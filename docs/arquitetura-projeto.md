@@ -121,12 +121,12 @@ src/
 
 ### FASE 2 - Funcionalidades Básicas (Semana 3-4)
 
-#### Etapa 2.1: Gestão de Contatos
+#### Etapa 2.1: Gestão de Contatos ✅
 
-- [ ] CRUD de contatos (Create, Read, Update, Delete)
-- [ ] Listagem de contatos com busca e filtros
-- [ ] Modal de criação/edição de contato
-- [ ] Visualização detalhada de contato
+- [x] CRUD de contatos (Create, Read, Update, Delete)
+- [x] Listagem de contatos com busca
+- [x] Formulário de criação/edição de contato
+- [x] Visualização detalhada de contato com negócios e atividades
 
 #### Etapa 2.2: Gestão de Organizações
 
