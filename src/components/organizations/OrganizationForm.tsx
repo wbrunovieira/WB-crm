@@ -1,32 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ContactFormData } from "@/lib/validations/contact";
-import { createContact, updateContact } from "@/actions/contacts";
-import { getOrganizationsList } from "@/actions/organizations-list";
+import { OrganizationFormData } from "@/lib/validations/organization";
+import {
+  createOrganization,
+  updateOrganization,
+} from "@/actions/organizations";
 
-interface ContactFormProps {
-  contact?: {
+interface OrganizationFormProps {
+  organization?: {
     id: string;
     name: string;
-    email: string | null;
+    domain: string | null;
     phone: string | null;
-    organizationId: string | null;
+    address: string | null;
   };
 }
 
-export function ContactForm({ contact }: ContactFormProps) {
+export function OrganizationForm({ organization }: OrganizationFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [organizations, setOrganizations] = useState<
-    Array<{ id: string; name: string }>
-  >([]);
-
-  useEffect(() => {
-    getOrganizationsList().then(setOrganizations);
-  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -35,23 +30,25 @@ export function ContactForm({ contact }: ContactFormProps) {
 
     try {
       const formData = new FormData(e.currentTarget);
-      const data: ContactFormData = {
+      const data: OrganizationFormData = {
         name: formData.get("name") as string,
-        email: formData.get("email") as string,
+        domain: formData.get("domain") as string,
         phone: formData.get("phone") as string,
-        organizationId: formData.get("organizationId") as string,
+        address: formData.get("address") as string,
       };
 
-      if (contact) {
-        await updateContact(contact.id, data);
+      if (organization) {
+        await updateOrganization(organization.id, data);
       } else {
-        await createContact(data);
+        await createOrganization(data);
       }
 
-      router.push("/contacts");
+      router.push("/organizations");
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao salvar contato");
+      setError(
+        err instanceof Error ? err.message : "Erro ao salvar organização"
+      );
     } finally {
       setIsLoading(false);
     }
@@ -77,23 +74,24 @@ export function ContactForm({ contact }: ContactFormProps) {
           id="name"
           name="name"
           required
-          defaultValue={contact?.name}
+          defaultValue={organization?.name}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
 
       <div>
         <label
-          htmlFor="email"
+          htmlFor="domain"
           className="block text-sm font-medium text-gray-700"
         >
-          Email
+          Domínio (website)
         </label>
         <input
-          type="email"
-          id="email"
-          name="email"
-          defaultValue={contact?.email || ""}
+          type="text"
+          id="domain"
+          name="domain"
+          placeholder="exemplo.com"
+          defaultValue={organization?.domain || ""}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
@@ -109,31 +107,25 @@ export function ContactForm({ contact }: ContactFormProps) {
           type="tel"
           id="phone"
           name="phone"
-          defaultValue={contact?.phone || ""}
+          defaultValue={organization?.phone || ""}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>
 
       <div>
         <label
-          htmlFor="organizationId"
+          htmlFor="address"
           className="block text-sm font-medium text-gray-700"
         >
-          Organização
+          Endereço
         </label>
-        <select
-          id="organizationId"
-          name="organizationId"
-          defaultValue={contact?.organizationId || ""}
+        <textarea
+          id="address"
+          name="address"
+          rows={3}
+          defaultValue={organization?.address || ""}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-        >
-          <option value="">Nenhuma</option>
-          {organizations.map((org) => (
-            <option key={org.id} value={org.id}>
-              {org.name}
-            </option>
-          ))}
-        </select>
+        />
       </div>
 
       <div className="flex gap-4">
@@ -149,7 +141,11 @@ export function ContactForm({ contact }: ContactFormProps) {
           disabled={isLoading}
           className="rounded-md bg-primary px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
         >
-          {isLoading ? "Salvando..." : contact ? "Atualizar" : "Criar"}
+          {isLoading
+            ? "Salvando..."
+            : organization
+              ? "Atualizar"
+              : "Criar"}
         </button>
       </div>
     </form>
