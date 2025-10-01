@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 WB-crm - Clone do Pipedrive. Sistema de CRM focado em gestão de pipeline de vendas construído com Next.js 14+ full-stack.
 
+**Repository**: https://github.com/wbrunovieira/WB-crm
+
 **Stack**: Next.js (App Router), TypeScript, PostgreSQL, Prisma, NextAuth.js, Tailwind CSS, shadcn/ui
 
 ## Development Commands
