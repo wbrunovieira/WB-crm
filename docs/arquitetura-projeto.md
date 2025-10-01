@@ -151,21 +151,21 @@ src/
 - [x] Atribuir negócios a estágios
 - [x] Listagem de negócios em tabela
 
-### FASE 4 - Visualização do Pipeline (Semana 7-8)
+### FASE 4 - Visualização do Pipeline (Semana 7-8) ✅ CONCLUÍDA
 
-#### Etapa 4.1: Interface Kanban
+#### Etapa 4.1: Interface Kanban ✅
 
-- [ ] Criar layout Kanban com colunas por estágio
-- [ ] Exibir cards de negócios em cada estágio
-- [ ] Mostrar valor total por estágio
-- [ ] Indicadores visuais de status
+- [x] Criar layout Kanban com colunas por estágio
+- [x] Exibir cards de negócios em cada estágio
+- [x] Mostrar valor total por estágio
+- [x] Indicadores visuais de status
 
-#### Etapa 4.2: Drag & Drop
+#### Etapa 4.2: Drag & Drop ✅
 
-- [ ] Implementar drag & drop entre estágios
-- [ ] Atualizar status do negócio ao mover
-- [ ] Animações de transição
-- [ ] Feedback visual durante drag
+- [x] Implementar drag & drop entre estágios
+- [x] Atualizar status do negócio ao mover
+- [x] Animações de transição
+- [x] Feedback visual durante drag
 
 ### FASE 5 - Atividades (Semana 9-10)
 

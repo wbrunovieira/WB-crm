@@ -1,6 +1,7 @@
 import { getPipelineView } from "@/actions/pipeline-view";
 import { getPipelines } from "@/actions/pipelines";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
+import PipelineSelector from "@/components/pipeline/PipelineSelector";
 import Link from "next/link";
 
 export default async function PipelineViewPage({
@@ -19,19 +20,10 @@ export default async function PipelineViewPage({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <h1 className="text-2xl font-bold">Pipeline de Vendas</h1>
-            <select
-              className="rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-              defaultValue={pipelineData.id}
-              onChange={(e) => {
-                window.location.href = `/pipeline?pipelineId=${e.target.value}`;
-              }}
-            >
-              {allPipelines.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name} {p.isDefault && "(Padrão)"}
-                </option>
-              ))}
-            </select>
+            <PipelineSelector
+              pipelines={allPipelines}
+              currentPipelineId={pipelineData.id}
+            />
           </div>
           <Link
             href="/deals/new"
