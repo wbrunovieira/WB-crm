@@ -94,28 +94,30 @@ src/
 
 ## Plano de Implementação por Etapas
 
-### FASE 1 - Fundação (Semana 1-2)
+### FASE 1 - Fundação (Semana 1-2) ✅ CONCLUÍDA
 
-#### Etapa 1.1: Setup Inicial
+#### Etapa 1.1: Setup Inicial ✅
 
-- [ ] Inicializar projeto Next.js com TypeScript
-- [ ] Configurar Tailwind CSS e shadcn/ui
-- [ ] Configurar ESLint e Prettier
-- [ ] Configurar variáveis de ambiente
+- [x] Inicializar projeto Next.js com TypeScript
+- [x] Configurar Tailwind CSS v4 (nova configuração CSS-based)
+- [x] Configurar ESLint e Prettier
+- [x] Configurar variáveis de ambiente
 
-#### Etapa 1.2: Banco de Dados
+#### Etapa 1.2: Banco de Dados ✅
 
-- [ ] Configurar PostgreSQL
-- [ ] Configurar Prisma
-- [ ] Criar schema inicial (User, Organization, Contact)
-- [ ] Gerar e executar migrations
+- [x] Configurar SQLite (ambiente local simplificado)
+- [x] Configurar Prisma
+- [x] Criar schema completo (User, Organization, Contact, Deal, Pipeline, Stage, Activity)
+- [x] Gerar e executar migrations
+- [x] Criar seed com usuário teste e pipeline padrão
 
-#### Etapa 1.3: Autenticação
+#### Etapa 1.3: Autenticação ✅
 
-- [ ] Configurar NextAuth.js
-- [ ] Criar páginas de login/registro
-- [ ] Implementar middleware de autenticação
-- [ ] Proteger rotas do dashboard
+- [x] Configurar NextAuth.js com Prisma Adapter
+- [x] Criar páginas de login/registro
+- [x] Implementar middleware de autenticação
+- [x] Proteger rotas do dashboard
+- [x] Criar dashboard básico com layout
 
 ### FASE 2 - Funcionalidades Básicas (Semana 3-4)
 
