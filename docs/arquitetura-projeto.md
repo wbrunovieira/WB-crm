@@ -128,12 +128,12 @@ src/
 - [x] Formulário de criação/edição de contato
 - [x] Visualização detalhada de contato com negócios e atividades
 
-#### Etapa 2.2: Gestão de Organizações
+#### Etapa 2.2: Gestão de Organizações ✅
 
-- [ ] CRUD de organizações
-- [ ] Listagem de organizações
-- [ ] Vincular contatos a organizações
-- [ ] Visualização detalhada de organização
+- [x] CRUD de organizações
+- [x] Listagem de organizações com contadores
+- [x] Vincular contatos a organizações via dropdown
+- [x] Visualização detalhada de organização com contatos e negócios
 
 ### FASE 3 - Pipeline de Vendas (Semana 5-6)
 
