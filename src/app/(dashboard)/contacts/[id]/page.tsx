@@ -108,11 +108,13 @@ export default async function ContactDetailPage({
                 {contact.activities.slice(0, 5).map((activity) => (
                   <li key={activity.id} className="text-sm">
                     <p className="font-medium">{activity.subject}</p>
-                    <p className="text-gray-500">
-                      {format(new Date(activity.dueDate), "PPP", {
-                        locale: ptBR,
-                      })}
-                    </p>
+                    {activity.dueDate && (
+                      <p className="text-gray-500">
+                        {format(new Date(activity.dueDate), "PPP", {
+                          locale: ptBR,
+                        })}
+                      </p>
+                    )}
                   </li>
                 ))}
               </ul>

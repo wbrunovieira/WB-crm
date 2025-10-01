@@ -174,17 +174,17 @@ model Deal {
 }
 
 model Activity {
-  id          String   @id @default(cuid())
-  type        String   // call, meeting, email, task
+  id          String    @id @default(cuid())
+  type        String    // call, meeting, email, task
   subject     String
   description String?
-  dueDate     DateTime
-  completed   Boolean  @default(false)
+  dueDate     DateTime?
+  completed   Boolean   @default(false)
   dealId      String?
   contactId   String?
   ownerId     String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   // Relations
   owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
