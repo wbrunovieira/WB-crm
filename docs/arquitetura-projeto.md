@@ -135,7 +135,7 @@ src/
 - [x] Vincular contatos a organizações via dropdown
 - [x] Visualização detalhada de organização com contatos e negócios
 
-### FASE 3 - Pipeline de Vendas (Semana 5-6)
+### FASE 3 - Pipeline de Vendas (Semana 5-6) ✅ CONCLUÍDA
 
 #### Etapa 3.1: Estrutura do Pipeline ✅
 
@@ -144,12 +144,12 @@ src/
 - [x] Configurar pipeline padrão
 - [x] Função de reordenar estágios (backend pronto)
 
-#### Etapa 3.2: Gestão de Negócios (Deals)
+#### Etapa 3.2: Gestão de Negócios (Deals) ✅
 
-- [ ] CRUD de negócios
-- [ ] Vincular negócios a contatos/organizações
-- [ ] Atribuir negócios a estágios
-- [ ] Listagem de negócios em tabela
+- [x] CRUD de negócios
+- [x] Vincular negócios a contatos/organizações
+- [x] Atribuir negócios a estágios
+- [x] Listagem de negócios em tabela
 
 ### FASE 4 - Visualização do Pipeline (Semana 7-8)
 

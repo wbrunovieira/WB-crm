@@ -1,5 +1,11 @@
 # API REST - Documentação
 
+## Índice
+- [Autenticação](#autenticação)
+- [Contatos](#contatos)
+- [Organizações](#organizações)
+- [Negócios (Deals)](#negócios-deals)
+
 ## Autenticação
 
 Todas as rotas da API requerem autenticação via NextAuth.js.
@@ -397,4 +403,346 @@ curl -X PUT http://localhost:3000/api/contacts/clxxx123 \
 # Excluir contato
 curl -X DELETE http://localhost:3000/api/contacts/clxxx123 \
   -b cookies.txt
+```
+
+---
+
+## Negócios (Deals)
+
+### Listar todos os negócios
+
+```http
+GET /api/deals
+GET /api/deals?search=termo
+```
+
+**Query Parameters:**
+- `search` (opcional): Busca por título, nome do contato ou organização
+
+**Resposta de sucesso (200):**
+```json
+[
+  {
+    "id": "clxxx789",
+    "title": "Venda de Software Empresarial",
+    "value": 50000.00,
+    "currency": "BRL",
+    "status": "open",
+    "stageId": "clxxx101",
+    "contactId": "clxxx123",
+    "organizationId": "clxxx456",
+    "expectedCloseDate": "2025-11-15T00:00:00.000Z",
+    "ownerId": "clxxx001",
+    "createdAt": "2025-10-01T10:00:00.000Z",
+    "contact": {
+      "id": "clxxx123",
+      "name": "João Silva",
+      "email": "joao@example.com"
+    },
+    "organization": {
+      "id": "clxxx456",
+      "name": "Empresa XYZ"
+    },
+    "stage": {
+      "id": "clxxx101",
+      "name": "Proposta",
+      "order": 2,
+      "probability": 30,
+      "pipeline": {
+        "id": "clxxx999",
+        "name": "Pipeline de Vendas",
+        "isDefault": true
+      }
+    },
+    "owner": {
+      "id": "clxxx001",
+      "name": "Admin",
+      "email": "admin@wbcrm.com"
+    }
+  }
+]
+```
+
+**Exemplo com cURL:**
+```bash
+curl -X GET 'http://localhost:3000/api/deals' \
+  -H 'Cookie: next-auth.session-token=seu_token_aqui'
+```
+
+**Exemplo com fetch:**
+```javascript
+const response = await fetch('http://localhost:3000/api/deals?search=software', {
+  credentials: 'include'
+});
+const deals = await response.json();
+```
+
+---
+
+### Buscar negócio por ID
+
+```http
+GET /api/deals/:id
+```
+
+**Resposta de sucesso (200):**
+```json
+{
+  "id": "clxxx789",
+  "title": "Venda de Software Empresarial",
+  "value": 50000.00,
+  "currency": "BRL",
+  "status": "open",
+  "stageId": "clxxx101",
+  "contactId": "clxxx123",
+  "organizationId": "clxxx456",
+  "expectedCloseDate": "2025-11-15T00:00:00.000Z",
+  "ownerId": "clxxx001",
+  "createdAt": "2025-10-01T10:00:00.000Z",
+  "contact": {
+    "id": "clxxx123",
+    "name": "João Silva",
+    "email": "joao@example.com",
+    "phone": "11999999999"
+  },
+  "organization": {
+    "id": "clxxx456",
+    "name": "Empresa XYZ"
+  },
+  "stage": {
+    "id": "clxxx101",
+    "name": "Proposta",
+    "order": 2,
+    "probability": 30,
+    "pipeline": {
+      "id": "clxxx999",
+      "name": "Pipeline de Vendas",
+      "isDefault": true
+    }
+  },
+  "owner": {
+    "id": "clxxx001",
+    "name": "Admin",
+    "email": "admin@wbcrm.com"
+  },
+  "activities": []
+}
+```
+
+**Resposta de erro (404):**
+```json
+{
+  "error": "Negócio não encontrado"
+}
+```
+
+**Exemplo com cURL:**
+```bash
+curl -X GET 'http://localhost:3000/api/deals/clxxx789' \
+  -H 'Cookie: next-auth.session-token=seu_token_aqui'
+```
+
+---
+
+### Criar novo negócio
+
+```http
+POST /api/deals
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+  "title": "Venda de Software Empresarial",
+  "value": 50000.00,
+  "currency": "BRL",
+  "status": "open",
+  "stageId": "clxxx101",
+  "contactId": "clxxx123",
+  "organizationId": "clxxx456",
+  "expectedCloseDate": "2025-11-15T00:00:00.000Z"
+}
+```
+
+**Campos obrigatórios:**
+- `title` (string, min 2 caracteres)
+- `value` (number, >= 0)
+- `stageId` (string)
+
+**Campos opcionais:**
+- `currency` (string, padrão: "BRL")
+- `status` (enum: "open", "won", "lost", padrão: "open")
+- `contactId` (string ou null)
+- `organizationId` (string ou null)
+- `expectedCloseDate` (ISO 8601 date ou null)
+
+**Resposta de sucesso (201):**
+```json
+{
+  "id": "clxxx789",
+  "title": "Venda de Software Empresarial",
+  "value": 50000.00,
+  "currency": "BRL",
+  "status": "open",
+  "stageId": "clxxx101",
+  "contactId": "clxxx123",
+  "organizationId": "clxxx456",
+  "expectedCloseDate": "2025-11-15T00:00:00.000Z",
+  "ownerId": "clxxx001",
+  "createdAt": "2025-10-01T10:00:00.000Z",
+  "contact": { },
+  "organization": { },
+  "stage": { }
+}
+```
+
+**Resposta de erro (400):**
+```json
+{
+  "error": "Título deve ter no mínimo 2 caracteres"
+}
+```
+
+**Exemplo com cURL:**
+```bash
+curl -X POST 'http://localhost:3000/api/deals' \
+  -H 'Content-Type: application/json' \
+  -H 'Cookie: next-auth.session-token=seu_token_aqui' \
+  -d '{
+    "title": "Venda de Software Empresarial",
+    "value": 50000.00,
+    "currency": "BRL",
+    "status": "open",
+    "stageId": "clxxx101",
+    "contactId": "clxxx123",
+    "organizationId": "clxxx456",
+    "expectedCloseDate": "2025-11-15T00:00:00.000Z"
+  }'
+```
+
+**Exemplo com fetch:**
+```javascript
+const response = await fetch('http://localhost:3000/api/deals', {
+  method: 'POST',
+  credentials: 'include',
+  headers: {
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    title: 'Venda de Software Empresarial',
+    value: 50000.00,
+    currency: 'BRL',
+    status: 'open',
+    stageId: 'clxxx101',
+    contactId: 'clxxx123',
+    organizationId: 'clxxx456',
+    expectedCloseDate: '2025-11-15T00:00:00.000Z'
+  })
+});
+const deal = await response.json();
+```
+
+---
+
+### Atualizar negócio
+
+```http
+PUT /api/deals/:id
+Content-Type: application/json
+```
+
+**Body:**
+```json
+{
+  "title": "Venda de Software Empresarial - Atualizado",
+  "value": 75000.00,
+  "currency": "BRL",
+  "status": "won",
+  "stageId": "clxxx104",
+  "contactId": "clxxx123",
+  "organizationId": "clxxx456",
+  "expectedCloseDate": "2025-11-20T00:00:00.000Z"
+}
+```
+
+**Campos obrigatórios:**
+- Todos os campos do POST são obrigatórios
+
+**Resposta de sucesso (200):**
+```json
+{
+  "id": "clxxx789",
+  "title": "Venda de Software Empresarial - Atualizado",
+  "value": 75000.00,
+  "currency": "BRL",
+  "status": "won",
+  "stageId": "clxxx104",
+  "contactId": "clxxx123",
+  "organizationId": "clxxx456",
+  "expectedCloseDate": "2025-11-20T00:00:00.000Z",
+  "ownerId": "clxxx001",
+  "createdAt": "2025-10-01T10:00:00.000Z"
+}
+```
+
+**Resposta de erro (404):**
+```json
+{
+  "error": "Negócio não encontrado"
+}
+```
+
+**Exemplo com cURL:**
+```bash
+curl -X PUT 'http://localhost:3000/api/deals/clxxx789' \
+  -H 'Content-Type: application/json' \
+  -H 'Cookie: next-auth.session-token=seu_token_aqui' \
+  -d '{
+    "title": "Venda de Software Empresarial - Atualizado",
+    "value": 75000.00,
+    "currency": "BRL",
+    "status": "won",
+    "stageId": "clxxx104",
+    "contactId": "clxxx123",
+    "organizationId": "clxxx456",
+    "expectedCloseDate": "2025-11-20T00:00:00.000Z"
+  }'
+```
+
+---
+
+### Excluir negócio
+
+```http
+DELETE /api/deals/:id
+```
+
+**Resposta de sucesso (200):**
+```json
+{
+  "success": true
+}
+```
+
+**Resposta de erro (404):**
+```json
+{
+  "error": "Negócio não encontrado"
+}
+```
+
+**Exemplo com cURL:**
+```bash
+curl -X DELETE 'http://localhost:3000/api/deals/clxxx789' \
+  -H 'Cookie: next-auth.session-token=seu_token_aqui'
+```
+
+**Exemplo com fetch:**
+```javascript
+const response = await fetch('http://localhost:3000/api/deals/clxxx789', {
+  method: 'DELETE',
+  credentials: 'include'
+});
+const result = await response.json();
 ```
