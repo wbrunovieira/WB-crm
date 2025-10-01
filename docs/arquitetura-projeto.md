@@ -137,12 +137,12 @@ src/
 
 ### FASE 3 - Pipeline de Vendas (Semana 5-6)
 
-#### Etapa 3.1: Estrutura do Pipeline
+#### Etapa 3.1: Estrutura do Pipeline ✅
 
-- [ ] CRUD de pipelines
-- [ ] CRUD de estágios (stages)
-- [ ] Configurar pipeline padrão
-- [ ] Reordenar estágios
+- [x] CRUD de pipelines
+- [x] CRUD de estágios (stages)
+- [x] Configurar pipeline padrão
+- [x] Função de reordenar estágios (backend pronto)
 
 #### Etapa 3.2: Gestão de Negócios (Deals)
 
