@@ -169,18 +169,18 @@ src/
 
 ### FASE 5 - Atividades (Semana 9-10)
 
-#### Etapa 5.1: Gestão de Atividades
+#### Etapa 5.1: Gestão de Atividades ✅
 
-- [ ] CRUD de atividades (call, meeting, email, task)
-- [ ] Vincular atividades a negócios/contatos
-- [ ] Agendar atividades com data/hora
-- [ ] Marcar atividades como concluídas
+- [x] CRUD de atividades (call, meeting, email, task)
+- [x] Vincular atividades a negócios/contatos
+- [x] Agendar atividades com data/hora
+- [x] Marcar atividades como concluídas
 
 #### Etapa 5.2: Timeline e Calendário
 
 - [ ] Timeline de atividades por negócio
 - [ ] Visualização em calendário
-- [ ] Filtros por tipo e status
+- [ ] Filtros por tipo e status (já implementados parcialmente)
 - [ ] Notificações de atividades pendentes
 
 ### FASE 6 - Dashboard e Relatórios (Semana 11-12)
