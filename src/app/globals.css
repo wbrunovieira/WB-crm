@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+@theme {
+  /* Custom colors for CRM */
+  --color-primary: #0066ff;
+  --color-success: #22c55e;
+  --color-warning: #f59e0b;
+  --color-danger: #ef4444;
+
+  /* Custom breakpoints */
+  --breakpoint-3xl: 1920px;
+}
+
+/* Base styles */
+body {
+  font-family: var(--font-geist-sans);
+}
