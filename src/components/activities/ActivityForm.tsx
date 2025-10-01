@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { createActivity, updateActivity } from "@/actions/activities";
 
 type Contact = {
@@ -37,6 +37,7 @@ export default function ActivityForm({
   deals,
 }: ActivityFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,8 +49,8 @@ export default function ActivityForm({
       ? new Date(activity.dueDate).toISOString().split("T")[0]
       : "",
     completed: activity?.completed || false,
-    contactId: activity?.contactId || "",
-    dealId: activity?.dealId || "",
+    contactId: activity?.contactId || searchParams.get("contactId") || "",
+    dealId: activity?.dealId || searchParams.get("dealId") || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {

@@ -27,12 +27,20 @@ export default async function ActivitiesPage({
             Gerencie suas tarefas e compromissos
           </p>
         </div>
-        <Link
-          href="/activities/new"
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
-        >
-          Nova Atividade
-        </Link>
+        <div className="flex gap-2">
+          <Link
+            href="/activities/calendar"
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            📅 Calendário
+          </Link>
+          <Link
+            href="/activities/new"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-600"
+          >
+            Nova Atividade
+          </Link>
+        </div>
       </div>
 
       <div className="mb-6 flex gap-4">

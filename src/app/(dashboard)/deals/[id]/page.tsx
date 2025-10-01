@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import DeleteDealButton from "@/components/deals/DeleteDealButton";
+import ActivityTimeline from "@/components/activities/ActivityTimeline";
 
 export default async function DealDetailPage({
   params,
@@ -165,51 +166,18 @@ export default async function DealDetailPage({
       </div>
 
       <div className="mt-6 rounded-lg bg-white p-6 shadow">
-        <h2 className="mb-4 text-lg font-semibold">
-          Atividades ({deal.activities.length})
-        </h2>
-        {deal.activities.length > 0 ? (
-          <div className="space-y-3">
-            {deal.activities.map((activity) => (
-              <div
-                key={activity.id}
-                className="rounded-lg border border-gray-200 p-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div>
-                    <h3 className="font-medium text-gray-900">
-                      {activity.subject}
-                    </h3>
-                    {activity.description && (
-                      <p className="mt-1 text-sm text-gray-600">
-                        {activity.description}
-                      </p>
-                    )}
-                  </div>
-                  <span
-                    className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                      activity.completed
-                        ? "bg-green-100 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {activity.completed ? "Concluída" : "Pendente"}
-                  </span>
-                </div>
-                <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
-                  <span className="capitalize">{activity.type}</span>
-                  {activity.dueDate && (
-                    <span>Vencimento: {formatDate(activity.dueDate)}</span>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-center text-gray-500">
-            Nenhuma atividade registrada
-          </p>
-        )}
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">
+            Timeline de Atividades ({deal.activities.length})
+          </h2>
+          <Link
+            href={`/activities/new?dealId=${deal.id}`}
+            className="text-sm text-primary hover:underline"
+          >
+            + Nova Atividade
+          </Link>
+        </div>
+        <ActivityTimeline activities={deal.activities} showLinks={false} />
       </div>
     </div>
   );

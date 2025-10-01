@@ -2,8 +2,8 @@ import { getContactById } from "@/actions/contacts";
 import { DeleteContactButton } from "@/components/contacts/DeleteContactButton";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { format } from "date-fns";
-import { ptBR } from "date-fns/locale";
+import ActivityTimeline from "@/components/activities/ActivityTimeline";
+import { formatDate } from "@/lib/utils";
 
 export default async function ContactDetailPage({
   params,
@@ -61,9 +61,7 @@ export default async function ContactDetailPage({
                 Criado em
               </dt>
               <dd className="mt-1 text-sm text-gray-900">
-                {format(new Date(contact.createdAt), "PPP 'às' HH:mm", {
-                  locale: ptBR,
-                })}
+                {formatDate(contact.createdAt)}
               </dd>
             </div>
           </dl>
@@ -96,29 +94,21 @@ export default async function ContactDetailPage({
           </div>
 
           <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-lg font-semibold">
-              Atividades ({contact.activities.length})
-            </h2>
-            {contact.activities.length === 0 ? (
-              <p className="text-sm text-gray-500">
-                Nenhuma atividade registrada
-              </p>
-            ) : (
-              <ul className="space-y-2">
-                {contact.activities.slice(0, 5).map((activity) => (
-                  <li key={activity.id} className="text-sm">
-                    <p className="font-medium">{activity.subject}</p>
-                    {activity.dueDate && (
-                      <p className="text-gray-500">
-                        {format(new Date(activity.dueDate), "PPP", {
-                          locale: ptBR,
-                        })}
-                      </p>
-                    )}
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold">
+                Timeline de Atividades ({contact.activities.length})
+              </h2>
+              <Link
+                href={`/activities/new?contactId=${contact.id}`}
+                className="text-sm text-primary hover:underline"
+              >
+                + Nova Atividade
+              </Link>
+            </div>
+            <ActivityTimeline
+              activities={contact.activities}
+              showLinks={false}
+            />
           </div>
         </div>
       </div>
