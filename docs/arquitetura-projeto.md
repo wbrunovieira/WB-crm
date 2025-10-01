@@ -167,7 +167,7 @@ src/
 - [x] Animações de transição
 - [x] Feedback visual durante drag
 
-### FASE 5 - Atividades (Semana 9-10)
+### FASE 5 - Atividades (Semana 9-10) ✅ CONCLUÍDA
 
 #### Etapa 5.1: Gestão de Atividades ✅
 
@@ -176,12 +176,12 @@ src/
 - [x] Agendar atividades com data/hora
 - [x] Marcar atividades como concluídas
 
-#### Etapa 5.2: Timeline e Calendário
+#### Etapa 5.2: Timeline e Calendário ✅
 
-- [ ] Timeline de atividades por negócio
-- [ ] Visualização em calendário
-- [ ] Filtros por tipo e status (já implementados parcialmente)
-- [ ] Notificações de atividades pendentes
+- [x] Timeline de atividades por negócio
+- [x] Visualização em calendário
+- [x] Filtros por tipo e status
+- [ ] Notificações de atividades pendentes (não implementado)
 
 ### FASE 6 - Dashboard e Relatórios (Semana 11-12)
 
