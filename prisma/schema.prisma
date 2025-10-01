@@ -1,0 +1,199 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and ownership
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String         @default("user") // user, admin
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  organizations Organization[]
+  contacts      Contact[]
+  deals         Deal[]
+  activities    Activity[]
+
+  @@map("users")
+}
+
+// NextAuth.js models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// CRM Models
+
+model Organization {
+  id        String   @id @default(cuid())
+  name      String
+  domain    String?
+  phone     String?
+  address   String?
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  contacts Contact[]
+  deals    Deal[]
+
+  @@index([ownerId])
+  @@map("organizations")
+}
+
+model Contact {
+  id             String        @id @default(cuid())
+  name           String
+  email          String?
+  phone          String?
+  organizationId String?
+  ownerId        String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  deals        Deal[]
+  activities   Activity[]
+
+  @@index([ownerId])
+  @@index([organizationId])
+  @@map("contacts")
+}
+
+model Pipeline {
+  id        String   @id @default(cuid())
+  name      String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  stages Stage[]
+
+  @@map("pipelines")
+}
+
+model Stage {
+  id          String   @id @default(cuid())
+  name        String
+  order       Int
+  pipelineId  String
+  probability Int      @default(0) // 0-100
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals    Deal[]
+
+  @@index([pipelineId])
+  @@map("stages")
+}
+
+model Deal {
+  id                String        @id @default(cuid())
+  title             String
+  value             Float         @default(0)
+  currency          String        @default("BRL")
+  status            String        @default("open") // open, won, lost
+  stageId           String
+  contactId         String?
+  organizationId    String?
+  ownerId           String
+  expectedCloseDate DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relations
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  stage        Stage         @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  activities   Activity[]
+
+  @@index([ownerId])
+  @@index([stageId])
+  @@index([contactId])
+  @@index([organizationId])
+  @@map("deals")
+}
+
+model Activity {
+  id          String   @id @default(cuid())
+  type        String   // call, meeting, email, task
+  subject     String
+  description String?  @db.Text
+  dueDate     DateTime
+  completed   Boolean  @default(false)
+  dealId      String?
+  contactId   String?
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([dealId])
+  @@index([contactId])
+  @@index([dueDate])
+  @@map("activities")
+}
