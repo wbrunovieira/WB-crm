@@ -1,9 +1,25 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("Starting seed...");
+
+  // Create test user
+  const hashedPassword = await bcrypt.hash("123456", 10);
+  const testUser = await prisma.user.upsert({
+    where: { email: "admin@wbcrm.com" },
+    update: {},
+    create: {
+      email: "admin@wbcrm.com",
+      name: "Admin",
+      password: hashedPassword,
+      role: "admin",
+    },
+  });
+
+  console.log("Created test user:", { email: testUser.email, name: testUser.name });
 
   // Create default pipeline
   const defaultPipeline = await prisma.pipeline.upsert({
