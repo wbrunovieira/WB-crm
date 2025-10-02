@@ -78,9 +78,31 @@ model VerificationToken {
 model Organization {
   id        String   @id @default(cuid())
   name      String
-  domain    String?
+
+  // Contact Info
+  website   String?
   phone     String?
-  address   String?
+
+  // Location
+  country        String?
+  state          String?
+  city           String?
+  zipCode        String?
+  streetAddress  String?
+
+  // Business Info
+  industry       String?
+  employeeCount  Int?
+  annualRevenue  Float?
+  taxId          String?
+  description    String?
+
+  // Social Media
+  instagram String?
+  linkedin  String?
+  facebook  String?
+  twitter   String?
+
   ownerId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

@@ -19,7 +19,7 @@ export async function GET(request: Request) {
       where: {
         ownerId: session.user.id,
         ...(search && {
-          OR: [{ name: { contains: search } }, { domain: { contains: search } }],
+          OR: [{ name: { contains: search } }, { website: { contains: search } }],
         }),
       },
       include: {
@@ -58,9 +58,22 @@ export async function POST(request: Request) {
     const organization = await prisma.organization.create({
       data: {
         name: validated.name,
-        domain: validated.domain || null,
+        website: validated.website || null,
         phone: validated.phone || null,
-        address: validated.address || null,
+        country: validated.country || null,
+        state: validated.state || null,
+        city: validated.city || null,
+        zipCode: validated.zipCode || null,
+        streetAddress: validated.streetAddress || null,
+        industry: validated.industry || null,
+        employeeCount: validated.employeeCount || null,
+        annualRevenue: validated.annualRevenue || null,
+        taxId: validated.taxId || null,
+        description: validated.description || null,
+        instagram: validated.instagram || null,
+        linkedin: validated.linkedin || null,
+        facebook: validated.facebook || null,
+        twitter: validated.twitter || null,
         ownerId: session.user.id,
       },
       include: {
