@@ -2,6 +2,7 @@ import { getActivityById } from "@/actions/activities";
 import ActivityForm from "@/components/activities/ActivityForm";
 import { getContactsList } from "@/lib/lists/contacts-list";
 import { getDealsList } from "@/lib/lists/deals-list";
+import { getLeadsList } from "@/lib/lists/leads-list";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -10,10 +11,11 @@ export default async function EditActivityPage({
 }: {
   params: { id: string };
 }) {
-  const [activity, contacts, deals] = await Promise.all([
+  const [activity, contacts, deals, leads] = await Promise.all([
     getActivityById(params.id),
     getContactsList(),
     getDealsList(),
+    getLeadsList(),
   ]);
 
   if (!activity) {
@@ -35,7 +37,7 @@ export default async function EditActivityPage({
       </div>
 
       <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow">
-        <ActivityForm activity={activity} contacts={contacts} deals={deals} />
+        <ActivityForm activity={activity} contacts={contacts} deals={deals} leads={leads} />
       </div>
     </div>
   );

@@ -11,6 +11,7 @@ export async function getActivities(filters?: {
   completed?: boolean;
   dealId?: string;
   contactId?: string;
+  leadId?: string;
 }) {
   const session = await getServerSession(authOptions);
 
@@ -25,6 +26,7 @@ export async function getActivities(filters?: {
       ...(filters?.completed !== undefined && { completed: filters.completed }),
       ...(filters?.dealId && { dealId: filters.dealId }),
       ...(filters?.contactId && { contactId: filters.contactId }),
+      ...(filters?.leadId && { leadId: filters.leadId }),
     },
     include: {
       deal: {
@@ -37,6 +39,12 @@ export async function getActivities(filters?: {
         select: {
           id: true,
           name: true,
+        },
+      },
+      lead: {
+        select: {
+          id: true,
+          businessName: true,
         },
       },
       owner: {
@@ -86,6 +94,14 @@ export async function getActivityById(id: string) {
           phone: true,
         },
       },
+      lead: {
+        select: {
+          id: true,
+          businessName: true,
+          status: true,
+          quality: true,
+        },
+      },
       owner: {
         select: {
           id: true,
@@ -117,6 +133,7 @@ export async function createActivity(data: ActivityFormData) {
       completed: validated.completed,
       dealId: validated.dealId,
       contactId: validated.contactId,
+      leadId: validated.leadId,
       ownerId: session.user.id,
     },
     include: {
@@ -132,6 +149,12 @@ export async function createActivity(data: ActivityFormData) {
           name: true,
         },
       },
+      lead: {
+        select: {
+          id: true,
+          businessName: true,
+        },
+      },
     },
   });
 
@@ -141,6 +164,9 @@ export async function createActivity(data: ActivityFormData) {
   }
   if (validated.contactId) {
     revalidatePath(`/contacts/${validated.contactId}`);
+  }
+  if (validated.leadId) {
+    revalidatePath(`/leads/${validated.leadId}`);
   }
 
   return activity;
@@ -173,6 +199,7 @@ export async function updateActivity(id: string, data: ActivityFormData) {
       completed: validated.completed,
       dealId: validated.dealId,
       contactId: validated.contactId,
+      leadId: validated.leadId,
     },
     include: {
       deal: {
@@ -187,6 +214,12 @@ export async function updateActivity(id: string, data: ActivityFormData) {
           name: true,
         },
       },
+      lead: {
+        select: {
+          id: true,
+          businessName: true,
+        },
+      },
     },
   });
 
@@ -197,6 +230,9 @@ export async function updateActivity(id: string, data: ActivityFormData) {
   }
   if (validated.contactId) {
     revalidatePath(`/contacts/${validated.contactId}`);
+  }
+  if (validated.leadId) {
+    revalidatePath(`/leads/${validated.leadId}`);
   }
 
   return activity;

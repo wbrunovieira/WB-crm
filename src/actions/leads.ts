@@ -70,6 +70,13 @@ export async function getLeadById(id: string) {
           { name: "asc" },
         ],
       },
+      activities: {
+        orderBy: [
+          { completed: "asc" },
+          { dueDate: "asc" },
+          { createdAt: "desc" },
+        ],
+      },
       convertedOrganization: {
         include: {
           contacts: true,
@@ -282,7 +289,10 @@ export async function convertLeadToOrganization(leadId: string) {
 
   const lead = await prisma.lead.findFirst({
     where: { id: leadId, ownerId: session.user.id },
-    include: { leadContacts: true },
+    include: {
+      leadContacts: true,
+      activities: true,
+    },
   });
 
   if (!lead) {
@@ -358,7 +368,11 @@ export async function convertLeadToOrganization(leadId: string) {
       },
     });
 
-    return { organization, contacts };
+    // Note: Activities linked to the lead remain unchanged
+    // They serve as historical record of the prospecting process
+    // and can be viewed through the lead detail page
+
+    return { organization, contacts, activities: lead.activities };
   });
 
   revalidatePath("/leads");

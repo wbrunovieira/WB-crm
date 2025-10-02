@@ -147,6 +147,7 @@ model Lead {
   // Relations
   owner                 User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   leadContacts          LeadContact[] // Lead tem múltiplos contatos
+  activities            Activity[]    // Lead tem múltiplas atividades
   convertedOrganization Organization? @relation("LeadConversion", fields: [convertedToOrganizationId], references: [id])
 
   @@index([ownerId])
@@ -326,6 +327,7 @@ model Activity {
   completed   Boolean   @default(false)
   dealId      String?
   contactId   String?
+  leadId      String?   // Activities can be linked to Leads
   ownerId     String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -334,10 +336,12 @@ model Activity {
   owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
   contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  lead    Lead?    @relation(fields: [leadId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([dealId])
   @@index([contactId])
+  @@index([leadId])
   @@index([dueDate])
   @@map("activities")
 }

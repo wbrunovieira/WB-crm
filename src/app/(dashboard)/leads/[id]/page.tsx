@@ -2,6 +2,7 @@ import { getLeadById } from "@/actions/leads";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
 import { LeadContactsList } from "@/components/leads/LeadContactsList";
+import { LeadActivitiesList } from "@/components/leads/LeadActivitiesList";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -229,6 +230,11 @@ export default async function LeadDetailPage({
           leadContacts={lead.leadContacts}
           isConverted={!!lead.convertedAt}
         />
+      </div>
+
+      {/* Lead Activities */}
+      <div className="mt-6">
+        <LeadActivitiesList leadId={lead.id} activities={lead.activities} />
       </div>
     </div>
   );

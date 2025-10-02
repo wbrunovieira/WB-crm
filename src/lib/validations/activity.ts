@@ -10,6 +10,7 @@ export const activitySchema = z.object({
   completed: z.boolean().default(false),
   dealId: z.string().optional().nullable(),
   contactId: z.string().optional().nullable(),
+  leadId: z.string().optional().nullable(),
 });
 
 export type ActivityFormData = z.infer<typeof activitySchema>;

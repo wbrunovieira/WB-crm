@@ -14,6 +14,11 @@ type Deal = {
   title: string;
 };
 
+type Lead = {
+  id: string;
+  businessName: string;
+};
+
 type Activity = {
   id: string;
   type: string;
@@ -23,18 +28,21 @@ type Activity = {
   completed: boolean;
   dealId: string | null;
   contactId: string | null;
+  leadId: string | null;
 };
 
 type ActivityFormProps = {
   activity?: Activity;
   contacts: Contact[];
   deals: Deal[];
+  leads: Lead[];
 };
 
 export default function ActivityForm({
   activity,
   contacts,
   deals,
+  leads,
 }: ActivityFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -51,6 +59,7 @@ export default function ActivityForm({
     completed: activity?.completed || false,
     contactId: activity?.contactId || searchParams.get("contactId") || "",
     dealId: activity?.dealId || searchParams.get("dealId") || "",
+    leadId: activity?.leadId || searchParams.get("leadId") || "",
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,6 +76,7 @@ export default function ActivityForm({
         completed: formData.completed,
         contactId: formData.contactId || null,
         dealId: formData.dealId || null,
+        leadId: formData.leadId || null,
       };
 
       if (activity) {
@@ -187,6 +197,28 @@ export default function ActivityForm({
           {deals.map((deal) => (
             <option key={deal.id} value={deal.id}>
               {deal.title}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div>
+        <label
+          htmlFor="leadId"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Lead
+        </label>
+        <select
+          id="leadId"
+          value={formData.leadId}
+          onChange={(e) => setFormData({ ...formData, leadId: e.target.value })}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
+        >
+          <option value="">Nenhum lead</option>
+          {leads.map((lead) => (
+            <option key={lead.id} value={lead.id}>
+              {lead.businessName}
             </option>
           ))}
         </select>
