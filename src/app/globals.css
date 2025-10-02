@@ -2,7 +2,7 @@
 
 @theme {
   /* Custom colors for CRM */
-  --color-primary: #0066ff;
+  --color-primary: #792990;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
@@ -14,6 +14,72 @@
 /* Base styles */
 body {
   font-family: var(--font-geist-sans);
+  background-color: #350045;
+  color: #e5e7eb;
+}
+
+/* Dark theme for cards and forms */
+.bg-white,
+[class*="bg-white"] {
+  background-color: #1a0022 !important;
+}
+
+.text-gray-900 {
+  color: #e5e7eb !important;
+}
+
+.text-gray-700 {
+  color: #d1d5db !important;
+}
+
+.text-gray-600 {
+  color: #d1d5db !important;
+}
+
+.text-gray-500 {
+  color: #9ca3af !important;
+}
+
+/* Form inputs */
+input[type="text"],
+input[type="email"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+input[type="date"],
+input[type="password"],
+textarea,
+select {
+  background-color: #2d1b3d !important;
+  border-color: #792990 !important;
+  color: #e5e7eb !important;
+}
+
+input[type="text"]::placeholder,
+input[type="email"]::placeholder,
+input[type="tel"]::placeholder,
+input[type="url"]::placeholder,
+input[type="number"]::placeholder,
+textarea::placeholder {
+  color: #9ca3af !important;
+}
+
+/* Table styles */
+.bg-gray-50 {
+  background-color: #2d1b3d !important;
+}
+
+thead.bg-gray-50 {
+  background-color: #1a0022 !important;
+}
+
+/* Hover states */
+.hover\:bg-gray-50:hover {
+  background-color: #2d1b3d !important;
+}
+
+.hover\:bg-gray-100:hover {
+  background-color: #3d2b4d !important;
 }
 
 /* Sonner Toast Customization */
