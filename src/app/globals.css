@@ -15,3 +15,63 @@
 body {
   font-family: var(--font-geist-sans);
 }
+
+/* Sonner Toast Customization */
+[data-sonner-toast] {
+  --normal-bg: #ffffff;
+  --normal-border: #e5e7eb;
+  --normal-text: #374151;
+
+  --success-bg: #f0fdf4;
+  --success-border: #22c55e;
+  --success-text: #15803d;
+
+  --error-bg: #fef2f2;
+  --error-border: #ef4444;
+  --error-text: #b91c1c;
+
+  --warning-bg: #fefce8;
+  --warning-border: #f59e0b;
+  --warning-text: #a16207;
+}
+
+[data-sonner-toast][data-type="success"] {
+  background-color: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success-text);
+}
+
+[data-sonner-toast][data-type="error"] {
+  background-color: var(--error-bg);
+  border-color: var(--error-border);
+  color: var(--error-text);
+}
+
+[data-sonner-toast][data-type="warning"] {
+  background-color: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning-text);
+}
+
+[data-sonner-toast] [data-button] {
+  background-color: var(--color-primary);
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+[data-sonner-toast] [data-button]:hover {
+  opacity: 0.9;
+}
+
+[data-sonner-toast] [data-cancel-button] {
+  background-color: #f3f4f6;
+  color: #374151;
+}
+
+[data-sonner-toast] [data-cancel-button]:hover {
+  background-color: #e5e7eb;
+}

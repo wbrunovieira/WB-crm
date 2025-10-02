@@ -5,11 +5,18 @@ import Link from "next/link";
 export default async function CalendarPage({
   searchParams,
 }: {
-  searchParams: { month?: string; year?: string };
+  searchParams: {
+    month?: string;
+    year?: string;
+    view?: string;
+    date?: string;
+  };
 }) {
   const now = new Date();
   const month = searchParams.month ? parseInt(searchParams.month) : now.getMonth();
   const year = searchParams.year ? parseInt(searchParams.year) : now.getFullYear();
+  const view = (searchParams.view || "month") as "month" | "week" | "3day" | "day";
+  const selectedDate = searchParams.date ? new Date(searchParams.date) : now;
 
   const activities = await getActivities();
 
@@ -43,6 +50,8 @@ export default async function CalendarPage({
           activities={activities}
           currentMonth={month}
           currentYear={year}
+          view={view}
+          selectedDate={selectedDate}
         />
       </div>
     </div>

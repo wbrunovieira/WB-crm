@@ -1,4 +1,5 @@
 import { getOrganizations } from "@/actions/organizations";
+import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import Link from "next/link";
 
 export default async function OrganizationsPage({
@@ -72,7 +73,7 @@ export default async function OrganizationsPage({
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Negócios
                 </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
                   Ações
                 </th>
               </tr>
@@ -100,13 +101,19 @@ export default async function OrganizationsPage({
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {org._count.deals}
                   </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                    <Link
-                      href={`/organizations/${org.id}/edit`}
-                      className="text-primary hover:text-blue-700"
-                    >
-                      Editar
-                    </Link>
+                  <td className="whitespace-nowrap px-6 py-4 text-center text-sm">
+                    <div className="flex items-center justify-center gap-2">
+                      <Link
+                        href={`/organizations/${org.id}/edit`}
+                        className="text-gray-600 hover:text-primary"
+                        title="Editar"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                        </svg>
+                      </Link>
+                      <DeleteOrganizationButton organizationId={org.id} />
+                    </div>
                   </td>
                 </tr>
               ))}
