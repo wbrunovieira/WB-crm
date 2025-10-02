@@ -58,6 +58,7 @@ export async function POST(request: Request) {
     const organization = await prisma.organization.create({
       data: {
         name: validated.name,
+        legalName: validated.legalName || null,
         website: validated.website || null,
         phone: validated.phone || null,
         country: validated.country || null,

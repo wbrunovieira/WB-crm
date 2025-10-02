@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 export const organizationSchema = z.object({
-  name: z.string().min(2, "Nome deve ter no mínimo 2 caracteres"),
+  name: z.string().min(2, "Nome Fantasia deve ter no mínimo 2 caracteres"),
+  legalName: z.string().optional(),
 
   // Contact Info
   website: z.string().optional(),

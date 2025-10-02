@@ -81,6 +81,7 @@ export async function createOrganization(data: OrganizationFormData) {
   const organization = await prisma.organization.create({
     data: {
       name: validated.name,
+      legalName: validated.legalName || null,
       website: validated.website || null,
       phone: validated.phone || null,
       country: validated.country || null,
@@ -123,6 +124,7 @@ export async function updateOrganization(
     },
     data: {
       name: validated.name,
+      legalName: validated.legalName || null,
       website: validated.website || null,
       phone: validated.phone || null,
       country: validated.country || null,

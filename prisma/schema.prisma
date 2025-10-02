@@ -76,8 +76,9 @@ model VerificationToken {
 // CRM Models
 
 model Organization {
-  id        String   @id @default(cuid())
-  name      String
+  id           String   @id @default(cuid())
+  name         String   // Nome Fantasia (obrigatório)
+  legalName    String?  // Razão Social
 
   // Contact Info
   website   String?

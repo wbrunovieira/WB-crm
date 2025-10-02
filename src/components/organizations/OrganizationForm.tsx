@@ -12,6 +12,7 @@ interface OrganizationFormProps {
   organization?: {
     id: string;
     name: string;
+    legalName: string | null;
     website: string | null;
     phone: string | null;
     country: string | null;
@@ -45,6 +46,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
       const formData = new FormData(e.currentTarget);
       const data: OrganizationFormData = {
         name: formData.get("name") as string,
+        legalName: formData.get("legalName") as string,
         website: formData.get("website") as string,
         phone: formData.get("phone") as string,
         country: formData.get("country") as string,
@@ -103,7 +105,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             htmlFor="name"
             className="block text-sm font-medium text-gray-700"
           >
-            Nome *
+            Nome Fantasia *
           </label>
           <input
             type="text"
@@ -111,6 +113,22 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             name="name"
             required
             defaultValue={organization?.name}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        <div>
+          <label
+            htmlFor="legalName"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Razão Social
+          </label>
+          <input
+            type="text"
+            id="legalName"
+            name="legalName"
+            defaultValue={organization?.legalName || ""}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>

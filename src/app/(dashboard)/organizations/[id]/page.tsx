@@ -39,6 +39,18 @@ export default async function OrganizationDetailPage({
           <h2 className="mb-4 text-lg font-semibold">Informações Básicas</h2>
           <dl className="space-y-4">
             <div>
+              <dt className="text-sm font-medium text-gray-500">Nome Fantasia</dt>
+              <dd className="mt-1 text-sm text-gray-900">
+                {organization.name}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Razão Social</dt>
+              <dd className="mt-1 text-sm text-gray-900">
+                {organization.legalName || "-"}
+              </dd>
+            </div>
+            <div>
               <dt className="text-sm font-medium text-gray-500">Website</dt>
               <dd className="mt-1 text-sm text-gray-900">
                 {organization.website ? (

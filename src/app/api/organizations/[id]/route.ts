@@ -81,6 +81,7 @@ export async function PUT(
       },
       data: {
         name: validated.name,
+        legalName: validated.legalName || null,
         website: validated.website || null,
         phone: validated.phone || null,
         country: validated.country || null,
