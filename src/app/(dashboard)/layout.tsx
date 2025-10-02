@@ -33,6 +33,12 @@ export default async function DashboardLayout({
                   Dashboard
                 </Link>
                 <Link
+                  href="/leads"
+                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
+                >
+                  Leads
+                </Link>
+                <Link
                   href="/contacts"
                   className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
                 >

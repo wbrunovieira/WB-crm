@@ -25,6 +25,7 @@ model User {
   // Relations
   accounts      Account[]
   sessions      Session[]
+  leads         Lead[]
   organizations Organization[]
   contacts      Contact[]
   deals         Deal[]
@@ -75,6 +76,113 @@ model VerificationToken {
 
 // CRM Models
 
+model Lead {
+  id        String   @id @default(cuid())
+  googleId  String?  @unique
+
+  // Informações Básicas da Empresa
+  businessName            String
+  registeredName          String?
+  foundationDate          DateTime?
+  companyRegistrationID   String?
+
+  // Localização
+  address   String?
+  city      String?
+  state     String?
+  country   String?
+  zipCode   String?
+  vicinity  String?
+
+  // Contato da Empresa (geral)
+  phone     String?
+  whatsapp  String?
+  website   String?
+  email     String?
+
+  // Redes Sociais
+  instagram String?
+  facebook  String?
+  tiktok    String?
+
+  // Informações do Google Places
+  categories          String?
+  rating              Float?
+  priceLevel          Int?
+  userRatingsTotal    Int?
+  permanentlyClosed   Boolean  @default(false)
+  types               String?
+
+  // Informações da Empresa
+  companyOwner    String?
+  companySize     String?
+  revenue         Float?
+  employeesCount  Int?
+  description     String?
+  equityCapital   Float?
+  businessStatus  String?
+
+  // Atividades
+  primaryActivity     String?
+  secondaryActivities String?
+
+  // Metadados da Busca
+  source        String?
+  quality       String?  // cold, warm, hot
+  searchTerm    String?
+  fieldsFilled  Int?
+  category      String?
+  radius        Int?
+
+  // Status e Conversão
+  status        String   @default("new") // new, contacted, qualified, disqualified
+  convertedAt   DateTime?
+  convertedToOrganizationId  String?  @unique // Lead vira 1 Organization
+
+  // Owner e timestamps
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  owner                 User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  leadContacts          LeadContact[] // Lead tem múltiplos contatos
+  convertedOrganization Organization? @relation("LeadConversion", fields: [convertedToOrganizationId], references: [id])
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([quality])
+  @@index([convertedAt])
+  @@map("leads")
+}
+
+model LeadContact {
+  id       String  @id @default(cuid())
+  leadId   String
+
+  // Informações do Contato
+  name     String
+  role     String?  // Cargo: Gerente, Diretor, etc
+  email    String?
+  phone    String?
+  whatsapp String?
+  isPrimary Boolean @default(false) // Contato principal
+
+  // Conversão
+  convertedToContactId String?  @unique // LeadContact vira 1 Contact
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  lead             Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  convertedContact Contact? @relation("LeadContactConversion", fields: [convertedToContactId], references: [id])
+
+  @@index([leadId])
+  @@index([isPrimary])
+  @@map("lead_contacts")
+}
+
 model Organization {
   id           String   @id @default(cuid())
   name         String   // Nome Fantasia (obrigatório)
@@ -104,16 +212,21 @@ model Organization {
   facebook  String?
   twitter   String?
 
+  // Lead tracking
+  sourceLeadId String?
+
   ownerId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
-  owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  contacts Contact[]
-  deals    Deal[]
+  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  contacts   Contact[]
+  deals      Deal[]
+  sourceLead Lead?     @relation("LeadConversion") // Organization veio de qual Lead
 
   @@index([ownerId])
+  @@index([sourceLeadId])
   @@map("organizations")
 }
 
@@ -122,19 +235,26 @@ model Contact {
   name           String
   email          String?
   phone          String?
+  role           String?       // Cargo da pessoa
   organizationId String?
+
+  // Lead tracking - veio de qual LeadContact
+  sourceLeadContactId String?
+
   ownerId        String
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
   // Relations
-  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  deals        Deal[]
-  activities   Activity[]
+  owner            User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  deals            Deal[]
+  activities       Activity[]
+  sourceLeadContact LeadContact? @relation("LeadContactConversion") // Contact veio de qual LeadContact
 
   @@index([ownerId])
   @@index([organizationId])
+  @@index([sourceLeadContactId])
   @@map("contacts")
 }
 
@@ -177,6 +297,7 @@ model Deal {
   stageId           String
   contactId         String?
   organizationId    String?
+
   ownerId           String
   expectedCloseDate DateTime?
   createdAt         DateTime      @default(now())
