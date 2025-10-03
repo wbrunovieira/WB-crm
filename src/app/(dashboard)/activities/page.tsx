@@ -74,24 +74,27 @@ export default async function ActivitiesPage({
         >
           Concluídas
         </Link>
-        <div className="ml-4 flex gap-2">
-          {["call", "meeting", "email", "task"].map((type) => (
+        <div className="ml-4 flex flex-wrap gap-2">
+          {[
+            { type: "call", label: "Ligações", icon: "📞" },
+            { type: "meeting", label: "Reuniões", icon: "📅" },
+            { type: "email", label: "E-mails", icon: "✉️" },
+            { type: "task", label: "Tarefas", icon: "📋" },
+            { type: "whatsapp", label: "WhatsApp", icon: "💬" },
+            { type: "visit", label: "Visitas", icon: "📍" },
+            { type: "instagram", label: "Instagram", icon: "📷" },
+          ].map(({ type, label, icon }) => (
             <Link
               key={type}
               href={`/activities?type=${type}`}
-              className={`rounded-md px-4 py-2 text-sm font-medium capitalize ${
+              className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium ${
                 searchParams.type === type
                   ? "bg-primary text-white"
                   : "bg-white text-gray-700 hover:bg-gray-50"
               }`}
             >
-              {type === "call"
-                ? "Ligações"
-                : type === "meeting"
-                  ? "Reuniões"
-                  : type === "email"
-                    ? "E-mails"
-                    : "Tarefas"}
+              <span>{icon}</span>
+              <span>{label}</span>
             </Link>
           ))}
         </div>

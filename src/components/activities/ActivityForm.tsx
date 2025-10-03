@@ -69,7 +69,7 @@ export default function ActivityForm({
 
     try {
       const data = {
-        type: formData.type as "call" | "meeting" | "email" | "task",
+        type: formData.type as "call" | "meeting" | "email" | "task" | "whatsapp" | "visit" | "instagram",
         subject: formData.subject,
         description: formData.description || undefined,
         dueDate: formData.dueDate ? new Date(formData.dueDate) : null,
@@ -118,10 +118,13 @@ export default function ActivityForm({
           onChange={(e) => setFormData({ ...formData, type: e.target.value })}
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
         >
-          <option value="call">Ligação</option>
-          <option value="meeting">Reunião</option>
-          <option value="email">E-mail</option>
-          <option value="task">Tarefa</option>
+          <option value="call">📞 Ligação</option>
+          <option value="meeting">📅 Reunião</option>
+          <option value="email">✉️ E-mail</option>
+          <option value="task">📋 Tarefa</option>
+          <option value="whatsapp">💬 WhatsApp</option>
+          <option value="visit">📍 Visita Física</option>
+          <option value="instagram">📷 Direct Instagram</option>
         </select>
       </div>
 

@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const activitySchema = z.object({
-  type: z.enum(["call", "meeting", "email", "task"], {
+  type: z.enum(["call", "meeting", "email", "task", "whatsapp", "visit", "instagram"], {
     required_error: "Tipo de atividade é obrigatório",
   }),
   subject: z.string().min(2, "Assunto deve ter no mínimo 2 caracteres"),
