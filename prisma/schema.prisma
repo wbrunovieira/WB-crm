@@ -30,6 +30,7 @@ model User {
   contacts      Contact[]
   deals         Deal[]
   activities    Activity[]
+  labels        Label[]
 
   @@map("users")
 }
@@ -141,6 +142,9 @@ model Lead {
   convertedAt   DateTime?
   convertedToOrganizationId  String?  @unique // Lead vira 1 Organization
 
+  // Label
+  labelId String?
+
   // Owner e timestamps
   ownerId   String
   createdAt DateTime @default(now())
@@ -148,6 +152,7 @@ model Lead {
 
   // Relations
   owner                 User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  label                 Label?        @relation(fields: [labelId], references: [id], onDelete: SetNull)
   leadContacts          LeadContact[] // Lead tem múltiplos contatos
   contacts              Contact[]     // Contatos diretamente vinculados ao Lead
   activities            Activity[]    // Lead tem múltiplas atividades
@@ -157,6 +162,7 @@ model Lead {
   @@index([status])
   @@index([quality])
   @@index([convertedAt])
+  @@index([labelId])
   @@map("leads")
 }
 
@@ -225,19 +231,42 @@ model Organization {
   // Lead tracking
   sourceLeadId String?
 
+  // Label
+  labelId String?
+
   ownerId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   // Relations
   owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  label      Label?    @relation(fields: [labelId], references: [id], onDelete: SetNull)
   contacts   Contact[]
   deals      Deal[]
   sourceLead Lead?     @relation("LeadConversion") // Organization veio de qual Lead
 
   @@index([ownerId])
   @@index([sourceLeadId])
+  @@index([labelId])
   @@map("organizations")
+}
+
+model Label {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   // Hex color code (e.g., #FF5733)
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  leads         Lead[]
+  organizations Organization[]
+
+  @@unique([name, ownerId]) // Each user can't have duplicate label names
+  @@index([ownerId])
+  @@map("labels")
 }
 
 model Contact {

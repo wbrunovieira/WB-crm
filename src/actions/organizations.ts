@@ -104,6 +104,7 @@ export async function createOrganization(data: OrganizationFormData) {
       facebook: validated.facebook || null,
       twitter: validated.twitter || null,
       tiktok: validated.tiktok || null,
+      labelId: validated.labelId || null,
       ownerId: session.user.id,
     },
   });
@@ -153,6 +154,7 @@ export async function updateOrganization(
       facebook: validated.facebook || null,
       twitter: validated.twitter || null,
       tiktok: validated.tiktok || null,
+      labelId: validated.labelId || null,
     },
   });
 

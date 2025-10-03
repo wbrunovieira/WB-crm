@@ -33,6 +33,9 @@ export const organizationSchema = z.object({
   facebook: z.string().optional(),
   twitter: z.string().optional(),
   tiktok: z.string().optional(),
+
+  // Label
+  labelId: z.string().optional(),
 });
 
 export type OrganizationFormData = z.infer<typeof organizationSchema>;

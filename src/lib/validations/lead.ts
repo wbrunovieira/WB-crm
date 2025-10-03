@@ -25,7 +25,9 @@ export const leadSchema = z.object({
 
   // Redes Sociais
   instagram: z.string().optional(),
+  linkedin: z.string().optional(),
   facebook: z.string().optional(),
+  twitter: z.string().optional(),
   tiktok: z.string().optional(),
 
   // Informações do Google Places
@@ -59,6 +61,9 @@ export const leadSchema = z.object({
 
   // Status
   status: z.enum(["new", "contacted", "qualified", "disqualified"]).optional(),
+
+  // Label
+  labelId: z.string().optional(),
 });
 
 export const leadContactSchema = z.object({

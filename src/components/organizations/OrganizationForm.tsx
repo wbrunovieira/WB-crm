@@ -7,6 +7,7 @@ import {
   createOrganization,
   updateOrganization,
 } from "@/actions/organizations";
+import { LabelSelect } from "@/components/shared/LabelSelect";
 
 interface OrganizationFormProps {
   organization?: {
@@ -35,6 +36,7 @@ interface OrganizationFormProps {
     facebook: string | null;
     twitter: string | null;
     tiktok: string | null;
+    labelId: string | null;
   };
 }
 
@@ -42,6 +44,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const [labelId, setLabelId] = useState<string | null>(organization?.labelId || null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -79,6 +82,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         facebook: formData.get("facebook") as string,
         twitter: formData.get("twitter") as string,
         tiktok: formData.get("tiktok") as string,
+        labelId: labelId || undefined,
       };
 
       if (organization) {
@@ -126,6 +130,17 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             required
             defaultValue={organization?.name}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Label
+          </label>
+          <LabelSelect
+            value={labelId}
+            onChange={setLabelId}
+            placeholder="Selecione ou crie uma label..."
           />
         </div>
 

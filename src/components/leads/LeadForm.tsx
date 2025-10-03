@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createLead, updateLead } from "@/actions/leads";
 import { useState } from "react";
+import { LabelSelect } from "@/components/shared/LabelSelect";
 
 type Lead = {
   id?: string;
@@ -49,6 +50,7 @@ type Lead = {
   category?: string | null;
   radius?: number | null;
   status?: string;
+  labelId?: string | null;
 };
 
 type LeadFormProps = {
@@ -58,6 +60,7 @@ type LeadFormProps = {
 export function LeadForm({ lead }: LeadFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [labelId, setLabelId] = useState<string | null>(lead?.labelId || null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -132,6 +135,7 @@ export function LeadForm({ lead }: LeadFormProps) {
         ? parseInt(formData.get("radius") as string)
         : undefined,
       status: (getString("status") || "new") as "new" | "contacted" | "qualified" | "disqualified",
+      labelId: labelId || undefined,
     };
 
     try {
@@ -172,6 +176,18 @@ export function LeadForm({ lead }: LeadFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Label */}
+      <div className="rounded-lg bg-[#1a0022] p-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-200">
+          Label
+        </h2>
+        <LabelSelect
+          value={labelId}
+          onChange={setLabelId}
+          placeholder="Selecione ou crie uma label..."
+        />
+      </div>
+
       {/* Informações Básicas */}
       <div className="rounded-lg bg-[#1a0022] p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
