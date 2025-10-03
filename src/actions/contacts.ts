@@ -23,6 +23,12 @@ export async function getContacts(search?: string) {
       }),
     },
     include: {
+      lead: {
+        select: {
+          id: true,
+          businessName: true,
+        },
+      },
       organization: {
         select: {
           id: true,
@@ -50,6 +56,13 @@ export async function getContactById(id: string) {
       ownerId: session.user.id,
     },
     include: {
+      lead: {
+        select: {
+          id: true,
+          businessName: true,
+          status: true,
+        },
+      },
       organization: true,
       deals: {
         include: {
@@ -79,6 +92,10 @@ export async function createContact(data: ContactFormData) {
 
   const validated = contactSchema.parse(data);
 
+  // Determine leadId or organizationId based on companyType
+  const leadId = validated.companyType === "lead" ? validated.companyId : null;
+  const organizationId = validated.companyType === "organization" ? validated.companyId : null;
+
   const contact = await prisma.contact.create({
     data: {
       name: validated.name,
@@ -87,7 +104,8 @@ export async function createContact(data: ContactFormData) {
       whatsapp: validated.whatsapp || null,
       role: validated.role || null,
       department: validated.department || null,
-      organizationId: validated.organizationId || null,
+      leadId: leadId || null,
+      organizationId: organizationId || null,
       linkedin: validated.linkedin || null,
       status: validated.status || "active",
       isPrimary: validated.isPrimary || false,
@@ -112,6 +130,10 @@ export async function updateContact(id: string, data: ContactFormData) {
 
   const validated = contactSchema.parse(data);
 
+  // Determine leadId or organizationId based on companyType
+  const leadId = validated.companyType === "lead" ? validated.companyId : null;
+  const organizationId = validated.companyType === "organization" ? validated.companyId : null;
+
   const contact = await prisma.contact.update({
     where: {
       id,
@@ -124,7 +146,8 @@ export async function updateContact(id: string, data: ContactFormData) {
       whatsapp: validated.whatsapp || null,
       role: validated.role || null,
       department: validated.department || null,
-      organizationId: validated.organizationId || null,
+      leadId: leadId || null,
+      organizationId: organizationId || null,
       linkedin: validated.linkedin || null,
       status: validated.status,
       isPrimary: validated.isPrimary,

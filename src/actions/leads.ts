@@ -291,6 +291,7 @@ export async function convertLeadToOrganization(leadId: string) {
     where: { id: leadId, ownerId: session.user.id },
     include: {
       leadContacts: true,
+      contacts: true, // Contacts directly linked to the Lead
       activities: true,
     },
   });
@@ -334,15 +335,17 @@ export async function convertLeadToOrganization(leadId: string) {
     });
 
     // 2. Create Contacts from LeadContacts
-    const contacts = await Promise.all(
+    const contactsFromLeadContacts = await Promise.all(
       lead.leadContacts.map(async (leadContact) => {
         const contact = await tx.contact.create({
           data: {
             name: leadContact.name,
             email: leadContact.email,
             phone: leadContact.phone,
+            whatsapp: leadContact.whatsapp,
             role: leadContact.role,
             organizationId: organization.id,
+            isPrimary: leadContact.isPrimary,
             sourceLeadContactId: leadContact.id,
             ownerId: session.user.id,
           },
@@ -358,7 +361,17 @@ export async function convertLeadToOrganization(leadId: string) {
       })
     );
 
-    // 3. Update Lead as converted
+    // 3. Update existing Contacts linked to the Lead
+    // Change their link from Lead to Organization
+    await tx.contact.updateMany({
+      where: { leadId: lead.id },
+      data: {
+        leadId: null,
+        organizationId: organization.id,
+      },
+    });
+
+    // 4. Update Lead as converted
     await tx.lead.update({
       where: { id: leadId },
       data: {
@@ -368,11 +381,21 @@ export async function convertLeadToOrganization(leadId: string) {
       },
     });
 
+    // Get all contacts now linked to the organization (both new and migrated)
+    const allContacts = await tx.contact.findMany({
+      where: { organizationId: organization.id },
+    });
+
     // Note: Activities linked to the lead remain unchanged
     // They serve as historical record of the prospecting process
     // and can be viewed through the lead detail page
 
-    return { organization, contacts, activities: lead.activities };
+    return {
+      organization,
+      contacts: allContacts,
+      contactsFromLeadContacts: contactsFromLeadContacts,
+      activities: lead.activities,
+    };
   });
 
   revalidatePath("/leads");

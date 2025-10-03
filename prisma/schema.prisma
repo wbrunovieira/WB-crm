@@ -147,6 +147,7 @@ model Lead {
   // Relations
   owner                 User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   leadContacts          LeadContact[] // Lead tem múltiplos contatos
+  contacts              Contact[]     // Contatos diretamente vinculados ao Lead
   activities            Activity[]    // Lead tem múltiplas atividades
   convertedOrganization Organization? @relation("LeadConversion", fields: [convertedToOrganizationId], references: [id])
 
@@ -239,14 +240,17 @@ model Contact {
   whatsapp       String?
   role           String?       // Cargo da pessoa
   department     String?       // Departamento: Vendas, TI, Financeiro, etc
-  organizationId String?
+
+  // Company linking - can be linked to either Lead OR Organization
+  leadId         String?       // Linked to a Lead (before conversion)
+  organizationId String?       // Linked to an Organization (after conversion or direct)
 
   // Professional Info
   linkedin       String?
 
   // Contact Status & Priority
   status         String        @default("active") // active, inactive, bounced
-  isPrimary      Boolean       @default(false)    // Contato principal da organização
+  isPrimary      Boolean       @default(false)    // Contato principal da organização/lead
 
   // Additional Info
   birthDate          DateTime?
@@ -263,12 +267,14 @@ model Contact {
 
   // Relations
   owner            User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  lead             Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   deals            Deal[]
   activities       Activity[]
   sourceLeadContact LeadContact? @relation("LeadContactConversion") // Contact veio de qual LeadContact
 
   @@index([ownerId])
+  @@index([leadId])
   @@index([organizationId])
   @@index([sourceLeadContactId])
   @@index([status])

@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ContactFormData } from "@/lib/validations/contact";
 import { createContact, updateContact } from "@/actions/contacts";
-import { getOrganizationsList } from "@/actions/organizations-list";
+import { getCompaniesList, CompanyOption } from "@/actions/companies-list";
 import { getLeadContactsList } from "@/actions/leads-list";
 import { departments, contactSources, contactStatuses } from "@/lib/lists/departments-list";
 
@@ -17,6 +17,7 @@ interface ContactFormProps {
     whatsapp: string | null;
     role: string | null;
     department: string | null;
+    leadId: string | null;
     organizationId: string | null;
     linkedin: string | null;
     status: string;
@@ -34,9 +35,7 @@ export function ContactForm({ contact, leadId }: ContactFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [organizations, setOrganizations] = useState<
-    Array<{ id: string; name: string }>
-  >([]);
+  const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [leadContacts, setLeadContacts] = useState<
     Array<{ id: string; name: string; role: string | null }>
   >([]);
@@ -44,8 +43,19 @@ export function ContactForm({ contact, leadId }: ContactFormProps) {
     contact?.sourceLeadContactId || ""
   );
 
+  // Determine initial company selection
+  const initialCompanyId = contact?.organizationId || contact?.leadId || leadId || "";
+  const initialCompanyType = contact?.organizationId
+    ? "organization"
+    : contact?.leadId
+    ? "lead"
+    : leadId
+    ? "lead"
+    : "";
+  const [selectedCompany, setSelectedCompany] = useState(`${initialCompanyType}:${initialCompanyId}`);
+
   useEffect(() => {
-    getOrganizationsList().then(setOrganizations);
+    getCompaniesList().then(setCompanies);
   }, []);
 
   useEffect(() => {
@@ -61,6 +71,11 @@ export function ContactForm({ contact, leadId }: ContactFormProps) {
 
     try {
       const formData = new FormData(e.currentTarget);
+
+      // Parse company selection (format: "type:id")
+      const companyValue = formData.get("company") as string;
+      const [companyType, companyId] = companyValue ? companyValue.split(":") : ["", ""];
+
       const data: ContactFormData = {
         name: formData.get("name") as string,
         email: formData.get("email") as string,
@@ -68,7 +83,8 @@ export function ContactForm({ contact, leadId }: ContactFormProps) {
         whatsapp: formData.get("whatsapp") as string,
         role: formData.get("role") as string,
         department: formData.get("department") as string,
-        organizationId: formData.get("organizationId") as string,
+        companyId: companyId || null,
+        companyType: (companyType as "lead" | "organization") || null,
         linkedin: formData.get("linkedin") as string,
         status: formData.get("status") as "active" | "inactive" | "bounced" | undefined,
         isPrimary: formData.get("isPrimary") === "on",
@@ -233,22 +249,26 @@ export function ContactForm({ contact, leadId }: ContactFormProps) {
           </div>
 
           <div>
-            <label htmlFor="organizationId" className="block text-sm font-medium text-gray-700">
-              Organização
+            <label htmlFor="company" className="block text-sm font-medium text-gray-700">
+              Empresa (Lead ou Organização)
             </label>
             <select
-              id="organizationId"
-              name="organizationId"
-              defaultValue={contact?.organizationId || ""}
+              id="company"
+              name="company"
+              value={selectedCompany}
+              onChange={(e) => setSelectedCompany(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="">Nenhuma</option>
-              {organizations.map((org) => (
-                <option key={org.id} value={org.id}>
-                  {org.name}
+              {companies.map((company) => (
+                <option key={`${company.type}:${company.id}`} value={`${company.type}:${company.id}`}>
+                  {company.name} {company.type === "lead" ? "📋 (Lead)" : "🏢 (Org)"}
                 </option>
               ))}
             </select>
+            <p className="mt-1 text-xs text-gray-500">
+              📋 = Lead (ainda não convertido) | 🏢 = Organização
+            </p>
           </div>
 
           <div>
