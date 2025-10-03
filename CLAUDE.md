@@ -31,24 +31,56 @@ npm run lint                  # Run ESLint
 ## Architecture
 
 ### Project Structure
-- `/app` - Next.js App Router (routes, layouts, pages)
-- `/components` - React components (ui, deals, contacts, activities, shared)
-- `/actions` - Server Actions (deals, contacts, activities, organizations)
-- `/lib` - Utilities, Prisma client, auth config, validations (Zod)
-- `/types` - TypeScript type definitions
-- `/prisma` - Database schema and migrations
+All source code is in `/src`:
+- `/src/app` - Next.js App Router with route groups:
+  - `(auth)/` - Login and registration pages
+  - `(dashboard)/` - Protected dashboard routes (deals, contacts, activities, organizations, pipeline, leads)
+  - `api/` - API routes for external integrations
+- `/src/components` - Feature-specific components organized by domain (deals, contacts, activities, organizations, pipeline, leads)
+- `/src/actions` - Server Actions for each domain (deals.ts, contacts.ts, activities.ts, organizations.ts, leads.ts, pipelines.ts, stages.ts)
+- `/src/lib` - Core utilities:
+  - `prisma.ts` - Prisma client singleton
+  - `auth.ts` - NextAuth.js configuration with credentials provider
+  - `validations/` - Zod schemas for form validation
+  - `utils.ts` - Helper functions
+  - `lists/` - Dropdown data (countries, industries, etc.)
+- `/src/types` - TypeScript type definitions
+- `/src/middleware.ts` - NextAuth middleware protecting dashboard routes
+- `/prisma` - Database schema (SQLite for dev, PostgreSQL for prod) and migrations
 - `/docs` - Project documentation
 
 ### Data Flow Pattern
-UI Component → Server Action → Validation (Zod) → Prisma → PostgreSQL → Revalidation → UI Update
+UI Component → Server Action (with "use server") → Zod Validation → Prisma Query → Database → revalidatePath() → UI Update
 
-### Core Entities
-- **User**: Users and authentication
-- **Organization**: Companies/Organizations
-- **Contact**: Individual contacts/people
-- **Deal**: Sales deals/opportunities
-- **Pipeline**: Sales pipelines
-- **Stage**: Pipeline stages
-- **Activity**: Tasks, calls, meetings, emails
+**Server Actions Pattern:**
+- All marked with `"use server"` directive
+- Authentication checked via `getServerSession(authOptions)`
+- Input validated with Zod schemas before database operations
+- Use `revalidatePath()` to update UI after mutations
+- Return format: `{ success: boolean, data?: T, error?: string }`
+
+### Core Entities & Relations
+- **Lead**: Prospective companies from searches/imports with multiple LeadContacts. Can be converted to Organization
+- **LeadContact**: Individual contacts within a Lead. Can be converted to Contact
+- **Organization**: Converted Leads or manually created companies (tracks `sourceLeadId`)
+- **Contact**: Individual people linked to Organizations (tracks `sourceLeadContactId`)
+- **Deal**: Sales opportunities linked to Contact/Organization, positioned in Pipeline Stages
+- **Pipeline**: Container for sales process stages
+- **Stage**: Steps in Pipeline (order, probability)
+- **Activity**: Tasks/calls/meetings/emails linked to Deals, Contacts, or Leads
+- **User**: System users with ownership of all entities
+
+**Key Conversion Flow:** Lead → Organization | LeadContact → Contact
+
+### Database
+- **Development**: SQLite (file:./dev.db)
+- **Production**: PostgreSQL
+- **Schema changes**: Use `npm run db:migrate` (creates migrations) or `npm run db:push` (direct push for dev)
+
+### Authentication
+- NextAuth.js with Credentials provider (bcrypt password hashing)
+- JWT session strategy
+- Protected routes via middleware matching `/dashboard/:path*`, `/contacts/:path*`, `/deals/:path*`, etc.
+- Session accessible via `getServerSession(authOptions)` in Server Actions
 
 Ver `/docs/arquitetura-projeto.md` para detalhes completos da arquitetura e plano de implementação em 7 fases.
