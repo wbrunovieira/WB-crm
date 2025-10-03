@@ -3,10 +3,13 @@ import { z } from "zod";
 export const organizationSchema = z.object({
   name: z.string().min(2, "Nome Fantasia deve ter no mínimo 2 caracteres"),
   legalName: z.string().optional(),
+  foundationDate: z.string().optional(),
 
   // Contact Info
   website: z.string().optional(),
   phone: z.string().optional(),
+  whatsapp: z.string().optional(),
+  email: z.string().email("Email inválido").optional().or(z.literal("")),
 
   // Location
   country: z.string().optional(),
@@ -21,12 +24,15 @@ export const organizationSchema = z.object({
   annualRevenue: z.number().positive().optional(),
   taxId: z.string().optional(),
   description: z.string().optional(),
+  companyOwner: z.string().optional(),
+  companySize: z.string().optional(),
 
   // Social Media
   instagram: z.string().optional(),
   linkedin: z.string().optional(),
   facebook: z.string().optional(),
   twitter: z.string().optional(),
+  tiktok: z.string().optional(),
 });
 
 export type OrganizationFormData = z.infer<typeof organizationSchema>;

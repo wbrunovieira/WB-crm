@@ -23,7 +23,9 @@ type Lead = {
   website?: string | null;
   email?: string | null;
   instagram?: string | null;
+  linkedin?: string | null;
   facebook?: string | null;
+  twitter?: string | null;
   tiktok?: string | null;
   categories?: string | null;
   rating?: number | null;
@@ -88,7 +90,9 @@ export function LeadForm({ lead }: LeadFormProps) {
       website: getString("website"),
       email: getString("email"),
       instagram: getString("instagram"),
+      linkedin: getString("linkedin"),
       facebook: getString("facebook"),
+      twitter: getString("twitter"),
       tiktok: getString("tiktok"),
       categories: getString("categories"),
       rating: formData.get("rating")
@@ -398,6 +402,19 @@ export function LeadForm({ lead }: LeadFormProps) {
               type="text"
               name="instagram"
               defaultValue={lead?.instagram || ""}
+              placeholder="@usuario"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              LinkedIn
+            </label>
+            <input
+              type="text"
+              name="linkedin"
+              defaultValue={lead?.linkedin || ""}
+              placeholder="linkedin.com/company/..."
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
@@ -409,6 +426,19 @@ export function LeadForm({ lead }: LeadFormProps) {
               type="text"
               name="facebook"
               defaultValue={lead?.facebook || ""}
+              placeholder="facebook.com/..."
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Twitter/X
+            </label>
+            <input
+              type="text"
+              name="twitter"
+              defaultValue={lead?.twitter || ""}
+              placeholder="@usuario"
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
@@ -420,6 +450,7 @@ export function LeadForm({ lead }: LeadFormProps) {
               type="text"
               name="tiktok"
               defaultValue={lead?.tiktok || ""}
+              placeholder="@usuario"
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>

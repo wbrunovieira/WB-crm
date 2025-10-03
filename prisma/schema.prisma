@@ -102,7 +102,9 @@ model Lead {
 
   // Redes Sociais
   instagram String?
+  linkedin  String?
   facebook  String?
+  twitter   String?
   tiktok    String?
 
   // Informações do Google Places
@@ -189,10 +191,13 @@ model Organization {
   id           String   @id @default(cuid())
   name         String   // Nome Fantasia (obrigatório)
   legalName    String?  // Razão Social
+  foundationDate DateTime?
 
   // Contact Info
   website   String?
   phone     String?
+  whatsapp  String?
+  email     String?
 
   // Location
   country        String?
@@ -205,14 +210,17 @@ model Organization {
   industry       String?
   employeeCount  Int?
   annualRevenue  Float?
-  taxId          String?
+  taxId          String?  // CNPJ, Tax ID, etc
   description    String?
+  companyOwner   String?
+  companySize    String?
 
   // Social Media
   instagram String?
   linkedin  String?
   facebook  String?
   twitter   String?
+  tiktok    String?
 
   // Lead tracking
   sourceLeadId String?

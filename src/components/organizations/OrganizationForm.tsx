@@ -13,8 +13,11 @@ interface OrganizationFormProps {
     id: string;
     name: string;
     legalName: string | null;
+    foundationDate: Date | null;
     website: string | null;
     phone: string | null;
+    whatsapp: string | null;
+    email: string | null;
     country: string | null;
     state: string | null;
     city: string | null;
@@ -25,10 +28,13 @@ interface OrganizationFormProps {
     annualRevenue: number | null;
     taxId: string | null;
     description: string | null;
+    companyOwner: string | null;
+    companySize: string | null;
     instagram: string | null;
     linkedin: string | null;
     facebook: string | null;
     twitter: string | null;
+    tiktok: string | null;
   };
 }
 
@@ -47,8 +53,11 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
       const data: OrganizationFormData = {
         name: formData.get("name") as string,
         legalName: formData.get("legalName") as string,
+        foundationDate: formData.get("foundationDate") as string,
         website: formData.get("website") as string,
         phone: formData.get("phone") as string,
+        whatsapp: formData.get("whatsapp") as string,
+        email: formData.get("email") as string,
         country: formData.get("country") as string,
         state: formData.get("state") as string,
         city: formData.get("city") as string,
@@ -63,10 +72,13 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
           : undefined,
         taxId: formData.get("taxId") as string,
         description: formData.get("description") as string,
+        companyOwner: formData.get("companyOwner") as string,
+        companySize: formData.get("companySize") as string,
         instagram: formData.get("instagram") as string,
         linkedin: formData.get("linkedin") as string,
         facebook: formData.get("facebook") as string,
         twitter: formData.get("twitter") as string,
+        tiktok: formData.get("tiktok") as string,
       };
 
       if (organization) {
@@ -133,6 +145,22 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
           />
         </div>
 
+        <div>
+          <label
+            htmlFor="foundationDate"
+            className="block text-sm font-medium text-gray-700"
+          >
+            Data de Fundação
+          </label>
+          <input
+            type="date"
+            id="foundationDate"
+            name="foundationDate"
+            defaultValue={organization?.foundationDate ? new Date(organization.foundationDate).toISOString().split('T')[0] : ""}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          />
+        </div>
+
         <div className="grid gap-6 md:grid-cols-2">
           <div>
             <label
@@ -153,6 +181,23 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
 
           <div>
             <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Email
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              placeholder="contato@empresa.com"
+              defaultValue={organization?.email || ""}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label
               htmlFor="phone"
               className="block text-sm font-medium text-gray-700"
             >
@@ -163,6 +208,22 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="phone"
               name="phone"
               defaultValue={organization?.phone || ""}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="whatsapp"
+              className="block text-sm font-medium text-gray-700"
+            >
+              WhatsApp
+            </label>
+            <input
+              type="tel"
+              id="whatsapp"
+              name="whatsapp"
+              defaultValue={organization?.whatsapp || ""}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
@@ -330,6 +391,45 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
+
+          <div>
+            <label
+              htmlFor="companyOwner"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Proprietário da Empresa
+            </label>
+            <input
+              type="text"
+              id="companyOwner"
+              name="companyOwner"
+              placeholder="Nome do proprietário"
+              defaultValue={organization?.companyOwner || ""}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="companySize"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Porte da Empresa
+            </label>
+            <select
+              id="companySize"
+              name="companySize"
+              defaultValue={organization?.companySize || ""}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Selecione...</option>
+              <option value="MEI">MEI</option>
+              <option value="Micro">Microempresa</option>
+              <option value="Pequena">Pequena</option>
+              <option value="Média">Média</option>
+              <option value="Grande">Grande</option>
+            </select>
+          </div>
         </div>
 
         <div>
@@ -418,6 +518,23 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="twitter"
               placeholder="@usuario"
               defaultValue={organization?.twitter || ""}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="tiktok"
+              className="block text-sm font-medium text-gray-700"
+            >
+              TikTok
+            </label>
+            <input
+              type="text"
+              id="tiktok"
+              name="tiktok"
+              placeholder="@usuario"
+              defaultValue={organization?.tiktok || ""}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
