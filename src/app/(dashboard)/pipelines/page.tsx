@@ -1,5 +1,6 @@
 import { getPipelines } from "@/actions/pipelines";
 import Link from "next/link";
+import { PipelineCreateButton } from "@/components/pipeline/PipelineCreateButton";
 
 export default async function PipelinesPage() {
   const pipelines = await getPipelines();
@@ -13,6 +14,7 @@ export default async function PipelinesPage() {
             Gerencie seus pipelines de vendas e estágios
           </p>
         </div>
+        <PipelineCreateButton />
       </div>
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
