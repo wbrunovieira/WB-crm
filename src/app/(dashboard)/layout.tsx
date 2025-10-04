@@ -3,6 +3,7 @@ import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Toaster } from "sonner";
+import { LogoutButton } from "@/components/shared/LogoutButton";
 
 export default async function DashboardLayout({
   children,
@@ -78,6 +79,7 @@ export default async function DashboardLayout({
             </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-200">{session.user?.name || session.user?.email}</span>
+              <LogoutButton />
             </div>
           </div>
         </div>
