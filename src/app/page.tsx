@@ -1,12 +1,13 @@
-export default function Home() {
-  return (
-    <div className="grid min-h-screen place-items-center">
-      <div className="text-center">
-        <h1 className="text-4xl font-bold text-primary">WB CRM</h1>
-        <p className="mt-4 text-lg text-gray-600">
-          Sistema de Gestão de Pipeline de Vendas
-        </p>
-      </div>
-    </div>
-  );
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
+export default async function Home() {
+  const session = await getServerSession(authOptions);
+
+  if (session) {
+    redirect("/dashboard");
+  } else {
+    redirect("/login");
+  }
 }
