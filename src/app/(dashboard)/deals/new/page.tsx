@@ -4,7 +4,11 @@ import { getOrganizationsList } from "@/actions/organizations-list";
 import { getStagesList } from "@/lib/lists/stages-list";
 import Link from "next/link";
 
-export default async function NewDealPage() {
+export default async function NewDealPage({
+  searchParams,
+}: {
+  searchParams: { organizationId?: string };
+}) {
   const [contacts, organizations, stages] = await Promise.all([
     getContactsList(),
     getOrganizationsList(),
@@ -27,6 +31,7 @@ export default async function NewDealPage() {
           contacts={contacts}
           organizations={organizations}
           stages={stages}
+          preselectedOrganizationId={searchParams.organizationId}
         />
       </div>
     </div>

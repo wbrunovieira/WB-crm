@@ -41,6 +41,7 @@ type DealFormProps = {
   contacts: Contact[];
   organizations: Organization[];
   stages: Stage[];
+  preselectedOrganizationId?: string;
 };
 
 export default function DealForm({
@@ -48,6 +49,7 @@ export default function DealForm({
   contacts,
   organizations,
   stages,
+  preselectedOrganizationId,
 }: DealFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -59,7 +61,7 @@ export default function DealForm({
     currency: deal?.currency || "BRL",
     status: deal?.status || "open",
     contactId: deal?.contactId || "",
-    organizationId: deal?.organizationId || "",
+    organizationId: deal?.organizationId || preselectedOrganizationId || "",
     stageId: deal?.stageId || "",
     expectedCloseDate: deal?.expectedCloseDate
       ? new Date(deal.expectedCloseDate).toISOString().split("T")[0]

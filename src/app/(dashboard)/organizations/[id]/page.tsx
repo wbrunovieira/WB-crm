@@ -228,31 +228,39 @@ export default async function OrganizationDetailPage({
       {/* Contacts and Deals */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="rounded-lg bg-white p-6 shadow">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-lg font-semibold">
+          <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
+            <h2 className="text-lg font-bold text-gray-900">
               Contatos ({organization.contacts.length})
             </h2>
             <Link
               href={`/contacts/new?organizationId=${organization.id}`}
-              className="text-sm text-primary hover:text-blue-700"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
             >
-              + Adicionar
+              + Novo Contato
             </Link>
           </div>
           {organization.contacts.length === 0 ? (
-            <p className="text-sm text-gray-500">Nenhum contato vinculado</p>
+            <div className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
+              <p className="text-sm text-gray-500 mb-3">Nenhum contato vinculado</p>
+              <Link
+                href={`/contacts/new?organizationId=${organization.id}`}
+                className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Criar Primeiro Contato
+              </Link>
+            </div>
           ) : (
             <ul className="space-y-2">
               {organization.contacts.map((contact) => (
                 <li key={contact.id} className="text-sm">
                   <Link
                     href={`/contacts/${contact.id}`}
-                    className="text-primary hover:underline"
+                    className="font-medium text-gray-100 hover:text-purple-200 hover:underline"
                   >
                     {contact.name}
                   </Link>
                   {contact.email && (
-                    <span className="ml-2 text-gray-500">
+                    <span className="ml-2 text-gray-400">
                       • {contact.email}
                     </span>
                   )}
@@ -263,22 +271,38 @@ export default async function OrganizationDetailPage({
         </div>
 
         <div className="rounded-lg bg-white p-6 shadow">
-          <h2 className="mb-4 text-lg font-semibold">
-            Negócios ({organization.deals.length})
-          </h2>
+          <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
+            <h2 className="text-lg font-bold text-gray-900">
+              Negócios ({organization.deals.length})
+            </h2>
+            <Link
+              href={`/deals/new?organizationId=${organization.id}`}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            >
+              + Novo Negócio
+            </Link>
+          </div>
           {organization.deals.length === 0 ? (
-            <p className="text-sm text-gray-500">Nenhum negócio vinculado</p>
+            <div className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
+              <p className="text-sm text-gray-500 mb-3">Nenhum negócio vinculado</p>
+              <Link
+                href={`/deals/new?organizationId=${organization.id}`}
+                className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              >
+                Criar Primeiro Negócio
+              </Link>
+            </div>
           ) : (
             <ul className="space-y-2">
               {organization.deals.map((deal) => (
                 <li key={deal.id} className="text-sm">
                   <Link
                     href={`/deals/${deal.id}`}
-                    className="text-primary hover:underline"
+                    className="font-medium text-gray-100 hover:text-purple-200 hover:underline"
                   >
                     {deal.title}
                   </Link>
-                  <span className="ml-2 text-gray-500">
+                  <span className="ml-2 text-gray-400">
                     • {deal.stage.name} • R${" "}
                     {deal.value.toLocaleString("pt-BR")}
                   </span>

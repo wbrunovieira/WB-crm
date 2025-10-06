@@ -29,9 +29,10 @@ interface ContactFormProps {
     sourceLeadContactId: string | null;
   };
   leadId?: string; // Optional: pre-select a lead when creating from lead page
+  preselectedOrganizationId?: string; // Optional: pre-select an organization when creating from org page
 }
 
-export function ContactForm({ contact, leadId }: ContactFormProps) {
+export function ContactForm({ contact, leadId, preselectedOrganizationId }: ContactFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -44,11 +45,13 @@ export function ContactForm({ contact, leadId }: ContactFormProps) {
   );
 
   // Determine initial company selection
-  const initialCompanyId = contact?.organizationId || contact?.leadId || leadId || "";
+  const initialCompanyId = contact?.organizationId || contact?.leadId || preselectedOrganizationId || leadId || "";
   const initialCompanyType = contact?.organizationId
     ? "organization"
     : contact?.leadId
     ? "lead"
+    : preselectedOrganizationId
+    ? "organization"
     : leadId
     ? "lead"
     : "";
