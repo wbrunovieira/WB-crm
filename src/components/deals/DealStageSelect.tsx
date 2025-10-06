@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { updateDealStage } from "@/actions/deals";
+import { getStages } from "@/actions/stages";
 import { useRouter } from "next/navigation";
 
 type Stage = {
@@ -17,17 +18,28 @@ type Stage = {
 type DealStageSelectProps = {
   dealId: string;
   currentStageId: string;
-  stages: Stage[];
 };
 
 export function DealStageSelect({
   dealId,
   currentStageId,
-  stages,
 }: DealStageSelectProps) {
   const router = useRouter();
   const [isUpdating, setIsUpdating] = useState(false);
   const [selectedStageId, setSelectedStageId] = useState(currentStageId);
+  const [stages, setStages] = useState<Stage[]>([]);
+
+  useEffect(() => {
+    async function loadStages() {
+      try {
+        const data = await getStages();
+        setStages(data);
+      } catch (error) {
+        console.error("Erro ao carregar estágios:", error);
+      }
+    }
+    loadStages();
+  }, []);
 
   const handleStageChange = async (newStageId: string) => {
     if (newStageId === selectedStageId) return;
@@ -47,6 +59,10 @@ export function DealStageSelect({
       setIsUpdating(false);
     }
   };
+
+  if (stages.length === 0) {
+    return <span className="text-xs text-gray-500">Carregando...</span>;
+  }
 
   const currentStage = stages.find((s) => s.id === selectedStageId);
 

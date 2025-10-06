@@ -4,6 +4,23 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { stageSchema, StageFormData } from "@/lib/validations/pipeline";
 
+export async function getStages() {
+  const stages = await prisma.stage.findMany({
+    orderBy: { order: "asc" },
+    include: {
+      pipeline: {
+        select: {
+          id: true,
+          name: true,
+          isDefault: true,
+        },
+      },
+    },
+  });
+
+  return stages;
+}
+
 export async function getStagesByPipeline(pipelineId: string) {
   const stages = await prisma.stage.findMany({
     where: { pipelineId },
