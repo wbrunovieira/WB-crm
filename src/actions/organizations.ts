@@ -62,12 +62,59 @@ export async function getOrganizationById(id: string) {
               name: true,
             },
           },
+          activities: {
+            orderBy: {
+              createdAt: "desc",
+            },
+            take: 1,
+          },
         },
       },
     },
   });
 
-  return organization;
+  if (!organization) {
+    return null;
+  }
+
+  // Get all activities related to this organization (through deals and contacts)
+  const activities = await prisma.activity.findMany({
+    where: {
+      ownerId: session.user.id,
+      OR: [
+        {
+          deal: {
+            organizationId: id,
+          },
+        },
+        {
+          contact: {
+            organizationId: id,
+          },
+        },
+      ],
+    },
+    include: {
+      deal: {
+        select: {
+          title: true,
+        },
+      },
+      contact: {
+        select: {
+          name: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  return {
+    ...organization,
+    activities,
+  };
 }
 
 export async function createOrganization(data: OrganizationFormData) {

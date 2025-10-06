@@ -1,6 +1,7 @@
 import { getOrganizationById } from "@/actions/organizations";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { OrganizationProjects } from "@/components/organizations/OrganizationProjects";
+import { OrganizationActivities } from "@/components/organizations/OrganizationActivities";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -312,6 +313,14 @@ export default async function OrganizationDetailPage({
             </ul>
           )}
         </div>
+      </div>
+
+      {/* Activities */}
+      <div className="mt-6">
+        <OrganizationActivities
+          activities={organization.activities}
+          organizationId={organization.id}
+        />
       </div>
 
       {/* Projects */}
