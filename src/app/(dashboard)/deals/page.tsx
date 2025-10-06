@@ -1,9 +1,12 @@
 import { getDeals } from "@/actions/deals";
 import Link from "next/link";
 import { formatCurrency } from "@/lib/utils";
+import { getStagesList } from "@/lib/lists/stages-list";
+import { DealStageSelect } from "@/components/deals/DealStageSelect";
+import { DealStatusSelect } from "@/components/deals/DealStatusSelect";
 
 export default async function DealsPage() {
-  const deals = await getDeals();
+  const [deals, stages] = await Promise.all([getDeals(), getStagesList()]);
 
   return (
     <div className="p-8">
@@ -55,7 +58,7 @@ export default async function DealsPage() {
                 <td className="whitespace-nowrap px-6 py-4">
                   <Link
                     href={`/deals/${deal.id}`}
-                    className="text-sm font-medium text-primary hover:underline"
+                    className="text-sm font-medium text-gray-900 hover:text-primary hover:underline"
                   >
                     {deal.title}
                   </Link>
@@ -63,51 +66,51 @@ export default async function DealsPage() {
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                   {formatCurrency(deal.value, deal.currency)}
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                   {deal.contact ? (
                     <Link
                       href={`/contacts/${deal.contact.id}`}
-                      className="hover:underline"
+                      className="hover:underline hover:text-primary"
                     >
                       {deal.contact.name}
                     </Link>
                   ) : (
-                    "-"
+                    <span className="text-gray-400">-</span>
                   )}
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
+                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
                   {deal.organization ? (
                     <Link
                       href={`/organizations/${deal.organization.id}`}
-                      className="hover:underline"
+                      className="hover:underline hover:text-primary"
                     >
                       {deal.organization.name}
                     </Link>
                   ) : (
-                    "-"
+                    <span className="text-gray-400">-</span>
                   )}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
-                  <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-primary">
-                    {deal.stage.name}
-                  </span>
+                  <DealStageSelect
+                    dealId={deal.id}
+                    currentStageId={deal.stage.id}
+                    stages={stages}
+                  />
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
-                  <span
-                    className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                      deal.status === "won"
-                        ? "bg-green-100 text-green-800"
-                        : deal.status === "lost"
-                          ? "bg-red-100 text-red-800"
-                          : "bg-yellow-100 text-yellow-800"
-                    }`}
-                  >
-                    {deal.status === "won"
-                      ? "Ganho"
-                      : deal.status === "lost"
-                        ? "Perdido"
-                        : "Aberto"}
-                  </span>
+                  <DealStatusSelect
+                    dealId={deal.id}
+                    currentStatus={deal.status}
+                    dealData={{
+                      title: deal.title,
+                      value: deal.value,
+                      currency: deal.currency,
+                      stageId: deal.stage.id,
+                      contactId: deal.contact?.id || null,
+                      organizationId: deal.organization?.id || null,
+                      expectedCloseDate: deal.expectedCloseDate,
+                    }}
+                  />
                 </td>
                 <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                   <Link

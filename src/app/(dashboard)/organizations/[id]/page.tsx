@@ -1,5 +1,6 @@
 import { getOrganizationById } from "@/actions/organizations";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
+import { OrganizationProjects } from "@/components/organizations/OrganizationProjects";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -225,7 +226,7 @@ export default async function OrganizationDetailPage({
         </div>
       </div>
 
-      {/* Contacts and Deals */}
+      {/* Contacts, Deals, and Projects */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
@@ -311,6 +312,18 @@ export default async function OrganizationDetailPage({
             </ul>
           )}
         </div>
+      </div>
+
+      {/* Projects */}
+      <div className="mt-6">
+        <OrganizationProjects
+          projectIds={
+            organization.externalProjectIds
+              ? JSON.parse(organization.externalProjectIds)
+              : []
+          }
+          organizationId={organization.id}
+        />
       </div>
     </div>
   );

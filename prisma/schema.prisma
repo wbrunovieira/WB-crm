@@ -234,6 +234,9 @@ model Organization {
   // Label
   labelId String?
 
+  // External Projects (JSON array of project IDs from external API)
+  externalProjectIds String? // JSON string: ["projectId1", "projectId2"]
+
   ownerId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
