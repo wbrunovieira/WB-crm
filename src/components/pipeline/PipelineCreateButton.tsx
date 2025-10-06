@@ -33,7 +33,7 @@ export function PipelineCreateButton() {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="rounded-md bg-primary px-4 py-2 text-white hover:bg-blue-700"
+        className="rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700"
       >
         + Novo Pipeline
       </button>
@@ -90,7 +90,7 @@ export function PipelineCreateButton() {
               <button
                 onClick={handleCreate}
                 disabled={isSaving || !name.trim()}
-                className="flex-1 rounded-md bg-primary px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+                className="flex-1 rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700 disabled:opacity-50"
               >
                 {isSaving ? "Criando..." : "Criar Pipeline"}
               </button>

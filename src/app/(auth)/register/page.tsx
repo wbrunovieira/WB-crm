@@ -119,7 +119,7 @@ export default function RegisterPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-md bg-primary px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
+            className="w-full rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
           >
             {isLoading ? "Criando conta..." : "Criar conta"}
           </button>
@@ -128,7 +128,7 @@ export default function RegisterPage() {
             Já tem uma conta?{" "}
             <Link
               href="/login"
-              className="font-medium text-primary hover:text-blue-700"
+              className="font-medium text-primary hover:text-purple-700"
             >
               Faça login
             </Link>

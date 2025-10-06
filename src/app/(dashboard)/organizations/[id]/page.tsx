@@ -236,7 +236,7 @@ export default async function OrganizationDetailPage({
             </h2>
             <Link
               href={`/contacts/new?organizationId=${organization.id}`}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
             >
               + Novo Contato
             </Link>
@@ -246,7 +246,7 @@ export default async function OrganizationDetailPage({
               <p className="text-sm text-gray-500 mb-3">Nenhum contato vinculado</p>
               <Link
                 href={`/contacts/new?organizationId=${organization.id}`}
-                className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
               >
                 Criar Primeiro Contato
               </Link>
@@ -279,7 +279,7 @@ export default async function OrganizationDetailPage({
             </h2>
             <Link
               href={`/deals/new?organizationId=${organization.id}`}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
             >
               + Novo Negócio
             </Link>
@@ -289,7 +289,7 @@ export default async function OrganizationDetailPage({
               <p className="text-sm text-gray-500 mb-3">Nenhum negócio vinculado</p>
               <Link
                 href={`/deals/new?organizationId=${organization.id}`}
-                className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+                className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
               >
                 Criar Primeiro Negócio
               </Link>

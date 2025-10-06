@@ -94,7 +94,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={isLoading}
-            className="w-full rounded-md bg-primary px-4 py-2 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
+            className="w-full rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
           >
             {isLoading ? "Entrando..." : "Entrar"}
           </button>
@@ -103,7 +103,7 @@ export default function LoginPage() {
             Não tem uma conta?{" "}
             <Link
               href="/register"
-              className="font-medium text-primary hover:text-blue-700"
+              className="font-medium text-primary hover:text-purple-700"
             >
               Cadastre-se
             </Link>

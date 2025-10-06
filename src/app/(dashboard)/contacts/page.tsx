@@ -19,7 +19,7 @@ export default async function ContactsPage({
         </div>
         <Link
           href="/contacts/new"
-          className="rounded-md bg-primary px-4 py-2 text-white hover:bg-blue-700"
+          className="rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700"
         >
           Novo Contato
         </Link>
@@ -47,7 +47,7 @@ export default async function ContactsPage({
           </p>
           <Link
             href="/contacts/new"
-            className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-white hover:bg-blue-700"
+            className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700"
           >
             Criar Contato
           </Link>
@@ -80,7 +80,7 @@ export default async function ContactsPage({
                   <td className="whitespace-nowrap px-6 py-4">
                     <Link
                       href={`/contacts/${contact.id}`}
-                      className="font-medium text-primary hover:text-blue-700"
+                      className="font-medium text-primary hover:text-purple-700"
                     >
                       {contact.name}
                     </Link>
@@ -97,7 +97,7 @@ export default async function ContactsPage({
                   <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
                     <Link
                       href={`/contacts/${contact.id}/edit`}
-                      className="text-primary hover:text-blue-700"
+                      className="text-primary hover:text-purple-700"
                     >
                       Editar
                     </Link>

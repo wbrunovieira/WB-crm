@@ -52,6 +52,12 @@ export default async function DashboardLayout({
                   Organizações
                 </Link>
                 <Link
+                  href="/partners"
+                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
+                >
+                  Parceiros
+                </Link>
+                <Link
                   href="/pipelines"
                   className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
                 >

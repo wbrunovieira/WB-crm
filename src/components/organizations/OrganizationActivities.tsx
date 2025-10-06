@@ -105,7 +105,7 @@ export function OrganizationActivities({
         </div>
         <Link
           href={`/activities/new?organizationId=${organizationId}`}
-          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+          className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
         >
           + Nova Atividade
         </Link>
@@ -118,7 +118,7 @@ export function OrganizationActivities({
           </p>
           <Link
             href={`/activities/new?organizationId=${organizationId}`}
-            className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+            className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
           >
             Registrar Primeira Atividade
           </Link>

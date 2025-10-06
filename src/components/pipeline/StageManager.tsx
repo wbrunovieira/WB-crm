@@ -149,7 +149,7 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
             setEditingId(null);
             setFormData({ name: "", probability: 50 });
           }}
-          className="rounded-md bg-primary px-4 py-2 text-sm text-white hover:bg-blue-700"
+          className="rounded-md bg-primary px-4 py-2 text-sm text-white hover:bg-purple-700"
         >
           + Adicionar Estágio
         </button>
@@ -202,7 +202,7 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
                   <button
                     onClick={() => handleUpdate(stage.id)}
                     disabled={!formData.name.trim()}
-                    className="rounded-md bg-primary px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded-md bg-primary px-4 py-2 text-sm text-white hover:bg-purple-700 disabled:opacity-50"
                   >
                     Salvar
                   </button>
@@ -297,7 +297,7 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
                 <button
                   onClick={handleCreate}
                   disabled={!formData.name.trim()}
-                  className="rounded-md bg-primary px-4 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+                  className="rounded-md bg-primary px-4 py-2 text-sm text-white hover:bg-purple-700 disabled:opacity-50"
                 >
                   Criar Estágio
                 </button>

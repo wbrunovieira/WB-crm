@@ -255,7 +255,7 @@ export function LabelSelect({ value, onChange, placeholder = "Selecione uma labe
                   type="button"
                   onClick={editingLabel ? handleUpdateLabel : handleCreateLabel}
                   disabled={!newLabelName.trim()}
-                  className="flex-1 rounded-md bg-primary px-3 py-2 text-sm text-white hover:bg-blue-700 disabled:opacity-50"
+                  className="flex-1 rounded-md bg-primary px-3 py-2 text-sm text-white hover:bg-purple-700 disabled:opacity-50"
                 >
                   {editingLabel ? "Atualizar" : "Criar"}
                 </button>

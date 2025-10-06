@@ -567,7 +567,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         <button
           type="submit"
           disabled={isLoading}
-          className="rounded-md bg-primary px-4 py-2 text-white hover:bg-blue-700 disabled:opacity-50"
+          className="rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700 disabled:opacity-50"
         >
           {isLoading
             ? "Salvando..."

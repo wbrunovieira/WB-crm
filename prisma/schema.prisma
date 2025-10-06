@@ -31,6 +31,7 @@ model User {
   deals         Deal[]
   activities    Activity[]
   labels        Label[]
+  partners      Partner[]
 
   @@map("users")
 }
@@ -145,6 +146,9 @@ model Lead {
   // Label
   labelId String?
 
+  // Referral tracking
+  referredByPartnerId String?
+
   // Owner e timestamps
   ownerId   String
   createdAt DateTime @default(now())
@@ -157,12 +161,14 @@ model Lead {
   contacts              Contact[]     // Contatos diretamente vinculados ao Lead
   activities            Activity[]    // Lead tem múltiplas atividades
   convertedOrganization Organization? @relation("LeadConversion", fields: [convertedToOrganizationId], references: [id])
+  referredByPartner     Partner?      @relation("PartnerReferrals", fields: [referredByPartnerId], references: [id], onDelete: SetNull)
 
   @@index([ownerId])
   @@index([status])
   @@index([quality])
   @@index([convertedAt])
   @@index([labelId])
+  @@index([referredByPartnerId])
   @@map("leads")
 }
 
@@ -281,9 +287,10 @@ model Contact {
   role           String?       // Cargo da pessoa
   department     String?       // Departamento: Vendas, TI, Financeiro, etc
 
-  // Company linking - can be linked to either Lead OR Organization
+  // Company linking - can be linked to Lead, Organization, or Partner
   leadId         String?       // Linked to a Lead (before conversion)
   organizationId String?       // Linked to an Organization (after conversion or direct)
+  partnerId      String?       // Linked to a Partner company
 
   // Professional Info
   linkedin       String?
@@ -309,6 +316,7 @@ model Contact {
   owner            User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   lead             Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  partner          Partner?      @relation(fields: [partnerId], references: [id], onDelete: SetNull)
   deals            Deal[]
   activities       Activity[]
   sourceLeadContact LeadContact? @relation("LeadContactConversion") // Contact veio de qual LeadContact
@@ -316,6 +324,7 @@ model Contact {
   @@index([ownerId])
   @@index([leadId])
   @@index([organizationId])
+  @@index([partnerId])
   @@index([sourceLeadContactId])
   @@index([status])
   @@index([isPrimary])
@@ -383,7 +392,7 @@ model Deal {
 
 model Activity {
   id          String    @id @default(cuid())
-  type        String    // call, meeting, email, task
+  type        String    // call, meeting, email, task, whatsapp, physical_visit, instagram_dm
   subject     String
   description String?
   dueDate     DateTime?
@@ -391,6 +400,7 @@ model Activity {
   dealId      String?
   contactId   String?
   leadId      String?   // Activities can be linked to Leads
+  partnerId   String?   // Activities can be linked to Partners
   ownerId     String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -400,11 +410,67 @@ model Activity {
   deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
   contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
   lead    Lead?    @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  partner Partner? @relation(fields: [partnerId], references: [id], onDelete: Cascade)
 
   @@index([ownerId])
   @@index([dealId])
   @@index([contactId])
   @@index([leadId])
+  @@index([partnerId])
   @@index([dueDate])
   @@map("activities")
+}
+
+model Partner {
+  id        String   @id @default(cuid())
+
+  // Informações da Empresa Parceira
+  name             String  // Nome da empresa parceira
+  legalName        String? // Razão Social
+  foundationDate   DateTime?
+
+  // Tipo de parceria
+  partnerType  String  // consultoria, universidade, fornecedor, indicador, investidor, etc
+
+  // Contato da Empresa (geral)
+  website   String?
+  email     String?
+  phone     String?
+  whatsapp  String?
+
+  // Localização
+  country        String?
+  state          String?
+  city           String?
+  zipCode        String?
+  streetAddress  String?
+
+  // Redes Sociais
+  linkedin  String?
+  instagram String?
+  facebook  String?
+  twitter   String?
+
+  // Informações da Parceria
+  industry       String? // Setor de atuação
+  employeeCount  Int?
+  description    String?
+  expertise      String? // Área de expertise/especialização
+  notes          String?
+
+  lastContactDate DateTime? // Última vez que houve contato
+
+  ownerId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  owner         User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  contacts      Contact[]  // Contatos da empresa parceira
+  activities    Activity[]
+  referredLeads Lead[]     @relation("PartnerReferrals")
+
+  @@index([ownerId])
+  @@index([partnerType])
+  @@map("partners")
 }

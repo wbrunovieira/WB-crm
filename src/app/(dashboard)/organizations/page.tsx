@@ -20,7 +20,7 @@ export default async function OrganizationsPage({
         </div>
         <Link
           href="/organizations/new"
-          className="rounded-md bg-primary px-4 py-2 text-white hover:bg-blue-700"
+          className="rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700"
         >
           Nova Organização
         </Link>
@@ -48,7 +48,7 @@ export default async function OrganizationsPage({
           </p>
           <Link
             href="/organizations/new"
-            className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-white hover:bg-blue-700"
+            className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700"
           >
             Criar Organização
           </Link>
@@ -87,7 +87,7 @@ export default async function OrganizationsPage({
                   <td className="whitespace-nowrap px-6 py-4">
                     <Link
                       href={`/organizations/${org.id}`}
-                      className="font-medium text-primary hover:text-blue-700"
+                      className="font-medium text-primary hover:text-purple-700"
                     >
                       {org.name}
                     </Link>
