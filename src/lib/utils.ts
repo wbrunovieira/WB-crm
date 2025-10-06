@@ -14,5 +14,6 @@ export function formatCurrency(value: number, currency: string = "BRL"): string 
 export function formatDate(date: Date | string | null): string {
   if (!date) return "-";
   const d = typeof date === "string" ? new Date(date) : date;
-  return new Intl.DateTimeFormat("pt-BR").format(d);
+  // Use UTC to avoid timezone issues when displaying dates
+  return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(d);
 }

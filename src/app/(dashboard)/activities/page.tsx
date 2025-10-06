@@ -3,6 +3,7 @@ import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
 import ToggleCompletedButton from "@/components/activities/ToggleCompletedButton";
+import DeleteActivityButton from "@/components/activities/DeleteActivityButton";
 
 export default async function ActivitiesPage({
   searchParams,
@@ -225,12 +226,18 @@ export default async function ActivitiesPage({
                 </div>
               </div>
 
-              <Link
-                href={`/activities/${activity.id}/edit`}
-                className="text-sm text-primary hover:underline"
-              >
-                Editar
-              </Link>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/activities/${activity.id}/edit`}
+                  className="text-gray-600 hover:text-primary"
+                  title="Editar"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                </Link>
+                <DeleteActivityButton activityId={activity.id} />
+              </div>
             </div>
           </div>
         ))}

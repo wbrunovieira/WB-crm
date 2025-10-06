@@ -92,9 +92,10 @@ export async function createContact(data: ContactFormData) {
 
   const validated = contactSchema.parse(data);
 
-  // Determine leadId or organizationId based on companyType
+  // Determine leadId, organizationId, or partnerId based on companyType
   const leadId = validated.companyType === "lead" ? validated.companyId : null;
   const organizationId = validated.companyType === "organization" ? validated.companyId : null;
+  const partnerId = validated.companyType === "partner" ? validated.companyId : null;
 
   const contact = await prisma.contact.create({
     data: {
@@ -106,6 +107,7 @@ export async function createContact(data: ContactFormData) {
       department: validated.department || null,
       leadId: leadId || null,
       organizationId: organizationId || null,
+      partnerId: partnerId || null,
       linkedin: validated.linkedin || null,
       status: validated.status || "active",
       isPrimary: validated.isPrimary || false,
@@ -130,9 +132,10 @@ export async function updateContact(id: string, data: ContactFormData) {
 
   const validated = contactSchema.parse(data);
 
-  // Determine leadId or organizationId based on companyType
+  // Determine leadId, organizationId, or partnerId based on companyType
   const leadId = validated.companyType === "lead" ? validated.companyId : null;
   const organizationId = validated.companyType === "organization" ? validated.companyId : null;
+  const partnerId = validated.companyType === "partner" ? validated.companyId : null;
 
   const contact = await prisma.contact.update({
     where: {
@@ -148,6 +151,7 @@ export async function updateContact(id: string, data: ContactFormData) {
       department: validated.department || null,
       leadId: leadId || null,
       organizationId: organizationId || null,
+      partnerId: partnerId || null,
       linkedin: validated.linkedin || null,
       status: validated.status,
       isPrimary: validated.isPrimary,

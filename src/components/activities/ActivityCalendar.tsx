@@ -10,6 +10,30 @@ type Activity = {
   subject: string;
   dueDate: Date | null;
   completed: boolean;
+  deal?: {
+    id: string;
+    title: string;
+    organization: {
+      id: string;
+      name: string;
+    } | null;
+  } | null;
+  contact?: {
+    id: string;
+    name: string;
+    organization: {
+      id: string;
+      name: string;
+    } | null;
+    partner: {
+      id: string;
+      name: string;
+    } | null;
+  } | null;
+  lead?: {
+    id: string;
+    businessName: string;
+  } | null;
 };
 
 type ActivityCalendarProps = {
@@ -109,14 +133,38 @@ export default function ActivityCalendar({
     router.push(`/activities/calendar?${params.toString()}`);
   };
 
+  const getActivityContext = (activity: Activity): { company: string | null; contact: string | null } => {
+    let company = null;
+    let contact = null;
+
+    // Get company name
+    if (activity.deal?.organization) {
+      company = activity.deal.organization.name;
+    } else if (activity.contact?.organization) {
+      company = activity.contact.organization.name;
+    } else if (activity.contact?.partner) {
+      company = activity.contact.partner.name;
+    } else if (activity.lead) {
+      company = activity.lead.businessName;
+    }
+
+    // Get contact name
+    if (activity.contact) {
+      contact = activity.contact.name;
+    }
+
+    return { company, contact };
+  };
+
   const getActivitiesForDate = (date: Date) => {
     return activities.filter((activity) => {
       if (!activity.dueDate) return false;
       const activityDate = new Date(activity.dueDate);
+      // Use UTC methods to avoid timezone issues
       return (
-        activityDate.getDate() === date.getDate() &&
-        activityDate.getMonth() === date.getMonth() &&
-        activityDate.getFullYear() === date.getFullYear()
+        activityDate.getUTCDate() === date.getDate() &&
+        activityDate.getUTCMonth() === date.getMonth() &&
+        activityDate.getUTCFullYear() === date.getFullYear()
       );
     });
   };
@@ -387,19 +435,39 @@ export default function ActivityCalendar({
               <Link
                 key={activity.id}
                 href={`/activities/${activity.id}`}
-                className={`block rounded-lg border p-4 hover:shadow-md ${
+                className={`block rounded-lg border p-4 transition-all hover:shadow-md ${
                   activity.completed
-                    ? "border-gray-200 bg-gray-50"
-                    : "border-blue-200 bg-blue-50"
+                    ? "border-gray-200 bg-white hover:bg-gray-50"
+                    : "border-primary/20 bg-white hover:border-primary/40"
                 }`}
               >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0 pt-1">
-                    <ActivityTypeIcon type={activity.type} />
+                <div className="flex items-center gap-3">
+                  <div className="flex-shrink-0">
+                    {activity.completed ? (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                        <svg
+                          className="h-5 w-5 text-green-600"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M5 13l4 4L19 7"
+                          />
+                        </svg>
+                      </div>
+                    ) : (
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                        <ActivityTypeIcon type={activity.type} />
+                      </div>
+                    )}
                   </div>
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0">
                     <h3
-                      className={`text-lg font-semibold ${
+                      className={`text-base font-semibold ${
                         activity.completed
                           ? "text-gray-500 line-through"
                           : "text-gray-900"
@@ -407,11 +475,43 @@ export default function ActivityCalendar({
                     >
                       {activity.subject}
                     </h3>
+                    {(() => {
+                      const context = getActivityContext(activity);
+                      return (
+                        <>
+                          {context.company && (
+                            <p className="mt-1 text-sm font-medium text-gray-700">
+                              {context.company}
+                            </p>
+                          )}
+                          {context.contact && (
+                            <p className="mt-0.5 text-xs text-gray-500">
+                              {context.contact}
+                            </p>
+                          )}
+                        </>
+                      );
+                    })()}
                     {activity.completed && (
-                      <span className="mt-1 inline-block rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                        Concluída
+                      <span className="mt-1 inline-block rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
+                        ✓ Concluída
                       </span>
                     )}
+                  </div>
+                  <div className="flex-shrink-0">
+                    <svg
+                      className="h-5 w-5 text-gray-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
                   </div>
                 </div>
               </Link>

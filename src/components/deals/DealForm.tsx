@@ -83,7 +83,7 @@ export default function DealForm({
         organizationId: formData.organizationId || null,
         stageId: formData.stageId,
         expectedCloseDate: formData.expectedCloseDate
-          ? new Date(formData.expectedCloseDate)
+          ? new Date(formData.expectedCloseDate + "T12:00:00")
           : null,
       };
 

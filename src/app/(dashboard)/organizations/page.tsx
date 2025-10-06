@@ -87,7 +87,7 @@ export default async function OrganizationsPage({
                   <td className="whitespace-nowrap px-6 py-4">
                     <Link
                       href={`/organizations/${org.id}`}
-                      className="font-medium text-primary hover:text-purple-700"
+                      className="font-medium text-gray-700 hover:text-primary text-base"
                     >
                       {org.name}
                     </Link>

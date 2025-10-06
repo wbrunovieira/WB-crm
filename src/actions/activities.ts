@@ -33,12 +33,30 @@ export async function getActivities(filters?: {
         select: {
           id: true,
           title: true,
+          organization: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       },
       contact: {
         select: {
           id: true,
           name: true,
+          organization: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          partner: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
         },
       },
       lead: {
@@ -61,6 +79,13 @@ export async function getActivities(filters?: {
       { createdAt: "desc" },
     ],
   });
+
+  // Debug: Log activities with partner info
+  console.log('Server - Activities with partners:', activities.map(a => ({
+    subject: a.subject,
+    contactName: a.contact?.name,
+    partner: a.contact?.partner?.name
+  })));
 
   return activities;
 }

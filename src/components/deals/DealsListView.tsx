@@ -113,7 +113,7 @@ export function DealsListView({ deals, groupBy }: DealsListViewProps) {
       <td className="whitespace-nowrap px-6 py-4">
         <Link
           href={`/deals/${deal.id}`}
-          className="text-primary hover:text-purple-700 font-medium"
+          className="text-gray-700 hover:text-primary font-medium text-base"
         >
           {deal.title}
         </Link>

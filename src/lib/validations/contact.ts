@@ -7,9 +7,9 @@ export const contactSchema = z.object({
   whatsapp: z.string().optional(),
   role: z.string().optional(),
   department: z.string().optional(),
-  // Company linking - companyId + companyType will be split into leadId/organizationId
+  // Company linking - companyId + companyType will be split into leadId/organizationId/partnerId
   companyId: z.string().optional().nullable(),
-  companyType: z.enum(["lead", "organization"]).optional().nullable(),
+  companyType: z.enum(["lead", "organization", "partner"]).optional().nullable(),
   linkedin: z.string().url("URL do LinkedIn inválida").optional().or(z.literal("")),
   status: z.enum(["active", "inactive", "bounced"]).optional(),
   isPrimary: z.boolean().optional(),

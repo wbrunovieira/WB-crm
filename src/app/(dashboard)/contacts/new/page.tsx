@@ -3,7 +3,7 @@ import { ContactForm } from "@/components/contacts/ContactForm";
 export default function NewContactPage({
   searchParams,
 }: {
-  searchParams: { organizationId?: string };
+  searchParams: { organizationId?: string; partnerId?: string };
 }) {
   return (
     <div className="p-8">
@@ -15,7 +15,10 @@ export default function NewContactPage({
       </div>
 
       <div className="max-w-2xl rounded-lg bg-white p-6 shadow">
-        <ContactForm preselectedOrganizationId={searchParams.organizationId} />
+        <ContactForm
+          preselectedOrganizationId={searchParams.organizationId}
+          partnerId={searchParams.partnerId}
+        />
       </div>
     </div>
   );

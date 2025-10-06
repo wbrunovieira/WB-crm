@@ -75,7 +75,7 @@ export function DealStageSelect({
     >
       {stages.map((stage) => (
         <option key={stage.id} value={stage.id}>
-          {stage.pipeline.name} - {stage.name}
+          {stage.name}
         </option>
       ))}
     </select>

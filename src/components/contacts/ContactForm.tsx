@@ -19,6 +19,7 @@ interface ContactFormProps {
     department: string | null;
     leadId: string | null;
     organizationId: string | null;
+    partnerId: string | null;
     linkedin: string | null;
     status: string;
     isPrimary: boolean;
@@ -30,9 +31,10 @@ interface ContactFormProps {
   };
   leadId?: string; // Optional: pre-select a lead when creating from lead page
   preselectedOrganizationId?: string; // Optional: pre-select an organization when creating from org page
+  partnerId?: string; // Optional: pre-select a partner when creating from partner page
 }
 
-export function ContactForm({ contact, leadId, preselectedOrganizationId }: ContactFormProps) {
+export function ContactForm({ contact, leadId, preselectedOrganizationId, partnerId }: ContactFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
@@ -45,15 +47,19 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId }: Cont
   );
 
   // Determine initial company selection
-  const initialCompanyId = contact?.organizationId || contact?.leadId || preselectedOrganizationId || leadId || "";
+  const initialCompanyId = contact?.organizationId || contact?.leadId || contact?.partnerId || preselectedOrganizationId || leadId || partnerId || "";
   const initialCompanyType = contact?.organizationId
     ? "organization"
     : contact?.leadId
     ? "lead"
+    : contact?.partnerId
+    ? "partner"
     : preselectedOrganizationId
     ? "organization"
     : leadId
     ? "lead"
+    : partnerId
+    ? "partner"
     : "";
   const [selectedCompany, setSelectedCompany] = useState(`${initialCompanyType}:${initialCompanyId}`);
 
@@ -253,7 +259,7 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId }: Cont
 
           <div>
             <label htmlFor="company" className="block text-sm font-medium text-gray-700">
-              Empresa (Lead ou Organização)
+              Empresa (Lead, Organização ou Parceiro)
             </label>
             <select
               id="company"
@@ -265,12 +271,12 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId }: Cont
               <option value="">Nenhuma</option>
               {companies.map((company) => (
                 <option key={`${company.type}:${company.id}`} value={`${company.type}:${company.id}`}>
-                  {company.name} {company.type === "lead" ? "📋 (Lead)" : "🏢 (Org)"}
+                  {company.name} {company.type === "lead" ? "📋 (Lead)" : company.type === "organization" ? "🏢 (Org)" : "🤝 (Parceiro)"}
                 </option>
               ))}
             </select>
             <p className="mt-1 text-xs text-gray-500">
-              📋 = Lead (ainda não convertido) | 🏢 = Organização
+              📋 = Lead | 🏢 = Organização | 🤝 = Parceiro
             </p>
           </div>
 

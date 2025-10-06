@@ -72,7 +72,9 @@ export default function ActivityForm({
         type: formData.type as "call" | "meeting" | "email" | "task" | "whatsapp" | "visit" | "instagram",
         subject: formData.subject,
         description: formData.description || undefined,
-        dueDate: formData.dueDate ? new Date(formData.dueDate) : null,
+        dueDate: formData.dueDate
+          ? new Date(formData.dueDate + "T12:00:00")
+          : null,
         completed: formData.completed,
         contactId: formData.contactId || null,
         dealId: formData.dealId || null,

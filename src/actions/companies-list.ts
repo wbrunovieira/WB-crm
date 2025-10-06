@@ -7,12 +7,12 @@ import { authOptions } from "@/lib/auth";
 export type CompanyOption = {
   id: string;
   name: string;
-  type: "lead" | "organization";
+  type: "lead" | "organization" | "partner";
   status?: string; // For leads
 };
 
 /**
- * Get unified list of companies (both Leads and Organizations)
+ * Get unified list of companies (Leads, Organizations, and Partners)
  * for contact linking
  */
 export async function getCompaniesList(): Promise<CompanyOption[]> {
@@ -52,7 +52,21 @@ export async function getCompaniesList(): Promise<CompanyOption[]> {
     },
   });
 
-  // Combine both lists
+  // Get all partners
+  const partners = await prisma.partner.findMany({
+    where: {
+      ownerId: session.user.id,
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  // Combine all lists
   const companies: CompanyOption[] = [
     ...leads.map((lead) => ({
       id: lead.id,
@@ -64,6 +78,11 @@ export async function getCompaniesList(): Promise<CompanyOption[]> {
       id: org.id,
       name: org.name,
       type: "organization" as const,
+    })),
+    ...partners.map((partner) => ({
+      id: partner.id,
+      name: partner.name,
+      type: "partner" as const,
     })),
   ];
 
