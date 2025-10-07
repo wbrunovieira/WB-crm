@@ -4,6 +4,9 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "WB CRM - Gestão de Pipeline de Vendas",
   description: "Sistema de CRM focado em gestão de pipeline de vendas",
+  icons: {
+    icon: "/favicon.svg",
+  },
 };
 
 export default function RootLayout({
