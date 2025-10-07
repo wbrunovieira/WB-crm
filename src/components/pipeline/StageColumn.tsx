@@ -3,7 +3,7 @@
 import { useDroppable } from "@dnd-kit/core";
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import DealCard from "./DealCard";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, calculateTotalInCurrency } from "@/lib/utils";
 
 type Deal = {
   id: string;
@@ -32,14 +32,15 @@ type Stage = {
 type StageColumnProps = {
   stage: Stage;
   isDragging: boolean;
+  displayCurrency?: string;
 };
 
-export default function StageColumn({ stage, isDragging }: StageColumnProps) {
+export default function StageColumn({ stage, isDragging, displayCurrency = "BRL" }: StageColumnProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: stage.id,
   });
 
-  const totalValue = stage.deals.reduce((sum, deal) => sum + deal.value, 0);
+  const totalValue = calculateTotalInCurrency(stage.deals, displayCurrency);
   const dealIds = stage.deals.map((deal) => deal.id);
 
   return (
@@ -55,7 +56,7 @@ export default function StageColumn({ stage, isDragging }: StageColumnProps) {
           <div className="text-right">
             <p className="text-xs text-gray-500">Total</p>
             <p className="text-sm font-semibold text-gray-900">
-              {formatCurrency(totalValue)}
+              {formatCurrency(totalValue, displayCurrency)}
             </p>
           </div>
         </div>

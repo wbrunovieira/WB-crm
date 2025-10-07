@@ -14,6 +14,7 @@ import { updateDealStage } from "@/actions/deals";
 import { useRouter } from "next/navigation";
 import StageColumn from "./StageColumn";
 import DealCard from "./DealCard";
+import { AVAILABLE_CURRENCIES } from "@/lib/utils";
 
 type Deal = {
   id: string;
@@ -53,6 +54,7 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
   const router = useRouter();
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [displayCurrency, setDisplayCurrency] = useState("BRL");
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -110,14 +112,39 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex h-full gap-4 overflow-x-auto p-8">
-        {pipeline.stages.map((stage) => (
-          <StageColumn
-            key={stage.id}
-            stage={stage}
-            isDragging={isDragging}
-          />
-        ))}
+      <div className="flex h-full flex-col">
+        {/* Currency Selector */}
+        <div className="mb-4 flex justify-end px-8 pt-4">
+          <div className="flex items-center gap-2">
+            <label htmlFor="currency-select-kanban" className="text-sm font-medium text-gray-700">
+              Moeda do Total:
+            </label>
+            <select
+              id="currency-select-kanban"
+              value={displayCurrency}
+              onChange={(e) => setDisplayCurrency(e.target.value)}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              {AVAILABLE_CURRENCIES.map((currency) => (
+                <option key={currency.code} value={currency.code}>
+                  {currency.symbol} {currency.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Kanban Columns */}
+        <div className="flex flex-1 gap-4 overflow-x-auto px-8 pb-8">
+          {pipeline.stages.map((stage) => (
+            <StageColumn
+              key={stage.id}
+              stage={stage}
+              isDragging={isDragging}
+              displayCurrency={displayCurrency}
+            />
+          ))}
+        </div>
       </div>
 
       <DragOverlay>

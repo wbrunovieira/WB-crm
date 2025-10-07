@@ -1,10 +1,12 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { DealStageSelect } from "./DealStageSelect";
 import { DealStatusSelect } from "./DealStatusSelect";
+import { calculateTotalInCurrency, AVAILABLE_CURRENCIES } from "@/lib/utils";
 
 interface Deal {
   id: string;
@@ -36,6 +38,8 @@ type GroupedDeals = {
 };
 
 export function DealsListView({ deals, groupBy }: DealsListViewProps) {
+  const [displayCurrency, setDisplayCurrency] = useState("BRL");
+
   // Grouping logic
   const groupedDeals: GroupedDeals | null = (() => {
     if (groupBy === "none") return null;
@@ -82,7 +86,11 @@ export function DealsListView({ deals, groupBy }: DealsListViewProps) {
       }
 
       groups[key].deals.push(deal);
-      groups[key].total += deal.value;
+    });
+
+    // Calculate totals in display currency for each group
+    Object.keys(groups).forEach((key) => {
+      groups[key].total = calculateTotalInCurrency(groups[key].deals, displayCurrency);
     });
 
     // Sort groups by total value descending
@@ -225,6 +233,28 @@ export function DealsListView({ deals, groupBy }: DealsListViewProps) {
   if (groupedDeals) {
     return (
       <div className="space-y-6">
+        {/* Currency Selector */}
+        <div className="flex justify-end">
+          <div className="flex items-center gap-2">
+            <label htmlFor="currency-select" className="text-sm font-medium text-gray-700">
+              Moeda do Total:
+            </label>
+            <select
+              id="currency-select"
+              value={displayCurrency}
+              onChange={(e) => setDisplayCurrency(e.target.value)}
+              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              {AVAILABLE_CURRENCIES.map((currency) => (
+                <option key={currency.code} value={currency.code}>
+                  {currency.symbol} {currency.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Groups */}
         {Object.entries(groupedDeals).map(([groupKey, group]) => {
           // Determine group label
           let groupLabel = groupKey;
@@ -260,7 +290,7 @@ export function DealsListView({ deals, groupBy }: DealsListViewProps) {
                     </span>
                     <span className="text-gray-300">•</span>
                     <span className="font-medium text-primary">
-                      {formatCurrency(group.total, group.deals[0].currency)}
+                      {formatCurrency(group.total, displayCurrency)}
                     </span>
                   </div>
                 </div>
@@ -273,10 +303,143 @@ export function DealsListView({ deals, groupBy }: DealsListViewProps) {
     );
   }
 
-  // Render ungrouped view
+  // Render ungrouped view with stats
+  const totalValue = calculateTotalInCurrency(deals, displayCurrency);
+  const avgValue = deals.length > 0 ? totalValue / deals.length : 0;
+  const openDeals = deals.filter(d => d.status === "open").length;
+  const wonDeals = deals.filter(d => d.status === "won").length;
+  const lostDeals = deals.filter(d => d.status === "lost").length;
+
+  // Group by stage for stats
+  const stageStats: { [key: string]: { name: string; count: number; total: number; pipeline: string } } = {};
+  deals.forEach((deal) => {
+    const key = deal.stage.id;
+    if (!stageStats[key]) {
+      stageStats[key] = {
+        name: deal.stage.name,
+        pipeline: deal.stage.pipeline.name,
+        count: 0,
+        total: 0,
+      };
+    }
+    stageStats[key].count++;
+    stageStats[key].total = calculateTotalInCurrency(
+      deals.filter(d => d.stage.id === key),
+      displayCurrency
+    );
+  });
+
   return (
-    <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-      {renderTable(deals)}
+    <div className="space-y-6">
+      {/* Currency Selector */}
+      <div className="flex justify-end">
+        <div className="flex items-center gap-2">
+          <label htmlFor="currency-select-ungrouped" className="text-sm font-medium text-gray-700">
+            Moeda do Total:
+          </label>
+          <select
+            id="currency-select-ungrouped"
+            value={displayCurrency}
+            onChange={(e) => setDisplayCurrency(e.target.value)}
+            className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          >
+            {AVAILABLE_CURRENCIES.map((currency) => (
+              <option key={currency.code} value={currency.code}>
+                {currency.symbol} {currency.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <p className="text-sm text-gray-500">Total de Negócios</p>
+          <p className="mt-1 text-2xl font-semibold text-gray-900">{deals.length}</p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <p className="text-sm text-gray-500">Valor Total</p>
+          <p className="mt-1 text-2xl font-semibold text-primary">
+            {formatCurrency(totalValue, displayCurrency)}
+          </p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <p className="text-sm text-gray-500">Ticket Médio</p>
+          <p className="mt-1 text-2xl font-semibold text-gray-900">
+            {formatCurrency(avgValue, displayCurrency)}
+          </p>
+        </div>
+        <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+          <p className="text-sm text-gray-500">Status</p>
+          <div className="mt-1 flex items-center gap-3 text-sm">
+            <span className="text-blue-600">
+              <span className="font-semibold">{openDeals}</span> aberto{openDeals !== 1 ? "s" : ""}
+            </span>
+            <span className="text-green-600">
+              <span className="font-semibold">{wonDeals}</span> ganho{wonDeals !== 1 ? "s" : ""}
+            </span>
+            <span className="text-red-600">
+              <span className="font-semibold">{lostDeals}</span> perdido{lostDeals !== 1 ? "s" : ""}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Stage Stats Card */}
+      {Object.keys(stageStats).length > 0 && (
+        <div className="rounded-lg border border-primary/30 bg-white p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base font-semibold text-gray-900">Totais por Estágio</h3>
+            <span className="text-xs text-gray-500">{Object.keys(stageStats).length} estágio{Object.keys(stageStats).length !== 1 ? "s" : ""}</span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {Object.entries(stageStats)
+              .sort((a, b) => b[1].total - a[1].total)
+              .map(([stageId, stats]) => (
+              <div
+                key={stageId}
+                className="group relative overflow-hidden rounded-lg border-2 border-primary/20 bg-gradient-to-br from-[#2d1b3d] to-[#1a0022] p-4 shadow-sm transition-all hover:border-primary hover:shadow-lg hover:shadow-primary/20"
+              >
+                {/* Pipeline Badge */}
+                <div className="mb-2">
+                  <span className="inline-block rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
+                    {stats.pipeline}
+                  </span>
+                </div>
+
+                {/* Stage Name */}
+                <h4 className="text-base font-bold text-gray-100 mb-3 group-hover:text-primary transition-colors">
+                  {stats.name}
+                </h4>
+
+                {/* Stats */}
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Negócios</span>
+                    <span className="text-lg font-bold text-gray-100">{stats.count}</span>
+                  </div>
+                  <div className="h-px bg-primary/30"></div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-gray-400 uppercase tracking-wide">Total</span>
+                    <span className="text-lg font-bold text-primary">
+                      {formatCurrency(stats.total, displayCurrency)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Hover Glow Effect */}
+                <div className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none bg-gradient-to-br from-primary/5 to-transparent"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Table */}
+      <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+        {renderTable(deals)}
+      </div>
     </div>
   );
 }
