@@ -81,7 +81,7 @@ export default async function ContactsPage({
                   <td className="whitespace-nowrap px-6 py-4">
                     <Link
                       href={`/contacts/${contact.id}`}
-                      className="font-medium text-primary hover:text-purple-700"
+                      className="font-medium text-gray-400 hover:text-primary"
                     >
                       {contact.name}
                     </Link>
@@ -93,7 +93,7 @@ export default async function ContactsPage({
                     {contact.phone || "-"}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {contact.organization?.name || "-"}
+                    {contact.organization?.name || contact.lead?.businessName || contact.partner?.name || "-"}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
                     <div className="flex items-center justify-end gap-2">

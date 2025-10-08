@@ -35,6 +35,12 @@ export async function getContacts(search?: string) {
           name: true,
         },
       },
+      partner: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
     orderBy: {
       createdAt: "desc",

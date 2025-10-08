@@ -92,14 +92,15 @@ export async function createDeal(data: DealFormData) {
 ```
 
 ### Core Entities & Relations
-- **Lead**: Prospective companies from searches/imports with multiple LeadContacts. Can be converted to Organization
+- **Lead**: Prospective companies from searches/imports with multiple LeadContacts. Can be converted to Organization. Can track referrals via `referredByPartnerId`
 - **LeadContact**: Individual contacts within a Lead. Can be converted to Contact
 - **Organization**: Converted Leads or manually created companies (tracks `sourceLeadId`). Can link to external projects via `externalProjectIds` (JSON array)
-- **Contact**: Individual people linked to Organizations or Leads (tracks `sourceLeadContactId`)
+- **Contact**: Individual people linked to Organizations, Leads, or Partners (tracks `sourceLeadContactId`)
 - **Deal**: Sales opportunities linked to Contact/Organization, positioned in Pipeline Stages
 - **Pipeline**: Container for sales process stages
 - **Stage**: Steps in Pipeline (order, probability)
-- **Activity**: Tasks/calls/meetings/emails/whatsapp/physical_visit/instagram_dm linked to Deals, Contacts, or Leads
+- **Activity**: Tasks/calls/meetings/emails/whatsapp/physical_visit/instagram_dm linked to Deals, Contacts, Leads, or Partners
+- **Partner**: Company-based entities for partnerships (consultoria, universidade, fornecedor, indicador, investidor). Can have Contacts and Activities, and refer Leads
 - **User**: System users with ownership of all entities
 - **Label**: Color-coded tags for Leads and Organizations
 
