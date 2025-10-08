@@ -129,9 +129,34 @@ export default async function ActivityDetailPage({
             </div>
 
             <div>
-              <dt className="text-sm font-medium text-gray-500">Contato</dt>
+              <dt className="text-sm font-medium text-gray-500">
+                {activity.contacts && activity.contacts.length > 1 ? "Contatos" : "Contato"}
+              </dt>
               <dd className="mt-1 text-sm text-gray-900">
-                {activity.contact ? (
+                {activity.contacts && activity.contacts.length > 0 ? (
+                  <div className="space-y-3">
+                    {activity.contacts.map((contact: any) => (
+                      <div key={contact.id} className="border-b border-gray-100 pb-2 last:border-b-0 last:pb-0">
+                        <Link
+                          href={`/contacts/${contact.id}`}
+                          className="text-primary hover:underline font-medium"
+                        >
+                          {contact.name}
+                        </Link>
+                        {contact.email && (
+                          <p className="mt-1 text-sm text-gray-500">
+                            {contact.email}
+                          </p>
+                        )}
+                        {contact.phone && (
+                          <p className="text-sm text-gray-500">
+                            {contact.phone}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : activity.contact ? (
                   <div>
                     <Link
                       href={`/contacts/${activity.contact.id}`}

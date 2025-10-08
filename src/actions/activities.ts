@@ -137,7 +137,38 @@ export async function getActivityById(id: string) {
     },
   });
 
-  return activity;
+  if (!activity) {
+    return null;
+  }
+
+  // Fetch all contacts if contactIds exists
+  let allContacts = [];
+  if (activity.contactIds) {
+    try {
+      const contactIds = JSON.parse(activity.contactIds);
+      if (contactIds && contactIds.length > 0) {
+        allContacts = await prisma.contact.findMany({
+          where: {
+            id: { in: contactIds },
+            ownerId: session.user.id,
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+          },
+        });
+      }
+    } catch (e) {
+      console.error("Error parsing contactIds:", e);
+    }
+  }
+
+  return {
+    ...activity,
+    contacts: allContacts,
+  };
 }
 
 export async function createActivity(data: ActivityFormData) {
