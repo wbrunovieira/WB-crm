@@ -185,10 +185,10 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               Website
             </label>
             <input
-              type="url"
+              type="text"
               id="website"
               name="website"
-              placeholder="https://exemplo.com"
+              placeholder="www.exemplo.com.br ou https://exemplo.com.br"
               defaultValue={organization?.website || ""}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />

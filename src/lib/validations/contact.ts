@@ -10,7 +10,7 @@ export const contactSchema = z.object({
   // Company linking - companyId + companyType will be split into leadId/organizationId/partnerId
   companyId: z.string().optional().nullable(),
   companyType: z.enum(["lead", "organization", "partner"]).optional().nullable(),
-  linkedin: z.string().url("URL do LinkedIn inválida").optional().or(z.literal("")),
+  linkedin: z.string().optional(),
   status: z.enum(["active", "inactive", "bounced"]).optional(),
   isPrimary: z.boolean().optional(),
   birthDate: z.string().optional(), // Will be converted to Date in the action

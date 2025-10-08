@@ -97,7 +97,7 @@ export async function getActivityById(id: string) {
     throw new Error("Não autorizado");
   }
 
-  const activity = await prisma.activity.findUnique({
+  const activity = await prisma.activity.findFirst({
     where: {
       id,
       ownerId: session.user.id,
@@ -149,6 +149,14 @@ export async function createActivity(data: ActivityFormData) {
 
   const validated = activitySchema.parse(data);
 
+  // Convert contactIds array to JSON string and set first contact as primary
+  const contactIdsJson = validated.contactIds && validated.contactIds.length > 0
+    ? JSON.stringify(validated.contactIds)
+    : null;
+  const primaryContactId = validated.contactIds && validated.contactIds.length > 0
+    ? validated.contactIds[0]
+    : null;
+
   const activity = await prisma.activity.create({
     data: {
       type: validated.type,
@@ -157,7 +165,8 @@ export async function createActivity(data: ActivityFormData) {
       dueDate: validated.dueDate,
       completed: validated.completed,
       dealId: validated.dealId,
-      contactId: validated.contactId,
+      contactId: primaryContactId,
+      contactIds: contactIdsJson,
       leadId: validated.leadId,
       ownerId: session.user.id,
     },
@@ -214,6 +223,14 @@ export async function updateActivity(id: string, data: ActivityFormData) {
 
   const validated = activitySchema.parse(data);
 
+  // Convert contactIds array to JSON string and set first contact as primary
+  const contactIdsJson = validated.contactIds && validated.contactIds.length > 0
+    ? JSON.stringify(validated.contactIds)
+    : null;
+  const primaryContactId = validated.contactIds && validated.contactIds.length > 0
+    ? validated.contactIds[0]
+    : null;
+
   const activity = await prisma.activity.update({
     where: { id },
     data: {
@@ -223,7 +240,8 @@ export async function updateActivity(id: string, data: ActivityFormData) {
       dueDate: validated.dueDate,
       completed: validated.completed,
       dealId: validated.dealId,
-      contactId: validated.contactId,
+      contactId: primaryContactId,
+      contactIds: contactIdsJson,
       leadId: validated.leadId,
     },
     include: {

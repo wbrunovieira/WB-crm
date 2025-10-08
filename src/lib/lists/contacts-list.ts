@@ -18,6 +18,24 @@ export async function getContactsList() {
     select: {
       id: true,
       name: true,
+      organization: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      lead: {
+        select: {
+          id: true,
+          businessName: true,
+        },
+      },
+      partner: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
     },
     orderBy: {
       name: "asc",

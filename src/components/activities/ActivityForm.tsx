@@ -7,6 +7,9 @@ import { createActivity, updateActivity } from "@/actions/activities";
 type Contact = {
   id: string;
   name: string;
+  organization?: { id: string; name: string } | null;
+  lead?: { id: string; businessName: string } | null;
+  partner?: { id: string; name: string } | null;
 };
 
 type Deal = {
@@ -28,6 +31,7 @@ type Activity = {
   completed: boolean;
   dealId: string | null;
   contactId: string | null;
+  contactIds: string | null;
   leadId: string | null;
 };
 
@@ -49,6 +53,21 @@ export default function ActivityForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const getInitialContactIds = (): string[] => {
+    if (activity?.contactIds) {
+      try {
+        return JSON.parse(activity.contactIds);
+      } catch {
+        return [];
+      }
+    }
+    if (activity?.contactId) {
+      return [activity.contactId];
+    }
+    const paramContactId = searchParams.get("contactId");
+    return paramContactId ? [paramContactId] : [];
+  };
+
   const [formData, setFormData] = useState({
     type: activity?.type || "task",
     subject: activity?.subject || "",
@@ -57,10 +76,19 @@ export default function ActivityForm({
       ? new Date(activity.dueDate).toISOString().split("T")[0]
       : "",
     completed: activity?.completed || false,
-    contactId: activity?.contactId || searchParams.get("contactId") || "",
     dealId: activity?.dealId || searchParams.get("dealId") || "",
     leadId: activity?.leadId || searchParams.get("leadId") || "",
   });
+
+  const [selectedContactIds, setSelectedContactIds] = useState<string[]>(getInitialContactIds());
+  const [contactSearch, setContactSearch] = useState("");
+  const [showContactDropdown, setShowContactDropdown] = useState(false);
+
+  const filteredContacts = contacts.filter(contact =>
+    contact.name.toLowerCase().includes(contactSearch.toLowerCase())
+  );
+
+  const selectedContacts = contacts.filter(c => selectedContactIds.includes(c.id));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -76,7 +104,7 @@ export default function ActivityForm({
           ? new Date(formData.dueDate + "T12:00:00")
           : null,
         completed: formData.completed,
-        contactId: formData.contactId || null,
+        contactIds: selectedContactIds.length > 0 ? selectedContactIds : null,
         dealId: formData.dealId || null,
         leadId: formData.leadId || null,
       };
@@ -96,6 +124,25 @@ export default function ActivityForm({
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const addContact = (contactId: string) => {
+    if (!selectedContactIds.includes(contactId)) {
+      setSelectedContactIds(prev => [...prev, contactId]);
+    }
+    setContactSearch("");
+    setShowContactDropdown(false);
+  };
+
+  const removeContact = (contactId: string) => {
+    setSelectedContactIds(prev => prev.filter(id => id !== contactId));
+  };
+
+  const getCompanyName = (contact: Contact) => {
+    if (contact.organization) return contact.organization.name;
+    if (contact.lead) return contact.lead.businessName;
+    if (contact.partner) return contact.partner.name;
+    return "Sem empresa";
   };
 
   return (
@@ -230,27 +277,84 @@ export default function ActivityForm({
       </div>
 
       <div>
-        <label
-          htmlFor="contactId"
-          className="block text-sm font-medium text-gray-700"
-        >
-          Contato
+        <label className="block text-sm font-medium text-gray-700 mb-2">
+          Contatos
         </label>
-        <select
-          id="contactId"
-          value={formData.contactId}
-          onChange={(e) =>
-            setFormData({ ...formData, contactId: e.target.value })
-          }
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
-        >
-          <option value="">Nenhum contato</option>
-          {contacts.map((contact) => (
-            <option key={contact.id} value={contact.id}>
-              {contact.name}
-            </option>
-          ))}
-        </select>
+
+        {/* Selected contacts */}
+        {selectedContacts.length > 0 && (
+          <div className="mb-3 space-y-2">
+            {selectedContacts.map((contact) => (
+              <div
+                key={contact.id}
+                className="flex items-center justify-between bg-gray-800 border border-gray-700 rounded-md px-3 py-2"
+              >
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-gray-200">{contact.name}</p>
+                  <p className="text-xs text-gray-400">{getCompanyName(contact)}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeContact(contact.id)}
+                  className="text-red-400 hover:text-red-300 ml-2"
+                  title="Remover contato"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Search input */}
+        <div className="relative">
+          <input
+            type="text"
+            placeholder="Buscar contato..."
+            value={contactSearch}
+            onChange={(e) => setContactSearch(e.target.value)}
+            onFocus={() => setShowContactDropdown(true)}
+            onBlur={() => setTimeout(() => setShowContactDropdown(false), 200)}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
+          />
+
+          {/* Dropdown with filtered contacts */}
+          {showContactDropdown && contactSearch && filteredContacts.length > 0 && (
+            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-y-auto">
+              {filteredContacts.map((contact) => (
+                <button
+                  key={contact.id}
+                  type="button"
+                  onClick={() => addContact(contact.id)}
+                  className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b border-gray-100 last:border-b-0"
+                  disabled={selectedContactIds.includes(contact.id)}
+                >
+                  <p className="text-sm font-medium text-gray-900">
+                    {contact.name}
+                    {selectedContactIds.includes(contact.id) && (
+                      <span className="ml-2 text-xs text-green-600">✓ Selecionado</span>
+                    )}
+                  </p>
+                  <p className="text-xs text-gray-500">{getCompanyName(contact)}</p>
+                </button>
+              ))}
+            </div>
+          )}
+
+          {showContactDropdown && contactSearch && filteredContacts.length === 0 && (
+            <div className="absolute z-10 mt-1 w-full bg-white border border-gray-300 rounded-md shadow-lg p-3">
+              <p className="text-sm text-gray-500">Nenhum contato encontrado</p>
+            </div>
+          )}
+        </div>
+
+        {selectedContacts.length > 0 && (
+          <p className="mt-2 text-sm text-gray-500">
+            {selectedContacts.length} {selectedContacts.length === 1 ? "contato selecionado" : "contatos selecionados"}
+          </p>
+        )}
       </div>
 
       <div className="flex items-center">

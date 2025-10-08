@@ -398,7 +398,8 @@ model Activity {
   dueDate     DateTime?
   completed   Boolean   @default(false)
   dealId      String?
-  contactId   String?
+  contactId   String?   // Primary contact (for backwards compatibility)
+  contactIds  String?   // JSON array of contact IDs for multiple contacts
   leadId      String?   // Activities can be linked to Leads
   partnerId   String?   // Activities can be linked to Partners
   ownerId     String

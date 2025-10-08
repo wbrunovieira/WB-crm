@@ -33,6 +33,7 @@ export const contactSources = [
   "Rede Social",
   "Feira/Exposição",
   "Lead Importado",
+  "Visita Porta a Porta",
   "Outro",
 ];
 

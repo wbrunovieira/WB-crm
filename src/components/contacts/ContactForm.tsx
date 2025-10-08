@@ -270,8 +270,11 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId, partne
             >
               <option value="">Nenhuma</option>
               {companies.map((company) => (
-                <option key={`${company.type}:${company.id}`} value={`${company.type}:${company.id}`}>
-                  {company.name} {company.type === "lead" ? "📋 (Lead)" : company.type === "organization" ? "🏢 (Org)" : "🤝 (Parceiro)"}
+                <option
+                  key={`${company.type}:${company.id}`}
+                  value={`${company.type}:${company.id}`}
+                >
+                  {company.type === "lead" ? "📋" : company.type === "organization" ? "🏢" : "🤝"} {company.name}
                 </option>
               ))}
             </select>
@@ -285,11 +288,11 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId, partne
               LinkedIn
             </label>
             <input
-              type="url"
+              type="text"
               id="linkedin"
               name="linkedin"
               defaultValue={contact?.linkedin || ""}
-              placeholder="https://linkedin.com/in/..."
+              placeholder="linkedin.com/in/... ou https://linkedin.com/in/..."
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>

@@ -395,8 +395,9 @@ export function LeadForm({ lead }: LeadFormProps) {
               Website
             </label>
             <input
-              type="url"
+              type="text"
               name="website"
+              placeholder="www.exemplo.com.br ou https://exemplo.com.br"
               defaultValue={lead?.website || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />

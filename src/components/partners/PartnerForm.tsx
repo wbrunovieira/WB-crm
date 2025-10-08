@@ -198,10 +198,10 @@ export function PartnerForm({ partner }: PartnerFormProps) {
               Website
             </label>
             <input
-              type="url"
+              type="text"
               id="website"
               name="website"
-              placeholder="https://"
+              placeholder="www.exemplo.com.br ou https://exemplo.com.br"
               defaultValue={partner?.website || ""}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
@@ -328,10 +328,10 @@ export function PartnerForm({ partner }: PartnerFormProps) {
               LinkedIn
             </label>
             <input
-              type="url"
+              type="text"
               id="linkedin"
               name="linkedin"
-              placeholder="https://linkedin.com/company/..."
+              placeholder="linkedin.com/company/... ou https://linkedin.com/company/..."
               defaultValue={partner?.linkedin || ""}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
