@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { useState } from "react";
+import { updateActivityDueDate } from "@/actions/activities";
 import ActivityTypeIcon from "./ActivityTypeIcon";
 
 type Activity = {
@@ -52,6 +54,8 @@ export default function ActivityCalendar({
   selectedDate,
 }: ActivityCalendarProps) {
   const router = useRouter();
+  const [draggedActivity, setDraggedActivity] = useState<string | null>(null);
+  const [isDragging, setIsDragging] = useState(false);
 
   const monthNames = [
     "Janeiro",
@@ -169,6 +173,42 @@ export default function ActivityCalendar({
     });
   };
 
+  const handleDragStart = (e: React.DragEvent, activityId: string) => {
+    setDraggedActivity(activityId);
+    setIsDragging(true);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragEnd = () => {
+    setDraggedActivity(null);
+    setIsDragging(false);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
+    e.preventDefault();
+
+    if (!draggedActivity) return;
+
+    try {
+      // Set time to noon to avoid timezone issues
+      const newDate = new Date(targetDate);
+      newDate.setHours(12, 0, 0, 0);
+
+      await updateActivityDueDate(draggedActivity, newDate);
+      router.refresh();
+    } catch (error) {
+      console.error("Error updating activity date:", error);
+    }
+
+    setDraggedActivity(null);
+    setIsDragging(false);
+  };
+
   const renderMonthView = () => {
     const getDaysInMonth = (month: number, year: number) => {
       return new Date(year, month + 1, 0).getDate();
@@ -213,7 +253,11 @@ export default function ActivityCalendar({
               key={index}
               className={`min-h-[120px] bg-white p-2 ${
                 !day ? "bg-gray-50" : ""
-              } ${isToday ? "ring-2 ring-primary" : ""}`}
+              } ${isToday ? "ring-2 ring-primary" : ""} ${
+                isDragging && day ? "hover:bg-blue-50" : ""
+              }`}
+              onDragOver={day ? handleDragOver : undefined}
+              onDrop={day && date ? (e) => handleDrop(e, date) : undefined}
             >
               {day && (
                 <>
@@ -228,20 +272,29 @@ export default function ActivityCalendar({
                   </div>
                   <div className="space-y-1">
                     {dayActivities.slice(0, 3).map((activity) => (
-                      <Link
+                      <div
                         key={activity.id}
-                        href={`/activities/${activity.id}`}
-                        className={`flex items-center gap-1 rounded px-1 py-0.5 text-xs hover:bg-gray-100 ${
+                        draggable
+                        onDragStart={(e) => handleDragStart(e, activity.id)}
+                        onDragEnd={handleDragEnd}
+                        className={`flex items-center gap-1 rounded px-1 py-0.5 text-xs cursor-move ${
                           activity.completed
                             ? "text-gray-500 line-through"
                             : "text-gray-900"
+                        } ${
+                          draggedActivity === activity.id ? "opacity-50" : "hover:bg-gray-100"
                         }`}
+                        onClick={(e) => {
+                          if (!isDragging) {
+                            window.location.href = `/activities/${activity.id}`;
+                          }
+                        }}
                       >
                         <div className="flex-shrink-0">
                           <ActivityTypeIcon type={activity.type} />
                         </div>
                         <span className="truncate">{activity.subject}</span>
-                      </Link>
+                      </div>
                     ))}
                     {dayActivities.length > 3 && (
                       <div className="text-xs text-gray-500">
@@ -283,7 +336,9 @@ export default function ActivityCalendar({
               key={index}
               className={`rounded-lg border bg-white p-4 ${
                 isToday ? "ring-2 ring-primary" : "border-gray-200"
-              }`}
+              } ${isDragging ? "hover:bg-blue-50" : ""}`}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, date)}
             >
               <div className="mb-3 text-center">
                 <div className="text-xs font-medium text-gray-500">
@@ -299,14 +354,26 @@ export default function ActivityCalendar({
               </div>
               <div className="space-y-2">
                 {dayActivities.map((activity) => (
-                  <Link
+                  <div
                     key={activity.id}
-                    href={`/activities/${activity.id}`}
-                    className={`block rounded-lg border p-2 text-sm hover:bg-gray-50 ${
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, activity.id)}
+                    onDragEnd={handleDragEnd}
+                    className={`block rounded-lg border p-2 text-sm cursor-move ${
                       activity.completed
-                        ? "border-gray-200 bg-gray-50 text-gray-500 line-through"
-                        : "border-blue-200 bg-blue-50"
-                    }`}
+                        ? "border-gray-200 bg-gray-50 text-gray-500 line-through hover:bg-gray-100"
+                        : "hover:opacity-90"
+                    } ${draggedActivity === activity.id ? "opacity-50" : ""}`}
+                    style={
+                      activity.completed
+                        ? {}
+                        : { backgroundColor: "#350455", borderColor: "#792990", color: "#e5e7eb" }
+                    }
+                    onClick={(e) => {
+                      if (!isDragging) {
+                        window.location.href = `/activities/${activity.id}`;
+                      }
+                    }}
                   >
                     <div className="flex items-center gap-2">
                       <ActivityTypeIcon type={activity.type} />
@@ -314,7 +381,7 @@ export default function ActivityCalendar({
                         {activity.subject}
                       </span>
                     </div>
-                  </Link>
+                  </div>
                 ))}
                 {dayActivities.length === 0 && (
                   <div className="py-4 text-center text-xs text-gray-400">
@@ -351,7 +418,9 @@ export default function ActivityCalendar({
               key={index}
               className={`rounded-lg border bg-white p-4 ${
                 isToday ? "ring-2 ring-primary" : "border-gray-200"
-              }`}
+              } ${isDragging ? "hover:bg-blue-50" : ""}`}
+              onDragOver={handleDragOver}
+              onDrop={(e) => handleDrop(e, date)}
             >
               <div className="mb-4 text-center">
                 <div className="text-sm font-medium text-gray-500">
@@ -370,14 +439,26 @@ export default function ActivityCalendar({
               </div>
               <div className="space-y-2">
                 {dayActivities.map((activity) => (
-                  <Link
+                  <div
                     key={activity.id}
-                    href={`/activities/${activity.id}`}
-                    className={`block rounded-lg border p-3 hover:bg-gray-50 ${
+                    draggable
+                    onDragStart={(e) => handleDragStart(e, activity.id)}
+                    onDragEnd={handleDragEnd}
+                    className={`block rounded-lg border p-3 cursor-move ${
                       activity.completed
-                        ? "border-gray-200 bg-gray-50 text-gray-500"
-                        : "border-blue-200 bg-blue-50"
-                    }`}
+                        ? "border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100"
+                        : "hover:opacity-90"
+                    } ${draggedActivity === activity.id ? "opacity-50" : ""}`}
+                    style={
+                      activity.completed
+                        ? {}
+                        : { backgroundColor: "#350455", borderColor: "#792990", color: "#e5e7eb" }
+                    }
+                    onClick={(e) => {
+                      if (!isDragging) {
+                        window.location.href = `/activities/${activity.id}`;
+                      }
+                    }}
                   >
                     <div className="mb-1 flex items-center gap-2">
                       <ActivityTypeIcon type={activity.type} />
@@ -389,7 +470,7 @@ export default function ActivityCalendar({
                         {activity.subject}
                       </span>
                     </div>
-                  </Link>
+                  </div>
                 ))}
                 {dayActivities.length === 0 && (
                   <div className="py-8 text-center text-sm text-gray-400">

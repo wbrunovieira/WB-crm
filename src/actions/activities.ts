@@ -372,3 +372,34 @@ export async function toggleActivityCompleted(id: string) {
 
   return updatedActivity;
 }
+
+export async function updateActivityDueDate(id: string, newDate: Date) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    throw new Error("Não autorizado");
+  }
+
+  const activity = await prisma.activity.findUnique({
+    where: { id },
+  });
+
+  if (!activity || activity.ownerId !== session.user.id) {
+    throw new Error("Atividade não encontrada");
+  }
+
+  const updatedActivity = await prisma.activity.update({
+    where: { id },
+    data: {
+      dueDate: newDate,
+    },
+  });
+
+  revalidatePath("/activities");
+  revalidatePath("/activities/calendar");
+  if (activity.dealId) {
+    revalidatePath(`/deals/${activity.dealId}`);
+  }
+
+  return updatedActivity;
+}
