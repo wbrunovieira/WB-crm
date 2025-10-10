@@ -8,17 +8,19 @@ import { formatDate } from "@/lib/utils";
 import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
 import ToggleCompletedButton from "@/components/activities/ToggleCompletedButton";
 import DeleteActivityButton from "@/components/activities/DeleteActivityButton";
+import { ActivitiesSortSelect } from "@/components/activities/ActivitiesSortSelect";
 
 export default async function ActivitiesPage({
   searchParams,
 }: {
-  searchParams: { type?: string; completed?: string };
+  searchParams: { type?: string; completed?: string; sortBy?: string };
 }) {
   const filters = {
     ...(searchParams.type && { type: searchParams.type }),
     ...(searchParams.completed && {
       completed: searchParams.completed === "true",
     }),
+    ...(searchParams.sortBy && { sortBy: searchParams.sortBy }),
   };
 
   const activities = await getActivities(filters);
@@ -63,60 +65,70 @@ export default async function ActivitiesPage({
         </div>
       </div>
 
-      <div className="mb-6 flex gap-4">
-        <Link
-          href="/activities"
-          className={`rounded-md px-4 py-2 text-sm font-medium ${
-            !searchParams.type && !searchParams.completed
-              ? "bg-primary text-white"
-              : "bg-white text-gray-700 hover:bg-gray-50"
-          }`}
-        >
-          Todas
-        </Link>
-        <Link
-          href="/activities?completed=false"
-          className={`rounded-md px-4 py-2 text-sm font-medium ${
-            searchParams.completed === "false"
-              ? "bg-primary text-white"
-              : "bg-white text-gray-700 hover:bg-gray-50"
-          }`}
-        >
-          Pendentes
-        </Link>
-        <Link
-          href="/activities?completed=true"
-          className={`rounded-md px-4 py-2 text-sm font-medium ${
-            searchParams.completed === "true"
-              ? "bg-primary text-white"
-              : "bg-white text-gray-700 hover:bg-gray-50"
-          }`}
-        >
-          Concluídas
-        </Link>
-        <div className="ml-4 flex flex-wrap gap-2">
-          {[
-            { type: "call", label: "Ligações", icon: "📞" },
-            { type: "meeting", label: "Reuniões", icon: "📅" },
-            { type: "email", label: "E-mails", icon: "✉️" },
-            { type: "task", label: "Tarefas", icon: "📋" },
-            { type: "whatsapp", label: "WhatsApp", icon: "💬" },
-            { type: "visit", label: "Visitas", icon: "📍" },
-            { type: "instagram", label: "Instagram", icon: "📷" },
-          ].map(({ type, label, icon }) => (
-            <Link
-              key={type}
-              href={`/activities?type=${type}`}
-              className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium ${
-                searchParams.type === type
-                  ? "bg-primary text-white"
-                  : "bg-white text-gray-700 hover:bg-gray-50"
-              }`}
-            >
-              <span>{icon}</span>
-              <span>{label}</span>
-            </Link>
-          ))}
+      <div className="mb-6 space-y-4">
+        {/* Status Filters */}
+        <div className="flex gap-4">
+          <Link
+            href="/activities"
+            className={`rounded-md px-4 py-2 text-sm font-medium ${
+              !searchParams.type && !searchParams.completed
+                ? "bg-primary text-white"
+                : "bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Todas
+          </Link>
+          <Link
+            href="/activities?completed=false"
+            className={`rounded-md px-4 py-2 text-sm font-medium ${
+              searchParams.completed === "false"
+                ? "bg-primary text-white"
+                : "bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Pendentes
+          </Link>
+          <Link
+            href="/activities?completed=true"
+            className={`rounded-md px-4 py-2 text-sm font-medium ${
+              searchParams.completed === "true"
+                ? "bg-primary text-white"
+                : "bg-white text-gray-700 hover:bg-gray-50"
+            }`}
+          >
+            Concluídas
+          </Link>
+        </div>
+
+        {/* Type Filters and Sort */}
+        <div className="flex items-center justify-between">
+          <div className="flex flex-wrap gap-2">
+            {[
+              { type: "call", label: "Ligações", icon: "📞" },
+              { type: "meeting", label: "Reuniões", icon: "📅" },
+              { type: "email", label: "E-mails", icon: "✉️" },
+              { type: "task", label: "Tarefas", icon: "📋" },
+              { type: "whatsapp", label: "WhatsApp", icon: "💬" },
+              { type: "visit", label: "Visitas", icon: "📍" },
+              { type: "instagram", label: "Instagram", icon: "📷" },
+            ].map(({ type, label, icon }) => (
+              <Link
+                key={type}
+                href={`/activities?type=${type}`}
+                className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium ${
+                  searchParams.type === type
+                    ? "bg-primary text-white"
+                    : "bg-white text-gray-700 hover:bg-gray-50"
+                }`}
+              >
+                <span>{icon}</span>
+                <span>{label}</span>
+              </Link>
+            ))}
+          </div>
+
+          {/* Sort Selector */}
+          <ActivitiesSortSelect />
         </div>
       </div>
 
@@ -126,8 +138,23 @@ export default async function ActivitiesPage({
             key={activity.id}
             className="rounded-lg bg-white p-6 shadow-sm transition-all hover:shadow-md"
           >
-            <div className="flex items-start justify-between">
-              <div className="flex items-start gap-4">
+            <div className="flex items-start gap-6">
+              {/* Date Badge on Left */}
+              {activity.dueDate && (
+                <div className="flex flex-col items-center justify-center rounded-lg bg-blue-50 border-2 border-blue-200 px-4 py-3 min-w-[80px]">
+                  <span className="text-2xl font-bold text-blue-700">
+                    {new Date(activity.dueDate).getDate()}
+                  </span>
+                  <span className="text-xs font-medium text-blue-600 uppercase">
+                    {new Date(activity.dueDate).toLocaleDateString("pt-BR", { month: "short" })}
+                  </span>
+                  <span className="text-xs text-blue-500">
+                    {new Date(activity.dueDate).getFullYear()}
+                  </span>
+                </div>
+              )}
+
+              <div className="flex items-start gap-4 flex-1">
                 <ToggleCompletedButton
                   activityId={activity.id}
                   completed={activity.completed}
@@ -152,7 +179,7 @@ export default async function ActivitiesPage({
                   availableData={availableData}
                 />
                 <div className="flex-1">
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 flex-wrap">
                     <ActivityTypeIcon type={activity.type} />
                     <Link
                       href={`/activities/${activity.id}`}
@@ -350,19 +377,20 @@ export default async function ActivitiesPage({
                     )}
                   </div>
                 </div>
-              </div>
 
-              <div className="flex items-center gap-2">
-                <Link
-                  href={`/activities/${activity.id}/edit`}
-                  className="text-gray-600 hover:text-primary"
-                  title="Editar"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                  </svg>
-                </Link>
-                <DeleteActivityButton activityId={activity.id} />
+                {/* Edit and Delete Buttons */}
+                <div className="flex items-center gap-2 ml-auto">
+                  <Link
+                    href={`/activities/${activity.id}/edit`}
+                    className="text-gray-600 hover:text-primary"
+                    title="Editar"
+                  >
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                    </svg>
+                  </Link>
+                  <DeleteActivityButton activityId={activity.id} />
+                </div>
               </div>
             </div>
           </div>

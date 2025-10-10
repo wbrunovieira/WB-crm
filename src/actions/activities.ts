@@ -12,11 +12,44 @@ export async function getActivities(filters?: {
   dealId?: string;
   contactId?: string;
   leadId?: string;
+  sortBy?: string;
 }) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
     throw new Error("Não autorizado");
+  }
+
+  // Build order by clause based on sortBy parameter
+  const orderByClause: Array<{ [key: string]: string | { sort: string; nulls?: string } }> = [];
+
+  if (filters?.sortBy) {
+    switch (filters.sortBy) {
+      case "dueDate-asc":
+        orderByClause.push({ dueDate: { sort: "asc", nulls: "last" } });
+        break;
+      case "dueDate-desc":
+        orderByClause.push({ dueDate: { sort: "desc", nulls: "last" } });
+        break;
+      case "created-asc":
+        orderByClause.push({ createdAt: "asc" });
+        break;
+      case "created-desc":
+        orderByClause.push({ createdAt: "desc" });
+        break;
+      case "subject":
+        orderByClause.push({ subject: "asc" });
+        break;
+      default:
+        orderByClause.push({ completed: "asc" });
+        orderByClause.push({ dueDate: { sort: "asc", nulls: "last" } });
+        orderByClause.push({ createdAt: "desc" });
+    }
+  } else {
+    // Default ordering
+    orderByClause.push({ completed: "asc" });
+    orderByClause.push({ dueDate: { sort: "asc", nulls: "last" } });
+    orderByClause.push({ createdAt: "desc" });
   }
 
   const activities = await prisma.activity.findMany({
@@ -79,19 +112,8 @@ export async function getActivities(filters?: {
         },
       },
     },
-    orderBy: [
-      { completed: "asc" },
-      { dueDate: "asc" },
-      { createdAt: "desc" },
-    ],
+    orderBy: orderByClause,
   });
-
-  // Debug: Log activities with partner info
-  console.log('Server - Activities with partners:', activities.map(a => ({
-    subject: a.subject,
-    contactName: a.contact?.name,
-    partner: a.contact?.partner?.name
-  })));
 
   return activities;
 }
