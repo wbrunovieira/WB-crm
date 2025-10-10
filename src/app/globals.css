@@ -141,3 +141,32 @@ thead.bg-gray-50 {
 [data-sonner-toast] [data-cancel-button]:hover {
   background-color: #e5e7eb;
 }
+
+/* Custom scrollbar */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom scrollbar for navigation */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a0022;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #792990;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a03bb8;
+}

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Toaster } from "sonner";
 import { LogoutButton } from "@/components/shared/LogoutButton";
+import { MainNav } from "@/components/shared/MainNav";
 
 export default async function DashboardLayout({
   children,
@@ -19,78 +20,19 @@ export default async function DashboardLayout({
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#350045' }}>
       <Toaster position="top-right" richColors />
-      <nav className="border-b" style={{ backgroundColor: '#1a0022', borderColor: '#792990' }}>
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between">
-            <div className="flex items-center gap-8">
-              <Link href="/dashboard" className="text-xl font-bold text-primary">
+      <nav className="sticky top-0 z-50 border-b shadow-lg" style={{ backgroundColor: '#1a0022', borderColor: '#792990' }}>
+        <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between gap-4">
+            <div className="flex items-center gap-6 min-w-0 flex-1">
+              <Link href="/dashboard" className="flex-shrink-0 text-xl font-bold text-primary hover:text-purple-400 transition-colors">
                 WB CRM
               </Link>
-              <div className="hidden space-x-4 md:flex">
-                <Link
-                  href="/dashboard"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/leads"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
-                >
-                  Leads
-                </Link>
-                <Link
-                  href="/contacts"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
-                >
-                  Contatos
-                </Link>
-                <Link
-                  href="/organizations"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
-                >
-                  Organizações
-                </Link>
-                <Link
-                  href="/partners"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
-                >
-                  Parceiros
-                </Link>
-                <Link
-                  href="/pipelines"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
-                >
-                  Pipelines
-                </Link>
-                <Link
-                  href="/deals"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
-                >
-                  Negócios
-                </Link>
-                <Link
-                  href="/projects"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
-                >
-                  Projetos
-                </Link>
-                <Link
-                  href="/pipeline"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
-                >
-                  Pipeline
-                </Link>
-                <Link
-                  href="/activities"
-                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-200 hover:bg-purple-900 hover:text-white"
-                >
-                  Atividades
-                </Link>
-              </div>
+              <MainNav />
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-200">{session.user?.name || session.user?.email}</span>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <div className="hidden sm:block text-sm text-gray-300 font-medium truncate max-w-[200px]" title={session.user?.name || session.user?.email || ""}>
+                {session.user?.name || session.user?.email}
+              </div>
               <LogoutButton />
             </div>
           </div>
