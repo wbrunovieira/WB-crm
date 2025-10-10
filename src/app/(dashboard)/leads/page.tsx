@@ -1,5 +1,6 @@
 import { getLeads } from "@/actions/leads";
 import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
+import { LeadsFilters } from "@/components/leads/LeadsFilters";
 import Link from "next/link";
 
 export default async function LeadsPage({
@@ -44,44 +45,7 @@ export default async function LeadsPage({
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex gap-4">
-        <form className="flex flex-1 gap-4">
-          <input
-            type="text"
-            name="search"
-            placeholder="Buscar leads..."
-            defaultValue={searchParams.search}
-            className="flex-1 rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-          <select
-            name="status"
-            defaultValue={searchParams.status || ""}
-            className="rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="">Todos os status</option>
-            <option value="new">Novo</option>
-            <option value="contacted">Contatado</option>
-            <option value="qualified">Qualificado</option>
-            <option value="disqualified">Desqualificado</option>
-          </select>
-          <select
-            name="quality"
-            defaultValue={searchParams.quality || ""}
-            className="rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          >
-            <option value="">Todas as qualidades</option>
-            <option value="cold">Frio</option>
-            <option value="warm">Morno</option>
-            <option value="hot">Quente</option>
-          </select>
-          <button
-            type="submit"
-            className="rounded-md bg-gray-700 px-6 py-2 text-white hover:bg-gray-800"
-          >
-            Filtrar
-          </button>
-        </form>
-      </div>
+      <LeadsFilters />
 
       {leads.length === 0 ? (
         <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">

@@ -12,6 +12,7 @@ export const activitySchema = z.object({
   contactId: z.string().optional().nullable(),
   contactIds: z.array(z.string()).optional().nullable(),
   leadId: z.string().optional().nullable(),
+  partnerId: z.string().optional().nullable(),
 });
 
 export type ActivityFormData = z.infer<typeof activitySchema>;

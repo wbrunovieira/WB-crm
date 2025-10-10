@@ -1,120 +1,143 @@
 import { getContacts } from "@/actions/contacts";
-import { DeleteContactButton } from "@/components/contacts/DeleteContactButton";
+import { ContactsFilters } from "@/components/contacts/ContactsFilters";
+import { ContactCard } from "@/components/contacts/ContactCard";
 import Link from "next/link";
+import { Users, Plus } from "lucide-react";
 
 export default async function ContactsPage({
   searchParams,
 }: {
-  searchParams: { search?: string };
+  searchParams: {
+    search?: string;
+    status?: string;
+    company?: string;
+    groupBy?: string;
+  };
 }) {
-  const contacts = await getContacts(searchParams.search);
+  const contacts = await getContacts({
+    search: searchParams.search,
+    status: searchParams.status,
+    company: searchParams.company,
+  });
+
+  // Group contacts based on groupBy parameter
+  const groupedContacts = () => {
+    if (!searchParams.groupBy || searchParams.groupBy === "") {
+      return { "Todos os contatos": contacts };
+    }
+
+    const groups: Record<string, typeof contacts> = {};
+
+    if (searchParams.groupBy === "organization") {
+      contacts.forEach((contact) => {
+        const key = contact.organization?.name || contact.lead?.businessName || contact.partner?.name || "Sem empresa";
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(contact);
+      });
+    } else if (searchParams.groupBy === "department") {
+      contacts.forEach((contact) => {
+        const key = contact.department || "Sem departamento";
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(contact);
+      });
+    } else if (searchParams.groupBy === "status") {
+      contacts.forEach((contact) => {
+        const key =
+          contact.status === "active"
+            ? "Ativos"
+            : contact.status === "inactive"
+              ? "Inativos"
+              : "Bounced";
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(contact);
+      });
+    }
+
+    return groups;
+  };
+
+  const groups = groupedContacts();
+  const totalContacts = contacts.length;
+  const activeContacts = contacts.filter((c) => c.status === "active").length;
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Contatos</h1>
-          <p className="mt-2 text-gray-600">
-            Gerencie seus contatos e leads
-          </p>
+    <div className="min-h-screen p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        {/* Header */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-primary/10 p-2">
+                  <Users className="h-6 w-6 text-primary" />
+                </div>
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900">Contatos</h1>
+                  <p className="mt-1 text-sm text-gray-600">
+                    {totalContacts} {totalContacts === 1 ? "contato" : "contatos"} •{" "}
+                    {activeContacts} {activeContacts === 1 ? "ativo" : "ativos"}
+                  </p>
+                </div>
+              </div>
+            </div>
+            <Link
+              href="/contacts/new"
+              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-primary/90 transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Novo Contato
+            </Link>
+          </div>
         </div>
-        <Link
-          href="/contacts/new"
-          className="rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700"
-        >
-          Novo Contato
-        </Link>
-      </div>
 
-      <div className="mb-6">
-        <form>
-          <input
-            type="text"
-            name="search"
-            placeholder="Buscar contatos..."
-            defaultValue={searchParams.search}
-            className="w-full max-w-md rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-          />
-        </form>
-      </div>
+        {/* Filters */}
+        <ContactsFilters />
 
-      {contacts.length === 0 ? (
-        <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
-          <h3 className="text-lg font-medium text-gray-900">
-            Nenhum contato encontrado
-          </h3>
-          <p className="mt-2 text-gray-500">
-            Comece criando seu primeiro contato.
-          </p>
-          <Link
-            href="/contacts/new"
-            className="mt-4 inline-block rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700"
-          >
-            Criar Contato
-          </Link>
-        </div>
-      ) : (
-        <div className="overflow-hidden rounded-lg bg-white shadow">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Nome
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Email
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Telefone
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Organização
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {contacts.map((contact) => (
-                <tr key={contact.id} className="hover:bg-gray-50">
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <Link
-                      href={`/contacts/${contact.id}`}
-                      className="font-medium text-gray-400 hover:text-primary"
-                    >
-                      {contact.name}
-                    </Link>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {contact.email || "-"}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {contact.phone || "-"}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {contact.organization?.name || contact.lead?.businessName || contact.partner?.name || "-"}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-right text-sm">
-                    <div className="flex items-center justify-end gap-2">
-                      <Link
-                        href={`/contacts/${contact.id}/edit`}
-                        className="text-gray-600 hover:text-primary"
-                        title="Editar"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                        </svg>
-                      </Link>
-                      <DeleteContactButton contactId={contact.id} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+        {/* Content */}
+        {totalContacts === 0 ? (
+          <div className="rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 p-12 text-center">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-gray-200">
+              <Users className="h-6 w-6 text-gray-600" />
+            </div>
+            <h3 className="mt-4 text-lg font-medium text-gray-900">
+              Nenhum contato encontrado
+            </h3>
+            <p className="mt-2 text-sm text-gray-500">
+              {searchParams.search || searchParams.status || searchParams.company
+                ? "Tente ajustar os filtros ou busca."
+                : "Comece criando seu primeiro contato."}
+            </p>
+            <Link
+              href="/contacts/new"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90"
+            >
+              <Plus className="h-4 w-4" />
+              Criar Contato
+            </Link>
+          </div>
+        ) : (
+          <div className="space-y-8">
+            {Object.entries(groups).map(([groupName, groupContacts]) => (
+              <div key={groupName}>
+                {searchParams.groupBy && (
+                  <h2 className="mb-4 text-lg font-semibold text-gray-900 flex items-center gap-2">
+                    <span className="h-1 w-1 rounded-full bg-primary"></span>
+                    {groupName}
+                    <span className="ml-2 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+                      {groupContacts.length}
+                    </span>
+                  </h2>
+                )}
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {groupContacts.map((contact) => (
+                    <ContactCard key={contact.id} contact={contact} />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

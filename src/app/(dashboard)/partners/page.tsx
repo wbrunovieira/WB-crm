@@ -1,4 +1,5 @@
 import { getPartners } from "@/actions/partners";
+import { SearchInput } from "@/components/shared/SearchInput";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -28,15 +29,12 @@ export default async function PartnersPage({
       </div>
 
       <div className="mb-6">
-        <form>
-          <input
-            type="text"
-            name="search"
+        <div className="w-full max-w-md">
+          <SearchInput
             placeholder="Buscar parceiros..."
             defaultValue={searchParams.search}
-            className="w-full max-w-md rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
-        </form>
+        </div>
       </div>
 
       {partners.length === 0 ? (

@@ -1,4 +1,8 @@
 import { getActivities } from "@/actions/activities";
+import { getDeals } from "@/actions/deals";
+import { getContacts } from "@/actions/contacts";
+import { getLeads } from "@/actions/leads";
+import { getPartners } from "@/actions/partners";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
@@ -18,6 +22,21 @@ export default async function ActivitiesPage({
   };
 
   const activities = await getActivities(filters);
+
+  // Fetch available data for the modal
+  const [deals, contacts, leads, partners] = await Promise.all([
+    getDeals(),
+    getContacts(),
+    getLeads({}),
+    getPartners(),
+  ]);
+
+  const availableData = {
+    deals: deals.map(d => ({ id: d.id, title: d.title })),
+    contacts: contacts.map(c => ({ id: c.id, name: c.name })),
+    leads: leads.map(l => ({ id: l.id, businessName: l.businessName })),
+    partners: partners.map(p => ({ id: p.id, name: p.name })),
+  };
 
   return (
     <div className="p-8">
@@ -112,6 +131,25 @@ export default async function ActivitiesPage({
                 <ToggleCompletedButton
                   activityId={activity.id}
                   completed={activity.completed}
+                  dealId={activity.dealId}
+                  contactId={activity.contactId}
+                  leadId={activity.leadId}
+                  partnerId={activity.partnerId}
+                  previousActivity={{
+                    type: activity.type,
+                    subject: activity.subject,
+                    description: activity.description,
+                    dealId: activity.dealId,
+                    dealTitle: activity.deal?.title,
+                    contactId: activity.contactId,
+                    contactName: activity.contact?.name,
+                    contactIds: activity.contactIds,
+                    leadId: activity.leadId,
+                    leadName: activity.lead?.businessName,
+                    partnerId: activity.partnerId,
+                    partnerName: activity.partner?.name,
+                  }}
+                  availableData={availableData}
                 />
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
@@ -220,6 +258,94 @@ export default async function ActivitiesPage({
                           />
                         </svg>
                         <span>{activity.lead.businessName}</span>
+                      </Link>
+                    )}
+
+                    {activity.partner && (
+                      <Link
+                        href={`/partners/${activity.partner.id}`}
+                        className="flex items-center gap-1 hover:text-primary"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                        <span>{activity.partner.name}</span>
+                      </Link>
+                    )}
+
+                    {activity.deal?.organization && (
+                      <Link
+                        href={`/organizations/${activity.deal.organization.id}`}
+                        className="flex items-center gap-1 hover:text-primary"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                          />
+                        </svg>
+                        <span>{activity.deal.organization.name}</span>
+                      </Link>
+                    )}
+
+                    {activity.contact?.organization && !activity.deal?.organization && (
+                      <Link
+                        href={`/organizations/${activity.contact.organization.id}`}
+                        className="flex items-center gap-1 hover:text-primary"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"
+                          />
+                        </svg>
+                        <span>{activity.contact.organization.name}</span>
+                      </Link>
+                    )}
+
+                    {activity.contact?.partner && !activity.partner && (
+                      <Link
+                        href={`/partners/${activity.contact.partner.id}`}
+                        className="flex items-center gap-1 hover:text-primary"
+                      >
+                        <svg
+                          className="h-4 w-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                          />
+                        </svg>
+                        <span>{activity.contact.partner.name}</span>
                       </Link>
                     )}
                   </div>

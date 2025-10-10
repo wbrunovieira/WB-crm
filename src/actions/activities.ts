@@ -65,6 +65,12 @@ export async function getActivities(filters?: {
           businessName: true,
         },
       },
+      partner: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       owner: {
         select: {
           id: true,
@@ -199,6 +205,7 @@ export async function createActivity(data: ActivityFormData) {
       contactId: primaryContactId,
       contactIds: contactIdsJson,
       leadId: validated.leadId,
+      partnerId: validated.partnerId,
       ownerId: session.user.id,
     },
     include: {
@@ -274,6 +281,7 @@ export async function updateActivity(id: string, data: ActivityFormData) {
       contactId: primaryContactId,
       contactIds: contactIdsJson,
       leadId: validated.leadId,
+      partnerId: validated.partnerId,
     },
     include: {
       deal: {

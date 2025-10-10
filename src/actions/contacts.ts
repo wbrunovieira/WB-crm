@@ -6,22 +6,61 @@ import { contactSchema, ContactFormData } from "@/lib/validations/contact";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-export async function getContacts(search?: string) {
+export async function getContacts(filters?: {
+  search?: string;
+  status?: string;
+  company?: string;
+}) {
   const session = await getServerSession(authOptions);
   if (!session?.user) {
     throw new Error("Não autorizado");
   }
 
+  const whereClause: {
+    ownerId: string;
+    status?: string;
+    OR?: Array<{ name?: { contains: string; mode: string }; email?: { contains: string; mode: string }; phone?: { contains: string } }>;
+    organizationId?: { not: null };
+    leadId?: { not: null };
+    partnerId?: { not: null };
+    AND?: Array<{ organizationId: null; leadId: null; partnerId: null }>;
+  } = {
+    ownerId: session.user.id,
+  };
+
+  // Search filter
+  if (filters?.search) {
+    whereClause.OR = [
+      { name: { contains: filters.search, mode: "insensitive" } },
+      { email: { contains: filters.search, mode: "insensitive" } },
+      { phone: { contains: filters.search } },
+    ];
+  }
+
+  // Status filter
+  if (filters?.status) {
+    whereClause.status = filters.status;
+  }
+
+  // Company filter
+  if (filters?.company) {
+    if (filters.company === "organization") {
+      whereClause.organizationId = { not: null };
+    } else if (filters.company === "lead") {
+      whereClause.leadId = { not: null };
+    } else if (filters.company === "partner") {
+      whereClause.partnerId = { not: null };
+    } else if (filters.company === "none") {
+      whereClause.AND = [
+        { organizationId: null },
+        { leadId: null },
+        { partnerId: null },
+      ];
+    }
+  }
+
   const contacts = await prisma.contact.findMany({
-    where: {
-      ownerId: session.user.id,
-      ...(search && {
-        OR: [
-          { name: { contains: search } },
-          { email: { contains: search } },
-        ],
-      }),
-    },
+    where: whereClause,
     include: {
       lead: {
         select: {
@@ -42,9 +81,10 @@ export async function getContacts(search?: string) {
         },
       },
     },
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: [
+      { isPrimary: "desc" },
+      { name: "asc" },
+    ],
   });
 
   return contacts;
