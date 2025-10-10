@@ -38,6 +38,29 @@ export async function getPipelineView(pipelineId?: string) {
                       name: true,
                     },
                   },
+                  activities: {
+                    where: {
+                      completed: false,
+                    },
+                    orderBy: [
+                      {
+                        dueDate: {
+                          sort: "asc",
+                          nulls: "last",
+                        },
+                      },
+                      {
+                        createdAt: "desc",
+                      },
+                    ],
+                    take: 1,
+                    select: {
+                      id: true,
+                      subject: true,
+                      type: true,
+                      dueDate: true,
+                    },
+                  },
                 },
                 orderBy: {
                   createdAt: "desc",
@@ -70,6 +93,29 @@ export async function getPipelineView(pipelineId?: string) {
                     select: {
                       id: true,
                       name: true,
+                    },
+                  },
+                  activities: {
+                    where: {
+                      completed: false,
+                    },
+                    orderBy: [
+                      {
+                        dueDate: {
+                          sort: "asc",
+                          nulls: "last",
+                        },
+                      },
+                      {
+                        createdAt: "desc",
+                      },
+                    ],
+                    take: 1,
+                    select: {
+                      id: true,
+                      subject: true,
+                      type: true,
+                      dueDate: true,
                     },
                   },
                 },

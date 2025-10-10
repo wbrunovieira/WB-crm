@@ -4,10 +4,11 @@ import { useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Trophy } from "lucide-react";
+import { Trophy, CalendarPlus } from "lucide-react";
 import { DealStageSelect } from "./DealStageSelect";
 import { DealStatusSelect } from "./DealStatusSelect";
 import { DealCard } from "./DealCard";
+import { ScheduleNextActivityModal } from "../activities/ScheduleNextActivityModal";
 import { calculateTotalInCurrency, AVAILABLE_CURRENCIES } from "@/lib/utils";
 
 interface Deal {
@@ -48,6 +49,14 @@ type GroupedDeals = {
 
 export function DealsListView({ deals, groupBy, displayMode = "table" }: DealsListViewProps) {
   const [displayCurrency, setDisplayCurrency] = useState("BRL");
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
+  const [availableData, setAvailableData] = useState<{
+    deals: Array<{ id: string; title: string }>;
+    contacts: Array<{ id: string; name: string }>;
+    leads: Array<{ id: string; businessName: string }>;
+    partners: Array<{ id: string; name: string }>;
+  } | null>(null);
 
   // Grouping logic
   const groupedDeals: GroupedDeals | null = (() => {
@@ -115,6 +124,45 @@ export function DealsListView({ deals, groupBy, displayMode = "table" }: DealsLi
   const formatDate = (date: Date | null) => {
     if (!date) return "-";
     return new Date(date).toLocaleDateString("pt-BR");
+  };
+
+  // Fetch available data when user clicks to schedule
+  const handleScheduleClick = async (deal: Deal) => {
+    setSelectedDeal(deal);
+
+    if (!availableData) {
+      try {
+        const [dealsRes, contactsRes, leadsRes, partnersRes] = await Promise.all([
+          fetch("/api/deals"),
+          fetch("/api/contacts"),
+          fetch("/api/leads"),
+          fetch("/api/partners"),
+        ]);
+
+        const [deals, contacts, leads, partners] = await Promise.all([
+          dealsRes.ok ? dealsRes.json() : [],
+          contactsRes.ok ? contactsRes.json() : [],
+          leadsRes.ok ? leadsRes.json() : [],
+          partnersRes.ok ? partnersRes.json() : [],
+        ]);
+
+        setAvailableData({
+          deals: deals.map((d: { id: string; title: string }) => ({ id: d.id, title: d.title })),
+          contacts: contacts.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })),
+          leads: leads.map((l: { id: string; businessName: string }) => ({ id: l.id, businessName: l.businessName })),
+          partners: partners.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })),
+        });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setAvailableData({
+          deals: [],
+          contacts: [],
+          leads: [],
+          partners: [],
+        });
+      }
+    }
+    setShowScheduleModal(true);
   };
 
   const renderDealRow = (deal: Deal) => {
@@ -193,10 +241,13 @@ export function DealsListView({ deals, groupBy, displayMode = "table" }: DealsLi
                 )}
               </Link>
             ) : deal.status === "open" && (
-              <span className="flex items-center gap-1 text-xs text-red-600 font-medium">
-                <span>⚠️</span>
-                <span>Sem atividade agendada</span>
-              </span>
+              <button
+                onClick={() => handleScheduleClick(deal)}
+                className="flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-red-600 hover:bg-red-100 transition-colors border border-red-200"
+                title="Agendar Atividade"
+              >
+                <CalendarPlus className="h-3 w-3" />
+              </button>
             )}
           </div>
         </td>
@@ -532,6 +583,24 @@ export function DealsListView({ deals, groupBy, displayMode = "table" }: DealsLi
         <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
           {renderTable(deals)}
         </div>
+      )}
+
+      {/* Schedule Activity Modal */}
+      {showScheduleModal && availableData && selectedDeal && (
+        <ScheduleNextActivityModal
+          isOpen={showScheduleModal}
+          onClose={() => {
+            setShowScheduleModal(false);
+            setSelectedDeal(null);
+          }}
+          previousActivity={{
+            dealId: selectedDeal.id,
+            dealTitle: selectedDeal.title,
+            contactId: selectedDeal.contact?.id || null,
+            contactName: selectedDeal.contact?.name,
+          }}
+          availableData={availableData}
+        />
       )}
     </div>
   );

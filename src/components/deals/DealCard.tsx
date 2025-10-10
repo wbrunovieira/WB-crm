@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Building2, User, Calendar, TrendingUp, Edit, Clock, AlertCircle, Trophy } from "lucide-react";
+import { Building2, User, Calendar, TrendingUp, Edit, Clock, Trophy, CalendarPlus } from "lucide-react";
 import { DealStageSelect } from "./DealStageSelect";
 import { DealStatusSelect } from "./DealStatusSelect";
+import { ScheduleNextActivityModal } from "../activities/ScheduleNextActivityModal";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -35,6 +37,14 @@ interface DealCardProps {
 }
 
 export function DealCard({ deal }: DealCardProps) {
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
+  const [availableData, setAvailableData] = useState<{
+    deals: Array<{ id: string; title: string }>;
+    contacts: Array<{ id: string; name: string }>;
+    leads: Array<{ id: string; businessName: string }>;
+    partners: Array<{ id: string; name: string }>;
+  } | null>(null);
+
   const formatCurrency = (value: number, currency: string) => {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -50,6 +60,43 @@ export function DealCard({ deal }: DealCardProps) {
   const nextActivity = deal.activities && deal.activities.length > 0 ? deal.activities[0] : null;
   const hasNoActivity = !nextActivity && deal.status === "open";
   const isWon = deal.status === "won";
+
+  // Fetch available data when user clicks to schedule
+  const handleScheduleClick = async () => {
+    if (!availableData) {
+      try {
+        const [dealsRes, contactsRes, leadsRes, partnersRes] = await Promise.all([
+          fetch("/api/deals"),
+          fetch("/api/contacts"),
+          fetch("/api/leads"),
+          fetch("/api/partners"),
+        ]);
+
+        const [deals, contacts, leads, partners] = await Promise.all([
+          dealsRes.ok ? dealsRes.json() : [],
+          contactsRes.ok ? contactsRes.json() : [],
+          leadsRes.ok ? leadsRes.json() : [],
+          partnersRes.ok ? partnersRes.json() : [],
+        ]);
+
+        setAvailableData({
+          deals: deals.map((d: { id: string; title: string }) => ({ id: d.id, title: d.title })),
+          contacts: contacts.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })),
+          leads: leads.map((l: { id: string; businessName: string }) => ({ id: l.id, businessName: l.businessName })),
+          partners: partners.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })),
+        });
+      } catch (error) {
+        console.error("Error fetching data:", error);
+        setAvailableData({
+          deals: [],
+          contacts: [],
+          leads: [],
+          partners: [],
+        });
+      }
+    }
+    setShowScheduleModal(true);
+  };
 
   const getActivityTypeIcon = (type: string) => {
     switch (type) {
@@ -167,10 +214,28 @@ export function DealCard({ deal }: DealCardProps) {
           </div>
         </Link>
       ) : deal.status === "open" && (
-        <div className="mb-4 flex items-center gap-2 rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-          <AlertCircle className="h-4 w-4 flex-shrink-0" />
-          <span className="font-medium">Sem atividade agendada</span>
-        </div>
+        <button
+          onClick={handleScheduleClick}
+          className="mb-4 w-full flex items-center justify-center gap-2 rounded-md bg-red-50 border-2 border-red-300 p-3 text-sm text-red-700 hover:bg-red-100 transition-all font-medium"
+        >
+          <CalendarPlus className="h-4 w-4" />
+          <span>Agendar Atividade</span>
+        </button>
+      )}
+
+      {/* Schedule Activity Modal */}
+      {showScheduleModal && availableData && (
+        <ScheduleNextActivityModal
+          isOpen={showScheduleModal}
+          onClose={() => setShowScheduleModal(false)}
+          previousActivity={{
+            dealId: deal.id,
+            dealTitle: deal.title,
+            contactId: deal.contact?.id || null,
+            contactName: deal.contact?.name,
+          }}
+          availableData={availableData}
+        />
       )}
 
       {/* Status & Stage */}
