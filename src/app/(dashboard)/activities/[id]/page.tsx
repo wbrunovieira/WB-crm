@@ -4,6 +4,7 @@ import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
 import DeleteActivityButton from "@/components/activities/DeleteActivityButton";
+import CopyButton from "@/components/CopyButton";
 
 export default async function ActivityDetailPage({
   params,
@@ -144,13 +145,15 @@ export default async function ActivityDetailPage({
                           {contact.name}
                         </Link>
                         {contact.email && (
-                          <p className="mt-1 text-sm text-gray-500">
-                            {contact.email}
+                          <p className="mt-1 text-sm text-gray-500 flex items-center">
+                            <span>{contact.email}</span>
+                            <CopyButton text={contact.email} label="Copiar email" />
                           </p>
                         )}
                         {contact.phone && (
-                          <p className="text-sm text-gray-500">
-                            {contact.phone}
+                          <p className="text-sm text-gray-500 flex items-center">
+                            <span>{contact.phone}</span>
+                            <CopyButton text={contact.phone} label="Copiar telefone" />
                           </p>
                         )}
                       </div>
@@ -165,13 +168,15 @@ export default async function ActivityDetailPage({
                       {activity.contact.name}
                     </Link>
                     {activity.contact.email && (
-                      <p className="mt-1 text-sm text-gray-500">
-                        {activity.contact.email}
+                      <p className="mt-1 text-sm text-gray-500 flex items-center">
+                        <span>{activity.contact.email}</span>
+                        <CopyButton text={activity.contact.email} label="Copiar email" />
                       </p>
                     )}
                     {activity.contact.phone && (
-                      <p className="text-sm text-gray-500">
-                        {activity.contact.phone}
+                      <p className="text-sm text-gray-500 flex items-center">
+                        <span>{activity.contact.phone}</span>
+                        <CopyButton text={activity.contact.phone} label="Copiar telefone" />
                       </p>
                     )}
                   </div>

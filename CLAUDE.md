@@ -8,7 +8,7 @@ WB-crm - Clone do Pipedrive. Sistema de CRM focado em gestão de pipeline de ven
 
 **Repository**: https://github.com/wbrunovieira/WB-crm
 
-**Stack**: Next.js 14+ (App Router), TypeScript, PostgreSQL, Prisma, NextAuth.js, Tailwind CSS v4, shadcn/ui
+**Stack**: Next.js 14+ (App Router), TypeScript, SQLite (dev) / PostgreSQL (prod), Prisma, NextAuth.js, Tailwind CSS v4, shadcn/ui
 
 ## Development Commands
 
@@ -17,8 +17,8 @@ WB-crm - Clone do Pipedrive. Sistema de CRM focado em gestão de pipeline de ven
 npm run dev                    # Start development server (port 3000)
 
 # Database
-npm run db:push               # Push schema changes to database (dev only)
-npm run db:migrate            # Create and run migrations (preferred)
+npm run db:push               # Push schema changes to database (dev only - NEVER use in prod)
+npm run db:migrate            # Create and run migrations (ALWAYS use for schema changes)
 npm run db:studio             # Open Prisma Studio GUI
 npm run db:seed               # Seed database with initial data
 
@@ -27,6 +27,14 @@ npm run build                 # Build for production
 npm run start                 # Start production server
 npm run lint                  # Run ESLint
 ```
+
+## Environment Setup
+
+Required environment variables (see `.env.example`):
+- `DATABASE_URL` - SQLite file path for dev (`file:./dev.db`) or PostgreSQL connection string for prod
+- `NEXTAUTH_SECRET` - Generate with `openssl rand -base64 32`
+- `NEXTAUTH_URL` - Base URL (e.g., `http://localhost:3000`)
+- `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` - For database seeding
 
 ## Architecture
 
@@ -119,10 +127,12 @@ export async function createDeal(data: DealFormData) {
 - Server actions in `/src/actions/external-projects.ts` handle linking/unlinking
 
 ### Database
-- **Development**: SQLite (file:./dev.db)
-- **Production**: PostgreSQL
-- **Schema changes**: ALWAYS use `npm run db:migrate` to create migrations (never use db:push in production)
-- **Important**: All entities have `ownerId` foreign key to User - ALWAYS filter queries by current user's ID for data isolation
+- **Development**: SQLite (`file:./dev.db`)
+- **Production**: PostgreSQL (via `DATABASE_URL` environment variable)
+- **Schema changes**: ALWAYS use `npm run db:migrate` to create migrations (never use `db:push` in production)
+- **Data isolation**: All entities have `ownerId` foreign key to User
+  - CRITICAL: ALWAYS filter queries by `ownerId: session.user.id` to ensure users only see their own data
+  - Verify ownership before updates/deletes: check `existingRecord.ownerId === session.user.id`
 
 ### Authentication
 - NextAuth.js with Credentials provider (bcrypt password hashing)
@@ -143,22 +153,32 @@ Located in `/src/app/api/`:
 Note: Server Actions are preferred over API routes for internal operations. API routes exist primarily for external integrations.
 
 ### Key Libraries
-- **@dnd-kit/core** - Drag & Drop for Kanban pipeline view
-- **Zod** - Schema validation
+- **@dnd-kit/core** & **@dnd-kit/sortable** - Drag & Drop for Kanban pipeline view
+- **Zod** - Schema validation (schemas in `/src/lib/validations/`)
 - **date-fns** - Date formatting
-- **Zustand** - Optional state management (if complex client-side state needed)
-- **Sonner** - Toast notifications
-- **shadcn/ui** - UI component library built on Tailwind CSS
+- **Zustand** - Optional state management (for complex client-side state)
+- **Sonner** - Toast notifications (customized in `globals.css`)
+- **shadcn/ui** - UI component library (not installed via npm, copied directly into `/src/components`)
 
-Ver `/docs/arquitetura-projeto.md` para detalhes completos da arquitetura e plano de implementação em 7 fases.
+See `/docs/arquitetura-projeto.md` for complete architecture and 7-phase implementation plan.
 
 ## Important Development Notes
 
+### Critical Security & Data Rules
 - **Data Isolation**: ALWAYS filter database queries by `ownerId: session.user.id` to ensure users only see their own data
-- **Tailwind CSS v4**: This project uses the new CSS-based configuration (not the old tailwind.config.js)
+- **Ownership Verification**: Before updates/deletes, verify `existingRecord.ownerId === session.user.id`
+- **Authentication First**: ALWAYS check session at the start of every Server Action before any database operation
+
+### Architecture Patterns
 - **Server vs Client**: Default to Server Components; only use `"use client"` when needed (forms, interactivity, hooks)
 - **Validation**: Define Zod schemas in `/src/lib/validations/` and reuse them for both server and client validation
-- **Brazilian Portuguese**: UI text is in Portuguese (pt-BR)
+- **Revalidation**: Always call `revalidatePath()` after mutations to update the UI cache
+
+### Technology-Specific Notes
+- **Tailwind CSS v4**: Uses new `@import "tailwindcss"` and `@theme` syntax in `globals.css` (NOT `tailwind.config.js`)
+- **Custom Theme**: Dark purple theme defined in `globals.css` with CSS variables (`--color-primary: #792990`)
+- **Brazilian Portuguese**: All UI text is in Portuguese (pt-BR)
+- **Multi-currency**: Deals support different currencies (default: `BRL`)
 
 ## Git Workflow
 
