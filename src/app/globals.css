@@ -170,3 +170,19 @@ thead.bg-gray-50 {
 ::-webkit-scrollbar-thumb:hover {
   background: #a03bb8;
 }
+
+/* Pulsing border animation for deals without activities */
+@keyframes pulse-border {
+  0%, 100% {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-pulse-border {
+  animation: pulse-border 2s ease-in-out infinite;
+}

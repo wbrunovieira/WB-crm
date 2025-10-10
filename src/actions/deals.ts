@@ -6,24 +6,84 @@ import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { dealSchema, type DealFormData } from "@/lib/validations/deal";
 
-export async function getDeals(search?: string) {
+export async function getDeals(filters?: {
+  search?: string;
+  status?: string;
+  valueRange?: string;
+  sortBy?: string;
+}) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
     throw new Error("Não autorizado");
   }
 
+  // Build where clause
+  const whereClause: {
+    ownerId: string;
+    OR?: Array<{
+      title?: { contains: string };
+      contact?: { name: { contains: string } };
+      organization?: { name: { contains: string } };
+    }>;
+    status?: string;
+    value?: { gte?: number; lt?: number };
+  } = {
+    ownerId: session.user.id,
+  };
+
+  // Search filter
+  if (filters?.search) {
+    whereClause.OR = [
+      { title: { contains: filters.search } },
+      { contact: { name: { contains: filters.search } } },
+      { organization: { name: { contains: filters.search } } },
+    ];
+  }
+
+  // Status filter
+  if (filters?.status && filters.status !== "all") {
+    whereClause.status = filters.status;
+  }
+
+  // Value range filter
+  if (filters?.valueRange && filters.valueRange !== "all") {
+    if (filters.valueRange === "0-10000") {
+      whereClause.value = { lt: 10000 };
+    } else if (filters.valueRange === "10000-50000") {
+      whereClause.value = { gte: 10000, lt: 50000 };
+    } else if (filters.valueRange === "50000-100000") {
+      whereClause.value = { gte: 50000, lt: 100000 };
+    } else if (filters.valueRange === "100000+") {
+      whereClause.value = { gte: 100000 };
+    }
+  }
+
+  // Build order by clause
+  const orderByClause: Array<{ [key: string]: string }> = [];
+  if (filters?.sortBy) {
+    switch (filters.sortBy) {
+      case "value-desc":
+        orderByClause.push({ value: "desc" });
+        break;
+      case "value-asc":
+        orderByClause.push({ value: "asc" });
+        break;
+      case "title":
+        orderByClause.push({ title: "asc" });
+        break;
+      case "expectedCloseDate":
+        orderByClause.push({ expectedCloseDate: "asc" });
+        break;
+      default:
+        orderByClause.push({ createdAt: "desc" });
+    }
+  } else {
+    orderByClause.push({ createdAt: "desc" });
+  }
+
   const deals = await prisma.deal.findMany({
-    where: {
-      ownerId: session.user.id,
-      ...(search && {
-        OR: [
-          { title: { contains: search } },
-          { contact: { name: { contains: search } } },
-          { organization: { name: { contains: search } } },
-        ],
-      }),
-    },
+    where: whereClause,
     include: {
       contact: true,
       organization: true,
@@ -39,10 +99,31 @@ export async function getDeals(search?: string) {
           email: true,
         },
       },
+      activities: {
+        where: {
+          completed: false,
+        },
+        orderBy: [
+          {
+            dueDate: {
+              sort: "asc",
+              nulls: "last",
+            },
+          },
+          {
+            createdAt: "desc",
+          },
+        ],
+        take: 1,
+        select: {
+          id: true,
+          subject: true,
+          type: true,
+          dueDate: true,
+        },
+      },
     },
-    orderBy: {
-      createdAt: "desc",
-    },
+    orderBy: orderByClause,
   });
 
   return deals;

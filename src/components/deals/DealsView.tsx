@@ -5,13 +5,42 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { DealsListView } from "./DealsListView";
 import { DealsKanbanView } from "./DealsKanbanView";
+import { DealsFilters } from "./DealsFilters";
+
+interface Deal {
+  id: string;
+  title: string;
+  value: number;
+  currency: string;
+  status: string;
+  expectedCloseDate: Date | null;
+  contact: { id: string; name: string } | null;
+  organization: { id: string; name: string } | null;
+  stage: {
+    id: string;
+    name: string;
+    pipeline: { id: string; name: string };
+  };
+  createdAt: Date;
+}
+
+interface PipelineData {
+  id: string;
+  name: string;
+  stages: Array<{
+    id: string;
+    name: string;
+    deals: Deal[];
+  }>;
+}
 
 interface DealsViewProps {
   initialView: "list" | "kanban";
-  deals?: any[];
-  pipelineData?: any;
-  allPipelines?: any[];
+  deals?: Deal[];
+  pipelineData?: PipelineData;
+  allPipelines?: Array<{ id: string; name: string }>;
   groupBy: string;
+  displayMode?: string;
 }
 
 export function DealsView({
@@ -20,6 +49,7 @@ export function DealsView({
   pipelineData,
   allPipelines = [],
   groupBy,
+  displayMode = "table",
 }: DealsViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -40,8 +70,8 @@ export function DealsView({
 
   return (
     <div className="flex h-[calc(100vh-4rem)] flex-col">
-      <div className="border-b bg-white px-8 py-4">
-        <div className="flex items-center justify-between">
+      <div className="border-b bg-white px-8 py-6">
+        <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-3xl font-bold">Negócios</h1>
             <p className="mt-2 text-gray-600">
@@ -96,11 +126,14 @@ export function DealsView({
             </Link>
           </div>
         </div>
+
+        {/* Filters (only for list view) */}
+        {initialView === "list" && <DealsFilters />}
       </div>
 
       <div className="flex-1 overflow-auto p-8">
         {initialView === "list" ? (
-          <DealsListView deals={deals} groupBy={currentGroupBy} />
+          <DealsListView deals={deals} groupBy={currentGroupBy} displayMode={displayMode} />
         ) : pipelineData ? (
           <DealsKanbanView
             pipelineData={pipelineData}

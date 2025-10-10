@@ -4,8 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { Trophy } from "lucide-react";
 import { DealStageSelect } from "./DealStageSelect";
 import { DealStatusSelect } from "./DealStatusSelect";
+import { DealCard } from "./DealCard";
 import { calculateTotalInCurrency, AVAILABLE_CURRENCIES } from "@/lib/utils";
 
 interface Deal {
@@ -23,11 +25,18 @@ interface Deal {
     pipeline: { id: string; name: string };
   };
   createdAt: Date;
+  activities?: Array<{
+    id: string;
+    subject: string;
+    type: string;
+    dueDate: Date | null;
+  }>;
 }
 
 interface DealsListViewProps {
   deals: Deal[];
   groupBy: string;
+  displayMode?: string;
 }
 
 type GroupedDeals = {
@@ -37,7 +46,7 @@ type GroupedDeals = {
   };
 };
 
-export function DealsListView({ deals, groupBy }: DealsListViewProps) {
+export function DealsListView({ deals, groupBy, displayMode = "table" }: DealsListViewProps) {
   const [displayCurrency, setDisplayCurrency] = useState("BRL");
 
   // Grouping logic
@@ -48,37 +57,29 @@ export function DealsListView({ deals, groupBy }: DealsListViewProps) {
 
     deals.forEach((deal) => {
       let key: string;
-      let label: string;
 
       switch (groupBy) {
         case "stage":
           key = deal.stage.id;
-          label = `${deal.stage.pipeline.name} - ${deal.stage.name}`;
           break;
         case "value":
           // Group by value ranges
           const value = deal.value;
           if (value < 10000) {
             key = "0-10k";
-            label = "Até R$ 10.000";
           } else if (value < 50000) {
             key = "10k-50k";
-            label = "R$ 10.000 - R$ 50.000";
           } else if (value < 100000) {
             key = "50k-100k";
-            label = "R$ 50.000 - R$ 100.000";
           } else {
             key = "100k+";
-            label = "Acima de R$ 100.000";
           }
           break;
         case "status":
           key = deal.status;
-          label = deal.status === "open" ? "Aberto" : deal.status === "won" ? "Ganho" : "Perdido";
           break;
         default:
           key = "other";
-          label = "Outros";
       }
 
       if (!groups[key]) {
@@ -116,16 +117,89 @@ export function DealsListView({ deals, groupBy }: DealsListViewProps) {
     return new Date(date).toLocaleDateString("pt-BR");
   };
 
-  const renderDealRow = (deal: Deal) => (
-    <tr key={deal.id} className="hover:bg-gray-50">
-      <td className="whitespace-nowrap px-6 py-4">
-        <Link
-          href={`/deals/${deal.id}`}
-          className="text-gray-700 hover:text-primary font-medium text-base"
-        >
-          {deal.title}
-        </Link>
-      </td>
+  const renderDealRow = (deal: Deal) => {
+    const nextActivity = deal.activities && deal.activities.length > 0 ? deal.activities[0] : null;
+    const hasNoActivity = !nextActivity && deal.status === "open";
+    const isWon = deal.status === "won";
+
+    const getActivityTypeIcon = (type: string) => {
+      switch (type) {
+        case "call": return "📞";
+        case "meeting": return "📅";
+        case "email": return "✉️";
+        case "task": return "📋";
+        case "whatsapp": return "💬";
+        case "visit": return "📍";
+        case "instagram": return "📷";
+        default: return "📌";
+      }
+    };
+
+    const getRowStyle = () => {
+      if (isWon) {
+        return { borderLeft: "4px solid #22c55e" };
+      }
+      if (hasNoActivity) {
+        return {
+          borderLeft: "4px solid #ef4444",
+          animation: "pulse-border 2s ease-in-out infinite"
+        };
+      }
+      return undefined;
+    };
+
+    const getRowClass = () => {
+      if (isWon) return "hover:bg-gray-50 bg-green-50/10";
+      if (hasNoActivity) return "hover:bg-gray-50 bg-red-50/10";
+      return "hover:bg-gray-50";
+    };
+
+    return (
+      <tr
+        key={deal.id}
+        className={getRowClass()}
+        style={getRowStyle()}
+      >
+        <td className="whitespace-nowrap px-6 py-4">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/deals/${deal.id}`}
+                className="text-gray-700 hover:text-primary font-medium text-base"
+              >
+                {deal.title}
+              </Link>
+              {isWon && (
+                <div className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-green-700 border border-green-300">
+                  <Trophy className="h-3 w-3" />
+                  <span className="text-xs font-semibold">Ganho</span>
+                </div>
+              )}
+            </div>
+            {nextActivity ? (
+              <Link
+                href={`/activities/${nextActivity.id}`}
+                className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
+              >
+                <span>{getActivityTypeIcon(nextActivity.type)}</span>
+                <span className="truncate max-w-[200px]">{nextActivity.subject}</span>
+                {nextActivity.dueDate && (
+                  <span className="text-blue-500">
+                    • {formatDistanceToNow(new Date(nextActivity.dueDate), {
+                      addSuffix: true,
+                      locale: ptBR,
+                    })}
+                  </span>
+                )}
+              </Link>
+            ) : deal.status === "open" && (
+              <span className="flex items-center gap-1 text-xs text-red-600 font-medium">
+                <span>⚠️</span>
+                <span>Sem atividade agendada</span>
+              </span>
+            )}
+          </div>
+        </td>
       <td className="whitespace-nowrap px-6 py-4">
         {deal.organization ? (
           <Link
@@ -181,6 +255,19 @@ export function DealsListView({ deals, groupBy }: DealsListViewProps) {
         })}
       </td>
     </tr>
+    );
+  };
+
+  const renderCards = (dealsToRender: Deal[]) => (
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {dealsToRender.length > 0 ? (
+        dealsToRender.map((deal) => <DealCard key={deal.id} deal={deal} />)
+      ) : (
+        <div className="col-span-full py-12 text-center text-gray-500">
+          Nenhum negócio encontrado
+        </div>
+      )}
+    </div>
   );
 
   const renderTable = (dealsToRender: Deal[]) => (
@@ -295,7 +382,9 @@ export function DealsListView({ deals, groupBy }: DealsListViewProps) {
                   </div>
                 </div>
               </div>
-              {renderTable(group.deals)}
+              <div className="p-6">
+                {displayMode === "cards" ? renderCards(group.deals) : renderTable(group.deals)}
+              </div>
             </div>
           );
         })}
@@ -436,10 +525,14 @@ export function DealsListView({ deals, groupBy }: DealsListViewProps) {
         </div>
       )}
 
-      {/* Table */}
-      <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-        {renderTable(deals)}
-      </div>
+      {/* Deals Display */}
+      {displayMode === "cards" ? (
+        renderCards(deals)
+      ) : (
+        <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
+          {renderTable(deals)}
+        </div>
+      )}
     </div>
   );
 }
