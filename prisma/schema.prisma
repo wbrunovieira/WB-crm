@@ -455,6 +455,7 @@ model Partner {
   // Informações da Parceria
   industry       String? // Setor de atuação
   employeeCount  Int?
+  companySize    String? // Porte da empresa
   description    String?
   expertise      String? // Área de expertise/especialização
   notes          String?

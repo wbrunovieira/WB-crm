@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { createLead, updateLead } from "@/actions/leads";
 import { useState } from "react";
 import { LabelSelect } from "@/components/shared/LabelSelect";
+import { companySizes } from "@/lib/lists/company-sizes";
 
 type Lead = {
   id?: string;
@@ -511,13 +512,18 @@ export function LeadForm({ lead }: LeadFormProps) {
             <label className="block text-sm font-medium text-gray-300">
               Tamanho da Empresa
             </label>
-            <input
-              type="text"
+            <select
               name="companySize"
-              placeholder="MEI, Pequena, Média, Grande"
               defaultValue={lead?.companySize || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
-            />
+            >
+              <option value="">Selecione...</option>
+              {companySizes.map((size) => (
+                <option key={size.value} value={size.value}>
+                  {size.label}
+                </option>
+              ))}
+            </select>
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">

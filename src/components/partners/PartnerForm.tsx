@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createPartner, updatePartner } from "@/actions/partners";
 import { partnerTypes } from "@/lib/lists/partner-types";
+import { companySizes } from "@/lib/lists/company-sizes";
 
 interface PartnerFormProps {
   partner?: {
@@ -27,6 +28,7 @@ interface PartnerFormProps {
     twitter: string | null;
     industry: string | null;
     employeeCount: number | null;
+    companySize: string | null;
     description: string | null;
     expertise: string | null;
     notes: string | null;
@@ -66,6 +68,7 @@ export function PartnerForm({ partner }: PartnerFormProps) {
       twitter: formData.get("twitter") as string,
       industry: formData.get("industry") as string,
       employeeCount: employeeCountStr ? parseInt(employeeCountStr) : undefined,
+      companySize: formData.get("companySize") as string,
       description: formData.get("description") as string,
       expertise: formData.get("expertise") as string,
       notes: formData.get("notes") as string,
@@ -185,6 +188,25 @@ export function PartnerForm({ partner }: PartnerFormProps) {
               defaultValue={partner?.employeeCount || ""}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
+          </div>
+
+          <div>
+            <label htmlFor="companySize" className="block text-sm font-medium text-gray-700">
+              Porte da Empresa
+            </label>
+            <select
+              id="companySize"
+              name="companySize"
+              defaultValue={partner?.companySize || ""}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Selecione...</option>
+              {companySizes.map((size) => (
+                <option key={size.value} value={size.value}>
+                  {size.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
