@@ -7,6 +7,7 @@ import { useState } from "react";
 import { LabelSelect } from "@/components/shared/LabelSelect";
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
+import { brazilianStates } from "@/lib/lists/brazilian-states";
 
 type Lead = {
   id?: string;
@@ -63,6 +64,7 @@ export function LeadForm({ lead }: LeadFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [labelId, setLabelId] = useState<string | null>(lead?.labelId || null);
+  const [selectedCountry, setSelectedCountry] = useState<string>(lead?.country || "");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -335,22 +337,12 @@ export function LeadForm({ lead }: LeadFormProps) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">
-              Estado
-            </label>
-            <input
-              type="text"
-              name="state"
-              defaultValue={lead?.state || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300">
               País
             </label>
             <select
               name="country"
-              defaultValue={lead?.country || ""}
+              value={selectedCountry}
+              onChange={(e) => setSelectedCountry(e.target.value)}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             >
               <option value="">Selecione...</option>
@@ -360,6 +352,33 @@ export function LeadForm({ lead }: LeadFormProps) {
                 </option>
               ))}
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              {selectedCountry === "BR" ? "Estado" : "Estado/Província/Região"}
+            </label>
+            {selectedCountry === "BR" ? (
+              <select
+                name="state"
+                defaultValue={lead?.state || ""}
+                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              >
+                <option value="">Selecione...</option>
+                {brazilianStates.map((state) => (
+                  <option key={state.value} value={state.value}>
+                    {state.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                name="state"
+                defaultValue={lead?.state || ""}
+                placeholder="Digite o estado, província ou região"
+                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              />
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">

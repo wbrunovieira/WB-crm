@@ -10,6 +10,7 @@ import {
 import { LabelSelect } from "@/components/shared/LabelSelect";
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
+import { brazilianStates } from "@/lib/lists/brazilian-states";
 
 interface OrganizationFormProps {
   organization?: {
@@ -47,6 +48,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [labelId, setLabelId] = useState<string | null>(organization?.labelId || null);
+  const [selectedCountry, setSelectedCountry] = useState<string>(organization?.country || "");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -262,7 +264,8 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             <select
               id="country"
               name="country"
-              defaultValue={organization?.country || ""}
+              value={selectedCountry}
+              onChange={(e) => setSelectedCountry(e.target.value)}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
               <option value="">Selecione...</option>
@@ -279,15 +282,32 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               htmlFor="state"
               className="block text-sm font-medium text-gray-700"
             >
-              Estado
+              {selectedCountry === "BR" ? "Estado" : "Estado/Província/Região"}
             </label>
-            <input
-              type="text"
-              id="state"
-              name="state"
-              defaultValue={organization?.state || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
+            {selectedCountry === "BR" ? (
+              <select
+                id="state"
+                name="state"
+                defaultValue={organization?.state || ""}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="">Selecione...</option>
+                {brazilianStates.map((state) => (
+                  <option key={state.value} value={state.value}>
+                    {state.label}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <input
+                type="text"
+                id="state"
+                name="state"
+                defaultValue={organization?.state || ""}
+                placeholder="Digite o estado, província ou região"
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            )}
           </div>
 
           <div>
