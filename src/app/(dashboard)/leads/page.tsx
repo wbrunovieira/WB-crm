@@ -1,6 +1,7 @@
 import { getLeads } from "@/actions/leads";
 import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
 import { LeadsFilters } from "@/components/leads/LeadsFilters";
+import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import Link from "next/link";
 
 export default async function LeadsPage({
@@ -91,19 +92,11 @@ export default async function LeadsPage({
               {leads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <div className="flex flex-col gap-1">
-                      <Link
-                        href={`/leads/${lead.id}`}
-                        className="text-lg font-semibold text-gray-400"
-                      >
-                        {lead.businessName}
-                      </Link>
-                      {lead.registeredName && (
-                        <p className="text-xs font-normal text-gray-500 italic">
-                          {lead.registeredName}
-                        </p>
-                      )}
-                    </div>
+                    <LeadNameCell
+                      id={lead.id}
+                      businessName={lead.businessName}
+                      registeredName={lead.registeredName}
+                    />
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {lead.city && lead.state
