@@ -45,8 +45,6 @@ type Lead = {
   description?: string | null;
   equityCapital?: number | null;
   businessStatus?: string | null;
-  primaryActivity?: string | null;
-  secondaryActivities?: string | null;
   primaryCNAEId?: string | null;
   internationalActivity?: string | null;
   source?: string | null;
@@ -117,11 +115,6 @@ export function LeadForm({ lead }: LeadFormProps) {
         : undefined,
       permanentlyClosed: formData.get("permanentlyClosed") === "on",
       types: getString("types"),
-      secondaryActivities: getString("secondaryActivities"),
-      category: getString("category"),
-      radius: formData.get("radius")
-        ? parseInt(formData.get("radius") as string)
-        : undefined,
       companyOwner: getString("companyOwner"),
       companySize: getString("companySize"),
       revenue: formData.get("revenue")
@@ -135,8 +128,6 @@ export function LeadForm({ lead }: LeadFormProps) {
         ? parseFloat(formData.get("equityCapital") as string)
         : undefined,
       businessStatus: getString("businessStatus"),
-      primaryActivity: getString("primaryActivity"),
-      secondaryActivities: getString("secondaryActivities"),
       primaryCNAEId: primaryCNAE?.id || undefined,
       internationalActivity: getString("internationalActivity"),
       source: getString("source"),
@@ -626,35 +617,6 @@ export function LeadForm({ lead }: LeadFormProps) {
             <p className="mt-1 text-xs text-gray-400">
               Use este campo para empresas não-brasileiras ou se não encontrar o CNAE adequado
             </p>
-          </div>
-          <div className="md:col-span-2 border-t border-gray-700 pt-4">
-            <p className="text-xs text-gray-400 mb-2">
-              Campos antigos (serão descontinuados - use CNAE acima)
-            </p>
-            <div className="grid gap-4 md:grid-cols-2 opacity-50">
-              <div>
-                <label className="block text-sm font-medium text-gray-300">
-                  Atividade Primária (deprecated)
-                </label>
-                <input
-                  type="text"
-                  name="primaryActivity"
-                  defaultValue={lead?.primaryActivity || ""}
-                  className="mt-1 block w-full rounded-md border border-gray-600 bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300">
-                  Atividades Secundárias (deprecated)
-                </label>
-                <input
-                  type="text"
-                  name="secondaryActivities"
-                  defaultValue={lead?.secondaryActivities || ""}
-                  className="mt-1 block w-full rounded-md border border-gray-600 bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
-                />
-              </div>
-            </div>
           </div>
         </div>
       </div>
