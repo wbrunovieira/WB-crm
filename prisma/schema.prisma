@@ -164,6 +164,15 @@ model Lead {
   referredByPartner     Partner?      @relation("PartnerReferrals", fields: [referredByPartnerId], references: [id], onDelete: SetNull)
   leadProducts          LeadProduct[] // Produtos de interesse do Lead
 
+  // Tech Profile (current tech stack)
+  leadLanguages   LeadLanguage[]
+  leadFrameworks  LeadFramework[]
+  leadHosting     LeadHosting[]
+  leadDatabases   LeadDatabase[]
+  leadERPs        LeadERP[]
+  leadCRMs        LeadCRM[]
+  leadEcommerces  LeadEcommerce[]
+
   @@index([ownerId])
   @@index([status])
   @@index([quality])
@@ -255,6 +264,15 @@ model Organization {
   deals                Deal[]
   sourceLead           Lead?                  @relation("LeadConversion") // Organization veio de qual Lead
   organizationProducts OrganizationProduct[]  // Produtos da Organization
+
+  // Tech Profile (current tech stack)
+  organizationLanguages   OrganizationLanguage[]
+  organizationFrameworks  OrganizationFramework[]
+  organizationHosting     OrganizationHosting[]
+  organizationDatabases   OrganizationDatabase[]
+  organizationERPs        OrganizationERP[]
+  organizationCRMs        OrganizationCRM[]
+  organizationEcommerces  OrganizationEcommerce[]
 
   @@index([ownerId])
   @@index([sourceLeadId])
@@ -765,4 +783,407 @@ model DealFramework {
   @@index([dealId])
   @@index([frameworkId])
   @@map("deal_frameworks")
+}
+
+// ============ TECH PROFILE (Current Tech Stack of Leads/Organizations) ============
+
+// Profile options (what technologies are available to track)
+model TechProfileLanguage {
+  id       String   @id @default(cuid())
+  name     String   // "JavaScript", "Python", "PHP", "Java"
+  slug     String   @unique
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadLanguages         LeadLanguage[]
+  organizationLanguages OrganizationLanguage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_profile_languages")
+}
+
+model TechProfileFramework {
+  id       String   @id @default(cuid())
+  name     String   // "React", "Django", "Laravel"
+  slug     String   @unique
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadFrameworks         LeadFramework[]
+  organizationFrameworks OrganizationFramework[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_profile_frameworks")
+}
+
+model TechProfileHosting {
+  id       String   @id @default(cuid())
+  name     String   // "AWS", "Azure", "GCP", "DigitalOcean", "Vercel"
+  slug     String   @unique
+  type     String   // "cloud", "vps", "shared", "dedicated", "serverless"
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadHosting         LeadHosting[]
+  organizationHosting OrganizationHosting[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([type])
+  @@map("tech_profile_hosting")
+}
+
+model TechProfileDatabase {
+  id       String   @id @default(cuid())
+  name     String   // "PostgreSQL", "MySQL", "MongoDB", "Redis"
+  slug     String   @unique
+  type     String   // "relational", "nosql", "cache", "search"
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadDatabases         LeadDatabase[]
+  organizationDatabases OrganizationDatabase[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([type])
+  @@map("tech_profile_databases")
+}
+
+model TechProfileERP {
+  id       String   @id @default(cuid())
+  name     String   // "SAP", "Oracle", "Totvs", "Odoo"
+  slug     String   @unique
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadERPs         LeadERP[]
+  organizationERPs OrganizationERP[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_profile_erps")
+}
+
+model TechProfileCRM {
+  id       String   @id @default(cuid())
+  name     String   // "Salesforce", "HubSpot", "Pipedrive", "Zoho"
+  slug     String   @unique
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadCRMs         LeadCRM[]
+  organizationCRMs OrganizationCRM[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_profile_crms")
+}
+
+model TechProfileEcommerce {
+  id       String   @id @default(cuid())
+  name     String   // "Shopify", "WooCommerce", "Magento", "VTEX"
+  slug     String   @unique
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadEcommerces         LeadEcommerce[]
+  organizationEcommerces OrganizationEcommerce[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_profile_ecommerce")
+}
+
+// ============ LEAD TECH PROFILE JUNCTIONS ============
+
+model LeadLanguage {
+  id         String   @id @default(cuid())
+  leadId     String
+  languageId String
+
+  // Relations
+  lead     Lead                  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  language TechProfileLanguage   @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, languageId])
+  @@index([leadId])
+  @@index([languageId])
+  @@map("lead_languages")
+}
+
+model LeadFramework {
+  id          String   @id @default(cuid())
+  leadId      String
+  frameworkId String
+
+  // Relations
+  lead      Lead                  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  framework TechProfileFramework  @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, frameworkId])
+  @@index([leadId])
+  @@index([frameworkId])
+  @@map("lead_frameworks")
+}
+
+model LeadHosting {
+  id        String   @id @default(cuid())
+  leadId    String
+  hostingId String
+
+  // Relations
+  lead    Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  hosting TechProfileHosting   @relation(fields: [hostingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, hostingId])
+  @@index([leadId])
+  @@index([hostingId])
+  @@map("lead_hosting")
+}
+
+model LeadDatabase {
+  id         String   @id @default(cuid())
+  leadId     String
+  databaseId String
+
+  // Relations
+  lead     Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  database TechProfileDatabase  @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, databaseId])
+  @@index([leadId])
+  @@index([databaseId])
+  @@map("lead_databases")
+}
+
+model LeadERP {
+  id     String   @id @default(cuid())
+  leadId String
+  erpId  String
+
+  // Relations
+  lead Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  erp  TechProfileERP  @relation(fields: [erpId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, erpId])
+  @@index([leadId])
+  @@index([erpId])
+  @@map("lead_erps")
+}
+
+model LeadCRM {
+  id     String   @id @default(cuid())
+  leadId String
+  crmId  String
+
+  // Relations
+  lead Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  crm  TechProfileCRM  @relation(fields: [crmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, crmId])
+  @@index([leadId])
+  @@index([crmId])
+  @@map("lead_crms")
+}
+
+model LeadEcommerce {
+  id          String   @id @default(cuid())
+  leadId      String
+  ecommerceId String
+
+  // Relations
+  lead      Lead                   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  ecommerce TechProfileEcommerce   @relation(fields: [ecommerceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, ecommerceId])
+  @@index([leadId])
+  @@index([ecommerceId])
+  @@map("lead_ecommerce")
+}
+
+// ============ ORGANIZATION TECH PROFILE JUNCTIONS ============
+
+model OrganizationLanguage {
+  id             String   @id @default(cuid())
+  organizationId String
+  languageId     String
+
+  // Relations
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  language     TechProfileLanguage  @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, languageId])
+  @@index([organizationId])
+  @@index([languageId])
+  @@map("organization_languages")
+}
+
+model OrganizationFramework {
+  id             String   @id @default(cuid())
+  organizationId String
+  frameworkId    String
+
+  // Relations
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  framework    TechProfileFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, frameworkId])
+  @@index([organizationId])
+  @@index([frameworkId])
+  @@map("organization_frameworks")
+}
+
+model OrganizationHosting {
+  id             String   @id @default(cuid())
+  organizationId String
+  hostingId      String
+
+  // Relations
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  hosting      TechProfileHosting  @relation(fields: [hostingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, hostingId])
+  @@index([organizationId])
+  @@index([hostingId])
+  @@map("organization_hosting")
+}
+
+model OrganizationDatabase {
+  id             String   @id @default(cuid())
+  organizationId String
+  databaseId     String
+
+  // Relations
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  database     TechProfileDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, databaseId])
+  @@index([organizationId])
+  @@index([databaseId])
+  @@map("organization_databases")
+}
+
+model OrganizationERP {
+  id             String   @id @default(cuid())
+  organizationId String
+  erpId          String
+
+  // Relations
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  erp          TechProfileERP @relation(fields: [erpId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, erpId])
+  @@index([organizationId])
+  @@index([erpId])
+  @@map("organization_erps")
+}
+
+model OrganizationCRM {
+  id             String   @id @default(cuid())
+  organizationId String
+  crmId          String
+
+  // Relations
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  crm          TechProfileCRM @relation(fields: [crmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, crmId])
+  @@index([organizationId])
+  @@index([crmId])
+  @@map("organization_crms")
+}
+
+model OrganizationEcommerce {
+  id             String   @id @default(cuid())
+  organizationId String
+  ecommerceId    String
+
+  // Relations
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ecommerce    TechProfileEcommerce  @relation(fields: [ecommerceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, ecommerceId])
+  @@index([organizationId])
+  @@index([ecommerceId])
+  @@map("organization_ecommerce")
 }
