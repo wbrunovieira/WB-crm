@@ -104,6 +104,26 @@ export default async function LeadDetailPage({
                 </dd>
               </div>
             )}
+            {lead.foundationDate && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">
+                  Data de Fundação
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {formatDate(lead.foundationDate)}
+                </dd>
+              </div>
+            )}
+            {lead.description && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">
+                  Descrição
+                </dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {lead.description}
+                </dd>
+              </div>
+            )}
             <div>
               <dt className="text-sm font-medium text-gray-500">Status</dt>
               <dd className="mt-1">
@@ -138,6 +158,23 @@ export default async function LeadDetailPage({
                     }`}
                   >
                     {qualityLabels[lead.quality]}
+                  </span>
+                </dd>
+              </div>
+            )}
+            {lead.label && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Label</dt>
+                <dd className="mt-1">
+                  <span
+                    className="inline-flex rounded-full px-3 py-1 text-xs font-semibold"
+                    style={{
+                      backgroundColor: `${lead.label.color}20`,
+                      color: lead.label.color,
+                      border: `1px solid ${lead.label.color}`,
+                    }}
+                  >
+                    {lead.label.name}
                   </span>
                 </dd>
               </div>
@@ -195,6 +232,12 @@ export default async function LeadDetailPage({
                 <dd className="mt-1 text-sm text-gray-900">{lead.address}</dd>
               </div>
             )}
+            {lead.vicinity && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Bairro/Região</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.vicinity}</dd>
+              </div>
+            )}
             {lead.city && (
               <div>
                 <dt className="text-sm font-medium text-gray-500">Cidade</dt>
@@ -222,6 +265,232 @@ export default async function LeadDetailPage({
           </dl>
         </div>
       </div>
+
+      {/* Redes Sociais */}
+      {(lead.instagram || lead.linkedin || lead.facebook || lead.twitter || lead.tiktok) && (
+        <div className="mt-6 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold">Redes Sociais</h2>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {lead.instagram && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Instagram</dt>
+                <dd className="mt-1 text-sm text-primary">
+                  <a
+                    href={lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    {lead.instagram}
+                  </a>
+                </dd>
+              </div>
+            )}
+            {lead.linkedin && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">LinkedIn</dt>
+                <dd className="mt-1 text-sm text-primary">
+                  <a
+                    href={lead.linkedin.startsWith('http') ? lead.linkedin : `https://linkedin.com/company/${lead.linkedin}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    {lead.linkedin}
+                  </a>
+                </dd>
+              </div>
+            )}
+            {lead.facebook && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Facebook</dt>
+                <dd className="mt-1 text-sm text-primary">
+                  <a
+                    href={lead.facebook.startsWith('http') ? lead.facebook : `https://facebook.com/${lead.facebook}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    {lead.facebook}
+                  </a>
+                </dd>
+              </div>
+            )}
+            {lead.twitter && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Twitter/X</dt>
+                <dd className="mt-1 text-sm text-primary">
+                  <a
+                    href={lead.twitter.startsWith('http') ? lead.twitter : `https://twitter.com/${lead.twitter.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    {lead.twitter}
+                  </a>
+                </dd>
+              </div>
+            )}
+            {lead.tiktok && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">TikTok</dt>
+                <dd className="mt-1 text-sm text-primary">
+                  <a
+                    href={lead.tiktok.startsWith('http') ? lead.tiktok : `https://tiktok.com/@${lead.tiktok.replace('@', '')}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:underline"
+                  >
+                    {lead.tiktok}
+                  </a>
+                </dd>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Informações da Empresa */}
+      {(lead.companyOwner || lead.companySize || lead.revenue || lead.employeesCount || lead.primaryActivity || lead.secondaryActivities || lead.businessStatus || lead.equityCapital) && (
+        <div className="mt-6 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold">Informações da Empresa</h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {lead.companyOwner && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Proprietário/CEO</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.companyOwner}</dd>
+              </div>
+            )}
+            {lead.companySize && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Tamanho</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.companySize}</dd>
+              </div>
+            )}
+            {lead.employeesCount && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Funcionários</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.employeesCount}</dd>
+              </div>
+            )}
+            {lead.revenue && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Receita Anual</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.revenue)}
+                </dd>
+              </div>
+            )}
+            {lead.equityCapital && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Capital Social</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.equityCapital)}
+                </dd>
+              </div>
+            )}
+            {lead.businessStatus && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Status do Negócio</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.businessStatus}</dd>
+              </div>
+            )}
+            {lead.primaryActivity && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Atividade Primária</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.primaryActivity}</dd>
+              </div>
+            )}
+            {lead.secondaryActivities && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Atividades Secundárias</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.secondaryActivities}</dd>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Google Places */}
+      {(lead.googleId || lead.categories || lead.rating || lead.userRatingsTotal || lead.priceLevel || lead.types) && (
+        <div className="mt-6 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold">Informações do Google Places</h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {lead.rating && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Avaliação</dt>
+                <dd className="mt-1 text-sm text-gray-900 flex items-center gap-1">
+                  <span className="text-yellow-500">⭐</span>
+                  {lead.rating.toFixed(1)} / 5.0
+                </dd>
+              </div>
+            )}
+            {lead.userRatingsTotal && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Total de Avaliações</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.userRatingsTotal} avaliações</dd>
+              </div>
+            )}
+            {lead.priceLevel && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Nível de Preço</dt>
+                <dd className="mt-1 text-sm text-gray-900">{'$'.repeat(lead.priceLevel)}</dd>
+              </div>
+            )}
+            {lead.categories && (
+              <div className="md:col-span-2 lg:col-span-4">
+                <dt className="text-sm font-medium text-gray-500">Categorias</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.categories}</dd>
+              </div>
+            )}
+            {lead.types && (
+              <div className="md:col-span-2 lg:col-span-4">
+                <dt className="text-sm font-medium text-gray-500">Tipos</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.types}</dd>
+              </div>
+            )}
+            {lead.googleId && (
+              <div className="md:col-span-2 lg:col-span-4">
+                <dt className="text-sm font-medium text-gray-500">Google Places ID</dt>
+                <dd className="mt-1 text-xs text-gray-600 font-mono">{lead.googleId}</dd>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Metadados */}
+      {(lead.source || lead.searchTerm || lead.category || lead.radius) && (
+        <div className="mt-6 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold">Metadados de Busca</h2>
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+            {lead.source && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Fonte</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.source}</dd>
+              </div>
+            )}
+            {lead.searchTerm && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Termo de Busca</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.searchTerm}</dd>
+              </div>
+            )}
+            {lead.category && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Categoria</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.category}</dd>
+              </div>
+            )}
+            {lead.radius && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Raio de Busca</dt>
+                <dd className="mt-1 text-sm text-gray-900">{lead.radius} km</dd>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Lead Contacts */}
       <div className="mt-6">

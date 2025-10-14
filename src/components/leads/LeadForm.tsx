@@ -109,6 +109,11 @@ export function LeadForm({ lead }: LeadFormProps) {
         : undefined,
       permanentlyClosed: formData.get("permanentlyClosed") === "on",
       types: getString("types"),
+      secondaryActivities: getString("secondaryActivities"),
+      category: getString("category"),
+      radius: formData.get("radius")
+        ? parseInt(formData.get("radius") as string)
+        : undefined,
       companyOwner: getString("companyOwner"),
       companySize: getString("companySize"),
       revenue: formData.get("revenue")
@@ -306,6 +311,17 @@ export function LeadForm({ lead }: LeadFormProps) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">
+              Bairro/Região
+            </label>
+            <input
+              type="text"
+              name="vicinity"
+              defaultValue={lead?.vicinity || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
               Cidade
             </label>
             <input
@@ -482,7 +498,7 @@ export function LeadForm({ lead }: LeadFormProps) {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-gray-300">
-              Proprietário
+              Proprietário/CEO
             </label>
             <input
               type="text"
@@ -498,19 +514,32 @@ export function LeadForm({ lead }: LeadFormProps) {
             <input
               type="text"
               name="companySize"
+              placeholder="MEI, Pequena, Média, Grande"
               defaultValue={lead?.companySize || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">
-              Receita Anual
+              Receita Anual (R$)
             </label>
             <input
               type="number"
               step="0.01"
               name="revenue"
               defaultValue={lead?.revenue || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Capital Social (R$)
+            </label>
+            <input
+              type="number"
+              step="0.01"
+              name="equityCapital"
+              defaultValue={lead?.equityCapital || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
@@ -527,23 +556,37 @@ export function LeadForm({ lead }: LeadFormProps) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">
+              Status do Negócio
+            </label>
+            <input
+              type="text"
+              name="businessStatus"
+              placeholder="Ativa, Suspensa, etc"
+              defaultValue={lead?.businessStatus || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
               Atividade Primária
             </label>
             <input
               type="text"
               name="primaryActivity"
+              placeholder="CNAE ou descrição"
               defaultValue={lead?.primaryActivity || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">
-              Status do Negócio
+              Atividades Secundárias
             </label>
             <input
               type="text"
-              name="businessStatus"
-              defaultValue={lead?.businessStatus || ""}
+              name="secondaryActivities"
+              placeholder="Outras atividades (separadas por vírgula)"
+              defaultValue={lead?.secondaryActivities || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
@@ -574,17 +617,32 @@ export function LeadForm({ lead }: LeadFormProps) {
             <input
               type="text"
               name="categories"
+              placeholder="Restaurante, Café, etc"
               defaultValue={lead?.categories || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">
-              Avaliação
+              Tipos
+            </label>
+            <input
+              type="text"
+              name="types"
+              placeholder="restaurant, cafe, store"
+              defaultValue={lead?.types || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Avaliação (0-5)
             </label>
             <input
               type="number"
               step="0.1"
+              min="0"
+              max="5"
               name="rating"
               defaultValue={lead?.rating || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
@@ -601,13 +659,37 @@ export function LeadForm({ lead }: LeadFormProps) {
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Nível de Preço (1-4)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="4"
+              name="priceLevel"
+              defaultValue={lead?.priceLevel || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="flex items-center gap-2 text-sm font-medium text-gray-300">
+              <input
+                type="checkbox"
+                name="permanentlyClosed"
+                defaultChecked={lead?.permanentlyClosed}
+                className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990] focus:ring-[#792990]"
+              />
+              Permanentemente Fechado
+            </label>
+          </div>
         </div>
       </div>
 
       {/* Metadados */}
       <div className="rounded-lg bg-[#1a0022] p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
-          Metadados
+          Metadados de Busca
         </h2>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
@@ -617,6 +699,7 @@ export function LeadForm({ lead }: LeadFormProps) {
             <input
               type="text"
               name="source"
+              placeholder="Google, LinkedIn, Indicação..."
               defaultValue={lead?.source || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
@@ -628,7 +711,32 @@ export function LeadForm({ lead }: LeadFormProps) {
             <input
               type="text"
               name="searchTerm"
+              placeholder="Palavras-chave usadas"
               defaultValue={lead?.searchTerm || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Categoria
+            </label>
+            <input
+              type="text"
+              name="category"
+              placeholder="B2B, B2C, Varejo..."
+              defaultValue={lead?.category || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Raio de Busca (km)
+            </label>
+            <input
+              type="number"
+              name="radius"
+              placeholder="Se foi busca geográfica"
+              defaultValue={lead?.radius || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
