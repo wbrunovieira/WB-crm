@@ -4,6 +4,7 @@ import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
 import { LeadContactsList } from "@/components/leads/LeadContactsList";
 import { LeadActivitiesList } from "@/components/leads/LeadActivitiesList";
 import { LeadProductsSection } from "@/components/leads/LeadProductsSection";
+import { LeadTechProfileSection } from "@/components/leads/LeadTechProfileSection";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -515,6 +516,9 @@ export default async function LeadDetailPage({
 
       {/* Lead Products */}
       <LeadProductsSection leadId={lead.id} isConverted={!!lead.convertedAt} />
+
+      {/* Tech Profile */}
+      <LeadTechProfileSection leadId={lead.id} />
 
       {/* Lead Contacts */}
       <div className="mt-6">

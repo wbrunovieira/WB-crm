@@ -2,6 +2,7 @@ import { getOrganizationById } from "@/actions/organizations";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { OrganizationProjects } from "@/components/organizations/OrganizationProjects";
 import { OrganizationActivities } from "@/components/organizations/OrganizationActivities";
+import { OrganizationTechProfileSection } from "@/components/organizations/OrganizationTechProfileSection";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -313,6 +314,11 @@ export default async function OrganizationDetailPage({
             </ul>
           )}
         </div>
+      </div>
+
+      {/* Tech Profile */}
+      <div className="mt-6">
+        <OrganizationTechProfileSection organizationId={organization.id} />
       </div>
 
       {/* Activities */}

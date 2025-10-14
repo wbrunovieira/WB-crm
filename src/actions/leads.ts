@@ -379,7 +379,44 @@ export async function convertLeadToOrganization(leadId: string) {
       },
     });
 
-    // 4. Update Lead as converted
+    // 4. Migrate Tech Profile data from Lead to Organization
+    // Get all tech profile data from the lead
+    const [leadLanguages, leadFrameworks, leadHosting, leadDatabases, leadERPs, leadCRMs, leadEcommerces] = await Promise.all([
+      tx.leadLanguage.findMany({ where: { leadId: lead.id } }),
+      tx.leadFramework.findMany({ where: { leadId: lead.id } }),
+      tx.leadHosting.findMany({ where: { leadId: lead.id } }),
+      tx.leadDatabase.findMany({ where: { leadId: lead.id } }),
+      tx.leadERP.findMany({ where: { leadId: lead.id } }),
+      tx.leadCRM.findMany({ where: { leadId: lead.id } }),
+      tx.leadEcommerce.findMany({ where: { leadId: lead.id } }),
+    ]);
+
+    // Create corresponding organization tech profile entries
+    await Promise.all([
+      ...leadLanguages.map(l => tx.organizationLanguage.create({
+        data: { organizationId: organization.id, languageId: l.languageId }
+      })),
+      ...leadFrameworks.map(f => tx.organizationFramework.create({
+        data: { organizationId: organization.id, frameworkId: f.frameworkId }
+      })),
+      ...leadHosting.map(h => tx.organizationHosting.create({
+        data: { organizationId: organization.id, hostingId: h.hostingId }
+      })),
+      ...leadDatabases.map(d => tx.organizationDatabase.create({
+        data: { organizationId: organization.id, databaseId: d.databaseId }
+      })),
+      ...leadERPs.map(e => tx.organizationERP.create({
+        data: { organizationId: organization.id, erpId: e.erpId }
+      })),
+      ...leadCRMs.map(c => tx.organizationCRM.create({
+        data: { organizationId: organization.id, crmId: c.crmId }
+      })),
+      ...leadEcommerces.map(e => tx.organizationEcommerce.create({
+        data: { organizationId: organization.id, ecommerceId: e.ecommerceId }
+      })),
+    ]);
+
+    // 5. Update Lead as converted
     await tx.lead.update({
       where: { id: leadId },
       data: {
