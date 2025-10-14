@@ -63,17 +63,19 @@ export function LeadContactsList({
   }
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold">
+    <div className="rounded-xl bg-white p-6 shadow-md">
+      <div className="mb-5 flex items-center justify-between pb-3 border-b-2 border-gray-100">
+        <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+          <span className="text-2xl">👥</span>
           Contatos ({leadContacts.length})
         </h2>
         {!isConverted && (
           <button
             onClick={() => setIsModalOpen(true)}
-            className="text-sm text-primary hover:text-purple-700"
+            className="inline-flex items-center gap-2 rounded-lg bg-[#792990] px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
           >
-            + Adicionar Contato
+            <span className="text-lg text-white">+</span>
+            Adicionar Contato
           </button>
         )}
       </div>
