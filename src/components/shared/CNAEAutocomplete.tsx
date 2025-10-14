@@ -87,15 +87,15 @@ export function CNAEAutocomplete({
       )}
 
       {value ? (
-        <div className="flex items-center justify-between rounded-md border border-gray-300 bg-gray-50 px-3 py-2">
+        <div className="flex items-center justify-between rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2">
           <div className="flex-1">
-            <span className="font-mono text-sm text-gray-600">{value.code}</span>
-            <span className="ml-2 text-sm text-gray-900">{value.description}</span>
+            <span className="font-mono text-sm text-gray-400">{value.code}</span>
+            <span className="ml-2 text-sm text-gray-200">{value.description}</span>
           </div>
           <button
             type="button"
             onClick={handleClear}
-            className="ml-2 text-gray-400 hover:text-red-600"
+            className="ml-2 text-gray-400 hover:text-red-400"
             title="Remover"
           >
             <X className="h-4 w-4" />
@@ -110,16 +110,16 @@ export function CNAEAutocomplete({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={placeholder}
-              className="w-full rounded-md border border-gray-300 py-2 pl-10 pr-3 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full rounded-md border border-[#792990] bg-[#2d1b3d] py-2 pl-10 pr-3 text-gray-200 placeholder-gray-500 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           {isOpen && (
-            <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-200 bg-white shadow-lg">
+            <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-600 bg-[#1a0022] shadow-lg">
               {loading ? (
-                <div className="px-3 py-2 text-sm text-gray-500">Buscando...</div>
+                <div className="px-3 py-2 text-sm text-gray-400">Buscando...</div>
               ) : results.length === 0 ? (
-                <div className="px-3 py-2 text-sm text-gray-500">
+                <div className="px-3 py-2 text-sm text-gray-400">
                   Nenhum CNAE encontrado
                 </div>
               ) : (
@@ -128,10 +128,10 @@ export function CNAEAutocomplete({
                     key={cnae.id}
                     type="button"
                     onClick={() => handleSelect(cnae)}
-                    className="w-full px-3 py-2 text-left hover:bg-gray-100"
+                    className="w-full px-3 py-2 text-left hover:bg-[#2d1b3d] transition-colors"
                   >
-                    <div className="font-mono text-sm text-gray-600">{cnae.code}</div>
-                    <div className="text-sm text-gray-900">{cnae.description}</div>
+                    <div className="font-mono text-xs text-gray-400">{cnae.code}</div>
+                    <div className="text-sm text-gray-200">{cnae.description}</div>
                   </button>
                 ))
               )}
@@ -146,7 +146,7 @@ export function CNAEAutocomplete({
 
       {!value && !isOpen && (
         <p className="text-xs text-gray-500">
-          Para empresas internacionais, use o campo "Atividade Internacional" abaixo
+          Para empresas internacionais, use o campo &quot;Atividade Internacional&quot; abaixo
         </p>
       )}
     </div>

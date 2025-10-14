@@ -27,6 +27,10 @@ export const organizationSchema = z.object({
   companyOwner: z.string().optional(),
   companySize: z.string().optional(),
 
+  // CNAE
+  primaryCNAEId: z.string().optional(),
+  internationalActivity: z.string().optional(),
+
   // Social Media
   instagram: z.string().optional(),
   linkedin: z.string().optional(),

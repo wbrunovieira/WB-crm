@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   getLeadSecondaryCNAEs,
   getOrganizationSecondaryCNAEs,
@@ -33,9 +33,24 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
   const [adding, setAdding] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
 
+  const loadCNAEs = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data =
+        entityType === "lead"
+          ? await getLeadSecondaryCNAEs(entityId)
+          : await getOrganizationSecondaryCNAEs(entityId);
+      setCnaes(data);
+    } catch (err) {
+      console.error("Error loading CNAEs:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [entityId, entityType]);
+
   useEffect(() => {
     loadCNAEs();
-  }, [entityId, entityType]);
+  }, [loadCNAEs]);
 
   useEffect(() => {
     const searchTimer = setTimeout(async () => {
@@ -48,8 +63,8 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
             (r) => !cnaes.some((c) => c.id === r.id)
           );
           setSearchResults(filtered);
-        } catch (error) {
-          console.error("Error searching:", error);
+        } catch (err) {
+          console.error("Error searching:", err);
         } finally {
           setSearching(false);
         }
@@ -60,21 +75,6 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
 
     return () => clearTimeout(searchTimer);
   }, [query, cnaes]);
-
-  const loadCNAEs = async () => {
-    setLoading(true);
-    try {
-      const data =
-        entityType === "lead"
-          ? await getLeadSecondaryCNAEs(entityId)
-          : await getOrganizationSecondaryCNAEs(entityId);
-      setCnaes(data);
-    } catch (error) {
-      console.error("Error loading CNAEs:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleAdd = async (cnaeId: string) => {
     setAdding(cnaeId);
@@ -88,7 +88,8 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
       setQuery("");
       setSearchResults([]);
       setShowAdd(false);
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as Error;
       alert(error.message || "Erro ao adicionar CNAE");
     } finally {
       setAdding(null);
@@ -106,7 +107,8 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
         await removeSecondaryCNAEFromOrganization(entityId, cnaeId);
       }
       await loadCNAEs();
-    } catch (error: any) {
+    } catch (err) {
+      const error = err as Error;
       alert(error.message || "Erro ao remover CNAE");
     } finally {
       setRemoving(null);

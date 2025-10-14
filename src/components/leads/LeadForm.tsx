@@ -5,6 +5,7 @@ import { toast } from "sonner";
 import { createLead, updateLead } from "@/actions/leads";
 import { useState } from "react";
 import { LabelSelect } from "@/components/shared/LabelSelect";
+import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
 import { brazilianStates } from "@/lib/lists/brazilian-states";
@@ -46,6 +47,8 @@ type Lead = {
   businessStatus?: string | null;
   primaryActivity?: string | null;
   secondaryActivities?: string | null;
+  primaryCNAEId?: string | null;
+  internationalActivity?: string | null;
   source?: string | null;
   quality?: string | null;
   searchTerm?: string | null;
@@ -65,6 +68,7 @@ export function LeadForm({ lead }: LeadFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [labelId, setLabelId] = useState<string | null>(lead?.labelId || null);
   const [selectedCountry, setSelectedCountry] = useState<string>(lead?.country || "");
+  const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -133,6 +137,8 @@ export function LeadForm({ lead }: LeadFormProps) {
       businessStatus: getString("businessStatus"),
       primaryActivity: getString("primaryActivity"),
       secondaryActivities: getString("secondaryActivities"),
+      primaryCNAEId: primaryCNAE?.id || undefined,
+      internationalActivity: getString("internationalActivity"),
       source: getString("source"),
       quality: getString("quality") as "cold" | "warm" | "hot" | undefined,
       searchTerm: getString("searchTerm"),
@@ -598,29 +604,57 @@ export function LeadForm({ lead }: LeadFormProps) {
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300">
-              Atividade Primária
-            </label>
-            <input
-              type="text"
-              name="primaryActivity"
-              placeholder="CNAE ou descrição"
-              defaultValue={lead?.primaryActivity || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+          <div className="md:col-span-2">
+            <CNAEAutocomplete
+              value={primaryCNAE}
+              onChange={setPrimaryCNAE}
+              label="Atividade Primária (CNAE) - Empresas Brasileiras"
+              placeholder="Digite código ou descrição do CNAE..."
             />
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300">
-              Atividades Secundárias
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Atividade Internacional (Empresas Estrangeiras)
             </label>
             <input
               type="text"
-              name="secondaryActivities"
-              placeholder="Outras atividades (separadas por vírgula)"
-              defaultValue={lead?.secondaryActivities || ""}
+              name="internationalActivity"
+              placeholder="Ex: Software Development, Digital Marketing, E-commerce..."
+              defaultValue={lead?.internationalActivity || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
+            <p className="mt-1 text-xs text-gray-400">
+              Use este campo para empresas não-brasileiras ou se não encontrar o CNAE adequado
+            </p>
+          </div>
+          <div className="md:col-span-2 border-t border-gray-700 pt-4">
+            <p className="text-xs text-gray-400 mb-2">
+              Campos antigos (serão descontinuados - use CNAE acima)
+            </p>
+            <div className="grid gap-4 md:grid-cols-2 opacity-50">
+              <div>
+                <label className="block text-sm font-medium text-gray-300">
+                  Atividade Primária (deprecated)
+                </label>
+                <input
+                  type="text"
+                  name="primaryActivity"
+                  defaultValue={lead?.primaryActivity || ""}
+                  className="mt-1 block w-full rounded-md border border-gray-600 bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300">
+                  Atividades Secundárias (deprecated)
+                </label>
+                <input
+                  type="text"
+                  name="secondaryActivities"
+                  defaultValue={lead?.secondaryActivities || ""}
+                  className="mt-1 block w-full rounded-md border border-gray-600 bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-gray-600 focus:outline-none focus:ring-1 focus:ring-gray-600"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>

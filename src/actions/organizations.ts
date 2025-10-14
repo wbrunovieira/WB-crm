@@ -50,6 +50,7 @@ export async function getOrganizationById(id: string) {
       ownerId: session.user.id,
     },
     include: {
+      primaryCNAE: true,
       contacts: {
         orderBy: {
           name: "asc",
@@ -146,6 +147,8 @@ export async function createOrganization(data: OrganizationFormData) {
       description: validated.description || null,
       companyOwner: validated.companyOwner || null,
       companySize: validated.companySize || null,
+      primaryCNAEId: validated.primaryCNAEId || null,
+      internationalActivity: validated.internationalActivity || null,
       instagram: validated.instagram || null,
       linkedin: validated.linkedin || null,
       facebook: validated.facebook || null,
@@ -196,6 +199,8 @@ export async function updateOrganization(
       description: validated.description || null,
       companyOwner: validated.companyOwner || null,
       companySize: validated.companySize || null,
+      primaryCNAEId: validated.primaryCNAEId || null,
+      internationalActivity: validated.internationalActivity || null,
       instagram: validated.instagram || null,
       linkedin: validated.linkedin || null,
       facebook: validated.facebook || null,

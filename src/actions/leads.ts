@@ -64,6 +64,8 @@ export async function getLeadById(id: string) {
       ownerId: session.user.id,
     },
     include: {
+      primaryCNAE: true,
+      label: true,
       leadContacts: {
         orderBy: [
           { isPrimary: "desc" },
@@ -332,6 +334,8 @@ export async function convertLeadToOrganization(leadId: string) {
         description: lead.description,
         companyOwner: lead.companyOwner,
         companySize: lead.companySize,
+        primaryCNAEId: lead.primaryCNAEId,
+        internationalActivity: lead.internationalActivity,
         instagram: lead.instagram,
         linkedin: lead.linkedin,
         facebook: lead.facebook,
@@ -381,7 +385,7 @@ export async function convertLeadToOrganization(leadId: string) {
 
     // 4. Migrate Tech Profile data from Lead to Organization
     // Get all tech profile data from the lead
-    const [leadLanguages, leadFrameworks, leadHosting, leadDatabases, leadERPs, leadCRMs, leadEcommerces] = await Promise.all([
+    const [leadLanguages, leadFrameworks, leadHosting, leadDatabases, leadERPs, leadCRMs, leadEcommerces, leadSecondaryCNAEs] = await Promise.all([
       tx.leadLanguage.findMany({ where: { leadId: lead.id } }),
       tx.leadFramework.findMany({ where: { leadId: lead.id } }),
       tx.leadHosting.findMany({ where: { leadId: lead.id } }),
@@ -389,9 +393,10 @@ export async function convertLeadToOrganization(leadId: string) {
       tx.leadERP.findMany({ where: { leadId: lead.id } }),
       tx.leadCRM.findMany({ where: { leadId: lead.id } }),
       tx.leadEcommerce.findMany({ where: { leadId: lead.id } }),
+      tx.leadSecondaryCNAE.findMany({ where: { leadId: lead.id } }),
     ]);
 
-    // Create corresponding organization tech profile entries
+    // Create corresponding organization tech profile entries and secondary CNAEs
     await Promise.all([
       ...leadLanguages.map(l => tx.organizationLanguage.create({
         data: { organizationId: organization.id, languageId: l.languageId }
@@ -413,6 +418,9 @@ export async function convertLeadToOrganization(leadId: string) {
       })),
       ...leadEcommerces.map(e => tx.organizationEcommerce.create({
         data: { organizationId: organization.id, ecommerceId: e.ecommerceId }
+      })),
+      ...leadSecondaryCNAEs.map(cnae => tx.organizationSecondaryCNAE.create({
+        data: { organizationId: organization.id, cnaeId: cnae.cnaeId }
       })),
     ]);
 

@@ -5,6 +5,7 @@ import { LeadContactsList } from "@/components/leads/LeadContactsList";
 import { LeadActivitiesList } from "@/components/leads/LeadActivitiesList";
 import { LeadProductsSection } from "@/components/leads/LeadProductsSection";
 import { LeadTechProfileSection } from "@/components/leads/LeadTechProfileSection";
+import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -495,7 +496,7 @@ export default async function LeadDetailPage({
             {lead.searchTerm && (
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Termo de Busca</dt>
-                <dd className="text-base font-medium text-purple-900">"{lead.searchTerm}"</dd>
+                <dd className="text-base font-medium text-purple-900">&quot;{lead.searchTerm}&quot;</dd>
               </div>
             )}
             {lead.category && (
@@ -519,6 +520,44 @@ export default async function LeadDetailPage({
 
       {/* Tech Profile */}
       <LeadTechProfileSection leadId={lead.id} />
+
+      {/* CNAE Management */}
+      {!lead.convertedAt && (
+        <div className="mt-6 rounded-xl bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
+          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-gray-100">
+            <span className="text-2xl">📊</span>
+            Atividades Econômicas (CNAE)
+          </h2>
+          {lead.primaryCNAE && (
+            <div className="mb-6 p-4 rounded-lg bg-purple-50 border-2 border-purple-200">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-purple-700 mb-2">
+                Atividade Primária
+              </dt>
+              <dd className="flex items-center gap-3">
+                <span className="font-mono text-sm font-bold text-purple-900 bg-white px-3 py-1 rounded-md shadow-sm">
+                  {lead.primaryCNAE.code}
+                </span>
+                <span className="text-base font-medium text-gray-900">
+                  {lead.primaryCNAE.description}
+                </span>
+              </dd>
+            </div>
+          )}
+          {lead.internationalActivity && (
+            <div className="mb-6 p-4 rounded-lg bg-blue-50 border-2 border-blue-200">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-blue-700 mb-2">
+                Atividade Internacional
+              </dt>
+              <dd className="text-base font-medium text-gray-900">
+                {lead.internationalActivity}
+              </dd>
+            </div>
+          )}
+          <div className="mt-6">
+            <SecondaryCNAEsManager entityId={lead.id} entityType="lead" />
+          </div>
+        </div>
+      )}
 
       {/* Lead Contacts */}
       <div className="mt-6">

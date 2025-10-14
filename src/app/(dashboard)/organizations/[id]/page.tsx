@@ -3,6 +3,7 @@ import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrgan
 import { OrganizationProjects } from "@/components/organizations/OrganizationProjects";
 import { OrganizationActivities } from "@/components/organizations/OrganizationActivities";
 import { OrganizationTechProfileSection } from "@/components/organizations/OrganizationTechProfileSection";
+import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -319,6 +320,42 @@ export default async function OrganizationDetailPage({
       {/* Tech Profile */}
       <div className="mt-6">
         <OrganizationTechProfileSection organizationId={organization.id} />
+      </div>
+
+      {/* CNAE Management */}
+      <div className="mt-6 rounded-lg bg-white p-6 shadow">
+        <h2 className="mb-4 text-lg font-semibold">Atividades Econômicas (CNAE)</h2>
+        {organization.primaryCNAE && (
+          <div className="mb-6 rounded-lg border-2 border-purple-200 bg-purple-50 p-4">
+            <dt className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-700">
+              Atividade Primária
+            </dt>
+            <dd className="flex items-center gap-3">
+              <span className="rounded-md bg-white px-3 py-1 font-mono text-sm font-bold text-purple-900 shadow-sm">
+                {organization.primaryCNAE.code}
+              </span>
+              <span className="text-base font-medium text-gray-900">
+                {organization.primaryCNAE.description}
+              </span>
+            </dd>
+          </div>
+        )}
+        {organization.internationalActivity && (
+          <div className="mb-6 rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
+            <dt className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+              Atividade Internacional
+            </dt>
+            <dd className="text-base font-medium text-gray-900">
+              {organization.internationalActivity}
+            </dd>
+          </div>
+        )}
+        <div className="mt-6">
+          <SecondaryCNAEsManager
+            entityId={organization.id}
+            entityType="organization"
+          />
+        </div>
       </div>
 
       {/* Activities */}

@@ -8,6 +8,7 @@ import {
   updateOrganization,
 } from "@/actions/organizations";
 import { LabelSelect } from "@/components/shared/LabelSelect";
+import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
 import { brazilianStates } from "@/lib/lists/brazilian-states";
@@ -40,6 +41,13 @@ interface OrganizationFormProps {
     twitter: string | null;
     tiktok: string | null;
     labelId: string | null;
+    primaryCNAEId: string | null;
+    internationalActivity: string | null;
+    primaryCNAE?: {
+      id: string;
+      code: string;
+      description: string;
+    } | null;
   };
 }
 
@@ -49,6 +57,9 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
   const [error, setError] = useState("");
   const [labelId, setLabelId] = useState<string | null>(organization?.labelId || null);
   const [selectedCountry, setSelectedCountry] = useState<string>(organization?.country || "");
+  const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(
+    organization?.primaryCNAE || null
+  );
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -81,6 +92,8 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         description: formData.get("description") as string,
         companyOwner: formData.get("companyOwner") as string,
         companySize: formData.get("companySize") as string,
+        primaryCNAEId: primaryCNAE?.id || undefined,
+        internationalActivity: formData.get("internationalActivity") as string,
         instagram: formData.get("instagram") as string,
         linkedin: formData.get("linkedin") as string,
         facebook: formData.get("facebook") as string,
@@ -472,6 +485,37 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <CNAEAutocomplete
+              value={primaryCNAE}
+              onChange={setPrimaryCNAE}
+              label="Atividade Primária (CNAE) - Empresas Brasileiras"
+              placeholder="Digite código ou descrição do CNAE..."
+            />
+          </div>
+
+          <div className="md:col-span-2">
+            <label
+              htmlFor="internationalActivity"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Atividade Internacional (Empresas Estrangeiras)
+            </label>
+            <input
+              type="text"
+              id="internationalActivity"
+              name="internationalActivity"
+              placeholder="Ex: Software Development, Digital Marketing, E-commerce..."
+              defaultValue={organization?.internationalActivity || ""}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Use este campo para empresas não-brasileiras ou se não encontrar o CNAE adequado
+            </p>
           </div>
         </div>
 

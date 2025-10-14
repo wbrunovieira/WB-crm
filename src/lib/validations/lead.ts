@@ -50,6 +50,8 @@ export const leadSchema = z.object({
   // Atividades
   primaryActivity: z.string().optional(),
   secondaryActivities: z.string().optional(),
+  primaryCNAEId: z.string().optional(),
+  internationalActivity: z.string().optional(),
 
   // Metadados da Busca
   source: z.string().optional(),
