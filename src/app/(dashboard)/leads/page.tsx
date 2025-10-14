@@ -91,17 +91,19 @@ export default async function LeadsPage({
               {leads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <Link
-                      href={`/leads/${lead.id}`}
-                      className="font-medium text-primary hover:text-purple-700"
-                    >
-                      {lead.businessName}
-                    </Link>
-                    {lead.registeredName && (
-                      <p className="text-xs text-gray-500">
-                        {lead.registeredName}
-                      </p>
-                    )}
+                    <div className="flex flex-col gap-1">
+                      <Link
+                        href={`/leads/${lead.id}`}
+                        className="text-lg font-semibold text-gray-400"
+                      >
+                        {lead.businessName}
+                      </Link>
+                      {lead.registeredName && (
+                        <p className="text-xs font-normal text-gray-500 italic">
+                          {lead.registeredName}
+                        </p>
+                      )}
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {lead.city && lead.state

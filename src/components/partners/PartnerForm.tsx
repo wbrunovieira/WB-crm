@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { createPartner, updatePartner } from "@/actions/partners";
 import { partnerTypes } from "@/lib/lists/partner-types";
 import { companySizes } from "@/lib/lists/company-sizes";
+import { countries } from "@/lib/lists/countries";
 
 interface PartnerFormProps {
   partner?: {
@@ -330,13 +331,19 @@ export function PartnerForm({ partner }: PartnerFormProps) {
             <label htmlFor="country" className="block text-sm font-medium text-gray-700">
               País
             </label>
-            <input
-              type="text"
+            <select
               id="country"
               name="country"
               defaultValue={partner?.country || ""}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
+            >
+              <option value="">Selecione...</option>
+              {countries.map((country) => (
+                <option key={country.value} value={country.value}>
+                  {country.label}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
