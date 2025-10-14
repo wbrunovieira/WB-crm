@@ -13,6 +13,7 @@ import {
   FolderKanban,
   Layers,
   CheckSquare,
+  Settings,
   Menu,
   X,
 } from "lucide-react";
@@ -69,6 +70,11 @@ const navItems = [
     href: "/activities",
     icon: CheckSquare,
   },
+  {
+    name: "Admin",
+    href: "/admin",
+    icon: Settings,
+  },
 ];
 
 export function MainNav() {
@@ -78,6 +84,9 @@ export function MainNav() {
   const isActive = (href: string) => {
     if (href === "/dashboard") {
       return pathname === "/dashboard";
+    }
+    if (href.startsWith("/admin")) {
+      return pathname.startsWith("/admin");
     }
     return pathname.startsWith(href);
   };

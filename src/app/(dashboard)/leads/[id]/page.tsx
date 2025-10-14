@@ -3,6 +3,7 @@ import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
 import { LeadContactsList } from "@/components/leads/LeadContactsList";
 import { LeadActivitiesList } from "@/components/leads/LeadActivitiesList";
+import { LeadProductsSection } from "@/components/leads/LeadProductsSection";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -512,8 +513,11 @@ export default async function LeadDetailPage({
         </div>
       )}
 
+      {/* Lead Products */}
+      <LeadProductsSection leadId={lead.id} isConverted={!!lead.convertedAt} />
+
       {/* Lead Contacts */}
-      <div className="mt-8">
+      <div className="mt-6">
         <LeadContactsList
           leadId={lead.id}
           leadContacts={lead.leadContacts}

@@ -162,6 +162,7 @@ model Lead {
   activities            Activity[]    // Lead tem múltiplas atividades
   convertedOrganization Organization? @relation("LeadConversion", fields: [convertedToOrganizationId], references: [id])
   referredByPartner     Partner?      @relation("PartnerReferrals", fields: [referredByPartnerId], references: [id], onDelete: SetNull)
+  leadProducts          LeadProduct[] // Produtos de interesse do Lead
 
   @@index([ownerId])
   @@index([status])
@@ -248,11 +249,12 @@ model Organization {
   updatedAt DateTime @updatedAt
 
   // Relations
-  owner      User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  label      Label?    @relation(fields: [labelId], references: [id], onDelete: SetNull)
-  contacts   Contact[]
-  deals      Deal[]
-  sourceLead Lead?     @relation("LeadConversion") // Organization veio de qual Lead
+  owner                User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  label                Label?                 @relation(fields: [labelId], references: [id], onDelete: SetNull)
+  contacts             Contact[]
+  deals                Deal[]
+  sourceLead           Lead?                  @relation("LeadConversion") // Organization veio de qual Lead
+  organizationProducts OrganizationProduct[]  // Produtos da Organization
 
   @@index([ownerId])
   @@index([sourceLeadId])
@@ -382,6 +384,10 @@ model Deal {
   contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   activities   Activity[]
+  dealProducts DealProduct[] // Produtos do Deal
+  dealTechStacks DealTechStack[] // Categorias técnicas (Frontend, Backend, etc)
+  dealLanguages  DealLanguage[]  // Linguagens de programação
+  dealFrameworks DealFramework[] // Frameworks utilizados
 
   @@index([ownerId])
   @@index([stageId])
@@ -467,12 +473,296 @@ model Partner {
   updatedAt    DateTime @updatedAt
 
   // Relations
-  owner         User       @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  contacts      Contact[]  // Contatos da empresa parceira
-  activities    Activity[]
-  referredLeads Lead[]     @relation("PartnerReferrals")
+  owner           User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  contacts        Contact[]        // Contatos da empresa parceira
+  activities      Activity[]
+  referredLeads   Lead[]           @relation("PartnerReferrals")
+  partnerProducts PartnerProduct[] // Produtos/serviços do parceiro
 
   @@index([ownerId])
   @@index([partnerType])
   @@map("partners")
+}
+
+// ============ BUSINESS LINES & PRODUCTS ============
+
+model BusinessLine {
+  id          String   @id @default(cuid())
+  name        String   // "Desenvolvimento Web", "Automação", "IA"
+  slug        String   @unique // "dev-web", "automation", "ai"
+  description String?
+  color       String?  // Hex color for UI (#792990)
+  icon        String?  // Lucide icon name
+  isActive    Boolean  @default(true)
+  order       Int      @default(0) // Display order
+
+  // Relations
+  products    Product[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("business_lines")
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  name            String   // "E-commerce", "Chatbot WhatsApp"
+  slug            String   @unique // "ecommerce", "chatbot-whatsapp"
+  description     String?
+  businessLineId  String
+
+  // Pricing Info (reference only)
+  basePrice       Float?   // Base reference price
+  currency        String   @default("BRL")
+  pricingType     String?  // "fixed", "hourly", "monthly", "custom"
+
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+
+  // Relations
+  businessLine    BusinessLine @relation(fields: [businessLineId], references: [id], onDelete: Cascade)
+
+  leadProducts         LeadProduct[]
+  organizationProducts OrganizationProduct[]
+  dealProducts         DealProduct[]
+  partnerProducts      PartnerProduct[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([businessLineId])
+  @@index([isActive])
+  @@map("products")
+}
+
+// ============ MANY-TO-MANY RELATIONS ============
+
+model LeadProduct {
+  id             String   @id @default(cuid())
+  leadId         String
+  productId      String
+
+  // Interest context
+  interestLevel  String?  // "high", "medium", "low"
+  estimatedValue Float?   // Estimated deal value for this product
+  notes          String?  // Specific notes about interest
+
+  // Relations
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, productId])
+  @@index([leadId])
+  @@index([productId])
+  @@index([interestLevel])
+  @@map("lead_products")
+}
+
+model OrganizationProduct {
+  id              String   @id @default(cuid())
+  organizationId  String
+  productId       String
+
+  // Purchase history
+  status          String   @default("interested") // interested, purchased, declined
+  firstPurchaseAt DateTime?
+  lastPurchaseAt  DateTime?
+  totalPurchases  Int      @default(0)
+  totalRevenue    Float    @default(0)
+
+  notes           String?
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([organizationId, productId])
+  @@index([organizationId])
+  @@index([productId])
+  @@index([status])
+  @@map("organization_products")
+}
+
+model DealProduct {
+  id          String   @id @default(cuid())
+  dealId      String
+  productId   String
+
+  // Product details in this deal
+  quantity    Int      @default(1)
+  unitPrice   Float    // Negotiated price
+  discount    Float    @default(0) // Discount in currency
+  totalValue  Float    // (quantity * unitPrice) - discount
+
+  // Additional info
+  description String?  // Customizations, specifications
+  deliveryTime Int?    // Estimated delivery in days
+
+  // Relations
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dealId, productId])
+  @@index([dealId])
+  @@index([productId])
+  @@map("deal_products")
+}
+
+model PartnerProduct {
+  id             String   @id @default(cuid())
+  partnerId      String
+  productId      String
+
+  // Partner expertise
+  expertiseLevel String?  // "basic", "intermediate", "expert"
+  canRefer       Boolean  @default(true)  // Can refer clients for this product?
+  canDeliver     Boolean  @default(false) // Can deliver this product?
+
+  // Commission (if applicable)
+  commissionType  String?  // "percentage", "fixed"
+  commissionValue Float?   // Percentage or fixed value
+
+  notes          String?
+
+  // Relations
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partnerId, productId])
+  @@index([partnerId])
+  @@index([productId])
+  @@index([canRefer])
+  @@map("partner_products")
+}
+
+// ============ TECH STACK ============
+
+model TechCategory {
+  id          String   @id @default(cuid())
+  name        String   // "Frontend", "Backend", "Fullstack", "DevOps", "Data Science", "Mobile"
+  slug        String   @unique // "frontend", "backend", "fullstack"
+  description String?
+  color       String?  // Hex color for UI
+  icon        String?  // Lucide icon name
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  // Relations
+  dealTechStacks DealTechStack[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_categories")
+}
+
+model TechLanguage {
+  id          String   @id @default(cuid())
+  name        String   // "JavaScript", "Python", "PHP", "Java", "Go", "Ruby"
+  slug        String   @unique // "javascript", "python"
+  color       String?  // Hex color for badges
+  icon        String?  // URL or icon name for logo
+  isActive    Boolean  @default(true)
+
+  // Relations
+  dealLanguages DealLanguage[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_languages")
+}
+
+model TechFramework {
+  id           String   @id @default(cuid())
+  name         String   // "React", "Next.js", "Django", "Laravel", "Vue.js"
+  slug         String   @unique // "react", "nextjs", "django"
+  languageSlug String?  // Optional relation to language (e.g., "javascript", "python")
+  color        String?  // Hex color for badges
+  icon         String?  // URL or icon name for logo
+  isActive     Boolean  @default(true)
+
+  // Relations
+  dealFrameworks DealFramework[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([languageSlug])
+  @@map("tech_frameworks")
+}
+
+// ============ DEAL TECH STACK JUNCTIONS ============
+
+model DealTechStack {
+  id             String   @id @default(cuid())
+  dealId         String
+  techCategoryId String
+
+  // Relations
+  deal         Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  techCategory TechCategory @relation(fields: [techCategoryId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([dealId, techCategoryId])
+  @@index([dealId])
+  @@index([techCategoryId])
+  @@map("deal_tech_stacks")
+}
+
+model DealLanguage {
+  id         String   @id @default(cuid())
+  dealId     String
+  languageId String
+  isPrimary  Boolean  @default(false) // Main language of the project
+
+  // Relations
+  deal     Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  language TechLanguage @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([dealId, languageId])
+  @@index([dealId])
+  @@index([languageId])
+  @@index([isPrimary])
+  @@map("deal_languages")
+}
+
+model DealFramework {
+  id          String   @id @default(cuid())
+  dealId      String
+  frameworkId String
+
+  // Relations
+  deal      Deal          @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  framework TechFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([dealId, frameworkId])
+  @@index([dealId])
+  @@index([frameworkId])
+  @@map("deal_frameworks")
 }

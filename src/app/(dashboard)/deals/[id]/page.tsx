@@ -4,6 +4,8 @@ import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import DeleteDealButton from "@/components/deals/DeleteDealButton";
 import ActivityTimeline from "@/components/activities/ActivityTimeline";
+import { DealProductsSection } from "@/components/deals/DealProductsSection";
+import { DealTechStackSection } from "@/components/deals/DealTechStackSection";
 
 export default async function DealDetailPage({
   params,
@@ -164,6 +166,12 @@ export default async function DealDetailPage({
           </dl>
         </div>
       </div>
+
+      {/* Produtos do Deal */}
+      <DealProductsSection dealId={deal.id} />
+
+      {/* Tech Stack do Deal */}
+      <DealTechStackSection dealId={deal.id} />
 
       <div className="mt-6 rounded-lg bg-white p-6 shadow">
         <div className="mb-4 flex items-center justify-between">
