@@ -126,9 +126,15 @@ model Lead {
   equityCapital   Float?
   businessStatus  String?
 
-  // Atividades
+  // Atividades (deprecated - usar CNAEs)
   primaryActivity     String?
   secondaryActivities String?
+
+  // Atividades CNAE (empresas brasileiras)
+  primaryCNAEId       String? // CNAE primário
+
+  // Atividade para empresas internacionais (texto livre)
+  internationalActivity String?
 
   // Metadados da Busca
   source        String?
@@ -173,12 +179,17 @@ model Lead {
   leadCRMs        LeadCRM[]
   leadEcommerces  LeadEcommerce[]
 
+  // CNAEs
+  primaryCNAE         CNAE?                @relation("LeadPrimaryCNAE", fields: [primaryCNAEId], references: [id], onDelete: SetNull)
+  secondaryCNAEs      LeadSecondaryCNAE[] // Múltiplas atividades secundárias
+
   @@index([ownerId])
   @@index([status])
   @@index([quality])
   @@index([convertedAt])
   @@index([labelId])
   @@index([referredByPartnerId])
+  @@index([primaryCNAEId])
   @@map("leads")
 }
 
@@ -237,6 +248,12 @@ model Organization {
   companyOwner   String?
   companySize    String?
 
+  // Atividades CNAE (empresas brasileiras)
+  primaryCNAEId       String? // CNAE primário
+
+  // Atividade para empresas internacionais (texto livre)
+  internationalActivity String?
+
   // Social Media
   instagram String?
   linkedin  String?
@@ -274,9 +291,14 @@ model Organization {
   organizationCRMs        OrganizationCRM[]
   organizationEcommerces  OrganizationEcommerce[]
 
+  // CNAEs
+  primaryCNAE                CNAE?                        @relation("OrganizationPrimaryCNAE", fields: [primaryCNAEId], references: [id], onDelete: SetNull)
+  secondaryCNAEs             OrganizationSecondaryCNAE[] // Múltiplas atividades secundárias
+
   @@index([ownerId])
   @@index([sourceLeadId])
   @@index([labelId])
+  @@index([primaryCNAEId])
   @@map("organizations")
 }
 
@@ -1186,4 +1208,64 @@ model OrganizationEcommerce {
   @@index([organizationId])
   @@index([ecommerceId])
   @@map("organization_ecommerce")
+}
+
+// ============ CNAE (Classificação Nacional de Atividades Econômicas) ============
+
+model CNAE {
+  id       String   @id @default(cuid())
+  code     String   @unique // Código CNAE (ex: "0111-3/01")
+  description String            // Descrição da atividade (ex: "Cultivo de arroz")
+
+  // Relations
+  leadsPrimary            Lead[]                     @relation("LeadPrimaryCNAE")
+  leadsSecondary          LeadSecondaryCNAE[]
+  organizationsPrimary    Organization[]             @relation("OrganizationPrimaryCNAE")
+  organizationsSecondary  OrganizationSecondaryCNAE[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@map("cnaes")
+}
+
+// ============ LEAD CNAE JUNCTION (Secondary Activities) ============
+
+model LeadSecondaryCNAE {
+  id      String   @id @default(cuid())
+  leadId  String
+  cnaeId  String
+
+  // Relations
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  cnae CNAE @relation(fields: [cnaeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, cnaeId])
+  @@index([leadId])
+  @@index([cnaeId])
+  @@map("lead_secondary_cnaes")
+}
+
+// ============ ORGANIZATION CNAE JUNCTION (Secondary Activities) ============
+
+model OrganizationSecondaryCNAE {
+  id             String   @id @default(cuid())
+  organizationId String
+  cnaeId         String
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cnae         CNAE         @relation(fields: [cnaeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, cnaeId])
+  @@index([organizationId])
+  @@index([cnaeId])
+  @@map("organization_secondary_cnaes")
 }
