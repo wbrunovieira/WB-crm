@@ -635,6 +635,68 @@ export default function ActivityCalendar({
     }
   };
 
+  const getActivitiesForPeriod = () => {
+    if (view === "month") {
+      return activities.filter((activity) => {
+        if (!activity.dueDate) return false;
+        const activityDate = new Date(activity.dueDate);
+        return (
+          activityDate.getUTCMonth() === currentMonth &&
+          activityDate.getUTCFullYear() === currentYear
+        );
+      });
+    } else if (view === "week") {
+      const startOfWeek = new Date(selectedDate);
+      startOfWeek.setDate(selectedDate.getDate() - selectedDate.getDay());
+      startOfWeek.setHours(0, 0, 0, 0);
+      const endOfWeek = new Date(startOfWeek);
+      endOfWeek.setDate(startOfWeek.getDate() + 6);
+      endOfWeek.setHours(23, 59, 59, 999);
+
+      return activities.filter((activity) => {
+        if (!activity.dueDate) return false;
+        const activityDate = new Date(activity.dueDate);
+        return activityDate >= startOfWeek && activityDate <= endOfWeek;
+      });
+    } else if (view === "3day") {
+      const start = new Date(selectedDate);
+      start.setDate(selectedDate.getDate() - 1);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(selectedDate);
+      end.setDate(selectedDate.getDate() + 1);
+      end.setHours(23, 59, 59, 999);
+
+      return activities.filter((activity) => {
+        if (!activity.dueDate) return false;
+        const activityDate = new Date(activity.dueDate);
+        return activityDate >= start && activityDate <= end;
+      });
+    } else {
+      return getActivitiesForDate(selectedDate);
+    }
+  };
+
+  const getStatsByType = () => {
+    const periodActivities = getActivitiesForPeriod();
+    const types = [
+      { type: "call", label: "Ligações", icon: "📞", bgColor: "#dbeafe", borderColor: "#bfdbfe", barColor: "#3b82f6" },
+      { type: "meeting", label: "Reuniões", icon: "📅", bgColor: "#f3e8ff", borderColor: "#e9d5ff", barColor: "#a855f7" },
+      { type: "email", label: "E-mails", icon: "✉️", bgColor: "#dcfce7", borderColor: "#bbf7d0", barColor: "#22c55e" },
+      { type: "task", label: "Tarefas", icon: "📋", bgColor: "#fef9c3", borderColor: "#fef08a", barColor: "#eab308" },
+      { type: "whatsapp", label: "WhatsApp", icon: "💬", bgColor: "#d1fae5", borderColor: "#a7f3d0", barColor: "#10b981" },
+      { type: "visit", label: "Visitas", icon: "📍", bgColor: "#fee2e2", borderColor: "#fecaca", barColor: "#ef4444" },
+      { type: "instagram", label: "Instagram", icon: "📷", bgColor: "#fce7f3", borderColor: "#fbcfe8", barColor: "#ec4899" },
+    ];
+
+    return types.map(({ type, label, icon, bgColor, borderColor, barColor }) => {
+      const typeActivities = periodActivities.filter((a) => a.type === type);
+      const completed = typeActivities.filter((a) => a.completed).length;
+      const total = typeActivities.length;
+
+      return { type, label, icon, bgColor, borderColor, barColor, completed, total };
+    }).filter(stat => stat.total > 0);
+  };
+
   return (
     <div>
       <div className="mb-6 flex items-center justify-between">
@@ -702,6 +764,67 @@ export default function ActivityCalendar({
           </button>
         </div>
       </div>
+
+      {/* Stats Header - Only for day, 3day, and week views */}
+      {(view === "day" || view === "3day" || view === "week") && (
+        <div className="mb-6 rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <h3 className="mb-4 text-sm font-semibold uppercase tracking-wide text-gray-600">
+            Estatísticas por Tipo de Atividade
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            {getStatsByType().map((stat) => (
+              <div
+                key={stat.type}
+                className="rounded-lg border-2 p-4"
+                style={{
+                  backgroundColor: stat.bgColor,
+                  borderColor: stat.borderColor,
+                }}
+              >
+                <div className="mb-2 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl">{stat.icon}</span>
+                    <span className="text-sm font-semibold text-gray-700">
+                      {stat.label}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-bold text-gray-900">
+                    {stat.completed}
+                  </span>
+                  <span className="text-sm text-gray-600">
+                    / {stat.total}
+                  </span>
+                </div>
+                <div className="mt-2">
+                  <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                    <div
+                      className="h-full transition-all duration-300"
+                      style={{
+                        width: `${stat.total > 0 ? (stat.completed / stat.total) * 100 : 0}%`,
+                        backgroundColor: stat.barColor,
+                      }}
+                    />
+                  </div>
+                  <p className="mt-1 text-xs text-gray-600">
+                    {stat.total > 0
+                      ? `${Math.round((stat.completed / stat.total) * 100)}% concluído`
+                      : "0% concluído"}
+                  </p>
+                </div>
+              </div>
+            ))}
+            {getStatsByType().length === 0 && (
+              <div className="col-span-full rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
+                <p className="text-sm text-gray-500">
+                  Nenhuma atividade neste período
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {view === "month" && renderMonthView()}
       {view === "week" && renderWeekView()}
