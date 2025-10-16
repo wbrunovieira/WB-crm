@@ -1,5 +1,7 @@
 import { getLeadById } from "@/actions/leads";
 import { LeadForm } from "@/components/leads/LeadForm";
+import { LeadTechProfileSection } from "@/components/leads/LeadTechProfileSection";
+import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
 import { notFound } from "next/navigation";
 
 export default async function EditLeadPage({
@@ -36,6 +38,17 @@ export default async function EditLeadPage({
       </div>
 
       <LeadForm lead={lead} />
+
+      {/* Secondary CNAEs */}
+      <div className="mt-6 rounded-lg bg-[#1a0022] p-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-200">
+          Atividades Secundárias (CNAEs)
+        </h2>
+        <SecondaryCNAEsManager entityId={lead.id} entityType="lead" />
+      </div>
+
+      {/* Tech Profile */}
+      <LeadTechProfileSection leadId={lead.id} />
     </div>
   );
 }
