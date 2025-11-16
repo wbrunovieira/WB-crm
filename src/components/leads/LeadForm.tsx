@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import { createLead, updateLead } from "@/actions/leads";
 import { useState } from "react";
@@ -393,9 +394,20 @@ export function LeadForm({ lead }: LeadFormProps) {
 
       {/* Contato */}
       <div className="rounded-lg bg-[#1a0022] p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-200">
-          Contato da Empresa
-        </h2>
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-200">
+            Contato da Empresa
+          </h2>
+          {lead?.id && (
+            <Link
+              href={`/contacts/new?leadId=${lead.id}`}
+              className="inline-flex items-center gap-2 rounded-md bg-[#792990] px-4 py-2 text-sm font-semibold text-white hover:bg-[#9333b8] transition-colors"
+            >
+              <span>➕</span>
+              Adicionar Contato
+            </Link>
+          )}
+        </div>
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-gray-300">

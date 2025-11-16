@@ -42,10 +42,27 @@ Required environment variables (see `.env.example`):
 All source code is in `/src`:
 - `/src/app` - Next.js App Router with route groups:
   - `(auth)/` - Login and registration pages (public)
-  - `(dashboard)/` - Protected dashboard routes (deals, contacts, activities, organizations, pipeline, leads, projects)
+  - `(dashboard)/` - Protected dashboard routes:
+    - `dashboard/` - Main dashboard page
+    - `deals/` - Deals list and CRUD (new, [id], [id]/edit)
+    - `contacts/` - Contacts list and CRUD (new, [id], [id]/edit)
+    - `activities/` - Activities list and CRUD (new, [id], [id]/edit, calendar)
+    - `organizations/` - Organizations list and CRUD (new, [id], [id]/edit)
+    - `pipeline/` - Kanban pipeline view
+    - `pipelines/` - Pipeline management ([id])
+    - `leads/` - Leads list and CRUD (new, [id], [id]/edit)
+    - `partners/` - Partners list and CRUD (new, [id], [id]/edit)
+    - `projects/` - External projects integration
+    - `admin/` - Admin area (business-lines, products, tech-stack, tech-profile)
   - `api/` - REST API routes for external integrations and NextAuth
-- `/src/components` - Feature-specific components organized by domain (deals, contacts, activities, organizations, pipeline, leads, projects)
-- `/src/actions` - Server Actions for each domain (deals.ts, contacts.ts, activities.ts, organizations.ts, leads.ts, pipelines.ts, stages.ts, labels.ts, external-projects.ts)
+- `/src/components` - Feature-specific components organized by domain (deals, contacts, activities, organizations, pipeline, leads, projects, partners, admin)
+- `/src/actions` - Server Actions for each domain:
+  - Core CRM: `deals.ts`, `contacts.ts`, `activities.ts`, `organizations.ts`, `leads.ts`, `partners.ts`
+  - Pipeline: `pipelines.ts`, `stages.ts`, `pipeline-view.ts`
+  - Lists: `organizations-list.ts`, `leads-list.ts`, `companies-list.ts`
+  - Products: `business-lines.ts`, `products.ts`, `product-links.ts`
+  - Tech: `tech-categories.ts`, `tech-languages.ts`, `tech-frameworks.ts`, `deal-tech-stack.ts`, `tech-profile-options.ts`, `lead-tech-profile.ts`, `organization-tech-profile.ts`
+  - Utilities: `labels.ts`, `external-projects.ts`, `cnaes.ts`
 - `/src/lib` - Core utilities:
   - `prisma.ts` - Prisma client singleton
   - `auth.ts` - NextAuth.js configuration with credentials provider
@@ -100,17 +117,22 @@ export async function createDeal(data: DealFormData) {
 ```
 
 ### Core Entities & Relations
-- **Lead**: Prospective companies from searches/imports with multiple LeadContacts. Can be converted to Organization. Can track referrals via `referredByPartnerId`
+- **Lead**: Prospective companies from searches/imports with multiple LeadContacts. Can be converted to Organization. Can track referrals via `referredByPartnerId`. Has tech profile (languages, frameworks, hosting, databases, ERPs, CRMs, ecommerce) and CNAE classifications
 - **LeadContact**: Individual contacts within a Lead. Can be converted to Contact
-- **Organization**: Converted Leads or manually created companies (tracks `sourceLeadId`). Can link to external projects via `externalProjectIds` (JSON array)
+- **Organization**: Converted Leads or manually created companies (tracks `sourceLeadId`). Can link to external projects via `externalProjectIds` (JSON array). Has tech profile and CNAE classifications
 - **Contact**: Individual people linked to Organizations, Leads, or Partners (tracks `sourceLeadContactId`)
-- **Deal**: Sales opportunities linked to Contact/Organization, positioned in Pipeline Stages
+- **Deal**: Sales opportunities linked to Contact/Organization, positioned in Pipeline Stages. Has products (via DealProduct junction), tech stack categories, languages, and frameworks
 - **Pipeline**: Container for sales process stages
 - **Stage**: Steps in Pipeline (order, probability)
-- **Activity**: Tasks/calls/meetings/emails/whatsapp/physical_visit/instagram_dm linked to Deals, Contacts, Leads, or Partners
-- **Partner**: Company-based entities for partnerships (consultoria, universidade, fornecedor, indicador, investidor). Can have Contacts and Activities, and refer Leads
+- **Activity**: Tasks/calls/meetings/emails/whatsapp/physical_visit/instagram_dm linked to Deals, Contacts, Leads, or Partners. Supports multiple contacts via `contactIds` JSON field
+- **Partner**: Company-based entities for partnerships (consultoria, universidade, fornecedor, indicador, investidor). Can have Contacts and Activities, and refer Leads. Can link to products
 - **User**: System users with ownership of all entities
 - **Label**: Color-coded tags for Leads and Organizations
+- **BusinessLine**: Product categorization (e.g., "Desenvolvimento Web", "Automação", "IA"). Has multiple Products
+- **Product**: Services/products offered. Links to Leads (interest), Organizations (purchase history), Deals (specific items), and Partners (expertise)
+- **CNAE**: Brazilian economic activity classification system. Used for primary and secondary activities of Leads and Organizations
+- **Tech Profile**: System for tracking current technology stack of Leads/Organizations (languages, frameworks, hosting, databases, ERPs, CRMs, ecommerce platforms)
+- **Tech Stack**: System for tracking required technologies in Deals (categories, languages, frameworks)
 
 **Key Conversion Flow:** Lead → Organization | LeadContact → Contact
 
@@ -119,12 +141,18 @@ export async function createDeal(data: DealFormData) {
 - Organization stores `sourceLeadId` for tracking
 - LeadContact stores `convertedToContactId` (one-to-one)
 - Contact stores `sourceLeadContactId` for tracking
+- When converting, tech profile and CNAE data should be transferred from Lead to Organization
 
 **External Project Integration:**
 - Organizations can link to external projects from a separate project management system
 - Project IDs stored as JSON array in `Organization.externalProjectIds`
 - External API client in `/src/lib/external-api/projects.ts` handles fetching project data
 - Server actions in `/src/actions/external-projects.ts` handle linking/unlinking
+
+**JSON Fields for Multiple Values:**
+- `Activity.contactIds` - Array of contact IDs when activity involves multiple contacts (primary contact still in `contactId`)
+- `Organization.externalProjectIds` - Array of external project IDs
+- Parse/stringify these fields when reading/writing to database
 
 ### Database
 - **Development**: SQLite (`file:./dev.db`)
@@ -137,9 +165,10 @@ export async function createDeal(data: DealFormData) {
 ### Authentication
 - NextAuth.js with Credentials provider (bcrypt password hashing)
 - JWT session strategy (no database sessions)
-- Protected routes via middleware matching `/dashboard/:path*`, `/contacts/:path*`, `/deals/:path*`, `/activities/:path*`, `/organizations/:path*`, `/pipeline/:path*`, `/projects/:path*`
+- Protected routes via middleware matching `/dashboard/:path*`, `/contacts/:path*`, `/deals/:path*`, `/activities/:path*`, `/organizations/:path*`, `/pipeline/:path*`, `/partners/:path*`, `/projects/:path*`
 - Session accessible via `getServerSession(authOptions)` in Server Actions
 - Session includes: `user.id`, `user.email`, `user.name`, `user.role`
+- Login page: `/login`, protected routes redirect unauthenticated users there
 
 ### API Routes
 Located in `/src/app/api/`:
@@ -149,8 +178,18 @@ Located in `/src/app/api/`:
 - `deals/route.ts` & `deals/[id]/route.ts` - Deal REST API
 - `activities/route.ts` & `activities/[id]/route.ts` - Activity REST API
 - `organizations/route.ts` & `organizations/[id]/route.ts` - Organization REST API
+- `products/active/route.ts` - Get active products
 
 Note: Server Actions are preferred over API routes for internal operations. API routes exist primarily for external integrations.
+
+### Admin Area
+The system includes an admin area (`/dashboard/admin`) for managing:
+- **Business Lines**: Product categories with slugs, colors, and icons
+- **Products**: Individual products/services linked to business lines with pricing info
+- **Tech Stack**: Tech categories (Frontend, Backend, etc.), languages, and frameworks for deal tracking
+- **Tech Profile**: Technology options (languages, frameworks, hosting, databases, ERPs, CRMs, ecommerce) for tracking current tech stack of Leads/Organizations
+
+All admin entities use slugs for URL-friendly identifiers and support active/inactive states.
 
 ### Key Libraries
 - **@dnd-kit/core** & **@dnd-kit/sortable** - Drag & Drop for Kanban pipeline view
@@ -166,6 +205,8 @@ See `/docs/arquitetura-projeto.md` for complete architecture and 7-phase impleme
 
 ### Critical Security & Data Rules
 - **Data Isolation**: ALWAYS filter database queries by `ownerId: session.user.id` to ensure users only see their own data
+  - Exception: Admin-managed entities (BusinessLine, Product, TechCategory, TechLanguage, TechFramework, TechProfile*, CNAE, Pipeline, Stage) are NOT user-scoped and don't have ownerId
+  - Exception: Labels ARE user-scoped with unique constraint `[name, ownerId]`
 - **Ownership Verification**: Before updates/deletes, verify `existingRecord.ownerId === session.user.id`
 - **Authentication First**: ALWAYS check session at the start of every Server Action before any database operation
 
@@ -173,12 +214,19 @@ See `/docs/arquitetura-projeto.md` for complete architecture and 7-phase impleme
 - **Server vs Client**: Default to Server Components; only use `"use client"` when needed (forms, interactivity, hooks)
 - **Validation**: Define Zod schemas in `/src/lib/validations/` and reuse them for both server and client validation
 - **Revalidation**: Always call `revalidatePath()` after mutations to update the UI cache
+- **Deprecated Fields**: Lead model has deprecated fields `primaryActivity` and `secondaryActivities` - use CNAE system instead (`primaryCNAEId`, `secondaryCNAEs` junction table, or `internationalActivity` for non-Brazilian companies)
 
 ### Technology-Specific Notes
 - **Tailwind CSS v4**: Uses new `@import "tailwindcss"` and `@theme` syntax in `globals.css` (NOT `tailwind.config.js`)
 - **Custom Theme**: Dark purple theme defined in `globals.css` with CSS variables (`--color-primary: #792990`)
 - **Brazilian Portuguese**: All UI text is in Portuguese (pt-BR)
 - **Multi-currency**: Deals support different currencies (default: `BRL`)
+- **CNAE Integration**: Brazilian companies use CNAE (Classificação Nacional de Atividades Econômicas) for primary and secondary economic activities. International companies use free-text `internationalActivity` field
+- **Many-to-Many Relations**: The system uses junction tables with additional fields:
+  - `LeadProduct`, `OrganizationProduct`, `DealProduct`, `PartnerProduct` - Link entities to products with context-specific data
+  - `LeadSecondaryCNAE`, `OrganizationSecondaryCNAE` - Link entities to multiple CNAEs
+  - Tech profile junctions: `LeadLanguage`, `OrganizationLanguage`, etc. - Track current tech stack
+  - Deal tech junctions: `DealTechStack`, `DealLanguage`, `DealFramework` - Track required technologies
 
 ## Git Workflow
 
