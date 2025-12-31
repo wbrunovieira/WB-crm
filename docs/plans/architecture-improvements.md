@@ -16,6 +16,7 @@
 | 2024-12-31 | Implementação dos testes de autenticação e autorização - Fase 2 completa  |
 | 2024-12-31 | Implementação dos testes de Leads (54 testes) - Fase 3.1 completa         |
 | 2024-12-31 | Implementação dos testes de Lead Contacts (42 testes) - Fase 3.2 completa |
+| 2024-12-31 | Implementação dos testes de Organizations (49 testes) - Fase 3.3 completa |
 
 ---
 
@@ -124,16 +125,16 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 | Status | Arquivo                               | Teste                               | Descrição                 |
 | ------ | ------------------------------------- | ----------------------------------- | ------------------------- |
-| [ ]    | `tests/actions/organizations.test.ts` | `createOrganization-success`        | Cria organization         |
-| [ ]    |                                       | `createOrganization-validation`     | Valida dados obrigatórios |
-| [ ]    |                                       | `createOrganization-sets-owner`     | Define ownerId            |
-| [ ]    |                                       | `getOrganizations-filters-by-owner` | Filtra por owner          |
-| [ ]    |                                       | `getOrganizationById-returns-own`   | Retorna próprio           |
-| [ ]    |                                       | `getOrganizationById-blocks-other`  | Bloqueia de outro         |
-| [ ]    |                                       | `updateOrganization-success`        | Atualiza                  |
-| [ ]    |                                       | `updateOrganization-ownership`      | Verifica ownership        |
-| [ ]    |                                       | `deleteOrganization-success`        | Deleta próprio            |
-| [ ]    |                                       | `deleteOrganization-ownership`      | Verifica ownership        |
+| [x]    | `tests/actions/organizations.test.ts` | `createOrganization-success`        | Cria organization         |
+| [x]    |                                       | `createOrganization-validation`     | Valida dados obrigatórios |
+| [x]    |                                       | `createOrganization-sets-owner`     | Define ownerId            |
+| [x]    |                                       | `getOrganizations-filters-by-owner` | Filtra por owner          |
+| [x]    |                                       | `getOrganizationById-returns-own`   | Retorna próprio           |
+| [x]    |                                       | `getOrganizationById-blocks-other`  | Bloqueia de outro         |
+| [x]    |                                       | `updateOrganization-success`        | Atualiza                  |
+| [x]    |                                       | `updateOrganization-ownership`      | Verifica ownership        |
+| [x]    |                                       | `deleteOrganization-success`        | Deleta próprio            |
+| [x]    |                                       | `deleteOrganization-ownership`      | Verifica ownership        |
 
 ### 3.4 Contacts (`src/actions/contacts.ts`)
 
@@ -537,14 +538,14 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | ------------------------- | ------- | ---------- | ----------- |
 | 1. Segurança (Isolamento) | 17      | 17         | 100%        |
 | 2. Autenticação           | 13      | 13         | 100%        |
-| 3. Core CRM               | 58      | 16         | 28%         |
+| 3. Core CRM               | 58      | 26         | 45%         |
 | 4. Pipeline               | 12      | 0          | 0%          |
 | 5. Produtos               | 19      | 0          | 0%          |
 | 6. Tech Profile/Stack     | 46      | 0          | 0%          |
 | 7. Auxiliares             | 21      | 0          | 0%          |
 | 8. API Routes             | 33      | 0          | 0%          |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **232** | **46**     | **20%**     |
+| **TOTAL**                 | **232** | **56**     | **24%**     |
 
 ---
 
