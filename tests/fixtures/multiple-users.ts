@@ -296,3 +296,25 @@ export function createMockPartner(ownerId: string, overrides: Partial<{
     updatedAt: new Date(),
   };
 }
+
+export function createMockLeadContact(leadId: string, overrides: Partial<{
+  id: string;
+  name: string;
+  email: string;
+  isPrimary: boolean;
+  convertedToContactId: string | null;
+}> = {}) {
+  return {
+    id: overrides.id || `lead-contact-${leadId}-${Date.now()}`,
+    name: overrides.name || `Contact for lead ${leadId}`,
+    email: overrides.email || null,
+    phone: null,
+    whatsapp: null,
+    role: null,
+    isPrimary: overrides.isPrimary ?? false,
+    leadId,
+    convertedToContactId: overrides.convertedToContactId ?? null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}

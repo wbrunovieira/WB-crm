@@ -15,6 +15,7 @@
 | 2024-12-31 | Implementação dos testes de isolamento (API Routes) - Fase 1 completa     |
 | 2024-12-31 | Implementação dos testes de autenticação e autorização - Fase 2 completa  |
 | 2024-12-31 | Implementação dos testes de Leads (54 testes) - Fase 3.1 completa         |
+| 2024-12-31 | Implementação dos testes de Lead Contacts (42 testes) - Fase 3.2 completa |
 
 ---
 
@@ -113,11 +114,11 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 | Status | Arquivo                               | Teste                                    | Descrição                  |
 | ------ | ------------------------------------- | ---------------------------------------- | -------------------------- |
-| [ ]    | `tests/actions/lead-contacts.test.ts` | `createLeadContact-success`              | Cria contato de lead       |
-| [ ]    |                                       | `createLeadContact-validates-lead-owner` | Verifica owner do lead pai |
-| [ ]    |                                       | `getLeadContacts-filters`                | Retorna contatos do lead   |
-| [ ]    |                                       | `updateLeadContact-success`              | Atualiza contato           |
-| [ ]    |                                       | `deleteLeadContact-success`              | Deleta contato             |
+| [x]    | `tests/actions/lead-contacts.test.ts` | `createLeadContact-success`              | Cria contato de lead       |
+| [x]    |                                       | `createLeadContact-validates-lead-owner` | Verifica owner do lead pai |
+| [x]    |                                       | `getLeadContacts-filters`                | Retorna contatos do lead   |
+| [x]    |                                       | `updateLeadContact-success`              | Atualiza contato           |
+| [x]    |                                       | `deleteLeadContact-success`              | Deleta contato             |
 
 ### 3.3 Organizations (`src/actions/organizations.ts`)
 
@@ -536,14 +537,14 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | ------------------------- | ------- | ---------- | ----------- |
 | 1. Segurança (Isolamento) | 17      | 17         | 100%        |
 | 2. Autenticação           | 13      | 13         | 100%        |
-| 3. Core CRM               | 58      | 11         | 19%         |
+| 3. Core CRM               | 58      | 16         | 28%         |
 | 4. Pipeline               | 12      | 0          | 0%          |
 | 5. Produtos               | 19      | 0          | 0%          |
 | 6. Tech Profile/Stack     | 46      | 0          | 0%          |
 | 7. Auxiliares             | 21      | 0          | 0%          |
 | 8. API Routes             | 33      | 0          | 0%          |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **232** | **41**     | **18%**     |
+| **TOTAL**                 | **232** | **46**     | **20%**     |
 
 ---
 
