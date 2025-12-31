@@ -4,6 +4,9 @@ import { OrganizationProjects } from "@/components/organizations/OrganizationPro
 import { OrganizationActivities } from "@/components/organizations/OrganizationActivities";
 import { OrganizationTechProfileSection } from "@/components/organizations/OrganizationTechProfileSection";
 import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
+import { EntityManagementPanel } from "@/components/shared/entity-management";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -13,11 +16,16 @@ export default async function OrganizationDetailPage({
 }: {
   params: { id: string };
 }) {
-  const organization = await getOrganizationById(params.id);
+  const [organization, session] = await Promise.all([
+    getOrganizationById(params.id),
+    getServerSession(authOptions),
+  ]);
 
   if (!organization) {
     notFound();
   }
+
+  const isAdmin = session?.user?.role?.toLowerCase() === "admin";
 
   return (
     <div className="p-8">
@@ -376,6 +384,22 @@ export default async function OrganizationDetailPage({
           }
         />
       </div>
+
+      {/* Entity Management Panel (Admin Only) */}
+      {isAdmin && organization.owner && (
+        <div className="mt-6 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold">Gerenciamento de Acesso</h2>
+          <EntityManagementPanel
+            entityType="organization"
+            entityId={organization.id}
+            entityName={organization.name}
+            ownerId={organization.owner.id}
+            ownerName={organization.owner.name}
+            ownerEmail={organization.owner.email}
+            isAdmin={isAdmin}
+          />
+        </div>
+      )}
     </div>
   );
 }

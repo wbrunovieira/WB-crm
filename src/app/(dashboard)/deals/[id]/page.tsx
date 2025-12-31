@@ -6,17 +6,25 @@ import DeleteDealButton from "@/components/deals/DeleteDealButton";
 import ActivityTimeline from "@/components/activities/ActivityTimeline";
 import { DealProductsSection } from "@/components/deals/DealProductsSection";
 import { DealTechStackSection } from "@/components/deals/DealTechStackSection";
+import { EntityManagementPanel } from "@/components/shared/entity-management";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export default async function DealDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const deal = await getDealById(params.id);
+  const [deal, session] = await Promise.all([
+    getDealById(params.id),
+    getServerSession(authOptions),
+  ]);
 
   if (!deal) {
     notFound();
   }
+
+  const isAdmin = session?.user?.role?.toLowerCase() === "admin";
 
   return (
     <div className="p-8">
@@ -187,6 +195,22 @@ export default async function DealDetailPage({
         </div>
         <ActivityTimeline activities={deal.activities} showLinks={false} />
       </div>
+
+      {/* Entity Management Panel (Admin Only) */}
+      {isAdmin && deal.owner && (
+        <div className="mt-6 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold">Gerenciamento de Acesso</h2>
+          <EntityManagementPanel
+            entityType="deal"
+            entityId={deal.id}
+            entityName={deal.title}
+            ownerId={deal.owner.id}
+            ownerName={deal.owner.name}
+            ownerEmail={deal.owner.email}
+            isAdmin={isAdmin}
+          />
+        </div>
+      )}
     </div>
   );
 }

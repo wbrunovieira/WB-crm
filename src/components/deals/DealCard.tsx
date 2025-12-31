@@ -8,7 +8,7 @@ import { DealStatusSelect } from "./DealStatusSelect";
 import { ScheduleNextActivityModal } from "../activities/ScheduleNextActivityModal";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { OwnerBadge } from "@/components/shared/OwnerBadge";
+import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 
 interface Deal {
   id: string;
@@ -38,9 +38,10 @@ interface DealCardProps {
   deal: Deal;
   isAdmin?: boolean;
   currentUserId?: string;
+  sharedWith?: { id: string; name: string }[];
 }
 
-export function DealCard({ deal, isAdmin = false, currentUserId = "" }: DealCardProps) {
+export function DealCard({ deal, isAdmin = false, currentUserId = "", sharedWith = [] }: DealCardProps) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [availableData, setAvailableData] = useState<{
     deals: Array<{ id: string; title: string }>;
@@ -142,9 +143,11 @@ export function DealCard({ deal, isAdmin = false, currentUserId = "" }: DealCard
               {deal.title}
             </Link>
             {isAdmin && deal.owner && (
-              <OwnerBadge
-                ownerName={deal.owner.name || ""}
-                isCurrentUser={deal.owner.id === currentUserId}
+              <EntityAccessBadges
+                owner={{ id: deal.owner.id, name: deal.owner.name || "" }}
+                sharedWith={sharedWith}
+                currentUserId={currentUserId}
+                compact
               />
             )}
           </div>

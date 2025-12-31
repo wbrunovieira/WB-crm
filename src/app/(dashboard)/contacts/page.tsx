@@ -1,5 +1,6 @@
 import { getContacts } from "@/actions/contacts";
 import { getUsers } from "@/actions/users";
+import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { ContactsFilters } from "@/components/contacts/ContactsFilters";
 import { ContactCard } from "@/components/contacts/ContactCard";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
@@ -32,6 +33,10 @@ export default async function ContactsPage({
     }),
     isAdmin ? getUsers() : Promise.resolve([]),
   ]);
+
+  // Get shared users for all contacts (batch query)
+  const contactIds = contacts.map((contact) => contact.id);
+  const sharedUsersMap = await getSharedUsersForEntities("contact", contactIds);
 
   // Group contacts based on groupBy parameter
   const groupedContacts = () => {
@@ -153,6 +158,7 @@ export default async function ContactsPage({
                       contact={contact}
                       showOwnerBadge={isAdmin}
                       currentUserId={currentUserId}
+                      sharedWith={sharedUsersMap[contact.id] || []}
                     />
                   ))}
                 </div>

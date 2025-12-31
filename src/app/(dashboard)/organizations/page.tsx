@@ -1,9 +1,10 @@
 import { getOrganizations } from "@/actions/organizations";
 import { getUsers } from "@/actions/users";
+import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { SearchInput } from "@/components/shared/SearchInput";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
-import { OwnerBadge } from "@/components/shared/OwnerBadge";
+import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
@@ -21,6 +22,10 @@ export default async function OrganizationsPage({
     getOrganizations({ search: searchParams.search, owner: searchParams.owner }),
     isAdmin ? getUsers() : Promise.resolve([]),
   ]);
+
+  // Get shared users for all organizations (batch query)
+  const orgIds = organizations.map((org) => org.id);
+  const sharedUsersMap = await getSharedUsersForEntities("organization", orgIds);
 
   return (
     <div className="p-8">
@@ -98,17 +103,19 @@ export default async function OrganizationsPage({
               {organizations.map((org) => (
                 <tr key={org.id} className="hover:bg-gray-50">
                   <td className="whitespace-nowrap px-6 py-4">
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
                       <Link
                         href={`/organizations/${org.id}`}
                         className="font-medium text-gray-700 hover:text-primary text-base"
                       >
                         {org.name}
                       </Link>
-                      {isAdmin && org.owner && (
-                        <OwnerBadge
-                          ownerName={org.owner.name}
-                          isCurrentUser={org.owner.id === currentUserId}
+                      {org.owner && (
+                        <EntityAccessBadges
+                          owner={{ id: org.owner.id, name: org.owner.name }}
+                          sharedWith={sharedUsersMap[org.id] || []}
+                          currentUserId={currentUserId}
+                          compact
                         />
                       )}
                     </div>

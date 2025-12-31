@@ -6,6 +6,9 @@ import { LeadActivitiesList } from "@/components/leads/LeadActivitiesList";
 import { LeadProductsSection } from "@/components/leads/LeadProductsSection";
 import { LeadTechProfileSection } from "@/components/leads/LeadTechProfileSection";
 import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
+import { EntityManagementPanel } from "@/components/shared/entity-management";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -15,11 +18,16 @@ export default async function LeadDetailPage({
 }: {
   params: { id: string };
 }) {
-  const lead = await getLeadById(params.id);
+  const [lead, session] = await Promise.all([
+    getLeadById(params.id),
+    getServerSession(authOptions),
+  ]);
 
   if (!lead) {
     notFound();
   }
+
+  const isAdmin = session?.user?.role?.toLowerCase() === "admin";
 
   const statusLabels: Record<string, string> = {
     new: "Novo",
@@ -512,6 +520,25 @@ export default async function LeadDetailPage({
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Entity Management Panel (Admin Only) */}
+      {isAdmin && lead.owner && (
+        <div className="mt-6 rounded-xl bg-white p-6 shadow-md">
+          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-gray-100">
+            <span className="text-2xl">👥</span>
+            Gerenciamento de Acesso
+          </h2>
+          <EntityManagementPanel
+            entityType="lead"
+            entityId={lead.id}
+            entityName={lead.businessName}
+            ownerId={lead.owner.id}
+            ownerName={lead.owner.name}
+            ownerEmail={lead.owner.email}
+            isAdmin={isAdmin}
+          />
         </div>
       )}
 

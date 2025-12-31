@@ -8,12 +8,12 @@ import {
 } from "@/lib/validations/organization";
 import {
   getAuthenticatedSession,
-  getOwnerFilter,
-  canAccessRecord,
+  getOwnerOrSharedFilter,
+  canAccessEntity,
 } from "@/lib/permissions";
 
 export async function getOrganizations(filters?: { search?: string; owner?: string }) {
-  const ownerFilter = await getOwnerFilter(filters?.owner);
+  const ownerFilter = await getOwnerOrSharedFilter("organization", filters?.owner);
 
   const organizations = await prisma.organization.findMany({
     where: {
@@ -45,7 +45,7 @@ export async function getOrganizations(filters?: { search?: string; owner?: stri
 }
 
 export async function getOrganizationById(id: string) {
-  const ownerFilter = await getOwnerFilter();
+  const ownerFilter = await getOwnerOrSharedFilter("organization");
 
   const organization = await prisma.organization.findFirst({
     where: {
@@ -72,6 +72,13 @@ export async function getOrganizationById(id: string) {
             },
             take: 1,
           },
+        },
+      },
+      owner: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
         },
       },
     },
@@ -169,9 +176,9 @@ export async function updateOrganization(
   await getAuthenticatedSession();
   const validated = organizationSchema.parse(data);
 
-  // Check ownership
+  // Check ownership or shared access
   const existing = await prisma.organization.findUnique({ where: { id } });
-  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+  if (!existing || !(await canAccessEntity("organization", id, existing.ownerId))) {
     throw new Error("Organização não encontrada");
   }
 
@@ -216,9 +223,9 @@ export async function updateOrganization(
 export async function deleteOrganization(id: string) {
   await getAuthenticatedSession();
 
-  // Check ownership
+  // Check ownership or shared access
   const existing = await prisma.organization.findUnique({ where: { id } });
-  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+  if (!existing || !(await canAccessEntity("organization", id, existing.ownerId))) {
     throw new Error("Organização não encontrada");
   }
 

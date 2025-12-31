@@ -10,8 +10,8 @@ import {
 } from "@/lib/validations/lead";
 import {
   getAuthenticatedSession,
-  getOwnerFilter,
-  canAccessRecord,
+  getOwnerOrSharedFilter,
+  canAccessEntity,
 } from "@/lib/permissions";
 
 // ============ LEAD CRUD ============
@@ -22,7 +22,7 @@ export async function getLeads(filters?: {
   quality?: string;
   owner?: string;
 }) {
-  const ownerFilter = await getOwnerFilter(filters?.owner);
+  const ownerFilter = await getOwnerOrSharedFilter("lead", filters?.owner);
 
   const leads = await prisma.lead.findMany({
     where: {
@@ -60,7 +60,7 @@ export async function getLeads(filters?: {
 }
 
 export async function getLeadById(id: string) {
-  const ownerFilter = await getOwnerFilter();
+  const ownerFilter = await getOwnerOrSharedFilter("lead");
 
   const lead = await prisma.lead.findFirst({
     where: {
@@ -89,6 +89,13 @@ export async function getLeadById(id: string) {
           deals: true,
         },
       },
+      owner: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
     },
   });
 
@@ -114,9 +121,9 @@ export async function updateLead(id: string, data: LeadFormData) {
   await getAuthenticatedSession();
   const validated = leadSchema.parse(data);
 
-  // Check ownership
+  // Check ownership or shared access
   const existing = await prisma.lead.findUnique({ where: { id } });
-  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+  if (!existing || !(await canAccessEntity("lead", id, existing.ownerId))) {
     throw new Error("Lead não encontrado");
   }
 
@@ -139,7 +146,7 @@ export async function deleteLead(id: string) {
     select: { ownerId: true, convertedAt: true },
   });
 
-  if (!lead || !(await canAccessRecord(lead.ownerId))) {
+  if (!lead || !(await canAccessEntity("lead", id, lead.ownerId))) {
     throw new Error("Lead não encontrado");
   }
 
@@ -155,7 +162,7 @@ export async function deleteLead(id: string) {
 // ============ LEAD CONTACT CRUD ============
 
 export async function getLeadContacts(leadId: string) {
-  const ownerFilter = await getOwnerFilter();
+  const ownerFilter = await getOwnerOrSharedFilter("lead");
 
   const contacts = await prisma.leadContact.findMany({
     where: {
@@ -177,7 +184,7 @@ export async function createLeadContact(leadId: string, data: LeadContactFormDat
   // Verify lead ownership
   const lead = await prisma.lead.findUnique({ where: { id: leadId } });
 
-  if (!lead || !(await canAccessRecord(lead.ownerId))) {
+  if (!lead || !(await canAccessEntity("lead", leadId, lead.ownerId))) {
     throw new Error("Lead não encontrado");
   }
 
@@ -214,7 +221,7 @@ export async function updateLeadContact(
     include: { lead: true },
   });
 
-  if (!leadContact || !(await canAccessRecord(leadContact.lead.ownerId))) {
+  if (!leadContact || !(await canAccessEntity("lead", leadContact.leadId, leadContact.lead.ownerId))) {
     throw new Error("Contato não encontrado");
   }
 
@@ -243,7 +250,7 @@ export async function deleteLeadContact(id: string) {
     include: { lead: true },
   });
 
-  if (!leadContact || !(await canAccessRecord(leadContact.lead.ownerId))) {
+  if (!leadContact || !(await canAccessEntity("lead", leadContact.leadId, leadContact.lead.ownerId))) {
     throw new Error("Contato não encontrado");
   }
 
@@ -273,7 +280,7 @@ export async function convertLeadToOrganization(leadId: string) {
     },
   });
 
-  if (!lead || !(await canAccessRecord(lead.ownerId))) {
+  if (!lead || !(await canAccessEntity("lead", leadId, lead.ownerId))) {
     throw new Error("Lead não encontrado");
   }
 

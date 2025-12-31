@@ -5,12 +5,12 @@ import { prisma } from "@/lib/prisma";
 import { partnerSchema, PartnerFormData } from "@/lib/validations/partner";
 import {
   getAuthenticatedSession,
-  getOwnerFilter,
-  canAccessRecord,
+  getOwnerOrSharedFilter,
+  canAccessEntity,
 } from "@/lib/permissions";
 
 export async function getPartners(filters?: { search?: string; owner?: string }) {
-  const ownerFilter = await getOwnerFilter(filters?.owner);
+  const ownerFilter = await getOwnerOrSharedFilter("partner", filters?.owner);
 
   const partners = await prisma.partner.findMany({
     where: {
@@ -47,7 +47,7 @@ export async function getPartners(filters?: { search?: string; owner?: string })
 }
 
 export async function getPartnerById(id: string) {
-  const ownerFilter = await getOwnerFilter();
+  const ownerFilter = await getOwnerOrSharedFilter("partner");
 
   const partner = await prisma.partner.findFirst({
     where: {
@@ -83,6 +83,13 @@ export async function getPartnerById(id: string) {
           contacts: true,
           activities: true,
           referredLeads: true,
+        },
+      },
+      owner: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
         },
       },
     },
@@ -132,9 +139,9 @@ export async function updatePartner(id: string, data: PartnerFormData) {
   await getAuthenticatedSession();
   const validated = partnerSchema.parse(data);
 
-  // Check ownership
+  // Check ownership or shared access
   const existing = await prisma.partner.findUnique({ where: { id } });
-  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+  if (!existing || !(await canAccessEntity("partner", id, existing.ownerId))) {
     throw new Error("Parceiro não encontrado");
   }
 
@@ -174,9 +181,9 @@ export async function updatePartner(id: string, data: PartnerFormData) {
 export async function deletePartner(id: string) {
   await getAuthenticatedSession();
 
-  // Check ownership
+  // Check ownership or shared access
   const existing = await prisma.partner.findUnique({ where: { id } });
-  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+  if (!existing || !(await canAccessEntity("partner", id, existing.ownerId))) {
     throw new Error("Parceiro não encontrado");
   }
 
@@ -188,9 +195,9 @@ export async function deletePartner(id: string) {
 export async function updatePartnerLastContact(id: string) {
   await getAuthenticatedSession();
 
-  // Check ownership
+  // Check ownership or shared access
   const existing = await prisma.partner.findUnique({ where: { id } });
-  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+  if (!existing || !(await canAccessEntity("partner", id, existing.ownerId))) {
     throw new Error("Parceiro não encontrado");
   }
 

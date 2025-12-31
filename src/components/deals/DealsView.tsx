@@ -66,6 +66,7 @@ interface DealsViewProps {
   isAdmin?: boolean;
   currentUserId?: string;
   users?: UserListItem[];
+  sharedUsersMap?: Record<string, { id: string; name: string }[]>;
 }
 
 export function DealsView({
@@ -78,6 +79,7 @@ export function DealsView({
   isAdmin = false,
   currentUserId = "",
   users = [],
+  sharedUsersMap = {},
 }: DealsViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -168,7 +170,7 @@ export function DealsView({
 
       <div className="flex-1 overflow-auto p-8">
         {initialView === "list" ? (
-          <DealsListView deals={deals} groupBy={currentGroupBy} displayMode={displayMode} isAdmin={isAdmin} currentUserId={currentUserId} />
+          <DealsListView deals={deals} groupBy={currentGroupBy} displayMode={displayMode} isAdmin={isAdmin} currentUserId={currentUserId} sharedUsersMap={sharedUsersMap} />
         ) : pipelineData ? (
           <DealsKanbanView
             pipelineData={pipelineData}

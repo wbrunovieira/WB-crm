@@ -1,10 +1,11 @@
 import { getLeads } from "@/actions/leads";
 import { getUsers } from "@/actions/users";
+import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
 import { LeadsFilters } from "@/components/leads/LeadsFilters";
 import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
-import { OwnerBadge } from "@/components/shared/OwnerBadge";
+import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
@@ -27,6 +28,10 @@ export default async function LeadsPage({
     getLeads(searchParams),
     isAdmin ? getUsers() : Promise.resolve([]),
   ]);
+
+  // Get shared users for all leads (batch query)
+  const leadIds = leads.map((lead) => lead.id);
+  const sharedUsersMap = await getSharedUsersForEntities("lead", leadIds);
 
   const statusLabels: Record<string, string> = {
     new: "Novo",
@@ -110,16 +115,18 @@ export default async function LeadsPage({
               {leads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <div className="flex items-center">
+                    <div className="flex items-center gap-2">
                       <LeadNameCell
                         id={lead.id}
                         businessName={lead.businessName}
                         registeredName={lead.registeredName}
                       />
-                      {isAdmin && lead.owner && (
-                        <OwnerBadge
-                          ownerName={lead.owner.name}
-                          isCurrentUser={lead.owner.id === currentUserId}
+                      {lead.owner && (
+                        <EntityAccessBadges
+                          owner={{ id: lead.owner.id, name: lead.owner.name }}
+                          sharedWith={sharedUsersMap[lead.id] || []}
+                          currentUserId={currentUserId}
+                          compact
                         />
                       )}
                     </div>

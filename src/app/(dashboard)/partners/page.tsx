@@ -1,8 +1,9 @@
 import { getPartners } from "@/actions/partners";
 import { getUsers } from "@/actions/users";
+import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { SearchInput } from "@/components/shared/SearchInput";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
-import { OwnerBadge } from "@/components/shared/OwnerBadge";
+import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
@@ -22,6 +23,10 @@ export default async function PartnersPage({
     getPartners({ search: searchParams.search, owner: searchParams.owner }),
     isAdmin ? getUsers() : Promise.resolve([]),
   ]);
+
+  // Get shared users for all partners (batch query)
+  const partnerIds = partners.map((partner) => partner.id);
+  const sharedUsersMap = await getSharedUsersForEntities("partner", partnerIds);
 
   return (
     <div className="p-8">
@@ -81,9 +86,11 @@ export default async function PartnersPage({
                     {partner.name}
                   </h3>
                   {isAdmin && partner.owner && (
-                    <OwnerBadge
-                      ownerName={partner.owner.name}
-                      isCurrentUser={partner.owner.id === currentUserId}
+                    <EntityAccessBadges
+                      owner={{ id: partner.owner.id, name: partner.owner.name }}
+                      sharedWith={sharedUsersMap[partner.id] || []}
+                      currentUserId={currentUserId}
+                      compact
                     />
                   )}
                 </div>

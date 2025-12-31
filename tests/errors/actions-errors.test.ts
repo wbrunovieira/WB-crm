@@ -30,6 +30,10 @@ vi.mock("@/lib/prisma", () => ({
       findFirst: vi.fn(),
       create: vi.fn(),
     },
+    sharedEntity: {
+      findFirst: vi.fn(() => Promise.resolve(null)),
+      findMany: vi.fn(() => Promise.resolve([])),
+    },
   },
 }));
 

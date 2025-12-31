@@ -54,6 +54,9 @@ describe('Deals Actions', () => {
   beforeEach(() => {
     mockReset(mockPrisma);
     mockSession = null;
+    // Setup default mocks for sharedEntity (used by getOwnerOrSharedFilter and canAccessEntity)
+    mockPrisma.sharedEntity.findMany.mockResolvedValue([]);
+    mockPrisma.sharedEntity.findFirst.mockResolvedValue(null);
   });
 
   // ===========================================

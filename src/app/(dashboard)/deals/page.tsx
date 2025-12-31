@@ -2,6 +2,7 @@ import { getDeals } from "@/actions/deals";
 import { getUsers } from "@/actions/users";
 import { getPipelineView } from "@/actions/pipeline-view";
 import { getPipelines } from "@/actions/pipelines";
+import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { DealsView } from "@/components/deals/DealsView";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -57,6 +58,10 @@ export default async function DealsPage({
     owner: searchParams.owner,
   });
 
+  // Get shared users for all deals (batch query)
+  const dealIds = deals.map((deal) => deal.id);
+  const sharedUsersMap = await getSharedUsersForEntities("deal", dealIds);
+
   return (
     <DealsView
       initialView="list"
@@ -66,6 +71,7 @@ export default async function DealsPage({
       isAdmin={isAdmin}
       currentUserId={currentUserId}
       users={users}
+      sharedUsersMap={sharedUsersMap}
     />
   );
 }

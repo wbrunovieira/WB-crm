@@ -5,8 +5,8 @@ import { revalidatePath } from "next/cache";
 import { dealSchema, type DealFormData } from "@/lib/validations/deal";
 import {
   getAuthenticatedSession,
-  getOwnerFilter,
-  canAccessRecord,
+  getOwnerOrSharedFilter,
+  canAccessEntity,
 } from "@/lib/permissions";
 
 export async function getDeals(filters?: {
@@ -18,45 +18,51 @@ export async function getDeals(filters?: {
   sortOrder?: "asc" | "desc";
   owner?: string;
 }) {
-  const ownerFilter = await getOwnerFilter(filters?.owner);
+  const ownerFilter = await getOwnerOrSharedFilter("deal", filters?.owner);
 
-  // Build where clause
-  const whereClause: {
-    ownerId?: string;
-    title?: { contains: string };
-    status?: string;
-    stageId?: string;
-    value?: { gte?: number; lt?: number };
-  } = {
-    ...ownerFilter,
-  };
+  // Build additional filters
+  const additionalFilters: Record<string, unknown> = {};
 
   // Search filter (simple title search)
   if (filters?.search) {
-    whereClause.title = { contains: filters.search };
+    additionalFilters.title = { contains: filters.search };
   }
 
   // Status filter
   if (filters?.status && filters.status !== "all") {
-    whereClause.status = filters.status;
+    additionalFilters.status = filters.status;
   }
 
   // Stage filter
   if (filters?.stageId) {
-    whereClause.stageId = filters.stageId;
+    additionalFilters.stageId = filters.stageId;
   }
 
   // Value range filter
   if (filters?.valueRange && filters.valueRange !== "all") {
     if (filters.valueRange === "0-10000") {
-      whereClause.value = { lt: 10000 };
+      additionalFilters.value = { lt: 10000 };
     } else if (filters.valueRange === "10000-50000") {
-      whereClause.value = { gte: 10000, lt: 50000 };
+      additionalFilters.value = { gte: 10000, lt: 50000 };
     } else if (filters.valueRange === "50000-100000") {
-      whereClause.value = { gte: 50000, lt: 100000 };
+      additionalFilters.value = { gte: 50000, lt: 100000 };
     } else if (filters.valueRange === "100000+") {
-      whereClause.value = { gte: 100000 };
+      additionalFilters.value = { gte: 100000 };
     }
+  }
+
+  // Combine owner filter with additional filters
+  // Use AND only when ownerFilter has OR (shared entities case)
+  const hasSharedEntities = 'OR' in ownerFilter;
+  const hasAdditionalFilters = Object.keys(additionalFilters).length > 0;
+
+  let whereClause: Record<string, unknown>;
+  if (hasSharedEntities && hasAdditionalFilters) {
+    whereClause = { AND: [ownerFilter, additionalFilters] };
+  } else if (hasAdditionalFilters) {
+    whereClause = { ...ownerFilter, ...additionalFilters };
+  } else {
+    whereClause = ownerFilter;
   }
 
   // Build order by clause
@@ -116,7 +122,7 @@ export async function getDeals(filters?: {
 }
 
 export async function getDealById(id: string) {
-  const ownerFilter = await getOwnerFilter();
+  const ownerFilter = await getOwnerOrSharedFilter("deal");
 
   const deal = await prisma.deal.findFirst({
     where: {
@@ -196,7 +202,7 @@ export async function updateDeal(id: string, data: DealFormData) {
   const session = await getAuthenticatedSession();
 
   const existingDeal = await prisma.deal.findUnique({ where: { id } });
-  if (!existingDeal || !(await canAccessRecord(existingDeal.ownerId))) {
+  if (!existingDeal || !(await canAccessEntity("deal", id, existingDeal.ownerId))) {
     throw new Error("Negócio não encontrado");
   }
 
@@ -249,7 +255,7 @@ export async function deleteDeal(id: string) {
   await getAuthenticatedSession();
 
   const deal = await prisma.deal.findUnique({ where: { id } });
-  if (!deal || !(await canAccessRecord(deal.ownerId))) {
+  if (!deal || !(await canAccessEntity("deal", id, deal.ownerId))) {
     throw new Error("Negócio não encontrado");
   }
 
@@ -262,7 +268,7 @@ export async function updateDealStage(id: string, stageId: string) {
   const session = await getAuthenticatedSession();
 
   const deal = await prisma.deal.findUnique({ where: { id } });
-  if (!deal || !(await canAccessRecord(deal.ownerId))) {
+  if (!deal || !(await canAccessEntity("deal", id, deal.ownerId))) {
     throw new Error("Negócio não encontrado");
   }
 

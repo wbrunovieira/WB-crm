@@ -1,4 +1,7 @@
 import { getPartnerById } from "@/actions/partners";
+import { EntityManagementPanel } from "@/components/shared/entity-management";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -10,11 +13,16 @@ export default async function PartnerDetailPage({
 }: {
   params: { id: string };
 }) {
-  const partner = await getPartnerById(params.id);
+  const [partner, session] = await Promise.all([
+    getPartnerById(params.id),
+    getServerSession(authOptions),
+  ]);
 
   if (!partner) {
     notFound();
   }
+
+  const isAdmin = session?.user?.role?.toLowerCase() === "admin";
 
   const daysSinceLastContact = partner.lastContactDate
     ? Math.ceil(
@@ -413,6 +421,22 @@ export default async function PartnerDetailPage({
           </div>
         )}
       </div>
+
+      {/* Entity Management Panel (Admin Only) */}
+      {isAdmin && partner.owner && (
+        <div className="mt-6 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-4 text-lg font-semibold">Gerenciamento de Acesso</h2>
+          <EntityManagementPanel
+            entityType="partner"
+            entityId={partner.id}
+            entityName={partner.name}
+            ownerId={partner.owner.id}
+            ownerName={partner.owner.name}
+            ownerEmail={partner.owner.email}
+            isAdmin={isAdmin}
+          />
+        </div>
+      )}
     </div>
   );
 }

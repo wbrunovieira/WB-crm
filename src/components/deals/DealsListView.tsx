@@ -10,7 +10,7 @@ import { DealStatusSelect } from "./DealStatusSelect";
 import { DealCard } from "./DealCard";
 import { ScheduleNextActivityModal } from "../activities/ScheduleNextActivityModal";
 import { calculateTotalInCurrency, AVAILABLE_CURRENCIES } from "@/lib/utils";
-import { OwnerBadge } from "@/components/shared/OwnerBadge";
+import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 
 interface Deal {
   id: string;
@@ -42,6 +42,7 @@ interface DealsListViewProps {
   displayMode?: string;
   isAdmin?: boolean;
   currentUserId?: string;
+  sharedUsersMap?: Record<string, { id: string; name: string }[]>;
 }
 
 type GroupedDeals = {
@@ -51,7 +52,7 @@ type GroupedDeals = {
   };
 };
 
-export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin = false, currentUserId = "" }: DealsListViewProps) {
+export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin = false, currentUserId = "", sharedUsersMap = {} }: DealsListViewProps) {
   const [displayCurrency, setDisplayCurrency] = useState("BRL");
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
@@ -222,9 +223,11 @@ export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin =
                 {deal.title}
               </Link>
               {isAdmin && deal.owner && (
-                <OwnerBadge
-                  ownerName={deal.owner.name || ""}
-                  isCurrentUser={deal.owner.id === currentUserId}
+                <EntityAccessBadges
+                  owner={{ id: deal.owner.id, name: deal.owner.name || "" }}
+                  sharedWith={sharedUsersMap[deal.id] || []}
+                  currentUserId={currentUserId}
+                  compact
                 />
               )}
               {isWon && (
@@ -322,7 +325,7 @@ export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin =
   const renderCards = (dealsToRender: Deal[]) => (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {dealsToRender.length > 0 ? (
-        dealsToRender.map((deal) => <DealCard key={deal.id} deal={deal} isAdmin={isAdmin} currentUserId={currentUserId} />)
+        dealsToRender.map((deal) => <DealCard key={deal.id} deal={deal} isAdmin={isAdmin} currentUserId={currentUserId} sharedWith={sharedUsersMap[deal.id] || []} />)
       ) : (
         <div className="col-span-full py-12 text-center text-gray-500">
           Nenhum negócio encontrado

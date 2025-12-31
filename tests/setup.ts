@@ -1,4 +1,4 @@
-import { beforeAll, afterEach, afterAll, vi } from 'vitest';
+import { beforeAll, beforeEach, afterEach, afterAll, vi } from 'vitest';
 import { mockDeep, mockReset } from 'vitest-mock-extended';
 import type { PrismaClient } from '@prisma/client';
 
@@ -38,6 +38,16 @@ vi.mock('next/navigation', () => ({
 beforeAll(() => {
   // Setup global antes de todos os testes
   console.log('🧪 Iniciando suite de testes...');
+});
+
+// Setup default mock for sharedEntity before each test
+// This ensures getOwnerOrSharedFilter and canAccessEntity work correctly in all tests
+// Individual tests can override these mocks if they need to test sharing behavior
+beforeEach(() => {
+  // For getSharedEntityIds (used by getOwnerOrSharedFilter)
+  prismaMock.sharedEntity.findMany.mockResolvedValue([]);
+  // For canAccessEntity (checks if entity is shared with user)
+  prismaMock.sharedEntity.findFirst.mockResolvedValue(null);
 });
 
 afterEach(() => {

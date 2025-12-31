@@ -5,8 +5,8 @@ import { prisma } from "@/lib/prisma";
 import { contactSchema, ContactFormData } from "@/lib/validations/contact";
 import {
   getAuthenticatedSession,
-  getOwnerFilter,
-  canAccessRecord,
+  getOwnerOrSharedFilter,
+  canAccessEntity,
 } from "@/lib/permissions";
 
 export async function getContacts(filters?: {
@@ -15,22 +15,14 @@ export async function getContacts(filters?: {
   company?: string;
   owner?: string;
 }) {
-  const ownerFilter = await getOwnerFilter(filters?.owner);
+  const ownerFilter = await getOwnerOrSharedFilter("contact", filters?.owner);
 
-  const whereClause: {
-    ownerId?: string;
-    status?: string;
-    OR?: Array<{ name?: { contains: string; mode: string }; email?: { contains: string; mode: string }; phone?: { contains: string } }>;
-    organizationId?: { not: null } | null;
-    leadId?: { not: null } | null;
-    partnerId?: { not: null } | null;
-  } = {
-    ...ownerFilter,
-  };
+  // Build additional filters
+  const additionalFilters: Record<string, unknown> = {};
 
   // Search filter
   if (filters?.search) {
-    whereClause.OR = [
+    additionalFilters.OR = [
       { name: { contains: filters.search, mode: "insensitive" } },
       { email: { contains: filters.search, mode: "insensitive" } },
       { phone: { contains: filters.search } },
@@ -39,22 +31,40 @@ export async function getContacts(filters?: {
 
   // Status filter
   if (filters?.status) {
-    whereClause.status = filters.status;
+    additionalFilters.status = filters.status;
   }
 
   // Company filter
   if (filters?.company) {
     if (filters.company === "organization") {
-      whereClause.organizationId = { not: null };
+      additionalFilters.organizationId = { not: null };
     } else if (filters.company === "lead") {
-      whereClause.leadId = { not: null };
+      additionalFilters.leadId = { not: null };
     } else if (filters.company === "partner") {
-      whereClause.partnerId = { not: null };
+      additionalFilters.partnerId = { not: null };
     } else if (filters.company === "none") {
-      whereClause.organizationId = null;
-      whereClause.leadId = null;
-      whereClause.partnerId = null;
+      additionalFilters.organizationId = null;
+      additionalFilters.leadId = null;
+      additionalFilters.partnerId = null;
     }
+  }
+
+  // Combine owner filter with additional filters
+  // Use AND only when ownerFilter has OR (shared entities case)
+  // Otherwise spread both objects together (simpler structure)
+  const hasSharedEntities = 'OR' in ownerFilter;
+  const hasAdditionalFilters = Object.keys(additionalFilters).length > 0;
+
+  let whereClause: Record<string, unknown>;
+  if (hasSharedEntities && hasAdditionalFilters) {
+    // Need AND to combine OR-based owner filter with other filters
+    whereClause = { AND: [ownerFilter, additionalFilters] };
+  } else if (hasAdditionalFilters) {
+    // Simple case: spread owner filter (ownerId) with other filters
+    whereClause = { ...ownerFilter, ...additionalFilters };
+  } else {
+    // No additional filters, just use owner filter
+    whereClause = ownerFilter;
   }
 
   const contacts = await prisma.contact.findMany({
@@ -95,7 +105,7 @@ export async function getContacts(filters?: {
 }
 
 export async function getContactById(id: string) {
-  const ownerFilter = await getOwnerFilter();
+  const ownerFilter = await getOwnerOrSharedFilter("contact");
 
   const contact = await prisma.contact.findFirst({
     where: {
@@ -123,6 +133,13 @@ export async function getContactById(id: string) {
       activities: {
         orderBy: {
           dueDate: "desc",
+        },
+      },
+      owner: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
         },
       },
     },
@@ -171,9 +188,9 @@ export async function updateContact(id: string, data: ContactFormData) {
   await getAuthenticatedSession();
   const validated = contactSchema.parse(data);
 
-  // Check ownership
+  // Check ownership or shared access
   const existing = await prisma.contact.findUnique({ where: { id } });
-  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+  if (!existing || !(await canAccessEntity("contact", id, existing.ownerId))) {
     throw new Error("Contato não encontrado");
   }
 
@@ -213,9 +230,9 @@ export async function updateContact(id: string, data: ContactFormData) {
 export async function deleteContact(id: string) {
   await getAuthenticatedSession();
 
-  // Check ownership
+  // Check ownership or shared access
   const existing = await prisma.contact.findUnique({ where: { id } });
-  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+  if (!existing || !(await canAccessEntity("contact", id, existing.ownerId))) {
     throw new Error("Contato não encontrado");
   }
 

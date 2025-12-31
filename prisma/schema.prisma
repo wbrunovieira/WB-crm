@@ -34,7 +34,30 @@ model User {
   partners           Partner[]
   dealStageChanges   DealStageHistory[]
 
+  // Shared entities relations
+  sharedWithMe       SharedEntity[] @relation("SharedWithUser")
+  sharedByMe         SharedEntity[] @relation("SharedByUser")
+
   @@map("users")
+}
+
+// Entity sharing - allows sharing entities between users without transferring ownership
+model SharedEntity {
+  id               String   @id @default(cuid())
+  entityType       String   // lead, contact, organization, partner, deal
+  entityId         String   // ID of the entity being shared
+  sharedWithUserId String   // User who receives access
+  sharedByUserId   String   // Admin who created the share
+  createdAt        DateTime @default(now())
+
+  // Relations
+  sharedWithUser   User     @relation("SharedWithUser", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+  sharedByUser     User     @relation("SharedByUser", fields: [sharedByUserId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId, sharedWithUserId])
+  @@index([entityType, entityId])
+  @@index([sharedWithUserId])
+  @@map("shared_entities")
 }
 
 // NextAuth.js models

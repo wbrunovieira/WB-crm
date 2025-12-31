@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Mail, Phone, MessageCircle, Building2, Briefcase, Edit, Star } from "lucide-react";
 import { DeleteContactButton } from "./DeleteContactButton";
-import { OwnerBadge } from "@/components/shared/OwnerBadge";
+import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 
 interface Contact {
   id: string;
@@ -23,9 +23,10 @@ interface ContactCardProps {
   contact: Contact;
   showOwnerBadge?: boolean;
   currentUserId?: string;
+  sharedWith?: { id: string; name: string }[];
 }
 
-export function ContactCard({ contact, showOwnerBadge, currentUserId }: ContactCardProps) {
+export function ContactCard({ contact, showOwnerBadge, currentUserId, sharedWith = [] }: ContactCardProps) {
   const companyName = contact.organization?.name || contact.lead?.businessName || contact.partner?.name;
   const companyLink = contact.organization
     ? `/organizations/${contact.organization.id}`
@@ -51,10 +52,12 @@ export function ContactCard({ contact, showOwnerBadge, currentUserId }: ContactC
                 <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 flex-shrink-0" />
               </span>
             )}
-            {showOwnerBadge && contact.owner && (
-              <OwnerBadge
-                ownerName={contact.owner.name}
-                isCurrentUser={contact.owner.id === currentUserId}
+            {showOwnerBadge && contact.owner && currentUserId && (
+              <EntityAccessBadges
+                owner={{ id: contact.owner.id, name: contact.owner.name }}
+                sharedWith={sharedWith}
+                currentUserId={currentUserId}
+                compact
               />
             )}
             <span
