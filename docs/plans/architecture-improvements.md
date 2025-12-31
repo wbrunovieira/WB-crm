@@ -9,18 +9,19 @@
 
 ## Histórico de Atualizações
 
-| Data       | Descrição                                                                 |
-|------------|---------------------------------------------------------------------------|
+| Data       | Descrição                                                                  |
+| ---------- | -------------------------------------------------------------------------- |
 | 2024-12-31 | Criação do plano e implementação dos testes de isolamento (Server Actions) |
-| 2024-12-31 | Implementação dos testes de isolamento (API Routes) - Fase 1 completa     |
-| 2024-12-31 | Implementação dos testes de autenticação e autorização - Fase 2 completa  |
-| 2024-12-31 | Implementação dos testes de Leads (54 testes) - Fase 3.1 completa         |
-| 2024-12-31 | Implementação dos testes de Lead Contacts (42 testes) - Fase 3.2 completa |
-| 2024-12-31 | Implementação dos testes de Organizations (49 testes) - Fase 3.3 completa |
-| 2024-12-31 | Implementação dos testes de Contacts (56 testes) - Fase 3.4 completa      |
-| 2024-12-31 | Implementação dos testes de Deals (48 testes) - Fase 3.5 completa         |
-| 2024-12-31 | Implementação dos testes de Activities (61 testes) - Fase 3.6 completa    |
-| 2024-12-31 | Implementação dos testes de Partners (45 testes) - Fase 3.7 completa      |
+| 2024-12-31 | Implementação dos testes de isolamento (API Routes) - Fase 1 completa      |
+| 2024-12-31 | Implementação dos testes de autenticação e autorização - Fase 2 completa   |
+| 2024-12-31 | Implementação dos testes de Leads (54 testes) - Fase 3.1 completa          |
+| 2024-12-31 | Implementação dos testes de Lead Contacts (42 testes) - Fase 3.2 completa  |
+| 2024-12-31 | Implementação dos testes de Organizations (49 testes) - Fase 3.3 completa  |
+| 2024-12-31 | Implementação dos testes de Contacts (56 testes) - Fase 3.4 completa       |
+| 2024-12-31 | Implementação dos testes de Deals (48 testes) - Fase 3.5 completa          |
+| 2024-12-31 | Implementação dos testes de Activities (61 testes) - Fase 3.6 completa     |
+| 2024-12-31 | Implementação dos testes de Partners (45 testes) - Fase 3.7 completa       |
+| 2024-12-31 | Implementação dos testes de Pipeline (63 testes) - Fase 4 completa         |
 
 ---
 
@@ -218,35 +219,37 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 | Status | Arquivo                           | Teste                        | Descrição                     |
 | ------ | --------------------------------- | ---------------------------- | ----------------------------- |
-| [ ]    | `tests/actions/pipelines.test.ts` | `createPipeline-success`     | Cria pipeline                 |
-| [ ]    |                                   | `getPipelines-returns-all`   | Retorna todos (não tem owner) |
-| [ ]    |                                   | `getPipelineById-success`    | Retorna por ID                |
-| [ ]    |                                   | `updatePipeline-success`     | Atualiza                      |
-| [ ]    |                                   | `setDefaultPipeline-success` | Define default                |
-| [ ]    |                                   | `deletePipeline-success`     | Deleta                        |
+| [x]    | `tests/actions/pipelines.test.ts` | `createPipeline-success`     | Cria pipeline                 |
+| [x]    |                                   | `getPipelines-returns-all`   | Retorna todos (não tem owner) |
+| [x]    |                                   | `getPipelineById-success`    | Retorna por ID                |
+| [x]    |                                   | `updatePipeline-success`     | Atualiza                      |
+| [x]    |                                   | `setDefaultPipeline-success` | Define default                |
+| [x]    |                                   | `deletePipeline-success`     | Deleta                        |
 
 ### 4.2 Stages (`src/actions/stages.ts`)
 
 | Status | Arquivo                        | Teste                         | Descrição                  |
 | ------ | ------------------------------ | ----------------------------- | -------------------------- |
-| [ ]    | `tests/actions/stages.test.ts` | `createStage-success`         | Cria stage                 |
-| [ ]    |                                | `getStagesByPipeline-success` | Retorna stages do pipeline |
-| [ ]    |                                | `updateStage-success`         | Atualiza                   |
-| [ ]    |                                | `reorderStages-success`       | Reordena stages            |
-| [ ]    |                                | `deleteStage-success`         | Deleta                     |
+| [x]    | `tests/actions/stages.test.ts` | `createStage-success`         | Cria stage                 |
+| [x]    |                                | `getStagesByPipeline-success` | Retorna stages do pipeline |
+| [x]    |                                | `updateStage-success`         | Atualiza                   |
+| [x]    |                                | `reorderStages-success`       | Reordena stages            |
+| [x]    |                                | `deleteStage-success`         | Deleta                     |
 
 ### 4.3 Pipeline View (`src/actions/pipeline-view.ts`)
 
 | Status | Arquivo                               | Teste                              | Descrição                |
 | ------ | ------------------------------------- | ---------------------------------- | ------------------------ |
-| [ ]    | `tests/actions/pipeline-view.test.ts` | `getPipelineView-filters-by-owner` | Filtra deals por owner   |
-| [ ]    |                                       | `getPipelineView-returns-stages`   | Retorna stages com deals |
+| [x]    | `tests/actions/pipeline-view.test.ts` | `getPipelineView-filters-by-owner` | Filtra deals por owner   |
+| [x]    |                                       | `getPipelineView-returns-stages`   | Retorna stages com deals |
 
 ---
 
 ## Fase 5: Testes de Server Actions - Produtos
 
-### 5.1 Business Lines (`src/actions/business-lines.ts`)
+### 5.1 Business Lines
+
+(`src/actions/business-lines.ts`)
 
 | Status | Arquivo                                | Teste                            | Descrição             |
 | ------ | -------------------------------------- | -------------------------------- | --------------------- |
@@ -543,13 +546,13 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | 1. Segurança (Isolamento) | 17      | 17         | 100%        |
 | 2. Autenticação           | 13      | 13         | 100%        |
 | 3. Core CRM               | 76      | 76         | 100%        |
-| 4. Pipeline               | 12      | 0          | 0%          |
+| 4. Pipeline               | 13      | 13         | 100%        |
 | 5. Produtos               | 19      | 0          | 0%          |
 | 6. Tech Profile/Stack     | 46      | 0          | 0%          |
 | 7. Auxiliares             | 21      | 0          | 0%          |
 | 8. API Routes             | 33      | 0          | 0%          |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **250** | **106**    | **42%**     |
+| **TOTAL**                 | **251** | **119**    | **47%**     |
 
 ---
 
