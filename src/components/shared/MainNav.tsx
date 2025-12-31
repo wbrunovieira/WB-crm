@@ -84,6 +84,7 @@ const navItems = [
 // Routes restricted by role
 const restrictedRoutes: Record<string, string[]> = {
   "/pipelines": ["sdr", "closer"],
+  "/projects": ["sdr", "closer"],
 };
 
 export function MainNav({ userRole: role }: MainNavProps) {
