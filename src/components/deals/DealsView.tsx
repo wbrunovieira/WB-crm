@@ -6,6 +6,8 @@ import Link from "next/link";
 import { DealsListView } from "./DealsListView";
 import { DealsKanbanView } from "./DealsKanbanView";
 import { DealsFilters } from "./DealsFilters";
+import { OwnerFilter } from "@/components/shared/OwnerFilter";
+import { UserListItem } from "@/actions/users";
 
 interface Deal {
   id: string;
@@ -41,6 +43,9 @@ interface DealsViewProps {
   allPipelines?: Array<{ id: string; name: string }>;
   groupBy: string;
   displayMode?: string;
+  isAdmin?: boolean;
+  currentUserId?: string;
+  users?: UserListItem[];
 }
 
 export function DealsView({
@@ -50,6 +55,9 @@ export function DealsView({
   allPipelines = [],
   groupBy,
   displayMode = "table",
+  isAdmin = false,
+  currentUserId = "",
+  users = [],
 }: DealsViewProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -128,7 +136,14 @@ export function DealsView({
         </div>
 
         {/* Filters (only for list view) */}
-        {initialView === "list" && <DealsFilters />}
+        {initialView === "list" && (
+          <div className="flex items-center justify-between gap-4">
+            <DealsFilters />
+            {isAdmin && users.length > 0 && (
+              <OwnerFilter users={users} currentUserId={currentUserId} />
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-auto p-8">
