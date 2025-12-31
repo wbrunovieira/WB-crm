@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -19,6 +18,10 @@ import {
   X,
 } from "lucide-react";
 import { useState, useMemo } from "react";
+
+interface MainNavProps {
+  userRole?: string;
+}
 
 const navItems = [
   {
@@ -83,12 +86,11 @@ const restrictedRoutes: Record<string, string[]> = {
   "/pipelines": ["sdr", "closer"],
 };
 
-export function MainNav() {
+export function MainNav({ userRole: role }: MainNavProps) {
   const pathname = usePathname();
-  const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  const userRole = session?.user?.role?.toLowerCase() || "";
+  const userRole = role?.toLowerCase() || "";
 
   // Filter nav items based on user role
   const filteredNavItems = useMemo(() => {

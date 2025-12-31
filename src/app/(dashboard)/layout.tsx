@@ -27,7 +27,7 @@ export default async function DashboardLayout({
               <Link href="/dashboard" className="flex-shrink-0 text-xl font-bold text-primary hover:text-purple-400 transition-colors">
                 WB CRM
               </Link>
-              <MainNav />
+              <MainNav userRole={session.user?.role} />
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
               <div className="hidden sm:block text-sm text-gray-300 font-medium truncate max-w-[200px]" title={session.user?.name || session.user?.email || ""}>
