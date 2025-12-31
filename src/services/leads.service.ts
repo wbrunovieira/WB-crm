@@ -8,13 +8,7 @@
  * - Lead qualification
  */
 
-import type {
-  Lead,
-  LeadContact,
-  Organization,
-  Contact,
-  CNAE,
-} from "@prisma/client";
+import type { Lead, LeadContact, CNAE } from "@prisma/client";
 
 export interface LeadWithRelations extends Lead {
   contacts?: LeadContact[];
@@ -50,13 +44,11 @@ export interface OrganizationData {
   city?: string | null;
   address?: string | null;
   postalCode?: string | null;
-  industry?: string | null;
-  employeeCount?: string | null;
+  employeeCount?: number | null;
   annualRevenue?: number | null;
   cnpj?: string | null;
   primaryCNAEId?: string | null;
   internationalActivity?: string | null;
-  techDetails?: string | null;
   ownerId: string;
   sourceLeadId: string;
 }
@@ -158,25 +150,29 @@ export function prepareLeadForConversion(lead: LeadWithRelations): {
 
 /**
  * Maps lead data to organization data structure
+ * Field name mappings: Lead → Organization
+ * - registeredName → legalName
+ * - zipCode → postalCode
+ * - companyRegistrationID → cnpj (taxId)
+ * - employeesCount → employeeCount
+ * - revenue → annualRevenue
  */
 export function mapLeadToOrganization(lead: LeadWithRelations): OrganizationData {
   return {
     name: lead.businessName!,
-    legalName: lead.legalName,
+    legalName: lead.registeredName,
     website: lead.website,
     phone: lead.phone,
     country: lead.country,
     state: lead.state,
     city: lead.city,
     address: lead.address,
-    postalCode: lead.postalCode,
-    industry: lead.industry,
-    employeeCount: lead.employeeCount,
-    annualRevenue: lead.annualRevenue,
-    cnpj: lead.cnpj,
+    postalCode: lead.zipCode,
+    employeeCount: lead.employeesCount,
+    annualRevenue: lead.revenue,
+    cnpj: lead.companyRegistrationID,
     primaryCNAEId: lead.primaryCNAEId,
     internationalActivity: lead.internationalActivity,
-    techDetails: lead.techDetails,
     ownerId: lead.ownerId,
     sourceLeadId: lead.id,
   };
@@ -193,7 +189,7 @@ export function mapLeadContactToContact(
     name: leadContact.name,
     email: leadContact.email,
     phone: leadContact.phone,
-    position: leadContact.position,
+    position: leadContact.role, // LeadContact uses "role" field
     isPrimary: leadContact.isPrimary || false,
     ownerId,
     sourceLeadContactId: leadContact.id,
@@ -262,11 +258,12 @@ export function calculateLeadScore(lead: LeadWithRelations): number {
   let score = 0;
 
   // Basic info (30 points)
+  // Uses correct Lead field names: categories (industry equivalent), employeesCount
   if (lead.businessName) score += 10;
   if (lead.website) score += 5;
   if (lead.phone) score += 5;
-  if (lead.industry) score += 5;
-  if (lead.employeeCount) score += 5;
+  if (lead.categories) score += 5; // Lead uses "categories" instead of "industry"
+  if (lead.employeesCount) score += 5; // Lead uses "employeesCount" (with 's')
 
   // Contact info (30 points)
   if (lead.contacts && lead.contacts.length > 0) {
@@ -282,7 +279,8 @@ export function calculateLeadScore(lead: LeadWithRelations): number {
   if (lead.city) score += 4;
 
   // Business details (20 points)
-  if (lead.cnpj || lead.country !== "BR") score += 10;
+  // Lead uses "companyRegistrationID" instead of "cnpj"
+  if (lead.companyRegistrationID || lead.country !== "BR") score += 10;
   if (lead.primaryCNAEId || lead.internationalActivity) score += 10;
 
   // Tech profile (10 points)

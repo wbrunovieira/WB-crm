@@ -199,23 +199,22 @@ describe("Leads Service", () => {
   // ==================== mapLeadToOrganization ====================
   describe("mapLeadToOrganization", () => {
     it("should map all fields correctly", () => {
+      // Use correct Lead field names (which map to Organization fields)
       const lead = createMockLead({
         businessName: "Test Corp",
-        legalName: "Test Corporation LTDA",
+        registeredName: "Test Corporation LTDA", // maps to legalName
         website: "https://test.com",
         phone: "+55 11 1234-5678",
         country: "BR",
         state: "SP",
         city: "São Paulo",
         address: "Av. Paulista, 1000",
-        postalCode: "01310-100",
-        industry: "Technology",
-        employeeCount: "50-100",
-        annualRevenue: 1000000,
-        cnpj: "12.345.678/0001-99",
+        zipCode: "01310-100", // maps to postalCode
+        employeesCount: 75, // maps to employeeCount
+        revenue: 1000000, // maps to annualRevenue
+        companyRegistrationID: "12.345.678/0001-99", // maps to cnpj
         primaryCNAEId: "cnae-1",
         internationalActivity: null,
-        techDetails: "Uses React and Node.js",
         ownerId: "user-123",
       });
 
@@ -228,7 +227,9 @@ describe("Leads Service", () => {
       expect(result.country).toBe("BR");
       expect(result.state).toBe("SP");
       expect(result.city).toBe("São Paulo");
-      expect(result.industry).toBe("Technology");
+      expect(result.postalCode).toBe("01310-100");
+      expect(result.employeeCount).toBe(75);
+      expect(result.annualRevenue).toBe(1000000);
       expect(result.cnpj).toBe("12.345.678/0001-99");
       expect(result.primaryCNAEId).toBe("cnae-1");
       expect(result.ownerId).toBe("user-123");
@@ -238,7 +239,7 @@ describe("Leads Service", () => {
     it("should handle null optional fields", () => {
       const lead = createMockLead({
         businessName: "Minimal Corp",
-        legalName: null,
+        registeredName: null,
         website: null,
       });
 
@@ -258,7 +259,7 @@ describe("Leads Service", () => {
         name: "Jane Smith",
         email: "jane@example.com",
         phone: "+55 11 88888-8888",
-        position: "CTO",
+        role: "CTO", // LeadContact uses "role", maps to "position"
         isPrimary: true,
       });
 
@@ -267,7 +268,7 @@ describe("Leads Service", () => {
       expect(result.name).toBe("Jane Smith");
       expect(result.email).toBe("jane@example.com");
       expect(result.phone).toBe("+55 11 88888-8888");
-      expect(result.position).toBe("CTO");
+      expect(result.position).toBe("CTO"); // Mapped from role
       expect(result.isPrimary).toBe(true);
       expect(result.ownerId).toBe("user-456");
       expect(result.sourceLeadContactId).toBe("lc-123");
@@ -278,7 +279,7 @@ describe("Leads Service", () => {
         name: "John",
         email: null,
         phone: null,
-        position: null,
+        role: null, // LeadContact uses "role"
         isPrimary: false,
       });
 
@@ -287,7 +288,7 @@ describe("Leads Service", () => {
       expect(result.name).toBe("John");
       expect(result.email).toBeNull();
       expect(result.phone).toBeNull();
-      expect(result.position).toBeNull();
+      expect(result.position).toBeNull(); // Mapped from role
       expect(result.isPrimary).toBe(false);
     });
   });
@@ -370,16 +371,17 @@ describe("Leads Service", () => {
   // ==================== calculateLeadScore ====================
   describe("calculateLeadScore", () => {
     it("should calculate score for complete lead", () => {
+      // Use correct Lead field names
       const lead = createMockLead({
         businessName: "Company",
         website: "https://example.com",
         phone: "+55 11 99999-9999",
-        industry: "Tech",
-        employeeCount: "10-50",
+        categories: "Tech", // Lead uses "categories" instead of "industry"
+        employeesCount: 50, // Lead uses "employeesCount" (with 's')
         country: "BR",
         state: "SP",
         city: "São Paulo",
-        cnpj: "12.345.678/0001-99",
+        companyRegistrationID: "12.345.678/0001-99", // Lead uses "companyRegistrationID" instead of "cnpj"
         primaryCNAEId: "cnae-1",
         contacts: [
           createMockLeadContact({

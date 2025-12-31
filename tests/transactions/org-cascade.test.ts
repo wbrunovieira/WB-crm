@@ -340,13 +340,8 @@ describe("Organization Cascade Delete Transaction", () => {
       });
     });
 
-    it("should delete activities directly linked to organization", async () => {
-      await deleteOrganizationWithCascade(ORG_ID, OWNER_ID);
-
-      // One of the activity.deleteMany calls should be for the organization
-      expect(mockTx.activity.deleteMany).toHaveBeenCalledWith({
-        where: { organizationId: ORG_ID },
-      });
-    });
+    // Note: Activities don't have a direct organizationId field.
+    // They are linked to organizations indirectly through deals or contacts.
+    // Deleting deals cascades to their activities via Prisma's onDelete: Cascade.
   });
 });

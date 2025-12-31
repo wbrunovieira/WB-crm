@@ -305,22 +305,21 @@ describe("mapLeadToOrganization", () => {
   });
 
   it("maps all optional fields when present", () => {
+    // Use correct Lead field names (which map to Organization fields)
     const lead = createLead({
-      legalName: "Test Corporation LTDA",
+      registeredName: "Test Corporation LTDA", // maps to legalName
       website: "https://test.com",
       phone: "+55 11 1234-5678",
       country: "BR",
       state: "SP",
       city: "São Paulo",
       address: "Av. Paulista, 1000",
-      postalCode: "01310-100",
-      industry: "Technology",
-      employeeCount: "50-100",
-      annualRevenue: 1000000,
-      cnpj: "12.345.678/0001-99",
+      zipCode: "01310-100", // maps to postalCode
+      employeesCount: 75, // maps to employeeCount
+      revenue: 1000000, // maps to annualRevenue
+      companyRegistrationID: "12.345.678/0001-99", // maps to cnpj
       primaryCNAEId: "cnae-1",
       internationalActivity: null,
-      techDetails: "React, Node.js",
     });
 
     const result = mapLeadToOrganization(lead);
@@ -333,17 +332,15 @@ describe("mapLeadToOrganization", () => {
     expect(result.city).toBe("São Paulo");
     expect(result.address).toBe("Av. Paulista, 1000");
     expect(result.postalCode).toBe("01310-100");
-    expect(result.industry).toBe("Technology");
-    expect(result.employeeCount).toBe("50-100");
+    expect(result.employeeCount).toBe(75);
     expect(result.annualRevenue).toBe(1000000);
     expect(result.cnpj).toBe("12.345.678/0001-99");
     expect(result.primaryCNAEId).toBe("cnae-1");
-    expect(result.techDetails).toBe("React, Node.js");
   });
 
   it("preserves null values for optional fields", () => {
     const lead = createLead({
-      legalName: null,
+      registeredName: null,
       website: null,
       phone: null,
     });
@@ -363,7 +360,7 @@ describe("mapLeadContactToContact", () => {
       name: "Jane Smith",
       email: "jane@example.com",
       phone: "+55 11 88888-8888",
-      position: "CTO",
+      role: "CTO", // LeadContact uses "role", maps to "position"
       isPrimary: true,
     });
 
@@ -372,7 +369,7 @@ describe("mapLeadContactToContact", () => {
     expect(result.name).toBe("Jane Smith");
     expect(result.email).toBe("jane@example.com");
     expect(result.phone).toBe("+55 11 88888-8888");
-    expect(result.position).toBe("CTO");
+    expect(result.position).toBe("CTO"); // Mapped from role
     expect(result.isPrimary).toBe(true);
     expect(result.ownerId).toBe("user-456");
     expect(result.sourceLeadContactId).toBe("lc-123");
@@ -383,7 +380,7 @@ describe("mapLeadContactToContact", () => {
       name: "John",
       email: null,
       phone: null,
-      position: null,
+      role: null, // LeadContact uses "role"
       isPrimary: false,
     });
 
@@ -392,7 +389,7 @@ describe("mapLeadContactToContact", () => {
     expect(result.name).toBe("John");
     expect(result.email).toBeNull();
     expect(result.phone).toBeNull();
-    expect(result.position).toBeNull();
+    expect(result.position).toBeNull(); // Mapped from role
     expect(result.isPrimary).toBe(false);
   });
 
@@ -581,16 +578,18 @@ describe("calculateLeadScore", () => {
       expect(diff).toBe(5);
     });
 
-    it("gives 5 points for industry", () => {
+    it("gives 5 points for categories", () => {
+      // Lead uses "categories" instead of "industry"
       const base = createLead({ businessName: "Company" });
-      const withIndustry = createLead({ businessName: "Company", industry: "Technology" });
-      const diff = calculateLeadScore(withIndustry) - calculateLeadScore(base);
+      const withCategories = createLead({ businessName: "Company", categories: "Technology" });
+      const diff = calculateLeadScore(withCategories) - calculateLeadScore(base);
       expect(diff).toBe(5);
     });
 
-    it("gives 5 points for employeeCount", () => {
+    it("gives 5 points for employeesCount", () => {
+      // Lead uses "employeesCount" (with 's') instead of "employeeCount"
       const base = createLead({ businessName: "Company" });
-      const withEmployees = createLead({ businessName: "Company", employeeCount: "50-100" });
+      const withEmployees = createLead({ businessName: "Company", employeesCount: 75 });
       const diff = calculateLeadScore(withEmployees) - calculateLeadScore(base);
       expect(diff).toBe(5);
     });
@@ -676,16 +675,17 @@ describe("calculateLeadScore", () => {
   });
 
   describe("business details scoring (20 points max)", () => {
-    it("gives 10 points for CNPJ (Brazilian)", () => {
-      const base = createLead({ businessName: "Company", cnpj: null, country: "BR" });
-      const withCnpj = createLead({ businessName: "Company", cnpj: "12.345.678/0001-99", country: "BR" });
-      const diff = calculateLeadScore(withCnpj) - calculateLeadScore(base);
+    it("gives 10 points for companyRegistrationID (Brazilian)", () => {
+      // Lead uses "companyRegistrationID" instead of "cnpj"
+      const base = createLead({ businessName: "Company", companyRegistrationID: null, country: "BR" });
+      const withRegistration = createLead({ businessName: "Company", companyRegistrationID: "12.345.678/0001-99", country: "BR" });
+      const diff = calculateLeadScore(withRegistration) - calculateLeadScore(base);
       expect(diff).toBe(10);
     });
 
-    it("gives 10 points for non-Brazilian country without CNPJ", () => {
-      const brazilian = createLead({ businessName: "Company", country: "BR", cnpj: null });
-      const foreign = createLead({ businessName: "Company", country: "US", cnpj: null });
+    it("gives 10 points for non-Brazilian country without companyRegistrationID", () => {
+      const brazilian = createLead({ businessName: "Company", country: "BR", companyRegistrationID: null });
+      const foreign = createLead({ businessName: "Company", country: "US", companyRegistrationID: null });
       const diff = calculateLeadScore(foreign) - calculateLeadScore(brazilian);
       expect(diff).toBe(10);
     });

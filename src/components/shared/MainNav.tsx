@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
   LayoutDashboard,
@@ -17,7 +18,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 
 const navItems = [
   {
@@ -77,9 +78,28 @@ const navItems = [
   },
 ];
 
+// Routes restricted by role
+const restrictedRoutes: Record<string, string[]> = {
+  "/pipelines": ["sdr", "closer"],
+};
+
 export function MainNav() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const userRole = session?.user?.role?.toLowerCase() || "";
+
+  // Filter nav items based on user role
+  const filteredNavItems = useMemo(() => {
+    return navItems.filter((item) => {
+      const restrictedRoles = restrictedRoutes[item.href];
+      if (restrictedRoles && restrictedRoles.includes(userRole)) {
+        return false;
+      }
+      return true;
+    });
+  }, [userRole]);
 
   const isActive = (href: string) => {
     if (href === "/dashboard") {
@@ -95,7 +115,7 @@ export function MainNav() {
     <>
       {/* Desktop Navigation */}
       <div className="hidden lg:flex items-center gap-1 overflow-x-auto scrollbar-hide">
-        {navItems.map((item) => {
+        {filteredNavItems.map((item) => {
           const Icon = item.icon;
           const active = isActive(item.href);
 
@@ -134,7 +154,7 @@ export function MainNav() {
         <div className="lg:hidden fixed inset-0 top-16 z-40 bg-black/50 backdrop-blur-sm">
           <div className="bg-[#1a0022] border-t border-[#792990] p-4 shadow-xl">
             <div className="grid gap-2">
-              {navItems.map((item) => {
+              {filteredNavItems.map((item) => {
                 const Icon = item.icon;
                 const active = isActive(item.href);
 

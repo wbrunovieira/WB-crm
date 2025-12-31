@@ -101,7 +101,7 @@ export interface LeadConversionInput {
     address?: string | null;
     postalCode?: string | null;
     industry?: string | null;
-    employeeCount?: string | null;
+    employeeCount?: number | null;
     annualRevenue?: number | null;
     cnpj?: string | null;
     primaryCNAEId?: string | null;
@@ -160,7 +160,7 @@ export async function convertLeadToOrganizationTransaction(
           name: contactData.name,
           email: contactData.email,
           phone: contactData.phone,
-          position: contactData.position,
+          role: contactData.position, // LeadContact uses "position", Contact uses "role"
           isPrimary: contactData.isPrimary,
           ownerId: input.ownerId,
           organizationId: organization.id,
@@ -417,12 +417,7 @@ export async function deleteOrganizationWithCascade(
       where: { organizationId },
     });
 
-    // 6. Delete activities directly linked to organization
-    await tx.activity.deleteMany({
-      where: { organizationId },
-    });
-
-    // 7. Delete the organization itself
+    // 6. Delete the organization itself
     await tx.organization.delete({
       where: { id: organizationId },
     });

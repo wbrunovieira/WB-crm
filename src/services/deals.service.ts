@@ -153,8 +153,8 @@ export function validateDealStageTransition(
 
   // Check if target stage is a "closed" stage (usually last stages)
   const maxOrder = Math.max(...stages.map((s) => s.order));
-  if (targetStage.order === maxOrder && !deal.closedAt) {
-    // Moving to final stage - this is allowed but should set closedAt
+  if (targetStage.order === maxOrder && deal.status === "open") {
+    // Moving to final stage - this is allowed but should update status
     return { valid: true };
   }
 
