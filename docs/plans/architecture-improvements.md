@@ -14,6 +14,7 @@
 | 2024-12-31 | Criação do plano e implementação dos testes de isolamento (Server Actions) |
 | 2024-12-31 | Implementação dos testes de isolamento (API Routes) - Fase 1 completa     |
 | 2024-12-31 | Implementação dos testes de autenticação e autorização - Fase 2 completa  |
+| 2024-12-31 | Implementação dos testes de Leads (54 testes) - Fase 3.1 completa         |
 
 ---
 
@@ -96,17 +97,17 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 | Status | Arquivo                       | Teste                       | Descrição                             |
 | ------ | ----------------------------- | --------------------------- | ------------------------------------- |
-| [ ]    | `tests/actions/leads.test.ts` | `createLead-success`        | Cria lead com dados válidos           |
-| [ ]    |                               | `createLead-validation`     | Rejeita dados inválidos               |
-| [ ]    |                               | `createLead-sets-owner`     | Define ownerId do usuário logado      |
-| [ ]    |                               | `getLeads-filters-by-owner` | Retorna apenas leads do owner         |
-| [ ]    |                               | `getLeadById-returns-own`   | Retorna lead próprio                  |
-| [ ]    |                               | `getLeadById-blocks-other`  | Bloqueia lead de outro usuário        |
-| [ ]    |                               | `updateLead-success`        | Atualiza lead com dados válidos       |
-| [ ]    |                               | `updateLead-ownership`      | Verifica ownership antes de atualizar |
-| [ ]    |                               | `deleteLead-success`        | Deleta lead próprio                   |
-| [ ]    |                               | `deleteLead-ownership`      | Verifica ownership antes de deletar   |
-| [ ]    |                               | `convertLeadToOrganization` | Converte lead para organization       |
+| [x]    | `tests/actions/leads.test.ts` | `createLead-success`        | Cria lead com dados válidos           |
+| [x]    |                               | `createLead-validation`     | Rejeita dados inválidos               |
+| [x]    |                               | `createLead-sets-owner`     | Define ownerId do usuário logado      |
+| [x]    |                               | `getLeads-filters-by-owner` | Retorna apenas leads do owner         |
+| [x]    |                               | `getLeadById-returns-own`   | Retorna lead próprio                  |
+| [x]    |                               | `getLeadById-blocks-other`  | Bloqueia lead de outro usuário        |
+| [x]    |                               | `updateLead-success`        | Atualiza lead com dados válidos       |
+| [x]    |                               | `updateLead-ownership`      | Verifica ownership antes de atualizar |
+| [x]    |                               | `deleteLead-success`        | Deleta lead próprio                   |
+| [x]    |                               | `deleteLead-ownership`      | Verifica ownership antes de deletar   |
+| [x]    |                               | `convertLeadToOrganization` | Converte lead para organization       |
 
 ### 3.2 Lead Contacts (`src/actions/leads.ts`)
 
@@ -535,14 +536,14 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | ------------------------- | ------- | ---------- | ----------- |
 | 1. Segurança (Isolamento) | 17      | 17         | 100%        |
 | 2. Autenticação           | 13      | 13         | 100%        |
-| 3. Core CRM               | 58      | 0          | 0%          |
+| 3. Core CRM               | 58      | 11         | 19%         |
 | 4. Pipeline               | 12      | 0          | 0%          |
 | 5. Produtos               | 19      | 0          | 0%          |
 | 6. Tech Profile/Stack     | 46      | 0          | 0%          |
 | 7. Auxiliares             | 21      | 0          | 0%          |
 | 8. API Routes             | 33      | 0          | 0%          |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **232** | **30**     | **13%**     |
+| **TOTAL**                 | **232** | **41**     | **18%**     |
 
 ---
 
