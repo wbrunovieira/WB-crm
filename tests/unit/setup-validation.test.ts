@@ -9,7 +9,7 @@ describe('Test Setup Validation', () => {
       expect(mockUser).toBeDefined();
       expect(mockUser.id).toBe('user-test-123');
       expect(mockUser.email).toBe('test@example.com');
-      expect(mockUser.role).toBe('user');
+      expect(mockUser.role).toBe('sdr');
     });
 
     it('should have valid session fixture', () => {
