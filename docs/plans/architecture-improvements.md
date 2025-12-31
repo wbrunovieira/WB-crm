@@ -22,6 +22,7 @@
 | 2024-12-31 | Implementação dos testes de Activities (61 testes) - Fase 3.6 completa     |
 | 2024-12-31 | Implementação dos testes de Partners (45 testes) - Fase 3.7 completa       |
 | 2024-12-31 | Implementação dos testes de Pipeline (63 testes) - Fase 4 completa         |
+| 2024-12-31 | Implementação dos testes de Produtos (105 testes) - Fase 5 completa        |
 
 ---
 
@@ -253,41 +254,41 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 | Status | Arquivo                                | Teste                            | Descrição             |
 | ------ | -------------------------------------- | -------------------------------- | --------------------- |
-| [ ]    | `tests/actions/business-lines.test.ts` | `createBusinessLine-success`     | Cria business line    |
-| [ ]    |                                        | `getBusinessLines-returns-all`   | Retorna todos         |
-| [ ]    |                                        | `getActiveBusinessLines-filters` | Retorna apenas ativos |
-| [ ]    |                                        | `updateBusinessLine-success`     | Atualiza              |
-| [ ]    |                                        | `toggleBusinessLineActive`       | Toggle ativo          |
-| [ ]    |                                        | `deleteBusinessLine-success`     | Deleta                |
+| [x]    | `tests/actions/business-lines.test.ts` | `createBusinessLine-success`     | Cria business line    |
+| [x]    |                                        | `getBusinessLines-returns-all`   | Retorna todos         |
+| [x]    |                                        | `getActiveBusinessLines-filters` | Retorna apenas ativos |
+| [x]    |                                        | `updateBusinessLine-success`     | Atualiza              |
+| [x]    |                                        | `toggleBusinessLineActive`       | Toggle ativo          |
+| [x]    |                                        | `deleteBusinessLine-success`     | Deleta                |
 
 ### 5.2 Products (`src/actions/products.ts`)
 
 | Status | Arquivo                          | Teste                       | Descrição             |
 | ------ | -------------------------------- | --------------------------- | --------------------- |
-| [ ]    | `tests/actions/products.test.ts` | `createProduct-success`     | Cria product          |
-| [ ]    |                                  | `getProducts-returns-all`   | Retorna todos         |
-| [ ]    |                                  | `getActiveProducts-filters` | Retorna apenas ativos |
-| [ ]    |                                  | `updateProduct-success`     | Atualiza              |
-| [ ]    |                                  | `toggleProductActive`       | Toggle ativo          |
-| [ ]    |                                  | `deleteProduct-success`     | Deleta                |
+| [x]    | `tests/actions/products.test.ts` | `createProduct-success`     | Cria product          |
+| [x]    |                                  | `getProducts-returns-all`   | Retorna todos         |
+| [x]    |                                  | `getActiveProducts-filters` | Retorna apenas ativos |
+| [x]    |                                  | `updateProduct-success`     | Atualiza              |
+| [x]    |                                  | `toggleProductActive`       | Toggle ativo          |
+| [x]    |                                  | `deleteProduct-success`     | Deleta                |
 
 ### 5.3 Product Links (`src/actions/product-links.ts`)
 
 | Status | Arquivo                               | Teste                                   | Descrição                 |
 | ------ | ------------------------------------- | --------------------------------------- | ------------------------- |
-| [ ]    | `tests/actions/product-links.test.ts` | `addProductToLead-success`              | Adiciona a lead           |
-| [ ]    |                                       | `addProductToOrganization-success`      | Adiciona a organization   |
-| [ ]    |                                       | `addProductToDeal-success`              | Adiciona a deal           |
-| [ ]    |                                       | `addProductToPartner-success`           | Adiciona a partner        |
-| [ ]    |                                       | `getDealProducts-success`               | Lista produtos do deal    |
-| [ ]    |                                       | `getLeadProducts-success`               | Lista produtos do lead    |
-| [ ]    |                                       | `getOrganizationProducts-success`       | Lista produtos da org     |
-| [ ]    |                                       | `getPartnerProducts-success`            | Lista produtos do partner |
-| [ ]    |                                       | `updateDealProduct-success`             | Atualiza produto do deal  |
-| [ ]    |                                       | `removeProductFromDeal-success`         | Remove do deal            |
-| [ ]    |                                       | `removeProductFromLead-success`         | Remove do lead            |
-| [ ]    |                                       | `removeProductFromOrganization-success` | Remove da org             |
-| [ ]    |                                       | `removeProductFromPartner-success`      | Remove do partner         |
+| [x]    | `tests/actions/product-links.test.ts` | `addProductToLead-success`              | Adiciona a lead           |
+| [x]    |                                       | `addProductToOrganization-success`      | Adiciona a organization   |
+| [x]    |                                       | `addProductToDeal-success`              | Adiciona a deal           |
+| [x]    |                                       | `addProductToPartner-success`           | Adiciona a partner        |
+| [x]    |                                       | `getDealProducts-success`               | Lista produtos do deal    |
+| [x]    |                                       | `getLeadProducts-success`               | Lista produtos do lead    |
+| [x]    |                                       | `getOrganizationProducts-success`       | Lista produtos da org     |
+| [x]    |                                       | `getPartnerProducts-success`            | Lista produtos do partner |
+| [x]    |                                       | `updateDealProduct-success`             | Atualiza produto do deal  |
+| [x]    |                                       | `removeProductFromDeal-success`         | Remove do deal            |
+| [x]    |                                       | `removeProductFromLead-success`         | Remove do lead            |
+| [x]    |                                       | `removeProductFromOrganization-success` | Remove da org             |
+| [x]    |                                       | `removeProductFromPartner-success`      | Remove do partner         |
 
 ---
 
@@ -547,12 +548,12 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | 2. Autenticação           | 13      | 13         | 100%        |
 | 3. Core CRM               | 76      | 76         | 100%        |
 | 4. Pipeline               | 13      | 13         | 100%        |
-| 5. Produtos               | 19      | 0          | 0%          |
+| 5. Produtos               | 19      | 19         | 100%        |
 | 6. Tech Profile/Stack     | 46      | 0          | 0%          |
 | 7. Auxiliares             | 21      | 0          | 0%          |
 | 8. API Routes             | 33      | 0          | 0%          |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **251** | **119**    | **47%**     |
+| **TOTAL**                 | **251** | **138**    | **55%**     |
 
 ---
 
