@@ -16,6 +16,7 @@ import {
   Settings,
   Menu,
   X,
+  BarChart3,
 } from "lucide-react";
 import { useState, useMemo } from "react";
 
@@ -75,17 +76,25 @@ const navItems = [
     icon: CheckSquare,
   },
   {
+    name: "Manager",
+    href: "/admin/manager",
+    icon: BarChart3,
+  },
+  {
     name: "Admin",
     href: "/admin",
     icon: Settings,
   },
 ];
 
-// Routes restricted by role
+// Routes restricted by role (roles that CANNOT access)
 const restrictedRoutes: Record<string, string[]> = {
   "/pipelines": ["sdr", "closer"],
   "/projects": ["sdr", "closer"],
 };
+
+// Routes only for specific roles (roles that CAN access)
+const adminOnlyRoutes = ["/admin/manager"];
 
 export function MainNav({ userRole: role }: MainNavProps) {
   const pathname = usePathname();
@@ -96,8 +105,13 @@ export function MainNav({ userRole: role }: MainNavProps) {
   // Filter nav items based on user role
   const filteredNavItems = useMemo(() => {
     return navItems.filter((item) => {
+      // Check if route is restricted for this role
       const restrictedRoles = restrictedRoutes[item.href];
       if (restrictedRoles && restrictedRoles.includes(userRole)) {
+        return false;
+      }
+      // Check if route is admin-only
+      if (adminOnlyRoutes.includes(item.href) && userRole !== "admin") {
         return false;
       }
       return true;
@@ -108,8 +122,13 @@ export function MainNav({ userRole: role }: MainNavProps) {
     if (href === "/dashboard") {
       return pathname === "/dashboard";
     }
-    if (href.startsWith("/admin")) {
-      return pathname.startsWith("/admin");
+    // Manager has its own check - exact match only
+    if (href === "/admin/manager") {
+      return pathname === "/admin/manager";
+    }
+    // Admin matches any /admin path except /admin/manager
+    if (href === "/admin") {
+      return pathname.startsWith("/admin") && pathname !== "/admin/manager";
     }
     return pathname.startsWith(href);
   };

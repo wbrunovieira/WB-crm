@@ -25,13 +25,14 @@ model User {
   // Relations
   accounts      Account[]
   sessions      Session[]
-  leads         Lead[]
-  organizations Organization[]
-  contacts      Contact[]
-  deals         Deal[]
-  activities    Activity[]
-  labels        Label[]
-  partners      Partner[]
+  leads              Lead[]
+  organizations      Organization[]
+  contacts           Contact[]
+  deals              Deal[]
+  activities         Activity[]
+  labels             Label[]
+  partners           Partner[]
+  dealStageChanges   DealStageHistory[]
 
   @@map("users")
 }
@@ -396,8 +397,10 @@ model Stage {
   updatedAt   DateTime @updatedAt
 
   // Relations
-  pipeline Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
-  deals    Deal[]
+  pipeline         Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals            Deal[]
+  historyFromStage DealStageHistory[] @relation("FromStage")
+  historyToStage   DealStageHistory[] @relation("ToStage")
 
   @@index([pipelineId])
   @@map("stages")
@@ -423,17 +426,39 @@ model Deal {
   stage        Stage         @relation(fields: [stageId], references: [id], onDelete: Restrict)
   contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  activities   Activity[]
-  dealProducts DealProduct[] // Produtos do Deal
+  activities     Activity[]
+  dealProducts   DealProduct[] // Produtos do Deal
   dealTechStacks DealTechStack[] // Categorias técnicas (Frontend, Backend, etc)
   dealLanguages  DealLanguage[]  // Linguagens de programação
   dealFrameworks DealFramework[] // Frameworks utilizados
+  stageHistory   DealStageHistory[] // Histórico de mudanças de etapa
 
   @@index([ownerId])
   @@index([stageId])
   @@index([contactId])
   @@index([organizationId])
   @@map("deals")
+}
+
+// Histórico de mudanças de etapa dos deals
+model DealStageHistory {
+  id          String   @id @default(cuid())
+  dealId      String
+  fromStageId String?  // null quando é criação inicial
+  toStageId   String
+  changedById String
+  changedAt   DateTime @default(now())
+
+  // Relations
+  deal      Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  fromStage Stage? @relation("FromStage", fields: [fromStageId], references: [id], onDelete: SetNull)
+  toStage   Stage  @relation("ToStage", fields: [toStageId], references: [id], onDelete: Cascade)
+  changedBy User   @relation(fields: [changedById], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+  @@index([changedAt])
+  @@index([changedById])
+  @@map("deal_stage_history")
 }
 
 model Activity {

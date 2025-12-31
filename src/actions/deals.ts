@@ -176,12 +176,24 @@ export async function createDeal(data: DealFormData) {
     },
   });
 
+  // Record initial stage in history
+  if (validated.stageId) {
+    await prisma.dealStageHistory.create({
+      data: {
+        dealId: deal.id,
+        fromStageId: null, // null indicates deal creation
+        toStageId: validated.stageId,
+        changedById: session.user.id,
+      },
+    });
+  }
+
   revalidatePath("/deals");
   return deal;
 }
 
 export async function updateDeal(id: string, data: DealFormData) {
-  await getAuthenticatedSession();
+  const session = await getAuthenticatedSession();
 
   const existingDeal = await prisma.deal.findUnique({ where: { id } });
   if (!existingDeal || !(await canAccessRecord(existingDeal.ownerId))) {
@@ -189,6 +201,9 @@ export async function updateDeal(id: string, data: DealFormData) {
   }
 
   const validated = dealSchema.parse(data);
+
+  // Check if stage changed
+  const stageChanged = validated.stageId && existingDeal.stageId !== validated.stageId;
 
   const deal = await prisma.deal.update({
     where: { id },
@@ -213,6 +228,18 @@ export async function updateDeal(id: string, data: DealFormData) {
     },
   });
 
+  // Record stage change in history
+  if (stageChanged && validated.stageId) {
+    await prisma.dealStageHistory.create({
+      data: {
+        dealId: id,
+        fromStageId: existingDeal.stageId,
+        toStageId: validated.stageId,
+        changedById: session.user.id,
+      },
+    });
+  }
+
   revalidatePath("/deals");
   revalidatePath(`/deals/${id}`);
   return deal;
@@ -232,12 +259,15 @@ export async function deleteDeal(id: string) {
 }
 
 export async function updateDealStage(id: string, stageId: string) {
-  await getAuthenticatedSession();
+  const session = await getAuthenticatedSession();
 
   const deal = await prisma.deal.findUnique({ where: { id } });
   if (!deal || !(await canAccessRecord(deal.ownerId))) {
     throw new Error("Negócio não encontrado");
   }
+
+  // Only record if stage actually changed
+  const stageChanged = deal.stageId !== stageId;
 
   const updatedDeal = await prisma.deal.update({
     where: { id },
@@ -252,6 +282,18 @@ export async function updateDealStage(id: string, stageId: string) {
       },
     },
   });
+
+  // Record stage change in history
+  if (stageChanged) {
+    await prisma.dealStageHistory.create({
+      data: {
+        dealId: id,
+        fromStageId: deal.stageId,
+        toStageId: stageId,
+        changedById: session.user.id,
+      },
+    });
+  }
 
   revalidatePath("/deals");
   revalidatePath(`/deals/${id}`);
