@@ -12,8 +12,10 @@ import {
 export async function getDeals(filters?: {
   search?: string;
   status?: string;
+  stageId?: string;
   valueRange?: string;
   sortBy?: string;
+  sortOrder?: "asc" | "desc";
   owner?: string;
 }) {
   const ownerFilter = await getOwnerFilter(filters?.owner);
@@ -21,29 +23,27 @@ export async function getDeals(filters?: {
   // Build where clause
   const whereClause: {
     ownerId?: string;
-    OR?: Array<{
-      title?: { contains: string };
-      contact?: { name: { contains: string } };
-      organization?: { name: { contains: string } };
-    }>;
+    title?: { contains: string };
     status?: string;
+    stageId?: string;
     value?: { gte?: number; lt?: number };
   } = {
     ...ownerFilter,
   };
 
-  // Search filter
+  // Search filter (simple title search)
   if (filters?.search) {
-    whereClause.OR = [
-      { title: { contains: filters.search } },
-      { contact: { name: { contains: filters.search } } },
-      { organization: { name: { contains: filters.search } } },
-    ];
+    whereClause.title = { contains: filters.search };
   }
 
   // Status filter
   if (filters?.status && filters.status !== "all") {
     whereClause.status = filters.status;
+  }
+
+  // Stage filter
+  if (filters?.stageId) {
+    whereClause.stageId = filters.stageId;
   }
 
   // Value range filter
@@ -60,26 +60,12 @@ export async function getDeals(filters?: {
   }
 
   // Build order by clause
-  const orderByClause: Array<{ [key: string]: string }> = [];
+  const orderByClause: { [key: string]: string } = {};
   if (filters?.sortBy) {
-    switch (filters.sortBy) {
-      case "value-desc":
-        orderByClause.push({ value: "desc" });
-        break;
-      case "value-asc":
-        orderByClause.push({ value: "asc" });
-        break;
-      case "title":
-        orderByClause.push({ title: "asc" });
-        break;
-      case "expectedCloseDate":
-        orderByClause.push({ expectedCloseDate: "asc" });
-        break;
-      default:
-        orderByClause.push({ createdAt: "desc" });
-    }
+    const order = filters.sortOrder || "asc";
+    orderByClause[filters.sortBy] = order;
   } else {
-    orderByClause.push({ createdAt: "desc" });
+    orderByClause.createdAt = "desc";
   }
 
   const deals = await prisma.deal.findMany({
