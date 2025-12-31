@@ -24,6 +24,7 @@
 | 2024-12-31 | Implementação dos testes de Pipeline (63 testes) - Fase 4 completa         |
 | 2024-12-31 | Implementação dos testes de Produtos (105 testes) - Fase 5 completa        |
 | 2024-12-31 | Implementação dos testes de Tech Profile & Stack (245 testes) - Fase 6 completa |
+| 2024-12-31 | Implementação dos testes Auxiliares (96 testes) - Fase 7 completa              |
 
 ---
 
@@ -388,51 +389,96 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 ## Fase 7: Testes de Server Actions - Auxiliares
 
-### 7.1 Labels (`src/actions/labels.ts`)
+### 7.1 Labels (`src/actions/labels.ts`) - 17 testes
 
-| Status | Arquivo                        | Teste                          | Descrição        |
-| ------ | ------------------------------ | ------------------------------ | ---------------- |
-| [ ]    | `tests/actions/labels.test.ts` | `createLabel-success`          | Cria label       |
-| [ ]    |                                | `createLabel-unique-per-owner` | Única por owner  |
-| [ ]    |                                | `getLabels-filters-by-owner`   | Filtra por owner |
-| [ ]    |                                | `updateLabel-success`          | Atualiza         |
-| [ ]    |                                | `deleteLabel-success`          | Deleta           |
+| Status | Arquivo                        | Teste                          | Descrição                   |
+| ------ | ------------------------------ | ------------------------------ | --------------------------- |
+| [x]    | `tests/actions/labels.test.ts` | `createLabel-success`          | Cria label                  |
+| [x]    |                                | `createLabel-unique-per-owner` | Única por owner             |
+| [x]    |                                | `getLabels-filters-by-owner`   | Filtra por owner            |
+| [x]    |                                | `updateLabel-success`          | Atualiza                    |
+| [x]    |                                | `updateLabel-ownership`        | Verifica ownership          |
+| [x]    |                                | `deleteLabel-success`          | Deleta                      |
+| [x]    |                                | `deleteLabel-ownership`        | Verifica ownership          |
+| [x]    |                                | `data-isolation`               | Isolamento de dados (5 testes) |
 
-### 7.2 CNAEs (`src/actions/cnaes.ts`)
+### 7.2 CNAEs (`src/actions/cnaes.ts`) - 22 testes
 
-| Status | Arquivo                       | Teste                                    | Descrição        |
-| ------ | ----------------------------- | ---------------------------------------- | ---------------- |
-| [ ]    | `tests/actions/cnaes.test.ts` | `searchCNAEs-success`                    | Busca CNAEs      |
-| [ ]    |                               | `getCNAEByCode-success`                  | Busca por código |
-| [ ]    |                               | `getCNAEById-success`                    | Busca por ID     |
-| [ ]    |                               | `addSecondaryCNAEToLead-success`         | Adiciona a lead  |
-| [ ]    |                               | `addSecondaryCNAEToOrganization-success` | Adiciona a org   |
-| [ ]    |                               | `getLeadSecondaryCNAEs-success`          | Lista do lead    |
-| [ ]    |                               | `getOrganizationSecondaryCNAEs-success`  | Lista da org     |
+| Status | Arquivo                       | Teste                                    | Descrição                    |
+| ------ | ----------------------------- | ---------------------------------------- | ---------------------------- |
+| [x]    | `tests/actions/cnaes.test.ts` | `searchCNAEs-success`                    | Busca CNAEs                  |
+| [x]    |                               | `searchCNAEs-empty-query`                | Retorna vazio com query vazia|
+| [x]    |                               | `searchCNAEs-short-query`                | Retorna vazio com query curta|
+| [x]    |                               | `searchCNAEs-by-code`                    | Busca por código             |
+| [x]    |                               | `searchCNAEs-by-description`             | Busca por descrição          |
+| [x]    |                               | `getCNAEByCode-success`                  | Busca por código             |
+| [x]    |                               | `getCNAEById-success`                    | Busca por ID                 |
+| [x]    |                               | `addSecondaryCNAEToLead-success`         | Adiciona a lead              |
+| [x]    |                               | `addSecondaryCNAEToOrganization-success` | Adiciona a org               |
+| [x]    |                               | `removeSecondaryCNAEFromLead-success`    | Remove do lead               |
+| [x]    |                               | `removeSecondaryCNAEFromOrg-success`     | Remove da org                |
+| [x]    |                               | `getLeadSecondaryCNAEs-success`          | Lista do lead                |
+| [x]    |                               | `getOrganizationSecondaryCNAEs-success`  | Lista da org                 |
 
-### 7.3 External Projects (`src/actions/external-projects.ts`)
+### 7.3 External Projects (`src/actions/external-projects.ts`) - 21 testes
 
-| Status | Arquivo                                   | Teste                                   | Descrição          |
-| ------ | ----------------------------------------- | --------------------------------------- | ------------------ |
-| [ ]    | `tests/actions/external-projects.test.ts` | `linkProjectToOrganization-success`     | Vincula projeto    |
-| [ ]    |                                           | `unlinkProjectFromOrganization-success` | Desvincula projeto |
-| [ ]    |                                           | `getOrganizationProjects-success`       | Lista projetos     |
+| Status | Arquivo                                   | Teste                                   | Descrição              |
+| ------ | ----------------------------------------- | --------------------------------------- | ---------------------- |
+| [x]    | `tests/actions/external-projects.test.ts` | `linkProject-not-authenticated`         | Rejeita sem auth       |
+| [x]    |                                           | `linkProject-org-not-found`             | Org não encontrada     |
+| [x]    |                                           | `linkProject-other-owner`               | Bloqueia outro owner   |
+| [x]    |                                           | `linkProjectToOrganization-success`     | Vincula projeto        |
+| [x]    |                                           | `linkProject-existing-projects`         | Com projetos existentes|
+| [x]    |                                           | `linkProject-no-duplicate`              | Evita duplicatas       |
+| [x]    |                                           | `unlinkProject-not-authenticated`       | Rejeita sem auth       |
+| [x]    |                                           | `unlinkProjectFromOrganization-success` | Desvincula projeto     |
+| [x]    |                                           | `unlinkProject-last-project`            | Remove último projeto  |
+| [x]    |                                           | `unlinkProject-non-existent`            | Projeto inexistente    |
+| [x]    |                                           | `unlinkProject-null-projects`           | Projects null          |
+| [x]    |                                           | `getOrganizationProjects-success`       | Lista projetos         |
+| [x]    |                                           | `getOrgProjects-empty`                  | Lista vazia            |
+| [x]    |                                           | `data-isolation`                        | Isolamento (4 testes)  |
 
-### 7.4 Users (`src/actions/users.ts`)
+### 7.4 Users (`src/actions/users.ts`) - 12 testes
 
-| Status | Arquivo                       | Teste                  | Descrição                |
-| ------ | ----------------------------- | ---------------------- | ------------------------ |
-| [ ]    | `tests/actions/users.test.ts` | `getUsers-admin-only`  | Apenas admin pode listar |
-| [ ]    |                               | `getUsers-returns-all` | Retorna todos usuários   |
+| Status | Arquivo                       | Teste                        | Descrição                    |
+| ------ | ----------------------------- | ---------------------------- | ---------------------------- |
+| [x]    | `tests/actions/users.test.ts` | `getUsers-not-authenticated` | Rejeita sem auth             |
+| [x]    |                               | `getUsers-admin-returns-all` | Admin vê todos               |
+| [x]    |                               | `getUsers-sdr-only-self`     | SDR vê só a si               |
+| [x]    |                               | `getUsers-closer-only-self`  | Closer vê só a si            |
+| [x]    |                               | `getUsers-null-name`         | Trata name null              |
+| [x]    |                               | `getUsers-null-email`        | Trata email null             |
+| [x]    |                               | `admin-sees-other-admins`    | Admin vê outros admins       |
+| [x]    |                               | `sdr-cannot-list-others`     | SDR não lista outros         |
+| [x]    |                               | `closer-cannot-list-others`  | Closer não lista outros      |
+| [x]    |                               | `return-format`              | Formato correto (3 testes)   |
 
-### 7.5 List Actions
+### 7.5 List Actions (`tests/actions/lists.test.ts`) - 24 testes
 
-| Status | Arquivo                       | Teste                                   | Descrição             |
-| ------ | ----------------------------- | --------------------------------------- | --------------------- |
-| [ ]    | `tests/actions/lists.test.ts` | `getOrganizationsList-filters-by-owner` | Lista orgs do owner   |
-| [ ]    |                               | `getLeadsList-filters-by-owner`         | Lista leads do owner  |
-| [ ]    |                               | `getLeadContactsList-filters-by-owner`  | Lista lead contacts   |
-| [ ]    |                               | `getCompaniesList-filters-by-owner`     | Lista todas companies |
+| Status | Arquivo                       | Teste                                   | Descrição                |
+| ------ | ----------------------------- | --------------------------------------- | ------------------------ |
+| [x]    | `tests/actions/lists.test.ts` | `getOrganizationsList-not-auth`         | Retorna [] sem auth      |
+| [x]    |                               | `getOrganizationsList-success`          | Lista orgs do owner      |
+| [x]    |                               | `getOrganizationsList-filters-by-owner` | Filtra por owner         |
+| [x]    |                               | `getOrganizationsList-empty`            | Lista vazia              |
+| [x]    |                               | `getLeadsList-not-auth`                 | Retorna [] sem auth      |
+| [x]    |                               | `getLeadsList-success`                  | Lista leads do owner     |
+| [x]    |                               | `getLeadsList-excludes-disqualified`    | Exclui disqualified      |
+| [x]    |                               | `getLeadsList-filters-by-owner`         | Filtra por owner         |
+| [x]    |                               | `getLeadContactsList-not-auth`          | Retorna [] sem auth      |
+| [x]    |                               | `getLeadContactsList-success`           | Lista lead contacts      |
+| [x]    |                               | `getLeadContactsList-filters-by-owner`  | Filtra por owner do lead |
+| [x]    |                               | `getLeadContactsList-excludes-converted`| Exclui convertidos       |
+| [x]    |                               | `getCompaniesList-not-auth`             | Retorna [] sem auth      |
+| [x]    |                               | `getCompaniesList-success`              | Lista todas companies    |
+| [x]    |                               | `getCompaniesList-filters-unconverted`  | Exclui convertidos       |
+| [x]    |                               | `getCompaniesList-filters-by-owner`     | Filtra por owner         |
+| [x]    |                               | `getCompaniesList-sorted`               | Ordenado alfabeticamente |
+| [x]    |                               | `getCompaniesList-lead-status`          | Inclui status do lead    |
+| [x]    |                               | `getCompaniesList-businessName-to-name` | Mapeia businessName      |
+| [x]    |                               | `getCompaniesList-correct-types`        | Tipos corretos           |
+| [x]    |                               | `data-isolation`                        | Isolamento (4 testes)    |
 
 ---
 
@@ -551,10 +597,10 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | 4. Pipeline               | 13      | 13         | 100%        |
 | 5. Produtos               | 19      | 19         | 100%        |
 | 6. Tech Profile/Stack     | 245     | 245        | 100%        |
-| 7. Auxiliares             | 21      | 0          | 0%          |
+| 7. Auxiliares             | 96      | 96         | 100%        |
 | 8. API Routes             | 33      | 0          | 0%          |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **450** | **383**    | **85%**     |
+| **TOTAL**                 | **525** | **479**    | **91%**     |
 
 ---
 
