@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { Mail, Phone, MessageCircle, Building2, Briefcase, Edit, Trash2, Star } from "lucide-react";
+import { Mail, Phone, MessageCircle, Building2, Briefcase, Edit, Star } from "lucide-react";
 import { DeleteContactButton } from "./DeleteContactButton";
+import { OwnerBadge } from "@/components/shared/OwnerBadge";
 
 interface Contact {
   id: string;
@@ -15,9 +16,16 @@ interface Contact {
   organization: { id: string; name: string } | null;
   lead: { id: string; businessName: string } | null;
   partner: { id: string; name: string } | null;
+  owner?: { id: string; name: string } | null;
 }
 
-export function ContactCard({ contact }: { contact: Contact }) {
+interface ContactCardProps {
+  contact: Contact;
+  showOwnerBadge?: boolean;
+  currentUserId?: string;
+}
+
+export function ContactCard({ contact, showOwnerBadge, currentUserId }: ContactCardProps) {
   const companyName = contact.organization?.name || contact.lead?.businessName || contact.partner?.name;
   const companyLink = contact.organization
     ? `/organizations/${contact.organization.id}`
@@ -40,6 +48,12 @@ export function ContactCard({ contact }: { contact: Contact }) {
             </Link>
             {contact.isPrimary && (
               <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 flex-shrink-0" title="Contato principal" />
+            )}
+            {showOwnerBadge && contact.owner && (
+              <OwnerBadge
+                ownerName={contact.owner.name}
+                isCurrentUser={contact.owner.id === currentUserId}
+              />
             )}
             <span
               className={`ml-auto flex-shrink-0 rounded-full px-2 py-0.5 text-xs font-medium ${

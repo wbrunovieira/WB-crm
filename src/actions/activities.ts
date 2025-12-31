@@ -16,8 +16,9 @@ export async function getActivities(filters?: {
   contactId?: string;
   leadId?: string;
   sortBy?: string;
+  owner?: string;
 }) {
-  const ownerFilter = await getOwnerFilter();
+  const ownerFilter = await getOwnerFilter(filters?.owner);
 
   // Build order by clause based on sortBy parameter
   const orderByClause: Array<{ [key: string]: string | { sort: string; nulls?: string } }> = [];

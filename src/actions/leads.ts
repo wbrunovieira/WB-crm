@@ -20,8 +20,9 @@ export async function getLeads(filters?: {
   search?: string;
   status?: string;
   quality?: string;
+  owner?: string;
 }) {
-  const ownerFilter = await getOwnerFilter();
+  const ownerFilter = await getOwnerFilter(filters?.owner);
 
   const leads = await prisma.lead.findMany({
     where: {
@@ -38,6 +39,12 @@ export async function getLeads(filters?: {
     },
     include: {
       leadContacts: true,
+      owner: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       _count: {
         select: {
           leadContacts: true,

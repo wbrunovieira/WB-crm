@@ -13,8 +13,9 @@ export async function getContacts(filters?: {
   search?: string;
   status?: string;
   company?: string;
+  owner?: string;
 }) {
-  const ownerFilter = await getOwnerFilter();
+  const ownerFilter = await getOwnerFilter(filters?.owner);
 
   const whereClause: {
     ownerId?: string;
@@ -75,6 +76,12 @@ export async function getContacts(filters?: {
         },
       },
       partner: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      owner: {
         select: {
           id: true,
           name: true,

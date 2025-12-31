@@ -15,6 +15,7 @@ export default async function DealsPage({
     valueRange?: string;
     sortBy?: string;
     displayMode?: string;
+    owner?: string;
   };
 }) {
   const view = searchParams.view || "list";
@@ -41,6 +42,7 @@ export default async function DealsPage({
     status: searchParams.status,
     valueRange: searchParams.valueRange,
     sortBy: searchParams.sortBy,
+    owner: searchParams.owner,
   });
 
   return (

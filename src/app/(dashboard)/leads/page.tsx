@@ -1,7 +1,12 @@
 import { getLeads } from "@/actions/leads";
+import { getUsers } from "@/actions/users";
 import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
 import { LeadsFilters } from "@/components/leads/LeadsFilters";
 import { LeadNameCell } from "@/components/leads/LeadNameCell";
+import { OwnerFilter } from "@/components/shared/OwnerFilter";
+import { OwnerBadge } from "@/components/shared/OwnerBadge";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 
 export default async function LeadsPage({
@@ -11,9 +16,17 @@ export default async function LeadsPage({
     search?: string;
     status?: string;
     quality?: string;
+    owner?: string;
   };
 }) {
-  const leads = await getLeads(searchParams);
+  const session = await getServerSession(authOptions);
+  const isAdmin = session?.user?.role === "admin";
+  const currentUserId = session?.user?.id || "";
+
+  const [leads, users] = await Promise.all([
+    getLeads(searchParams),
+    isAdmin ? getUsers() : Promise.resolve([]),
+  ]);
 
   const statusLabels: Record<string, string> = {
     new: "Novo",
@@ -46,7 +59,12 @@ export default async function LeadsPage({
       </div>
 
       {/* Filters */}
-      <LeadsFilters />
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <LeadsFilters />
+        {isAdmin && users.length > 0 && (
+          <OwnerFilter users={users} currentUserId={currentUserId} />
+        )}
+      </div>
 
       {leads.length === 0 ? (
         <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
@@ -92,11 +110,19 @@ export default async function LeadsPage({
               {leads.map((lead) => (
                 <tr key={lead.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4">
-                    <LeadNameCell
-                      id={lead.id}
-                      businessName={lead.businessName}
-                      registeredName={lead.registeredName}
-                    />
+                    <div className="flex items-center">
+                      <LeadNameCell
+                        id={lead.id}
+                        businessName={lead.businessName}
+                        registeredName={lead.registeredName}
+                      />
+                      {isAdmin && lead.owner && (
+                        <OwnerBadge
+                          ownerName={lead.owner.name}
+                          isCurrentUser={lead.owner.id === currentUserId}
+                        />
+                      )}
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {lead.city && lead.state

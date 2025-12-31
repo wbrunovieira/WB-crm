@@ -1,14 +1,26 @@
 import { getOrganizations } from "@/actions/organizations";
+import { getUsers } from "@/actions/users";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { SearchInput } from "@/components/shared/SearchInput";
+import { OwnerFilter } from "@/components/shared/OwnerFilter";
+import { OwnerBadge } from "@/components/shared/OwnerBadge";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 
 export default async function OrganizationsPage({
   searchParams,
 }: {
-  searchParams: { search?: string };
+  searchParams: { search?: string; owner?: string };
 }) {
-  const organizations = await getOrganizations(searchParams.search);
+  const session = await getServerSession(authOptions);
+  const isAdmin = session?.user?.role === "admin";
+  const currentUserId = session?.user?.id || "";
+
+  const [organizations, users] = await Promise.all([
+    getOrganizations({ search: searchParams.search, owner: searchParams.owner }),
+    isAdmin ? getUsers() : Promise.resolve([]),
+  ]);
 
   return (
     <div className="p-8">
@@ -27,13 +39,16 @@ export default async function OrganizationsPage({
         </Link>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="w-full max-w-md">
           <SearchInput
             placeholder="Buscar organizações..."
             defaultValue={searchParams.search}
           />
         </div>
+        {isAdmin && users.length > 0 && (
+          <OwnerFilter users={users} currentUserId={currentUserId} />
+        )}
       </div>
 
       {organizations.length === 0 ? (
@@ -83,12 +98,20 @@ export default async function OrganizationsPage({
               {organizations.map((org) => (
                 <tr key={org.id} className="hover:bg-gray-50">
                   <td className="whitespace-nowrap px-6 py-4">
-                    <Link
-                      href={`/organizations/${org.id}`}
-                      className="font-medium text-gray-700 hover:text-primary text-base"
-                    >
-                      {org.name}
-                    </Link>
+                    <div className="flex items-center">
+                      <Link
+                        href={`/organizations/${org.id}`}
+                        className="font-medium text-gray-700 hover:text-primary text-base"
+                      >
+                        {org.name}
+                      </Link>
+                      {isAdmin && org.owner && (
+                        <OwnerBadge
+                          ownerName={org.owner.name}
+                          isCurrentUser={org.owner.id === currentUserId}
+                        />
+                      )}
+                    </div>
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {org.website || "-"}

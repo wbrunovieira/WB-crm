@@ -19,18 +19,32 @@ export async function getAuthenticatedSession() {
 }
 
 /**
- * Returns ownerId filter based on user role
- * - admin: empty filter (sees all data)
- * - sdr/closer: filters by ownerId
+ * Returns ownerId filter based on user role and optional filter
+ * - admin with no filter: empty filter (sees all data)
+ * - admin with "mine": filters by admin's ownerId
+ * - admin with specific userId: filters by that userId
+ * - sdr/closer: always filters by their ownerId
  */
-export async function getOwnerFilter(): Promise<OwnerFilter> {
+export async function getOwnerFilter(ownerIdFilter?: string): Promise<OwnerFilter> {
   const session = await getAuthenticatedSession();
 
-  if (session.user.role === "admin") {
+  // Non-admin users always see only their own data
+  if (session.user.role !== "admin") {
+    return { ownerId: session.user.id };
+  }
+
+  // Admin with no filter sees all
+  if (!ownerIdFilter || ownerIdFilter === "all") {
     return {};
   }
 
-  return { ownerId: session.user.id };
+  // Admin filtering by "mine"
+  if (ownerIdFilter === "mine") {
+    return { ownerId: session.user.id };
+  }
+
+  // Admin filtering by specific user
+  return { ownerId: ownerIdFilter };
 }
 
 /**

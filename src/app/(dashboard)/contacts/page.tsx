@@ -1,6 +1,10 @@
 import { getContacts } from "@/actions/contacts";
+import { getUsers } from "@/actions/users";
 import { ContactsFilters } from "@/components/contacts/ContactsFilters";
 import { ContactCard } from "@/components/contacts/ContactCard";
+import { OwnerFilter } from "@/components/shared/OwnerFilter";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { Users, Plus } from "lucide-react";
 
@@ -12,13 +16,22 @@ export default async function ContactsPage({
     status?: string;
     company?: string;
     groupBy?: string;
+    owner?: string;
   };
 }) {
-  const contacts = await getContacts({
-    search: searchParams.search,
-    status: searchParams.status,
-    company: searchParams.company,
-  });
+  const session = await getServerSession(authOptions);
+  const isAdmin = session?.user?.role === "admin";
+  const currentUserId = session?.user?.id || "";
+
+  const [contacts, users] = await Promise.all([
+    getContacts({
+      search: searchParams.search,
+      status: searchParams.status,
+      company: searchParams.company,
+      owner: searchParams.owner,
+    }),
+    isAdmin ? getUsers() : Promise.resolve([]),
+  ]);
 
   // Group contacts based on groupBy parameter
   const groupedContacts = () => {
@@ -91,7 +104,12 @@ export default async function ContactsPage({
         </div>
 
         {/* Filters */}
-        <ContactsFilters />
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+          <ContactsFilters />
+          {isAdmin && users.length > 0 && (
+            <OwnerFilter users={users} currentUserId={currentUserId} />
+          )}
+        </div>
 
         {/* Content */}
         {totalContacts === 0 ? (
@@ -130,7 +148,12 @@ export default async function ContactsPage({
                 )}
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {groupContacts.map((contact) => (
-                    <ContactCard key={contact.id} contact={contact} />
+                    <ContactCard
+                      key={contact.id}
+                      contact={contact}
+                      showOwnerBadge={isAdmin}
+                      currentUserId={currentUserId}
+                    />
                   ))}
                 </div>
               </div>

@@ -3,34 +3,45 @@ import { getDeals } from "@/actions/deals";
 import { getContacts } from "@/actions/contacts";
 import { getLeads } from "@/actions/leads";
 import { getPartners } from "@/actions/partners";
+import { getUsers } from "@/actions/users";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
 import ToggleCompletedButton from "@/components/activities/ToggleCompletedButton";
 import DeleteActivityButton from "@/components/activities/DeleteActivityButton";
 import { ActivitiesSortSelect } from "@/components/activities/ActivitiesSortSelect";
+import { OwnerFilter } from "@/components/shared/OwnerFilter";
+import { OwnerBadge } from "@/components/shared/OwnerBadge";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 
 export default async function ActivitiesPage({
   searchParams,
 }: {
-  searchParams: { type?: string; completed?: string; sortBy?: string };
+  searchParams: { type?: string; completed?: string; sortBy?: string; owner?: string };
 }) {
+  const session = await getServerSession(authOptions);
+  const isAdmin = session?.user?.role === "admin";
+  const currentUserId = session?.user?.id || "";
+
   const filters = {
     ...(searchParams.type && { type: searchParams.type }),
     ...(searchParams.completed && {
       completed: searchParams.completed === "true",
     }),
     ...(searchParams.sortBy && { sortBy: searchParams.sortBy }),
+    ...(searchParams.owner && { owner: searchParams.owner }),
   };
 
   const activities = await getActivities(filters);
 
   // Fetch available data for the modal
-  const [deals, contacts, leads, partners] = await Promise.all([
+  const [deals, contacts, leads, partners, users] = await Promise.all([
     getDeals(),
     getContacts(),
     getLeads({}),
     getPartners(),
+    isAdmin ? getUsers() : Promise.resolve([]),
   ]);
 
   const availableData = {
@@ -128,7 +139,12 @@ export default async function ActivitiesPage({
           </div>
 
           {/* Sort Selector */}
-          <ActivitiesSortSelect />
+          <div className="flex items-center gap-4">
+            <ActivitiesSortSelect />
+            {isAdmin && users.length > 0 && (
+              <OwnerFilter users={users} currentUserId={currentUserId} />
+            )}
+          </div>
         </div>
       </div>
 
@@ -187,6 +203,12 @@ export default async function ActivitiesPage({
                     >
                       {activity.subject}
                     </Link>
+                    {isAdmin && activity.owner && (
+                      <OwnerBadge
+                        ownerName={activity.owner.name}
+                        isCurrentUser={activity.owner.id === currentUserId}
+                      />
+                    )}
                     {activity.completed && (
                       <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-semibold text-green-800">
                         Concluída

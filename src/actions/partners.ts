@@ -9,24 +9,30 @@ import {
   canAccessRecord,
 } from "@/lib/permissions";
 
-export async function getPartners(search?: string) {
-  const ownerFilter = await getOwnerFilter();
+export async function getPartners(filters?: { search?: string; owner?: string }) {
+  const ownerFilter = await getOwnerFilter(filters?.owner);
 
   const partners = await prisma.partner.findMany({
     where: {
       ...ownerFilter,
-      ...(search && {
+      ...(filters?.search && {
         OR: [
-          { name: { contains: search } },
-          { company: { contains: search } },
-          { partnerType: { contains: search } },
-          { expertise: { contains: search } },
+          { name: { contains: filters.search } },
+          { partnerType: { contains: filters.search } },
+          { expertise: { contains: filters.search } },
         ],
       }),
     },
     include: {
+      owner: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
       _count: {
         select: {
+          contacts: true,
           activities: true,
           referredLeads: true,
         },

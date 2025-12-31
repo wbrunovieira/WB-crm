@@ -14,8 +14,9 @@ export async function getDeals(filters?: {
   status?: string;
   valueRange?: string;
   sortBy?: string;
+  owner?: string;
 }) {
-  const ownerFilter = await getOwnerFilter();
+  const ownerFilter = await getOwnerFilter(filters?.owner);
 
   // Build where clause
   const whereClause: {

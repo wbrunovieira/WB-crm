@@ -1,5 +1,10 @@
 import { getPartners } from "@/actions/partners";
+import { getUsers } from "@/actions/users";
 import { SearchInput } from "@/components/shared/SearchInput";
+import { OwnerFilter } from "@/components/shared/OwnerFilter";
+import { OwnerBadge } from "@/components/shared/OwnerBadge";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -7,9 +12,16 @@ import { ptBR } from "date-fns/locale";
 export default async function PartnersPage({
   searchParams,
 }: {
-  searchParams: { search?: string };
+  searchParams: { search?: string; owner?: string };
 }) {
-  const partners = await getPartners(searchParams.search);
+  const session = await getServerSession(authOptions);
+  const isAdmin = session?.user?.role === "admin";
+  const currentUserId = session?.user?.id || "";
+
+  const [partners, users] = await Promise.all([
+    getPartners({ search: searchParams.search, owner: searchParams.owner }),
+    isAdmin ? getUsers() : Promise.resolve([]),
+  ]);
 
   return (
     <div className="p-8">
@@ -28,13 +40,16 @@ export default async function PartnersPage({
         </Link>
       </div>
 
-      <div className="mb-6">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div className="w-full max-w-md">
           <SearchInput
             placeholder="Buscar parceiros..."
             defaultValue={searchParams.search}
           />
         </div>
+        {isAdmin && users.length > 0 && (
+          <OwnerFilter users={users} currentUserId={currentUserId} />
+        )}
       </div>
 
       {partners.length === 0 ? (
@@ -61,9 +76,17 @@ export default async function PartnersPage({
               className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
             >
               <div className="mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">
-                  {partner.name}
-                </h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold text-gray-900">
+                    {partner.name}
+                  </h3>
+                  {isAdmin && partner.owner && (
+                    <OwnerBadge
+                      ownerName={partner.owner.name}
+                      isCurrentUser={partner.owner.id === currentUserId}
+                    />
+                  )}
+                </div>
                 {partner.city && partner.state && (
                   <p className="text-sm text-gray-600">{partner.city}, {partner.state}</p>
                 )}
