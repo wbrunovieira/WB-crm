@@ -17,6 +17,7 @@
 | 2024-12-31 | Implementação dos testes de Leads (54 testes) - Fase 3.1 completa         |
 | 2024-12-31 | Implementação dos testes de Lead Contacts (42 testes) - Fase 3.2 completa |
 | 2024-12-31 | Implementação dos testes de Organizations (49 testes) - Fase 3.3 completa |
+| 2024-12-31 | Implementação dos testes de Contacts (56 testes) - Fase 3.4 completa      |
 
 ---
 
@@ -140,18 +141,18 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 | Status | Arquivo                          | Teste                             | Descrição                |
 | ------ | -------------------------------- | --------------------------------- | ------------------------ |
-| [ ]    | `tests/actions/contacts.test.ts` | `createContact-success`           | Cria contact             |
-| [ ]    |                                  | `createContact-with-organization` | Cria vinculado a org     |
-| [ ]    |                                  | `createContact-with-lead`         | Cria vinculado a lead    |
-| [ ]    |                                  | `createContact-with-partner`      | Cria vinculado a partner |
-| [ ]    |                                  | `createContact-sets-owner`        | Define ownerId           |
-| [ ]    |                                  | `getContacts-filters-by-owner`    | Filtra por owner         |
-| [ ]    |                                  | `getContactById-returns-own`      | Retorna próprio          |
-| [ ]    |                                  | `getContactById-blocks-other`     | Bloqueia de outro        |
-| [ ]    |                                  | `updateContact-success`           | Atualiza                 |
-| [ ]    |                                  | `updateContact-ownership`         | Verifica ownership       |
-| [ ]    |                                  | `deleteContact-success`           | Deleta próprio           |
-| [ ]    |                                  | `deleteContact-ownership`         | Verifica ownership       |
+| [x]    | `tests/actions/contacts.test.ts` | `createContact-success`           | Cria contact             |
+| [x]    |                                  | `createContact-with-organization` | Cria vinculado a org     |
+| [x]    |                                  | `createContact-with-lead`         | Cria vinculado a lead    |
+| [x]    |                                  | `createContact-with-partner`      | Cria vinculado a partner |
+| [x]    |                                  | `createContact-sets-owner`        | Define ownerId           |
+| [x]    |                                  | `getContacts-filters-by-owner`    | Filtra por owner         |
+| [x]    |                                  | `getContactById-returns-own`      | Retorna próprio          |
+| [x]    |                                  | `getContactById-blocks-other`     | Bloqueia de outro        |
+| [x]    |                                  | `updateContact-success`           | Atualiza                 |
+| [x]    |                                  | `updateContact-ownership`         | Verifica ownership       |
+| [x]    |                                  | `deleteContact-success`           | Deleta próprio           |
+| [x]    |                                  | `deleteContact-ownership`         | Verifica ownership       |
 
 ### 3.5 Deals (`src/actions/deals.ts`)
 
@@ -538,14 +539,14 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | ------------------------- | ------- | ---------- | ----------- |
 | 1. Segurança (Isolamento) | 17      | 17         | 100%        |
 | 2. Autenticação           | 13      | 13         | 100%        |
-| 3. Core CRM               | 58      | 26         | 45%         |
+| 3. Core CRM               | 58      | 38         | 66%         |
 | 4. Pipeline               | 12      | 0          | 0%          |
 | 5. Produtos               | 19      | 0          | 0%          |
 | 6. Tech Profile/Stack     | 46      | 0          | 0%          |
 | 7. Auxiliares             | 21      | 0          | 0%          |
 | 8. API Routes             | 33      | 0          | 0%          |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **232** | **56**     | **24%**     |
+| **TOTAL**                 | **232** | **68**     | **29%**     |
 
 ---
 
