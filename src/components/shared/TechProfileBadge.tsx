@@ -21,9 +21,18 @@ import {
   removeEcommerceFromOrganization,
 } from "@/actions/organization-tech-profile";
 
+interface TechItem {
+  id: string;
+  name: string;
+  slug?: string;
+  color?: string | null;
+  icon?: string | null;
+  type?: string | null;
+}
+
 interface TechProfileBadgeProps {
   title: string;
-  items: any[];
+  items: TechItem[];
   entityId: string;
   entityType: "lead" | "organization";
   profileType: "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";

@@ -30,8 +30,8 @@ export function BusinessLineForm() {
 
       form.reset();
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Erro ao criar linha de negócio");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao criar linha de negócio");
     } finally {
       setLoading(false);
     }

@@ -10,6 +10,7 @@ import { DealStatusSelect } from "./DealStatusSelect";
 import { DealCard } from "./DealCard";
 import { ScheduleNextActivityModal } from "../activities/ScheduleNextActivityModal";
 import { calculateTotalInCurrency, AVAILABLE_CURRENCIES } from "@/lib/utils";
+import { OwnerBadge } from "@/components/shared/OwnerBadge";
 
 interface Deal {
   id: string;
@@ -32,12 +33,15 @@ interface Deal {
     type: string;
     dueDate: Date | null;
   }>;
+  owner?: { id: string; name: string | null };
 }
 
 interface DealsListViewProps {
   deals: Deal[];
   groupBy: string;
   displayMode?: string;
+  isAdmin?: boolean;
+  currentUserId?: string;
 }
 
 type GroupedDeals = {
@@ -47,7 +51,7 @@ type GroupedDeals = {
   };
 };
 
-export function DealsListView({ deals, groupBy, displayMode = "table" }: DealsListViewProps) {
+export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin = false, currentUserId = "" }: DealsListViewProps) {
   const [displayCurrency, setDisplayCurrency] = useState("BRL");
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [selectedDeal, setSelectedDeal] = useState<Deal | null>(null);
@@ -217,6 +221,12 @@ export function DealsListView({ deals, groupBy, displayMode = "table" }: DealsLi
               >
                 {deal.title}
               </Link>
+              {isAdmin && deal.owner && (
+                <OwnerBadge
+                  ownerName={deal.owner.name || ""}
+                  isCurrentUser={deal.owner.id === currentUserId}
+                />
+              )}
               {isWon && (
                 <div className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-green-700 border border-green-300">
                   <Trophy className="h-3 w-3" />
@@ -312,7 +322,7 @@ export function DealsListView({ deals, groupBy, displayMode = "table" }: DealsLi
   const renderCards = (dealsToRender: Deal[]) => (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {dealsToRender.length > 0 ? (
-        dealsToRender.map((deal) => <DealCard key={deal.id} deal={deal} />)
+        dealsToRender.map((deal) => <DealCard key={deal.id} deal={deal} isAdmin={isAdmin} currentUserId={currentUserId} />)
       ) : (
         <div className="col-span-full py-12 text-center text-gray-500">
           Nenhum negócio encontrado

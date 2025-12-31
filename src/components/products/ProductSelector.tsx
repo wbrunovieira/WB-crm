@@ -88,7 +88,7 @@ export function ProductSelector({
   const handleUpdateProduct = (
     productId: string,
     field: keyof SelectedProduct,
-    value: any
+    value: string | number | null
   ) => {
     onChange(
       selectedProducts.map((sp) =>

@@ -43,17 +43,25 @@ export function LeadProductsSection({ leadId, isConverted }: LeadProductsSection
   const [removing, setRemoving] = useState<string | null>(null);
 
   useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const data = await getLeadProducts(leadId);
+        setProducts(data);
+      } catch (error) {
+        console.error("Erro ao carregar produtos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     loadProducts();
   }, [leadId]);
 
-  const loadProducts = async () => {
+  const refreshProducts = async () => {
     try {
       const data = await getLeadProducts(leadId);
       setProducts(data);
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -63,9 +71,9 @@ export function LeadProductsSection({ leadId, isConverted }: LeadProductsSection
     setRemoving(id);
     try {
       await removeProductFromLead(id);
-      await loadProducts();
-    } catch (error: any) {
-      alert(error.message || "Erro ao remover produto");
+      await refreshProducts();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Erro ao remover produto");
     } finally {
       setRemoving(null);
     }

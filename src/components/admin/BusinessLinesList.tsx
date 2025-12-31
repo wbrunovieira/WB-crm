@@ -35,8 +35,8 @@ export function BusinessLinesList({ businessLines }: BusinessLinesListProps) {
     try {
       await toggleBusinessLineActive(id);
       router.refresh();
-    } catch (error: any) {
-      alert(error.message || "Erro ao atualizar linha de negócio");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Erro ao atualizar linha de negócio");
     } finally {
       setLoading(null);
     }
@@ -58,8 +58,8 @@ export function BusinessLinesList({ businessLines }: BusinessLinesListProps) {
     try {
       await deleteBusinessLine(id);
       router.refresh();
-    } catch (error: any) {
-      alert(error.message || "Erro ao excluir linha de negócio");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Erro ao excluir linha de negócio");
     } finally {
       setLoading(null);
     }

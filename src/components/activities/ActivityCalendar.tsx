@@ -284,7 +284,7 @@ export default function ActivityCalendar({
                         } ${
                           draggedActivity === activity.id ? "opacity-50" : "hover:bg-gray-100"
                         }`}
-                        onClick={(e) => {
+                        onClick={() => {
                           if (!isDragging) {
                             window.location.href = `/activities/${activity.id}`;
                           }
@@ -369,7 +369,7 @@ export default function ActivityCalendar({
                         ? {}
                         : { backgroundColor: "#350455", borderColor: "#792990", color: "#e5e7eb" }
                     }
-                    onClick={(e) => {
+                    onClick={() => {
                       if (!isDragging) {
                         window.location.href = `/activities/${activity.id}`;
                       }
@@ -454,7 +454,7 @@ export default function ActivityCalendar({
                         ? {}
                         : { backgroundColor: "#350455", borderColor: "#792990", color: "#e5e7eb" }
                     }
-                    onClick={(e) => {
+                    onClick={() => {
                       if (!isDragging) {
                         window.location.href = `/activities/${activity.id}`;
                       }

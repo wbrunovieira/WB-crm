@@ -22,9 +22,21 @@ import { Eye, EyeOff, Trash2 } from "lucide-react";
 
 type TechProfileType = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
 
+interface TechProfileItem {
+  id: string;
+  name: string;
+  slug: string;
+  color?: string | null;
+  icon?: string | null;
+  type?: string | null;
+  isActive: boolean;
+  order: number;
+  _count: Record<string, number>;
+}
+
 interface TechProfileGenericListProps {
   type: TechProfileType;
-  items: any[];
+  items: TechProfileItem[];
   countKeys: { lead: string; org: string };
 }
 
@@ -101,8 +113,8 @@ export function TechProfileGenericList({ type, items, countKeys }: TechProfileGe
   return (
     <div className="space-y-3">
       {items.map((item) => {
-        const leadCount = (item._count as any)[countKeys.lead] || 0;
-        const orgCount = (item._count as any)[countKeys.org] || 0;
+        const leadCount = item._count[countKeys.lead] || 0;
+        const orgCount = item._count[countKeys.org] || 0;
         const totalCount = leadCount + orgCount;
 
         return (

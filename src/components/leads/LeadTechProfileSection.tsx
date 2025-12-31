@@ -10,23 +10,49 @@ interface LeadTechProfileSectionProps {
   leadId: string;
 }
 
+interface TechItem {
+  id: string;
+  name: string;
+  slug: string;
+  color?: string | null;
+  icon?: string | null;
+}
+
+interface TechProfile {
+  languages: Array<{ language: TechItem }>;
+  frameworks: Array<{ framework: TechItem }>;
+  hosting: Array<{ hosting: TechItem }>;
+  databases: Array<{ database: TechItem }>;
+  erps: Array<{ erp: TechItem }>;
+  crms: Array<{ crm: TechItem }>;
+  ecommerces: Array<{ ecommerce: TechItem }>;
+}
+
 export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) {
-  const [techProfile, setTechProfile] = useState<any>(null);
+  const [techProfile, setTechProfile] = useState<TechProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    const loadTechProfile = async () => {
+      try {
+        const data = await getLeadTechProfile(leadId);
+        setTechProfile(data);
+      } catch (error) {
+        console.error("Erro ao carregar tech profile:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     loadTechProfile();
   }, [leadId]);
 
-  const loadTechProfile = async () => {
+  const refreshTechProfile = async () => {
     try {
       const data = await getLeadTechProfile(leadId);
       setTechProfile(data);
     } catch (error) {
       console.error("Erro ao carregar tech profile:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -81,77 +107,77 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
             {techProfile.languages.length > 0 && (
               <TechProfileBadge
                 title="Linguagens"
-                items={techProfile.languages.map((l: any) => l.language)}
+                items={techProfile.languages.map((l) => l.language)}
                 entityId={leadId}
                 entityType="lead"
                 profileType="languages"
-                onUpdate={loadTechProfile}
+                onUpdate={refreshTechProfile}
               />
             )}
 
             {techProfile.frameworks.length > 0 && (
               <TechProfileBadge
                 title="Frameworks"
-                items={techProfile.frameworks.map((f: any) => f.framework)}
+                items={techProfile.frameworks.map((f) => f.framework)}
                 entityId={leadId}
                 entityType="lead"
                 profileType="frameworks"
-                onUpdate={loadTechProfile}
+                onUpdate={refreshTechProfile}
               />
             )}
 
             {techProfile.hosting.length > 0 && (
               <TechProfileBadge
                 title="Hospedagem"
-                items={techProfile.hosting.map((h: any) => h.hosting)}
+                items={techProfile.hosting.map((h) => h.hosting)}
                 entityId={leadId}
                 entityType="lead"
                 profileType="hosting"
-                onUpdate={loadTechProfile}
+                onUpdate={refreshTechProfile}
               />
             )}
 
             {techProfile.databases.length > 0 && (
               <TechProfileBadge
                 title="Bancos de Dados"
-                items={techProfile.databases.map((d: any) => d.database)}
+                items={techProfile.databases.map((d) => d.database)}
                 entityId={leadId}
                 entityType="lead"
                 profileType="databases"
-                onUpdate={loadTechProfile}
+                onUpdate={refreshTechProfile}
               />
             )}
 
             {techProfile.erps.length > 0 && (
               <TechProfileBadge
                 title="ERPs"
-                items={techProfile.erps.map((e: any) => e.erp)}
+                items={techProfile.erps.map((e) => e.erp)}
                 entityId={leadId}
                 entityType="lead"
                 profileType="erps"
-                onUpdate={loadTechProfile}
+                onUpdate={refreshTechProfile}
               />
             )}
 
             {techProfile.crms.length > 0 && (
               <TechProfileBadge
                 title="CRMs"
-                items={techProfile.crms.map((c: any) => c.crm)}
+                items={techProfile.crms.map((c) => c.crm)}
                 entityId={leadId}
                 entityType="lead"
                 profileType="crms"
-                onUpdate={loadTechProfile}
+                onUpdate={refreshTechProfile}
               />
             )}
 
             {techProfile.ecommerces.length > 0 && (
               <TechProfileBadge
                 title="E-commerce"
-                items={techProfile.ecommerces.map((e: any) => e.ecommerce)}
+                items={techProfile.ecommerces.map((e) => e.ecommerce)}
                 entityId={leadId}
                 entityType="lead"
                 profileType="ecommerces"
-                onUpdate={loadTechProfile}
+                onUpdate={refreshTechProfile}
               />
             )}
           </div>
@@ -163,7 +189,7 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
         entityType="lead"
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={loadTechProfile}
+        onSuccess={refreshTechProfile}
       />
     </>
   );

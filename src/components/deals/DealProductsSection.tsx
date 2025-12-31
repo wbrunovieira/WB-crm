@@ -35,17 +35,25 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    const loadProducts = async () => {
+      try {
+        const data = await getDealProducts(dealId);
+        setProducts(data);
+      } catch (error) {
+        console.error("Erro ao carregar produtos:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     loadProducts();
   }, [dealId]);
 
-  const loadProducts = async () => {
+  const refreshProducts = async () => {
     try {
       const data = await getDealProducts(dealId);
       setProducts(data);
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -55,9 +63,9 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
     setRemoving(id);
     try {
       await removeProductFromDeal(id);
-      await loadProducts();
-    } catch (error: any) {
-      alert(error.message || "Erro ao remover produto");
+      await refreshProducts();
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Erro ao remover produto");
     } finally {
       setRemoving(null);
     }
@@ -88,7 +96,7 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
           dealId={dealId}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={loadProducts}
+          onSuccess={refreshProducts}
         />
       </>
     );
@@ -119,7 +127,7 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
           dealId={dealId}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={loadProducts}
+          onSuccess={refreshProducts}
         />
       </>
     );
@@ -276,7 +284,7 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
       dealId={dealId}
       isOpen={isModalOpen}
       onClose={() => setIsModalOpen(false)}
-      onSuccess={loadProducts}
+      onSuccess={refreshProducts}
     />
     </>
   );

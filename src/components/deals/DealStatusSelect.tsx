@@ -67,17 +67,6 @@ export function DealStatusSelect({
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "won":
-        return "Ganho";
-      case "lost":
-        return "Perdido";
-      default:
-        return "Aberto";
-    }
-  };
-
   return (
     <>
       <select

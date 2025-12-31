@@ -21,10 +21,9 @@ export async function getContacts(filters?: {
     ownerId?: string;
     status?: string;
     OR?: Array<{ name?: { contains: string; mode: string }; email?: { contains: string; mode: string }; phone?: { contains: string } }>;
-    organizationId?: { not: null };
-    leadId?: { not: null };
-    partnerId?: { not: null };
-    AND?: Array<{ organizationId: null; leadId: null; partnerId: null }>;
+    organizationId?: { not: null } | null;
+    leadId?: { not: null } | null;
+    partnerId?: { not: null } | null;
   } = {
     ...ownerFilter,
   };
@@ -52,11 +51,9 @@ export async function getContacts(filters?: {
     } else if (filters.company === "partner") {
       whereClause.partnerId = { not: null };
     } else if (filters.company === "none") {
-      whereClause.AND = [
-        { organizationId: null },
-        { leadId: null },
-        { partnerId: null },
-      ];
+      whereClause.organizationId = null;
+      whereClause.leadId = null;
+      whereClause.partnerId = null;
     }
   }
 

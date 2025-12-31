@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Plus } from "lucide-react";
+import { X } from "lucide-react";
 import { addProductToDeal } from "@/actions/product-links";
 
 interface Product {
@@ -92,8 +92,8 @@ export function AddProductToDealModal({
 
       onSuccess();
       handleClose();
-    } catch (err: any) {
-      setError(err.message || "Erro ao adicionar produto");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao adicionar produto");
     } finally {
       setSubmitting(false);
     }

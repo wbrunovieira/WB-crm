@@ -15,13 +15,14 @@ type ConvertDealToProjectModalProps = {
 };
 
 export function ConvertDealToProjectModal({
-  dealId,
+  dealId: _dealId,
   dealTitle,
   dealValue,
   organizationId,
   isOpen,
   onClose,
 }: ConvertDealToProjectModalProps) {
+  void _dealId; // Reserved for future use
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,8 +42,8 @@ export function ConvertDealToProjectModal({
         .then((data) => {
           setWorkspaces(data);
           // Auto-select first workspace if available
-          if (data.length > 0 && !workspaceId) {
-            setWorkspaceId(data[0].id);
+          if (data.length > 0) {
+            setWorkspaceId((current) => current || data[0].id);
           }
         })
         .catch((err) => {

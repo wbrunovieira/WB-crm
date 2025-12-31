@@ -40,9 +40,20 @@ interface AddTechProfileModalProps {
 
 type TabType = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
 
+interface TechOption {
+  id: string;
+  name: string;
+  slug: string;
+  color?: string | null;
+  icon?: string | null;
+  type?: string | null;
+}
+
+type TechOptions = Record<TabType, TechOption[]>;
+
 export function AddTechProfileModal({ entityId, entityType, isOpen, onClose, onSuccess }: AddTechProfileModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("languages");
-  const [options, setOptions] = useState<any>({});
+  const [options, setOptions] = useState<Partial<TechOptions>>({});
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState<string | null>(null);
 
@@ -162,7 +173,7 @@ export function AddTechProfileModal({ entityId, entityType, isOpen, onClose, onS
                 Nenhuma opção disponível
               </p>
             ) : (
-              currentOptions.map((item: any) => (
+              currentOptions.map((item) => (
                 <div
                   key={item.id}
                   className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3"

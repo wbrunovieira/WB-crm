@@ -105,7 +105,7 @@ export function DealProductsForm({
   const handleUpdateProduct = (
     productId: string,
     field: keyof DealProduct,
-    value: any
+    value: string | number | null
   ) => {
     onChange(
       selectedProducts.map((sp) => {
@@ -115,10 +115,11 @@ export function DealProductsForm({
 
         // Recalcular total se mudou quantidade, preço ou desconto
         if (field === "quantity" || field === "unitPrice" || field === "discount") {
+          const numValue = typeof value === "number" ? value : 0;
           updated.totalValue = calculateTotalValue(
-            field === "quantity" ? value : updated.quantity,
-            field === "unitPrice" ? value : updated.unitPrice,
-            field === "discount" ? value : updated.discount
+            field === "quantity" ? numValue : updated.quantity,
+            field === "unitPrice" ? numValue : updated.unitPrice,
+            field === "discount" ? numValue : updated.discount
           );
         }
 
@@ -286,7 +287,7 @@ export function DealProductsForm({
                       handleUpdateProduct(
                         dealProduct.productId,
                         "deliveryTime",
-                        e.target.value ? parseInt(e.target.value) : undefined
+                        e.target.value ? parseInt(e.target.value) : null
                       )
                     }
                     className="w-full rounded-md border border-gray-300 px-2 py-1 text-sm"

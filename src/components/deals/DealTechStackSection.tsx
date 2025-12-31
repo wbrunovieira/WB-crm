@@ -61,17 +61,25 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    const loadTechStack = async () => {
+      try {
+        const data = await getDealTechStack(dealId);
+        setTechStack(data);
+      } catch (error) {
+        console.error("Erro ao carregar tech stack:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
     loadTechStack();
   }, [dealId]);
 
-  const loadTechStack = async () => {
+  const refreshTechStack = async () => {
     try {
       const data = await getDealTechStack(dealId);
       setTechStack(data);
     } catch (error) {
       console.error("Erro ao carregar tech stack:", error);
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -81,7 +89,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
     setRemoving(categoryId);
     try {
       await removeCategoryFromDeal(dealId, categoryId);
-      await loadTechStack();
+      await refreshTechStack();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao remover categoria";
       alert(message);
@@ -96,7 +104,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
     setRemoving(languageId);
     try {
       await removeLanguageFromDeal(dealId, languageId);
-      await loadTechStack();
+      await refreshTechStack();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao remover linguagem";
       alert(message);
@@ -111,7 +119,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
     setRemoving(frameworkId);
     try {
       await removeFrameworkFromDeal(dealId, frameworkId);
-      await loadTechStack();
+      await refreshTechStack();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao remover framework";
       alert(message);
@@ -124,7 +132,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
     setRemoving(languageId);
     try {
       await setPrimaryLanguage(dealId, languageId);
-      await loadTechStack();
+      await refreshTechStack();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao definir linguagem principal";
       alert(message);
@@ -158,7 +166,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
           dealId={dealId}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={loadTechStack}
+          onSuccess={refreshTechStack}
         />
       </>
     );
@@ -189,7 +197,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
           dealId={dealId}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={loadTechStack}
+          onSuccess={refreshTechStack}
         />
       </>
     );
@@ -350,7 +358,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
         dealId={dealId}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={loadTechStack}
+        onSuccess={refreshTechStack}
       />
     </>
   );

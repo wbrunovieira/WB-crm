@@ -136,7 +136,7 @@ export default async function ActivityDetailPage({
               <dd className="mt-1 text-sm text-gray-900">
                 {activity.contacts && activity.contacts.length > 0 ? (
                   <div className="space-y-3">
-                    {activity.contacts.map((contact: any) => (
+                    {activity.contacts.map((contact) => (
                       <div key={contact.id} className="border-b border-gray-100 pb-2 last:border-b-0 last:pb-0">
                         <Link
                           href={`/contacts/${contact.id}`}

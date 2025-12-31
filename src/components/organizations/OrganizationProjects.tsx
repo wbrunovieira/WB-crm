@@ -1,17 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { Project } from "@/lib/external-api/projects";
 
 type OrganizationProjectsProps = {
   projectIds: string[];
-  organizationId: string;
 };
 
 export function OrganizationProjects({
   projectIds,
-  organizationId,
 }: OrganizationProjectsProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);

@@ -374,7 +374,6 @@ export default async function OrganizationDetailPage({
               ? JSON.parse(organization.externalProjectIds)
               : []
           }
-          organizationId={organization.id}
         />
       </div>
     </div>

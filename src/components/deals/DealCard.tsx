@@ -8,6 +8,7 @@ import { DealStatusSelect } from "./DealStatusSelect";
 import { ScheduleNextActivityModal } from "../activities/ScheduleNextActivityModal";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { OwnerBadge } from "@/components/shared/OwnerBadge";
 
 interface Deal {
   id: string;
@@ -30,13 +31,16 @@ interface Deal {
     type: string;
     dueDate: Date | null;
   }>;
+  owner?: { id: string; name: string | null };
 }
 
 interface DealCardProps {
   deal: Deal;
+  isAdmin?: boolean;
+  currentUserId?: string;
 }
 
-export function DealCard({ deal }: DealCardProps) {
+export function DealCard({ deal, isAdmin = false, currentUserId = "" }: DealCardProps) {
   const [showScheduleModal, setShowScheduleModal] = useState(false);
   const [availableData, setAvailableData] = useState<{
     deals: Array<{ id: string; title: string }>;
@@ -130,12 +134,20 @@ export function DealCard({ deal }: DealCardProps) {
       {/* Header */}
       <div className="mb-4 flex items-start justify-between">
         <div className="flex-1">
-          <Link
-            href={`/deals/${deal.id}`}
-            className="text-lg font-semibold text-gray-900 hover:text-primary transition-colors line-clamp-2"
-          >
-            {deal.title}
-          </Link>
+          <div className="flex items-center gap-2">
+            <Link
+              href={`/deals/${deal.id}`}
+              className="text-lg font-semibold text-gray-900 hover:text-primary transition-colors line-clamp-2"
+            >
+              {deal.title}
+            </Link>
+            {isAdmin && deal.owner && (
+              <OwnerBadge
+                ownerName={deal.owner.name || ""}
+                isCurrentUser={deal.owner.id === currentUserId}
+              />
+            )}
+          </div>
           <div className="mt-1 flex items-center gap-2">
             <span className="text-xs text-gray-500">{deal.stage.pipeline.name}</span>
             <span className="text-gray-300">•</span>

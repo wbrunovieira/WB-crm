@@ -166,7 +166,7 @@ export async function getActivityById(id: string) {
   }
 
   // Fetch all contacts if contactIds exists
-  let allContacts = [];
+  let allContacts: Array<{ id: string; name: string; email: string | null; phone: string | null }> = [];
   if (activity.contactIds) {
     try {
       const contactIds = JSON.parse(activity.contactIds);

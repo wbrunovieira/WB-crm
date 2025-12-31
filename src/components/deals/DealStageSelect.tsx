@@ -64,8 +64,6 @@ export function DealStageSelect({
     return <span className="text-xs text-gray-500">Carregando...</span>;
   }
 
-  const currentStage = stages.find((s) => s.id === selectedStageId);
-
   return (
     <select
       value={selectedStageId}

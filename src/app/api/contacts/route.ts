@@ -55,12 +55,33 @@ export async function POST(request: Request) {
     const body = await request.json();
     const validated = contactSchema.parse(body);
 
+    // Determine which ID field to set based on companyType
+    let organizationId: string | null = null;
+    let leadId: string | null = null;
+    let partnerId: string | null = null;
+
+    if (validated.companyId && validated.companyType) {
+      switch (validated.companyType) {
+        case "organization":
+          organizationId = validated.companyId;
+          break;
+        case "lead":
+          leadId = validated.companyId;
+          break;
+        case "partner":
+          partnerId = validated.companyId;
+          break;
+      }
+    }
+
     const contact = await prisma.contact.create({
       data: {
         name: validated.name,
         email: validated.email || null,
         phone: validated.phone || null,
-        organizationId: validated.organizationId || null,
+        organizationId,
+        leadId,
+        partnerId,
         ownerId: session.user.id,
       },
       include: {

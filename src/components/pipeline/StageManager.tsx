@@ -315,7 +315,7 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
 
       {stages.length === 0 && !isCreating && (
         <div className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
-          <p className="text-gray-500">Nenhum estágio configurado. Clique em "Adicionar Estágio" para começar.</p>
+          <p className="text-gray-500">Nenhum estágio configurado. Clique em &quot;Adicionar Estágio&quot; para começar.</p>
         </div>
       )}
     </div>

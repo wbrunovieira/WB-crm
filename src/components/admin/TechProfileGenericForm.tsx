@@ -51,13 +51,13 @@ export function TechProfileGenericForm({ type }: TechProfileGenericFormProps) {
         case "hosting":
           await createTechProfileHosting({
             ...baseData,
-            type: formData.get("type") as string,
+            type: (formData.get("type") as "cloud" | "vps" | "shared" | "dedicated" | "serverless") || "cloud",
           });
           break;
         case "databases":
           await createTechProfileDatabase({
             ...baseData,
-            type: formData.get("type") as string,
+            type: (formData.get("type") as "relational" | "nosql" | "cache" | "search") || "relational",
           });
           break;
         case "erps":

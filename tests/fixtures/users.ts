@@ -1,5 +1,6 @@
 import type { User } from '@prisma/client';
 import type { Session } from 'next-auth';
+import type { UserRole } from '@/types/next-auth';
 
 export const mockUser: User = {
   id: 'user-test-123',
@@ -8,7 +9,7 @@ export const mockUser: User = {
   emailVerified: null,
   image: null,
   password: 'hashed-password-123',
-  role: 'user',
+  role: 'sdr',
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
 };
@@ -30,7 +31,7 @@ export const mockSession: Session = {
     id: mockUser.id,
     email: mockUser.email,
     name: mockUser.name,
-    role: mockUser.role,
+    role: mockUser.role as UserRole,
   },
   expires: '2025-12-31T23:59:59.999Z',
 };
@@ -40,7 +41,7 @@ export const mockAdminSession: Session = {
     id: mockAdminUser.id,
     email: mockAdminUser.email,
     name: mockAdminUser.name,
-    role: mockAdminUser.role,
+    role: mockAdminUser.role as UserRole,
   },
   expires: '2025-12-31T23:59:59.999Z',
 };

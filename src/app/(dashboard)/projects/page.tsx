@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Project } from "@/lib/external-api/projects";
-import Link from "next/link";
 
 export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);

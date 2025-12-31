@@ -39,15 +39,15 @@ export function ProductForm({ businessLines }: ProductFormProps) {
           ? parseFloat(formData.get("basePrice") as string)
           : null,
         currency: "BRL",
-        pricingType: (formData.get("pricingType") as string) || null,
+        pricingType: (formData.get("pricingType") as "fixed" | "custom" | "hourly" | "monthly" | null) || null,
         isActive: true,
         order: parseInt(formData.get("order") as string) || 0,
       });
 
       form.reset();
       router.refresh();
-    } catch (err: any) {
-      setError(err.message || "Erro ao criar produto");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao criar produto");
     } finally {
       setLoading(false);
     }

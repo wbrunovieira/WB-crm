@@ -47,7 +47,9 @@ export function ContactCard({ contact, showOwnerBadge, currentUserId }: ContactC
               {contact.name}
             </Link>
             {contact.isPrimary && (
-              <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 flex-shrink-0" title="Contato principal" />
+              <span title="Contato principal">
+                <Star className="h-4 w-4 text-yellow-500 fill-yellow-500 flex-shrink-0" />
+              </span>
             )}
             {showOwnerBadge && contact.owner && (
               <OwnerBadge

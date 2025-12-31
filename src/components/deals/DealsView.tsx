@@ -26,13 +26,33 @@ interface Deal {
   createdAt: Date;
 }
 
+interface KanbanDeal {
+  id: string;
+  title: string;
+  value: number;
+  currency: string;
+  status: string;
+  expectedCloseDate: Date | null;
+  contact: { id: string; name: string; email: string | null } | null;
+  organization: { id: string; name: string } | null;
+  createdAt: Date;
+  activities?: Array<{
+    id: string;
+    type: string;
+    subject: string;
+    dueDate: Date | null;
+  }>;
+}
+
 interface PipelineData {
   id: string;
   name: string;
   stages: Array<{
     id: string;
     name: string;
-    deals: Deal[];
+    order: number;
+    probability: number;
+    deals: KanbanDeal[];
   }>;
 }
 
@@ -40,7 +60,7 @@ interface DealsViewProps {
   initialView: "list" | "kanban";
   deals?: Deal[];
   pipelineData?: PipelineData;
-  allPipelines?: Array<{ id: string; name: string }>;
+  allPipelines?: Array<{ id: string; name: string; isDefault: boolean }>;
   groupBy: string;
   displayMode?: string;
   isAdmin?: boolean;
@@ -148,7 +168,7 @@ export function DealsView({
 
       <div className="flex-1 overflow-auto p-8">
         {initialView === "list" ? (
-          <DealsListView deals={deals} groupBy={currentGroupBy} displayMode={displayMode} />
+          <DealsListView deals={deals} groupBy={currentGroupBy} displayMode={displayMode} isAdmin={isAdmin} currentUserId={currentUserId} />
         ) : pipelineData ? (
           <DealsKanbanView
             pipelineData={pipelineData}

@@ -41,8 +41,8 @@ export function ProductsList({ products }: ProductsListProps) {
     try {
       await toggleProductActive(id);
       router.refresh();
-    } catch (error: any) {
-      alert(error.message || "Erro ao atualizar produto");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Erro ao atualizar produto");
     } finally {
       setLoading(null);
     }
@@ -64,8 +64,8 @@ export function ProductsList({ products }: ProductsListProps) {
     try {
       await deleteProduct(id);
       router.refresh();
-    } catch (error: any) {
-      alert(error.message || "Erro ao excluir produto");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Erro ao excluir produto");
     } finally {
       setLoading(null);
     }
