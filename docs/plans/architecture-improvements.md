@@ -12,6 +12,7 @@
 | Data       | Descrição                                                                 |
 |------------|---------------------------------------------------------------------------|
 | 2024-12-31 | Criação do plano e implementação dos testes de isolamento (Server Actions) |
+| 2024-12-31 | Implementação dos testes de isolamento (API Routes) - Fase 1 completa     |
 
 ---
 
@@ -45,14 +46,14 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 | Status | Arquivo                                | Teste                       | Descrição                                           |
 | ------ | -------------------------------------- | --------------------------- | --------------------------------------------------- |
-| [ ]    | `tests/security/api-isolation.test.ts` | `GET /api/deals`            | Retorna apenas deals do usuário autenticado         |
-| [ ]    |                                        | `GET /api/contacts`         | Retorna apenas contacts do usuário autenticado      |
-| [ ]    |                                        | `GET /api/activities`       | Retorna apenas activities do usuário autenticado    |
-| [ ]    |                                        | `GET /api/organizations`    | Retorna apenas organizations do usuário autenticado |
-| [ ]    |                                        | `PUT /api/deals/[id]`       | Não permite editar deal de outro usuário            |
-| [ ]    |                                        | `PUT /api/contacts/[id]`    | Não permite editar contact de outro usuário         |
-| [ ]    |                                        | `DELETE /api/deals/[id]`    | Não permite deletar deal de outro usuário           |
-| [ ]    |                                        | `DELETE /api/contacts/[id]` | Não permite deletar contact de outro usuário        |
+| [x]    | `tests/security/api-isolation.test.ts` | `GET /api/deals`            | Retorna apenas deals do usuário autenticado         |
+| [x]    |                                        | `GET /api/contacts`         | Retorna apenas contacts do usuário autenticado      |
+| [x]    |                                        | `GET /api/activities`       | Retorna apenas activities do usuário autenticado    |
+| [x]    |                                        | `GET /api/organizations`    | Retorna apenas organizations do usuário autenticado |
+| [x]    |                                        | `PUT /api/deals/[id]`       | Não permite editar deal de outro usuário            |
+| [x]    |                                        | `PUT /api/contacts/[id]`    | Não permite editar contact de outro usuário         |
+| [x]    |                                        | `DELETE /api/deals/[id]`    | Não permite deletar deal de outro usuário           |
+| [x]    |                                        | `DELETE /api/contacts/[id]` | Não permite deletar contact de outro usuário        |
 
 ---
 
@@ -531,7 +532,7 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 | Fase                      | Total   | Concluídos | Porcentagem |
 | ------------------------- | ------- | ---------- | ----------- |
-| 1. Segurança (Isolamento) | 17      | 9          | 53%         |
+| 1. Segurança (Isolamento) | 17      | 17         | 100%        |
 | 2. Autenticação           | 12      | 0          | 0%          |
 | 3. Core CRM               | 58      | 0          | 0%          |
 | 4. Pipeline               | 12      | 0          | 0%          |
@@ -540,7 +541,7 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | 7. Auxiliares             | 21      | 0          | 0%          |
 | 8. API Routes             | 33      | 0          | 0%          |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **231** | **9**      | **4%**      |
+| **TOTAL**                 | **231** | **17**     | **7%**      |
 
 ---
 
