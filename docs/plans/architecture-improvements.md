@@ -25,6 +25,7 @@
 | 2024-12-31 | Implementação dos testes de Produtos (105 testes) - Fase 5 completa        |
 | 2024-12-31 | Implementação dos testes de Tech Profile & Stack (245 testes) - Fase 6 completa |
 | 2024-12-31 | Implementação dos testes Auxiliares (96 testes) - Fase 7 completa              |
+| 2024-12-31 | Implementação dos testes de API Routes (105 testes) - Fase 8 completa          |
 
 ---
 
@@ -484,67 +485,109 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 ## Fase 8: Testes de API Routes
 
-### 8.1 Auth API (`/api/auth`, `/api/register`)
+### 8.1 Auth API (`/api/register`) - 8 testes
 
 | Status | Arquivo                  | Teste                             | Descrição               |
 | ------ | ------------------------ | --------------------------------- | ----------------------- |
-| [ ]    | `tests/api/auth.test.ts` | `POST /api/register - success`    | Registra usuário        |
-| [ ]    |                          | `POST /api/register - duplicate`  | Rejeita email duplicado |
-| [ ]    |                          | `POST /api/register - validation` | Valida dados            |
+| [x]    | `tests/api/auth.test.ts` | `POST /api/register - success`    | Registra usuário        |
+| [x]    |                          | `POST /api/register - duplicate`  | Rejeita email duplicado |
+| [x]    |                          | `POST /api/register - validation` | Valida dados (4 testes) |
+| [x]    |                          | `POST /api/register - hash`       | Hash de senha           |
+| [x]    |                          | `POST /api/register - error`      | Erro de banco           |
 
-### 8.2 Deals API (`/api/deals`)
+### 8.2 Deals API (`/api/deals`) - 24 testes
 
-| Status | Arquivo                   | Teste                                | Descrição             |
-| ------ | ------------------------- | ------------------------------------ | --------------------- |
-| [ ]    | `tests/api/deals.test.ts` | `GET /api/deals - success`           | Lista deals do owner  |
-| [ ]    |                           | `GET /api/deals - unauthorized`      | 401 sem auth          |
-| [ ]    |                           | `POST /api/deals - success`          | Cria deal             |
-| [ ]    |                           | `GET /api/deals/[id] - success`      | Retorna deal próprio  |
-| [ ]    |                           | `GET /api/deals/[id] - forbidden`    | 403 deal de outro     |
-| [ ]    |                           | `PUT /api/deals/[id] - success`      | Atualiza deal próprio |
-| [ ]    |                           | `PUT /api/deals/[id] - forbidden`    | 403 deal de outro     |
-| [ ]    |                           | `DELETE /api/deals/[id] - success`   | Deleta deal próprio   |
-| [ ]    |                           | `DELETE /api/deals/[id] - forbidden` | 403 deal de outro     |
+| Status | Arquivo                   | Teste                                | Descrição              |
+| ------ | ------------------------- | ------------------------------------ | ---------------------- |
+| [x]    | `tests/api/deals.test.ts` | `GET /api/deals - success`           | Lista deals do owner   |
+| [x]    |                           | `GET /api/deals - unauthorized`      | 401 sem auth           |
+| [x]    |                           | `GET /api/deals - search`            | Filtra por busca       |
+| [x]    |                           | `POST /api/deals - success`          | Cria deal              |
+| [x]    |                           | `POST /api/deals - unauthorized`     | 401 sem auth           |
+| [x]    |                           | `POST /api/deals - sets-owner`       | Define ownerId         |
+| [x]    |                           | `GET /api/deals/[id] - success`      | Retorna deal próprio   |
+| [x]    |                           | `GET /api/deals/[id] - unauthorized` | 401 sem auth           |
+| [x]    |                           | `GET /api/deals/[id] - not-found`    | 404 deal não existe    |
+| [x]    |                           | `GET /api/deals/[id] - other-user`   | 404 deal de outro      |
+| [x]    |                           | `PUT /api/deals/[id] - success`      | Atualiza deal próprio  |
+| [x]    |                           | `PUT /api/deals/[id] - not-found`    | 404 deal não existe    |
+| [x]    |                           | `PUT /api/deals/[id] - other-user`   | 404 deal de outro      |
+| [x]    |                           | `DELETE /api/deals/[id] - success`   | Deleta deal próprio    |
+| [x]    |                           | `DELETE /api/deals/[id] - not-found` | 404 deal não existe    |
+| [x]    |                           | `DELETE /api/deals/[id] - other-user`| 404 deal de outro      |
+| [x]    |                           | `data-isolation`                     | Isolamento (4 testes)  |
 
-### 8.3 Contacts API (`/api/contacts`)
+### 8.3 Contacts API (`/api/contacts`) - 21 testes
 
-| Status | Arquivo                      | Teste                                 | Descrição                |
-| ------ | ---------------------------- | ------------------------------------- | ------------------------ |
-| [ ]    | `tests/api/contacts.test.ts` | `GET /api/contacts - success`         | Lista contacts do owner  |
-| [ ]    |                              | `GET /api/contacts - unauthorized`    | 401 sem auth             |
-| [ ]    |                              | `POST /api/contacts - success`        | Cria contact             |
-| [ ]    |                              | `GET /api/contacts/[id] - success`    | Retorna contact próprio  |
-| [ ]    |                              | `GET /api/contacts/[id] - forbidden`  | 403 contact de outro     |
-| [ ]    |                              | `PUT /api/contacts/[id] - success`    | Atualiza contact próprio |
-| [ ]    |                              | `DELETE /api/contacts/[id] - success` | Deleta contact próprio   |
+| Status | Arquivo                      | Teste                                   | Descrição                |
+| ------ | ---------------------------- | --------------------------------------- | ------------------------ |
+| [x]    | `tests/api/contacts.test.ts` | `GET /api/contacts - success`           | Lista contacts do owner  |
+| [x]    |                              | `GET /api/contacts - unauthorized`      | 401 sem auth             |
+| [x]    |                              | `GET /api/contacts - search`            | Filtra por busca         |
+| [x]    |                              | `POST /api/contacts - success`          | Cria contact             |
+| [x]    |                              | `POST /api/contacts - unauthorized`     | 401 sem auth             |
+| [x]    |                              | `POST /api/contacts - with-org`         | Vincula a organization   |
+| [x]    |                              | `GET /api/contacts/[id] - success`      | Retorna contact próprio  |
+| [x]    |                              | `GET /api/contacts/[id] - unauthorized` | 401 sem auth             |
+| [x]    |                              | `GET /api/contacts/[id] - not-found`    | 404 não existe           |
+| [x]    |                              | `PUT /api/contacts/[id] - success`      | Atualiza contact próprio |
+| [x]    |                              | `PUT /api/contacts/[id] - unauthorized` | 401 sem auth             |
+| [x]    |                              | `DELETE /api/contacts/[id] - success`   | Deleta contact próprio   |
+| [x]    |                              | `DELETE /api/contacts/[id] - unauthorized` | 401 sem auth          |
+| [x]    |                              | `data-isolation`                        | Isolamento (5 testes)    |
 
-### 8.4 Activities API (`/api/activities`)
+### 8.4 Activities API (`/api/activities`) - 24 testes
 
-| Status | Arquivo                        | Teste                                   | Descrição                 |
-| ------ | ------------------------------ | --------------------------------------- | ------------------------- |
-| [ ]    | `tests/api/activities.test.ts` | `GET /api/activities - success`         | Lista activities do owner |
-| [ ]    |                                | `GET /api/activities - unauthorized`    | 401 sem auth              |
-| [ ]    |                                | `POST /api/activities - success`        | Cria activity             |
-| [ ]    |                                | `GET /api/activities/[id] - success`    | Retorna activity própria  |
-| [ ]    |                                | `PUT /api/activities/[id] - success`    | Atualiza activity própria |
-| [ ]    |                                | `DELETE /api/activities/[id] - success` | Deleta activity própria   |
+| Status | Arquivo                        | Teste                                     | Descrição                 |
+| ------ | ------------------------------ | ----------------------------------------- | ------------------------- |
+| [x]    | `tests/api/activities.test.ts` | `GET /api/activities - success`           | Lista activities do owner |
+| [x]    |                                | `GET /api/activities - unauthorized`      | 401 sem auth              |
+| [x]    |                                | `GET /api/activities - filter-type`       | Filtra por tipo           |
+| [x]    |                                | `GET /api/activities - filter-deal`       | Filtra por deal           |
+| [x]    |                                | `GET /api/activities - filter-contact`    | Filtra por contact        |
+| [x]    |                                | `POST /api/activities - success`          | Cria activity             |
+| [x]    |                                | `POST /api/activities - unauthorized`     | 401 sem auth              |
+| [x]    |                                | `POST /api/activities - with-deal`        | Vincula a deal            |
+| [x]    |                                | `GET /api/activities/[id] - success`      | Retorna activity própria  |
+| [x]    |                                | `GET /api/activities/[id] - unauthorized` | 401 sem auth              |
+| [x]    |                                | `GET /api/activities/[id] - not-found`    | 404 não existe            |
+| [x]    |                                | `PUT /api/activities/[id] - success`      | Atualiza activity própria |
+| [x]    |                                | `PUT /api/activities/[id] - not-found`    | 404 não existe            |
+| [x]    |                                | `PUT /api/activities/[id] - other-user`   | 404 de outro              |
+| [x]    |                                | `DELETE /api/activities/[id] - success`   | Deleta activity própria   |
+| [x]    |                                | `DELETE /api/activities/[id] - not-found` | 404 não existe            |
+| [x]    |                                | `DELETE /api/activities/[id] - other-user`| 404 de outro              |
+| [x]    |                                | `data-isolation`                          | Isolamento (4 testes)     |
 
-### 8.5 Organizations API (`/api/organizations`)
+### 8.5 Organizations API (`/api/organizations`) - 21 testes
 
-| Status | Arquivo                           | Teste                                      | Descrição            |
-| ------ | --------------------------------- | ------------------------------------------ | -------------------- |
-| [ ]    | `tests/api/organizations.test.ts` | `GET /api/organizations - success`         | Lista orgs do owner  |
-| [ ]    |                                   | `GET /api/organizations - unauthorized`    | 401 sem auth         |
-| [ ]    |                                   | `POST /api/organizations - success`        | Cria org             |
-| [ ]    |                                   | `GET /api/organizations/[id] - success`    | Retorna org própria  |
-| [ ]    |                                   | `PUT /api/organizations/[id] - success`    | Atualiza org própria |
-| [ ]    |                                   | `DELETE /api/organizations/[id] - success` | Deleta org própria   |
+| Status | Arquivo                           | Teste                                        | Descrição            |
+| ------ | --------------------------------- | -------------------------------------------- | -------------------- |
+| [x]    | `tests/api/organizations.test.ts` | `GET /api/organizations - success`           | Lista orgs do owner  |
+| [x]    |                                   | `GET /api/organizations - unauthorized`      | 401 sem auth         |
+| [x]    |                                   | `GET /api/organizations - search`            | Filtra por busca     |
+| [x]    |                                   | `POST /api/organizations - success`          | Cria org             |
+| [x]    |                                   | `POST /api/organizations - unauthorized`     | 401 sem auth         |
+| [x]    |                                   | `POST /api/organizations - all-fields`       | Cria com campos      |
+| [x]    |                                   | `GET /api/organizations/[id] - success`      | Retorna org própria  |
+| [x]    |                                   | `GET /api/organizations/[id] - unauthorized` | 401 sem auth         |
+| [x]    |                                   | `GET /api/organizations/[id] - not-found`    | 404 não existe       |
+| [x]    |                                   | `PUT /api/organizations/[id] - success`      | Atualiza org própria |
+| [x]    |                                   | `PUT /api/organizations/[id] - unauthorized` | 401 sem auth         |
+| [x]    |                                   | `DELETE /api/organizations/[id] - success`   | Deleta org própria   |
+| [x]    |                                   | `DELETE /api/organizations/[id] - unauthorized` | 401 sem auth      |
+| [x]    |                                   | `data-isolation`                             | Isolamento (5 testes)|
 
-### 8.6 Products API (`/api/products`)
+### 8.6 Products API (`/api/products`) - 7 testes
 
-| Status | Arquivo                      | Teste                                | Descrição             |
-| ------ | ---------------------------- | ------------------------------------ | --------------------- |
-| [ ]    | `tests/api/products.test.ts` | `GET /api/products/active - success` | Lista produtos ativos |
+| Status | Arquivo                      | Teste                                    | Descrição               |
+| ------ | ---------------------------- | ---------------------------------------- | ----------------------- |
+| [x]    | `tests/api/products.test.ts` | `GET /api/products/active - success`     | Lista produtos ativos   |
+| [x]    |                              | `GET /api/products/active - unauthorized`| 401 sem auth            |
+| [x]    |                              | `GET /api/products/active - empty`       | Lista vazia             |
+| [x]    |                              | `GET /api/products/active - calls-action`| Chama server action     |
+| [x]    |                              | `GET /api/products/active - error`       | 500 em erro             |
+| [x]    |                              | `authentication`                         | Testes de auth (2)      |
 
 ---
 
@@ -598,9 +641,9 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | 5. Produtos               | 19      | 19         | 100%        |
 | 6. Tech Profile/Stack     | 245     | 245        | 100%        |
 | 7. Auxiliares             | 96      | 96         | 100%        |
-| 8. API Routes             | 33      | 0          | 0%          |
+| 8. API Routes             | 105     | 105        | 100%        |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **525** | **479**    | **91%**     |
+| **TOTAL**                 | **597** | **584**    | **98%**     |
 
 ---
 
