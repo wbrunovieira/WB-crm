@@ -13,6 +13,7 @@
 |------------|---------------------------------------------------------------------------|
 | 2024-12-31 | Criação do plano e implementação dos testes de isolamento (Server Actions) |
 | 2024-12-31 | Implementação dos testes de isolamento (API Routes) - Fase 1 completa     |
+| 2024-12-31 | Implementação dos testes de autenticação e autorização - Fase 2 completa  |
 
 ---
 
@@ -63,29 +64,29 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 | Status | Arquivo                             | Teste                    | Descrição                     |
 | ------ | ----------------------------------- | ------------------------ | ----------------------------- |
-| [ ]    | `tests/auth/authentication.test.ts` | `login-success`          | Login com credenciais válidas |
-| [ ]    |                                     | `login-invalid-email`    | Rejeita email inválido        |
-| [ ]    |                                     | `login-invalid-password` | Rejeita senha incorreta       |
-| [ ]    |                                     | `login-nonexistent-user` | Rejeita usuário inexistente   |
-| [ ]    |                                     | `session-token-valid`    | Token JWT válido após login   |
-| [ ]    |                                     | `session-expiry`         | Sessão expira corretamente    |
+| [x]    | `tests/auth/authentication.test.ts` | `login-success`          | Login com credenciais válidas |
+| [x]    |                                     | `login-invalid-email`    | Rejeita email inválido        |
+| [x]    |                                     | `login-invalid-password` | Rejeita senha incorreta       |
+| [x]    |                                     | `login-nonexistent-user` | Rejeita usuário inexistente   |
+| [x]    |                                     | `session-token-valid`    | Token JWT válido após login   |
+| [x]    |                                     | `session-expiry`         | Sessão expira corretamente    |
 
 ### 2.2 Proteção de Rotas
 
 | Status | Arquivo                               | Teste                  | Descrição                               |
 | ------ | ------------------------------------- | ---------------------- | --------------------------------------- |
-| [ ]    | `tests/auth/route-protection.test.ts` | `middleware-redirects` | Middleware redireciona não autenticados |
-| [ ]    |                                       | `api-returns-401`      | API retorna 401 sem autenticação        |
-| [ ]    |                                       | `server-action-throws` | Server Action lança erro sem sessão     |
+| [x]    | `tests/auth/route-protection.test.ts` | `middleware-redirects` | Middleware redireciona não autenticados |
+| [x]    |                                       | `api-returns-401`      | API retorna 401 sem autenticação        |
+| [x]    |                                       | `server-action-throws` | Server Action lança erro sem sessão     |
 
 ### 2.3 Autorização por Role
 
 | Status | Arquivo                            | Teste                     | Descrição                         |
 | ------ | ---------------------------------- | ------------------------- | --------------------------------- |
-| [ ]    | `tests/auth/authorization.test.ts` | `admin-access-admin-area` | Admin acessa /admin               |
-| [ ]    |                                    | `sdr-no-admin-access`     | SDR não acessa /admin             |
-| [ ]    |                                    | `closer-no-admin-access`  | Closer não acessa /admin          |
-| [ ]    |                                    | `owner-filter-admin-only` | OwnerFilter só aparece para admin |
+| [x]    | `tests/auth/authorization.test.ts` | `admin-access-admin-area` | Admin acessa /admin               |
+| [x]    |                                    | `sdr-no-admin-access`     | SDR não acessa /admin             |
+| [x]    |                                    | `closer-no-admin-access`  | Closer não acessa /admin          |
+| [x]    |                                    | `owner-filter-admin-only` | OwnerFilter só aparece para admin |
 
 ---
 
@@ -533,7 +534,7 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | Fase                      | Total   | Concluídos | Porcentagem |
 | ------------------------- | ------- | ---------- | ----------- |
 | 1. Segurança (Isolamento) | 17      | 17         | 100%        |
-| 2. Autenticação           | 12      | 0          | 0%          |
+| 2. Autenticação           | 13      | 13         | 100%        |
 | 3. Core CRM               | 58      | 0          | 0%          |
 | 4. Pipeline               | 12      | 0          | 0%          |
 | 5. Produtos               | 19      | 0          | 0%          |
@@ -541,7 +542,7 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | 7. Auxiliares             | 21      | 0          | 0%          |
 | 8. API Routes             | 33      | 0          | 0%          |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **231** | **17**     | **7%**      |
+| **TOTAL**                 | **232** | **30**     | **13%**     |
 
 ---
 
