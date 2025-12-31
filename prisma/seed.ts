@@ -12,13 +12,12 @@ async function main() {
   const adminName = process.env.ADMIN_NAME || "Admin";
 
   if (!adminEmail || !adminPassword) {
-    throw new Error(
-      "ADMIN_EMAIL and ADMIN_PASSWORD must be set in .env file"
-    );
+    throw new Error("ADMIN_EMAIL and ADMIN_PASSWORD must be set in .env file");
   }
 
   // Create admin user
   const hashedPassword = await bcrypt.hash(adminPassword, 10);
+
   const adminUser = await prisma.user.upsert({
     where: { email: adminEmail },
     update: {
@@ -39,6 +38,35 @@ async function main() {
     name: adminUser.name,
     role: adminUser.role,
   });
+
+  // Create SDR user
+  const sdrEmail = process.env.SDR_EMAIL;
+  const sdrPassword = process.env.SDR_PASSWORD;
+  const sdrName = process.env.SDR_NAME || "SDR";
+
+  if (sdrEmail && sdrPassword) {
+    const hashedSdrPassword = await bcrypt.hash(sdrPassword, 10);
+    const sdrUser = await prisma.user.upsert({
+      where: { email: sdrEmail },
+      update: {
+        password: hashedSdrPassword,
+        name: sdrName,
+        role: "sdr",
+      },
+      create: {
+        email: sdrEmail,
+        name: sdrName,
+        password: hashedSdrPassword,
+        role: "sdr",
+      },
+    });
+
+    console.log("✅ SDR user created/updated:", {
+      email: sdrUser.email,
+      name: sdrUser.name,
+      role: sdrUser.role,
+    });
+  }
 
   // Create default pipeline
   const defaultPipeline = await prisma.pipeline.upsert({

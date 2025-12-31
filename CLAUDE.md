@@ -22,11 +22,34 @@ npm run db:migrate            # Create and run migrations (ALWAYS use for schema
 npm run db:studio             # Open Prisma Studio GUI
 npm run db:seed               # Seed database with initial data
 
+# Testing
+npm test                      # Run all tests
+npm run test:watch            # Run tests in watch mode (development)
+npm run test:ui               # Open Vitest UI in browser
+npm run test:unit             # Run only unit tests (tests/unit)
+npm run test:integration      # Run only integration tests (tests/integration)
+npm run test:e2e              # Run only E2E tests (tests/e2e)
+npm run test:coverage         # Run tests with coverage report
+
 # Build & Deploy
 npm run build                 # Build for production
 npm run start                 # Start production server
 npm run lint                  # Run ESLint
 ```
+
+## Testing
+
+Test files are in `/tests` with fixtures in `/tests/fixtures`. Vitest is configured with:
+- Environment: happy-dom
+- Coverage thresholds: 80% lines/functions/statements, 75% branches
+- Global setup: `tests/setup.ts` includes Prisma and NextAuth mocks
+
+Run a specific test file:
+```bash
+npx vitest run tests/unit/example.test.ts
+```
+
+Test structure follows AAA pattern (Arrange, Act, Assert) with fixtures from `@/tests/fixtures`.
 
 ## Environment Setup
 
@@ -169,6 +192,11 @@ export async function createDeal(data: DealFormData) {
 - Session accessible via `getServerSession(authOptions)` in Server Actions
 - Session includes: `user.id`, `user.email`, `user.name`, `user.role`
 - Login page: `/login`, protected routes redirect unauthenticated users there
+
+**User Roles** (`UserRole` type in `/src/types/next-auth.d.ts`):
+- `admin` - Full access, can see all users and data
+- `sdr` - Sales Development Representative (prospecting/qualification)
+- `closer` - Account Executive (closing deals)
 
 ### API Routes
 Located in `/src/app/api/`:

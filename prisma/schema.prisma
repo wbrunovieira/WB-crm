@@ -18,7 +18,7 @@ model User {
   emailVerified DateTime?
   image         String?
   password      String?
-  role          String         @default("user") // user, admin
+  role          String         @default("sdr") // admin, sdr, closer
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
 
