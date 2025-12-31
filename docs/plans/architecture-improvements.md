@@ -19,6 +19,7 @@
 | 2024-12-31 | Implementação dos testes de Organizations (49 testes) - Fase 3.3 completa |
 | 2024-12-31 | Implementação dos testes de Contacts (56 testes) - Fase 3.4 completa      |
 | 2024-12-31 | Implementação dos testes de Deals (48 testes) - Fase 3.5 completa         |
+| 2024-12-31 | Implementação dos testes de Activities (61 testes) - Fase 3.6 completa    |
 
 ---
 
@@ -177,21 +178,21 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 | Status | Arquivo                            | Teste                              | Descrição                  |
 | ------ | ---------------------------------- | ---------------------------------- | -------------------------- |
-| [ ]    | `tests/actions/activities.test.ts` | `createActivity-success`           | Cria activity              |
-| [ ]    |                                    | `createActivity-types`             | Suporta todos os tipos     |
-| [ ]    |                                    | `createActivity-sets-owner`        | Define ownerId             |
-| [ ]    |                                    | `createActivity-with-deal`         | Vincula a deal             |
-| [ ]    |                                    | `createActivity-with-contact`      | Vincula a contact          |
-| [ ]    |                                    | `createActivity-with-lead`         | Vincula a lead             |
-| [ ]    |                                    | `createActivity-multiple-contacts` | Suporta múltiplos contacts |
-| [ ]    |                                    | `getActivities-filters-by-owner`   | Filtra por owner           |
-| [ ]    |                                    | `getActivityById-returns-own`      | Retorna própria            |
-| [ ]    |                                    | `getActivityById-blocks-other`     | Bloqueia de outro          |
-| [ ]    |                                    | `updateActivity-success`           | Atualiza                   |
-| [ ]    |                                    | `updateActivityDueDate-success`    | Atualiza dueDate           |
-| [ ]    |                                    | `toggleActivityCompleted`          | Toggle completed           |
-| [ ]    |                                    | `deleteActivity-success`           | Deleta própria             |
-| [ ]    |                                    | `deleteActivity-ownership`         | Verifica ownership         |
+| [x]    | `tests/actions/activities.test.ts` | `createActivity-success`           | Cria activity              |
+| [x]    |                                    | `createActivity-types`             | Suporta todos os tipos     |
+| [x]    |                                    | `createActivity-sets-owner`        | Define ownerId             |
+| [x]    |                                    | `createActivity-with-deal`         | Vincula a deal             |
+| [x]    |                                    | `createActivity-with-contact`      | Vincula a contact          |
+| [x]    |                                    | `createActivity-with-lead`         | Vincula a lead             |
+| [x]    |                                    | `createActivity-multiple-contacts` | Suporta múltiplos contacts |
+| [x]    |                                    | `getActivities-filters-by-owner`   | Filtra por owner           |
+| [x]    |                                    | `getActivityById-returns-own`      | Retorna própria            |
+| [x]    |                                    | `getActivityById-blocks-other`     | Bloqueia de outro          |
+| [x]    |                                    | `updateActivity-success`           | Atualiza                   |
+| [x]    |                                    | `updateActivityDueDate-success`    | Atualiza dueDate           |
+| [x]    |                                    | `toggleActivityCompleted`          | Toggle completed           |
+| [x]    |                                    | `deleteActivity-success`           | Deleta própria             |
+| [x]    |                                    | `deleteActivity-ownership`         | Verifica ownership         |
 
 ### 3.7 Partners (`src/actions/partners.ts`)
 
@@ -540,14 +541,14 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | ------------------------- | ------- | ---------- | ----------- |
 | 1. Segurança (Isolamento) | 17      | 17         | 100%        |
 | 2. Autenticação           | 13      | 13         | 100%        |
-| 3. Core CRM               | 58      | 51         | 88%         |
+| 3. Core CRM               | 76      | 66         | 87%         |
 | 4. Pipeline               | 12      | 0          | 0%          |
 | 5. Produtos               | 19      | 0          | 0%          |
 | 6. Tech Profile/Stack     | 46      | 0          | 0%          |
 | 7. Auxiliares             | 21      | 0          | 0%          |
 | 8. API Routes             | 33      | 0          | 0%          |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **232** | **81**     | **35%**     |
+| **TOTAL**                 | **250** | **96**     | **38%**     |
 
 ---
 
