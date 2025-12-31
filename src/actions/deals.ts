@@ -1,10 +1,13 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { dealSchema, type DealFormData } from "@/lib/validations/deal";
+import {
+  getAuthenticatedSession,
+  getOwnerFilter,
+  canAccessRecord,
+} from "@/lib/permissions";
 
 export async function getDeals(filters?: {
   search?: string;
@@ -12,15 +15,11 @@ export async function getDeals(filters?: {
   valueRange?: string;
   sortBy?: string;
 }) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   // Build where clause
   const whereClause: {
-    ownerId: string;
+    ownerId?: string;
     OR?: Array<{
       title?: { contains: string };
       contact?: { name: { contains: string } };
@@ -29,7 +28,7 @@ export async function getDeals(filters?: {
     status?: string;
     value?: { gte?: number; lt?: number };
   } = {
-    ownerId: session.user.id,
+    ...ownerFilter,
   };
 
   // Search filter
@@ -130,16 +129,12 @@ export async function getDeals(filters?: {
 }
 
 export async function getDealById(id: string) {
-  const session = await getServerSession(authOptions);
+  const ownerFilter = await getOwnerFilter();
 
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
-  const deal = await prisma.deal.findUnique({
+  const deal = await prisma.deal.findFirst({
     where: {
       id,
-      ownerId: session.user.id,
+      ...ownerFilter,
     },
     include: {
       contact: true,
@@ -168,12 +163,7 @@ export async function getDealById(id: string) {
 }
 
 export async function createDeal(data: DealFormData) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
+  const session = await getAuthenticatedSession();
   const validated = dealSchema.parse(data);
 
   const deal = await prisma.deal.create({
@@ -204,17 +194,10 @@ export async function createDeal(data: DealFormData) {
 }
 
 export async function updateDeal(id: string, data: DealFormData) {
-  const session = await getServerSession(authOptions);
+  await getAuthenticatedSession();
 
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
-  const existingDeal = await prisma.deal.findUnique({
-    where: { id },
-  });
-
-  if (!existingDeal || existingDeal.ownerId !== session.user.id) {
+  const existingDeal = await prisma.deal.findUnique({ where: { id } });
+  if (!existingDeal || !(await canAccessRecord(existingDeal.ownerId))) {
     throw new Error("Negócio não encontrado");
   }
 
@@ -249,39 +232,23 @@ export async function updateDeal(id: string, data: DealFormData) {
 }
 
 export async function deleteDeal(id: string) {
-  const session = await getServerSession(authOptions);
+  await getAuthenticatedSession();
 
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
-  const deal = await prisma.deal.findUnique({
-    where: { id },
-  });
-
-  if (!deal || deal.ownerId !== session.user.id) {
+  const deal = await prisma.deal.findUnique({ where: { id } });
+  if (!deal || !(await canAccessRecord(deal.ownerId))) {
     throw new Error("Negócio não encontrado");
   }
 
-  await prisma.deal.delete({
-    where: { id },
-  });
+  await prisma.deal.delete({ where: { id } });
 
   revalidatePath("/deals");
 }
 
 export async function updateDealStage(id: string, stageId: string) {
-  const session = await getServerSession(authOptions);
+  await getAuthenticatedSession();
 
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
-  const deal = await prisma.deal.findUnique({
-    where: { id },
-  });
-
-  if (!deal || deal.ownerId !== session.user.id) {
+  const deal = await prisma.deal.findUnique({ where: { id } });
+  if (!deal || !(await canAccessRecord(deal.ownerId))) {
     throw new Error("Negócio não encontrado");
   }
 

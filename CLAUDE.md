@@ -198,6 +198,12 @@ export async function createDeal(data: DealFormData) {
 - `sdr` - Sales Development Representative (prospecting/qualification)
 - `closer` - Account Executive (closing deals)
 
+**Permission Helpers** (`/src/lib/permissions.ts`):
+- `getAuthenticatedSession()` - Get session or throw "Não autorizado"
+- `getOwnerFilter()` - Returns `{ ownerId: id }` for sdr/closer, `{}` for admin
+- `canAccessRecord(ownerId)` - Check if user can access a specific record
+- `isAdmin()` / `getUserRole()` - Role checking utilities
+
 ### API Routes
 Located in `/src/app/api/`:
 - `auth/[...nextauth]/route.ts` - NextAuth.js handlers

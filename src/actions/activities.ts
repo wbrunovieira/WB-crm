@@ -1,10 +1,13 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { activitySchema, type ActivityFormData } from "@/lib/validations/activity";
+import {
+  getAuthenticatedSession,
+  getOwnerFilter,
+  canAccessRecord,
+} from "@/lib/permissions";
 
 export async function getActivities(filters?: {
   type?: string;
@@ -14,11 +17,7 @@ export async function getActivities(filters?: {
   leadId?: string;
   sortBy?: string;
 }) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   // Build order by clause based on sortBy parameter
   const orderByClause: Array<{ [key: string]: string | { sort: string; nulls?: string } }> = [];
@@ -54,7 +53,7 @@ export async function getActivities(filters?: {
 
   const activities = await prisma.activity.findMany({
     where: {
-      ownerId: session.user.id,
+      ...ownerFilter,
       ...(filters?.type && { type: filters.type }),
       ...(filters?.completed !== undefined && { completed: filters.completed }),
       ...(filters?.dealId && { dealId: filters.dealId }),
@@ -119,16 +118,12 @@ export async function getActivities(filters?: {
 }
 
 export async function getActivityById(id: string) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   const activity = await prisma.activity.findFirst({
     where: {
       id,
-      ownerId: session.user.id,
+      ...ownerFilter,
     },
     include: {
       deal: {
@@ -178,7 +173,7 @@ export async function getActivityById(id: string) {
         allContacts = await prisma.contact.findMany({
           where: {
             id: { in: contactIds },
-            ownerId: session.user.id,
+            ...ownerFilter,
           },
           select: {
             id: true,
@@ -200,12 +195,7 @@ export async function getActivityById(id: string) {
 }
 
 export async function createActivity(data: ActivityFormData) {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
+  const session = await getAuthenticatedSession();
   const validated = activitySchema.parse(data);
 
   // Convert contactIds array to JSON string and set first contact as primary
@@ -267,17 +257,10 @@ export async function createActivity(data: ActivityFormData) {
 }
 
 export async function updateActivity(id: string, data: ActivityFormData) {
-  const session = await getServerSession(authOptions);
+  await getAuthenticatedSession();
 
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
-  const existingActivity = await prisma.activity.findUnique({
-    where: { id },
-  });
-
-  if (!existingActivity || existingActivity.ownerId !== session.user.id) {
+  const existingActivity = await prisma.activity.findUnique({ where: { id } });
+  if (!existingActivity || !(await canAccessRecord(existingActivity.ownerId))) {
     throw new Error("Atividade não encontrada");
   }
 
@@ -343,23 +326,14 @@ export async function updateActivity(id: string, data: ActivityFormData) {
 }
 
 export async function deleteActivity(id: string) {
-  const session = await getServerSession(authOptions);
+  await getAuthenticatedSession();
 
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
-  const activity = await prisma.activity.findUnique({
-    where: { id },
-  });
-
-  if (!activity || activity.ownerId !== session.user.id) {
+  const activity = await prisma.activity.findUnique({ where: { id } });
+  if (!activity || !(await canAccessRecord(activity.ownerId))) {
     throw new Error("Atividade não encontrada");
   }
 
-  await prisma.activity.delete({
-    where: { id },
-  });
+  await prisma.activity.delete({ where: { id } });
 
   revalidatePath("/activities");
   if (activity.dealId) {
@@ -371,17 +345,10 @@ export async function deleteActivity(id: string) {
 }
 
 export async function toggleActivityCompleted(id: string) {
-  const session = await getServerSession(authOptions);
+  await getAuthenticatedSession();
 
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
-  const activity = await prisma.activity.findUnique({
-    where: { id },
-  });
-
-  if (!activity || activity.ownerId !== session.user.id) {
+  const activity = await prisma.activity.findUnique({ where: { id } });
+  if (!activity || !(await canAccessRecord(activity.ownerId))) {
     throw new Error("Atividade não encontrada");
   }
 
@@ -404,17 +371,10 @@ export async function toggleActivityCompleted(id: string) {
 }
 
 export async function updateActivityDueDate(id: string, newDate: Date) {
-  const session = await getServerSession(authOptions);
+  await getAuthenticatedSession();
 
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
-  const activity = await prisma.activity.findUnique({
-    where: { id },
-  });
-
-  if (!activity || activity.ownerId !== session.user.id) {
+  const activity = await prisma.activity.findUnique({ where: { id } });
+  if (!activity || !(await canAccessRecord(activity.ownerId))) {
     throw new Error("Atividade não encontrada");
   }
 

@@ -3,18 +3,18 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { partnerSchema, PartnerFormData } from "@/lib/validations/partner";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import {
+  getAuthenticatedSession,
+  getOwnerFilter,
+  canAccessRecord,
+} from "@/lib/permissions";
 
 export async function getPartners(search?: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   const partners = await prisma.partner.findMany({
     where: {
-      ownerId: session.user.id,
+      ...ownerFilter,
       ...(search && {
         OR: [
           { name: { contains: search } },
@@ -41,15 +41,12 @@ export async function getPartners(search?: string) {
 }
 
 export async function getPartnerById(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   const partner = await prisma.partner.findFirst({
     where: {
       id,
-      ownerId: session.user.id,
+      ...ownerFilter,
     },
     include: {
       contacts: {
@@ -89,11 +86,7 @@ export async function getPartnerById(id: string) {
 }
 
 export async function createPartner(data: PartnerFormData) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
+  const session = await getAuthenticatedSession();
   const validated = partnerSchema.parse(data);
 
   const partner = await prisma.partner.create({
@@ -130,18 +123,17 @@ export async function createPartner(data: PartnerFormData) {
 }
 
 export async function updatePartner(id: string, data: PartnerFormData) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
+  await getAuthenticatedSession();
   const validated = partnerSchema.parse(data);
 
+  // Check ownership
+  const existing = await prisma.partner.findUnique({ where: { id } });
+  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+    throw new Error("Parceiro não encontrado");
+  }
+
   const partner = await prisma.partner.update({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
+    where: { id },
     data: {
       name: validated.name,
       legalName: validated.legalName || null,
@@ -174,35 +166,31 @@ export async function updatePartner(id: string, data: PartnerFormData) {
 }
 
 export async function deletePartner(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
+  await getAuthenticatedSession();
+
+  // Check ownership
+  const existing = await prisma.partner.findUnique({ where: { id } });
+  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+    throw new Error("Parceiro não encontrado");
   }
 
-  await prisma.partner.delete({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
-  });
+  await prisma.partner.delete({ where: { id } });
 
   revalidatePath("/partners");
 }
 
 export async function updatePartnerLastContact(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
+  await getAuthenticatedSession();
+
+  // Check ownership
+  const existing = await prisma.partner.findUnique({ where: { id } });
+  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+    throw new Error("Parceiro não encontrado");
   }
 
   const partner = await prisma.partner.update({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
-    data: {
-      lastContactDate: new Date(),
-    },
+    where: { id },
+    data: { lastContactDate: new Date() },
   });
 
   revalidatePath(`/partners/${id}`);

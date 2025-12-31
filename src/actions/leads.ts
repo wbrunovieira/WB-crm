@@ -8,8 +8,11 @@ import {
   LeadFormData,
   LeadContactFormData,
 } from "@/lib/validations/lead";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import {
+  getAuthenticatedSession,
+  getOwnerFilter,
+  canAccessRecord,
+} from "@/lib/permissions";
 
 // ============ LEAD CRUD ============
 
@@ -18,14 +21,11 @@ export async function getLeads(filters?: {
   status?: string;
   quality?: string;
 }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   const leads = await prisma.lead.findMany({
     where: {
-      ownerId: session.user.id,
+      ...ownerFilter,
       ...(filters?.search && {
         OR: [
           { businessName: { contains: filters.search } },
@@ -53,15 +53,12 @@ export async function getLeads(filters?: {
 }
 
 export async function getLeadById(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   const lead = await prisma.lead.findFirst({
     where: {
       id,
-      ownerId: session.user.id,
+      ...ownerFilter,
     },
     include: {
       primaryCNAE: true,
@@ -92,11 +89,7 @@ export async function getLeadById(id: string) {
 }
 
 export async function createLead(data: LeadFormData) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
+  const session = await getAuthenticatedSession();
   const validated = leadSchema.parse(data);
 
   const lead = await prisma.lead.create({
@@ -111,18 +104,17 @@ export async function createLead(data: LeadFormData) {
 }
 
 export async function updateLead(id: string, data: LeadFormData) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
+  await getAuthenticatedSession();
   const validated = leadSchema.parse(data);
 
+  // Check ownership
+  const existing = await prisma.lead.findUnique({ where: { id } });
+  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+    throw new Error("Lead não encontrado");
+  }
+
   const lead = await prisma.lead.update({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
+    where: { id },
     data: validated,
   });
 
@@ -132,27 +124,23 @@ export async function updateLead(id: string, data: LeadFormData) {
 }
 
 export async function deleteLead(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  await getAuthenticatedSession();
 
-  // Check if lead is already converted
-  const lead = await prisma.lead.findFirst({
-    where: { id, ownerId: session.user.id },
-    select: { convertedAt: true },
+  // Check ownership and if lead is already converted
+  const lead = await prisma.lead.findUnique({
+    where: { id },
+    select: { ownerId: true, convertedAt: true },
   });
 
-  if (lead?.convertedAt) {
+  if (!lead || !(await canAccessRecord(lead.ownerId))) {
+    throw new Error("Lead não encontrado");
+  }
+
+  if (lead.convertedAt) {
     throw new Error("Não é possível excluir um lead já convertido");
   }
 
-  await prisma.lead.delete({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
-  });
+  await prisma.lead.delete({ where: { id } });
 
   revalidatePath("/leads");
 }
@@ -160,17 +148,12 @@ export async function deleteLead(id: string) {
 // ============ LEAD CONTACT CRUD ============
 
 export async function getLeadContacts(leadId: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   const contacts = await prisma.leadContact.findMany({
     where: {
       leadId,
-      lead: {
-        ownerId: session.user.id,
-      },
+      lead: ownerFilter,
     },
     orderBy: [
       { isPrimary: "desc" },
@@ -182,17 +165,12 @@ export async function getLeadContacts(leadId: string) {
 }
 
 export async function createLeadContact(leadId: string, data: LeadContactFormData) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  await getAuthenticatedSession();
 
   // Verify lead ownership
-  const lead = await prisma.lead.findFirst({
-    where: { id: leadId, ownerId: session.user.id },
-  });
+  const lead = await prisma.lead.findUnique({ where: { id: leadId } });
 
-  if (!lead) {
+  if (!lead || !(await canAccessRecord(lead.ownerId))) {
     throw new Error("Lead não encontrado");
   }
 
@@ -221,11 +199,7 @@ export async function updateLeadContact(
   id: string,
   data: LeadContactFormData
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
+  await getAuthenticatedSession();
   const validated = leadContactSchema.parse(data);
 
   const leadContact = await prisma.leadContact.findUnique({
@@ -233,8 +207,8 @@ export async function updateLeadContact(
     include: { lead: true },
   });
 
-  if (!leadContact || leadContact.lead.ownerId !== session.user.id) {
-    throw new Error("Não autorizado");
+  if (!leadContact || !(await canAccessRecord(leadContact.lead.ownerId))) {
+    throw new Error("Contato não encontrado");
   }
 
   // If setting as primary, remove primary from others
@@ -255,18 +229,15 @@ export async function updateLeadContact(
 }
 
 export async function deleteLeadContact(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  await getAuthenticatedSession();
 
   const leadContact = await prisma.leadContact.findUnique({
     where: { id },
     include: { lead: true },
   });
 
-  if (!leadContact || leadContact.lead.ownerId !== session.user.id) {
-    throw new Error("Não autorizado");
+  if (!leadContact || !(await canAccessRecord(leadContact.lead.ownerId))) {
+    throw new Error("Contato não encontrado");
   }
 
   // Check if already converted
@@ -284,21 +255,18 @@ export async function deleteLeadContact(id: string) {
 // ============ LEAD CONVERSION ============
 
 export async function convertLeadToOrganization(leadId: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const session = await getAuthenticatedSession();
 
-  const lead = await prisma.lead.findFirst({
-    where: { id: leadId, ownerId: session.user.id },
+  const lead = await prisma.lead.findUnique({
+    where: { id: leadId },
     include: {
       leadContacts: true,
-      contacts: true, // Contacts directly linked to the Lead
+      contacts: true,
       activities: true,
     },
   });
 
-  if (!lead) {
+  if (!lead || !(await canAccessRecord(lead.ownerId))) {
     throw new Error("Lead não encontrado");
   }
 

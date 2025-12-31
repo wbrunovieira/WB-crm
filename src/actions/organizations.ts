@@ -6,18 +6,18 @@ import {
   organizationSchema,
   OrganizationFormData,
 } from "@/lib/validations/organization";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import {
+  getAuthenticatedSession,
+  getOwnerFilter,
+  canAccessRecord,
+} from "@/lib/permissions";
 
 export async function getOrganizations(search?: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   const organizations = await prisma.organization.findMany({
     where: {
-      ownerId: session.user.id,
+      ...ownerFilter,
       ...(search && {
         OR: [{ name: { contains: search } }, { website: { contains: search } }],
       }),
@@ -39,15 +39,12 @@ export async function getOrganizations(search?: string) {
 }
 
 export async function getOrganizationById(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   const organization = await prisma.organization.findFirst({
     where: {
       id,
-      ownerId: session.user.id,
+      ...ownerFilter,
     },
     include: {
       primaryCNAE: true,
@@ -81,7 +78,7 @@ export async function getOrganizationById(id: string) {
   // Get all activities related to this organization (through deals and contacts)
   const activities = await prisma.activity.findMany({
     where: {
-      ownerId: session.user.id,
+      ...ownerFilter,
       OR: [
         {
           deal: {
@@ -119,11 +116,7 @@ export async function getOrganizationById(id: string) {
 }
 
 export async function createOrganization(data: OrganizationFormData) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
+  const session = await getAuthenticatedSession();
   const validated = organizationSchema.parse(data);
 
   const organization = await prisma.organization.create({
@@ -167,18 +160,17 @@ export async function updateOrganization(
   id: string,
   data: OrganizationFormData
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
+  await getAuthenticatedSession();
   const validated = organizationSchema.parse(data);
 
+  // Check ownership
+  const existing = await prisma.organization.findUnique({ where: { id } });
+  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+    throw new Error("Organização não encontrada");
+  }
+
   const organization = await prisma.organization.update({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
+    where: { id },
     data: {
       name: validated.name,
       legalName: validated.legalName || null,
@@ -216,17 +208,15 @@ export async function updateOrganization(
 }
 
 export async function deleteOrganization(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
+  await getAuthenticatedSession();
+
+  // Check ownership
+  const existing = await prisma.organization.findUnique({ where: { id } });
+  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+    throw new Error("Organização não encontrada");
   }
 
-  await prisma.organization.delete({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
-  });
+  await prisma.organization.delete({ where: { id } });
 
   revalidatePath("/organizations");
 }

@@ -3,21 +3,21 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { contactSchema, ContactFormData } from "@/lib/validations/contact";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import {
+  getAuthenticatedSession,
+  getOwnerFilter,
+  canAccessRecord,
+} from "@/lib/permissions";
 
 export async function getContacts(filters?: {
   search?: string;
   status?: string;
   company?: string;
 }) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   const whereClause: {
-    ownerId: string;
+    ownerId?: string;
     status?: string;
     OR?: Array<{ name?: { contains: string; mode: string }; email?: { contains: string; mode: string }; phone?: { contains: string } }>;
     organizationId?: { not: null };
@@ -25,7 +25,7 @@ export async function getContacts(filters?: {
     partnerId?: { not: null };
     AND?: Array<{ organizationId: null; leadId: null; partnerId: null }>;
   } = {
-    ownerId: session.user.id,
+    ...ownerFilter,
   };
 
   // Search filter
@@ -91,15 +91,12 @@ export async function getContacts(filters?: {
 }
 
 export async function getContactById(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  const ownerFilter = await getOwnerFilter();
 
   const contact = await prisma.contact.findFirst({
     where: {
       id,
-      ownerId: session.user.id,
+      ...ownerFilter,
     },
     include: {
       lead: {
@@ -131,11 +128,7 @@ export async function getContactById(id: string) {
 }
 
 export async function createContact(data: ContactFormData) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
+  const session = await getAuthenticatedSession();
   const validated = contactSchema.parse(data);
 
   // Determine leadId, organizationId, or partnerId based on companyType
@@ -171,12 +164,14 @@ export async function createContact(data: ContactFormData) {
 }
 
 export async function updateContact(id: string, data: ContactFormData) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
-
+  await getAuthenticatedSession();
   const validated = contactSchema.parse(data);
+
+  // Check ownership
+  const existing = await prisma.contact.findUnique({ where: { id } });
+  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+    throw new Error("Contato não encontrado");
+  }
 
   // Determine leadId, organizationId, or partnerId based on companyType
   const leadId = validated.companyType === "lead" ? validated.companyId : null;
@@ -184,10 +179,7 @@ export async function updateContact(id: string, data: ContactFormData) {
   const partnerId = validated.companyType === "partner" ? validated.companyId : null;
 
   const contact = await prisma.contact.update({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
+    where: { id },
     data: {
       name: validated.name,
       email: validated.email || null,
@@ -215,17 +207,15 @@ export async function updateContact(id: string, data: ContactFormData) {
 }
 
 export async function deleteContact(id: string) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    throw new Error("Não autorizado");
+  await getAuthenticatedSession();
+
+  // Check ownership
+  const existing = await prisma.contact.findUnique({ where: { id } });
+  if (!existing || !(await canAccessRecord(existing.ownerId))) {
+    throw new Error("Contato não encontrado");
   }
 
-  await prisma.contact.delete({
-    where: {
-      id,
-      ownerId: session.user.id,
-    },
-  });
+  await prisma.contact.delete({ where: { id } });
 
   revalidatePath("/contacts");
 }
