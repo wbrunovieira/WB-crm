@@ -23,6 +23,7 @@
 | 2024-12-31 | Implementação dos testes de Partners (45 testes) - Fase 3.7 completa       |
 | 2024-12-31 | Implementação dos testes de Pipeline (63 testes) - Fase 4 completa         |
 | 2024-12-31 | Implementação dos testes de Produtos (105 testes) - Fase 5 completa        |
+| 2024-12-31 | Implementação dos testes de Tech Profile & Stack (245 testes) - Fase 6 completa |
 
 ---
 
@@ -296,92 +297,92 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 
 ### 6.1 Tech Categories (`src/actions/tech-categories.ts`)
 
-| Status | Arquivo                                 | Teste                           | Descrição      |
-| ------ | --------------------------------------- | ------------------------------- | -------------- |
-| [ ]    | `tests/actions/tech-categories.test.ts` | `createTechCategory-success`    | Cria categoria |
-| [ ]    |                                         | `getTechCategories-returns-all` | Retorna todas  |
-| [ ]    |                                         | `updateTechCategory-success`    | Atualiza       |
-| [ ]    |                                         | `toggleTechCategoryActive`      | Toggle ativo   |
-| [ ]    |                                         | `deleteTechCategory-success`    | Deleta         |
+| Status | Arquivo                          | Teste                           | Descrição      |
+| ------ | -------------------------------- | ------------------------------- | -------------- |
+| [x]    | `tests/actions/tech-stack.test.ts` | `createTechCategory-success`    | Cria categoria |
+| [x]    |                                  | `getTechCategories-returns-all` | Retorna todas  |
+| [x]    |                                  | `updateTechCategory-success`    | Atualiza       |
+| [x]    |                                  | `toggleTechCategoryActive`      | Toggle ativo   |
+| [x]    |                                  | `deleteTechCategory-success`    | Deleta         |
 
 ### 6.2 Tech Languages (`src/actions/tech-languages.ts`)
 
-| Status | Arquivo                                | Teste                          | Descrição      |
-| ------ | -------------------------------------- | ------------------------------ | -------------- |
-| [ ]    | `tests/actions/tech-languages.test.ts` | `createTechLanguage-success`   | Cria linguagem |
-| [ ]    |                                        | `getTechLanguages-returns-all` | Retorna todas  |
-| [ ]    |                                        | `updateTechLanguage-success`   | Atualiza       |
-| [ ]    |                                        | `toggleTechLanguageActive`     | Toggle ativo   |
-| [ ]    |                                        | `deleteTechLanguage-success`   | Deleta         |
+| Status | Arquivo                          | Teste                          | Descrição      |
+| ------ | -------------------------------- | ------------------------------ | -------------- |
+| [x]    | `tests/actions/tech-stack.test.ts` | `createTechLanguage-success`   | Cria linguagem |
+| [x]    |                                  | `getTechLanguages-returns-all` | Retorna todas  |
+| [x]    |                                  | `updateTechLanguage-success`   | Atualiza       |
+| [x]    |                                  | `toggleTechLanguageActive`     | Toggle ativo   |
+| [x]    |                                  | `deleteTechLanguage-success`   | Deleta         |
 
 ### 6.3 Tech Frameworks (`src/actions/tech-frameworks.ts`)
 
-| Status | Arquivo                                 | Teste                           | Descrição      |
-| ------ | --------------------------------------- | ------------------------------- | -------------- |
-| [ ]    | `tests/actions/tech-frameworks.test.ts` | `createTechFramework-success`   | Cria framework |
-| [ ]    |                                         | `getTechFrameworks-returns-all` | Retorna todos  |
-| [ ]    |                                         | `updateTechFramework-success`   | Atualiza       |
-| [ ]    |                                         | `toggleTechFrameworkActive`     | Toggle ativo   |
-| [ ]    |                                         | `deleteTechFramework-success`   | Deleta         |
+| Status | Arquivo                          | Teste                           | Descrição      |
+| ------ | -------------------------------- | ------------------------------- | -------------- |
+| [x]    | `tests/actions/tech-stack.test.ts` | `createTechFramework-success`   | Cria framework |
+| [x]    |                                  | `getTechFrameworks-returns-all` | Retorna todos  |
+| [x]    |                                  | `updateTechFramework-success`   | Atualiza       |
+| [x]    |                                  | `toggleTechFrameworkActive`     | Toggle ativo   |
+| [x]    |                                  | `deleteTechFramework-success`   | Deleta         |
 
 ### 6.4 Tech Profile Options (`src/actions/tech-profile-options.ts`)
 
 | Status | Arquivo                                      | Teste                                | Descrição      |
 | ------ | -------------------------------------------- | ------------------------------------ | -------------- |
-| [ ]    | `tests/actions/tech-profile-options.test.ts` | `createTechProfileLanguage-success`  | Cria language  |
-| [ ]    |                                              | `createTechProfileFramework-success` | Cria framework |
-| [ ]    |                                              | `createTechProfileHosting-success`   | Cria hosting   |
-| [ ]    |                                              | `createTechProfileDatabase-success`  | Cria database  |
-| [ ]    |                                              | `createTechProfileERP-success`       | Cria ERP       |
-| [ ]    |                                              | `createTechProfileCRM-success`       | Cria CRM       |
-| [ ]    |                                              | `createTechProfileEcommerce-success` | Cria ecommerce |
-| [ ]    |                                              | `getActiveTechProfileLanguages`      | Lista ativos   |
-| [ ]    |                                              | `getActiveTechProfileFrameworks`     | Lista ativos   |
-| [ ]    |                                              | `getActiveTechProfileHosting`        | Lista ativos   |
-| [ ]    |                                              | `getActiveTechProfileDatabases`      | Lista ativos   |
-| [ ]    |                                              | `getActiveTechProfileERPs`           | Lista ativos   |
-| [ ]    |                                              | `getActiveTechProfileCRMs`           | Lista ativos   |
-| [ ]    |                                              | `getActiveTechProfileEcommerces`     | Lista ativos   |
+| [x]    | `tests/actions/tech-profile-options.test.ts` | `createTechProfileLanguage-success`  | Cria language  |
+| [x]    |                                              | `createTechProfileFramework-success` | Cria framework |
+| [x]    |                                              | `createTechProfileHosting-success`   | Cria hosting   |
+| [x]    |                                              | `createTechProfileDatabase-success`  | Cria database  |
+| [x]    |                                              | `createTechProfileERP-success`       | Cria ERP       |
+| [x]    |                                              | `createTechProfileCRM-success`       | Cria CRM       |
+| [x]    |                                              | `createTechProfileEcommerce-success` | Cria ecommerce |
+| [x]    |                                              | `getActiveTechProfileLanguages`      | Lista ativos   |
+| [x]    |                                              | `getActiveTechProfileFrameworks`     | Lista ativos   |
+| [x]    |                                              | `getActiveTechProfileHosting`        | Lista ativos   |
+| [x]    |                                              | `getActiveTechProfileDatabases`      | Lista ativos   |
+| [x]    |                                              | `getActiveTechProfileERPs`           | Lista ativos   |
+| [x]    |                                              | `getActiveTechProfileCRMs`           | Lista ativos   |
+| [x]    |                                              | `getActiveTechProfileEcommerces`     | Lista ativos   |
 
 ### 6.5 Lead Tech Profile (`src/actions/lead-tech-profile.ts`)
 
 | Status | Arquivo                                   | Teste                            | Descrição          |
 | ------ | ----------------------------------------- | -------------------------------- | ------------------ |
-| [ ]    | `tests/actions/lead-tech-profile.test.ts` | `addLanguageToLead-success`      | Adiciona language  |
-| [ ]    |                                           | `addFrameworkToLead-success`     | Adiciona framework |
-| [ ]    |                                           | `addHostingToLead-success`       | Adiciona hosting   |
-| [ ]    |                                           | `addDatabaseToLead-success`      | Adiciona database  |
-| [ ]    |                                           | `addERPToLead-success`           | Adiciona ERP       |
-| [ ]    |                                           | `addCRMToLead-success`           | Adiciona CRM       |
-| [ ]    |                                           | `addEcommerceToLead-success`     | Adiciona ecommerce |
-| [ ]    |                                           | `getLeadTechProfile-success`     | Lista tech profile |
-| [ ]    |                                           | `removeLanguageFromLead-success` | Remove language    |
-| [ ]    |                                           | `setPrimaryLanguage-success`     | Define primary     |
+| [x]    | `tests/actions/lead-tech-profile.test.ts` | `addLanguageToLead-success`      | Adiciona language  |
+| [x]    |                                           | `addFrameworkToLead-success`     | Adiciona framework |
+| [x]    |                                           | `addHostingToLead-success`       | Adiciona hosting   |
+| [x]    |                                           | `addDatabaseToLead-success`      | Adiciona database  |
+| [x]    |                                           | `addERPToLead-success`           | Adiciona ERP       |
+| [x]    |                                           | `addCRMToLead-success`           | Adiciona CRM       |
+| [x]    |                                           | `addEcommerceToLead-success`     | Adiciona ecommerce |
+| [x]    |                                           | `getLeadTechProfile-success`     | Lista tech profile |
+| [x]    |                                           | `removeLanguageFromLead-success` | Remove language    |
+| [x]    |                                           | `setPrimaryLanguage-success`     | Define primary     |
 
 ### 6.6 Organization Tech Profile (`src/actions/organization-tech-profile.ts`)
 
 | Status | Arquivo                                           | Teste                                | Descrição          |
 | ------ | ------------------------------------------------- | ------------------------------------ | ------------------ |
-| [ ]    | `tests/actions/organization-tech-profile.test.ts` | `addLanguageToOrganization-success`  | Adiciona language  |
-| [ ]    |                                                   | `addFrameworkToOrganization-success` | Adiciona framework |
-| [ ]    |                                                   | `addHostingToOrganization-success`   | Adiciona hosting   |
-| [ ]    |                                                   | `addDatabaseToOrganization-success`  | Adiciona database  |
-| [ ]    |                                                   | `addERPToOrganization-success`       | Adiciona ERP       |
-| [ ]    |                                                   | `addCRMToOrganization-success`       | Adiciona CRM       |
-| [ ]    |                                                   | `addEcommerceToOrganization-success` | Adiciona ecommerce |
-| [ ]    |                                                   | `getOrganizationTechProfile-success` | Lista tech profile |
+| [x]    | `tests/actions/organization-tech-profile.test.ts` | `addLanguageToOrganization-success`  | Adiciona language  |
+| [x]    |                                                   | `addFrameworkToOrganization-success` | Adiciona framework |
+| [x]    |                                                   | `addHostingToOrganization-success`   | Adiciona hosting   |
+| [x]    |                                                   | `addDatabaseToOrganization-success`  | Adiciona database  |
+| [x]    |                                                   | `addERPToOrganization-success`       | Adiciona ERP       |
+| [x]    |                                                   | `addCRMToOrganization-success`       | Adiciona CRM       |
+| [x]    |                                                   | `addEcommerceToOrganization-success` | Adiciona ecommerce |
+| [x]    |                                                   | `getOrganizationTechProfile-success` | Lista tech profile |
 
 ### 6.7 Deal Tech Stack (`src/actions/deal-tech-stack.ts`)
 
 | Status | Arquivo                                 | Teste                             | Descrição          |
 | ------ | --------------------------------------- | --------------------------------- | ------------------ |
-| [ ]    | `tests/actions/deal-tech-stack.test.ts` | `addCategoryToDeal-success`       | Adiciona categoria |
-| [ ]    |                                         | `addLanguageToDeal-success`       | Adiciona language  |
-| [ ]    |                                         | `addFrameworkToDeal-success`      | Adiciona framework |
-| [ ]    |                                         | `getDealTechStack-success`        | Lista tech stack   |
-| [ ]    |                                         | `removeCategoryFromDeal-success`  | Remove categoria   |
-| [ ]    |                                         | `removeLanguageFromDeal-success`  | Remove language    |
-| [ ]    |                                         | `removeFrameworkFromDeal-success` | Remove framework   |
+| [x]    | `tests/actions/deal-tech-stack.test.ts` | `addCategoryToDeal-success`       | Adiciona categoria |
+| [x]    |                                         | `addLanguageToDeal-success`       | Adiciona language  |
+| [x]    |                                         | `addFrameworkToDeal-success`      | Adiciona framework |
+| [x]    |                                         | `getDealTechStack-success`        | Lista tech stack   |
+| [x]    |                                         | `removeCategoryFromDeal-success`  | Remove categoria   |
+| [x]    |                                         | `removeLanguageFromDeal-success`  | Remove language    |
+| [x]    |                                         | `removeFrameworkFromDeal-success` | Remove framework   |
 
 ---
 
@@ -549,11 +550,11 @@ Este documento define o plano de melhorias para tornar o sistema mais robusto an
 | 3. Core CRM               | 76      | 76         | 100%        |
 | 4. Pipeline               | 13      | 13         | 100%        |
 | 5. Produtos               | 19      | 19         | 100%        |
-| 6. Tech Profile/Stack     | 46      | 0          | 0%          |
+| 6. Tech Profile/Stack     | 245     | 245        | 100%        |
 | 7. Auxiliares             | 21      | 0          | 0%          |
 | 8. API Routes             | 33      | 0          | 0%          |
 | 9. Arquitetura            | 13      | 0          | 0%          |
-| **TOTAL**                 | **251** | **138**    | **55%**     |
+| **TOTAL**                 | **450** | **383**    | **85%**     |
 
 ---
 
