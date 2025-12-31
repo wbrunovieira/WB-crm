@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { dealSchema } from "@/lib/validations/deal";
+import { errorToResponse } from "@/lib/errors";
 
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
@@ -49,15 +50,7 @@ export async function GET(request: Request) {
 
     return NextResponse.json(deals);
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Erro ao buscar negócios",
-      },
-      { status: 500 }
-    );
+    return errorToResponse(error);
   }
 }
 
@@ -106,12 +99,6 @@ export async function POST(request: Request) {
 
     return NextResponse.json(deal, { status: 201 });
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Erro ao criar negócio",
-      },
-      { status: 400 }
-    );
+    return errorToResponse(error);
   }
 }

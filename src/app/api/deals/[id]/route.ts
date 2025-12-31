@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { dealSchema } from "@/lib/validations/deal";
+import { errorToResponse } from "@/lib/errors";
 
 export async function GET(
   request: Request,
@@ -52,13 +53,7 @@ export async function GET(
 
     return NextResponse.json(deal);
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Erro ao buscar negócio",
-      },
-      { status: 500 }
-    );
+    return errorToResponse(error);
   }
 }
 
@@ -121,15 +116,7 @@ export async function PUT(
 
     return NextResponse.json(deal);
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error
-            ? error.message
-            : "Erro ao atualizar negócio",
-      },
-      { status: 400 }
-    );
+    return errorToResponse(error);
   }
 }
 
@@ -161,12 +148,6 @@ export async function DELETE(
 
     return NextResponse.json({ success: true });
   } catch (error) {
-    return NextResponse.json(
-      {
-        error:
-          error instanceof Error ? error.message : "Erro ao excluir negócio",
-      },
-      { status: 500 }
-    );
+    return errorToResponse(error);
   }
 }
