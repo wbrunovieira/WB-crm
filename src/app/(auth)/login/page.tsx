@@ -3,7 +3,6 @@
 import { signIn } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import Link from "next/link";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function LoginPage() {
@@ -114,16 +113,7 @@ export default function LoginPage() {
             {isLoading ? "Entrando..." : "Entrar"}
           </button>
 
-          <p className="text-center text-sm text-gray-600">
-            Não tem uma conta?{" "}
-            <Link
-              href="/register"
-              className="font-medium text-primary hover:text-purple-700"
-            >
-              Cadastre-se
-            </Link>
-          </p>
-        </form>
+                  </form>
       </div>
     </div>
   );
