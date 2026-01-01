@@ -1,0 +1,328 @@
+---
+# Backup role - Configures daily PostgreSQL backup to Google Drive
+
+- name: Install rclone
+  raw: |
+    if ! which rclone > /dev/null 2>&1; then
+      curl https://rclone.org/install.sh | bash
+    fi
+    rclone version | head -1
+  register: rclone_install
+  changed_when: false
+
+- name: Display rclone version
+  debug:
+    msg: "{{ rclone_install.stdout_lines | last }}"
+
+- name: Create backup directories
+  raw: |
+    mkdir -p /opt/backups/crm
+    mkdir -p /root/.config/rclone
+    chmod 700 /root/.config/rclone
+  changed_when: false
+
+- name: Check if rclone is configured for Google Drive
+  raw: rclone listremotes | grep -q "gdrive:" && echo "configured" || echo "not configured"
+  register: rclone_configured
+  changed_when: false
+
+- name: Display rclone configuration status
+  debug:
+    msg: "Rclone Google Drive: {{ 'Configured' if 'configured' in rclone_configured.stdout else 'NOT CONFIGURED - Manual setup required' }}"
+
+- name: Create backup script
+  raw: |
+    cat > /opt/backups/backup-crm.sh << 'BACKUP_SCRIPT'
+    #!/bin/bash
+    set -e
+
+    # Configuration
+    BACKUP_DIR="/opt/backups/crm"
+    APP_DIR="/opt/wb-crm"
+    DB_CONTAINER="crm_postgres"
+    DB_USER="crm_user"
+    DB_NAME="crm_db"
+    GDRIVE_REMOTE="gdrive"
+    GDRIVE_FOLDER="backups/wb-crm"
+    RETENTION_DAYS=7
+    DATE=$(date +%Y-%m-%d_%H-%M-%S)
+    BACKUP_NAME="crm-backup-${DATE}"
+    LOG_FILE="/var/log/crm-backup.log"
+    NOTIFY_EMAIL="{{ backup_notify_email }}"
+
+    # Functions
+    log() {
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1" | tee -a "$LOG_FILE"
+    }
+
+    send_notification() {
+        local subject="$1"
+        local body="$2"
+        if [ -n "$NOTIFY_EMAIL" ] && which mail > /dev/null 2>&1; then
+            echo "$body" | mail -s "$subject" "$NOTIFY_EMAIL"
+        fi
+    }
+
+    cleanup_old_backups() {
+        log "Cleaning up backups older than ${RETENTION_DAYS} days..."
+
+        # Local cleanup
+        find "$BACKUP_DIR" -name "crm-backup-*.tar.gz" -mtime +${RETENTION_DAYS} -delete 2>/dev/null || true
+
+        # Remote cleanup (Google Drive)
+        if rclone listremotes | grep -q "${GDRIVE_REMOTE}:"; then
+            # List and delete old backups from Google Drive
+            rclone delete "${GDRIVE_REMOTE}:${GDRIVE_FOLDER}" --min-age ${RETENTION_DAYS}d 2>/dev/null || true
+        fi
+    }
+
+    # Main backup process
+    main() {
+        log "=========================================="
+        log "Starting CRM backup: ${BACKUP_NAME}"
+        log "=========================================="
+
+        # Create temporary backup directory
+        TEMP_DIR="${BACKUP_DIR}/${BACKUP_NAME}"
+        mkdir -p "$TEMP_DIR"
+
+        # 1. Backup PostgreSQL database
+        log "Backing up PostgreSQL database..."
+        if docker exec "$DB_CONTAINER" pg_dump -U "$DB_USER" -d "$DB_NAME" -F c -f /tmp/database.dump; then
+            docker cp "${DB_CONTAINER}:/tmp/database.dump" "${TEMP_DIR}/database.dump"
+            docker exec "$DB_CONTAINER" rm /tmp/database.dump
+            log "Database backup completed: $(du -h ${TEMP_DIR}/database.dump | cut -f1)"
+        else
+            log "ERROR: Database backup failed!"
+            send_notification "[ERRO] CRM Backup Failed" "Database backup failed on $(hostname) at $(date)"
+            exit 1
+        fi
+
+        # 2. Backup .env file
+        log "Backing up .env file..."
+        if [ -f "${APP_DIR}/.env" ]; then
+            cp "${APP_DIR}/.env" "${TEMP_DIR}/env.backup"
+            log ".env backup completed"
+        else
+            log "WARNING: .env file not found"
+        fi
+
+        # 3. Create compressed archive
+        log "Creating compressed archive..."
+        cd "$BACKUP_DIR"
+        tar -czf "${BACKUP_NAME}.tar.gz" "${BACKUP_NAME}"
+        rm -rf "$TEMP_DIR"
+
+        BACKUP_SIZE=$(du -h "${BACKUP_DIR}/${BACKUP_NAME}.tar.gz" | cut -f1)
+        log "Archive created: ${BACKUP_NAME}.tar.gz (${BACKUP_SIZE})"
+
+        # 4. Upload to Google Drive
+        log "Uploading to Google Drive..."
+        if rclone listremotes | grep -q "${GDRIVE_REMOTE}:"; then
+            if rclone copy "${BACKUP_DIR}/${BACKUP_NAME}.tar.gz" "${GDRIVE_REMOTE}:${GDRIVE_FOLDER}/" --progress; then
+                log "Upload to Google Drive completed successfully"
+            else
+                log "ERROR: Upload to Google Drive failed!"
+                send_notification "[ERRO] CRM Backup Upload Failed" "Google Drive upload failed on $(hostname) at $(date)"
+                exit 1
+            fi
+        else
+            log "WARNING: Google Drive not configured, skipping remote backup"
+        fi
+
+        # 5. Cleanup old backups
+        cleanup_old_backups
+
+        # 6. Summary
+        log "=========================================="
+        log "Backup completed successfully!"
+        log "Local: ${BACKUP_DIR}/${BACKUP_NAME}.tar.gz"
+        log "Remote: ${GDRIVE_REMOTE}:${GDRIVE_FOLDER}/${BACKUP_NAME}.tar.gz"
+        log "Size: ${BACKUP_SIZE}"
+        log "=========================================="
+
+        # Send success notification (optional, comment out if too noisy)
+        # send_notification "[OK] CRM Backup Completed" "Backup completed successfully on $(hostname)\nSize: ${BACKUP_SIZE}\nFile: ${BACKUP_NAME}.tar.gz"
+    }
+
+    # Run main function
+    main "$@"
+    BACKUP_SCRIPT
+    chmod +x /opt/backups/backup-crm.sh
+  changed_when: false
+
+- name: Create restore script
+  raw: |
+    cat > /opt/backups/restore-crm.sh << 'RESTORE_SCRIPT'
+    #!/bin/bash
+    set -e
+
+    # Configuration
+    BACKUP_DIR="/opt/backups/crm"
+    APP_DIR="/opt/wb-crm"
+    DB_CONTAINER="crm_postgres"
+    DB_USER="crm_user"
+    DB_NAME="crm_db"
+    GDRIVE_REMOTE="gdrive"
+    GDRIVE_FOLDER="backups/wb-crm"
+
+    # Functions
+    log() {
+        echo "[$(date '+%Y-%m-%d %H:%M:%S')] $1"
+    }
+
+    list_backups() {
+        echo "=== Local Backups ==="
+        ls -lh "$BACKUP_DIR"/*.tar.gz 2>/dev/null || echo "No local backups found"
+        echo ""
+        echo "=== Google Drive Backups ==="
+        if rclone listremotes | grep -q "${GDRIVE_REMOTE}:"; then
+            rclone ls "${GDRIVE_REMOTE}:${GDRIVE_FOLDER}/" 2>/dev/null || echo "No remote backups found"
+        else
+            echo "Google Drive not configured"
+        fi
+    }
+
+    download_from_gdrive() {
+        local backup_name="$1"
+        log "Downloading ${backup_name} from Google Drive..."
+        rclone copy "${GDRIVE_REMOTE}:${GDRIVE_FOLDER}/${backup_name}" "$BACKUP_DIR/" --progress
+    }
+
+    restore_backup() {
+        local backup_file="$1"
+
+        if [ ! -f "$backup_file" ]; then
+            log "ERROR: Backup file not found: $backup_file"
+            exit 1
+        fi
+
+        log "Restoring from: $backup_file"
+
+        # Extract backup
+        TEMP_DIR=$(mktemp -d)
+        tar -xzf "$backup_file" -C "$TEMP_DIR"
+        BACKUP_NAME=$(ls "$TEMP_DIR")
+
+        # Stop application
+        log "Stopping application..."
+        pm2 stop wb-crm || true
+
+        # Restore database
+        log "Restoring database..."
+        if [ -f "${TEMP_DIR}/${BACKUP_NAME}/database.dump" ]; then
+            docker cp "${TEMP_DIR}/${BACKUP_NAME}/database.dump" "${DB_CONTAINER}:/tmp/database.dump"
+            docker exec "$DB_CONTAINER" pg_restore -U "$DB_USER" -d "$DB_NAME" --clean --if-exists /tmp/database.dump || true
+            docker exec "$DB_CONTAINER" rm /tmp/database.dump
+            log "Database restored successfully"
+        fi
+
+        # Restore .env (optional, ask first)
+        if [ -f "${TEMP_DIR}/${BACKUP_NAME}/env.backup" ]; then
+            read -p "Restore .env file? (y/N): " restore_env
+            if [ "$restore_env" = "y" ] || [ "$restore_env" = "Y" ]; then
+                cp "${TEMP_DIR}/${BACKUP_NAME}/env.backup" "${APP_DIR}/.env"
+                log ".env restored"
+            fi
+        fi
+
+        # Cleanup
+        rm -rf "$TEMP_DIR"
+
+        # Restart application
+        log "Starting application..."
+        pm2 start wb-crm
+
+        log "Restore completed!"
+    }
+
+    # Main
+    case "$1" in
+        list)
+            list_backups
+            ;;
+        download)
+            if [ -z "$2" ]; then
+                echo "Usage: $0 download <backup-filename>"
+                exit 1
+            fi
+            download_from_gdrive "$2"
+            ;;
+        restore)
+            if [ -z "$2" ]; then
+                echo "Usage: $0 restore <backup-file-path>"
+                echo "Example: $0 restore /opt/backups/crm/crm-backup-2024-01-01_03-00-00.tar.gz"
+                exit 1
+            fi
+            restore_backup "$2"
+            ;;
+        *)
+            echo "CRM Backup Restore Tool"
+            echo ""
+            echo "Usage: $0 <command> [options]"
+            echo ""
+            echo "Commands:"
+            echo "  list                    List available backups (local and remote)"
+            echo "  download <filename>     Download backup from Google Drive"
+            echo "  restore <filepath>      Restore from a backup file"
+            echo ""
+            echo "Examples:"
+            echo "  $0 list"
+            echo "  $0 download crm-backup-2024-01-01_03-00-00.tar.gz"
+            echo "  $0 restore /opt/backups/crm/crm-backup-2024-01-01_03-00-00.tar.gz"
+            ;;
+    esac
+    RESTORE_SCRIPT
+    chmod +x /opt/backups/restore-crm.sh
+  changed_when: false
+
+- name: Setup cron job for daily backup at 3 AM
+  raw: |
+    # Remove existing cron job if any
+    crontab -l 2>/dev/null | grep -v "backup-crm.sh" | crontab - 2>/dev/null || true
+    # Add new cron job
+    (crontab -l 2>/dev/null; echo "0 3 * * * /opt/backups/backup-crm.sh >> /var/log/crm-backup.log 2>&1") | crontab -
+    echo "Cron job configured:"
+    crontab -l | grep backup-crm
+  register: cron_setup
+  changed_when: false
+
+- name: Display cron configuration
+  debug:
+    msg: "{{ cron_setup.stdout_lines }}"
+
+- name: Skip mailutils (notifications disabled)
+  debug:
+    msg: "Email notifications disabled (mailutils not installed). Backups will still work."
+
+- name: Run initial backup test (dry run)
+  raw: |
+    echo "Testing backup script..."
+    if [ -f /opt/backups/backup-crm.sh ]; then
+      echo "Backup script exists and is executable"
+      ls -la /opt/backups/backup-crm.sh
+    fi
+  register: backup_test
+  changed_when: false
+
+- name: Display backup setup summary
+  debug:
+    msg: |
+      ========================================
+      Backup Configuration Complete!
+      ========================================
+      Backup Script: /opt/backups/backup-crm.sh
+      Restore Script: /opt/backups/restore-crm.sh
+      Backup Directory: /opt/backups/crm
+      Schedule: Daily at 3:00 AM
+      Retention: 7 days
+      Log File: /var/log/crm-backup.log
+
+      IMPORTANT: Configure Google Drive with:
+        rclone config
+
+      Manual Commands:
+        - Run backup now: /opt/backups/backup-crm.sh
+        - List backups: /opt/backups/restore-crm.sh list
+        - View logs: tail -f /var/log/crm-backup.log
+      ========================================

@@ -34,3 +34,8 @@ nextauth_url: "https://{{ app_domain }}"
 
 # Certbot email
 certbot_email: bruno@wbdigitalsolutions.com
+
+# Backup settings
+backup_notify_email: bruno@wbdigitalsolutions.com
+backup_retention_days: 7
+backup_schedule: "0 3 * * *"  # Daily at 3 AM

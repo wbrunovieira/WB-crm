@@ -1,0 +1,66 @@
+---
+# Playbook to configure daily backups to Google Drive
+# Usage: ansible-playbook -i inventory/production.yml playbooks/setup-backup.yml --ask-vault-pass
+
+- name: Setup CRM Backup to Google Drive
+  hosts: crm_server
+  gather_facts: yes
+
+  vars_files:
+    - ../group_vars/all.yml
+
+  pre_tasks:
+    - name: Display backup configuration info
+      debug:
+        msg: |
+          Configuring backup for WB-CRM
+          ==============================
+          Target: Google Drive
+          Schedule: Daily at 3:00 AM
+          Retention: 7 days
+          Notification Email: {{ backup_notify_email }}
+
+  roles:
+    - backup
+
+  post_tasks:
+    - name: Final instructions
+      debug:
+        msg: |
+          ==========================================
+          NEXT STEPS - Configure Google Drive
+          ==========================================
+
+          1. SSH into the server:
+             ssh root@{{ ansible_host }}
+
+          2. Run rclone config:
+             rclone config
+
+          3. Follow the prompts:
+             - n (new remote)
+             - gdrive (name)
+             - 18 (Google Drive)
+             - Enter for client_id (empty)
+             - Enter for client_secret (empty)
+             - 1 (full access)
+             - Enter for service_account (empty)
+             - n (don't edit advanced config)
+             - n (don't auto config - we're on remote server)
+
+          4. You'll get a URL to open in your browser:
+             - Open the URL on your LOCAL machine
+             - Authorize with your Google account
+             - Copy the verification code
+             - Paste it back in the terminal
+
+          5. Test the configuration:
+             rclone lsd gdrive:
+
+          6. Run a test backup:
+             /opt/backups/backup-crm.sh
+
+          7. Verify on Google Drive:
+             rclone ls gdrive:backups/wb-crm/
+
+          ==========================================
