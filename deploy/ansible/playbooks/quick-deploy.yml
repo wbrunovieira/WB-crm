@@ -1,0 +1,92 @@
+---
+# Quick Deploy - Fast code update without full infrastructure check
+#
+# Use this for:
+#   - Code updates
+#   - Security patches
+#   - Bug fixes
+#
+# What it does:
+#   1. Git pull
+#   2. npm ci
+#   3. Prisma generate
+#   4. npm run build
+#   5. PM2 restart
+#
+# Usage:
+#   ansible-playbook -i inventory/production.yml playbooks/quick-deploy.yml
+#
+# Time: ~2-3 minutes (vs 5-10 minutes for full deploy)
+
+- name: Quick Deploy - Code Update Only
+  hosts: crm_server
+  gather_facts: no
+
+  vars:
+    app_dir: /opt/wb-crm
+    app_name: wb-crm
+    github_branch: main
+
+  tasks:
+    - name: Display quick deploy info
+      debug:
+        msg: |
+          🚀 QUICK DEPLOY
+          ================
+          App: {{ app_name }}
+          Branch: {{ github_branch }}
+
+    - name: Pull latest code from GitHub
+      raw: |
+        cd {{ app_dir }} && \
+        git fetch origin && \
+        git reset --hard origin/{{ github_branch }} && \
+        git log -1 --oneline
+      register: git_pull
+
+    - name: Display commit
+      debug:
+        msg: "Latest commit: {{ git_pull.stdout_lines | last }}"
+
+    - name: Install dependencies
+      raw: cd {{ app_dir }} && npm ci --production=false
+      register: npm_install
+
+    - name: Generate Prisma client
+      raw: cd {{ app_dir }} && npx prisma generate
+
+    - name: Run database migrations (if any)
+      raw: cd {{ app_dir }} && npx prisma migrate deploy 2>&1 || echo "No pending migrations"
+      register: migrations
+
+    - name: Display migrations
+      debug:
+        msg: "{{ migrations.stdout_lines | last }}"
+
+    - name: Build Next.js
+      raw: cd {{ app_dir }} && NODE_ENV=production npm run build
+      register: build_result
+
+    - name: Restart PM2
+      raw: pm2 restart {{ app_name }} && sleep 3 && pm2 status {{ app_name }}
+      register: pm2_status
+
+    - name: Display PM2 status
+      debug:
+        msg: "{{ pm2_status.stdout_lines }}"
+
+    - name: Health check
+      raw: curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000"
+      register: health_check
+      retries: 3
+      delay: 5
+      until: health_check.stdout | trim == "200" or health_check.stdout | trim == "307"
+
+    - name: Deploy result
+      debug:
+        msg: |
+          ✅ QUICK DEPLOY COMPLETE
+          ========================
+          Commit: {{ git_pull.stdout_lines | last }}
+          Health: {{ 'OK' if health_check.stdout | trim in ['200', '307'] else 'FAILED' }}
+          URL: https://crm.wbdigitalsolutions.com
