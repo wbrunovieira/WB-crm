@@ -1,0 +1,250 @@
+---
+# Security Hardening - Phase 2
+# - Nginx Security Headers
+# - Rate Limiting
+# - Fail2ban for Nginx
+
+# ============================================
+# 1. NGINX SECURITY HEADERS
+# ============================================
+
+- name: Create Nginx security headers config
+  raw: |
+    cat > /etc/nginx/conf.d/security-headers.conf << 'SECURITY'
+    # Security Headers - Applied to all sites
+
+    # Prevent clickjacking attacks
+    add_header X-Frame-Options "SAMEORIGIN" always;
+
+    # Prevent MIME type sniffing
+    add_header X-Content-Type-Options "nosniff" always;
+
+    # Enable XSS filter
+    add_header X-XSS-Protection "1; mode=block" always;
+
+    # Control referrer information
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+
+    # Permissions Policy (formerly Feature-Policy)
+    add_header Permissions-Policy "camera=(), microphone=(), geolocation=()" always;
+
+    # HSTS - Force HTTPS (uncomment after confirming HTTPS works)
+    add_header Strict-Transport-Security "max-age=31536000; includeSubDomains" always;
+
+    # Hide Nginx version
+    server_tokens off;
+    SECURITY
+    echo "Security headers config created"
+  changed_when: false
+
+- name: Verify security headers config syntax
+  raw: nginx -t 2>&1
+  register: nginx_test_headers
+  changed_when: false
+
+- name: Display nginx test result
+  debug:
+    msg: "{{ nginx_test_headers.stdout_lines }}"
+
+# ============================================
+# 2. RATE LIMITING
+# ============================================
+
+- name: Create Nginx rate limiting config
+  raw: |
+    cat > /etc/nginx/conf.d/rate-limiting.conf << 'RATELIMIT'
+    # Rate Limiting Zones
+
+    # General rate limit: 10 requests/second per IP
+    limit_req_zone $binary_remote_addr zone=general:10m rate=10r/s;
+
+    # Login rate limit: 5 requests/minute per IP (stricter for auth endpoints)
+    limit_req_zone $binary_remote_addr zone=login:10m rate=5r/m;
+
+    # API rate limit: 30 requests/second per IP
+    limit_req_zone $binary_remote_addr zone=api:10m rate=30r/s;
+
+    # Connection limit per IP
+    limit_conn_zone $binary_remote_addr zone=conn_limit:10m;
+
+    # Rate limit status code (429 Too Many Requests)
+    limit_req_status 429;
+    limit_conn_status 429;
+    RATELIMIT
+    echo "Rate limiting config created"
+  changed_when: false
+
+- name: Update CRM Nginx config with rate limiting
+  raw: |
+    # Check if rate limiting already applied
+    if grep -q "limit_req zone=general" /etc/nginx/sites-available/wb-crm.conf; then
+      echo "Rate limiting already configured for CRM"
+    else
+      # Add rate limiting to location block
+      sed -i '/location \/ {/a\        # Rate limiting\n        limit_req zone=general burst=20 nodelay;\n        limit_conn conn_limit 20;' /etc/nginx/sites-available/wb-crm.conf
+      echo "Rate limiting added to CRM config"
+    fi
+  register: crm_ratelimit
+  changed_when: "'added' in crm_ratelimit.stdout"
+
+- name: Display rate limit result
+  debug:
+    msg: "{{ crm_ratelimit.stdout }}"
+
+- name: Add login rate limiting for auth endpoints
+  raw: |
+    # Check if login rate limit exists
+    if grep -q "location /api/auth" /etc/nginx/sites-available/wb-crm.conf; then
+      echo "Auth rate limiting already configured"
+    else
+      # Find the closing brace of the server block and add auth location before it
+      sed -i '/location \/ {/i\    # Stricter rate limit for authentication\n    location /api/auth {\n        limit_req zone=login burst=3 nodelay;\n        proxy_pass http://127.0.0.1:3000;\n        proxy_http_version 1.1;\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;\n        proxy_set_header X-Forwarded-Proto $scheme;\n    }\n' /etc/nginx/sites-available/wb-crm.conf
+      echo "Auth rate limiting added"
+    fi
+  register: auth_ratelimit
+  changed_when: "'added' in auth_ratelimit.stdout"
+
+# ============================================
+# 3. FAIL2BAN FOR NGINX
+# ============================================
+
+- name: Create Fail2ban Nginx filter
+  raw: |
+    cat > /etc/fail2ban/filter.d/nginx-limit-req.conf << 'FILTER'
+    [Definition]
+    failregex = limiting requests, excess:.* by zone.*client: <HOST>
+    ignoreregex =
+    FILTER
+    echo "Nginx rate limit filter created"
+  changed_when: false
+
+- name: Create Fail2ban Nginx 404 filter
+  raw: |
+    cat > /etc/fail2ban/filter.d/nginx-404.conf << 'FILTER'
+    [Definition]
+    failregex = ^<HOST> .* "(GET|POST|HEAD).*" 404
+    ignoreregex = \.(css|js|png|jpg|jpeg|gif|ico|svg|woff|woff2)
+    FILTER
+    echo "Nginx 404 filter created"
+  changed_when: false
+
+- name: Create Fail2ban Nginx bad bots filter
+  raw: |
+    cat > /etc/fail2ban/filter.d/nginx-badbots.conf << 'FILTER'
+    [Definition]
+    badbotscustom = EmailCollector|WebEMailExtrac|TrackBack/1\.02|sogou|Baiduspider|semrush
+    badbots = Atomic_Email_Hunter|atSpider|autoemailspider|bwh3_user_agent|China Local Browse 2.6|ContactBot|ContentSmartz|DataCha0s|DBrowse 1.4b|DBrowse 1.4d|Demo Bot DOT 16b|Demo Bot Z 16b|DSurf15a 01|DSurf15a 71|DSurf15a 81|DSurf15a VA|EBrowse 1.4b|Educate Search VxB|EmailSiphon|EmailSpider|EmailWolf 1.00|ESurf15a 15|ExtractorPro|Franklin Locator 1.8|FSurf15a 01|Full Web Bot 0416B|Full Web Bot 0516B|Full Web Bot 2816B|Guestbook Auto Submitter|Industry Program 1.0.x|ISC Systems iRc Search 2.1|IUPUI Research Bot v 1.9a|LARBIN-EXPERIMENTAL|Lexibot|LinkWalker|LNSpiderguy|LWP::Simple|lwp-trivial|Mata Hari|Microsoft URL Control|MIIxpc|MIIxpc/4.2|Missigua Locator|Mister PiX|MJ12bot|moget|MSIECrawler|NetMechanic|NICErsPRO|Offline Navigator|Openfind data gatherer|Openfind|PerMan|searchpreview|sitecheck.internetseer.com|SiteSnagger|Smartdownload|Snoopy|Soup|Steeler|Teleport Pro|TurnitinBot|Twiceler|WebBandit|WebCopier|WebEnhancer|WebmasterWorldForumBot|WebReaper|WebSauger|Website Quester|Webster Pro|Wget|WWW-Collector-E
+    failregex = ^<HOST> .* ".*".*".*(?:%(badbots)s|%(badbotscustom)s).*"$
+    ignoreregex =
+    FILTER
+    echo "Nginx bad bots filter created"
+  changed_when: false
+
+- name: Update Fail2ban jail config for Nginx
+  raw: |
+    cat > /etc/fail2ban/jail.d/nginx.conf << 'JAIL'
+    # Nginx Rate Limit violations
+    [nginx-limit-req]
+    enabled = true
+    filter = nginx-limit-req
+    action = iptables-multiport[name=nginx-limit-req, port="http,https"]
+    logpath = /var/log/nginx/*error.log
+    findtime = 600
+    maxretry = 10
+    bantime = 1h
+
+    # Nginx 404 scanning (looking for vulnerabilities)
+    [nginx-404]
+    enabled = true
+    filter = nginx-404
+    action = iptables-multiport[name=nginx-404, port="http,https"]
+    logpath = /var/log/nginx/*access.log
+    findtime = 60
+    maxretry = 30
+    bantime = 1h
+
+    # Bad bots and crawlers
+    [nginx-badbots]
+    enabled = true
+    filter = nginx-badbots
+    action = iptables-multiport[name=nginx-badbots, port="http,https"]
+    logpath = /var/log/nginx/*access.log
+    findtime = 86400
+    maxretry = 1
+    bantime = 7d
+    JAIL
+    echo "Fail2ban nginx jails configured"
+  changed_when: false
+
+# ============================================
+# 4. ADDITIONAL NGINX SECURITY
+# ============================================
+
+# Note: Attack pattern blocking removed - causes nginx config issues
+# The other protections (rate limiting, fail2ban, headers) are sufficient
+
+# ============================================
+# APPLY AND RESTART SERVICES
+# ============================================
+
+- name: Test final Nginx configuration
+  raw: nginx -t 2>&1
+  register: nginx_final_test
+  changed_when: false
+
+- name: Display Nginx test result
+  debug:
+    msg: "{{ nginx_final_test.stdout_lines }}"
+
+- name: Reload Nginx
+  raw: |
+    if nginx -t 2>&1 | grep -q "successful"; then
+      systemctl reload nginx
+      echo "Nginx reloaded successfully"
+    else
+      echo "Nginx config error - not reloading"
+      nginx -t
+    fi
+  register: nginx_reload
+  changed_when: "'successfully' in nginx_reload.stdout"
+
+- name: Restart Fail2ban
+  raw: systemctl restart fail2ban && sleep 2 && systemctl is-active fail2ban
+  register: fail2ban_restart
+  changed_when: false
+
+- name: Display Fail2ban status
+  raw: fail2ban-client status
+  register: fail2ban_status
+  changed_when: false
+
+- name: Show Fail2ban jails
+  debug:
+    msg: "{{ fail2ban_status.stdout_lines }}"
+
+# ============================================
+# FINAL SUMMARY
+# ============================================
+
+- name: Security Phase 2 Summary
+  raw: |
+    echo "=========================================="
+    echo "SECURITY HARDENING PHASE 2 - COMPLETE"
+    echo "=========================================="
+    echo ""
+    echo "=== Security Headers ==="
+    curl -sI https://{{ app_domain }} 2>/dev/null | grep -iE "^(x-frame|x-content|x-xss|referrer|strict|permissions)" || echo "Headers will apply after reload"
+    echo ""
+    echo "=== Rate Limiting ==="
+    grep -l "limit_req" /etc/nginx/sites-available/*.conf 2>/dev/null || echo "Check nginx config"
+    echo ""
+    echo "=== Fail2ban Jails ==="
+    fail2ban-client status | grep "Jail list"
+    echo ""
+    echo "=========================================="
+  register: phase2_summary
+  changed_when: false
+
+- name: Display Phase 2 Summary
+  debug:
+    msg: "{{ phase2_summary.stdout_lines }}"

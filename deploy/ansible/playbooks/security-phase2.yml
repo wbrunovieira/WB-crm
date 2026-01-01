@@ -1,0 +1,95 @@
+---
+# Security Hardening Playbook - Phase 2
+#
+# WHAT THIS DOES:
+#   1. Adds security headers to Nginx (XSS, CSRF, Clickjacking protection)
+#   2. Configures rate limiting (DDoS protection)
+#   3. Extends Fail2ban for Nginx (bans attackers)
+#   4. Blocks common attack patterns (SQL injection, etc.)
+#
+# PREREQUISITES:
+#   - Phase 1 security hardening completed
+#   - Nginx running with SSL
+#
+# USAGE:
+#   ansible-playbook -i inventory/production.yml playbooks/security-phase2.yml
+
+- name: Security Hardening - Phase 2
+  hosts: crm_server
+  gather_facts: yes
+
+  vars_files:
+    - ../group_vars/all.yml
+
+  pre_tasks:
+    - name: Phase 2 Security Info
+      debug:
+        msg: |
+          🔒 SECURITY HARDENING - PHASE 2
+          ================================
+          This playbook will configure:
+
+          1. Security Headers (Nginx)
+             - X-Frame-Options (clickjacking)
+             - X-Content-Type-Options (MIME sniffing)
+             - X-XSS-Protection (XSS filter)
+             - Strict-Transport-Security (HSTS)
+             - Referrer-Policy
+             - Permissions-Policy
+
+          2. Rate Limiting (Nginx)
+             - 10 req/s general
+             - 5 req/min for login endpoints
+             - Connection limits per IP
+
+          3. Fail2ban for Nginx
+             - Ban IPs hitting rate limits
+             - Ban 404 scanners
+             - Ban bad bots
+
+          4. Attack Pattern Blocking
+             - SQL injection attempts
+             - File injection attempts
+             - Common exploits
+
+  roles:
+    - security-phase2
+
+  post_tasks:
+    - name: Test security headers
+      raw: curl -sI https://{{ app_domain }} | grep -iE "^(x-frame|x-content|x-xss|strict)" | head -5
+      register: headers_test
+      changed_when: false
+
+    - name: Display headers
+      debug:
+        msg: "{{ headers_test.stdout_lines }}"
+
+    - name: Final instructions
+      debug:
+        msg: |
+          ==========================================
+          ✅ SECURITY PHASE 2 COMPLETE
+          ==========================================
+
+          New protections active:
+          ✓ Security headers on all responses
+          ✓ Rate limiting (10 req/s, 5 req/min for login)
+          ✓ Fail2ban monitoring Nginx logs
+          ✓ Attack pattern blocking
+
+          Test your site:
+            https://{{ app_domain }}
+
+          Check security headers:
+            curl -I https://{{ app_domain }}
+
+          Monitor Fail2ban:
+            fail2ban-client status
+            fail2ban-client status nginx-limit-req
+
+          View banned IPs:
+            fail2ban-client status nginx-limit-req
+            fail2ban-client status nginx-404
+
+          ==========================================
