@@ -1,0 +1,36 @@
+# Application settings
+app_name: wb-crm
+app_domain: crm.wbdigitalsolutions.com
+app_port: 3000
+app_dir: /opt/wb-crm
+
+# Database settings
+db_dir: /opt/crm-db
+db_port: 5433
+db_name: crm_db
+db_user: crm_user
+db_password: "{{ vault_db_password }}"
+
+# GitHub repository
+github_repo: https://github.com/wbrunovieira/WB-crm.git
+github_branch: main
+
+# Node.js version
+node_version: "20"
+
+# Admin credentials
+admin_email: bruno@wbdigitalsolutions.com
+admin_password: "{{ vault_admin_password }}"
+admin_name: Bruno Vieira
+
+# SDR credentials
+sdr_email: fabiola@wbdigitalsolutions.com
+sdr_password: "{{ vault_sdr_password }}"
+sdr_name: Fabíola
+
+# NextAuth
+nextauth_secret: "{{ vault_nextauth_secret }}"
+nextauth_url: "https://{{ app_domain }}"
+
+# Certbot email
+certbot_email: bruno@wbdigitalsolutions.com

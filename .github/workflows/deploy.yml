@@ -1,0 +1,49 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H 45.90.123.190 >> ~/.ssh/known_hosts
+
+      - name: Install Ansible
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ansible
+
+      - name: Create Vault Password File
+        run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
+
+      - name: Run Ansible Update Playbook
+        working-directory: deploy/ansible
+        run: |
+          ansible-playbook -i inventory/production.yml playbooks/update.yml \
+            --vault-password-file ../../.vault_pass
+
+      - name: Cleanup secrets
+        if: always()
+        run: |
+          rm -f .vault_pass
+          rm -f ~/.ssh/id_rsa
+
+      - name: Notify success
+        if: success()
+        run: echo "Deployment to crm.wbdigitalsolutions.com completed successfully!"
+
+      - name: Notify failure
+        if: failure()
+        run: echo "Deployment failed! Check the logs above."

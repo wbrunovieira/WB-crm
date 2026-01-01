@@ -1,0 +1,59 @@
+---
+# Full deployment playbook - run this for first-time setup
+# Usage: ansible-playbook -i inventory/production.yml playbooks/deploy.yml --vault-password-file .vault_pass
+
+- name: Deploy WB-CRM Application
+  hosts: crm_server
+  become: yes
+  vars_files:
+    - ../group_vars/all.yml
+    - ../group_vars/vault.yml
+
+  pre_tasks:
+    - name: Display deployment info
+      debug:
+        msg: |
+          Deploying {{ app_name }} to {{ app_domain }}
+          Repository: {{ github_repo }}
+          Branch: {{ github_branch }}
+
+    - name: Create log directory
+      file:
+        path: /var/log/pm2
+        state: directory
+        mode: '0755'
+
+  roles:
+    - common
+    - nodejs
+    - postgres
+    - app
+    - nginx
+
+  post_tasks:
+    - name: Display deployment summary
+      debug:
+        msg: |
+          ================================
+          Deployment Complete!
+          ================================
+          Application: {{ app_name }}
+          URL: https://{{ app_domain }}
+          PM2 Process: {{ app_name }}
+          Database: crm_postgres (port {{ db_port }})
+          ================================
+
+    - name: Check application health
+      uri:
+        url: "http://127.0.0.1:{{ app_port }}"
+        status_code: 200
+        timeout: 30
+      register: health_check
+      retries: 5
+      delay: 10
+      until: health_check.status == 200
+      ignore_errors: yes
+
+    - name: Health check result
+      debug:
+        msg: "Application is {{ 'healthy' if health_check.status == 200 else 'not responding' }}"

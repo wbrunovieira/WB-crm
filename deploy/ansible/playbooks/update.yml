@@ -1,0 +1,84 @@
+---
+# Update playbook - run this for CI/CD updates
+# Usage: ansible-playbook -i inventory/production.yml playbooks/update.yml --vault-password-file .vault_pass
+
+- name: Update WB-CRM Application
+  hosts: crm_server
+  become: yes
+  vars_files:
+    - ../group_vars/all.yml
+    - ../group_vars/vault.yml
+
+  tasks:
+    - name: Display update info
+      debug:
+        msg: "Updating {{ app_name }} from {{ github_repo }} ({{ github_branch }})"
+
+    - name: Pull latest changes from GitHub
+      git:
+        repo: "{{ github_repo }}"
+        dest: "{{ app_dir }}"
+        version: "{{ github_branch }}"
+        update: yes
+        force: yes
+      register: git_result
+
+    - name: Display git changes
+      debug:
+        msg: "Git updated: {{ git_result.changed }}"
+
+    - name: Install npm dependencies
+      npm:
+        path: "{{ app_dir }}"
+        state: present
+        ci: yes
+      when: git_result.changed
+
+    - name: Generate Prisma client
+      command: npx prisma generate
+      args:
+        chdir: "{{ app_dir }}"
+      when: git_result.changed
+
+    - name: Run database migrations
+      command: npx prisma migrate deploy
+      args:
+        chdir: "{{ app_dir }}"
+      register: prisma_migrate
+      when: git_result.changed
+
+    - name: Build Next.js application
+      command: npm run build
+      args:
+        chdir: "{{ app_dir }}"
+      environment:
+        NODE_ENV: production
+      when: git_result.changed
+
+    - name: Reload PM2 application
+      command: pm2 reload {{ app_name }}
+      when: git_result.changed
+
+    - name: Save PM2 process list
+      command: pm2 save
+      when: git_result.changed
+
+    - name: Check application health
+      uri:
+        url: "http://127.0.0.1:{{ app_port }}"
+        status_code: 200
+        timeout: 30
+      register: health_check
+      retries: 5
+      delay: 5
+      until: health_check.status == 200
+
+    - name: Update summary
+      debug:
+        msg: |
+          ================================
+          Update Complete!
+          ================================
+          Changed: {{ git_result.changed }}
+          Health: {{ 'OK' if health_check.status == 200 else 'FAILED' }}
+          ================================

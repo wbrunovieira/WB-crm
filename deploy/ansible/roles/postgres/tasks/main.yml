@@ -1,0 +1,40 @@
+---
+- name: Create database directory
+  file:
+    path: "{{ db_dir }}"
+    state: directory
+    mode: '0755'
+
+- name: Copy docker-compose file for PostgreSQL
+  template:
+    src: docker-compose.yml.j2
+    dest: "{{ db_dir }}/docker-compose.yml"
+    mode: '0644'
+
+- name: Start PostgreSQL container
+  community.docker.docker_compose_v2:
+    project_src: "{{ db_dir }}"
+    state: present
+  register: postgres_compose
+  ignore_errors: yes
+
+- name: Start PostgreSQL with docker-compose (fallback)
+  command: docker-compose up -d
+  args:
+    chdir: "{{ db_dir }}"
+  when: postgres_compose is failed
+
+- name: Wait for PostgreSQL to be ready
+  wait_for:
+    port: "{{ db_port }}"
+    host: localhost
+    delay: 5
+    timeout: 60
+
+- name: Check PostgreSQL container health
+  command: docker exec crm_postgres pg_isready -U {{ db_user }} -d {{ db_name }}
+  register: pg_health
+  retries: 10
+  delay: 3
+  until: pg_health.rc == 0
+  changed_when: false

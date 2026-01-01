@@ -1,0 +1,103 @@
+---
+- name: Check if app directory exists
+  stat:
+    path: "{{ app_dir }}"
+  register: app_dir_stat
+
+- name: Clone repository
+  git:
+    repo: "{{ github_repo }}"
+    dest: "{{ app_dir }}"
+    version: "{{ github_branch }}"
+    force: yes
+  when: not app_dir_stat.stat.exists
+
+- name: Pull latest changes
+  git:
+    repo: "{{ github_repo }}"
+    dest: "{{ app_dir }}"
+    version: "{{ github_branch }}"
+    update: yes
+  when: app_dir_stat.stat.exists
+  register: git_pull
+
+- name: Create .env file
+  template:
+    src: .env.j2
+    dest: "{{ app_dir }}/.env"
+    mode: '0600'
+
+- name: Install npm dependencies
+  npm:
+    path: "{{ app_dir }}"
+    state: present
+    ci: yes
+
+- name: Generate Prisma client
+  command: npx prisma generate
+  args:
+    chdir: "{{ app_dir }}"
+  changed_when: false
+
+- name: Run database migrations
+  command: npx prisma migrate deploy
+  args:
+    chdir: "{{ app_dir }}"
+  register: prisma_migrate
+  changed_when: "'applied' in prisma_migrate.stdout"
+
+- name: Check if users exist in database
+  command: >
+    docker exec crm_postgres psql -U {{ db_user }} -d {{ db_name }} -t -c
+    "SELECT COUNT(*) FROM \"User\";"
+  register: user_count
+  changed_when: false
+  ignore_errors: yes
+
+- name: Run database seed (create users)
+  command: npm run db:seed
+  args:
+    chdir: "{{ app_dir }}"
+  when: user_count.stdout | default('0') | trim | int == 0
+  register: seed_result
+
+- name: Display seed result
+  debug:
+    msg: "Database seeded successfully"
+  when: seed_result is changed
+
+- name: Build Next.js application
+  command: npm run build
+  args:
+    chdir: "{{ app_dir }}"
+  environment:
+    NODE_ENV: production
+
+- name: Copy PM2 ecosystem config
+  template:
+    src: ecosystem.config.js.j2
+    dest: "{{ app_dir }}/ecosystem.config.js"
+    mode: '0644'
+
+- name: Stop existing PM2 process
+  command: pm2 delete {{ app_name }}
+  ignore_errors: yes
+  changed_when: false
+
+- name: Start application with PM2
+  command: pm2 start ecosystem.config.js
+  args:
+    chdir: "{{ app_dir }}"
+
+- name: Save PM2 process list
+  command: pm2 save
+  changed_when: false
+
+- name: Display PM2 status
+  command: pm2 list
+  register: pm2_status
+  changed_when: false
+
+- name: Show PM2 status
+  debug:
+    msg: "{{ pm2_status.stdout_lines }}"

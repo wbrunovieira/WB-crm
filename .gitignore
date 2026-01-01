@@ -38,3 +38,8 @@ next-env.d.ts
 # Prisma
 *.db
 *.db-journal
+
+# Ansible
+deploy/ansible/.vault_pass
+deploy/ansible/*.retry
+*.retry

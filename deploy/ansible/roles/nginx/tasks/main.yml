@@ -1,0 +1,52 @@
+---
+- name: Ensure Nginx is installed
+  apt:
+    name: nginx
+    state: present
+
+- name: Create Nginx config for CRM
+  template:
+    src: crm.conf.j2
+    dest: /etc/nginx/sites-available/{{ app_name }}.conf
+    mode: '0644'
+  notify: Reload Nginx
+
+- name: Enable site
+  file:
+    src: /etc/nginx/sites-available/{{ app_name }}.conf
+    dest: /etc/nginx/sites-enabled/{{ app_name }}.conf
+    state: link
+  notify: Reload Nginx
+
+- name: Test Nginx configuration
+  command: nginx -t
+  register: nginx_test
+  changed_when: false
+
+- name: Ensure Nginx is running
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+- name: Check if SSL certificate exists
+  stat:
+    path: /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem
+  register: ssl_cert
+
+- name: Obtain SSL certificate with Certbot
+  command: >
+    certbot certonly --nginx
+    -d {{ app_domain }}
+    --non-interactive
+    --agree-tos
+    --email {{ certbot_email }}
+  when: not ssl_cert.stat.exists
+  notify: Reload Nginx
+
+- name: Update Nginx config with SSL
+  template:
+    src: crm-ssl.conf.j2
+    dest: /etc/nginx/sites-available/{{ app_name }}.conf
+    mode: '0644'
+  notify: Reload Nginx

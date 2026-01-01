@@ -1,0 +1,15 @@
+# Copie este arquivo para vault.yml e criptografe com:
+# ansible-vault encrypt vault.yml
+#
+# Para editar depois:
+# ansible-vault edit vault.yml
+
+# Senha do PostgreSQL (escolha uma senha segura)
+vault_db_password: "SuaSenhaSeguraAqui123!"
+
+# NextAuth Secret (use o mesmo do .env ou gere novo com: openssl rand -base64 32)
+vault_nextauth_secret: "4htXDqz/HJoyY+awRE8/JYbqeXvF7xmtw0DzbWqW8XU="
+
+# Senhas dos usuários (mesmas do .env)
+vault_admin_password: "Crm172003"
+vault_sdr_password: "fabiola123"
