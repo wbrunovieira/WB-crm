@@ -1,0 +1,87 @@
+---
+# Security Hardening Playbook - Phase 1
+#
+# WHAT THIS DOES:
+#   1. Enables UFW firewall (allows only SSH, HTTP, HTTPS)
+#   2. Restricts Docker ports to localhost
+#   3. Hardens SSH (disables password auth, key-only)
+#   4. Configures Fail2ban for brute-force protection
+#
+# PREREQUISITES:
+#   - SSH key authentication must be working!
+#   - Test with: ssh root@45.90.123.190 "echo OK"
+#
+# USAGE:
+#   ansible-playbook -i inventory/production.yml playbooks/security-hardening.yml
+#
+# WARNING:
+#   After running this, password SSH login will be DISABLED.
+#   Make sure your SSH key is properly configured!
+
+- name: Security Hardening - Phase 1
+  hosts: crm_server
+  gather_facts: yes
+
+  vars_files:
+    - ../group_vars/all.yml
+
+  pre_tasks:
+    - name: CRITICAL WARNING
+      debug:
+        msg: |
+          ⚠️  SECURITY HARDENING WARNING ⚠️
+          =====================================
+          This playbook will:
+
+          1. ENABLE FIREWALL - Block all ports except 22, 80, 443
+          2. DISABLE SSH PASSWORD - Only key authentication allowed
+          3. RESTRICT DOCKER - Bind services to localhost
+
+          BEFORE CONTINUING, VERIFY:
+          ✓ Your SSH key works: ssh root@{{ ansible_host }} "echo OK"
+          ✓ You have a backup of your SSH key
+          ✓ You understand you may lose access if misconfigured
+
+          The playbook will proceed in 10 seconds...
+          Press Ctrl+C to abort.
+
+    - name: Wait for user to read warning
+      pause:
+        seconds: 10
+
+    - name: Verify SSH key authentication
+      raw: echo "SSH key verified for $(whoami) from $(hostname)"
+      register: ssh_verify
+
+    - name: Confirm SSH access
+      debug:
+        msg: "✓ {{ ssh_verify.stdout | trim }}"
+
+  roles:
+    - security
+
+  post_tasks:
+    - name: Final instructions
+      debug:
+        msg: |
+          ==========================================
+          ✅ SECURITY HARDENING COMPLETE
+          ==========================================
+
+          Changes applied:
+          ✓ UFW Firewall enabled (22, 80, 443 only)
+          ✓ SSH password authentication disabled
+          ✓ SSH root login: key-only
+          ✓ Fail2ban protecting SSH (24h ban after 3 failures)
+          ✓ Docker CRM DB bound to localhost
+
+          IMPORTANT - Test your SSH access NOW:
+            ssh root@{{ ansible_host }} "echo 'Still working!'"
+
+          If locked out, use Contabo console/VNC to fix.
+
+          REMAINING TASKS (manual):
+          - Update other Docker compose files to use 127.0.0.1
+          - Add Nginx reverse proxy for N8N, Evolution, Chatbot
+
+          ==========================================

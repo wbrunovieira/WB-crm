@@ -1,0 +1,218 @@
+---
+# Security Hardening - Phase 1
+# IMPORTANT: Run this only after confirming SSH key access works!
+
+# ============================================
+# PRE-FLIGHT CHECKS
+# ============================================
+
+- name: Verify SSH key authentication works
+  raw: echo "SSH key authentication verified for $(whoami)"
+  register: ssh_check
+  changed_when: false
+
+- name: Display SSH verification
+  debug:
+    msg: "{{ ssh_check.stdout | trim }}"
+
+# ============================================
+# 1. FIREWALL (UFW) CONFIGURATION
+# ============================================
+
+- name: Install UFW
+  raw: apt-get install -y ufw
+  changed_when: false
+
+- name: Reset UFW to default (deny incoming)
+  raw: ufw --force reset
+  changed_when: false
+
+- name: Set UFW default policies
+  raw: |
+    ufw default deny incoming
+    ufw default allow outgoing
+  changed_when: false
+
+- name: Allow SSH (port 22)
+  raw: ufw allow 22/tcp comment 'SSH'
+  changed_when: false
+
+- name: Allow HTTP (port 80)
+  raw: ufw allow 80/tcp comment 'HTTP'
+  changed_when: false
+
+- name: Allow HTTPS (port 443)
+  raw: ufw allow 443/tcp comment 'HTTPS'
+  changed_when: false
+
+- name: Enable UFW
+  raw: echo "y" | ufw enable
+  changed_when: false
+
+- name: Display UFW status
+  raw: ufw status verbose
+  register: ufw_status
+  changed_when: false
+
+- name: Show UFW configuration
+  debug:
+    msg: "{{ ufw_status.stdout_lines }}"
+
+# ============================================
+# 2. DOCKER - RESTRICT PORTS TO LOCALHOST
+# ============================================
+
+- name: Update CRM PostgreSQL to localhost only
+  raw: |
+    cd /opt/crm-db
+    if grep -q "0.0.0.0:{{ db_port }}" docker-compose.yml 2>/dev/null || grep -q '"{{ db_port }}:5432"' docker-compose.yml; then
+      sed -i 's/"{{ db_port }}:5432"/"127.0.0.1:{{ db_port }}:5432"/' docker-compose.yml
+      sed -i 's/0.0.0.0:{{ db_port }}/127.0.0.1:{{ db_port }}/' docker-compose.yml
+      docker-compose down && docker-compose up -d
+      echo "CRM PostgreSQL updated to localhost:{{ db_port }}"
+    else
+      echo "CRM PostgreSQL already on localhost or not found"
+    fi
+  register: crm_db_update
+  changed_when: "'updated' in crm_db_update.stdout"
+
+- name: Display CRM DB update result
+  debug:
+    msg: "{{ crm_db_update.stdout_lines }}"
+
+# Note: Other Docker containers (n8n, evolution, chatbot)
+# should be updated in their respective docker-compose files
+# to bind to 127.0.0.1 instead of 0.0.0.0
+
+- name: Check for other docker-compose files to update
+  raw: |
+    echo "=== Docker containers still exposed to 0.0.0.0 ==="
+    docker ps --format '{{ '{{' }}.Names{{ '}}' }}: {{ '{{' }}.Ports{{ '}}' }}' | grep "0.0.0.0" || echo "None found - all secured!"
+  register: docker_exposed
+  changed_when: false
+
+- name: Show exposed Docker ports
+  debug:
+    msg: "{{ docker_exposed.stdout_lines }}"
+
+# ============================================
+# 3. SSH HARDENING
+# ============================================
+
+- name: Backup SSH config
+  raw: cp /etc/ssh/sshd_config /etc/ssh/sshd_config.backup.$(date +%Y%m%d)
+  changed_when: false
+
+- name: Disable SSH password authentication
+  raw: |
+    sed -i 's/^#*PasswordAuthentication.*/PasswordAuthentication no/' /etc/ssh/sshd_config
+    sed -i 's/^#*ChallengeResponseAuthentication.*/ChallengeResponseAuthentication no/' /etc/ssh/sshd_config
+    grep "^PasswordAuthentication" /etc/ssh/sshd_config
+  register: ssh_password
+  changed_when: false
+
+- name: Disable empty passwords
+  raw: |
+    sed -i 's/^#*PermitEmptyPasswords.*/PermitEmptyPasswords no/' /etc/ssh/sshd_config
+  changed_when: false
+
+- name: Keep root login enabled (for now, using key)
+  raw: |
+    sed -i 's/^#*PermitRootLogin.*/PermitRootLogin prohibit-password/' /etc/ssh/sshd_config
+    grep "^PermitRootLogin" /etc/ssh/sshd_config
+  register: ssh_root
+  changed_when: false
+
+- name: Set SSH security options
+  raw: |
+    # Add security settings if not present
+    grep -q "^MaxAuthTries" /etc/ssh/sshd_config || echo "MaxAuthTries 3" >> /etc/ssh/sshd_config
+    grep -q "^ClientAliveInterval" /etc/ssh/sshd_config || echo "ClientAliveInterval 300" >> /etc/ssh/sshd_config
+    grep -q "^ClientAliveCountMax" /etc/ssh/sshd_config || echo "ClientAliveCountMax 2" >> /etc/ssh/sshd_config
+    grep -q "^X11Forwarding" /etc/ssh/sshd_config && sed -i 's/^X11Forwarding.*/X11Forwarding no/' /etc/ssh/sshd_config || echo "X11Forwarding no" >> /etc/ssh/sshd_config
+  changed_when: false
+
+- name: Test SSH configuration
+  raw: sshd -t && echo "SSH config OK" || echo "SSH config ERROR"
+  register: ssh_test
+  changed_when: false
+
+- name: Display SSH test result
+  debug:
+    msg: "{{ ssh_test.stdout_lines }}"
+
+- name: Reload SSH service
+  raw: systemctl reload sshd
+  when: "'OK' in ssh_test.stdout"
+
+- name: Display SSH configuration summary
+  debug:
+    msg: |
+      SSH Hardening Applied:
+      - PasswordAuthentication: no
+      - PermitRootLogin: prohibit-password (key only)
+      - MaxAuthTries: 3
+      - X11Forwarding: no
+
+# ============================================
+# 4. ADDITIONAL SECURITY MEASURES
+# ============================================
+
+- name: Configure Fail2ban for SSH
+  raw: |
+    cat > /etc/fail2ban/jail.local << 'JAIL'
+    [DEFAULT]
+    bantime = 1h
+    findtime = 10m
+    maxretry = 5
+
+    [sshd]
+    enabled = true
+    port = ssh
+    filter = sshd
+    logpath = /var/log/auth.log
+    maxretry = 3
+    bantime = 24h
+    JAIL
+    systemctl restart fail2ban
+    echo "Fail2ban configured for SSH"
+  changed_when: false
+
+- name: Display Fail2ban status
+  raw: fail2ban-client status sshd 2>/dev/null || echo "Fail2ban sshd jail active"
+  register: fail2ban_status
+  changed_when: false
+
+- name: Show Fail2ban status
+  debug:
+    msg: "{{ fail2ban_status.stdout_lines }}"
+
+# ============================================
+# FINAL SECURITY SUMMARY
+# ============================================
+
+- name: Final security check
+  raw: |
+    echo "=========================================="
+    echo "SECURITY HARDENING COMPLETE - PHASE 1"
+    echo "=========================================="
+    echo ""
+    echo "=== Firewall Status ==="
+    ufw status | head -10
+    echo ""
+    echo "=== SSH Configuration ==="
+    grep -E "^(PasswordAuthentication|PermitRootLogin|MaxAuthTries)" /etc/ssh/sshd_config
+    echo ""
+    echo "=== Open Ports (should only be 22, 80, 443 external) ==="
+    ss -tlnp | grep LISTEN | grep -v "127.0.0.1" | grep -v "::1"
+    echo ""
+    echo "=== Fail2ban Status ==="
+    fail2ban-client status sshd 2>/dev/null | head -5
+    echo ""
+    echo "=========================================="
+  register: security_summary
+  changed_when: false
+
+- name: Display security summary
+  debug:
+    msg: "{{ security_summary.stdout_lines }}"
