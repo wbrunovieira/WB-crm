@@ -28,10 +28,10 @@ jobs:
       - name: Create Vault Password File
         run: echo "${{ secrets.ANSIBLE_VAULT_PASSWORD }}" > .vault_pass
 
-      - name: Run Ansible Update Playbook
+      - name: Run Quick Deploy
         working-directory: deploy/ansible
         run: |
-          ansible-playbook -i inventory/production.yml playbooks/update.yml \
+          ansible-playbook -i inventory/production.yml playbooks/quick-deploy.yml \
             --vault-password-file ../../.vault_pass
 
       - name: Cleanup secrets
