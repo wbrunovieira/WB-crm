@@ -4,12 +4,15 @@
 # Para editar depois:
 # ansible-vault edit vault.yml
 
-# Senha do PostgreSQL (escolha uma senha segura)
-vault_db_password: "SuaSenhaSeguraAqui123!"
+# IMPORTANTE: Use senhas fortes e únicas!
+# NÃO use os valores de exemplo abaixo em produção!
 
-# NextAuth Secret (use o mesmo do .env ou gere novo com: openssl rand -base64 32)
-vault_nextauth_secret: "4htXDqz/HJoyY+awRE8/JYbqeXvF7xmtw0DzbWqW8XU="
+# Senha do PostgreSQL
+vault_db_password: "CHANGE_ME_STRONG_PASSWORD"
 
-# Senhas dos usuários (mesmas do .env)
-vault_admin_password: "Crm172003"
-vault_sdr_password: "fabiola123"
+# NextAuth Secret (gere com: openssl rand -base64 32)
+vault_nextauth_secret: "GENERATE_WITH_openssl_rand_-base64_32"
+
+# Senhas dos usuários
+vault_admin_password: "CHANGE_ME_ADMIN_PASSWORD"
+vault_sdr_password: "CHANGE_ME_SDR_PASSWORD"
