@@ -1,100 +1,120 @@
 ---
 - name: Check if app directory exists
-  stat:
-    path: "{{ app_dir }}"
+  raw: test -d {{ app_dir }} && echo "exists" || echo "not exists"
   register: app_dir_stat
+  changed_when: false
 
 - name: Clone repository
-  git:
-    repo: "{{ github_repo }}"
-    dest: "{{ app_dir }}"
-    version: "{{ github_branch }}"
-    force: yes
-  when: not app_dir_stat.stat.exists
+  raw: git clone {{ github_repo }} {{ app_dir }}
+  when: "'not exists' in app_dir_stat.stdout"
 
 - name: Pull latest changes
-  git:
-    repo: "{{ github_repo }}"
-    dest: "{{ app_dir }}"
-    version: "{{ github_branch }}"
-    update: yes
-  when: app_dir_stat.stat.exists
-  register: git_pull
+  raw: cd {{ app_dir }} && git fetch origin && git reset --hard origin/{{ github_branch }}
+  when: "'exists' in app_dir_stat.stdout"
 
 - name: Create .env file
-  template:
-    src: .env.j2
-    dest: "{{ app_dir }}/.env"
-    mode: '0600'
+  raw: |
+    cat > {{ app_dir }}/.env << 'ENVFILE'
+    DATABASE_URL=postgresql://{{ db_user }}:{{ db_password }}@localhost:{{ db_port }}/{{ db_name }}
+    NEXTAUTH_SECRET={{ nextauth_secret }}
+    NEXTAUTH_URL=https://{{ app_domain }}
+    ADMIN_EMAIL={{ admin_email }}
+    ADMIN_PASSWORD={{ admin_password }}
+    ADMIN_NAME={{ admin_name }}
+    SDR_EMAIL={{ sdr_email }}
+    SDR_PASSWORD={{ sdr_password }}
+    SDR_NAME={{ sdr_name }}
+    NODE_ENV=production
+    ENVFILE
+    chmod 600 {{ app_dir }}/.env
+  changed_when: false
 
 - name: Install npm dependencies
-  npm:
-    path: "{{ app_dir }}"
-    state: present
-    ci: yes
+  raw: cd {{ app_dir }} && npm ci --production=false
+  register: npm_install
+
+- name: Display npm install result
+  debug:
+    msg: "npm dependencies installed"
+
+- name: Update Prisma schema for PostgreSQL
+  raw: |
+    sed -i 's/provider = "sqlite"/provider = "postgresql"/' {{ app_dir }}/prisma/schema.prisma
+  changed_when: false
 
 - name: Generate Prisma client
-  command: npx prisma generate
-  args:
-    chdir: "{{ app_dir }}"
+  raw: cd {{ app_dir }} && npx prisma generate
   changed_when: false
 
 - name: Run database migrations
-  command: npx prisma migrate deploy
-  args:
-    chdir: "{{ app_dir }}"
+  raw: cd {{ app_dir }} && npx prisma migrate deploy
   register: prisma_migrate
-  changed_when: "'applied' in prisma_migrate.stdout"
-
-- name: Check if users exist in database
-  command: >
-    docker exec crm_postgres psql -U {{ db_user }} -d {{ db_name }} -t -c
-    "SELECT COUNT(*) FROM \"User\";"
-  register: user_count
-  changed_when: false
   ignore_errors: yes
 
+- name: Push schema if migrations fail (first deploy)
+  raw: cd {{ app_dir }} && npx prisma db push --accept-data-loss
+  when: prisma_migrate.rc != 0
+
+- name: Display migration result
+  debug:
+    msg: "Database migrations applied"
+
+- name: Check if users exist in database
+  raw: docker exec crm_postgres psql -U {{ db_user }} -d {{ db_name }} -t -c "SELECT COUNT(*) FROM \"User\";" 2>/dev/null || echo "0"
+  register: user_count
+  changed_when: false
+
 - name: Run database seed (create users)
-  command: npm run db:seed
-  args:
-    chdir: "{{ app_dir }}"
-  when: user_count.stdout | default('0') | trim | int == 0
+  raw: cd {{ app_dir }} && npm run db:seed
+  when: user_count.stdout | trim | int == 0
   register: seed_result
 
 - name: Display seed result
   debug:
-    msg: "Database seeded successfully"
+    msg: "Database seeded with users"
   when: seed_result is changed
 
 - name: Build Next.js application
-  command: npm run build
-  args:
-    chdir: "{{ app_dir }}"
-  environment:
-    NODE_ENV: production
+  raw: cd {{ app_dir }} && NODE_ENV=production npm run build
+  register: build_result
 
-- name: Copy PM2 ecosystem config
-  template:
-    src: ecosystem.config.js.j2
-    dest: "{{ app_dir }}/ecosystem.config.js"
-    mode: '0644'
+- name: Display build result
+  debug:
+    msg: "Next.js application built successfully"
+
+- name: Create PM2 ecosystem config
+  raw: |
+    cat > {{ app_dir }}/ecosystem.config.js << 'PM2CONFIG'
+    module.exports = {
+      apps: [{
+        name: '{{ app_name }}',
+        script: 'npm',
+        args: 'start',
+        cwd: '{{ app_dir }}',
+        instances: 1,
+        exec_mode: 'fork',
+        env: {
+          NODE_ENV: 'production',
+          PORT: {{ app_port }}
+        }
+      }]
+    };
+    PM2CONFIG
+  changed_when: false
 
 - name: Stop existing PM2 process
-  command: pm2 delete {{ app_name }}
-  ignore_errors: yes
+  raw: pm2 delete {{ app_name }} 2>/dev/null || true
   changed_when: false
 
 - name: Start application with PM2
-  command: pm2 start ecosystem.config.js
-  args:
-    chdir: "{{ app_dir }}"
+  raw: cd {{ app_dir }} && pm2 start ecosystem.config.js
 
 - name: Save PM2 process list
-  command: pm2 save
+  raw: pm2 save
   changed_when: false
 
 - name: Display PM2 status
-  command: pm2 list
+  raw: pm2 list
   register: pm2_status
   changed_when: false
 

@@ -1,52 +1,109 @@
 ---
-- name: Ensure Nginx is installed
-  apt:
-    name: nginx
-    state: present
+- name: Check if Nginx is installed
+  raw: which nginx && nginx -v 2>&1 || echo "not installed"
+  register: nginx_check
+  changed_when: false
 
-- name: Create Nginx config for CRM
-  template:
-    src: crm.conf.j2
-    dest: /etc/nginx/sites-available/{{ app_name }}.conf
-    mode: '0644'
-  notify: Reload Nginx
+- name: Nginx status
+  debug:
+    msg: "Nginx: {{ nginx_check.stdout_lines | default(['']) | first }}"
 
-- name: Enable site
-  file:
-    src: /etc/nginx/sites-available/{{ app_name }}.conf
-    dest: /etc/nginx/sites-enabled/{{ app_name }}.conf
-    state: link
-  notify: Reload Nginx
+- name: Install Nginx if not present
+  raw: apt-get install -y nginx
+  when: "'not installed' in nginx_check.stdout"
+
+- name: Create initial Nginx config (HTTP only for Certbot)
+  raw: |
+    cat > /etc/nginx/sites-available/{{ app_name }}.conf << 'NGINXCONF'
+    server {
+        listen 80;
+        server_name {{ app_domain }};
+
+        location /.well-known/acme-challenge/ {
+            root /var/www/html;
+        }
+
+        location / {
+            proxy_pass http://127.0.0.1:{{ app_port }};
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache_bypass $http_upgrade;
+        }
+    }
+    NGINXCONF
+  changed_when: false
+
+- name: Enable site (create symlink)
+  raw: ln -sf /etc/nginx/sites-available/{{ app_name }}.conf /etc/nginx/sites-enabled/{{ app_name }}.conf
+  changed_when: false
 
 - name: Test Nginx configuration
-  command: nginx -t
+  raw: nginx -t
   register: nginx_test
   changed_when: false
 
-- name: Ensure Nginx is running
-  service:
-    name: nginx
-    state: started
-    enabled: yes
+- name: Reload Nginx
+  raw: systemctl reload nginx
+  changed_when: false
 
 - name: Check if SSL certificate exists
-  stat:
-    path: /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem
+  raw: test -f /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem && echo "exists" || echo "not exists"
   register: ssl_cert
+  changed_when: false
 
 - name: Obtain SSL certificate with Certbot
-  command: >
-    certbot certonly --nginx
-    -d {{ app_domain }}
-    --non-interactive
-    --agree-tos
-    --email {{ certbot_email }}
-  when: not ssl_cert.stat.exists
-  notify: Reload Nginx
+  raw: certbot certonly --webroot -w /var/www/html -d {{ app_domain }} --non-interactive --agree-tos --email {{ certbot_email }}
+  when: "'not exists' in ssl_cert.stdout"
+  register: certbot_result
 
 - name: Update Nginx config with SSL
-  template:
-    src: crm-ssl.conf.j2
-    dest: /etc/nginx/sites-available/{{ app_name }}.conf
-    mode: '0644'
-  notify: Reload Nginx
+  raw: |
+    cat > /etc/nginx/sites-available/{{ app_name }}.conf << 'NGINXSSL'
+    server {
+        listen 80;
+        server_name {{ app_domain }};
+        return 301 https://$server_name$request_uri;
+    }
+
+    server {
+        listen 443 ssl http2;
+        server_name {{ app_domain }};
+
+        ssl_certificate /etc/letsencrypt/live/{{ app_domain }}/fullchain.pem;
+        ssl_certificate_key /etc/letsencrypt/live/{{ app_domain }}/privkey.pem;
+        ssl_protocols TLSv1.2 TLSv1.3;
+        ssl_prefer_server_ciphers off;
+
+        location / {
+            proxy_pass http://127.0.0.1:{{ app_port }};
+            proxy_http_version 1.1;
+            proxy_set_header Upgrade $http_upgrade;
+            proxy_set_header Connection 'upgrade';
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_cache_bypass $http_upgrade;
+        }
+    }
+    NGINXSSL
+  when: ssl_cert.stdout is search('exists') or certbot_result is changed
+  changed_when: false
+
+- name: Test final Nginx configuration
+  raw: nginx -t
+  register: nginx_final_test
+  changed_when: false
+
+- name: Reload Nginx with SSL config
+  raw: systemctl reload nginx
+  changed_when: false
+
+- name: Display Nginx status
+  debug:
+    msg: "Nginx configured for {{ app_domain }} with SSL"

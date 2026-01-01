@@ -1,43 +1,30 @@
 ---
 - name: Update apt cache
-  apt:
-    update_cache: yes
-    cache_valid_time: 3600
+  raw: apt-get update
+  changed_when: false
 
 - name: Install common dependencies
-  apt:
-    name:
-      - git
-      - curl
-      - wget
-      - build-essential
-      - ca-certificates
-      - gnupg
-      - lsb-release
-      - python3-pip
-    state: present
+  raw: apt-get install -y git curl wget build-essential ca-certificates gnupg lsb-release
+  changed_when: false
 
-- name: Ensure Docker is installed
-  apt:
-    name: docker.io
-    state: present
-
-- name: Ensure Docker service is running
-  service:
-    name: docker
-    state: started
-    enabled: yes
-
-- name: Install Docker Compose plugin
-  apt:
-    name: docker-compose-plugin
-    state: present
+- name: Check if Docker is installed
+  raw: which docker && docker --version
+  register: docker_check
+  changed_when: false
   ignore_errors: yes
 
-- name: Install docker-compose standalone (fallback)
-  get_url:
-    url: https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64
-    dest: /usr/local/bin/docker-compose
-    mode: '0755'
-  when: ansible_facts.packages['docker-compose-plugin'] is not defined
-  ignore_errors: yes
+- name: Docker already installed
+  debug:
+    msg: "Docker já instalado: {{ docker_check.stdout_lines | default(['']) | first }}"
+  when: docker_check.rc == 0
+
+- name: Check if docker-compose exists
+  raw: which docker-compose || echo "not found"
+  register: docker_compose_check
+  changed_when: false
+
+- name: Install docker-compose standalone
+  raw: |
+    curl -L "https://github.com/docker/compose/releases/download/v2.24.0/docker-compose-linux-x86_64" -o /usr/local/bin/docker-compose
+    chmod +x /usr/local/bin/docker-compose
+  when: "'not found' in docker_compose_check.stdout"
