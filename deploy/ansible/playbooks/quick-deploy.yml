@@ -52,6 +52,9 @@
       raw: cd {{ app_dir }} && npm ci --production=false
       register: npm_install
 
+    - name: Update Prisma schema for PostgreSQL
+      raw: sed -i 's/provider = "sqlite"/provider = "postgresql"/' {{ app_dir }}/prisma/schema.prisma
+
     - name: Generate Prisma client
       raw: cd {{ app_dir }} && npx prisma generate
 
