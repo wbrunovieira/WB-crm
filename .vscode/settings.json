@@ -1,0 +1,5 @@
+{
+  "prisma.prismaFmtBinPath": "./node_modules/.bin/prisma",
+  "prisma.schemaPath": "./prisma/schema.prisma",
+  "prisma.enableCodeLens": false
+}
