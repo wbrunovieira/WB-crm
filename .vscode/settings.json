@@ -1,5 +1,45 @@
 {
-  "prisma.prismaFmtBinPath": "./node_modules/.bin/prisma",
-  "prisma.schemaPath": "./prisma/schema.prisma",
-  "prisma.enableCodeLens": false
+  // Prisma: Configuração para Prisma 5.x (ignorar avisos do Prisma 7)
+  "prisma.prisma7Support": false,
+  "prisma.enableDiagnostics": false,
+  "[prisma]": {
+    "editor.defaultFormatter": "Prisma.prisma"
+  },
+  // Tema Gold/Amarelo Moderno - WB CRM
+  "workbench.colorCustomizations": {
+    "titleBar.activeBackground": "#1a1507",
+    "titleBar.activeForeground": "#ffd700",
+    "titleBar.inactiveBackground": "#14110a",
+    "titleBar.inactiveForeground": "#b8860b",
+    "activityBar.background": "#1a1507",
+    "activityBar.foreground": "#ffd700",
+    "activityBar.inactiveForeground": "#b8860b",
+    "activityBarBadge.background": "#ffd700",
+    "activityBarBadge.foreground": "#1a1507",
+    "statusBar.background": "#ffd700",
+    "statusBar.foreground": "#1a1507",
+    "statusBar.debuggingBackground": "#ffb347",
+    "statusBar.debuggingForeground": "#1a1507",
+    "window.activeBorder": "#ffd700",
+    "editorGroupHeader.tabsBackground": "#1a1507",
+    "tab.activeBackground": "#2a2210",
+    "tab.activeForeground": "#ffd700",
+    "tab.inactiveBackground": "#1a1507",
+    "tab.inactiveForeground": "#b8860b",
+    "tab.activeBorder": "#ffd700",
+    "sideBar.background": "#14110a",
+    "sideBar.foreground": "#e6be8a",
+    "sideBarTitle.foreground": "#ffd700",
+    "list.activeSelectionBackground": "#2a2210",
+    "list.activeSelectionForeground": "#ffd700",
+    "list.hoverBackground": "#221c0d",
+    "editor.background": "#1a1507",
+    "editor.foreground": "#e6e6e6",
+    "editorCursor.foreground": "#ffd700",
+    "editor.lineHighlightBackground": "#221c0d",
+    "editorLineNumber.foreground": "#b8860b",
+    "editorLineNumber.activeForeground": "#ffd700"
+  },
+  "ansible.python.interpreterPath": "/usr/bin/python3",
+  "typescript.updateImportsOnFileMove.enabled": "always"
 }
