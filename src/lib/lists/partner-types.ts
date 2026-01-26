@@ -1,4 +1,5 @@
 export const partnerTypes = [
+  { value: "agencia_digital", label: "Agência Digital" },
   { value: "consultoria", label: "Consultoria" },
   { value: "universidade", label: "Universidade" },
   { value: "fornecedor", label: "Fornecedor" },

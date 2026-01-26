@@ -58,6 +58,7 @@ Required environment variables (see `.env.example`):
 - `NEXTAUTH_SECRET` - Generate with `openssl rand -base64 32`
 - `NEXTAUTH_URL` - Base URL (e.g., `http://localhost:3000`)
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` - For database seeding
+- `SDR_EMAIL`, `SDR_PASSWORD`, `SDR_NAME` - Optional SDR user for seeding
 
 ## Architecture
 
@@ -200,9 +201,17 @@ export async function createDeal(data: DealFormData) {
 
 **Permission Helpers** (`/src/lib/permissions.ts`):
 - `getAuthenticatedSession()` - Get session or throw "Não autorizado"
-- `getOwnerFilter()` - Returns `{ ownerId: id }` for sdr/closer, `{}` for admin
+- `getOwnerFilter(ownerIdFilter?)` - Returns `{ ownerId: id }` for sdr/closer, `{}` for admin (supports "all", "mine", or specific userId)
 - `canAccessRecord(ownerId)` - Check if user can access a specific record
+- `canAccessEntity(entityType, entityId, entityOwnerId)` - Check access including shared entities
+- `getOwnerOrSharedFilter(entityType, ownerIdFilter?)` - Filter that includes owned AND shared entities
+- `getSharedEntityIds(entityType)` - Get IDs of entities shared with current user
 - `isAdmin()` / `getUserRole()` - Role checking utilities
+
+**Entity Sharing** (`SharedEntity` model):
+- Admins can share records (leads, contacts, organizations, partners, deals) with other users without transferring ownership
+- Non-admin users can view both owned records AND records shared with them
+- Use `canAccessEntity()` and `getOwnerOrSharedFilter()` to properly check/filter including shared records
 
 ### API Routes
 Located in `/src/app/api/`:
@@ -269,4 +278,4 @@ When the user types "github", perform these steps:
 2. Create a commit with a short message in English describing the changes
 3. Run `git push` to push to remote repository
 
-Note: All development is local only. No CI/CD pipelines or GitHub Actions.
+Note: Pushing to `main` triggers automatic deployment via GitHub Actions (Ansible-based deployment to production server at crm.wbdigitalsolutions.com).
