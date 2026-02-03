@@ -12,7 +12,7 @@ import {
   canAccessEntity,
 } from "@/lib/permissions";
 
-export async function getOrganizations(filters?: { search?: string; owner?: string }) {
+export async function getOrganizations(filters?: { search?: string; owner?: string; hasHosting?: boolean }) {
   const ownerFilter = await getOwnerOrSharedFilter("organization", filters?.owner);
 
   const organizations = await prisma.organization.findMany({
@@ -20,6 +20,9 @@ export async function getOrganizations(filters?: { search?: string; owner?: stri
       ...ownerFilter,
       ...(filters?.search && {
         OR: [{ name: { contains: filters.search } }, { website: { contains: filters.search } }],
+      }),
+      ...(filters?.hasHosting !== undefined && {
+        hasHosting: filters.hasHosting,
       }),
     },
     include: {
@@ -161,6 +164,13 @@ export async function createOrganization(data: OrganizationFormData) {
       twitter: validated.twitter || null,
       tiktok: validated.tiktok || null,
       labelId: validated.labelId || null,
+      // Hosting
+      hasHosting: validated.hasHosting || false,
+      hostingRenewalDate: validated.hostingRenewalDate ? new Date(validated.hostingRenewalDate) : null,
+      hostingPlan: validated.hostingPlan || null,
+      hostingValue: validated.hostingValue || null,
+      hostingReminderDays: validated.hostingReminderDays || 30,
+      hostingNotes: validated.hostingNotes || null,
       ownerId: session.user.id,
     },
   });
@@ -212,6 +222,13 @@ export async function updateOrganization(
       twitter: validated.twitter || null,
       tiktok: validated.tiktok || null,
       labelId: validated.labelId || null,
+      // Hosting
+      hasHosting: validated.hasHosting || false,
+      hostingRenewalDate: validated.hostingRenewalDate ? new Date(validated.hostingRenewalDate) : null,
+      hostingPlan: validated.hostingPlan || null,
+      hostingValue: validated.hostingValue || null,
+      hostingReminderDays: validated.hostingReminderDays || 30,
+      hostingNotes: validated.hostingNotes || null,
     },
   });
 

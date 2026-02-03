@@ -294,6 +294,14 @@ model Organization {
   // External Projects (JSON array of project IDs from external API)
   externalProjectIds String? // JSON string: ["projectId1", "projectId2"]
 
+  // Hosting
+  hasHosting          Boolean   @default(false)
+  hostingRenewalDate  DateTime?
+  hostingPlan         String?   // "Básico", "Profissional", "Enterprise"
+  hostingValue        Float?    // Valor anual
+  hostingReminderDays Int       @default(30) // Dias antes para lembrar
+  hostingNotes        String?
+
   ownerId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -323,6 +331,8 @@ model Organization {
   @@index([sourceLeadId])
   @@index([labelId])
   @@index([primaryCNAEId])
+  @@index([hasHosting])
+  @@index([hostingRenewalDate])
   @@map("organizations")
 }
 

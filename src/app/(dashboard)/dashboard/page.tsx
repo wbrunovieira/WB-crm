@@ -2,6 +2,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
+import { getUpcomingRenewals } from "@/actions/hosting-renewals";
+import { HostingRenewalsWidget } from "@/components/dashboard/HostingRenewalsWidget";
 
 export default async function DashboardPage() {
   const session = await getServerSession(authOptions);
@@ -9,6 +11,9 @@ export default async function DashboardPage() {
   if (!session) {
     redirect("/login");
   }
+
+  // Get hosting renewals for the next 30 days
+  const upcomingRenewals = await getUpcomingRenewals(30);
 
   return (
     <div className="p-8">
@@ -235,6 +240,11 @@ export default async function DashboardPage() {
             </span>
           </div>
         </Link>
+      </div>
+
+      {/* Hosting Renewals Widget */}
+      <div className="mt-8">
+        <HostingRenewalsWidget renewals={upcomingRenewals} />
       </div>
     </div>
   );

@@ -5,21 +5,24 @@ import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrgan
 import { SearchInput } from "@/components/shared/SearchInput";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
+import { HostingFilter } from "@/components/organizations/HostingFilter";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
+import { Server } from "lucide-react";
 
 export default async function OrganizationsPage({
   searchParams,
 }: {
-  searchParams: { search?: string; owner?: string };
+  searchParams: { search?: string; owner?: string; hasHosting?: string };
 }) {
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
   const currentUserId = session?.user?.id || "";
+  const hasHostingFilter = searchParams.hasHosting === "true" ? true : searchParams.hasHosting === "false" ? false : undefined;
 
   const [organizations, users] = await Promise.all([
-    getOrganizations({ search: searchParams.search, owner: searchParams.owner }),
+    getOrganizations({ search: searchParams.search, owner: searchParams.owner, hasHosting: hasHostingFilter }),
     isAdmin ? getUsers() : Promise.resolve([]),
   ]);
 
@@ -45,11 +48,14 @@ export default async function OrganizationsPage({
       </div>
 
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="w-full max-w-md">
-          <SearchInput
-            placeholder="Buscar organizações..."
-            defaultValue={searchParams.search}
-          />
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="w-full max-w-md sm:w-auto">
+            <SearchInput
+              placeholder="Buscar organizações..."
+              defaultValue={searchParams.search}
+            />
+          </div>
+          <HostingFilter currentValue={searchParams.hasHosting} />
         </div>
         {isAdmin && users.length > 0 && (
           <OwnerFilter users={users} currentUserId={currentUserId} />
@@ -95,6 +101,9 @@ export default async function OrganizationsPage({
                   Negócios
                 </th>
                 <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+                  Hospedagem
+                </th>
+                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
                   Ações
                 </th>
               </tr>
@@ -134,6 +143,27 @@ export default async function OrganizationsPage({
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {org._count.deals}
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4 text-center text-sm">
+                    {org.hasHosting ? (
+                      <div className="flex flex-col items-center gap-1">
+                        <Server className="h-4 w-4 text-primary" />
+                        {org.hostingRenewalDate && (
+                          <span className={`text-xs ${
+                            (() => {
+                              const days = Math.ceil((new Date(org.hostingRenewalDate).getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+                              if (days <= 7) return "text-red-500 font-medium";
+                              if (days <= 15) return "text-yellow-500";
+                              return "text-gray-500";
+                            })()
+                          }`}>
+                            {new Date(org.hostingRenewalDate).toLocaleDateString("pt-BR")}
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-300">-</span>
+                    )}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-center text-sm">
                     <div className="flex items-center justify-center gap-2">

@@ -200,6 +200,12 @@ export function createMockLead(ownerId: string, overrides: Partial<{
 export function createMockOrganization(ownerId: string, overrides: Partial<{
   id: string;
   name: string;
+  hasHosting: boolean;
+  hostingRenewalDate: Date | null;
+  hostingPlan: string | null;
+  hostingValue: number | null;
+  hostingReminderDays: number;
+  hostingNotes: string | null;
 }> = {}) {
   return {
     id: overrides.id || `org-${ownerId}-${Date.now()}`,
@@ -232,6 +238,13 @@ export function createMockOrganization(ownerId: string, overrides: Partial<{
     sourceLeadId: null,
     externalProjectIds: null,
     labelId: null,
+    // Hosting fields
+    hasHosting: overrides.hasHosting ?? false,
+    hostingRenewalDate: overrides.hostingRenewalDate ?? null,
+    hostingPlan: overrides.hostingPlan ?? null,
+    hostingValue: overrides.hostingValue ?? null,
+    hostingReminderDays: overrides.hostingReminderDays ?? 30,
+    hostingNotes: overrides.hostingNotes ?? null,
     ownerId,
     createdAt: new Date(),
     updatedAt: new Date(),

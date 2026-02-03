@@ -40,6 +40,14 @@ export const organizationSchema = z.object({
 
   // Label
   labelId: z.string().optional(),
+
+  // Hosting
+  hasHosting: z.boolean().optional(),
+  hostingRenewalDate: z.string().optional(),
+  hostingPlan: z.string().optional(),
+  hostingValue: z.number().nonnegative().optional(),
+  hostingReminderDays: z.number().int().positive().optional(),
+  hostingNotes: z.string().optional(),
 });
 
 export type OrganizationFormData = z.infer<typeof organizationSchema>;

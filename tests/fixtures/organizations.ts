@@ -31,6 +31,13 @@ export const mockOrganization: Organization = {
   sourceLeadId: null,
   labelId: null,
   externalProjectIds: null,
+  // Hosting
+  hasHosting: false,
+  hostingRenewalDate: null,
+  hostingPlan: null,
+  hostingValue: null,
+  hostingReminderDays: 30,
+  hostingNotes: null,
   ownerId: 'user-test-123',
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),

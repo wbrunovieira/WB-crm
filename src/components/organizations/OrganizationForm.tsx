@@ -48,6 +48,13 @@ interface OrganizationFormProps {
       code: string;
       description: string;
     } | null;
+    // Hosting fields
+    hasHosting: boolean;
+    hostingRenewalDate: Date | null;
+    hostingPlan: string | null;
+    hostingValue: number | null;
+    hostingReminderDays: number;
+    hostingNotes: string | null;
   };
 }
 
@@ -60,6 +67,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
   const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(
     organization?.primaryCNAE || null
   );
+  const [hasHosting, setHasHosting] = useState(organization?.hasHosting || false);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -100,6 +108,17 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         twitter: formData.get("twitter") as string,
         tiktok: formData.get("tiktok") as string,
         labelId: labelId || undefined,
+        // Hosting
+        hasHosting: hasHosting,
+        hostingRenewalDate: formData.get("hostingRenewalDate") as string,
+        hostingPlan: formData.get("hostingPlan") as string,
+        hostingValue: formData.get("hostingValue")
+          ? parseFloat(formData.get("hostingValue") as string)
+          : undefined,
+        hostingReminderDays: formData.get("hostingReminderDays")
+          ? parseInt(formData.get("hostingReminderDays") as string)
+          : undefined,
+        hostingNotes: formData.get("hostingNotes") as string,
       };
 
       if (organization) {
@@ -534,6 +553,122 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
           />
         </div>
+      </div>
+
+      {/* Hosting */}
+      <div className="space-y-6">
+        <h3 className="text-lg font-semibold text-gray-900">Hospedagem</h3>
+
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="hasHosting"
+            checked={hasHosting}
+            onChange={(e) => setHasHosting(e.target.checked)}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          <label htmlFor="hasHosting" className="text-sm font-medium text-gray-700">
+            Cliente possui hospedagem conosco
+          </label>
+        </div>
+
+        {hasHosting && (
+          <div className="grid gap-6 md:grid-cols-2 pl-7">
+            <div>
+              <label
+                htmlFor="hostingRenewalDate"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Data de Vencimento *
+              </label>
+              <input
+                type="date"
+                id="hostingRenewalDate"
+                name="hostingRenewalDate"
+                required={hasHosting}
+                defaultValue={organization?.hostingRenewalDate ? new Date(organization.hostingRenewalDate).toISOString().split('T')[0] : ""}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="hostingPlan"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Plano
+              </label>
+              <select
+                id="hostingPlan"
+                name="hostingPlan"
+                defaultValue={organization?.hostingPlan || ""}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="">Selecione...</option>
+                <option value="Básico">Básico</option>
+                <option value="Profissional">Profissional</option>
+                <option value="Enterprise">Enterprise</option>
+                <option value="Personalizado">Personalizado</option>
+              </select>
+            </div>
+
+            <div>
+              <label
+                htmlFor="hostingValue"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Valor Anual (R$)
+              </label>
+              <input
+                type="number"
+                id="hostingValue"
+                name="hostingValue"
+                min="0"
+                step="0.01"
+                defaultValue={organization?.hostingValue || ""}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="hostingReminderDays"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Lembrar com Antecedência (dias)
+              </label>
+              <select
+                id="hostingReminderDays"
+                name="hostingReminderDays"
+                defaultValue={organization?.hostingReminderDays || 30}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="7">7 dias</option>
+                <option value="15">15 dias</option>
+                <option value="30">30 dias</option>
+                <option value="45">45 dias</option>
+                <option value="60">60 dias</option>
+              </select>
+            </div>
+
+            <div className="md:col-span-2">
+              <label
+                htmlFor="hostingNotes"
+                className="block text-sm font-medium text-gray-700"
+              >
+                Observações
+              </label>
+              <textarea
+                id="hostingNotes"
+                name="hostingNotes"
+                rows={2}
+                placeholder="Ex: Renovação automática, contato financeiro@empresa.com"
+                defaultValue={organization?.hostingNotes || ""}
+                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Social Media */}
