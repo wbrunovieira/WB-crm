@@ -149,7 +149,7 @@ export async function createDeal(data: DealFormData) {
 - **Pipeline**: Container for sales process stages
 - **Stage**: Steps in Pipeline (order, probability)
 - **Activity**: Tasks/calls/meetings/emails/whatsapp/physical_visit/instagram_dm linked to Deals, Contacts, Leads, or Partners. Supports multiple contacts via `contactIds` JSON field
-- **Partner**: Company-based entities for partnerships (consultoria, universidade, fornecedor, indicador, investidor). Can have Contacts and Activities, and refer Leads. Can link to products
+- **Partner**: Company-based entities for partnerships (agencia_digital, consultoria, universidade, fornecedor, indicador, investidor, mentor, parceiro_tecnologico, associacao, midia, outros). Can have Contacts and Activities, and refer Leads. Can link to products
 - **User**: System users with ownership of all entities
 - **Label**: Color-coded tags for Leads and Organizations
 - **BusinessLine**: Product categorization (e.g., "Desenvolvimento Web", "Automação", "IA"). Has multiple Products

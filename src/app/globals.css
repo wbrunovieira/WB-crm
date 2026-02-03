@@ -152,6 +152,30 @@ thead.bg-gray-50 {
   display: none;
 }
 
+/* Navigation scroll container - visible scrollbar */
+.nav-scroll-container {
+  scrollbar-width: thin;
+  scrollbar-color: #792990 transparent;
+}
+
+.nav-scroll-container::-webkit-scrollbar {
+  height: 4px;
+}
+
+.nav-scroll-container::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 2px;
+}
+
+.nav-scroll-container::-webkit-scrollbar-thumb {
+  background: #792990;
+  border-radius: 2px;
+}
+
+.nav-scroll-container::-webkit-scrollbar-thumb:hover {
+  background: #a03bb8;
+}
+
 /* Custom scrollbar for navigation */
 ::-webkit-scrollbar {
   width: 6px;

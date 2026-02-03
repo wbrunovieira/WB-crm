@@ -22,15 +22,15 @@ export default async function DashboardLayout({
       <Toaster position="top-right" richColors />
       <nav className="sticky top-0 z-50 border-b shadow-lg" style={{ backgroundColor: '#1a0022', borderColor: '#792990' }}>
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
-          <div className="flex h-16 items-center justify-between gap-4">
-            <div className="flex items-center gap-6 min-w-0 flex-1">
-              <Link href="/dashboard" className="flex-shrink-0 text-xl font-bold text-primary hover:text-purple-400 transition-colors">
+          <div className="flex h-16 items-center justify-between gap-2">
+            <div className="flex items-center gap-4 min-w-0 flex-1">
+              <Link href="/dashboard" className="flex-shrink-0 text-lg font-bold text-primary hover:text-purple-400 transition-colors">
                 WB CRM
               </Link>
               <MainNav userRole={session.user?.role} />
             </div>
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="hidden sm:block text-sm text-gray-300 font-medium truncate max-w-[200px]" title={session.user?.name || session.user?.email || ""}>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="hidden lg:block text-sm text-gray-300 font-medium truncate max-w-[150px]" title={session.user?.name || session.user?.email || ""}>
                 {session.user?.name || session.user?.email}
               </div>
               <LogoutButton />
