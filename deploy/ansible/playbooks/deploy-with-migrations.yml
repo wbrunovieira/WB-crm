@@ -1,0 +1,176 @@
+---
+# Deploy with Migrations - Safe deployment with database migrations
+#
+# Use this when:
+#   - Schema changes are pending (new tables, columns, indexes)
+#   - Data migrations are needed
+#   - Any prisma/migrations/* changes since last deploy
+#
+# What it does:
+#   1. Creates database backup BEFORE migration
+#   2. Git pull
+#   3. npm ci
+#   4. Prisma generate
+#   5. Prisma migrate deploy (with proper error handling)
+#   6. npm run build
+#   7. PM2 restart
+#   8. Health check
+#   9. Rollback instructions on failure
+#
+# Usage:
+#   ansible-playbook -i inventory/production.yml playbooks/deploy-with-migrations.yml
+#
+# Time: ~5-8 minutes (includes backup)
+
+- name: Deploy with Migrations - Safe Database Update
+  hosts: crm_server
+  gather_facts: no
+
+  vars:
+    app_dir: /opt/wb-crm
+    app_name: wb-crm
+    github_branch: main
+    backup_dir: /opt/wb-crm-backups
+    timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+
+  tasks:
+    - name: Display deployment info
+      debug:
+        msg: |
+          🚀 DEPLOY WITH MIGRATIONS
+          ==========================
+          App: {{ app_name }}
+          Branch: {{ github_branch }}
+          Backup: {{ backup_dir }}/pre_migration_{{ timestamp }}.sql
+
+    # ============ PRE-MIGRATION BACKUP ============
+    - name: Ensure backup directory exists
+      raw: mkdir -p {{ backup_dir }}
+
+    - name: Create pre-migration database backup
+      raw: |
+        source /opt/wb-crm/.env && \
+        PGPASSWORD=$DB_PASSWORD pg_dump -h $DB_HOST -U $DB_USER -d $DB_NAME \
+          --format=custom \
+          --file={{ backup_dir }}/pre_migration_{{ timestamp }}.sql && \
+        echo "Backup created successfully"
+      register: backup_result
+      ignore_errors: yes
+
+    - name: Verify backup was created
+      raw: ls -la {{ backup_dir }}/pre_migration_{{ timestamp }}.sql 2>/dev/null || echo "BACKUP_FAILED"
+      register: backup_check
+
+    - name: Fail if backup failed
+      fail:
+        msg: |
+          ❌ DATABASE BACKUP FAILED
+          Cannot proceed with migrations without a backup.
+          Check database credentials and connectivity.
+      when: "'BACKUP_FAILED' in backup_check.stdout"
+
+    - name: Display backup success
+      debug:
+        msg: "✅ Database backup created: pre_migration_{{ timestamp }}.sql"
+
+    # ============ CODE UPDATE ============
+    - name: Pull latest code from GitHub
+      raw: |
+        cd {{ app_dir }} && \
+        git fetch origin && \
+        git reset --hard origin/{{ github_branch }} && \
+        git log -1 --oneline
+      register: git_pull
+
+    - name: Display commit
+      debug:
+        msg: "Latest commit: {{ git_pull.stdout_lines | last }}"
+
+    - name: Install dependencies
+      raw: cd {{ app_dir }} && npm ci --production=false
+      register: npm_install
+
+    - name: Update Prisma schema for PostgreSQL
+      raw: sed -i 's/provider = "sqlite"/provider = "postgresql"/' {{ app_dir }}/prisma/schema.prisma
+
+    - name: Generate Prisma client
+      raw: cd {{ app_dir }} && npx prisma generate
+
+    # ============ DATABASE MIGRATION ============
+    - name: Check pending migrations
+      raw: cd {{ app_dir }} && npx prisma migrate status 2>&1
+      register: migration_status
+      ignore_errors: yes
+
+    - name: Display migration status
+      debug:
+        msg: "{{ migration_status.stdout_lines }}"
+
+    - name: Run database migrations
+      raw: cd {{ app_dir }} && npx prisma migrate deploy 2>&1
+      register: migrations
+      ignore_errors: yes
+
+    - name: Check migration result
+      fail:
+        msg: |
+          ❌ MIGRATION FAILED
+          ====================
+          {{ migrations.stdout }}
+
+          🔄 TO ROLLBACK:
+          1. SSH into server: ssh user@crm.wbdigitalsolutions.com
+          2. Restore backup:
+             source /opt/wb-crm/.env
+             PGPASSWORD=$DB_PASSWORD pg_restore -h $DB_HOST -U $DB_USER -d $DB_NAME \
+               --clean --if-exists {{ backup_dir }}/pre_migration_{{ timestamp }}.sql
+          3. Revert code:
+             cd /opt/wb-crm && git reset --hard HEAD~1
+          4. Restart app:
+             pm2 restart wb-crm
+      when: migrations.rc != 0 and 'Error' in migrations.stdout
+
+    - name: Display migration success
+      debug:
+        msg: |
+          ✅ Migrations applied successfully
+          {{ migrations.stdout_lines | last }}
+
+    # ============ BUILD & RESTART ============
+    - name: Build Next.js
+      raw: cd {{ app_dir }} && NODE_ENV=production npm run build
+      register: build_result
+
+    - name: Restart PM2
+      raw: pm2 restart {{ app_name }} && sleep 3 && pm2 status {{ app_name }}
+      register: pm2_status
+
+    - name: Display PM2 status
+      debug:
+        msg: "{{ pm2_status.stdout_lines }}"
+
+    # ============ HEALTH CHECK ============
+    - name: Health check
+      raw: curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000"
+      register: health_check
+      retries: 5
+      delay: 5
+      until: health_check.stdout | trim == "200" or health_check.stdout | trim == "307"
+
+    - name: Deploy result
+      debug:
+        msg: |
+          ✅ DEPLOY WITH MIGRATIONS COMPLETE
+          ===================================
+          Commit: {{ git_pull.stdout_lines | last }}
+          Backup: pre_migration_{{ timestamp }}.sql
+          Health: {{ 'OK' if health_check.stdout | trim in ['200', '307'] else 'FAILED' }}
+          URL: https://crm.wbdigitalsolutions.com
+
+          📝 ROLLBACK COMMAND (if needed):
+          ansible-playbook -i inventory/production.yml playbooks/rollback.yml \
+            -e "backup_file=pre_migration_{{ timestamp }}.sql"
+
+    # ============ CLEANUP OLD BACKUPS ============
+    - name: Remove backups older than 7 days
+      raw: find {{ backup_dir }} -name "pre_migration_*.sql" -mtime +7 -delete 2>/dev/null || true

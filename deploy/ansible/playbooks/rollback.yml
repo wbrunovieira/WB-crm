@@ -1,0 +1,131 @@
+---
+# Rollback - Restore database from backup and revert code
+#
+# Use this when:
+#   - Migration failed and corrupted data
+#   - Deploy broke the application
+#   - Need to revert to previous state
+#
+# Usage:
+#   # Rollback to specific backup:
+#   ansible-playbook -i inventory/production.yml playbooks/rollback.yml \
+#     -e "backup_file=pre_migration_20260204_120000.sql"
+#
+#   # Rollback to latest backup:
+#   ansible-playbook -i inventory/production.yml playbooks/rollback.yml
+#
+#   # Code-only rollback (no database restore):
+#   ansible-playbook -i inventory/production.yml playbooks/rollback.yml \
+#     -e "code_only=true" -e "commits_back=1"
+
+- name: Rollback - Restore Previous State
+  hosts: crm_server
+  gather_facts: no
+
+  vars:
+    app_dir: /opt/wb-crm
+    app_name: wb-crm
+    backup_dir: /opt/wb-crm-backups
+    backup_file: ""
+    code_only: false
+    commits_back: 1
+
+  tasks:
+    - name: Display rollback info
+      debug:
+        msg: |
+          ⚠️  ROLLBACK OPERATION
+          ======================
+          Mode: {{ 'Code only' if code_only else 'Full (code + database)' }}
+          Backup: {{ backup_file if backup_file else 'Latest available' }}
+
+    # ============ FIND BACKUP (if not specified) ============
+    - name: Find latest backup
+      raw: ls -t {{ backup_dir }}/pre_migration_*.sql 2>/dev/null | head -1
+      register: latest_backup
+      when: not backup_file and not code_only
+
+    - name: Set backup file
+      set_fact:
+        actual_backup: "{{ backup_file if backup_file else latest_backup.stdout | trim | basename }}"
+      when: not code_only
+
+    - name: Verify backup exists
+      raw: ls {{ backup_dir }}/{{ actual_backup }} 2>/dev/null || echo "NOT_FOUND"
+      register: backup_check
+      when: not code_only
+
+    - name: Fail if backup not found
+      fail:
+        msg: |
+          ❌ BACKUP NOT FOUND: {{ actual_backup }}
+          Available backups:
+          {{ lookup('pipe', 'ls -la ' + backup_dir + '/pre_migration_*.sql 2>/dev/null || echo "No backups found"') }}
+      when: not code_only and 'NOT_FOUND' in backup_check.stdout
+
+    # ============ STOP APPLICATION ============
+    - name: Stop PM2 application
+      raw: pm2 stop {{ app_name }} 2>/dev/null || true
+
+    # ============ DATABASE ROLLBACK ============
+    - name: Restore database from backup
+      raw: |
+        source {{ app_dir }}/.env && \
+        PGPASSWORD=$DB_PASSWORD pg_restore -h $DB_HOST -U $DB_USER -d $DB_NAME \
+          --clean --if-exists {{ backup_dir }}/{{ actual_backup }} 2>&1
+      register: restore_result
+      when: not code_only
+      ignore_errors: yes
+
+    - name: Check restore result
+      debug:
+        msg: |
+          Database restore: {{ 'COMPLETED' if restore_result.rc == 0 else 'COMPLETED WITH WARNINGS' }}
+          {{ restore_result.stdout_lines | last if restore_result.stdout_lines else '' }}
+      when: not code_only
+
+    # ============ CODE ROLLBACK ============
+    - name: Revert code to previous commits
+      raw: |
+        cd {{ app_dir }} && \
+        git reset --hard HEAD~{{ commits_back }} && \
+        git log -1 --oneline
+      register: git_revert
+
+    - name: Display reverted commit
+      debug:
+        msg: "Reverted to: {{ git_revert.stdout_lines | last }}"
+
+    # ============ REBUILD ============
+    - name: Update Prisma schema for PostgreSQL
+      raw: sed -i 's/provider = "sqlite"/provider = "postgresql"/' {{ app_dir }}/prisma/schema.prisma
+
+    - name: Generate Prisma client
+      raw: cd {{ app_dir }} && npx prisma generate
+
+    - name: Build Next.js
+      raw: cd {{ app_dir }} && NODE_ENV=production npm run build
+      register: build_result
+
+    # ============ RESTART ============
+    - name: Restart PM2
+      raw: pm2 restart {{ app_name }} && sleep 3 && pm2 status {{ app_name }}
+      register: pm2_status
+
+    # ============ HEALTH CHECK ============
+    - name: Health check
+      raw: curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000"
+      register: health_check
+      retries: 5
+      delay: 5
+      until: health_check.stdout | trim == "200" or health_check.stdout | trim == "307"
+
+    - name: Rollback result
+      debug:
+        msg: |
+          {{ '✅' if health_check.stdout | trim in ['200', '307'] else '❌' }} ROLLBACK {{ 'COMPLETE' if health_check.stdout | trim in ['200', '307'] else 'FAILED' }}
+          =====================
+          Commit: {{ git_revert.stdout_lines | last }}
+          Database: {{ 'Restored from ' + actual_backup if not code_only else 'Not changed' }}
+          Health: {{ 'OK' if health_check.stdout | trim in ['200', '307'] else 'FAILED - MANUAL INTERVENTION REQUIRED' }}
+          URL: https://crm.wbdigitalsolutions.com

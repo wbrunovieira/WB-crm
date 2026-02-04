@@ -2,16 +2,23 @@
 # Quick Deploy - Fast code update without full infrastructure check
 #
 # Use this for:
-#   - Code updates
+#   - Code updates WITHOUT schema changes
 #   - Security patches
 #   - Bug fixes
+#   - UI changes
+#
+# ⚠️  DO NOT USE THIS FOR MIGRATIONS!
+#     Use deploy-with-migrations.yml instead when:
+#     - prisma/migrations/* has new folders
+#     - schema.prisma has changes
 #
 # What it does:
 #   1. Git pull
 #   2. npm ci
 #   3. Prisma generate
-#   4. npm run build
-#   5. PM2 restart
+#   4. Check for pending migrations (warn only)
+#   5. npm run build
+#   6. PM2 restart
 #
 # Usage:
 #   ansible-playbook -i inventory/production.yml playbooks/quick-deploy.yml
@@ -58,13 +65,42 @@
     - name: Generate Prisma client
       raw: cd {{ app_dir }} && npx prisma generate
 
-    - name: Run database migrations (if any)
-      raw: cd {{ app_dir }} && npx prisma migrate deploy 2>&1 || echo "No pending migrations"
-      register: migrations
+    - name: Check for pending migrations
+      raw: cd {{ app_dir }} && npx prisma migrate status 2>&1 | grep -E "(pending|Behind)" || echo "NO_PENDING"
+      register: migration_check
+      ignore_errors: yes
 
-    - name: Display migrations
+    - name: Warn about pending migrations
       debug:
-        msg: "{{ migrations.stdout_lines | last }}"
+        msg: |
+          ⚠️  WARNING: PENDING MIGRATIONS DETECTED
+          =========================================
+          {{ migration_check.stdout }}
+
+          Consider using deploy-with-migrations.yml instead:
+          ansible-playbook -i inventory/production.yml playbooks/deploy-with-migrations.yml
+      when: "'NO_PENDING' not in migration_check.stdout and migration_check.stdout | trim != ''"
+
+    - name: Run database migrations (safe apply)
+      raw: cd {{ app_dir }} && npx prisma migrate deploy 2>&1
+      register: migrations
+      ignore_errors: yes
+
+    - name: Check migration result
+      debug:
+        msg: "{{ 'Migrations: ' + (migrations.stdout_lines | last) if migrations.stdout_lines else 'No migrations output' }}"
+      when: migrations.stdout_lines is defined
+
+    - name: Fail on migration error
+      fail:
+        msg: |
+          ❌ MIGRATION FAILED
+          ===================
+          {{ migrations.stdout }}
+
+          ⚠️  USE deploy-with-migrations.yml FOR SAFER MIGRATION HANDLING:
+          ansible-playbook -i inventory/production.yml playbooks/deploy-with-migrations.yml
+      when: migrations.rc is defined and migrations.rc != 0 and 'Error' in (migrations.stdout | default(''))
 
     - name: Build Next.js
       raw: cd {{ app_dir }} && NODE_ENV=production npm run build
