@@ -70,8 +70,13 @@
     # ============ DATABASE ROLLBACK ============
     - name: Restore database from backup
       raw: |
-        source {{ app_dir }}/.env && \
-        PGPASSWORD=$DB_PASSWORD pg_restore -h $DB_HOST -U $DB_USER -d $DB_NAME \
+        DATABASE_URL=$(grep -E "^DATABASE_URL=" {{ app_dir }}/.env | cut -d'=' -f2-)
+        DB_USER=$(echo "$DATABASE_URL" | sed -E 's|postgresql://([^:]+):.*|\1|')
+        DB_PASSWORD=$(echo "$DATABASE_URL" | sed -E 's|postgresql://[^:]+:([^@]+)@.*|\1|' | python3 -c "import sys,urllib.parse;print(urllib.parse.unquote(sys.stdin.read().strip()))")
+        DB_HOST=$(echo "$DATABASE_URL" | sed -E 's|postgresql://[^@]+@([^:]+):.*|\1|')
+        DB_PORT=$(echo "$DATABASE_URL" | sed -E 's|postgresql://[^@]+@[^:]+:([0-9]+)/.*|\1|')
+        DB_NAME=$(echo "$DATABASE_URL" | sed -E 's|postgresql://[^/]+/([^?]+).*|\1|')
+        PGPASSWORD="$DB_PASSWORD" pg_restore -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
           --clean --if-exists {{ backup_dir }}/{{ actual_backup }} 2>&1
       register: restore_result
       when: not code_only
