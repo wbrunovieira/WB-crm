@@ -97,7 +97,7 @@ export default function ActivityForm({
 
     try {
       const data = {
-        type: formData.type as "call" | "meeting" | "email" | "task" | "whatsapp" | "visit" | "instagram",
+        type: formData.type as "call" | "meeting" | "email" | "task" | "whatsapp" | "visit" | "instagram" | "linkedin",
         subject: formData.subject,
         description: formData.description || undefined,
         dueDate: formData.dueDate
@@ -173,7 +173,8 @@ export default function ActivityForm({
           <option value="task">📋 Tarefa</option>
           <option value="whatsapp">💬 WhatsApp</option>
           <option value="visit">📍 Visita Física</option>
-          <option value="instagram">📷 Direct Instagram</option>
+          <option value="instagram">📷 Instagram</option>
+          <option value="linkedin">💼 LinkedIn</option>
         </select>
       </div>
 

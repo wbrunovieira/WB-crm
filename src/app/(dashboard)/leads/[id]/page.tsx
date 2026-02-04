@@ -6,6 +6,7 @@ import { LeadActivitiesList } from "@/components/leads/LeadActivitiesList";
 import { LeadProductsSection } from "@/components/leads/LeadProductsSection";
 import { LeadTechProfileSection } from "@/components/leads/LeadTechProfileSection";
 import { LeadICPSection } from "@/components/icps/LeadICPSection";
+import { LeadCadenceSection } from "@/components/leads/LeadCadenceSection";
 import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
@@ -551,6 +552,9 @@ export default async function LeadDetailPage({
 
       {/* ICP Section */}
       <LeadICPSection leadId={lead.id} isConverted={!!lead.convertedAt} />
+
+      {/* Cadence Section */}
+      <LeadCadenceSection leadId={lead.id} isConverted={!!lead.convertedAt} />
 
       {/* CNAE Management */}
       {!lead.convertedAt && (

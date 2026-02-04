@@ -686,6 +686,7 @@ export default function ActivityCalendar({
       { type: "whatsapp", label: "WhatsApp", icon: "💬", bgColor: "#d1fae5", borderColor: "#a7f3d0", barColor: "#10b981" },
       { type: "visit", label: "Visitas", icon: "📍", bgColor: "#fee2e2", borderColor: "#fecaca", barColor: "#ef4444" },
       { type: "instagram", label: "Instagram", icon: "📷", bgColor: "#fce7f3", borderColor: "#fbcfe8", barColor: "#ec4899" },
+      { type: "linkedin", label: "LinkedIn", icon: "💼", bgColor: "#e0e7ff", borderColor: "#c7d2fe", barColor: "#6366f1" },
     ];
 
     return types.map(({ type, label, icon, bgColor, borderColor, barColor }) => {

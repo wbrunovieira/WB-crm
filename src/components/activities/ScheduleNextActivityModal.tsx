@@ -122,7 +122,7 @@ export function ScheduleNextActivityModal({
         : null;
 
       await createActivity({
-        type: formData.type as "call" | "meeting" | "email" | "task" | "whatsapp" | "visit" | "instagram",
+        type: formData.type as "call" | "meeting" | "email" | "task" | "whatsapp" | "visit" | "instagram" | "linkedin",
         subject: formData.subject,
         description: formData.description || undefined,
         dueDate: dueDateTime,
@@ -198,7 +198,8 @@ export function ScheduleNextActivityModal({
               <option value="task">📋 Tarefa</option>
               <option value="whatsapp">💬 WhatsApp</option>
               <option value="visit">📍 Visita Presencial</option>
-              <option value="instagram">📷 Instagram DM</option>
+              <option value="instagram">📷 Instagram</option>
+              <option value="linkedin">💼 LinkedIn</option>
             </select>
           </div>
 
