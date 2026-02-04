@@ -13,7 +13,6 @@ import {
   History,
   ChevronRight,
   ChevronDown,
-  ChevronUp,
   Target
 } from "lucide-react";
 import { deleteICP, updateICP } from "@/actions/icps";
