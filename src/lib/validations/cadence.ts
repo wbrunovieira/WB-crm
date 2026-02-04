@@ -32,12 +32,12 @@ export const cadenceSchema = z.object({
     .regex(slugRegex, "Slug deve conter apenas letras minúsculas, números e hífens"),
   description: z
     .string()
-    .max(2000, "Descrição deve ter no máximo 2000 caracteres")
+    .max(10000, "Descrição deve ter no máximo 10.000 caracteres")
     .optional()
     .nullable(),
   objective: z
     .string()
-    .max(500, "Objetivo deve ter no máximo 500 caracteres")
+    .max(2000, "Objetivo deve ter no máximo 2.000 caracteres")
     .optional()
     .nullable(),
   durationDays: z
@@ -62,8 +62,8 @@ export const cadenceUpdateSchema = z.object({
     .max(50, "Slug deve ter no máximo 50 caracteres")
     .regex(slugRegex, "Slug deve conter apenas letras minúsculas, números e hífens")
     .optional(),
-  description: z.string().max(2000).optional().nullable(),
-  objective: z.string().max(500).optional().nullable(),
+  description: z.string().max(10000).optional().nullable(),
+  objective: z.string().max(2000).optional().nullable(),
   durationDays: z.number().int().min(1).max(90).optional(),
   icpId: z.string().optional().nullable(),
   status: cadenceStatusEnum.optional(),
@@ -85,7 +85,7 @@ export const cadenceStepSchema = z.object({
     .max(200, "Assunto deve ter no máximo 200 caracteres"),
   description: z
     .string()
-    .max(2000, "Descrição deve ter no máximo 2000 caracteres")
+    .max(10000, "Descrição deve ter no máximo 10.000 caracteres")
     .optional()
     .nullable(),
   order: z.number().int().min(0).default(0),
@@ -95,7 +95,7 @@ export const cadenceStepUpdateSchema = z.object({
   dayNumber: z.number().int().min(1).max(90).optional(),
   channel: cadenceChannelEnum.optional(),
   subject: z.string().min(2).max(200).optional(),
-  description: z.string().max(2000).optional().nullable(),
+  description: z.string().max(10000).optional().nullable(),
   order: z.number().int().min(0).optional(),
 });
 
