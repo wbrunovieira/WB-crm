@@ -38,6 +38,10 @@ model User {
   sharedWithMe       SharedEntity[] @relation("SharedWithUser")
   sharedByMe         SharedEntity[] @relation("SharedByUser")
 
+  // ICP relations
+  icps               ICP[]
+  icpVersions        ICPVersion[]
+
   @@map("users")
 }
 
@@ -207,6 +211,9 @@ model Lead {
   primaryCNAE         CNAE?                @relation("LeadPrimaryCNAE", fields: [primaryCNAEId], references: [id], onDelete: SetNull)
   secondaryCNAEs      LeadSecondaryCNAE[] // Múltiplas atividades secundárias
 
+  // ICPs
+  icps                LeadICP[]
+
   @@index([ownerId])
   @@index([status])
   @@index([quality])
@@ -326,6 +333,9 @@ model Organization {
   // CNAEs
   primaryCNAE                CNAE?                        @relation("OrganizationPrimaryCNAE", fields: [primaryCNAEId], references: [id], onDelete: SetNull)
   secondaryCNAEs             OrganizationSecondaryCNAE[] // Múltiplas atividades secundárias
+
+  // ICPs
+  icps                       OrganizationICP[]
 
   @@index([ownerId])
   @@index([sourceLeadId])
@@ -1326,4 +1336,89 @@ model OrganizationSecondaryCNAE {
   @@index([organizationId])
   @@index([cnaeId])
   @@map("organization_secondary_cnaes")
+}
+
+// ============ ICP (Ideal Customer Profile) ============
+
+model ICP {
+  id          String   @id @default(cuid())
+  name        String   // "Startup de Tech", "E-commerce Médio"
+  slug        String   @unique
+  content     String   // Texto rico do ICP (descrição completa)
+  status      String   @default("draft") // draft, active, archived
+
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  versions      ICPVersion[]
+  leads         LeadICP[]
+  organizations OrganizationICP[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@map("icps")
+}
+
+model ICPVersion {
+  id            String   @id @default(cuid())
+  icpId         String
+  versionNumber Int
+  name          String   // Snapshot do nome
+  content       String   // Snapshot do conteúdo
+  status        String   // Snapshot do status
+  changedBy     String
+  changeReason  String?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  icp           ICP  @relation(fields: [icpId], references: [id], onDelete: Cascade)
+  user          User @relation(fields: [changedBy], references: [id], onDelete: Cascade)
+
+  @@unique([icpId, versionNumber])
+  @@index([icpId])
+  @@index([changedBy])
+  @@map("icp_versions")
+}
+
+// ============ ICP JUNCTIONS ============
+
+model LeadICP {
+  id        String   @id @default(cuid())
+  leadId    String
+  icpId     String
+  matchScore Int?    // Score de fit (0-100)
+  notes     String?  // Observações do link
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  lead      Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  icp       ICP  @relation(fields: [icpId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, icpId])
+  @@index([leadId])
+  @@index([icpId])
+  @@map("lead_icps")
+}
+
+model OrganizationICP {
+  id             String   @id @default(cuid())
+  organizationId String
+  icpId          String
+  matchScore     Int?     // Score de fit (0-100)
+  notes          String?  // Observações do link
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  icp            ICP          @relation(fields: [icpId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, icpId])
+  @@index([organizationId])
+  @@index([icpId])
+  @@map("organization_icps")
 }

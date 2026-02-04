@@ -43,6 +43,12 @@ const mockTx = {
   organizationProduct: {
     createMany: vi.fn(),
   },
+  leadICP: {
+    findMany: vi.fn(),
+  },
+  organizationICP: {
+    createMany: vi.fn(),
+  },
   lead: {
     update: vi.fn(),
   },
@@ -76,6 +82,8 @@ describe("Lead Conversion Transaction", () => {
     mockTx.organizationCRM.createMany.mockResolvedValue({ count: 0 });
     mockTx.organizationEcommerce.createMany.mockResolvedValue({ count: 0 });
     mockTx.organizationProduct.createMany.mockResolvedValue({ count: 0 });
+    mockTx.leadICP.findMany.mockResolvedValue([]);
+    mockTx.organizationICP.createMany.mockResolvedValue({ count: 0 });
     mockTx.lead.update.mockResolvedValue({});
   });
 
@@ -274,6 +282,38 @@ describe("Lead Conversion Transaction", () => {
           { organizationId: "org-1", productId: "prod-2" },
         ],
       });
+    });
+  });
+
+  // ==================== ICP Links Transfer ====================
+  describe("ICP Links Transfer", () => {
+    it("should transfer ICP links from lead to organization", async () => {
+      mockTx.leadICP.findMany.mockResolvedValue([
+        { id: "licp-1", leadId: "lead-1", icpId: "icp-1", matchScore: 85, notes: "Excelente fit" },
+        { id: "licp-2", leadId: "lead-1", icpId: "icp-2", matchScore: 70, notes: null },
+      ]);
+
+      await convertLeadToOrganizationTransaction(basicInput);
+
+      expect(mockTx.leadICP.findMany).toHaveBeenCalledWith({
+        where: { leadId: "lead-1" },
+      });
+
+      expect(mockTx.organizationICP.createMany).toHaveBeenCalledWith({
+        data: [
+          { organizationId: "org-1", icpId: "icp-1", matchScore: 85, notes: "Excelente fit" },
+          { organizationId: "org-1", icpId: "icp-2", matchScore: 70, notes: null },
+        ],
+      });
+    });
+
+    it("should not call createMany when lead has no ICP links", async () => {
+      mockTx.leadICP.findMany.mockResolvedValue([]);
+
+      await convertLeadToOrganizationTransaction(basicInput);
+
+      expect(mockTx.leadICP.findMany).toHaveBeenCalled();
+      expect(mockTx.organizationICP.createMany).not.toHaveBeenCalled();
     });
   });
 

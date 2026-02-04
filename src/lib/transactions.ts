@@ -264,7 +264,23 @@ export async function convertLeadToOrganizationTransaction(
       });
     }
 
-    // 6. Update lead status
+    // 6. Transfer ICP links
+    const leadICPs = await tx.leadICP.findMany({
+      where: { leadId: input.leadId },
+    });
+
+    if (leadICPs.length > 0) {
+      await tx.organizationICP.createMany({
+        data: leadICPs.map((link) => ({
+          organizationId: organization.id,
+          icpId: link.icpId,
+          matchScore: link.matchScore,
+          notes: link.notes,
+        })),
+      });
+    }
+
+    // 7. Update lead status
     await tx.lead.update({
       where: { id: input.leadId },
       data: {
