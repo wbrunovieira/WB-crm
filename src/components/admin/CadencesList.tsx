@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Trash2, Zap, Target, Users } from "lucide-react";
+import { Eye, EyeOff, Trash2, Zap, Target, Users, ChevronRight } from "lucide-react";
 import { deleteCadence, updateCadence } from "@/actions/cadences";
 import { CADENCE_STATUS_LABELS, type CadenceStatus } from "@/lib/validations/cadence";
 
@@ -96,32 +96,34 @@ export function CadencesList({ cadences }: CadencesListProps) {
 
       <div className="space-y-3">
         {cadences.map((cadence) => (
-          <div
+          <Link
             key={cadence.id}
-            className="rounded-lg border bg-white p-4 shadow-sm transition-shadow hover:shadow-md"
+            href={`/admin/cadences/${cadence.id}`}
+            className="group block rounded-lg border border-gray-200 bg-white p-4 shadow-sm cursor-pointer transition-all duration-300 ease-out hover:bg-[#792990] hover:border-[#792990] hover:shadow-xl hover:scale-[1.02]"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <Link
-                    href={`/admin/cadences/${cadence.id}`}
-                    className="text-lg font-medium text-gray-900 hover:text-primary"
-                  >
+                  <span className="inline-flex items-center gap-1.5 text-lg font-medium text-gray-900 transition-colors duration-200 ease-in-out group-hover:text-white">
                     {cadence.name}
-                  </Link>
+                    <ChevronRight className="h-4 w-4 opacity-0 -translate-x-1 transition-all duration-200 ease-in-out group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-white" />
+                  </span>
                   {getStatusBadge(cadence.status)}
                 </div>
 
                 {cadence.objective && (
-                  <p className="mt-1 text-sm text-gray-600">
+                  <p className="mt-1 text-sm text-gray-600 transition-colors duration-200 ease-in-out group-hover:text-white/90">
                     {cadence.objective}
                   </p>
                 )}
 
-                <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-500">
-                  <span className="flex items-center gap-1">
+                <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-500 transition-colors duration-200 ease-in-out group-hover:text-white/80">
+                  <span className={`flex items-center gap-1 ${cadence._count.steps === 0 ? "text-amber-600 font-medium group-hover:text-amber-200" : ""}`}>
                     <Zap className="h-4 w-4" />
                     {cadence._count.steps} etapas
+                    {cadence._count.steps === 0 && (
+                      <span className="text-xs">(clique para adicionar)</span>
+                    )}
                   </span>
                   <span>{cadence.durationDays} dias</span>
                   {cadence.icp && (
@@ -141,9 +143,13 @@ export function CadencesList({ cadences }: CadencesListProps) {
 
               <div className="ml-4 flex gap-2">
                 <button
-                  onClick={() => handleToggleStatus(cadence)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleToggleStatus(cadence);
+                  }}
                   disabled={loading === cadence.id}
-                  className="rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 disabled:opacity-50"
+                  className="rounded-md p-2 text-gray-400 hover:bg-white/20 hover:text-gray-600 group-hover:text-white/70 group-hover:hover:text-white group-hover:hover:bg-white/20 disabled:opacity-50 transition-colors duration-200"
                   title={cadence.status === "active" ? "Arquivar" : "Ativar"}
                 >
                   {cadence.status === "active" ? (
@@ -153,16 +159,20 @@ export function CadencesList({ cadences }: CadencesListProps) {
                   )}
                 </button>
                 <button
-                  onClick={() => handleDelete(cadence)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleDelete(cadence);
+                  }}
                   disabled={loading === cadence.id}
-                  className="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                  className="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 group-hover:text-white/70 group-hover:hover:text-red-200 group-hover:hover:bg-red-500/30 disabled:opacity-50 transition-colors duration-200"
                   title="Excluir"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
               </div>
             </div>
-          </div>
+          </Link>
         ))}
       </div>
     </div>
