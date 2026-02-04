@@ -12,6 +12,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockDeep, mockReset } from 'vitest-mock-extended';
 import type { PrismaClient } from '@prisma/client';
 import type { Session } from 'next-auth';
+import type {
+  TechProfileHostingFormData,
+  TechProfileDatabaseFormData,
+} from '@/lib/validations/tech-profile';
 
 // Mock Prisma
 vi.mock('@/lib/prisma', () => ({
@@ -376,7 +380,7 @@ describe('Tech Profile Options Actions', () => {
     });
 
     describe('createTechProfileHosting', () => {
-      const validData = { name: 'GCP', slug: 'gcp', type: 'cloud', isActive: true, order: 0 };
+      const validData: TechProfileHostingFormData = { name: 'GCP', slug: 'gcp', type: 'cloud', isActive: true, order: 0 };
 
       it('should create hosting', async () => {
         mockSession = sessionUserA;
@@ -494,7 +498,7 @@ describe('Tech Profile Options Actions', () => {
     });
 
     describe('createTechProfileDatabase', () => {
-      const validData = { name: 'MongoDB', slug: 'mongodb', type: 'nosql' as const, isActive: true, order: 0 };
+      const validData: TechProfileDatabaseFormData = { name: 'MongoDB', slug: 'mongodb', type: 'nosql', isActive: true, order: 0 };
 
       it('should create database', async () => {
         mockSession = sessionUserA;

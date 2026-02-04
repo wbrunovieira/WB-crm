@@ -543,10 +543,7 @@ describe('Leads - deleteLead', () => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
 
       const leadA = createMockLead(userA.id, { id: 'lead-a' });
-      prismaMock.lead.findUnique.mockResolvedValue({
-        ownerId: leadA.ownerId,
-        convertedAt: null,
-      });
+      prismaMock.lead.findUnique.mockResolvedValue(leadA);
       prismaMock.lead.delete.mockResolvedValue(leadA);
 
       await deleteLead('lead-a');
@@ -561,10 +558,8 @@ describe('Leads - deleteLead', () => {
     it('should throw error when trying to delete other user lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
 
-      prismaMock.lead.findUnique.mockResolvedValue({
-        ownerId: userB.id,
-        convertedAt: null,
-      });
+      const leadB = createMockLead(userB.id, { id: 'lead-b' });
+      prismaMock.lead.findUnique.mockResolvedValue(leadB);
 
       await expect(deleteLead('lead-b')).rejects.toThrow('Lead não encontrado');
       expect(prismaMock.lead.delete).not.toHaveBeenCalled();
@@ -582,10 +577,7 @@ describe('Leads - deleteLead', () => {
       mockedGetServerSession.mockResolvedValue(sessionAdmin);
 
       const leadA = createMockLead(userA.id, { id: 'lead-a' });
-      prismaMock.lead.findUnique.mockResolvedValue({
-        ownerId: leadA.ownerId,
-        convertedAt: null,
-      });
+      prismaMock.lead.findUnique.mockResolvedValue(leadA);
       prismaMock.lead.delete.mockResolvedValue(leadA);
 
       await deleteLead('lead-a');
@@ -600,10 +592,8 @@ describe('Leads - deleteLead', () => {
     it('should throw error when trying to delete converted lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
 
-      prismaMock.lead.findUnique.mockResolvedValue({
-        ownerId: userA.id,
-        convertedAt: new Date(),
-      });
+      const convertedLead = createMockLead(userA.id, { id: 'lead-a', convertedAt: new Date() });
+      prismaMock.lead.findUnique.mockResolvedValue(convertedLead);
 
       await expect(deleteLead('lead-a')).rejects.toThrow(
         'Não é possível excluir um lead já convertido'
@@ -650,47 +640,20 @@ describe('Leads - convertLeadToOrganization', () => {
         convertedAt: null,
       };
 
-      const organization = {
-        id: 'org-new',
-        name: 'Tech Corp',
-        ownerId: userA.id,
+      const conversionResult = {
+        organization: {
+          id: 'org-new',
+          name: 'Tech Corp',
+          ownerId: userA.id,
+        },
+        contacts: [{ id: 'contact-new', name: 'John Doe' }],
+        contactsFromLeadContacts: [{ id: 'contact-new', name: 'John Doe' }],
+        activities: [],
       };
 
       prismaMock.lead.findUnique.mockResolvedValue(lead);
-      prismaMock.$transaction.mockImplementation(async (callback) => {
-        return callback({
-          organization: {
-            create: vi.fn().mockResolvedValue(organization),
-          },
-          contact: {
-            create: vi.fn().mockResolvedValue({ id: 'contact-new', name: 'John Doe' }),
-            findMany: vi.fn().mockResolvedValue([{ id: 'contact-new' }]),
-            updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-          },
-          leadContact: {
-            update: vi.fn().mockResolvedValue({}),
-          },
-          lead: {
-            update: vi.fn().mockResolvedValue({}),
-          },
-          leadLanguage: { findMany: vi.fn().mockResolvedValue([]) },
-          leadFramework: { findMany: vi.fn().mockResolvedValue([]) },
-          leadHosting: { findMany: vi.fn().mockResolvedValue([]) },
-          leadDatabase: { findMany: vi.fn().mockResolvedValue([]) },
-          leadERP: { findMany: vi.fn().mockResolvedValue([]) },
-          leadCRM: { findMany: vi.fn().mockResolvedValue([]) },
-          leadEcommerce: { findMany: vi.fn().mockResolvedValue([]) },
-          leadSecondaryCNAE: { findMany: vi.fn().mockResolvedValue([]) },
-          organizationLanguage: { create: vi.fn() },
-          organizationFramework: { create: vi.fn() },
-          organizationHosting: { create: vi.fn() },
-          organizationDatabase: { create: vi.fn() },
-          organizationERP: { create: vi.fn() },
-          organizationCRM: { create: vi.fn() },
-          organizationEcommerce: { create: vi.fn() },
-          organizationSecondaryCNAE: { create: vi.fn() },
-        });
-      });
+      // Mock the transaction to return the expected result directly
+      prismaMock.$transaction.mockResolvedValue(conversionResult);
 
       const result = await convertLeadToOrganization('lead-a');
 
@@ -836,20 +799,18 @@ describe('Leads - Edge Cases', () => {
 
     it('User A cannot delete User B lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
-      prismaMock.lead.findUnique.mockResolvedValue({
-        ownerId: userB.id,
-        convertedAt: null,
-      });
+      prismaMock.lead.findUnique.mockResolvedValue(
+        createMockLead(userB.id, { id: 'lead-b' })
+      );
 
       await expect(deleteLead('lead-b')).rejects.toThrow('Lead não encontrado');
     });
 
     it('User B cannot delete User A lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserB);
-      prismaMock.lead.findUnique.mockResolvedValue({
-        ownerId: userA.id,
-        convertedAt: null,
-      });
+      prismaMock.lead.findUnique.mockResolvedValue(
+        createMockLead(userA.id, { id: 'lead-a' })
+      );
 
       await expect(deleteLead('lead-a')).rejects.toThrow('Lead não encontrado');
     });

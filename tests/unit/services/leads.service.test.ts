@@ -23,30 +23,58 @@ import type { LeadContact } from "@prisma/client";
 function createLead(overrides: Partial<LeadWithRelations> = {}): LeadWithRelations {
   return {
     id: "lead-1",
+    googleId: null,
     businessName: "Test Company",
-    legalName: null,
-    website: null,
-    phone: null,
-    country: "BR",
-    state: null, // Changed from "SP" to null for scoring tests
-    city: null,  // Changed from "São Paulo" to null for scoring tests
+    registeredName: null,
+    foundationDate: null,
+    companyRegistrationID: null,
     address: null,
-    postalCode: null,
-    industry: null,
-    employeeCount: null,
-    annualRevenue: null,
-    cnpj: null,
+    city: null,
+    state: null,
+    country: "BR",
+    zipCode: null,
+    vicinity: null,
+    phone: null,
+    whatsapp: null,
+    website: null,
+    email: null,
+    instagram: null,
+    linkedin: null,
+    facebook: null,
+    twitter: null,
+    tiktok: null,
+    categories: null,
+    rating: null,
+    priceLevel: null,
+    userRatingsTotal: null,
+    permanentlyClosed: false,
+    types: null,
+    companyOwner: null,
+    companySize: null,
+    revenue: null,
+    employeesCount: null,
+    description: null,
+    equityCapital: null,
+    businessStatus: null,
+    primaryActivity: null,
+    secondaryActivities: null,
     primaryCNAEId: null,
     internationalActivity: null,
-    techDetails: null,
-    status: "new",
     source: null,
-    notes: null,
-    ownerId: "user-1",
+    quality: null,
+    searchTerm: null,
+    fieldsFilled: null,
+    category: null,
+    radius: null,
+    status: "new",
+    convertedAt: null,
     convertedToOrganizationId: null,
+    labelId: null,
     referredByPartnerId: null,
+    ownerId: "user-1",
     createdAt: new Date(),
     updatedAt: new Date(),
+    // Relations
     contacts: [],
     primaryCNAE: null,
     secondaryCNAEs: [],
@@ -68,7 +96,8 @@ function createLeadContact(overrides: Partial<LeadContact> = {}): LeadContact {
     name: "John Doe",
     email: "john@example.com",
     phone: "+55 11 99999-9999",
-    position: "CEO",
+    whatsapp: null,
+    role: "CEO",
     isPrimary: false,
     leadId: "lead-1",
     convertedToContactId: null,
@@ -89,7 +118,7 @@ describe("validateLeadForConversion", () => {
     });
 
     it("returns invalid when businessName is null", () => {
-      const lead = createLead({ businessName: null });
+      const lead = createLead({ businessName: null as unknown as string });
       const result = validateLeadForConversion(lead);
       expect(result.valid).toBe(false);
       expect(result.missingFields).toContain("businessName");
@@ -210,7 +239,7 @@ describe("validateLeadForConversion", () => {
   describe("multiple validation issues", () => {
     it("collects all missing fields", () => {
       const lead = createLead({
-        businessName: null,
+        businessName: null as unknown as string,
         status: "converted",
       });
       const result = validateLeadForConversion(lead);
@@ -244,14 +273,14 @@ describe("prepareLeadForConversion", () => {
   });
 
   it("returns isReady false for invalid lead", () => {
-    const lead = createLead({ businessName: null });
+    const lead = createLead({ businessName: null as unknown as string });
     const result = prepareLeadForConversion(lead);
     expect(result.isReady).toBe(false);
     expect(result.organizationData).toBeNull();
   });
 
   it("includes missing fields in issues", () => {
-    const lead = createLead({ businessName: null });
+    const lead = createLead({ businessName: null as unknown as string });
     const result = prepareLeadForConversion(lead);
     expect(result.issues).toContain("businessName");
   });
@@ -559,7 +588,7 @@ describe("calculateLeadScore", () => {
   describe("basic info scoring (30 points max)", () => {
     it("gives 10 points for businessName", () => {
       const withName = createLead({ businessName: "Company" });
-      const withoutName = createLead({ businessName: null });
+      const withoutName = createLead({ businessName: null as unknown as string });
       const diff = calculateLeadScore(withName) - calculateLeadScore(withoutName);
       expect(diff).toBe(10);
     });
@@ -757,15 +786,15 @@ describe("calculateLeadScore", () => {
         businessName: "Company",
         website: "https://example.com",
         phone: "+55 11 99999-9999",
-        industry: "Tech",
-        employeeCount: "100+",
+        companySize: "100+",
+        employeesCount: 100,
         country: "BR",
         state: "SP",
         city: "São Paulo",
-        cnpj: "12.345.678/0001-99",
+        companyRegistrationID: "12.345.678/0001-99",
         primaryCNAEId: "cnae-1",
         contacts: [createLeadContact({ isPrimary: true })],
-        languages: [{ language: { id: "l1", name: "JS" } }] as any,
+        languages: [{ language: { id: "l1", name: "JS" } }],
       });
       expect(calculateLeadScore(maxLead)).toBeLessThanOrEqual(100);
     });
@@ -774,10 +803,10 @@ describe("calculateLeadScore", () => {
       // No businessName, no country, no state, no city = should be 0
       // But non-BR country (null) with no CNPJ still gets 10 bonus for business details
       const emptyLead = createLead({
-        businessName: null,
+        businessName: null as unknown as string,
         contacts: [],
         country: null, // null country = non-BR logic (10 bonus points)
-        cnpj: null,
+        companyRegistrationID: null,
         state: null,
         city: null,
         primaryCNAEId: null,
@@ -792,7 +821,7 @@ describe("calculateLeadScore", () => {
         businessName: "Company",
         contacts: [],
         country: "BR",
-        cnpj: null,
+        companyRegistrationID: null,
         state: null,
         city: null,
         primaryCNAEId: null,

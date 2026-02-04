@@ -84,6 +84,9 @@ describe("Deals Service", () => {
             quantity: 2,
             unitPrice: 100,
             discount: 0,
+            totalValue: 200,
+            description: null,
+            deliveryTime: null,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -94,6 +97,9 @@ describe("Deals Service", () => {
             quantity: 1,
             unitPrice: 500,
             discount: 0,
+            totalValue: 500,
+            description: null,
+            deliveryTime: null,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -115,6 +121,9 @@ describe("Deals Service", () => {
             quantity: 1,
             unitPrice: 1000,
             discount: 10, // 10% discount
+            totalValue: 900,
+            description: null,
+            deliveryTime: null,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -134,8 +143,11 @@ describe("Deals Service", () => {
             dealId: "deal-1",
             productId: "prod-1",
             quantity: 1,
-            unitPrice: null,
+            unitPrice: 250,
             discount: 0,
+            totalValue: 250,
+            description: null,
+            deliveryTime: null,
             product: { id: "prod-1", name: "Product", price: 250 },
             createdAt: new Date(),
             updatedAt: new Date(),
@@ -158,6 +170,9 @@ describe("Deals Service", () => {
             quantity: 2,
             unitPrice: 100,
             discount: 10, // 10% off = 180
+            totalValue: 180,
+            description: null,
+            deliveryTime: null,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -168,6 +183,9 @@ describe("Deals Service", () => {
             quantity: 3,
             unitPrice: 200,
             discount: 25, // 25% off = 450
+            totalValue: 450,
+            description: null,
+            deliveryTime: null,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -208,6 +226,9 @@ describe("Deals Service", () => {
             quantity: 1,
             unitPrice: 1000,
             discount: 0,
+            totalValue: 1000,
+            description: null,
+            deliveryTime: null,
             createdAt: new Date(),
             updatedAt: new Date(),
           },
@@ -230,7 +251,7 @@ describe("Deals Service", () => {
         currency: "USD",
         stage: createMockStage({ name: "Negotiation", probability: 75 }),
         products: [
-          { id: "dp-1", dealId: "deal-123", productId: "p1", quantity: 1, unitPrice: 1000, discount: 0, createdAt: new Date(), updatedAt: new Date() },
+          { id: "dp-1", dealId: "deal-123", productId: "p1", quantity: 1, unitPrice: 1000, discount: 0, totalValue: 1000, description: null, deliveryTime: null, createdAt: new Date(), updatedAt: new Date() },
         ],
         activities: [
           { id: "a-1", completed: true } as any,
@@ -266,7 +287,7 @@ describe("Deals Service", () => {
     });
 
     it("should handle deal with no stage", () => {
-      const deal = createMockDeal({ stage: null });
+      const deal = createMockDeal({ stage: undefined });
 
       const summary = getDealSummary(deal);
 
@@ -298,7 +319,7 @@ describe("Deals Service", () => {
     });
 
     it("should allow transition when no current stage", () => {
-      const deal = createMockDeal({ stage: null });
+      const deal = createMockDeal({ stage: undefined });
 
       const result = validateDealStageTransition(deal, stages[0], stages);
 

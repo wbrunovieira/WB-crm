@@ -152,9 +152,12 @@ export function createMockLead(ownerId: string, overrides: Partial<{
   id: string;
   businessName: string;
   status: string;
+  convertedAt: Date | null;
+  convertedToOrganizationId: string | null;
 }> = {}) {
   return {
     id: overrides.id || `lead-${ownerId}-${Date.now()}`,
+    googleId: null,
     businessName: overrides.businessName || `Lead owned by ${ownerId}`,
     registeredName: null,
     companyRegistrationID: null,
@@ -167,8 +170,19 @@ export function createMockLead(ownerId: string, overrides: Partial<{
     city: null,
     zipCode: null,
     address: null,
+    vicinity: null,
     foundationDate: null,
     description: null,
+    // Google Places fields
+    categories: null,
+    rating: null,
+    priceLevel: null,
+    userRatingsTotal: null,
+    permanentlyClosed: false,
+    types: null,
+    // Business info
+    equityCapital: null,
+    businessStatus: null,
     primaryActivity: null,
     secondaryActivities: null,
     status: overrides.status || 'new',
@@ -179,14 +193,16 @@ export function createMockLead(ownerId: string, overrides: Partial<{
     companySize: null,
     companyOwner: null,
     searchTerm: null,
-    position: null,
+    fieldsFilled: null,
+    category: null,
+    radius: null,
     instagram: null,
     linkedin: null,
     facebook: null,
     twitter: null,
     tiktok: null,
-    convertedAt: null,
-    convertedToOrganizationId: null,
+    convertedAt: overrides.convertedAt ?? null,
+    convertedToOrganizationId: overrides.convertedToOrganizationId ?? null,
     referredByPartnerId: null,
     labelId: null,
     primaryCNAEId: null,
@@ -300,6 +316,7 @@ export function createMockPartner(ownerId: string, overrides: Partial<{
     twitter: null,
     industry: null,
     employeeCount: null,
+    companySize: null,
     description: null,
     expertise: null,
     notes: null,
@@ -327,6 +344,100 @@ export function createMockLeadContact(leadId: string, overrides: Partial<{
     isPrimary: overrides.isPrimary ?? false,
     leadId,
     convertedToContactId: overrides.convertedToContactId ?? null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+export function createMockLeadICP(leadId: string, icpId: string, overrides: Partial<{
+  id: string;
+  matchScore: number | null;
+  notes: string | null;
+  icpFitStatus: string | null;
+  realDecisionMaker: string | null;
+  realDecisionMakerOther: string | null;
+  perceivedUrgency: string | null;
+  businessMoment: string | null;
+  currentPlatforms: string | null;
+  fragmentationLevel: number | null;
+  mainDeclaredPain: string | null;
+  strategicDesire: string | null;
+  perceivedTechnicalComplexity: number | null;
+  purchaseTrigger: string | null;
+  nonClosingReason: string | null;
+  estimatedDecisionTime: string | null;
+  expansionPotential: number | null;
+}> = {}) {
+  return {
+    id: overrides.id || `lead-icp-${leadId}-${icpId}`,
+    leadId,
+    icpId,
+    matchScore: overrides.matchScore ?? null,
+    notes: overrides.notes ?? null,
+    // Essential Fields
+    icpFitStatus: overrides.icpFitStatus ?? null,
+    realDecisionMaker: overrides.realDecisionMaker ?? null,
+    realDecisionMakerOther: overrides.realDecisionMakerOther ?? null,
+    perceivedUrgency: overrides.perceivedUrgency ?? null,
+    businessMoment: overrides.businessMoment ?? null,
+    // Specific Fields
+    currentPlatforms: overrides.currentPlatforms ?? null,
+    fragmentationLevel: overrides.fragmentationLevel ?? null,
+    mainDeclaredPain: overrides.mainDeclaredPain ?? null,
+    strategicDesire: overrides.strategicDesire ?? null,
+    perceivedTechnicalComplexity: overrides.perceivedTechnicalComplexity ?? null,
+    // Strategic Fields
+    purchaseTrigger: overrides.purchaseTrigger ?? null,
+    nonClosingReason: overrides.nonClosingReason ?? null,
+    estimatedDecisionTime: overrides.estimatedDecisionTime ?? null,
+    expansionPotential: overrides.expansionPotential ?? null,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+  };
+}
+
+export function createMockOrganizationICP(organizationId: string, icpId: string, overrides: Partial<{
+  id: string;
+  matchScore: number | null;
+  notes: string | null;
+  icpFitStatus: string | null;
+  realDecisionMaker: string | null;
+  realDecisionMakerOther: string | null;
+  perceivedUrgency: string | null;
+  businessMoment: string | null;
+  currentPlatforms: string | null;
+  fragmentationLevel: number | null;
+  mainDeclaredPain: string | null;
+  strategicDesire: string | null;
+  perceivedTechnicalComplexity: number | null;
+  purchaseTrigger: string | null;
+  nonClosingReason: string | null;
+  estimatedDecisionTime: string | null;
+  expansionPotential: number | null;
+}> = {}) {
+  return {
+    id: overrides.id || `org-icp-${organizationId}-${icpId}`,
+    organizationId,
+    icpId,
+    matchScore: overrides.matchScore ?? null,
+    notes: overrides.notes ?? null,
+    // Essential Fields
+    icpFitStatus: overrides.icpFitStatus ?? null,
+    realDecisionMaker: overrides.realDecisionMaker ?? null,
+    realDecisionMakerOther: overrides.realDecisionMakerOther ?? null,
+    perceivedUrgency: overrides.perceivedUrgency ?? null,
+    businessMoment: overrides.businessMoment ?? null,
+    // Specific Fields
+    currentPlatforms: overrides.currentPlatforms ?? null,
+    fragmentationLevel: overrides.fragmentationLevel ?? null,
+    mainDeclaredPain: overrides.mainDeclaredPain ?? null,
+    strategicDesire: overrides.strategicDesire ?? null,
+    perceivedTechnicalComplexity: overrides.perceivedTechnicalComplexity ?? null,
+    // Strategic Fields
+    purchaseTrigger: overrides.purchaseTrigger ?? null,
+    nonClosingReason: overrides.nonClosingReason ?? null,
+    estimatedDecisionTime: overrides.estimatedDecisionTime ?? null,
+    expansionPotential: overrides.expansionPotential ?? null,
     createdAt: new Date(),
     updatedAt: new Date(),
   };

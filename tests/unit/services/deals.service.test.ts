@@ -327,8 +327,8 @@ describe("calculateExpectedValue", () => {
     expect(calculateExpectedValue(deal)).toBe(500);
   });
 
-  it("returns 0 when stage is null", () => {
-    const deal = createDeal({ value: 1000, products: [], stage: null });
+  it("returns 0 when stage is undefined", () => {
+    const deal = createDeal({ value: 1000, products: [], stage: undefined });
     expect(calculateExpectedValue(deal)).toBe(0);
   });
 
@@ -460,7 +460,7 @@ describe("getDealSummary", () => {
   });
 
   it("returns null stage when no stage", () => {
-    const deal = createDeal({ stage: null });
+    const deal = createDeal({ stage: undefined });
 
     const summary = getDealSummary(deal);
 
@@ -553,7 +553,7 @@ describe("validateDealStageTransition", () => {
 
   describe("edge cases", () => {
     it("allows transition when no current stage", () => {
-      const deal = createDeal({ stage: null });
+      const deal = createDeal({ stage: undefined });
       const result = validateDealStageTransition(deal, stages[0], stages);
       expect(result.valid).toBe(true);
     });

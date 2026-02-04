@@ -21,28 +21,55 @@ import type { LeadContact } from "@prisma/client";
 function createMockLead(overrides: Partial<LeadWithRelations> = {}): LeadWithRelations {
   return {
     id: "lead-1",
+    googleId: null,
     businessName: "Test Company",
-    legalName: null,
-    website: null,
-    phone: null,
-    country: "BR",
-    state: "SP",
-    city: "São Paulo",
+    registeredName: null,
+    foundationDate: null,
+    companyRegistrationID: null,
     address: null,
-    postalCode: null,
-    industry: null,
-    employeeCount: null,
-    annualRevenue: null,
-    cnpj: null,
+    city: "São Paulo",
+    state: "SP",
+    country: "BR",
+    zipCode: null,
+    vicinity: null,
+    phone: null,
+    whatsapp: null,
+    website: null,
+    email: null,
+    instagram: null,
+    linkedin: null,
+    facebook: null,
+    twitter: null,
+    tiktok: null,
+    categories: null,
+    rating: null,
+    priceLevel: null,
+    userRatingsTotal: null,
+    permanentlyClosed: false,
+    types: null,
+    companyOwner: null,
+    companySize: null,
+    revenue: null,
+    employeesCount: null,
+    description: null,
+    equityCapital: null,
+    businessStatus: null,
+    primaryActivity: null,
+    secondaryActivities: null,
     primaryCNAEId: null,
     internationalActivity: null,
-    techDetails: null,
-    status: "new",
     source: null,
-    notes: null,
-    ownerId: "user-1",
+    quality: null,
+    searchTerm: null,
+    fieldsFilled: null,
+    category: null,
+    radius: null,
+    status: "new",
+    convertedAt: null,
     convertedToOrganizationId: null,
+    labelId: null,
     referredByPartnerId: null,
+    ownerId: "user-1",
     createdAt: new Date(),
     updatedAt: new Date(),
     contacts: [],
@@ -67,7 +94,8 @@ function createMockLeadContact(overrides: Partial<LeadContact> = {}): LeadContac
     name: "John Doe",
     email: "john@example.com",
     phone: "+55 11 99999-9999",
-    position: "CEO",
+    whatsapp: null,
+    role: "CEO",
     isPrimary: true,
     leadId: "lead-1",
     convertedToContactId: null,
@@ -93,7 +121,7 @@ describe("Leads Service", () => {
     });
 
     it("should require businessName", () => {
-      const lead = createMockLead({ businessName: null });
+      const lead = createMockLead({ businessName: "" });
 
       const result = validateLeadForConversion(lead);
 
@@ -175,7 +203,7 @@ describe("Leads Service", () => {
     });
 
     it("should return isReady false for invalid lead", () => {
-      const lead = createMockLead({ businessName: null });
+      const lead = createMockLead({ businessName: "" });
 
       const result = prepareLeadForConversion(lead);
 
@@ -414,15 +442,14 @@ describe("Leads Service", () => {
         businessName: "Complete Company",
         website: "https://example.com",
         phone: "+55 11 99999-9999",
-        industry: "Technology",
-        employeeCount: "100-500",
+        companySize: "100-500",
         country: "BR",
         state: "SP",
         city: "São Paulo",
-        cnpj: "12.345.678/0001-99",
+        companyRegistrationID: "12.345.678/0001-99",
         primaryCNAEId: "cnae-1",
         contacts: [createMockLeadContact()],
-        languages: [{ language: { id: "l1", name: "JS" } }] as any,
+        languages: [{ language: { id: "l1", name: "JS" } }],
       });
 
       const score = calculateLeadScore(lead);

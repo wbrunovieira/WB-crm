@@ -240,6 +240,8 @@ describe('Data Isolation - Deals', () => {
         title: 'Updated Deal',
         value: 10000,
         stageId: 'stage-1',
+        status: 'open',
+        currency: 'BRL',
       });
 
       // Assert
@@ -262,6 +264,8 @@ describe('Data Isolation - Deals', () => {
           title: 'Hacked Deal',
           value: 10000,
           stageId: 'stage-1',
+          status: 'open',
+          currency: 'BRL',
         })
       ).rejects.toThrow('Negócio não encontrado');
 
@@ -280,6 +284,8 @@ describe('Data Isolation - Deals', () => {
           title: 'Updated',
           value: 10000,
           stageId: 'stage-1',
+          status: 'open',
+          currency: 'BRL',
         })
       ).rejects.toThrow('Negócio não encontrado');
     });
@@ -690,6 +696,7 @@ describe('Data Isolation - Activities', () => {
         updateActivity('activity-b-1', {
           type: 'call',
           subject: 'Hacked Activity',
+          completed: false,
         })
       ).rejects.toThrow('Atividade não encontrada');
 

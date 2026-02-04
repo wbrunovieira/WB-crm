@@ -159,15 +159,22 @@ describe('Authentication - Credentials Provider', () => {
       };
 
       // On subsequent calls, user is undefined, token should be preserved
-      const user = undefined;
-
-      if (user) {
-        existingToken.id = user.id;
-        existingToken.role = user.role;
+      // Simulate jwt callback behavior where user may or may not be present
+      function simulateJwtCallback(
+        token: typeof existingToken,
+        user: { id: string; role: string } | undefined
+      ) {
+        if (user) {
+          token.id = user.id;
+          token.role = user.role;
+        }
+        return token;
       }
 
-      expect(existingToken.id).toBe(userA.id);
-      expect(existingToken.role).toBe('sdr');
+      const result = simulateJwtCallback(existingToken, undefined);
+
+      expect(result.id).toBe(userA.id);
+      expect(result.role).toBe('sdr');
     });
   });
 

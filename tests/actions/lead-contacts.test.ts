@@ -12,6 +12,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getServerSession } from 'next-auth';
+import type { Prisma } from '@prisma/client';
 import { prismaMock } from '../setup';
 import {
   userA,
@@ -23,6 +24,9 @@ import {
   createMockLead,
   createMockLeadContact,
 } from '../fixtures/multiple-users';
+
+// Type for LeadContact with included Lead relation (matches the query in updateLeadContact/deleteLeadContact)
+type LeadContactWithLead = Prisma.LeadContactGetPayload<{ include: { lead: true } }>;
 
 // Import Server Actions
 import {
@@ -320,7 +324,7 @@ describe('LeadContacts - updateLeadContact', () => {
     });
 
     it('should update own lead contact', async () => {
-      const existingContact = {
+      const existingContact: LeadContactWithLead = {
         ...createMockLeadContact('lead-a', { id: 'contact-1', name: 'Old Name' }),
         lead: createMockLead(userA.id, { id: 'lead-a' }),
       };
@@ -348,10 +352,9 @@ describe('LeadContacts - updateLeadContact', () => {
     });
 
     it('should unset other primaries when setting as primary', async () => {
-      const existingContact = {
+      const existingContact: LeadContactWithLead = {
         ...createMockLeadContact('lead-a', { id: 'contact-1', isPrimary: false }),
         lead: createMockLead(userA.id, { id: 'lead-a' }),
-        leadId: 'lead-a',
       };
 
       prismaMock.leadContact.findUnique.mockResolvedValue(existingContact);
@@ -370,10 +373,9 @@ describe('LeadContacts - updateLeadContact', () => {
     });
 
     it('should NOT unset other primaries when already primary', async () => {
-      const existingContact = {
+      const existingContact: LeadContactWithLead = {
         ...createMockLeadContact('lead-a', { id: 'contact-1', isPrimary: true }),
         lead: createMockLead(userA.id, { id: 'lead-a' }),
-        leadId: 'lead-a',
       };
 
       prismaMock.leadContact.findUnique.mockResolvedValue(existingContact);
@@ -390,7 +392,7 @@ describe('LeadContacts - updateLeadContact', () => {
     it('should throw error when trying to update contact from other user lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
 
-      const contactFromUserB = {
+      const contactFromUserB: LeadContactWithLead = {
         ...createMockLeadContact('lead-b', { id: 'contact-b' }),
         lead: createMockLead(userB.id, { id: 'lead-b' }),
       };
@@ -417,7 +419,7 @@ describe('LeadContacts - updateLeadContact', () => {
     it('should allow admin to update contact from any lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionAdmin);
 
-      const contactFromUserA = {
+      const contactFromUserA: LeadContactWithLead = {
         ...createMockLeadContact('lead-a', { id: 'contact-a' }),
         lead: createMockLead(userA.id, { id: 'lead-a' }),
       };
@@ -437,10 +439,11 @@ describe('LeadContacts - updateLeadContact', () => {
   describe('validation', () => {
     beforeEach(() => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
-      prismaMock.leadContact.findUnique.mockResolvedValue({
+      const contactWithLead: LeadContactWithLead = {
         ...createMockLeadContact('lead-a', { id: 'contact-1' }),
         lead: createMockLead(userA.id, { id: 'lead-a' }),
-      });
+      };
+      prismaMock.leadContact.findUnique.mockResolvedValue(contactWithLead);
     });
 
     it('should reject update with name too short', async () => {
@@ -474,10 +477,9 @@ describe('LeadContacts - deleteLeadContact', () => {
     it('should delete own lead contact', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
 
-      const contact = {
+      const contact: LeadContactWithLead = {
         ...createMockLeadContact('lead-a', { id: 'contact-1' }),
         lead: createMockLead(userA.id, { id: 'lead-a' }),
-        leadId: 'lead-a',
       };
 
       prismaMock.leadContact.findUnique.mockResolvedValue(contact);
@@ -495,7 +497,7 @@ describe('LeadContacts - deleteLeadContact', () => {
     it('should throw error when trying to delete contact from other user lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
 
-      const contactFromUserB = {
+      const contactFromUserB: LeadContactWithLead = {
         ...createMockLeadContact('lead-b', { id: 'contact-b' }),
         lead: createMockLead(userB.id, { id: 'lead-b' }),
       };
@@ -522,10 +524,9 @@ describe('LeadContacts - deleteLeadContact', () => {
     it('should allow admin to delete contact from any lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionAdmin);
 
-      const contactFromUserA = {
+      const contactFromUserA: LeadContactWithLead = {
         ...createMockLeadContact('lead-a', { id: 'contact-a' }),
         lead: createMockLead(userA.id, { id: 'lead-a' }),
-        leadId: 'lead-a',
       };
 
       prismaMock.leadContact.findUnique.mockResolvedValue(contactFromUserA);
@@ -541,7 +542,7 @@ describe('LeadContacts - deleteLeadContact', () => {
     it('should throw error when trying to delete converted contact', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
 
-      const convertedContact = {
+      const convertedContact: LeadContactWithLead = {
         ...createMockLeadContact('lead-a', {
           id: 'contact-1',
           convertedToContactId: 'converted-contact-id',
@@ -599,7 +600,7 @@ describe('LeadContacts - Edge Cases', () => {
     it('User A cannot update contact in User B lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
 
-      const contactFromB = {
+      const contactFromB: LeadContactWithLead = {
         ...createMockLeadContact('lead-b', { id: 'contact-b' }),
         lead: createMockLead(userB.id, { id: 'lead-b' }),
       };
@@ -613,7 +614,7 @@ describe('LeadContacts - Edge Cases', () => {
     it('User B cannot update contact in User A lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserB);
 
-      const contactFromA = {
+      const contactFromA: LeadContactWithLead = {
         ...createMockLeadContact('lead-a', { id: 'contact-a' }),
         lead: createMockLead(userA.id, { id: 'lead-a' }),
       };
@@ -627,7 +628,7 @@ describe('LeadContacts - Edge Cases', () => {
     it('User A cannot delete contact in User B lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
 
-      const contactFromB = {
+      const contactFromB: LeadContactWithLead = {
         ...createMockLeadContact('lead-b', { id: 'contact-b' }),
         lead: createMockLead(userB.id, { id: 'lead-b' }),
       };
@@ -641,7 +642,7 @@ describe('LeadContacts - Edge Cases', () => {
     it('User B cannot delete contact in User A lead', async () => {
       mockedGetServerSession.mockResolvedValue(sessionUserB);
 
-      const contactFromA = {
+      const contactFromA: LeadContactWithLead = {
         ...createMockLeadContact('lead-a', { id: 'contact-a' }),
         lead: createMockLead(userA.id, { id: 'lead-a' }),
       };

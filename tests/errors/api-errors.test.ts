@@ -237,9 +237,10 @@ describe("API Error Responses", () => {
   // ==================== 500 Internal Server Error ====================
   describe("500 Internal Server Error", () => {
     const originalEnv = process.env.NODE_ENV;
+    const env = process.env as { NODE_ENV?: string };
 
     afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
+      env.NODE_ENV = originalEnv;
     });
 
     beforeEach(() => {
@@ -261,7 +262,7 @@ describe("API Error Responses", () => {
     });
 
     it("hides internal error details in production", async () => {
-      process.env.NODE_ENV = "production";
+      env.NODE_ENV = "production";
       vi.mocked(prisma.deal.findMany).mockRejectedValue(
         new Error("SECRET: Database credentials exposed")
       );

@@ -386,9 +386,10 @@ describe("Response Utilities", () => {
 
   describe("errorToResponse", () => {
     const originalEnv = process.env.NODE_ENV;
+    const env = process.env as { NODE_ENV?: string };
 
     afterEach(() => {
-      process.env.NODE_ENV = originalEnv;
+      env.NODE_ENV = originalEnv;
     });
 
     it("should convert AppError to Response", async () => {
@@ -402,7 +403,7 @@ describe("Response Utilities", () => {
     });
 
     it("should convert generic Error to 500 Response", async () => {
-      process.env.NODE_ENV = "development";
+      env.NODE_ENV = "development";
       const error = new Error("Something went wrong");
 
       const response = errorToResponse(error);
@@ -413,7 +414,7 @@ describe("Response Utilities", () => {
     });
 
     it("should hide error details in production", async () => {
-      process.env.NODE_ENV = "production";
+      env.NODE_ENV = "production";
       const error = new Error("Secret database error");
 
       const response = errorToResponse(error);
@@ -425,7 +426,7 @@ describe("Response Utilities", () => {
     });
 
     it("should not include stack trace in production", async () => {
-      process.env.NODE_ENV = "production";
+      env.NODE_ENV = "production";
       const error = new Error("Test error");
 
       const response = errorToResponse(error, { includeStack: true });
@@ -435,7 +436,7 @@ describe("Response Utilities", () => {
     });
 
     it("should include stack trace in development when requested", async () => {
-      process.env.NODE_ENV = "development";
+      env.NODE_ENV = "development";
       const error = new Error("Test error");
 
       const response = errorToResponse(error, { includeStack: true });

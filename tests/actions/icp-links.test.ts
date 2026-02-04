@@ -21,6 +21,8 @@ import {
   sessionUserB,
   createMockLead,
   createMockOrganization,
+  createMockLeadICP,
+  createMockOrganizationICP,
 } from '../fixtures/multiple-users';
 
 // Import Server Actions (will be created)
@@ -52,42 +54,6 @@ function createMockICP(ownerId: string, overrides?: Partial<{
     content: 'Descrição do ICP...',
     status: 'active',
     ownerId,
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-    ...overrides,
-  };
-}
-
-// Helper to create mock LeadICP link
-function createMockLeadICP(leadId: string, icpId: string, overrides?: Partial<{
-  id: string;
-  matchScore: number | null;
-  notes: string | null;
-}>) {
-  return {
-    id: 'lead-icp-link-id',
-    leadId,
-    icpId,
-    matchScore: null,
-    notes: null,
-    createdAt: new Date('2024-01-01'),
-    updatedAt: new Date('2024-01-01'),
-    ...overrides,
-  };
-}
-
-// Helper to create mock OrganizationICP link
-function createMockOrganizationICP(organizationId: string, icpId: string, overrides?: Partial<{
-  id: string;
-  matchScore: number | null;
-  notes: string | null;
-}>) {
-  return {
-    id: 'org-icp-link-id',
-    organizationId,
-    icpId,
-    matchScore: null,
-    notes: null,
     createdAt: new Date('2024-01-01'),
     updatedAt: new Date('2024-01-01'),
     ...overrides,

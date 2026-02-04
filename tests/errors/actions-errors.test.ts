@@ -102,7 +102,7 @@ describe("Actions Error Handling", () => {
       const { createDeal } = await import("@/actions/deals");
 
       await expect(
-        createDeal({ title: "Test", value: 1000, stageId: STAGE_ID })
+        createDeal({ title: "Test", value: 1000, stageId: STAGE_ID, status: "open", currency: "BRL" })
       ).rejects.toThrow("Não autorizado");
     });
   });
@@ -210,7 +210,7 @@ describe("Actions Error Handling", () => {
       const { createLabel } = await import("@/actions/labels");
 
       await expect(
-        createLabel({ name: "Importante", color: "#00FF00" })
+        createLabel("Importante", "#00FF00")
       ).rejects.toThrow();
     });
   });

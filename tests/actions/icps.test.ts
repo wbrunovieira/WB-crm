@@ -95,6 +95,7 @@ describe('ICP Actions - createICP', () => {
         name: 'Startup de Tecnologia',
         slug: 'startup-tech',
         content: 'Empresas de tecnologia com 10-50 funcionários...',
+        status: 'draft' as const,
       };
 
       const createdICP = createMockICP(userA.id, {
@@ -127,6 +128,7 @@ describe('ICP Actions - createICP', () => {
         name: 'E-commerce',
         slug: 'ecommerce',
         content: 'Lojas virtuais de médio porte...',
+        status: 'draft' as const,
       };
 
       const createdICP = createMockICP(userA.id, {
@@ -160,6 +162,7 @@ describe('ICP Actions - createICP', () => {
         name: 'Test',
         slug: 'existing-slug',
         content: 'Content...',
+        status: 'draft' as const,
       };
 
       prismaMock.iCP.findUnique.mockResolvedValue(
@@ -179,6 +182,7 @@ describe('ICP Actions - createICP', () => {
           name: 'Test',
           slug: 'test',
           content: 'Content...',
+          status: 'draft',
         })
       ).rejects.toThrow('Não autorizado');
     });
@@ -195,6 +199,7 @@ describe('ICP Actions - createICP', () => {
           name: 'Test',
           slug: 'Invalid Slug!',
           content: 'Content...',
+          status: 'draft',
         })
       ).rejects.toThrow();
     });
@@ -205,6 +210,7 @@ describe('ICP Actions - createICP', () => {
           name: 'Test',
           slug: 'test',
           content: '',
+          status: 'draft',
         })
       ).rejects.toThrow();
     });
