@@ -1,25 +1,23 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, Target, Users, Calendar, Zap } from "lucide-react";
+import { Target, Users, Calendar, Zap } from "lucide-react";
 import { getCadenceById } from "@/actions/cadences";
+import { getICPs } from "@/actions/icps";
 import { CadenceStepForm } from "@/components/admin/CadenceStepForm";
 import { CadenceStepsList } from "@/components/admin/CadenceStepsList";
-import { CADENCE_STATUS_LABELS, type CadenceStatus } from "@/lib/validations/cadence";
+import { CadenceHeader } from "@/components/admin/CadenceHeader";
 
 interface CadenceDetailPageProps {
   params: Promise<{ id: string }>;
 }
 
-const statusColors: Record<string, string> = {
-  draft: "bg-gray-100 text-gray-700",
-  active: "bg-green-100 text-green-700",
-  archived: "bg-yellow-100 text-yellow-700",
-};
-
 export default async function CadenceDetailPage({ params }: CadenceDetailPageProps) {
   const { id } = await params;
 
-  const cadence = await getCadenceById(id);
+  const [cadence, icps] = await Promise.all([
+    getCadenceById(id),
+    getICPs(),
+  ]);
 
   if (!cadence) {
     notFound();
@@ -30,31 +28,28 @@ export default async function CadenceDetailPage({ params }: CadenceDetailPagePro
     ? Math.max(...cadence.steps.map((s) => s.dayNumber))
     : 1;
 
+  // Format ICPs for the modal
+  const icpOptions = icps.map((icp) => ({
+    id: icp.id,
+    name: icp.name,
+  }));
+
   return (
     <div className="p-8">
-      <div className="mb-8">
-        <Link
-          href="/admin/cadences"
-          className="mb-4 inline-flex items-center gap-1 text-sm text-gray-500 hover:text-primary"
-        >
-          <ArrowLeft className="h-4 w-4" />
-          Voltar para Cadências
-        </Link>
-
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <h1 className="text-2xl font-bold text-gray-900">{cadence.name}</h1>
-            <span
-              className={`rounded-full px-3 py-1 text-sm font-medium ${
-                statusColors[cadence.status] || "bg-gray-100 text-gray-700"
-              }`}
-            >
-              {CADENCE_STATUS_LABELS[cadence.status as CadenceStatus] || cadence.status}
-            </span>
-          </div>
-        </div>
-        <p className="mt-1 text-sm text-gray-500">/{cadence.slug}</p>
-      </div>
+      <CadenceHeader
+        cadence={{
+          id: cadence.id,
+          name: cadence.name,
+          slug: cadence.slug,
+          description: cadence.description,
+          objective: cadence.objective,
+          durationDays: cadence.durationDays,
+          icpId: cadence.icpId,
+          status: cadence.status,
+          icp: cadence.icp,
+        }}
+        icps={icpOptions}
+      />
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         {/* Content Section */}
