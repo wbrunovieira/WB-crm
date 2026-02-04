@@ -9,6 +9,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockDeep, mockReset } from 'vitest-mock-extended';
 import type { PrismaClient } from '@prisma/client';
 import type { Session } from 'next-auth';
+import type { ActivityFormData } from '@/lib/validations/activity';
 
 // Mock Prisma
 vi.mock('@/lib/prisma', () => ({
@@ -61,8 +62,8 @@ describe('Activities Actions', () => {
   // createActivity Tests
   // ===========================================
   describe('createActivity', () => {
-    const validActivityData = {
-      type: 'call' as const,
+    const validActivityData: ActivityFormData = {
+      type: 'call',
       subject: 'Follow-up call',
       description: 'Call to discuss proposal',
       dueDate: new Date('2025-02-01'),
@@ -518,8 +519,8 @@ describe('Activities Actions', () => {
   // updateActivity Tests
   // ===========================================
   describe('updateActivity', () => {
-    const updateData = {
-      type: 'meeting' as const,
+    const updateData: ActivityFormData = {
+      type: 'meeting',
       subject: 'Updated Activity',
       description: 'Updated description',
       dueDate: new Date('2025-03-01'),

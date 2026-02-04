@@ -14,6 +14,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getServerSession } from 'next-auth';
 import { prismaMock } from '../setup';
+import type { Contact } from '@prisma/client';
+import type { ContactFormData } from '@/lib/validations/contact';
 import {
   userA,
   userB,
@@ -89,9 +91,9 @@ describe('Contacts - createContact', () => {
     });
 
     it('should create contact linked to organization', async () => {
-      const contactData = {
+      const contactData: ContactFormData = {
         name: 'Org Contact',
-        companyType: 'organization' as const,
+        companyType: 'organization',
         companyId: 'org-123',
       };
 
@@ -116,9 +118,9 @@ describe('Contacts - createContact', () => {
     });
 
     it('should create contact linked to lead', async () => {
-      const contactData = {
+      const contactData: ContactFormData = {
         name: 'Lead Contact',
-        companyType: 'lead' as const,
+        companyType: 'lead',
         companyId: 'lead-123',
       };
 
@@ -143,9 +145,9 @@ describe('Contacts - createContact', () => {
     });
 
     it('should create contact linked to partner', async () => {
-      const contactData = {
+      const contactData: ContactFormData = {
         name: 'Partner Contact',
-        companyType: 'partner' as const,
+        companyType: 'partner',
         companyId: 'partner-123',
       };
 
@@ -170,7 +172,7 @@ describe('Contacts - createContact', () => {
     });
 
     it('should create contact with all optional fields', async () => {
-      const contactData = {
+      const contactData: ContactFormData = {
         name: 'Full Contact',
         email: 'full@example.com',
         phone: '+55 11 99999-9999',
@@ -178,16 +180,27 @@ describe('Contacts - createContact', () => {
         role: 'CEO',
         department: 'Executive',
         linkedin: 'linkedin.com/in/fullcontact',
-        status: 'active' as const,
+        status: 'active',
         isPrimary: true,
         notes: 'Important contact',
         preferredLanguage: 'en-US',
         source: 'website',
       };
 
-      const createdContact = {
+      const createdContact: Contact = {
         ...createMockContact(userA.id),
-        ...contactData,
+        name: contactData.name,
+        email: contactData.email ?? null,
+        phone: contactData.phone ?? null,
+        whatsapp: contactData.whatsapp ?? null,
+        role: contactData.role ?? null,
+        department: contactData.department ?? null,
+        linkedin: contactData.linkedin ?? null,
+        status: contactData.status ?? 'active',
+        isPrimary: contactData.isPrimary ?? false,
+        notes: contactData.notes ?? null,
+        preferredLanguage: contactData.preferredLanguage ?? 'pt-BR',
+        source: contactData.source ?? null,
       };
 
       prismaMock.contact.create.mockResolvedValue(createdContact);
@@ -598,9 +611,9 @@ describe('Contacts - updateContact', () => {
 
     it('should update contact company link', async () => {
       const existingContact = createMockContact(userA.id, { id: 'contact-a' });
-      const updatedData = {
+      const updatedData: ContactFormData = {
         name: 'Test Contact',
-        companyType: 'organization' as const,
+        companyType: 'organization',
         companyId: 'new-org-id',
       };
 
@@ -624,9 +637,9 @@ describe('Contacts - updateContact', () => {
 
     it('should update contact status', async () => {
       const existingContact = createMockContact(userA.id, { id: 'contact-a' });
-      const updatedData = {
+      const updatedData: ContactFormData = {
         name: 'Test Contact',
-        status: 'inactive' as const,
+        status: 'inactive',
       };
 
       prismaMock.contact.findUnique.mockResolvedValue(existingContact);

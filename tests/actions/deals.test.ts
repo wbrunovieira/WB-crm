@@ -7,8 +7,9 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockDeep, mockReset } from 'vitest-mock-extended';
-import type { PrismaClient } from '@prisma/client';
+import type { PrismaClient, Deal } from '@prisma/client';
 import type { Session } from 'next-auth';
+import type { DealFormData } from '@/lib/validations/deal';
 
 // Mock Prisma
 vi.mock('@/lib/prisma', () => ({
@@ -63,11 +64,11 @@ describe('Deals Actions', () => {
   // createDeal Tests
   // ===========================================
   describe('createDeal', () => {
-    const validDealData = {
+    const validDealData: DealFormData = {
       title: 'New Deal',
       value: 10000,
       currency: 'BRL',
-      status: 'open' as const,
+      status: 'open',
       stageId: 'stage-1',
       contactId: null,
       organizationId: null,
@@ -76,9 +77,16 @@ describe('Deals Actions', () => {
 
     it('should create a deal with valid data', async () => {
       mockSession = sessionUserA;
-      const createdDeal = {
+      const createdDeal: Deal & { stage: { id: string; name: string; pipeline: { id: string; name: string } }; contact: null; organization: null; owner: typeof userA } = {
         id: 'deal-1',
-        ...validDealData,
+        title: validDealData.title,
+        value: validDealData.value,
+        currency: validDealData.currency,
+        status: validDealData.status,
+        stageId: validDealData.stageId,
+        contactId: validDealData.contactId ?? null,
+        organizationId: validDealData.organizationId ?? null,
+        expectedCloseDate: validDealData.expectedCloseDate ?? null,
         ownerId: userA.id,
         createdAt: new Date(),
         updatedAt: new Date(),
@@ -474,11 +482,11 @@ describe('Deals Actions', () => {
   // updateDeal Tests
   // ===========================================
   describe('updateDeal', () => {
-    const updateData = {
+    const updateData: DealFormData = {
       title: 'Updated Deal',
       value: 20000,
       currency: 'BRL',
-      status: 'open' as const,
+      status: 'open',
       stageId: 'stage-1',
       contactId: null,
       organizationId: null,

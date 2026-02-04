@@ -13,6 +13,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getServerSession } from 'next-auth';
 import { prismaMock } from '../setup';
+import type { LeadFormData } from '@/lib/validations/lead';
 import {
   userA,
   userB,
@@ -90,14 +91,14 @@ describe('Leads - createLead', () => {
     });
 
     it('should create lead with optional fields', async () => {
-      const leadData = {
+      const leadData: LeadFormData = {
         businessName: 'Full Company',
         registeredName: 'Full Company LTDA',
         email: 'contact@fullcompany.com',
         phone: '+55 11 99999-9999',
         website: 'https://fullcompany.com',
-        status: 'new' as const,
-        quality: 'hot' as const,
+        status: 'new',
+        quality: 'hot',
       };
 
       const createdLead = {
@@ -422,15 +423,16 @@ describe('Leads - updateLead', () => {
 
     it('should update own lead with valid data', async () => {
       const existingLead = createMockLead(userA.id, { id: 'lead-a' });
-      const updatedData = {
+      const updatedData: LeadFormData = {
         businessName: 'Updated Company Name',
-        status: 'contacted' as const,
+        status: 'contacted',
       };
 
       prismaMock.lead.findUnique.mockResolvedValue(existingLead);
       prismaMock.lead.update.mockResolvedValue({
         ...existingLead,
-        ...updatedData,
+        businessName: updatedData.businessName,
+        status: 'contacted',
       });
 
       const result = await updateLead('lead-a', updatedData);
@@ -447,15 +449,16 @@ describe('Leads - updateLead', () => {
 
     it('should update lead quality', async () => {
       const existingLead = createMockLead(userA.id, { id: 'lead-a' });
-      const updatedData = {
+      const updatedData: LeadFormData = {
         businessName: 'Test Company',
-        quality: 'hot' as const,
+        quality: 'hot',
       };
 
       prismaMock.lead.findUnique.mockResolvedValue(existingLead);
       prismaMock.lead.update.mockResolvedValue({
         ...existingLead,
-        ...updatedData,
+        businessName: updatedData.businessName,
+        quality: 'hot',
       });
 
       const result = await updateLead('lead-a', updatedData);
@@ -472,8 +475,9 @@ describe('Leads - updateLead', () => {
       const leadB = createMockLead(userB.id, { id: 'lead-b' });
       prismaMock.lead.findUnique.mockResolvedValue(leadB);
 
+      const hackedData: LeadFormData = { businessName: 'Hacked Name' };
       await expect(
-        updateLead('lead-b', { businessName: 'Hacked Name' })
+        updateLead('lead-b', hackedData)
       ).rejects.toThrow('Lead não encontrado');
     });
 
@@ -482,8 +486,9 @@ describe('Leads - updateLead', () => {
 
       prismaMock.lead.findUnique.mockResolvedValue(null);
 
+      const testData: LeadFormData = { businessName: 'Test' };
       await expect(
-        updateLead('non-existent', { businessName: 'Test' })
+        updateLead('non-existent', testData)
       ).rejects.toThrow('Lead não encontrado');
     });
 
@@ -497,7 +502,8 @@ describe('Leads - updateLead', () => {
         businessName: 'Admin Updated',
       });
 
-      const result = await updateLead('lead-a', { businessName: 'Admin Updated' });
+      const adminUpdateData: LeadFormData = { businessName: 'Admin Updated' };
+      const result = await updateLead('lead-a', adminUpdateData);
 
       expect(result.businessName).toBe('Admin Updated');
     });
@@ -512,14 +518,16 @@ describe('Leads - updateLead', () => {
     });
 
     it('should reject update with businessName too short', async () => {
+      const shortNameData: LeadFormData = { businessName: 'A' };
       await expect(
-        updateLead('lead-a', { businessName: 'A' })
+        updateLead('lead-a', shortNameData)
       ).rejects.toThrow();
     });
 
     it('should reject update with invalid email', async () => {
+      const invalidEmailData: LeadFormData = { businessName: 'Valid', email: 'invalid' };
       await expect(
-        updateLead('lead-a', { businessName: 'Valid', email: 'invalid' })
+        updateLead('lead-a', invalidEmailData)
       ).rejects.toThrow();
     });
   });
@@ -528,8 +536,9 @@ describe('Leads - updateLead', () => {
     it('should throw error when not authenticated', async () => {
       mockedGetServerSession.mockResolvedValue(null);
 
+      const testData: LeadFormData = { businessName: 'Test' };
       await expect(
-        updateLead('lead-a', { businessName: 'Test' })
+        updateLead('lead-a', testData)
       ).rejects.toThrow('Não autorizado');
     });
   });
@@ -781,8 +790,9 @@ describe('Leads - Edge Cases', () => {
         createMockLead(userB.id, { id: 'lead-b' })
       );
 
+      const hackedData: LeadFormData = { businessName: 'Hacked' };
       await expect(
-        updateLead('lead-b', { businessName: 'Hacked' })
+        updateLead('lead-b', hackedData)
       ).rejects.toThrow('Lead não encontrado');
     });
 
@@ -792,8 +802,9 @@ describe('Leads - Edge Cases', () => {
         createMockLead(userA.id, { id: 'lead-a' })
       );
 
+      const hackedData: LeadFormData = { businessName: 'Hacked' };
       await expect(
-        updateLead('lead-a', { businessName: 'Hacked' })
+        updateLead('lead-a', hackedData)
       ).rejects.toThrow('Lead não encontrado');
     });
 

@@ -117,18 +117,11 @@ describe("validateLeadForConversion", () => {
       expect(result.valid).toBe(true);
     });
 
-    it("returns invalid when businessName is null", () => {
-      const lead = createLead({ businessName: null as unknown as string });
+    it("returns invalid when businessName is empty", () => {
+      const lead = createLead({ businessName: "" });
       const result = validateLeadForConversion(lead);
       expect(result.valid).toBe(false);
       expect(result.missingFields).toContain("businessName");
-    });
-
-    it("returns invalid when businessName is empty string", () => {
-      const lead = createLead({ businessName: "" as any });
-      const result = validateLeadForConversion(lead);
-      // Empty string is falsy, so should be invalid
-      expect(result.valid).toBe(false);
     });
 
     it("returns invalid when businessName is whitespace only", () => {
@@ -239,7 +232,7 @@ describe("validateLeadForConversion", () => {
   describe("multiple validation issues", () => {
     it("collects all missing fields", () => {
       const lead = createLead({
-        businessName: null as unknown as string,
+        businessName: "",
         status: "converted",
       });
       const result = validateLeadForConversion(lead);
@@ -273,14 +266,14 @@ describe("prepareLeadForConversion", () => {
   });
 
   it("returns isReady false for invalid lead", () => {
-    const lead = createLead({ businessName: null as unknown as string });
+    const lead = createLead({ businessName: "" });
     const result = prepareLeadForConversion(lead);
     expect(result.isReady).toBe(false);
     expect(result.organizationData).toBeNull();
   });
 
   it("includes missing fields in issues", () => {
-    const lead = createLead({ businessName: null as unknown as string });
+    const lead = createLead({ businessName: "" });
     const result = prepareLeadForConversion(lead);
     expect(result.issues).toContain("businessName");
   });
@@ -588,7 +581,7 @@ describe("calculateLeadScore", () => {
   describe("basic info scoring (30 points max)", () => {
     it("gives 10 points for businessName", () => {
       const withName = createLead({ businessName: "Company" });
-      const withoutName = createLead({ businessName: null as unknown as string });
+      const withoutName = createLead({ businessName: "" });
       const diff = calculateLeadScore(withName) - calculateLeadScore(withoutName);
       expect(diff).toBe(10);
     });
@@ -803,7 +796,7 @@ describe("calculateLeadScore", () => {
       // No businessName, no country, no state, no city = should be 0
       // But non-BR country (null) with no CNPJ still gets 10 bonus for business details
       const emptyLead = createLead({
-        businessName: null as unknown as string,
+        businessName: "",
         contacts: [],
         country: null, // null country = non-BR logic (10 bonus points)
         companyRegistrationID: null,

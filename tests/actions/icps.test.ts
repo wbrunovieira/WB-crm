@@ -14,6 +14,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { getServerSession } from 'next-auth';
 import { prismaMock } from '../setup';
+import type { ICPFormData } from '@/lib/validations/icp';
 import {
   userA,
   userB,
@@ -91,11 +92,11 @@ describe('ICP Actions - createICP', () => {
     });
 
     it('should create ICP with valid data', async () => {
-      const icpData = {
+      const icpData: ICPFormData = {
         name: 'Startup de Tecnologia',
         slug: 'startup-tech',
         content: 'Empresas de tecnologia com 10-50 funcionários...',
-        status: 'draft' as const,
+        status: 'draft',
       };
 
       const createdICP = createMockICP(userA.id, {
@@ -124,11 +125,11 @@ describe('ICP Actions - createICP', () => {
     });
 
     it('should create initial version (v1) when creating ICP', async () => {
-      const icpData = {
+      const icpData: ICPFormData = {
         name: 'E-commerce',
         slug: 'ecommerce',
         content: 'Lojas virtuais de médio porte...',
-        status: 'draft' as const,
+        status: 'draft',
       };
 
       const createdICP = createMockICP(userA.id, {
@@ -158,11 +159,11 @@ describe('ICP Actions - createICP', () => {
     });
 
     it('should reject duplicate slug', async () => {
-      const icpData = {
+      const icpData: ICPFormData = {
         name: 'Test',
         slug: 'existing-slug',
         content: 'Content...',
-        status: 'draft' as const,
+        status: 'draft',
       };
 
       prismaMock.iCP.findUnique.mockResolvedValue(

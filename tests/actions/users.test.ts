@@ -9,21 +9,27 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { UserRole } from "@/types/next-auth";
 
 // Valid CUID format for testing
 const USER_ID_ADMIN = "clxxxxxxxxxxxxxxxxxxxxxxxxxad";
 const USER_ID_SDR = "clxxxxxxxxxxxxxxxxxxxxxxxxxsd";
 const USER_ID_CLOSER = "clxxxxxxxxxxxxxxxxxxxxxxxxxcl";
 
+// Type for mock sessions
+interface MockSession {
+  user: { id: string; email: string; name: string | null; role: UserRole };
+}
+
 // Mock sessions
-const sessionAdmin = {
-  user: { id: USER_ID_ADMIN, email: "admin@test.com", name: "Admin User", role: "admin" as const },
+const sessionAdmin: MockSession = {
+  user: { id: USER_ID_ADMIN, email: "admin@test.com", name: "Admin User", role: "admin" },
 };
-const sessionSDR = {
-  user: { id: USER_ID_SDR, email: "sdr@test.com", name: "SDR User", role: "sdr" as const },
+const sessionSDR: MockSession = {
+  user: { id: USER_ID_SDR, email: "sdr@test.com", name: "SDR User", role: "sdr" },
 };
-const sessionCloser = {
-  user: { id: USER_ID_CLOSER, email: "closer@test.com", name: "Closer User", role: "closer" as const },
+const sessionCloser: MockSession = {
+  user: { id: USER_ID_CLOSER, email: "closer@test.com", name: "Closer User", role: "closer" },
 };
 
 // Mock Prisma
@@ -121,8 +127,8 @@ describe("Users Actions", () => {
     });
 
     it("should handle null name for non-admin user", async () => {
-      const sessionWithNullName = {
-        user: { id: USER_ID_SDR, email: "sdr@test.com", name: null, role: "sdr" as const },
+      const sessionWithNullName: MockSession = {
+        user: { id: USER_ID_SDR, email: "sdr@test.com", name: null, role: "sdr" },
       };
 
       vi.mocked(getAuthenticatedSession).mockResolvedValue(sessionWithNullName as any);
@@ -134,8 +140,8 @@ describe("Users Actions", () => {
     });
 
     it("should handle null email for non-admin user", async () => {
-      const sessionWithNullEmail = {
-        user: { id: USER_ID_SDR, email: null, name: "SDR User", role: "sdr" as const },
+      const sessionWithNullEmail: { user: { id: string; email: null; name: string; role: UserRole } } = {
+        user: { id: USER_ID_SDR, email: null, name: "SDR User", role: "sdr" },
       };
 
       vi.mocked(getAuthenticatedSession).mockResolvedValue(sessionWithNullEmail as any);

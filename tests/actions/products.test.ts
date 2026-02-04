@@ -11,6 +11,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockDeep, mockReset } from 'vitest-mock-extended';
 import type { PrismaClient } from '@prisma/client';
 import type { Session } from 'next-auth';
+import type { ProductFormData } from '@/lib/validations/product';
 
 // Mock Prisma
 vi.mock('@/lib/prisma', () => ({
@@ -294,14 +295,14 @@ describe('Products Actions', () => {
   // createProduct Tests
   // ===========================================
   describe('createProduct', () => {
-    const validProductData = {
+    const validProductData: ProductFormData = {
       name: 'New Product',
       slug: 'new-product',
       description: 'A new product',
       businessLineId: CUID_BL_1,
       basePrice: 1000,
       currency: 'BRL',
-      pricingType: 'fixed' as const,
+      pricingType: 'fixed',
       isActive: true,
       order: 1,
     };
@@ -391,7 +392,7 @@ describe('Products Actions', () => {
         createMockProduct({ pricingType: 'hourly', businessLineId: CUID_BL_1 }) as any
       );
 
-      const dataWithHourlyPricing = { ...validProductData, pricingType: 'hourly' as const };
+      const dataWithHourlyPricing: ProductFormData = { ...validProductData, pricingType: 'hourly' };
 
       await createProduct(dataWithHourlyPricing);
 

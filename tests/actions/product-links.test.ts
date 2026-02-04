@@ -12,6 +12,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { mockDeep, mockReset } from 'vitest-mock-extended';
 import type { PrismaClient } from '@prisma/client';
 import type { Session } from 'next-auth';
+import type {
+  LeadProductFormData,
+  OrganizationProductFormData,
+  PartnerProductFormData,
+} from '@/lib/validations/product';
 
 // Mock Prisma
 vi.mock('@/lib/prisma', () => ({
@@ -172,10 +177,10 @@ describe('Product Links Actions', () => {
   // ===========================================
   describe('Lead Products', () => {
     describe('addProductToLead', () => {
-      const validLeadProductData = {
+      const validLeadProductData: LeadProductFormData = {
         leadId: CUID_LEAD_1,
         productId: CUID_PROD_1,
-        interestLevel: 'high' as const,
+        interestLevel: 'high',
         estimatedValue: 5000,
         notes: 'Very interested',
       };
@@ -218,7 +223,7 @@ describe('Product Links Actions', () => {
     describe('updateLeadProduct', () => {
       it('should update lead product', async () => {
         mockSession = sessionUserA;
-        const updateData = { interestLevel: 'medium' as const, estimatedValue: 3000 };
+        const updateData: Partial<LeadProductFormData> = { interestLevel: 'medium', estimatedValue: 3000 };
         mockPrisma.leadProduct.update.mockResolvedValue(
           createMockLeadProduct({ id: 'lp-1', ...updateData }) as any
         );
@@ -321,10 +326,10 @@ describe('Product Links Actions', () => {
   // ===========================================
   describe('Organization Products', () => {
     describe('addProductToOrganization', () => {
-      const validOrgProductData = {
+      const validOrgProductData: OrganizationProductFormData = {
         organizationId: CUID_ORG_1,
         productId: CUID_PROD_1,
-        status: 'interested' as const,
+        status: 'interested',
         totalPurchases: 0,
         totalRevenue: 0,
       };
@@ -363,7 +368,7 @@ describe('Product Links Actions', () => {
     describe('updateOrganizationProduct', () => {
       it('should update organization product', async () => {
         mockSession = sessionUserA;
-        const updateData = { status: 'purchased' as const, totalPurchases: 1 };
+        const updateData: Partial<OrganizationProductFormData> = { status: 'purchased', totalPurchases: 1 };
         mockPrisma.organizationProduct.update.mockResolvedValue(
           createMockOrganizationProduct({ id: 'op-1', ...updateData }) as any
         );
@@ -593,10 +598,10 @@ describe('Product Links Actions', () => {
   // ===========================================
   describe('Partner Products', () => {
     describe('addProductToPartner', () => {
-      const validPartnerProductData = {
+      const validPartnerProductData: PartnerProductFormData = {
         partnerId: CUID_PARTNER_1,
         productId: CUID_PROD_1,
-        expertiseLevel: 'expert' as const,
+        expertiseLevel: 'expert',
         canRefer: true,
         canDeliver: true,
       };
@@ -635,7 +640,7 @@ describe('Product Links Actions', () => {
     describe('updatePartnerProduct', () => {
       it('should update partner product', async () => {
         mockSession = sessionUserA;
-        const updateData = { expertiseLevel: 'intermediate' as const, canDeliver: true };
+        const updateData: Partial<PartnerProductFormData> = { expertiseLevel: 'intermediate', canDeliver: true };
         mockPrisma.partnerProduct.update.mockResolvedValue(
           createMockPartnerProduct({ id: 'pp-1', ...updateData }) as any
         );
