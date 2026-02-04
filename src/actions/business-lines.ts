@@ -11,6 +11,44 @@ import {
   type BusinessLineUpdateData,
 } from "@/lib/validations/business-line";
 
+/**
+ * Check if a slug already exists
+ */
+export async function checkBusinessLineSlugExists(slug: string): Promise<boolean> {
+  const existing = await prisma.businessLine.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  return !!existing;
+}
+
+/**
+ * Generate a unique slug from name
+ */
+export async function generateUniqueBusinessLineSlug(name: string): Promise<string> {
+  const baseSlug = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .substring(0, 45);
+
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (await checkBusinessLineSlugExists(slug)) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+    if (counter > 100) {
+      slug = `${baseSlug}-${Date.now()}`;
+      break;
+    }
+  }
+
+  return slug;
+}
+
 export async function getBusinessLines() {
   const session = await getServerSession(authOptions);
 

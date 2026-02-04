@@ -7,7 +7,7 @@ export const businessLineSchema = z.object({
     .min(1, "Slug é obrigatório")
     .max(50)
     .regex(/^[a-z0-9-]+$/, "Slug deve conter apenas letras minúsculas, números e hífens"),
-  description: z.string().max(500).optional().nullable(),
+  description: z.string().max(5000, "Descrição deve ter no máximo 5.000 caracteres").optional().nullable(),
   color: z
     .string()
     .regex(/^#[0-9A-Fa-f]{6}$/, "Cor deve ser um hex válido (ex: #792990)")
