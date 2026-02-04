@@ -14,6 +14,48 @@ import {
 } from "@/lib/permissions";
 
 /**
+ * Check if a slug already exists
+ */
+export async function checkICPSlugExists(slug: string): Promise<boolean> {
+  const existing = await prisma.iCP.findUnique({
+    where: { slug },
+    select: { id: true },
+  });
+  return !!existing;
+}
+
+/**
+ * Generate a unique slug from a name
+ */
+export async function generateUniqueICPSlug(name: string): Promise<string> {
+  // Generate base slug from name
+  const baseSlug = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove accents
+    .replace(/[^a-z0-9]+/g, "-") // Replace non-alphanumeric with hyphens
+    .replace(/^-+|-+$/g, "") // Remove leading/trailing hyphens
+    .substring(0, 45); // Limit length to leave room for suffix
+
+  // Check if base slug exists
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (await checkICPSlugExists(slug)) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+
+    // Safety limit
+    if (counter > 100) {
+      slug = `${baseSlug}-${Date.now()}`;
+      break;
+    }
+  }
+
+  return slug;
+}
+
+/**
  * Create a new ICP
  */
 export async function createICP(data: ICPFormData) {

@@ -3,6 +3,7 @@ import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrgan
 import { OrganizationProjects } from "@/components/organizations/OrganizationProjects";
 import { OrganizationActivities } from "@/components/organizations/OrganizationActivities";
 import { OrganizationTechProfileSection } from "@/components/organizations/OrganizationTechProfileSection";
+import { OrganizationICPSection } from "@/components/icps/OrganizationICPSection";
 import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
@@ -328,6 +329,11 @@ export default async function OrganizationDetailPage({
       {/* Tech Profile */}
       <div className="mt-6">
         <OrganizationTechProfileSection organizationId={organization.id} />
+      </div>
+
+      {/* ICP Section */}
+      <div className="mt-6">
+        <OrganizationICPSection organizationId={organization.id} />
       </div>
 
       {/* CNAE Management */}

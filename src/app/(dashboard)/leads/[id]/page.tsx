@@ -5,6 +5,7 @@ import { LeadContactsList } from "@/components/leads/LeadContactsList";
 import { LeadActivitiesList } from "@/components/leads/LeadActivitiesList";
 import { LeadProductsSection } from "@/components/leads/LeadProductsSection";
 import { LeadTechProfileSection } from "@/components/leads/LeadTechProfileSection";
+import { LeadICPSection } from "@/components/icps/LeadICPSection";
 import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
@@ -547,6 +548,9 @@ export default async function LeadDetailPage({
 
       {/* Tech Profile */}
       <LeadTechProfileSection leadId={lead.id} />
+
+      {/* ICP Section */}
+      <LeadICPSection leadId={lead.id} isConverted={!!lead.convertedAt} />
 
       {/* CNAE Management */}
       {!lead.convertedAt && (
