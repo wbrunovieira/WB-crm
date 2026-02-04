@@ -4,9 +4,13 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import {
   leadICPSchema,
+  leadICPExtendedSchema,
   organizationICPSchema,
+  organizationICPExtendedSchema,
   type LeadICPFormData,
+  type LeadICPExtendedFormData,
   type OrganizationICPFormData,
+  type OrganizationICPExtendedFormData,
 } from "@/lib/validations/icp";
 import {
   getAuthenticatedSession,
@@ -68,6 +72,79 @@ export async function linkLeadToICP(data: LeadICPFormData) {
       icpId: validated.icpId,
       matchScore: validated.matchScore,
       notes: validated.notes,
+    },
+    include: {
+      icp: true,
+    },
+  });
+
+  revalidatePath(`/leads/${validated.leadId}`);
+  revalidatePath(`/admin/icps/${validated.icpId}`);
+  return link;
+}
+
+/**
+ * Update a Lead ICP link with extended categorization fields
+ */
+export async function updateLeadICP(data: LeadICPExtendedFormData) {
+  await getAuthenticatedSession();
+  const validated = leadICPExtendedSchema.parse(data);
+  const ownerFilter = await getOwnerFilter();
+
+  // Check lead access
+  const lead = await prisma.lead.findFirst({
+    where: {
+      id: validated.leadId,
+      ...ownerFilter,
+    },
+  });
+
+  if (!lead) {
+    throw new Error("Lead não encontrado");
+  }
+
+  // Check if link exists
+  const existingLink = await prisma.leadICP.findUnique({
+    where: {
+      leadId_icpId: {
+        leadId: validated.leadId,
+        icpId: validated.icpId,
+      },
+    },
+  });
+
+  if (!existingLink) {
+    throw new Error("Vínculo não encontrado");
+  }
+
+  // Update link with extended fields
+  const link = await prisma.leadICP.update({
+    where: {
+      leadId_icpId: {
+        leadId: validated.leadId,
+        icpId: validated.icpId,
+      },
+    },
+    data: {
+      matchScore: validated.matchScore,
+      notes: validated.notes,
+      // Essential fields
+      icpFitStatus: validated.icpFitStatus,
+      realDecisionMaker: validated.realDecisionMaker,
+      realDecisionMakerOther: validated.realDecisionMakerOther,
+      perceivedUrgency: validated.perceivedUrgency ? JSON.stringify(validated.perceivedUrgency) : null,
+      businessMoment: validated.businessMoment ? JSON.stringify(validated.businessMoment) : null,
+      // Specific fields
+      currentPlatforms: validated.currentPlatforms ? JSON.stringify(validated.currentPlatforms) : null,
+      fragmentationLevel: validated.fragmentationLevel,
+      mainDeclaredPain: validated.mainDeclaredPain,
+      strategicDesire: validated.strategicDesire,
+      perceivedTechnicalComplexity: validated.perceivedTechnicalComplexity,
+      // Strategic fields
+      purchaseTrigger: validated.purchaseTrigger,
+      nonClosingReason: validated.nonClosingReason,
+      estimatedDecisionTime: validated.estimatedDecisionTime,
+      expansionPotential: validated.expansionPotential,
     },
     include: {
       icp: true,
@@ -218,6 +295,79 @@ export async function linkOrganizationToICP(data: OrganizationICPFormData) {
       icpId: validated.icpId,
       matchScore: validated.matchScore,
       notes: validated.notes,
+    },
+    include: {
+      icp: true,
+    },
+  });
+
+  revalidatePath(`/organizations/${validated.organizationId}`);
+  revalidatePath(`/admin/icps/${validated.icpId}`);
+  return link;
+}
+
+/**
+ * Update an Organization ICP link with extended categorization fields
+ */
+export async function updateOrganizationICP(data: OrganizationICPExtendedFormData) {
+  await getAuthenticatedSession();
+  const validated = organizationICPExtendedSchema.parse(data);
+  const ownerFilter = await getOwnerFilter();
+
+  // Check organization access
+  const organization = await prisma.organization.findFirst({
+    where: {
+      id: validated.organizationId,
+      ...ownerFilter,
+    },
+  });
+
+  if (!organization) {
+    throw new Error("Organização não encontrada");
+  }
+
+  // Check if link exists
+  const existingLink = await prisma.organizationICP.findUnique({
+    where: {
+      organizationId_icpId: {
+        organizationId: validated.organizationId,
+        icpId: validated.icpId,
+      },
+    },
+  });
+
+  if (!existingLink) {
+    throw new Error("Vínculo não encontrado");
+  }
+
+  // Update link with extended fields
+  const link = await prisma.organizationICP.update({
+    where: {
+      organizationId_icpId: {
+        organizationId: validated.organizationId,
+        icpId: validated.icpId,
+      },
+    },
+    data: {
+      matchScore: validated.matchScore,
+      notes: validated.notes,
+      // Essential fields
+      icpFitStatus: validated.icpFitStatus,
+      realDecisionMaker: validated.realDecisionMaker,
+      realDecisionMakerOther: validated.realDecisionMakerOther,
+      perceivedUrgency: validated.perceivedUrgency ? JSON.stringify(validated.perceivedUrgency) : null,
+      businessMoment: validated.businessMoment ? JSON.stringify(validated.businessMoment) : null,
+      // Specific fields
+      currentPlatforms: validated.currentPlatforms ? JSON.stringify(validated.currentPlatforms) : null,
+      fragmentationLevel: validated.fragmentationLevel,
+      mainDeclaredPain: validated.mainDeclaredPain,
+      strategicDesire: validated.strategicDesire,
+      perceivedTechnicalComplexity: validated.perceivedTechnicalComplexity,
+      // Strategic fields
+      purchaseTrigger: validated.purchaseTrigger,
+      nonClosingReason: validated.nonClosingReason,
+      estimatedDecisionTime: validated.estimatedDecisionTime,
+      expansionPotential: validated.expansionPotential,
     },
     include: {
       icp: true,
@@ -409,12 +559,30 @@ export async function copyLeadICPsToOrganization(leadId: string, organizationId:
   }
 
   // Create organization ICP links (no skipDuplicates needed since this is during conversion)
+  // Copy all extended categorization fields
   const organizationICPs = await prisma.organizationICP.createMany({
     data: leadICPs.map((link) => ({
       organizationId,
       icpId: link.icpId,
       matchScore: link.matchScore,
       notes: link.notes,
+      // Essential fields
+      icpFitStatus: link.icpFitStatus,
+      realDecisionMaker: link.realDecisionMaker,
+      realDecisionMakerOther: link.realDecisionMakerOther,
+      perceivedUrgency: link.perceivedUrgency,
+      businessMoment: link.businessMoment,
+      // Specific fields
+      currentPlatforms: link.currentPlatforms,
+      fragmentationLevel: link.fragmentationLevel,
+      mainDeclaredPain: link.mainDeclaredPain,
+      strategicDesire: link.strategicDesire,
+      perceivedTechnicalComplexity: link.perceivedTechnicalComplexity,
+      // Strategic fields
+      purchaseTrigger: link.purchaseTrigger,
+      nonClosingReason: link.nonClosingReason,
+      estimatedDecisionTime: link.estimatedDecisionTime,
+      expansionPotential: link.expansionPotential,
     })),
   });
 

@@ -42,12 +42,12 @@ export const organizationSchema = z.object({
   labelId: z.string().optional(),
 
   // Hosting
-  hasHosting: z.boolean().optional(),
-  hostingRenewalDate: z.string().optional(),
-  hostingPlan: z.string().optional(),
-  hostingValue: z.number().nonnegative().optional(),
-  hostingReminderDays: z.number().int().positive().optional(),
-  hostingNotes: z.string().optional(),
+  hasHosting: z.boolean().nullish(),
+  hostingRenewalDate: z.string().nullish(),
+  hostingPlan: z.string().nullish(),
+  hostingValue: z.number().nonnegative().nullish(),
+  hostingReminderDays: z.number().int().positive().nullish(),
+  hostingNotes: z.string().nullish(),
 });
 
 export type OrganizationFormData = z.infer<typeof organizationSchema>;
