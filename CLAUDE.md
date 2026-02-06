@@ -279,3 +279,66 @@ When the user types "github", perform these steps:
 3. Run `git push` to push to remote repository
 
 Note: Pushing to `main` triggers automatic deployment via GitHub Actions (Ansible-based deployment to production server at crm.wbdigitalsolutions.com).
+
+## Production Server
+
+**Server**: `45.90.123.190` (root access via SSH key `~/.ssh/id_rsa`)
+
+### Apps Running
+- **WB-CRM** (Next.js) - PM2 process `wb-crm`, porta 3000, dir `/opt/wb-crm`
+- **n8n** (Docker) - container `n8n`, porta 5678
+- **Evolution API** (Docker) - container `evolution_postgres`
+- **Nextcloud** (Docker)
+- **Chatbot** (Docker)
+
+### Nginx Sites Configured
+- `crm.wbdigitalsolutions.com` → localhost:3000 (CRM)
+- `n8n.wbdigitalsolutions.com` → localhost:5678 (n8n)
+- `chatbotwb.wbdigitalsolutions.com`
+- `nextcloud.wbdigitalsolutions.com`
+
+### Database Backups (Automático via Crontab)
+
+**CRM** (PostgreSQL em Docker `crm_postgres`):
+- Script: `/opt/backups/backup-crm.sh`
+- Horário: 3:30 AM diariamente
+- Local: `/opt/backups/crm/`
+- Google Drive: `gdrive:backups/wb-crm/`
+- Retenção: 7 dias
+
+**n8n** (PostgreSQL em Docker `n8n_postgres`):
+- Script: `/root/n8n/backup-n8n.sh`
+- Horário: 3:00 AM diariamente
+- Local: `/root/n8n/backups/`
+- Google Drive: `gdrive:backups/n8n/`
+- Retenção: 30 dias
+
+**Verificar backups:**
+```bash
+# Ver backups no Google Drive
+ssh root@45.90.123.190 "rclone ls gdrive:backups/"
+
+# Ver logs de backup
+ssh root@45.90.123.190 "tail -50 /var/log/crm-backup.log"
+```
+
+### Deploy Commands (Ansible)
+
+```bash
+cd deploy/ansible
+
+# Deploy rápido (sem migrations)
+ansible-playbook -i inventory/production.yml playbooks/quick-deploy.yml
+
+# Deploy com migrations (faz backup antes)
+ansible-playbook -i inventory/production.yml playbooks/deploy-with-migrations.yml
+
+# Rollback
+ansible-playbook -i inventory/production.yml playbooks/rollback.yml \
+  -e "backup_file=pre_migration_XXXXXXXX_XXXXXX.sql"
+```
+
+### SSL Certificates
+- Gerenciados pelo Certbot (Let's Encrypt)
+- Renovação automática via crontab (segundas às 2:00 AM)
+- Configs em `/etc/nginx/sites-available/`
