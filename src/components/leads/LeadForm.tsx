@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { createLead, updateLead } from "@/actions/leads";
+import { updateLead, createLeadWithContacts } from "@/actions/leads";
+import { Trash2, Plus } from "lucide-react";
 import { linkLeadToICP, unlinkLeadFromICP, getLeadICPs } from "@/actions/icp-links";
 import { setLeadLabels } from "@/actions/lead-labels";
 import { useState, useEffect } from "react";
@@ -65,6 +66,24 @@ type LeadFormProps = {
   lead?: Lead;
 };
 
+type ContactFormData = {
+  name: string;
+  email: string;
+  phone: string;
+  whatsapp: string;
+  role: string;
+  isPrimary: boolean;
+};
+
+const emptyContact: ContactFormData = {
+  name: "",
+  email: "",
+  phone: "",
+  whatsapp: "",
+  role: "",
+  isPrimary: false,
+};
+
 export function LeadForm({ lead }: LeadFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -75,6 +94,7 @@ export function LeadForm({ lead }: LeadFormProps) {
   const [originalIcpId, setOriginalIcpId] = useState<string>("");
   const [availableIcps, setAvailableIcps] = useState<{ id: string; name: string }[]>([]);
   const [loadingIcps, setLoadingIcps] = useState(true);
+  const [contacts, setContacts] = useState<ContactFormData[]>([]);
 
   // Load available ICPs and current ICP (for both new and edit)
   useEffect(() => {
@@ -214,7 +234,21 @@ export function LeadForm({ lead }: LeadFormProps) {
         toast.success("Lead atualizado com sucesso!");
         router.push(`/leads/${lead.id}`);
       } else {
-        const newLead = await createLead(data);
+        // Filter out empty contacts and prepare valid contacts
+        const validContacts = contacts
+          .filter((c) => c.name.trim().length >= 2)
+          .map((c, index) => ({
+            name: c.name.trim(),
+            email: c.email.trim() || undefined,
+            phone: c.phone.trim() || undefined,
+            whatsapp: c.whatsapp.trim() || undefined,
+            role: c.role.trim() || undefined,
+            isPrimary: index === 0 ? true : c.isPrimary,
+          }));
+
+        // Use createLeadWithContacts for atomic creation
+        const result = await createLeadWithContacts(data, validContacts);
+        const newLead = result.lead;
 
         // Set labels if any selected
         if (labelIds.length > 0) {
@@ -239,7 +273,12 @@ export function LeadForm({ lead }: LeadFormProps) {
           }
         }
 
-        toast.success("Lead criado com sucesso!");
+        const contactsCount = result.contacts.length;
+        if (contactsCount > 0) {
+          toast.success(`Lead criado com ${contactsCount} contato(s)!`);
+        } else {
+          toast.success("Lead criado com sucesso!");
+        }
         router.push(`/leads/${newLead.id}`);
       }
       router.refresh();
@@ -580,6 +619,154 @@ export function LeadForm({ lead }: LeadFormProps) {
           </div>
         </div>
       </div>
+
+      {/* Contatos do Lead - Apenas para novos leads */}
+      {!lead?.id && (
+        <div className="rounded-lg bg-[#1a0022] p-6">
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <h2 className="text-lg font-semibold text-gray-200">
+                Contatos
+              </h2>
+              <p className="text-sm text-gray-400">
+                Adicione pessoas de contato para este lead
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setContacts([...contacts, { ...emptyContact }])}
+              className="inline-flex items-center gap-2 rounded-md bg-[#792990] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#9333b8] transition-colors"
+            >
+              <Plus className="h-4 w-4" />
+              Adicionar Contato
+            </button>
+          </div>
+
+          {contacts.length === 0 ? (
+            <div className="rounded-lg border-2 border-dashed border-gray-600 p-8 text-center">
+              <p className="text-gray-400">
+                Nenhum contato adicionado ainda.
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                Clique em &quot;Adicionar Contato&quot; para incluir pessoas de contato.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {contacts.map((contact, index) => (
+                <div
+                  key={index}
+                  className="rounded-lg border border-[#792990] bg-[#2d1b3d] p-4"
+                >
+                  <div className="mb-3 flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-300">
+                      Contato {index + 1}
+                      {index === 0 && (
+                        <span className="ml-2 rounded bg-[#792990] px-2 py-0.5 text-xs text-white">
+                          Principal
+                        </span>
+                      )}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newContacts = contacts.filter((_, i) => i !== index);
+                        setContacts(newContacts);
+                      }}
+                      className="text-red-400 hover:text-red-300"
+                      title="Remover contato"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400">
+                        Nome *
+                      </label>
+                      <input
+                        type="text"
+                        value={contact.name}
+                        onChange={(e) => {
+                          const newContacts = [...contacts];
+                          newContacts[index].name = e.target.value;
+                          setContacts(newContacts);
+                        }}
+                        placeholder="Nome do contato"
+                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400">
+                        Cargo
+                      </label>
+                      <input
+                        type="text"
+                        value={contact.role}
+                        onChange={(e) => {
+                          const newContacts = [...contacts];
+                          newContacts[index].role = e.target.value;
+                          setContacts(newContacts);
+                        }}
+                        placeholder="Ex: CEO, Diretor, Gerente"
+                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400">
+                        Email
+                      </label>
+                      <input
+                        type="email"
+                        value={contact.email}
+                        onChange={(e) => {
+                          const newContacts = [...contacts];
+                          newContacts[index].email = e.target.value;
+                          setContacts(newContacts);
+                        }}
+                        placeholder="email@exemplo.com"
+                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400">
+                        Telefone
+                      </label>
+                      <input
+                        type="tel"
+                        value={contact.phone}
+                        onChange={(e) => {
+                          const newContacts = [...contacts];
+                          newContacts[index].phone = e.target.value;
+                          setContacts(newContacts);
+                        }}
+                        placeholder="(00) 0000-0000"
+                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400">
+                        WhatsApp
+                      </label>
+                      <input
+                        type="tel"
+                        value={contact.whatsapp}
+                        onChange={(e) => {
+                          const newContacts = [...contacts];
+                          newContacts[index].whatsapp = e.target.value;
+                          setContacts(newContacts);
+                        }}
+                        placeholder="(00) 00000-0000"
+                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Redes Sociais */}
       <div className="rounded-lg bg-[#1a0022] p-6">
