@@ -53,7 +53,9 @@
 
     - name: Create pre-migration database backup via Docker
       raw: |
-        docker exec {{ db_container }} pg_dump -U {{ db_user }} -d {{ db_name }} -Fc > {{ backup_dir }}/pre_migration_{{ timestamp }}.sql && \
+        docker exec {{ db_container }} pg_dump -U {{ db_user }} -d {{ db_name }} -Fc -f /tmp/backup_{{ timestamp }}.sql && \
+        docker cp {{ db_container }}:/tmp/backup_{{ timestamp }}.sql {{ backup_dir }}/pre_migration_{{ timestamp }}.sql && \
+        docker exec {{ db_container }} rm /tmp/backup_{{ timestamp }}.sql && \
         echo "Backup created successfully"
       register: backup_result
       ignore_errors: yes
