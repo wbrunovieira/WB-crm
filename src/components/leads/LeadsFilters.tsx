@@ -4,7 +4,16 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDebouncedCallback } from "@/lib/hooks/useDebouncedCallback";
 import { Search } from "lucide-react";
 
-export function LeadsFilters() {
+interface ICP {
+  id: string;
+  name: string;
+}
+
+interface LeadsFiltersProps {
+  icps?: ICP[];
+}
+
+export function LeadsFilters({ icps = [] }: LeadsFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -68,6 +77,20 @@ export function LeadsFilters() {
         <option value="warm">Morno</option>
         <option value="hot">Quente</option>
       </select>
+      {icps.length > 0 && (
+        <select
+          value={searchParams.get("icpId")?.toString() || ""}
+          onChange={(e) => handleFilterChange("icpId", e.target.value)}
+          className="rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">Todos os ICPs</option>
+          {icps.map((icp) => (
+            <option key={icp.id} value={icp.id}>
+              {icp.name}
+            </option>
+          ))}
+        </select>
+      )}
     </div>
   );
 }

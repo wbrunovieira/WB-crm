@@ -1,5 +1,6 @@
 import { getLeads } from "@/actions/leads";
 import { getUsers } from "@/actions/users";
+import { getICPs } from "@/actions/icps";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
 import { LeadsFilters } from "@/components/leads/LeadsFilters";
@@ -18,15 +19,17 @@ export default async function LeadsPage({
     status?: string;
     quality?: string;
     owner?: string;
+    icpId?: string;
   };
 }) {
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
   const currentUserId = session?.user?.id || "";
 
-  const [leads, users] = await Promise.all([
+  const [leads, users, icps] = await Promise.all([
     getLeads(searchParams),
     isAdmin ? getUsers() : Promise.resolve([]),
+    getICPs({ status: "active" }),
   ]);
 
   // Get shared users for all leads (batch query)
@@ -65,7 +68,7 @@ export default async function LeadsPage({
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <LeadsFilters />
+        <LeadsFilters icps={icps} />
         {isAdmin && users.length > 0 && (
           <OwnerFilter users={users} currentUserId={currentUserId} />
         )}
@@ -93,6 +96,9 @@ export default async function LeadsPage({
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Empresa
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+                  ICP
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
                   Localização
@@ -130,6 +136,17 @@ export default async function LeadsPage({
                         />
                       )}
                     </div>
+                  </td>
+                  <td className="whitespace-nowrap px-6 py-4">
+                    {lead.icps[0]?.icp ? (
+                      <span
+                        className="inline-flex rounded-full bg-purple-100 px-2 text-xs font-semibold leading-5 text-purple-800"
+                      >
+                        {lead.icps[0].icp.name}
+                      </span>
+                    ) : (
+                      <span className="text-sm text-gray-400">-</span>
+                    )}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {lead.city && lead.state

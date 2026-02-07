@@ -21,6 +21,7 @@ export async function getLeads(filters?: {
   status?: string;
   quality?: string;
   owner?: string;
+  icpId?: string;
 }) {
   const ownerFilter = await getOwnerOrSharedFilter("lead", filters?.owner);
 
@@ -36,6 +37,11 @@ export async function getLeads(filters?: {
       }),
       ...(filters?.status && { status: filters.status }),
       ...(filters?.quality && { quality: filters.quality }),
+      ...(filters?.icpId && {
+        icps: {
+          some: { icpId: filters.icpId },
+        },
+      }),
     },
     include: {
       leadContacts: true,
@@ -44,6 +50,17 @@ export async function getLeads(filters?: {
           id: true,
           name: true,
         },
+      },
+      icps: {
+        include: {
+          icp: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+        },
+        take: 1,
       },
       _count: {
         select: {
