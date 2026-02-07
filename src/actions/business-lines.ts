@@ -224,3 +224,16 @@ export async function toggleBusinessLineActive(id: string) {
   revalidatePath("/admin/business-lines");
   return updated;
 }
+
+// Retorna as ordens já utilizadas pelas linhas de negócio
+export async function getUsedBusinessLineOrders(): Promise<number[]> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) throw new Error("Não autorizado");
+
+  const businessLines = await prisma.businessLine.findMany({
+    select: { order: true },
+    orderBy: { order: "asc" },
+  });
+
+  return businessLines.map((bl) => bl.order);
+}

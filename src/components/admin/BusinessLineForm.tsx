@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
 import { createBusinessLine, generateUniqueBusinessLineSlug } from "@/actions/business-lines";
@@ -12,7 +12,11 @@ const LIMITS = {
   icon: 50,
 };
 
-export function BusinessLineForm() {
+interface BusinessLineFormProps {
+  usedOrders: number[];
+}
+
+export function BusinessLineForm({ usedOrders }: BusinessLineFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -25,6 +29,17 @@ export function BusinessLineForm() {
   const [order, setOrder] = useState(0);
 
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  // Gera lista de ordens disponíveis (0 a 99, excluindo as já usadas)
+  const availableOrders = useMemo(() => {
+    const orders: number[] = [];
+    for (let i = 0; i <= 99; i++) {
+      if (!usedOrders.includes(i)) {
+        orders.push(i);
+      }
+    }
+    return orders;
+  }, [usedOrders]);
 
   const handleNameChange = (value: string) => {
     setName(value);
@@ -128,7 +143,7 @@ export function BusinessLineForm() {
       setDescription("");
       setColor("#792990");
       setIcon("");
-      setOrder(0);
+      setOrder(availableOrders[0] ?? 0);
       setFieldErrors({});
 
       setTimeout(() => setSuccess(false), 3000);
@@ -271,13 +286,22 @@ export function BusinessLineForm() {
         <label className="block text-sm font-medium text-gray-700">
           Ordem de Exibição
         </label>
-        <input
-          type="number"
+        <select
           value={order}
           onChange={(e) => setOrder(parseInt(e.target.value) || 0)}
-          min="0"
           className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-        />
+        >
+          {availableOrders.map((o) => (
+            <option key={o} value={o}>
+              {o}
+            </option>
+          ))}
+        </select>
+        {usedOrders.length > 0 && (
+          <p className="mt-1 text-xs text-gray-500">
+            Ordens já usadas: {usedOrders.sort((a, b) => a - b).join(", ")}
+          </p>
+        )}
       </div>
 
       {/* Submit */}

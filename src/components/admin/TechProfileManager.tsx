@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { TechProfileGenericForm } from "./TechProfileGenericForm";
 import { TechProfileGenericList } from "./TechProfileGenericList";
 
@@ -90,6 +90,21 @@ export function TechProfileManager({
     }
   };
 
+  // Get used orders for the active tab
+  const usedOrders = useMemo(() => {
+    let data: TechProfileItem[];
+    switch (activeTab) {
+      case "languages": data = languages; break;
+      case "frameworks": data = frameworks; break;
+      case "hosting": data = hosting; break;
+      case "databases": data = databases; break;
+      case "erps": data = erps; break;
+      case "crms": data = crms; break;
+      case "ecommerces": data = ecommerces; break;
+    }
+    return data.map((item) => item.order);
+  }, [activeTab, languages, frameworks, hosting, databases, erps, crms, ecommerces]);
+
   return (
     <div>
       {/* Tabs */}
@@ -118,7 +133,7 @@ export function TechProfileManager({
             <h2 className="mb-4 text-lg font-semibold">
               Novo {tabs.find(t => t.key === activeTab)?.label.slice(0, -1)}
             </h2>
-            <TechProfileGenericForm type={activeTab} />
+            <TechProfileGenericForm type={activeTab} usedOrders={usedOrders} />
           </div>
         </div>
         <div className="lg:col-span-2">

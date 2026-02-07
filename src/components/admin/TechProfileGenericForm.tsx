@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   createTechProfileLanguage,
@@ -10,37 +10,56 @@ import {
   createTechProfileERP,
   createTechProfileCRM,
   createTechProfileEcommerce,
+  generateUniqueTechProfileSlug,
 } from "@/actions/tech-profile-options";
 
 type TechProfileType = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
 
 interface TechProfileGenericFormProps {
   type: TechProfileType;
+  usedOrders: number[];
 }
 
-export function TechProfileGenericForm({ type }: TechProfileGenericFormProps) {
+export function TechProfileGenericForm({ type, usedOrders }: TechProfileGenericFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const needsTypeField = type === "hosting" || type === "databases";
+
+  // Gera lista de ordens disponíveis (0 a 99, excluindo as já usadas)
+  const availableOrders = useMemo(() => {
+    const orders: number[] = [];
+    for (let i = 0; i <= 99; i++) {
+      if (!usedOrders.includes(i)) {
+        orders.push(i);
+      }
+    }
+    return orders;
+  }, [usedOrders]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    const baseData = {
-      name: formData.get("name") as string,
-      slug: formData.get("slug") as string,
-      color: formData.get("color") as string || null,
-      icon: formData.get("icon") as string || null,
-      order: parseInt(formData.get("order") as string) || 0,
-      isActive: true,
-    };
+    const name = formData.get("name") as string;
 
     try {
+      const slug = await generateUniqueTechProfileSlug(type, name);
+
+      const baseData = {
+        name,
+        slug,
+        color: (formData.get("color") as string) || null,
+        icon: (formData.get("icon") as string) || null,
+        order: parseInt(formData.get("order") as string) || 0,
+        isActive: true,
+      };
+
       switch (type) {
         case "languages":
           await createTechProfileLanguage(baseData);
@@ -73,9 +92,9 @@ export function TechProfileGenericForm({ type }: TechProfileGenericFormProps) {
 
       form.reset();
       router.refresh();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Erro ao criar item";
-      alert(message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro ao criar item";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -83,13 +102,13 @@ export function TechProfileGenericForm({ type }: TechProfileGenericFormProps) {
 
   const getPlaceholders = () => {
     switch (type) {
-      case "languages": return { name: "JavaScript, Python, PHP...", slug: "javascript, python..." };
-      case "frameworks": return { name: "React, Django, Laravel...", slug: "react, django..." };
-      case "hosting": return { name: "AWS, Azure, DigitalOcean...", slug: "aws, azure..." };
-      case "databases": return { name: "PostgreSQL, MySQL, MongoDB...", slug: "postgresql, mysql..." };
-      case "erps": return { name: "SAP, Oracle, Totvs...", slug: "sap, oracle..." };
-      case "crms": return { name: "Salesforce, HubSpot, Pipedrive...", slug: "salesforce, hubspot..." };
-      case "ecommerces": return { name: "Shopify, WooCommerce, VTEX...", slug: "shopify, woocommerce..." };
+      case "languages": return { name: "JavaScript, Python, PHP..." };
+      case "frameworks": return { name: "React, Django, Laravel..." };
+      case "hosting": return { name: "AWS, Azure, DigitalOcean..." };
+      case "databases": return { name: "PostgreSQL, MySQL, MongoDB..." };
+      case "erps": return { name: "SAP, Oracle, Totvs..." };
+      case "crms": return { name: "Salesforce, HubSpot, Pipedrive..." };
+      case "ecommerces": return { name: "Shopify, WooCommerce, VTEX..." };
     }
   };
 
@@ -97,6 +116,12 @@ export function TechProfileGenericForm({ type }: TechProfileGenericFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-700">
           Nome *
@@ -109,23 +134,8 @@ export function TechProfileGenericForm({ type }: TechProfileGenericFormProps) {
           className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
           placeholder={placeholders.name}
         />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Slug *
-        </label>
-        <input
-          type="text"
-          name="slug"
-          required
-          maxLength={50}
-          pattern="^[a-z0-9-]+$"
-          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-          placeholder={placeholders.slug}
-        />
         <p className="mt-1 text-xs text-gray-500">
-          Apenas letras minúsculas, números e hífens
+          O identificador (slug) será gerado automaticamente
         </p>
       </div>
 
@@ -187,15 +197,23 @@ export function TechProfileGenericForm({ type }: TechProfileGenericFormProps) {
 
       <div>
         <label className="block text-sm font-medium text-gray-700">
-          Ordem
+          Ordem de Exibição
         </label>
-        <input
-          type="number"
+        <select
           name="order"
-          min={0}
-          defaultValue={0}
           className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-        />
+        >
+          {availableOrders.map((order) => (
+            <option key={order} value={order}>
+              {order}
+            </option>
+          ))}
+        </select>
+        {usedOrders.length > 0 && (
+          <p className="mt-1 text-xs text-gray-500">
+            Ordens já usadas: {usedOrders.sort((a, b) => a - b).join(", ")}
+          </p>
+        )}
       </div>
 
       <button

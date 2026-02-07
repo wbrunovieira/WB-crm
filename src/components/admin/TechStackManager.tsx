@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { TechCategoryForm } from "./TechCategoryForm";
 import { TechCategoriesList } from "./TechCategoriesList";
 import { TechLanguageForm } from "./TechLanguageForm";
@@ -62,6 +62,11 @@ export function TechStackManager({
 }: TechStackManagerProps) {
   const [activeTab, setActiveTab] = useState<Tab>("categories");
 
+  // Extract used orders from categories
+  const usedCategoryOrders = useMemo(() => {
+    return categories.map((c) => c.order);
+  }, [categories]);
+
   return (
     <div>
       {/* Tabs */}
@@ -106,7 +111,7 @@ export function TechStackManager({
           <div className="lg:col-span-1">
             <div className="rounded-lg bg-white p-6 shadow">
               <h2 className="mb-4 text-lg font-semibold">Nova Categoria</h2>
-              <TechCategoryForm />
+              <TechCategoryForm usedOrders={usedCategoryOrders} />
             </div>
           </div>
           <div className="lg:col-span-2">

@@ -177,3 +177,36 @@ export async function toggleTechFrameworkActive(id: string) {
   revalidatePath("/admin/tech-stack");
   return updated;
 }
+
+// Verifica se o slug já existe
+export async function checkTechFrameworkSlugExists(slug: string): Promise<boolean> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) throw new Error("Não autorizado");
+
+  const existing = await prisma.techFramework.findUnique({ where: { slug } });
+  return !!existing;
+}
+
+// Gera um slug único baseado no nome
+export async function generateUniqueTechFrameworkSlug(name: string): Promise<string> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) throw new Error("Não autorizado");
+
+  const baseSlug = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .substring(0, 45);
+
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (await checkTechFrameworkSlugExists(slug)) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+
+  return slug;
+}

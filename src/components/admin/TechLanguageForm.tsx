@@ -2,33 +2,38 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createTechLanguage } from "@/actions/tech-languages";
+import { createTechLanguage, generateUniqueTechLanguageSlug } from "@/actions/tech-languages";
 
 export function TechLanguageForm() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
+    setError("");
 
     const form = e.currentTarget;
     const formData = new FormData(form);
 
     try {
+      const name = formData.get("name") as string;
+      const slug = await generateUniqueTechLanguageSlug(name);
+
       await createTechLanguage({
-        name: formData.get("name") as string,
-        slug: formData.get("slug") as string,
-        color: formData.get("color") as string || null,
-        icon: formData.get("icon") as string || null,
+        name,
+        slug,
+        color: (formData.get("color") as string) || null,
+        icon: (formData.get("icon") as string) || null,
         isActive: true,
       });
 
       form.reset();
       router.refresh();
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : "Erro ao criar linguagem";
-      alert(message);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erro ao criar linguagem";
+      setError(message);
     } finally {
       setLoading(false);
     }
@@ -36,6 +41,12 @@ export function TechLanguageForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
+      {error && (
+        <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
+          {error}
+        </div>
+      )}
+
       <div>
         <label className="block text-sm font-medium text-gray-700">
           Nome *
@@ -48,23 +59,8 @@ export function TechLanguageForm() {
           className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
           placeholder="JavaScript, Python, PHP..."
         />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Slug *
-        </label>
-        <input
-          type="text"
-          name="slug"
-          required
-          maxLength={50}
-          pattern="^[a-z0-9-]+$"
-          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-          placeholder="javascript, python..."
-        />
         <p className="mt-1 text-xs text-gray-500">
-          Apenas letras minúsculas, números e hífens
+          O identificador (slug) será gerado automaticamente
         </p>
       </div>
 

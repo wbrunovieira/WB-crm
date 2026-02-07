@@ -603,3 +603,89 @@ export async function toggleTechProfileEcommerceActive(id: string) {
   revalidatePath("/admin/tech-profile");
   return updated;
 }
+
+// ========== UTILITY FUNCTIONS FOR SLUG GENERATION ==========
+
+type TechProfileType = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
+
+// Helper to generate base slug from name
+function generateBaseSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .substring(0, 45);
+}
+
+// Check if slug exists for a tech profile type
+async function checkTechProfileSlugExists(type: TechProfileType, slug: string): Promise<boolean> {
+  switch (type) {
+    case "languages":
+      return !!(await prisma.techProfileLanguage.findUnique({ where: { slug } }));
+    case "frameworks":
+      return !!(await prisma.techProfileFramework.findUnique({ where: { slug } }));
+    case "hosting":
+      return !!(await prisma.techProfileHosting.findUnique({ where: { slug } }));
+    case "databases":
+      return !!(await prisma.techProfileDatabase.findUnique({ where: { slug } }));
+    case "erps":
+      return !!(await prisma.techProfileERP.findUnique({ where: { slug } }));
+    case "crms":
+      return !!(await prisma.techProfileCRM.findUnique({ where: { slug } }));
+    case "ecommerces":
+      return !!(await prisma.techProfileEcommerce.findUnique({ where: { slug } }));
+  }
+}
+
+// Generate unique slug for any tech profile type
+export async function generateUniqueTechProfileSlug(type: TechProfileType, name: string): Promise<string> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) throw new Error("Não autorizado");
+
+  const baseSlug = generateBaseSlug(name);
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (await checkTechProfileSlugExists(type, slug)) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+
+  return slug;
+}
+
+// Get used orders for any tech profile type
+export async function getUsedTechProfileOrders(type: TechProfileType): Promise<number[]> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) throw new Error("Não autorizado");
+
+  let items: { order: number }[] = [];
+
+  switch (type) {
+    case "languages":
+      items = await prisma.techProfileLanguage.findMany({ select: { order: true }, orderBy: { order: "asc" } });
+      break;
+    case "frameworks":
+      items = await prisma.techProfileFramework.findMany({ select: { order: true }, orderBy: { order: "asc" } });
+      break;
+    case "hosting":
+      items = await prisma.techProfileHosting.findMany({ select: { order: true }, orderBy: { order: "asc" } });
+      break;
+    case "databases":
+      items = await prisma.techProfileDatabase.findMany({ select: { order: true }, orderBy: { order: "asc" } });
+      break;
+    case "erps":
+      items = await prisma.techProfileERP.findMany({ select: { order: true }, orderBy: { order: "asc" } });
+      break;
+    case "crms":
+      items = await prisma.techProfileCRM.findMany({ select: { order: true }, orderBy: { order: "asc" } });
+      break;
+    case "ecommerces":
+      items = await prisma.techProfileEcommerce.findMany({ select: { order: true }, orderBy: { order: "asc" } });
+      break;
+  }
+
+  return items.map((i) => i.order);
+}

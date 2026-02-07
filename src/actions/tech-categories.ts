@@ -177,3 +177,49 @@ export async function toggleTechCategoryActive(id: string) {
   revalidatePath("/admin/tech-stack");
   return updated;
 }
+
+// Verifica se o slug já existe
+export async function checkTechCategorySlugExists(slug: string): Promise<boolean> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) throw new Error("Não autorizado");
+
+  const existing = await prisma.techCategory.findUnique({ where: { slug } });
+  return !!existing;
+}
+
+// Gera um slug único baseado no nome
+export async function generateUniqueTechCategorySlug(name: string): Promise<string> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) throw new Error("Não autorizado");
+
+  const baseSlug = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .substring(0, 45);
+
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (await checkTechCategorySlugExists(slug)) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+
+  return slug;
+}
+
+// Retorna as ordens já utilizadas
+export async function getUsedTechCategoryOrders(): Promise<number[]> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) throw new Error("Não autorizado");
+
+  const categories = await prisma.techCategory.findMany({
+    select: { order: true },
+    orderBy: { order: "asc" },
+  });
+
+  return categories.map((c) => c.order);
+}

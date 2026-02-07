@@ -1,10 +1,13 @@
-import { getBusinessLines } from "@/actions/business-lines";
+import { getBusinessLines, getUsedBusinessLineOrders } from "@/actions/business-lines";
 import { BusinessLineForm } from "@/components/admin/BusinessLineForm";
 import { BusinessLinesList } from "@/components/admin/BusinessLinesList";
 import Link from "next/link";
 
 export default async function BusinessLinesPage() {
-  const businessLines = await getBusinessLines();
+  const [businessLines, usedOrders] = await Promise.all([
+    getBusinessLines(),
+    getUsedBusinessLineOrders(),
+  ]);
 
   return (
     <div className="p-8">
@@ -35,7 +38,7 @@ export default async function BusinessLinesPage() {
             <h2 className="mb-4 text-lg font-semibold">
               Nova Linha de Negócio
             </h2>
-            <BusinessLineForm />
+            <BusinessLineForm usedOrders={usedOrders} />
           </div>
         </div>
 
