@@ -134,6 +134,79 @@ export async function createLead(data: LeadFormData) {
   return lead;
 }
 
+export async function createLeadWithContacts(
+  leadData: LeadFormData,
+  contacts: LeadContactFormData[]
+) {
+  const session = await getAuthenticatedSession();
+
+  // Validate lead data
+  const validatedLead = leadSchema.parse(leadData);
+
+  // Validate all contacts
+  const validatedContacts = contacts.map((contact) =>
+    leadContactSchema.parse(contact)
+  );
+
+  // Use transaction to ensure all-or-nothing
+  const result = await prisma.$transaction(async (tx) => {
+    // 1. Create the lead
+    const lead = await tx.lead.create({
+      data: {
+        ...validatedLead,
+        ownerId: session.user.id,
+      },
+    });
+
+    // 2. Create contacts if any
+    const createdContacts = [];
+
+    if (validatedContacts.length > 0) {
+      // Determine primary contact logic:
+      // - If any contact has isPrimary: true, use the first one as primary
+      // - If no contact has isPrimary, set the first contact as primary
+      const hasPrimaryContact = validatedContacts.some((c) => c.isPrimary);
+      let primaryAssigned = false;
+
+      for (let i = 0; i < validatedContacts.length; i++) {
+        const contactData = validatedContacts[i];
+
+        // Determine if this contact should be primary
+        let isPrimary = false;
+        if (!primaryAssigned) {
+          if (hasPrimaryContact && contactData.isPrimary) {
+            isPrimary = true;
+            primaryAssigned = true;
+          } else if (!hasPrimaryContact && i === 0) {
+            isPrimary = true;
+            primaryAssigned = true;
+          }
+        }
+
+        const contact = await tx.leadContact.create({
+          data: {
+            ...contactData,
+            isPrimary,
+            leadId: lead.id,
+          },
+        });
+
+        createdContacts.push(contact);
+      }
+    }
+
+    return {
+      lead,
+      contacts: createdContacts,
+    };
+  });
+
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${result.lead.id}`);
+
+  return result;
+}
+
 export async function updateLead(id: string, data: LeadFormData) {
   await getAuthenticatedSession();
   const validated = leadSchema.parse(data);
