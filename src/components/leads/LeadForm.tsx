@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createLead, updateLead } from "@/actions/leads";
-import { linkLeadToICP } from "@/actions/icp-links";
+import { linkLeadToICP, unlinkLeadFromICP, getLeadICPs } from "@/actions/icp-links";
 import { setLeadLabels } from "@/actions/lead-labels";
 import { useState, useEffect } from "react";
 import { MultiLabelSelect } from "@/components/shared/MultiLabelSelect";
@@ -72,19 +72,34 @@ export function LeadForm({ lead }: LeadFormProps) {
   const [selectedCountry, setSelectedCountry] = useState<string>(lead?.country || "");
   const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(null);
   const [selectedIcpId, setSelectedIcpId] = useState<string>("");
+  const [originalIcpId, setOriginalIcpId] = useState<string>("");
   const [availableIcps, setAvailableIcps] = useState<{ id: string; name: string }[]>([]);
   const [loadingIcps, setLoadingIcps] = useState(true);
 
-  // Load available ICPs on mount (only for new leads)
+  // Load available ICPs and current ICP (for both new and edit)
   useEffect(() => {
-    if (!lead?.id) {
-      getActiveICPsForSelect()
-        .then((icps) => setAvailableIcps(icps))
-        .catch((err) => console.error("Error loading ICPs:", err))
-        .finally(() => setLoadingIcps(false));
-    } else {
-      setLoadingIcps(false);
+    async function loadData() {
+      try {
+        // Load available ICPs
+        const icps = await getActiveICPsForSelect();
+        setAvailableIcps(icps);
+
+        // If editing, load current ICP
+        if (lead?.id) {
+          const leadIcps = await getLeadICPs(lead.id);
+          if (leadIcps.length > 0) {
+            const currentIcpId = leadIcps[0].icp.id;
+            setSelectedIcpId(currentIcpId);
+            setOriginalIcpId(currentIcpId);
+          }
+        }
+      } catch (err) {
+        console.error("Error loading ICPs:", err);
+      } finally {
+        setLoadingIcps(false);
+      }
     }
+    loadData();
   }, [lead?.id]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -176,6 +191,26 @@ export function LeadForm({ lead }: LeadFormProps) {
           }
         }
 
+        // Handle ICP changes
+        if (selectedIcpId !== originalIcpId) {
+          try {
+            // Unlink old ICP if exists
+            if (originalIcpId) {
+              await unlinkLeadFromICP(lead.id, originalIcpId);
+            }
+            // Link new ICP if selected
+            if (selectedIcpId) {
+              await linkLeadToICP({
+                leadId: lead.id,
+                icpId: selectedIcpId,
+              });
+            }
+          } catch (icpError) {
+            console.error("Error updating ICP:", icpError);
+            toast.warning("Lead atualizado, mas houve erro ao atualizar ICP");
+          }
+        }
+
         toast.success("Lead atualizado com sucesso!");
         router.push(`/leads/${lead.id}`);
       } else {
@@ -251,38 +286,36 @@ export function LeadForm({ lead }: LeadFormProps) {
               placeholder="Selecione labels..."
             />
           </div>
-          {!lead?.id && (
-            <div>
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                ICP (Perfil de Cliente Ideal)
-              </label>
-              {loadingIcps ? (
-                <div className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-400">
-                  Carregando ICPs...
-                </div>
-              ) : availableIcps.length === 0 ? (
-                <div className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-400">
-                  Nenhum ICP ativo disponível
-                </div>
-              ) : (
-                <select
-                  value={selectedIcpId}
-                  onChange={(e) => setSelectedIcpId(e.target.value)}
-                  className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
-                >
-                  <option value="">Selecione um ICP (opcional)</option>
-                  {availableIcps.map((icp) => (
-                    <option key={icp.id} value={icp.id}>
-                      {icp.name}
-                    </option>
-                  ))}
-                </select>
-              )}
-              <p className="mt-1 text-xs text-gray-400">
-                Vincule o lead a um ICP para melhor segmentação
-              </p>
-            </div>
-          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              ICP (Perfil de Cliente Ideal)
+            </label>
+            {loadingIcps ? (
+              <div className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-400">
+                Carregando ICPs...
+              </div>
+            ) : availableIcps.length === 0 ? (
+              <div className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-400">
+                Nenhum ICP ativo disponível
+              </div>
+            ) : (
+              <select
+                value={selectedIcpId}
+                onChange={(e) => setSelectedIcpId(e.target.value)}
+                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              >
+                <option value="">Selecione um ICP (opcional)</option>
+                {availableIcps.map((icp) => (
+                  <option key={icp.id} value={icp.id}>
+                    {icp.name}
+                  </option>
+                ))}
+              </select>
+            )}
+            <p className="mt-1 text-xs text-gray-400">
+              Vincule o lead a um ICP para melhor segmentação
+            </p>
+          </div>
         </div>
       </div>
 
