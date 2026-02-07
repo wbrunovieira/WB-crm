@@ -64,8 +64,8 @@ export const leadSchema = z.object({
   // Status
   status: z.enum(["new", "contacted", "qualified", "disqualified"]).optional(),
 
-  // Label
-  labelId: z.string().optional(),
+  // Labels (multiple)
+  labelIds: z.array(z.string()).optional(),
 });
 
 export const leadContactSchema = z.object({

@@ -69,7 +69,6 @@ function createLead(overrides: Partial<LeadWithRelations> = {}): LeadWithRelatio
     status: "new",
     convertedAt: null,
     convertedToOrganizationId: null,
-    labelId: null,
     referredByPartnerId: null,
     ownerId: "user-1",
     createdAt: new Date(),

@@ -7,7 +7,8 @@ import {
   createOrganization,
   updateOrganization,
 } from "@/actions/organizations";
-import { LabelSelect } from "@/components/shared/LabelSelect";
+import { MultiLabelSelect } from "@/components/shared/MultiLabelSelect";
+import { setOrganizationLabels } from "@/actions/organization-labels";
 import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
@@ -40,7 +41,7 @@ interface OrganizationFormProps {
     facebook: string | null;
     twitter: string | null;
     tiktok: string | null;
-    labelId: string | null;
+    labels?: { id: string; name: string; color: string }[];
     primaryCNAEId: string | null;
     internationalActivity: string | null;
     primaryCNAE?: {
@@ -62,7 +63,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [labelId, setLabelId] = useState<string | null>(organization?.labelId || null);
+  const [labelIds, setLabelIds] = useState<string[]>(organization?.labels?.map(l => l.id) || []);
   const [selectedCountry, setSelectedCountry] = useState<string>(organization?.country || "");
   const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(
     organization?.primaryCNAE || null
@@ -107,7 +108,6 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         facebook: formData.get("facebook") as string,
         twitter: formData.get("twitter") as string,
         tiktok: formData.get("tiktok") as string,
-        labelId: labelId || undefined,
         // Hosting
         hasHosting: hasHosting,
         hostingRenewalDate: formData.get("hostingRenewalDate") as string,
@@ -121,10 +121,18 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         hostingNotes: formData.get("hostingNotes") as string,
       };
 
+      let orgId = organization?.id;
+
       if (organization) {
         await updateOrganization(organization.id, data);
       } else {
-        await createOrganization(data);
+        const newOrg = await createOrganization(data);
+        orgId = newOrg.id;
+      }
+
+      // Set labels after create/update
+      if (orgId) {
+        await setOrganizationLabels(orgId, labelIds);
       }
 
       router.push("/organizations");
@@ -171,12 +179,12 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-1">
-            Label
+            Labels
           </label>
-          <LabelSelect
-            value={labelId}
-            onChange={setLabelId}
-            placeholder="Selecione ou crie uma label..."
+          <MultiLabelSelect
+            value={labelIds}
+            onChange={setLabelIds}
+            placeholder="Selecione ou crie labels..."
           />
         </div>
 

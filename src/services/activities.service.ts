@@ -228,6 +228,8 @@ export function getUpcomingActivities(
   const now = new Date();
   const futureDate = new Date(now);
   futureDate.setDate(futureDate.getDate() + days);
+  // Use end of day to include all activities on the boundary day
+  futureDate.setHours(23, 59, 59, 999);
 
   return activities.filter((activity) => {
     if (activity.completed) return false;

@@ -69,7 +69,7 @@ export async function getLeadById(id: string) {
     },
     include: {
       primaryCNAE: true,
-      label: true,
+      labels: true,
       leadContacts: {
         orderBy: [
           { isPrimary: "desc" },

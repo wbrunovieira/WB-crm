@@ -204,7 +204,6 @@ export function createMockLead(ownerId: string, overrides: Partial<{
     convertedAt: overrides.convertedAt ?? null,
     convertedToOrganizationId: overrides.convertedToOrganizationId ?? null,
     referredByPartnerId: null,
-    labelId: null,
     primaryCNAEId: null,
     internationalActivity: null,
     ownerId,
@@ -253,7 +252,6 @@ export function createMockOrganization(ownerId: string, overrides: Partial<{
     tiktok: null,
     sourceLeadId: null,
     externalProjectIds: null,
-    labelId: null,
     // Hosting fields
     hasHosting: overrides.hasHosting ?? false,
     hostingRenewalDate: overrides.hostingRenewalDate ?? null,

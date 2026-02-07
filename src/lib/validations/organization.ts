@@ -38,8 +38,8 @@ export const organizationSchema = z.object({
   twitter: z.string().optional(),
   tiktok: z.string().optional(),
 
-  // Label
-  labelId: z.string().optional(),
+  // Labels (multiple)
+  labelIds: z.array(z.string()).optional(),
 
   // Hosting
   hasHosting: z.boolean().nullish(),

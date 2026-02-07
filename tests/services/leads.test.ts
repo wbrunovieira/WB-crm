@@ -67,7 +67,6 @@ function createMockLead(overrides: Partial<LeadWithRelations> = {}): LeadWithRel
     status: "new",
     convertedAt: null,
     convertedToOrganizationId: null,
-    labelId: null,
     referredByPartnerId: null,
     ownerId: "user-1",
     createdAt: new Date(),

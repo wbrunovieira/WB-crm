@@ -5,8 +5,9 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { createLead, updateLead } from "@/actions/leads";
 import { linkLeadToICP } from "@/actions/icp-links";
+import { setLeadLabels } from "@/actions/lead-labels";
 import { useState, useEffect } from "react";
-import { LabelSelect } from "@/components/shared/LabelSelect";
+import { MultiLabelSelect } from "@/components/shared/MultiLabelSelect";
 import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
@@ -57,7 +58,7 @@ type Lead = {
   category?: string | null;
   radius?: number | null;
   status?: string;
-  labelId?: string | null;
+  labels?: { id: string; name: string; color: string }[];
 };
 
 type LeadFormProps = {
@@ -67,7 +68,7 @@ type LeadFormProps = {
 export function LeadForm({ lead }: LeadFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [labelId, setLabelId] = useState<string | null>(lead?.labelId || null);
+  const [labelIds, setLabelIds] = useState<string[]>(lead?.labels?.map(l => l.id) || []);
   const [selectedCountry, setSelectedCountry] = useState<string>(lead?.country || "");
   const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(null);
   const [selectedIcpId, setSelectedIcpId] = useState<string>("");
@@ -159,16 +160,36 @@ export function LeadForm({ lead }: LeadFormProps) {
         ? parseInt(formData.get("radius") as string)
         : undefined,
       status: (getString("status") || "new") as "new" | "contacted" | "qualified" | "disqualified",
-      labelId: labelId || undefined,
     };
 
     try {
       if (lead?.id) {
         await updateLead(lead.id, data);
+
+        // Set labels
+        if (labelIds.length > 0) {
+          try {
+            await setLeadLabels(lead.id, labelIds);
+          } catch (labelError) {
+            console.error("Error setting labels:", labelError);
+            toast.warning("Lead atualizado, mas houve erro ao atualizar labels");
+          }
+        }
+
         toast.success("Lead atualizado com sucesso!");
         router.push(`/leads/${lead.id}`);
       } else {
         const newLead = await createLead(data);
+
+        // Set labels if any selected
+        if (labelIds.length > 0) {
+          try {
+            await setLeadLabels(newLead.id, labelIds);
+          } catch (labelError) {
+            console.error("Error setting labels:", labelError);
+            toast.warning("Lead criado, mas houve erro ao vincular labels");
+          }
+        }
 
         // Link to ICP if selected
         if (selectedIcpId) {
@@ -179,7 +200,6 @@ export function LeadForm({ lead }: LeadFormProps) {
             });
           } catch (icpError) {
             console.error("Error linking ICP:", icpError);
-            // Don't fail the whole operation, just notify
             toast.warning("Lead criado, mas houve erro ao vincular ICP");
           }
         }
@@ -223,12 +243,12 @@ export function LeadForm({ lead }: LeadFormProps) {
         <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label className="block text-sm font-medium text-gray-300 mb-2">
-              Label
+              Labels
             </label>
-            <LabelSelect
-              value={labelId}
-              onChange={setLabelId}
-              placeholder="Selecione ou crie uma label..."
+            <MultiLabelSelect
+              value={labelIds}
+              onChange={setLabelIds}
+              placeholder="Selecione labels..."
             />
           </div>
           {!lead?.id && (

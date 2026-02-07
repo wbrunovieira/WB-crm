@@ -29,7 +29,6 @@ export const mockOrganization: Organization = {
   twitter: '@testorg',
   tiktok: null,
   sourceLeadId: null,
-  labelId: null,
   externalProjectIds: null,
   // Hosting
   hasHosting: false,

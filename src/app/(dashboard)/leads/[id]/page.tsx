@@ -80,17 +80,22 @@ export default async function LeadDetailPage({
               >
                 {statusLabels[lead.status]}
               </span>
-              {lead.label && (
-                <span
-                  className="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold"
-                  style={{
-                    backgroundColor: `${lead.label.color}15`,
-                    color: lead.label.color,
-                    border: `1.5px solid ${lead.label.color}40`,
-                  }}
-                >
-                  {lead.label.name}
-                </span>
+              {lead.labels && lead.labels.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {lead.labels.map((label) => (
+                    <span
+                      key={label.id}
+                      className="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold"
+                      style={{
+                        backgroundColor: `${label.color}15`,
+                        color: label.color,
+                        border: `1.5px solid ${label.color}40`,
+                      }}
+                    >
+                      {label.name}
+                    </span>
+                  ))}
+                </div>
               )}
             </div>
           </div>

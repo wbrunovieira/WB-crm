@@ -163,7 +163,6 @@ export async function createOrganization(data: OrganizationFormData) {
       facebook: validated.facebook || null,
       twitter: validated.twitter || null,
       tiktok: validated.tiktok || null,
-      labelId: validated.labelId || null,
       // Hosting
       hasHosting: validated.hasHosting || false,
       hostingRenewalDate: validated.hostingRenewalDate ? new Date(validated.hostingRenewalDate) : null,
@@ -221,7 +220,6 @@ export async function updateOrganization(
       facebook: validated.facebook || null,
       twitter: validated.twitter || null,
       tiktok: validated.tiktok || null,
-      labelId: validated.labelId || null,
       // Hosting
       hasHosting: validated.hasHosting || false,
       hostingRenewalDate: validated.hostingRenewalDate ? new Date(validated.hostingRenewalDate) : null,

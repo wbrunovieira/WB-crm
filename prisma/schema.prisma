@@ -181,8 +181,8 @@ model Lead {
   convertedAt   DateTime?
   convertedToOrganizationId  String?  @unique // Lead vira 1 Organization
 
-  // Label
-  labelId String?
+  // Labels (many-to-many)
+  labels Label[]
 
   // Referral tracking
   referredByPartnerId String?
@@ -194,7 +194,6 @@ model Lead {
 
   // Relations
   owner                 User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  label                 Label?        @relation(fields: [labelId], references: [id], onDelete: SetNull)
   leadContacts          LeadContact[] // Lead tem múltiplos contatos
   contacts              Contact[]     // Contatos diretamente vinculados ao Lead
   activities            Activity[]    // Lead tem múltiplas atividades
@@ -225,7 +224,6 @@ model Lead {
   @@index([status])
   @@index([quality])
   @@index([convertedAt])
-  @@index([labelId])
   @@index([referredByPartnerId])
   @@index([primaryCNAEId])
   @@map("leads")
@@ -302,8 +300,8 @@ model Organization {
   // Lead tracking
   sourceLeadId String?
 
-  // Label
-  labelId String?
+  // Labels (many-to-many)
+  labels Label[]
 
   // External Projects (JSON array of project IDs from external API)
   externalProjectIds String? // JSON string: ["projectId1", "projectId2"]
@@ -322,7 +320,6 @@ model Organization {
 
   // Relations
   owner                User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  label                Label?                 @relation(fields: [labelId], references: [id], onDelete: SetNull)
   contacts             Contact[]
   deals                Deal[]
   sourceLead           Lead?                  @relation("LeadConversion") // Organization veio de qual Lead
@@ -346,7 +343,6 @@ model Organization {
 
   @@index([ownerId])
   @@index([sourceLeadId])
-  @@index([labelId])
   @@index([primaryCNAEId])
   @@index([hasHosting])
   @@index([hostingRenewalDate])

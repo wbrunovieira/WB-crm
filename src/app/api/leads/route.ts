@@ -78,7 +78,7 @@ export async function GET(request: Request) {
             name: true,
           },
         },
-        label: true,
+        labels: true,
         _count: {
           select: {
             leadContacts: true,

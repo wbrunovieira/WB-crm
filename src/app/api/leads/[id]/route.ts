@@ -48,7 +48,7 @@ export async function GET(
       },
       include: {
         primaryCNAE: true,
-        label: true,
+        labels: true,
         leadContacts: {
           orderBy: [
             { isPrimary: "desc" },
