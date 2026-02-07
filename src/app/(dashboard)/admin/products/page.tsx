@@ -1,13 +1,14 @@
-import { getProducts } from "@/actions/products";
+import { getProducts, getUsedProductOrders } from "@/actions/products";
 import { getBusinessLines } from "@/actions/business-lines";
 import { ProductForm } from "@/components/admin/ProductForm";
 import { ProductsList } from "@/components/admin/ProductsList";
 import Link from "next/link";
 
 export default async function ProductsPage() {
-  const [products, businessLines] = await Promise.all([
+  const [products, businessLines, usedOrders] = await Promise.all([
     getProducts(),
     getBusinessLines(),
+    getUsedProductOrders(),
   ]);
 
   return (
@@ -37,7 +38,7 @@ export default async function ProductsPage() {
         <div className="lg:col-span-1">
           <div className="rounded-lg bg-white p-6 shadow">
             <h2 className="mb-4 text-lg font-semibold">Novo Produto</h2>
-            <ProductForm businessLines={businessLines} />
+            <ProductForm businessLines={businessLines} usedOrders={usedOrders} />
           </div>
         </div>
 

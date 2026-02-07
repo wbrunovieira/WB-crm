@@ -92,13 +92,19 @@ export async function createProduct(data: ProductFormData) {
 
   const validated = productSchema.parse(data);
 
-  // Verificar se slug já existe
-  const existing = await prisma.product.findUnique({
-    where: { slug: validated.slug },
-  });
+  // Gerar slug automaticamente se não fornecido
+  let slug = validated.slug;
+  if (!slug) {
+    slug = await generateUniqueProductSlug(validated.name);
+  } else {
+    // Verificar se slug já existe
+    const existing = await prisma.product.findUnique({
+      where: { slug },
+    });
 
-  if (existing) {
-    throw new Error("Já existe um produto com este slug");
+    if (existing) {
+      throw new Error("Já existe um produto com este slug");
+    }
   }
 
   // Verificar se a linha de negócio existe
@@ -111,7 +117,10 @@ export async function createProduct(data: ProductFormData) {
   }
 
   const product = await prisma.product.create({
-    data: validated,
+    data: {
+      ...validated,
+      slug,
+    },
   });
 
   revalidatePath("/admin/products");
@@ -231,4 +240,64 @@ export async function toggleProductActive(id: string) {
   revalidatePath("/admin/products");
   revalidatePath("/admin/business-lines");
   return updated;
+}
+
+// Verifica se o slug já existe
+export async function checkProductSlugExists(slug: string): Promise<boolean> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    throw new Error("Não autorizado");
+  }
+
+  const existing = await prisma.product.findUnique({
+    where: { slug },
+  });
+
+  return !!existing;
+}
+
+// Gera um slug único baseado no nome
+export async function generateUniqueProductSlug(name: string): Promise<string> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    throw new Error("Não autorizado");
+  }
+
+  // Converte para slug básico
+  const baseSlug = name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "") // Remove acentos
+    .replace(/[^a-z0-9]+/g, "-") // Substitui caracteres especiais por hífen
+    .replace(/^-+|-+$/g, "") // Remove hífens do início e fim
+    .substring(0, 45); // Limita tamanho para deixar espaço para sufixo
+
+  // Verifica se já existe
+  let slug = baseSlug;
+  let counter = 1;
+
+  while (await checkProductSlugExists(slug)) {
+    slug = `${baseSlug}-${counter}`;
+    counter++;
+  }
+
+  return slug;
+}
+
+// Retorna as ordens já utilizadas pelos produtos
+export async function getUsedProductOrders(): Promise<number[]> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    throw new Error("Não autorizado");
+  }
+
+  const products = await prisma.product.findMany({
+    select: { order: true },
+    orderBy: { order: "asc" },
+  });
+
+  return products.map((p) => p.order);
 }

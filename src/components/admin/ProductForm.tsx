@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createProduct } from "@/actions/products";
 
@@ -12,14 +12,26 @@ interface BusinessLine {
 
 interface ProductFormProps {
   businessLines: BusinessLine[];
+  usedOrders: number[];
 }
 
-export function ProductForm({ businessLines }: ProductFormProps) {
+export function ProductForm({ businessLines, usedOrders }: ProductFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   const activeBusinessLines = businessLines.filter((bl) => bl.isActive);
+
+  // Gera lista de ordens disponíveis (0 a 99, excluindo as já usadas)
+  const availableOrders = useMemo(() => {
+    const orders: number[] = [];
+    for (let i = 0; i <= 99; i++) {
+      if (!usedOrders.includes(i)) {
+        orders.push(i);
+      }
+    }
+    return orders;
+  }, [usedOrders]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -32,14 +44,20 @@ export function ProductForm({ businessLines }: ProductFormProps) {
     try {
       await createProduct({
         name: formData.get("name") as string,
-        slug: formData.get("slug") as string,
-        description: formData.get("description") as string || null,
+        // slug será gerado automaticamente
+        description: (formData.get("description") as string) || null,
         businessLineId: formData.get("businessLineId") as string,
         basePrice: formData.get("basePrice")
           ? parseFloat(formData.get("basePrice") as string)
           : null,
         currency: "BRL",
-        pricingType: (formData.get("pricingType") as "fixed" | "custom" | "hourly" | "monthly" | null) || null,
+        pricingType:
+          (formData.get("pricingType") as
+            | "fixed"
+            | "custom"
+            | "hourly"
+            | "monthly"
+            | null) || null,
         isActive: true,
         order: parseInt(formData.get("order") as string) || 0,
       });
@@ -102,22 +120,8 @@ export function ProductForm({ businessLines }: ProductFormProps) {
           className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
           placeholder="Ex: E-commerce Completo"
         />
-      </div>
-
-      <div>
-        <label className="block text-sm font-medium text-gray-700">
-          Slug <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          name="slug"
-          required
-          pattern="[a-z0-9-]+"
-          className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-          placeholder="Ex: ecommerce-completo"
-        />
         <p className="mt-1 text-xs text-gray-500">
-          Apenas letras minúsculas, números e hífens
+          O identificador (slug) será gerado automaticamente
         </p>
       </div>
 
@@ -167,13 +171,21 @@ export function ProductForm({ businessLines }: ProductFormProps) {
         <label className="block text-sm font-medium text-gray-700">
           Ordem de Exibição
         </label>
-        <input
-          type="number"
+        <select
           name="order"
-          min="0"
-          defaultValue="0"
           className="mt-1 w-full rounded-md border border-gray-300 px-3 py-2"
-        />
+        >
+          {availableOrders.map((order) => (
+            <option key={order} value={order}>
+              {order}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-gray-500">
+          {usedOrders.length > 0 && (
+            <>Ordens já usadas: {usedOrders.sort((a, b) => a - b).join(", ")}</>
+          )}
+        </p>
       </div>
 
       <button

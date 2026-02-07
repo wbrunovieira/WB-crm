@@ -4,9 +4,9 @@ export const productSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório").max(100),
   slug: z
     .string()
-    .min(1, "Slug é obrigatório")
     .max(50)
-    .regex(/^[a-z0-9-]+$/, "Slug deve conter apenas letras minúsculas, números e hífens"),
+    .regex(/^[a-z0-9-]+$/, "Slug deve conter apenas letras minúsculas, números e hífens")
+    .optional(), // Slug é opcional - será gerado automaticamente se não fornecido
   description: z.string().max(1000).optional().nullable(),
   businessLineId: z.string().cuid("Linha de negócio é obrigatória"),
   basePrice: z.number().min(0).optional().nullable(),
