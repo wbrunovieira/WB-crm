@@ -32,6 +32,10 @@
     github_branch: main
     backup_dir: /opt/wb-crm-backups
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
+    # Docker PostgreSQL container
+    db_container: crm_postgres
+    db_name: crm_db
+    db_user: crm_user
 
   tasks:
     - name: Display deployment info
@@ -47,16 +51,9 @@
     - name: Ensure backup directory exists
       raw: mkdir -p {{ backup_dir }}
 
-    - name: Create pre-migration database backup
+    - name: Create pre-migration database backup via Docker
       raw: |
-        DATABASE_URL=$(grep -E "^DATABASE_URL=" /opt/wb-crm/.env | cut -d'=' -f2-)
-        DB_USER=$(echo "$DATABASE_URL" | sed -E 's|postgresql://([^:]+):.*|\1|')
-        DB_PASSWORD=$(echo "$DATABASE_URL" | sed -E 's|postgresql://[^:]+:([^@]+)@.*|\1|' | python3 -c "import sys,urllib.parse;print(urllib.parse.unquote(sys.stdin.read().strip()))")
-        DB_HOST=$(echo "$DATABASE_URL" | sed -E 's|postgresql://[^@]+@([^:]+):.*|\1|')
-        DB_PORT=$(echo "$DATABASE_URL" | sed -E 's|postgresql://[^@]+@[^:]+:([0-9]+)/.*|\1|')
-        DB_NAME=$(echo "$DATABASE_URL" | sed -E 's|postgresql://[^/]+/([^?]+).*|\1|')
-        PGPASSWORD="$DB_PASSWORD" pg_dump -h "$DB_HOST" -p "$DB_PORT" -U "$DB_USER" -d "$DB_NAME" \
-          -Fc -f {{ backup_dir }}/pre_migration_{{ timestamp }}.sql && \
+        docker exec {{ db_container }} pg_dump -U {{ db_user }} -d {{ db_name }} -Fc > {{ backup_dir }}/pre_migration_{{ timestamp }}.sql && \
         echo "Backup created successfully"
       register: backup_result
       ignore_errors: yes
@@ -125,9 +122,8 @@
           🔄 TO ROLLBACK:
           1. SSH into server: ssh user@crm.wbdigitalsolutions.com
           2. Restore backup:
-             source /opt/wb-crm/.env
-             PGPASSWORD=$DB_PASSWORD pg_restore -h $DB_HOST -U $DB_USER -d $DB_NAME \
-               --clean --if-exists {{ backup_dir }}/pre_migration_{{ timestamp }}.sql
+             cat {{ backup_dir }}/pre_migration_{{ timestamp }}.sql | \
+               docker exec -i {{ db_container }} pg_restore -U {{ db_user }} -d {{ db_name }} --clean --if-exists
           3. Revert code:
              cd /opt/wb-crm && git reset --hard HEAD~1
           4. Restart app:
