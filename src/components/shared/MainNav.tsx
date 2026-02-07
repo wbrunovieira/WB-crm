@@ -64,8 +64,9 @@ const navItems = [
   },
   {
     name: "Projetos",
-    href: "/projects",
+    href: "https://projects.wbdigitalsolutions.com/projects",
     icon: FolderKanban,
+    external: true,
   },
   {
     name: "Pipeline",
@@ -92,7 +93,6 @@ const navItems = [
 // Routes restricted by role (roles that CANNOT access)
 const restrictedRoutes: Record<string, string[]> = {
   "/pipelines": ["sdr", "closer"],
-  "/projects": ["sdr", "closer"],
 };
 
 // Routes only for specific roles (roles that CAN access)
@@ -196,18 +196,34 @@ export function MainNav({ userRole: role }: MainNavProps) {
         >
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
-            const active = isActive(item.href);
+            const active = !item.external && isActive(item.href);
+            const className = cn(
+              "group relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all duration-200 whitespace-nowrap",
+              active
+                ? "bg-primary text-white shadow-lg"
+                : "text-gray-300 hover:bg-purple-900/50 hover:text-white"
+            );
+
+            if (item.external) {
+              return (
+                <a
+                  key={item.href}
+                  href={item.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={className}
+                >
+                  <Icon className="h-4 w-4 flex-shrink-0" />
+                  <span className="hidden lg:inline">{item.name}</span>
+                </a>
+              );
+            }
 
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={cn(
-                  "group relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all duration-200 whitespace-nowrap",
-                  active
-                    ? "bg-primary text-white shadow-lg"
-                    : "text-gray-300 hover:bg-purple-900/50 hover:text-white"
-                )}
+                className={className}
               >
                 <Icon className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden lg:inline">{item.name}</span>
@@ -252,19 +268,36 @@ export function MainNav({ userRole: role }: MainNavProps) {
             <div className="grid gap-2">
               {filteredNavItems.map((item) => {
                 const Icon = item.icon;
-                const active = isActive(item.href);
+                const active = !item.external && isActive(item.href);
+                const className = cn(
+                  "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200",
+                  active
+                    ? "bg-primary text-white shadow-md"
+                    : "text-gray-300 hover:bg-purple-900/50 hover:text-white"
+                );
+
+                if (item.external) {
+                  return (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={className}
+                    >
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <span>{item.name}</span>
+                    </a>
+                  );
+                }
 
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={cn(
-                      "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200",
-                      active
-                        ? "bg-primary text-white shadow-md"
-                        : "text-gray-300 hover:bg-purple-900/50 hover:text-white"
-                    )}
+                    className={className}
                   >
                     <Icon className="h-5 w-5 flex-shrink-0" />
                     <span>{item.name}</span>
