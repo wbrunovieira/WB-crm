@@ -61,13 +61,7 @@
       ignore_errors: yes
 
     - name: Verify backup was created
-      raw: |
-        BACKUP_FILE="{{ backup_dir }}/pre_migration_{{ timestamp }}.sql"
-        if [ -f "$BACKUP_FILE" ] && [ -s "$BACKUP_FILE" ]; then
-          ls -la "$BACKUP_FILE"
-        else
-          echo "BACKUP_FAILED"
-        fi
+      raw: test -s {{ backup_dir }}/pre_migration_{{ timestamp }}.sql && echo "BACKUP_OK" || echo "BACKUP_FAILED"
       register: backup_check
 
     - name: Fail if backup failed
@@ -76,7 +70,6 @@
           ❌ DATABASE BACKUP FAILED
           Cannot proceed with migrations without a backup.
           Check database credentials and connectivity.
-          Debug: {{ backup_check.stdout }}
       when: "'BACKUP_FAILED' in backup_check.stdout"
 
     - name: Display backup success
