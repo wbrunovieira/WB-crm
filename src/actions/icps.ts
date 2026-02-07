@@ -141,6 +141,30 @@ export async function getICPs(filters?: { status?: string; search?: string }) {
 }
 
 /**
+ * Get active ICPs for select dropdown (lightweight)
+ */
+export async function getActiveICPsForSelect() {
+  await getAuthenticatedSession();
+  const ownerFilter = await getOwnerFilter();
+
+  const icps = await prisma.iCP.findMany({
+    where: {
+      ...ownerFilter,
+      status: "active",
+    },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: {
+      name: "asc",
+    },
+  });
+
+  return icps;
+}
+
+/**
  * Get ICP by ID
  */
 export async function getICPById(id: string) {

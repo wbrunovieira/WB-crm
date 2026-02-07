@@ -4,12 +4,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { createLead, updateLead } from "@/actions/leads";
-import { useState } from "react";
+import { linkLeadToICP } from "@/actions/icp-links";
+import { useState, useEffect } from "react";
 import { LabelSelect } from "@/components/shared/LabelSelect";
 import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
 import { brazilianStates } from "@/lib/lists/brazilian-states";
+import { getActiveICPsForSelect } from "@/actions/icps";
 
 type Lead = {
   id?: string;
@@ -68,6 +70,21 @@ export function LeadForm({ lead }: LeadFormProps) {
   const [labelId, setLabelId] = useState<string | null>(lead?.labelId || null);
   const [selectedCountry, setSelectedCountry] = useState<string>(lead?.country || "");
   const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(null);
+  const [selectedIcpId, setSelectedIcpId] = useState<string>("");
+  const [availableIcps, setAvailableIcps] = useState<{ id: string; name: string }[]>([]);
+  const [loadingIcps, setLoadingIcps] = useState(true);
+
+  // Load available ICPs on mount (only for new leads)
+  useEffect(() => {
+    if (!lead?.id) {
+      getActiveICPsForSelect()
+        .then((icps) => setAvailableIcps(icps))
+        .catch((err) => console.error("Error loading ICPs:", err))
+        .finally(() => setLoadingIcps(false));
+    } else {
+      setLoadingIcps(false);
+    }
+  }, [lead?.id]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -152,6 +169,21 @@ export function LeadForm({ lead }: LeadFormProps) {
         router.push(`/leads/${lead.id}`);
       } else {
         const newLead = await createLead(data);
+
+        // Link to ICP if selected
+        if (selectedIcpId) {
+          try {
+            await linkLeadToICP({
+              leadId: newLead.id,
+              icpId: selectedIcpId,
+            });
+          } catch (icpError) {
+            console.error("Error linking ICP:", icpError);
+            // Don't fail the whole operation, just notify
+            toast.warning("Lead criado, mas houve erro ao vincular ICP");
+          }
+        }
+
         toast.success("Lead criado com sucesso!");
         router.push(`/leads/${newLead.id}`);
       }
@@ -183,16 +215,55 @@ export function LeadForm({ lead }: LeadFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Label */}
+      {/* Label e ICP */}
       <div className="rounded-lg bg-[#1a0022] p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
-          Label
+          Classificação
         </h2>
-        <LabelSelect
-          value={labelId}
-          onChange={setLabelId}
-          placeholder="Selecione ou crie uma label..."
-        />
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Label
+            </label>
+            <LabelSelect
+              value={labelId}
+              onChange={setLabelId}
+              placeholder="Selecione ou crie uma label..."
+            />
+          </div>
+          {!lead?.id && (
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                ICP (Perfil de Cliente Ideal)
+              </label>
+              {loadingIcps ? (
+                <div className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-400">
+                  Carregando ICPs...
+                </div>
+              ) : availableIcps.length === 0 ? (
+                <div className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-400">
+                  Nenhum ICP ativo disponível
+                </div>
+              ) : (
+                <select
+                  value={selectedIcpId}
+                  onChange={(e) => setSelectedIcpId(e.target.value)}
+                  className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                >
+                  <option value="">Selecione um ICP (opcional)</option>
+                  {availableIcps.map((icp) => (
+                    <option key={icp.id} value={icp.id}>
+                      {icp.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+              <p className="mt-1 text-xs text-gray-400">
+                Vincule o lead a um ICP para melhor segmentação
+              </p>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Informações Básicas */}
