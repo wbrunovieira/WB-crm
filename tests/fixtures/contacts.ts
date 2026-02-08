@@ -12,6 +12,7 @@ export const mockContact: Contact = {
   organizationId: 'org-test-1',
   partnerId: null,
   linkedin: 'in/joaosilva',
+  instagram: '@joaosilva',
   status: 'active',
   isPrimary: true,
   birthDate: new Date('1980-05-15'),
