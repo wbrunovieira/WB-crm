@@ -239,6 +239,7 @@ model LeadContact {
   email    String?
   phone    String?
   whatsapp String?
+  linkedin String?  // URL do perfil LinkedIn
   isPrimary Boolean @default(false) // Contato principal
 
   // Conversão

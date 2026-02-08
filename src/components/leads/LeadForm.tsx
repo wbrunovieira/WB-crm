@@ -71,6 +71,7 @@ type ContactFormData = {
   email: string;
   phone: string;
   whatsapp: string;
+  linkedin: string;
   role: string;
   isPrimary: boolean;
 };
@@ -80,6 +81,7 @@ const emptyContact: ContactFormData = {
   email: "",
   phone: "",
   whatsapp: "",
+  linkedin: "",
   role: "",
   isPrimary: false,
 };
@@ -242,6 +244,7 @@ export function LeadForm({ lead }: LeadFormProps) {
             email: c.email.trim() || undefined,
             phone: c.phone.trim() || undefined,
             whatsapp: c.whatsapp.trim() || undefined,
+            linkedin: c.linkedin.trim() || undefined,
             role: c.role.trim() || undefined,
             isPrimary: index === 0 ? true : c.isPrimary,
           }));
@@ -757,6 +760,22 @@ export function LeadForm({ lead }: LeadFormProps) {
                           setContacts(newContacts);
                         }}
                         placeholder="(00) 00000-0000"
+                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-400">
+                        LinkedIn
+                      </label>
+                      <input
+                        type="text"
+                        value={contact.linkedin}
+                        onChange={(e) => {
+                          const newContacts = [...contacts];
+                          newContacts[index].linkedin = e.target.value;
+                          setContacts(newContacts);
+                        }}
+                        placeholder="linkedin.com/in/..."
                         className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
                       />
                     </div>

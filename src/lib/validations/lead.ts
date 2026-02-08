@@ -74,6 +74,7 @@ export const leadContactSchema = z.object({
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   phone: z.string().optional(),
   whatsapp: z.string().optional(),
+  linkedin: z.string().optional(),
   isPrimary: z.boolean().optional(),
 });
 
