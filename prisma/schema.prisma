@@ -239,7 +239,8 @@ model LeadContact {
   email    String?
   phone    String?
   whatsapp String?
-  linkedin String?  // URL do perfil LinkedIn
+  linkedin  String?  // URL do perfil LinkedIn
+  instagram String?  // @ do Instagram
   isPrimary Boolean @default(false) // Contato principal
 
   // Conversão
@@ -384,6 +385,7 @@ model Contact {
 
   // Professional Info
   linkedin       String?
+  instagram      String?
 
   // Contact Status & Priority
   status         String        @default("active") // active, inactive, bounced

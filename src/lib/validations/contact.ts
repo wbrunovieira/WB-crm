@@ -11,6 +11,7 @@ export const contactSchema = z.object({
   companyId: z.string().optional().nullable(),
   companyType: z.enum(["lead", "organization", "partner"]).optional().nullable(),
   linkedin: z.string().optional(),
+  instagram: z.string().optional(),
   status: z.enum(["active", "inactive", "bounced"]).optional(),
   isPrimary: z.boolean().optional(),
   birthDate: z.string().optional(), // Will be converted to Date in the action

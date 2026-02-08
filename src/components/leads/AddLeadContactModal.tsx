@@ -37,6 +37,8 @@ export function AddLeadContactModal({
       email: getString("email"),
       phone: getString("phone"),
       whatsapp: getString("whatsapp"),
+      linkedin: getString("linkedin"),
+      instagram: getString("instagram"),
       isPrimary: formData.get("isPrimary") === "on",
     };
 
@@ -157,6 +159,38 @@ export function AddLeadContactModal({
               type="tel"
               id="whatsapp"
               name="whatsapp"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="linkedin"
+              className="block text-sm font-medium text-gray-300"
+            >
+              LinkedIn
+            </label>
+            <input
+              type="text"
+              id="linkedin"
+              name="linkedin"
+              placeholder="linkedin.com/in/..."
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+
+          <div>
+            <label
+              htmlFor="instagram"
+              className="block text-sm font-medium text-gray-300"
+            >
+              Instagram
+            </label>
+            <input
+              type="text"
+              id="instagram"
+              name="instagram"
+              placeholder="@usuario"
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>

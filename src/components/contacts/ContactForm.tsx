@@ -21,6 +21,7 @@ interface ContactFormProps {
     organizationId: string | null;
     partnerId: string | null;
     linkedin: string | null;
+    instagram?: string | null;
     status: string;
     isPrimary: boolean;
     birthDate: Date | null;
@@ -95,6 +96,7 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId, partne
         companyId: companyId || null,
         companyType: (companyType as "lead" | "organization") || null,
         linkedin: formData.get("linkedin") as string,
+        instagram: formData.get("instagram") as string,
         status: formData.get("status") as "active" | "inactive" | "bounced" | undefined,
         isPrimary: formData.get("isPrimary") === "on",
         birthDate: formData.get("birthDate") as string,
@@ -293,6 +295,20 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId, partne
               name="linkedin"
               defaultValue={contact?.linkedin || ""}
               placeholder="linkedin.com/in/... ou https://linkedin.com/in/..."
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="instagram" className="block text-sm font-medium text-gray-700">
+              Instagram
+            </label>
+            <input
+              type="text"
+              id="instagram"
+              name="instagram"
+              defaultValue={contact?.instagram || ""}
+              placeholder="@usuario"
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
