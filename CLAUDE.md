@@ -8,7 +8,7 @@ WB-crm - Clone do Pipedrive. Sistema de CRM focado em gestão de pipeline de ven
 
 **Repository**: https://github.com/wbrunovieira/WB-crm
 
-**Stack**: Next.js 14+ (App Router), TypeScript, SQLite (dev) / PostgreSQL (prod), Prisma, NextAuth.js, Tailwind CSS v4, shadcn/ui
+**Stack**: Next.js 14+ (App Router), TypeScript, PostgreSQL (dev via Docker, prod), Prisma, NextAuth.js, Tailwind CSS v4, shadcn/ui
 
 ## Development Commands
 
@@ -53,8 +53,24 @@ Test structure follows AAA pattern (Arrange, Act, Assert) with fixtures from `@/
 
 ## Environment Setup
 
+### Database (PostgreSQL via Docker)
+
+Development uses PostgreSQL via Docker for consistency with production:
+
+```bash
+# Start PostgreSQL container
+docker-compose up -d
+
+# Verify it's running
+docker-compose ps
+```
+
+The `docker-compose.yml` creates PostgreSQL on port 5499 (to avoid conflicts).
+
+### Environment Variables
+
 Required environment variables (see `.env.example`):
-- `DATABASE_URL` - SQLite file path for dev (`file:./dev.db`) or PostgreSQL connection string for prod
+- `DATABASE_URL` - PostgreSQL connection string (dev: `postgresql://crm_user:dev_password_123@localhost:5499/crm_db`)
 - `NEXTAUTH_SECRET` - Generate with `openssl rand -base64 32`
 - `NEXTAUTH_URL` - Base URL (e.g., `http://localhost:3000`)
 - `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` - For database seeding
@@ -179,7 +195,7 @@ export async function createDeal(data: DealFormData) {
 - Parse/stringify these fields when reading/writing to database
 
 ### Database
-- **Development**: SQLite (`file:./dev.db`)
+- **Development**: PostgreSQL via Docker (port 5499) - `docker-compose up -d`
 - **Production**: PostgreSQL (via `DATABASE_URL` environment variable)
 - **Schema changes**: ALWAYS use `npm run db:migrate` to create migrations (never use `db:push` in production)
 - **Data isolation**: All entities have `ownerId` foreign key to User
