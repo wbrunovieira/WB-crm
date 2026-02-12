@@ -33,6 +33,12 @@ export function isInternalRequest(request: Request): boolean {
     return true;
   }
 
+  // Check for webhook secret (for external services like Agent)
+  const webhookSecret = request.headers.get("x-webhook-secret");
+  if (webhookSecret && webhookSecret === process.env.WEBHOOK_SECRET) {
+    return true;
+  }
+
   return false;
 }
 

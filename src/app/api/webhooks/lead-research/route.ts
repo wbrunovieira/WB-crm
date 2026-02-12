@@ -8,8 +8,10 @@ import { isInternalRequest } from "@/lib/internal-auth";
  * Receives results from the Agent after lead research is complete.
  * The Agent sends this webhook when a lead research job finishes (success or error).
  *
- * This endpoint is only accessible from internal network (localhost, private IPs)
- * for security.
+ * Authentication options:
+ * 1. Internal network request (localhost, private IPs)
+ * 2. X-Webhook-Secret header matching WEBHOOK_SECRET env var
+ * 3. X-Internal-API-Key header matching INTERNAL_API_KEY env var
  */
 
 type LeadResearchPayload = {
@@ -38,9 +40,9 @@ type LeadResearchPayload = {
 
 export async function POST(request: Request) {
   try {
-    // Verify request is from internal network
+    // Verify request is authenticated (internal network, webhook secret, or API key)
     if (!isInternalRequest(request)) {
-      console.warn("[Webhook] Lead research webhook called from external IP");
+      console.warn("[Webhook] Lead research webhook - unauthorized request");
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 

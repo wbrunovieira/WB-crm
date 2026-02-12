@@ -32,6 +32,10 @@ sdr_name: Fabíola
 nextauth_secret: "{{ vault_nextauth_secret }}"
 nextauth_url: "https://{{ app_domain }}"
 
+# API Security (for webhooks and internal communication)
+webhook_secret: "{{ vault_webhook_secret }}"
+internal_api_key: "{{ vault_internal_api_key }}"
+
 # Certbot email
 certbot_email: bruno@wbdigitalsolutions.com
 

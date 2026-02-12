@@ -24,6 +24,8 @@
     SDR_EMAIL={{ sdr_email }}
     SDR_PASSWORD={{ sdr_password }}
     SDR_NAME={{ sdr_name }}
+    WEBHOOK_SECRET={{ webhook_secret }}
+    INTERNAL_API_KEY={{ internal_api_key }}
     NODE_ENV=production
     ENVFILE
     chmod 600 {{ app_dir }}/.env

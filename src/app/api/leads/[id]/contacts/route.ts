@@ -115,6 +115,12 @@ export async function GET(
  *                 type: string
  *               whatsapp:
  *                 type: string
+ *               linkedin:
+ *                 type: string
+ *                 description: URL do perfil no LinkedIn
+ *               instagram:
+ *                 type: string
+ *                 description: URL/usuario do Instagram
  *               isPrimary:
  *                 type: boolean
  *                 description: Se é o contato principal
