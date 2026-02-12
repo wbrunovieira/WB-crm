@@ -43,7 +43,7 @@ export function AgentLeadGenerationModal({
     city: "",
     state: "",
     country: "Brasil",
-    quantity: 10,
+    quantity: 1,
     quality: "warm",
   });
 
@@ -226,25 +226,25 @@ export function AgentLeadGenerationModal({
                     <button
                       key={icp.id}
                       onClick={() => handleSelectICP(icp)}
-                      className="w-full rounded-lg border border-gray-200 p-4 text-left transition-all hover:border-purple-300 hover:bg-purple-50 hover:shadow-md"
+                      className="group w-full rounded-lg border-2 border-gray-200 bg-white p-4 text-left transition-all hover:border-purple-500 hover:bg-purple-600 hover:shadow-lg"
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-gray-900">
+                          <h3 className="font-semibold text-gray-900 group-hover:text-white">
                             {icp.name}
                           </h3>
-                          <p className="mt-1 line-clamp-2 text-sm text-gray-600">
+                          <p className="mt-1 line-clamp-2 text-sm text-gray-600 group-hover:text-purple-100">
                             {icp.content.substring(0, 150)}
                             {icp.content.length > 150 ? "..." : ""}
                           </p>
                           {icp._count && (
-                            <div className="mt-2 flex gap-4 text-xs text-gray-500">
+                            <div className="mt-2 flex gap-4 text-xs text-gray-500 group-hover:text-purple-200">
                               <span>{icp._count.leads} leads vinculados</span>
                               <span>{icp._count.organizations} organizações</span>
                             </div>
                           )}
                         </div>
-                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                        <ChevronRight className="h-5 w-5 text-gray-400 group-hover:text-white" />
                       </div>
                     </button>
                   ))}
@@ -255,20 +255,20 @@ export function AgentLeadGenerationModal({
             /* Step 2: Configure Search */
             <form onSubmit={handleSubmit}>
               {/* Selected ICP Summary */}
-              <div className="mb-6 rounded-lg bg-purple-50 p-4">
+              <div className="mb-6 rounded-lg border-2 border-purple-200 bg-purple-50 p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <span className="text-xs font-medium uppercase text-purple-600">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-purple-700">
                       ICP Selecionado
                     </span>
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="mt-1 text-lg font-bold text-purple-900">
                       {selectedICP?.name}
                     </h3>
                   </div>
                   <button
                     type="button"
                     onClick={handleBack}
-                    className="text-sm text-purple-600 hover:text-purple-800"
+                    className="rounded-md bg-purple-100 px-3 py-1 text-sm font-medium text-purple-700 hover:bg-purple-200 hover:text-purple-900"
                   >
                     Alterar
                   </button>
@@ -349,22 +349,22 @@ export function AgentLeadGenerationModal({
                       <Hash className="mr-1 inline h-4 w-4" />
                       Quantidade de Leads
                     </label>
-                    <select
+                    <input
+                      type="number"
+                      min={1}
                       value={formData.quantity}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          quantity: parseInt(e.target.value),
+                          quantity: Math.max(1, parseInt(e.target.value) || 1),
                         })
                       }
+                      placeholder="1"
                       className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                    >
-                      <option value={5}>5 leads</option>
-                      <option value={10}>10 leads</option>
-                      <option value={20}>20 leads</option>
-                      <option value={50}>50 leads</option>
-                      <option value={100}>100 leads</option>
-                    </select>
+                    />
+                    <p className="mt-1 text-xs text-gray-500">
+                      Mínimo: 1 lead
+                    </p>
                   </div>
                   <div>
                     <label className="mb-1 block text-sm font-medium text-gray-700">
