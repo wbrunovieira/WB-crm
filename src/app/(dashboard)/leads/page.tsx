@@ -8,6 +8,7 @@ import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 import { AgentLeadGenerationButton } from "@/components/leads/AgentLeadGenerationButton";
+import { LeadResearchNotifications } from "@/components/leads/LeadResearchNotifications";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
@@ -52,6 +53,9 @@ export default async function LeadsPage({
 
   return (
     <div className="p-8">
+      {/* Notification polling for lead research results */}
+      <LeadResearchNotifications />
+
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Leads</h1>

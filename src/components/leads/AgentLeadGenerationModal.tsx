@@ -37,6 +37,7 @@ export function AgentLeadGenerationModal({
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [successMessage, setSuccessMessage] = useState<string>("");
 
   const [formData, setFormData] = useState<FormData>({
     searchTerm: "",
@@ -91,21 +92,43 @@ export function AgentLeadGenerationModal({
         },
       };
 
-      // TODO: Replace with actual agent API call
-      // For now, we'll just log and simulate success
-      console.log("Agent payload:", JSON.stringify(payload, null, 2));
+      // Call the Agent API
+      const response = await fetch(
+        "https://agents.wbdigitalsolutions.com/agents/crm/lead-research",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(payload),
+        }
+      );
 
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          errorData.error || `Erro ${response.status}: ${response.statusText}`
+        );
+      }
 
-      setSuccess(true);
+      const data = await response.json();
 
-      // Close modal after showing success
-      setTimeout(() => {
-        onClose();
-      }, 2000);
+      if (data.status === "accepted") {
+        setSuccessMessage(data.reply || "Pesquisa iniciada com sucesso!");
+        setSuccess(true);
+
+        // Close modal after showing success
+        setTimeout(() => {
+          onClose();
+        }, 3000);
+      } else {
+        throw new Error(data.error || "Resposta inesperada do agente");
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao enviar para o agente");
+      console.error("Agent API error:", err);
+      setError(
+        err instanceof Error ? err.message : "Erro ao enviar para o agente"
+      );
     } finally {
       setSubmitting(false);
     }
@@ -195,11 +218,12 @@ export function AgentLeadGenerationModal({
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900">
-                Solicitação Enviada!
+                Pesquisa Iniciada!
               </h3>
               <p className="mt-2 text-center text-gray-600">
-                O agente começará a buscar leads com base no ICP selecionado.
-                <br />
+                {successMessage}
+              </p>
+              <p className="mt-4 text-sm text-gray-500">
                 Você será notificado quando os leads estiverem disponíveis.
               </p>
             </div>
