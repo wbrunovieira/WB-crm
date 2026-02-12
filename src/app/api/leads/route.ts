@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { leadSchema } from "@/lib/validations/lead";
+import { getSessionOrInternal } from "@/lib/internal-auth";
 
 /**
  * @swagger
@@ -42,8 +41,8 @@ import { leadSchema } from "@/lib/validations/lead";
  */
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await getSessionOrInternal(request);
+    if (!auth) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
@@ -52,9 +51,13 @@ export async function GET(request: Request) {
     const status = searchParams.get("status") || undefined;
     const quality = searchParams.get("quality") || undefined;
 
+    // Build owner filter based on role (internal requests act as admin)
+    const ownerFilter =
+      auth.user.role === "admin" || auth.isInternal ? {} : { ownerId: auth.user.id };
+
     const leads = await prisma.lead.findMany({
       where: {
-        ownerId: session.user.id,
+        ...ownerFilter,
         ...(search && {
           OR: [
             { businessName: { contains: search } },
@@ -160,8 +163,8 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await getSessionOrInternal(request);
+    if (!auth) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
@@ -177,7 +180,7 @@ export async function POST(request: Request) {
     const lead = await prisma.lead.create({
       data: {
         ...validated,
-        ownerId: session.user.id,
+        ownerId: auth.user.id,
       },
       include: {
         leadContacts: true,

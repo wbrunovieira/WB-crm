@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { leadSchema } from "@/lib/validations/lead";
+import { getSessionOrInternal } from "@/lib/internal-auth";
 
 /**
  * @swagger
@@ -36,15 +35,19 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await getSessionOrInternal(request);
+    if (!auth) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
+
+    // Build owner filter based on role (internal requests act as admin)
+    const ownerFilter =
+      auth.user.role === "admin" || auth.isInternal ? {} : { ownerId: auth.user.id };
 
     const lead = await prisma.lead.findFirst({
       where: {
         id: params.id,
-        ownerId: session.user.id,
+        ...ownerFilter,
       },
       include: {
         primaryCNAE: true,
@@ -168,16 +171,20 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await getSessionOrInternal(request);
+    if (!auth) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Check if lead exists and belongs to user
+    // Build owner filter based on role (internal requests act as admin)
+    const ownerFilter =
+      auth.user.role === "admin" || auth.isInternal ? {} : { ownerId: auth.user.id };
+
+    // Check if lead exists and user has access
     const existing = await prisma.lead.findFirst({
       where: {
         id: params.id,
-        ownerId: session.user.id,
+        ...ownerFilter,
       },
     });
 
@@ -257,16 +264,20 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await getSessionOrInternal(request);
+    if (!auth) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
-    // Check if lead exists and belongs to user
+    // Build owner filter based on role (internal requests act as admin)
+    const ownerFilter =
+      auth.user.role === "admin" || auth.isInternal ? {} : { ownerId: auth.user.id };
+
+    // Check if lead exists and user has access
     const lead = await prisma.lead.findFirst({
       where: {
         id: params.id,
-        ownerId: session.user.id,
+        ...ownerFilter,
       },
       select: {
         id: true,

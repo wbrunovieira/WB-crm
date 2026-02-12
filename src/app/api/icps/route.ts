@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { getSessionOrInternal } from "@/lib/internal-auth";
 
 /**
  * @swagger
@@ -35,8 +34,8 @@ import { prisma } from "@/lib/prisma";
  */
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await getSessionOrInternal(request);
+    if (!auth) {
       return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
@@ -44,9 +43,9 @@ export async function GET(request: Request) {
     const status = searchParams.get("status") || undefined;
     const search = searchParams.get("search") || undefined;
 
-    // Build owner filter based on role
+    // Build owner filter based on role (internal requests act as admin)
     const ownerFilter =
-      session.user.role === "admin" ? {} : { ownerId: session.user.id };
+      auth.user.role === "admin" || auth.isInternal ? {} : { ownerId: auth.user.id };
 
     const icps = await prisma.iCP.findMany({
       where: {
