@@ -7,6 +7,7 @@ import { LeadsFilters } from "@/components/leads/LeadsFilters";
 import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
+import { AgentLeadGenerationButton } from "@/components/leads/AgentLeadGenerationButton";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
@@ -58,12 +59,15 @@ export default async function LeadsPage({
             Gerencie seus leads e converta em clientes
           </p>
         </div>
-        <Link
-          href="/leads/new"
-          className="rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700"
-        >
-          Novo Lead
-        </Link>
+        <div className="flex items-center gap-3">
+          <AgentLeadGenerationButton icps={icps} />
+          <Link
+            href="/leads/new"
+            className="rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700"
+          >
+            Novo Lead
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
