@@ -82,6 +82,16 @@ export default async function LeadsPage({
         )}
       </div>
 
+      {/* Lead Counter */}
+      <div className="mb-4 flex items-center gap-2">
+        <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
+          {leads.length} {leads.length === 1 ? "lead" : "leads"}
+        </span>
+        {(searchParams.search || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner) && (
+          <span className="text-sm text-gray-500">com os filtros aplicados</span>
+        )}
+      </div>
+
       {leads.length === 0 ? (
         <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
           <h3 className="text-lg font-medium text-gray-900">
