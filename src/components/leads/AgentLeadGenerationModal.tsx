@@ -66,10 +66,6 @@ export function AgentLeadGenerationModal({
       return;
     }
 
-    if (!formData.searchTerm.trim()) {
-      setError("Termo de busca é obrigatório");
-      return;
-    }
 
     setSubmitting(true);
     setError(null);
@@ -304,7 +300,7 @@ export function AgentLeadGenerationModal({
                 <div>
                   <label className="mb-1 block text-sm font-medium text-gray-700">
                     <Building2 className="mr-1 inline h-4 w-4" />
-                    Termo de Busca *
+                    Termo de Busca
                   </label>
                   <input
                     type="text"
@@ -314,10 +310,9 @@ export function AgentLeadGenerationModal({
                     }
                     placeholder="Ex: agência de marketing, software house, e-commerce"
                     className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
-                    required
                   />
                   <p className="mt-1 text-xs text-gray-500">
-                    O agente usará este termo junto com o ICP para buscar leads relevantes
+                    Opcional - O agente usará o ICP para buscar leads relevantes
                   </p>
                 </div>
 
@@ -376,18 +371,19 @@ export function AgentLeadGenerationModal({
                     <input
                       type="number"
                       min={1}
+                      max={10}
                       value={formData.quantity}
                       onChange={(e) =>
                         setFormData({
                           ...formData,
-                          quantity: Math.max(1, parseInt(e.target.value) || 1),
+                          quantity: Math.min(10, Math.max(1, parseInt(e.target.value) || 1)),
                         })
                       }
                       placeholder="1"
                       className="w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                      Mínimo: 1 lead
+                      Mínimo: 1 / Máximo: 10 leads
                     </p>
                   </div>
                   <div>

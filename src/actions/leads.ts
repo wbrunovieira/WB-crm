@@ -30,9 +30,11 @@ export async function getLeads(filters?: {
       ...ownerFilter,
       ...(filters?.search && {
         OR: [
-          { businessName: { contains: filters.search } },
-          { registeredName: { contains: filters.search } },
-          { email: { contains: filters.search } },
+          { businessName: { contains: filters.search, mode: "insensitive" as const } },
+          { registeredName: { contains: filters.search, mode: "insensitive" as const } },
+          { email: { contains: filters.search, mode: "insensitive" as const } },
+          { city: { contains: filters.search, mode: "insensitive" as const } },
+          { description: { contains: filters.search, mode: "insensitive" as const } },
         ],
       }),
       ...(filters?.status && { status: filters.status }),
