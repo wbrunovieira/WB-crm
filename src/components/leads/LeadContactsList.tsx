@@ -55,12 +55,10 @@ function ContactDetailModal({
               <User className="h-8 w-8 text-purple-600" />
             </div>
             <h3 className="text-xl font-bold text-gray-900">{contact.name}</h3>
-            {contact.role && (
-              <p className="mt-1 flex items-center justify-center gap-1 text-sm text-gray-600">
-                <Briefcase className="h-4 w-4" />
-                {contact.role}
-              </p>
-            )}
+            <p className="mt-1 flex items-center justify-center gap-1 text-sm text-gray-600">
+              <Briefcase className="h-4 w-4" />
+              {contact.role || <span className="text-gray-400 italic">Cargo não informado</span>}
+            </p>
             {contact.isPrimary && (
               <span className="mt-2 inline-flex rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-800">
                 Contato Principal
@@ -68,43 +66,50 @@ function ContactDetailModal({
             )}
           </div>
 
-          {/* Contact Info */}
-          <div className="space-y-4">
-            {contact.email && (
-              <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                  <Mail className="h-5 w-5 text-blue-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Email</p>
+          {/* Contact Info - Always show all fields */}
+          <div className="space-y-3">
+            {/* Email */}
+            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                <Mail className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Email</p>
+                {contact.email ? (
                   <a href={`mailto:${contact.email}`} className="text-sm font-medium text-gray-900 hover:text-purple-600">
                     {contact.email}
                   </a>
-                </div>
+                ) : (
+                  <span className="text-sm text-gray-400 italic">Não informado</span>
+                )}
               </div>
-            )}
+            </div>
 
-            {contact.phone && (
-              <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                  <Phone className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Telefone</p>
+            {/* Phone */}
+            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                <Phone className="h-5 w-5 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Telefone</p>
+                {contact.phone ? (
                   <a href={`tel:${contact.phone}`} className="text-sm font-medium text-gray-900 hover:text-purple-600">
                     {contact.phone}
                   </a>
-                </div>
+                ) : (
+                  <span className="text-sm text-gray-400 italic">Não informado</span>
+                )}
               </div>
-            )}
+            </div>
 
-            {contact.whatsapp && (
-              <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
-                  <MessageCircle className="h-5 w-5 text-green-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">WhatsApp</p>
+            {/* WhatsApp */}
+            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+                <MessageCircle className="h-5 w-5 text-green-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">WhatsApp</p>
+                {contact.whatsapp ? (
                   <a
                     href={`https://wa.me/${contact.whatsapp.replace(/\D/g, '')}`}
                     target="_blank"
@@ -113,17 +118,20 @@ function ContactDetailModal({
                   >
                     {contact.whatsapp}
                   </a>
-                </div>
+                ) : (
+                  <span className="text-sm text-gray-400 italic">Não informado</span>
+                )}
               </div>
-            )}
+            </div>
 
-            {contact.linkedin && (
-              <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
-                  <Linkedin className="h-5 w-5 text-blue-700" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">LinkedIn</p>
+            {/* LinkedIn */}
+            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+                <Linkedin className="h-5 w-5 text-blue-700" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">LinkedIn</p>
+                {contact.linkedin ? (
                   <a
                     href={contact.linkedin.startsWith('http') ? contact.linkedin : `https://linkedin.com/in/${contact.linkedin}`}
                     target="_blank"
@@ -132,17 +140,20 @@ function ContactDetailModal({
                   >
                     {contact.linkedin}
                   </a>
-                </div>
+                ) : (
+                  <span className="text-sm text-gray-400 italic">Não informado</span>
+                )}
               </div>
-            )}
+            </div>
 
-            {contact.instagram && (
-              <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100">
-                  <Instagram className="h-5 w-5 text-pink-600" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Instagram</p>
+            {/* Instagram */}
+            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100">
+                <Instagram className="h-5 w-5 text-pink-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Instagram</p>
+                {contact.instagram ? (
                   <a
                     href={contact.instagram.startsWith('http') ? contact.instagram : `https://instagram.com/${contact.instagram.replace('@', '')}`}
                     target="_blank"
@@ -151,15 +162,11 @@ function ContactDetailModal({
                   >
                     {contact.instagram}
                   </a>
-                </div>
+                ) : (
+                  <span className="text-sm text-gray-400 italic">Não informado</span>
+                )}
               </div>
-            )}
-
-            {!contact.email && !contact.phone && !contact.whatsapp && !contact.linkedin && !contact.instagram && (
-              <div className="text-center py-4 text-gray-500">
-                <p className="text-sm">Nenhuma informação de contato adicional.</p>
-              </div>
-            )}
+            </div>
           </div>
         </div>
 
@@ -167,7 +174,7 @@ function ContactDetailModal({
         <div className="border-t bg-gray-50 px-6 py-4 rounded-b-xl">
           <button
             onClick={onClose}
-            className="w-full rounded-lg bg-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-300 transition-colors"
+            className="w-full rounded-lg bg-purple-600 px-4 py-3 text-base font-bold text-white hover:bg-purple-700 transition-colors shadow-md"
           >
             Fechar
           </button>
