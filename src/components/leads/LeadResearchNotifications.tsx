@@ -56,7 +56,8 @@ export function LeadResearchNotifications() {
         if (notification.type === "LEAD_RESEARCH_COMPLETE") {
           toast.success(notification.summary, {
             description: "Clique para ver os novos leads",
-            duration: 8000,
+            duration: Infinity,
+            dismissible: true,
             action: {
               label: "Ver",
               onClick: () => {
@@ -66,7 +67,8 @@ export function LeadResearchNotifications() {
           });
         } else if (notification.type === "LEAD_RESEARCH_ERROR") {
           toast.error(notification.summary, {
-            duration: 10000,
+            duration: Infinity,
+            dismissible: true,
           });
         }
 

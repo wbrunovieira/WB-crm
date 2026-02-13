@@ -45,7 +45,7 @@ export function AgentLeadGenerationModal({
     state: "",
     country: "Brasil",
     quantity: 1,
-    quality: "warm",
+    quality: "cold",
   });
 
   const handleSelectICP = (icp: ICP) => {

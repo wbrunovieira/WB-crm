@@ -496,34 +496,34 @@ export default async function LeadDetailPage({
 
       {/* Metadados */}
       {(lead.source || lead.searchTerm || lead.category || lead.radius) && (
-        <div className="mt-6 rounded-xl bg-gradient-to-br from-gray-50 to-purple-50 p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-purple-100">
+        <div className="mt-6 rounded-xl bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
+          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-gray-100">
             <span className="text-2xl">🔍</span>
             Metadados de Busca
           </h2>
           <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
             {lead.source && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Fonte</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.source}</dd>
+              <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Fonte</dt>
+                <dd className="text-base font-semibold text-gray-900">{lead.source}</dd>
               </div>
             )}
             {lead.searchTerm && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Termo de Busca</dt>
-                <dd className="text-base font-medium text-purple-900">&quot;{lead.searchTerm}&quot;</dd>
+              <div className="rounded-lg bg-purple-50 p-4 border border-purple-200">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-purple-600 mb-2">Termo de Busca</dt>
+                <dd className="text-base font-semibold text-purple-900">&quot;{lead.searchTerm}&quot;</dd>
               </div>
             )}
             {lead.category && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Categoria</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.category}</dd>
+              <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Categoria</dt>
+                <dd className="text-base font-semibold text-gray-900">{lead.category}</dd>
               </div>
             )}
             {lead.radius && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Raio de Busca</dt>
-                <dd className="text-base font-semibold text-purple-900">📏 {lead.radius} km</dd>
+              <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Raio de Busca</dt>
+                <dd className="text-base font-semibold text-gray-900">📏 {lead.radius} km</dd>
               </div>
             )}
           </div>
