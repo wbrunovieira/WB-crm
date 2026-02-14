@@ -58,6 +58,7 @@ export function LeadResearchNotifications() {
             description: "Clique para ver os novos leads",
             duration: Infinity,
             dismissible: true,
+            closeButton: true,
             action: {
               label: "Ver",
               onClick: () => {
@@ -69,6 +70,7 @@ export function LeadResearchNotifications() {
           toast.error(notification.summary, {
             duration: Infinity,
             dismissible: true,
+            closeButton: true,
           });
         }
 
