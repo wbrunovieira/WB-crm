@@ -55,12 +55,12 @@ export function LeadActivitiesList({
             <Link
               key={activity.id}
               href={`/activities/${activity.id}`}
-              className="block rounded-lg border border-gray-200 p-4 transition-colors hover:border-primary hover:bg-purple-50"
+              className="group block rounded-lg border border-gray-200 p-4 transition-all duration-200 hover:border-purple-300 hover:bg-purple-50/60 hover:shadow-sm"
             >
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 group-hover:bg-purple-100 group-hover:text-purple-800">
                       {typeLabels[activity.type]}
                     </span>
                     {activity.completed && (
@@ -69,22 +69,22 @@ export function LeadActivitiesList({
                       </span>
                     )}
                   </div>
-                  <h3 className="mt-2 font-medium text-gray-900">
+                  <h3 className="mt-2 font-medium text-gray-900 group-hover:text-purple-900">
                     {activity.subject}
                   </h3>
                   {activity.description && (
-                    <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                    <p className="mt-1 text-sm text-gray-600 group-hover:text-gray-700 line-clamp-2">
                       {activity.description}
                     </p>
                   )}
                   {activity.dueDate && (
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className="mt-2 text-xs text-gray-500 group-hover:text-gray-600">
                       Vencimento: {formatDate(activity.dueDate)}
                     </p>
                   )}
                 </div>
                 <svg
-                  className="h-5 w-5 text-gray-400"
+                  className="h-5 w-5 text-gray-400 group-hover:text-primary"
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
