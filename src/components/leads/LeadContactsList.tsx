@@ -5,7 +5,8 @@ import { toast } from "sonner";
 import { deleteLeadContact } from "@/actions/leads";
 import { useRouter } from "next/navigation";
 import { AddLeadContactModal } from "./AddLeadContactModal";
-import { Eye, Trash2, X, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase } from "lucide-react";
+import { updateLeadContact } from "@/actions/leads";
+import { Eye, Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase } from "lucide-react";
 
 type LeadContact = {
   id: string;
@@ -184,6 +185,191 @@ function ContactDetailModal({
   );
 }
 
+function EditContactModal({
+  contact,
+  isOpen,
+  onClose,
+  onSuccess,
+}: {
+  contact: LeadContact;
+  isOpen: boolean;
+  onClose: () => void;
+  onSuccess: () => void;
+}) {
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [form, setForm] = useState({
+    name: contact.name,
+    role: contact.role || "",
+    email: contact.email || "",
+    phone: contact.phone || "",
+    whatsapp: contact.whatsapp || "",
+    linkedin: contact.linkedin || "",
+    instagram: contact.instagram || "",
+    isPrimary: contact.isPrimary,
+  });
+
+  if (!isOpen) return null;
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+    try {
+      await updateLeadContact(contact.id, {
+        name: form.name,
+        role: form.role || undefined,
+        email: form.email || undefined,
+        phone: form.phone || undefined,
+        whatsapp: form.whatsapp || undefined,
+        linkedin: form.linkedin || undefined,
+        instagram: form.instagram || undefined,
+        isPrimary: form.isPrimary,
+      });
+      toast.success("Contato atualizado!");
+      onSuccess();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao atualizar contato");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const update = (field: string, value: string | boolean) => {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl">
+        <div className="flex items-center justify-between border-b bg-gradient-to-r from-purple-600 to-purple-800 p-4 text-white rounded-t-xl">
+          <h2 className="flex items-center gap-2 text-lg font-bold">
+            <Pencil className="h-5 w-5" />
+            Editar Contato
+          </h2>
+          <button onClick={onClose} className="rounded-lg p-2 hover:bg-white/20">
+            <X className="h-5 w-5" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {error && (
+            <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Nome *</label>
+            <input
+              type="text"
+              required
+              value={form.name}
+              onChange={(e) => update("name", e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Cargo</label>
+            <input
+              type="text"
+              value={form.role}
+              onChange={(e) => update("role", e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Email</label>
+            <input
+              type="email"
+              value={form.email}
+              onChange={(e) => update("email", e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Telefone</label>
+            <input
+              type="text"
+              value={form.phone}
+              onChange={(e) => update("phone", e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">WhatsApp</label>
+            <input
+              type="text"
+              value={form.whatsapp}
+              onChange={(e) => update("whatsapp", e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">LinkedIn</label>
+            <input
+              type="text"
+              value={form.linkedin}
+              onChange={(e) => update("linkedin", e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Instagram</label>
+            <input
+              type="text"
+              value={form.instagram}
+              onChange={(e) => update("instagram", e.target.value)}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              id="edit-isPrimary"
+              checked={form.isPrimary}
+              onChange={(e) => update("isPrimary", e.target.checked)}
+              className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            />
+            <label htmlFor="edit-isPrimary" className="text-sm text-gray-700">
+              Contato principal
+            </label>
+          </div>
+
+          <div className="flex gap-3 pt-2">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="flex-1 rounded-md bg-primary px-4 py-2 text-white hover:bg-primary/90 disabled:opacity-50"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Salvando...
+                </span>
+              ) : (
+                "Salvar"
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export function LeadContactsList({
   leadId,
   leadContacts,
@@ -197,6 +383,7 @@ export function LeadContactsList({
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewingContact, setViewingContact] = useState<LeadContact | null>(null);
+  const [editingContact, setEditingContact] = useState<LeadContact | null>(null);
 
   async function handleDelete(contactId: string) {
     if (isConverted) {
@@ -307,7 +494,7 @@ export function LeadContactsList({
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <button
                   onClick={() => setViewingContact(contact)}
                   className="rounded-lg p-2 text-gray-500 hover:bg-purple-100 hover:text-purple-600 transition-colors"
@@ -315,6 +502,15 @@ export function LeadContactsList({
                 >
                   <Eye className="h-5 w-5" />
                 </button>
+                {!isConverted && (
+                  <button
+                    onClick={() => setEditingContact(contact)}
+                    className="rounded-lg p-2 text-gray-500 hover:bg-purple-100 hover:text-purple-600 transition-colors"
+                    title="Editar contato"
+                  >
+                    <Pencil className="h-5 w-5" />
+                  </button>
+                )}
                 {!isConverted && (
                   <button
                     onClick={() => handleDelete(contact.id)}
@@ -342,6 +538,18 @@ export function LeadContactsList({
           contact={viewingContact}
           isOpen={!!viewingContact}
           onClose={() => setViewingContact(null)}
+        />
+      )}
+
+      {editingContact && (
+        <EditContactModal
+          contact={editingContact}
+          isOpen={!!editingContact}
+          onClose={() => setEditingContact(null)}
+          onSuccess={() => {
+            setEditingContact(null);
+            router.refresh();
+          }}
         />
       )}
     </div>
