@@ -152,6 +152,16 @@ export default async function ActivitiesPage({
         </div>
       </div>
 
+      {/* Activity Counter */}
+      <div className="mb-4 flex items-center gap-2">
+        <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
+          {activities.length} {activities.length === 1 ? "atividade" : "atividades"}
+        </span>
+        {(searchParams.type || searchParams.completed || searchParams.dateFrom || searchParams.dateTo || searchParams.owner) && (
+          <span className="text-sm text-gray-500">com os filtros aplicados</span>
+        )}
+      </div>
+
       <div className="space-y-4">
         {activities.map((activity) => (
           <div
