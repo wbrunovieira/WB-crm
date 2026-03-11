@@ -17,11 +17,15 @@ export function LeadActivitiesList({
   leadId: string;
   activities: Activity[];
 }) {
-  const typeLabels: Record<string, string> = {
-    call: "Ligação",
-    meeting: "Reunião",
-    email: "E-mail",
-    task: "Tarefa",
+  const typeConfig: Record<string, { label: string; bg: string; text: string; hoverBg: string; hoverText: string }> = {
+    call: { label: "Ligação", bg: "bg-blue-100", text: "text-blue-800", hoverBg: "group-hover:bg-blue-200", hoverText: "group-hover:text-blue-900" },
+    meeting: { label: "Reunião", bg: "bg-pink-100", text: "text-pink-800", hoverBg: "group-hover:bg-pink-200", hoverText: "group-hover:text-pink-900" },
+    email: { label: "E-mail", bg: "bg-purple-100", text: "text-purple-800", hoverBg: "group-hover:bg-purple-200", hoverText: "group-hover:text-purple-900" },
+    task: { label: "Tarefa", bg: "bg-amber-100", text: "text-amber-800", hoverBg: "group-hover:bg-amber-200", hoverText: "group-hover:text-amber-900" },
+    whatsapp: { label: "WhatsApp", bg: "bg-green-100", text: "text-green-800", hoverBg: "group-hover:bg-green-200", hoverText: "group-hover:text-green-900" },
+    linkedin: { label: "LinkedIn", bg: "bg-sky-100", text: "text-sky-800", hoverBg: "group-hover:bg-sky-200", hoverText: "group-hover:text-sky-900" },
+    instagram: { label: "Instagram", bg: "bg-rose-100", text: "text-rose-800", hoverBg: "group-hover:bg-rose-200", hoverText: "group-hover:text-rose-900" },
+    physical_visit: { label: "Visita", bg: "bg-teal-100", text: "text-teal-800", hoverBg: "group-hover:bg-teal-200", hoverText: "group-hover:text-teal-900" },
   };
 
   return (
@@ -60,8 +64,8 @@ export function LeadActivitiesList({
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700 group-hover:bg-purple-100 group-hover:text-purple-800">
-                      {typeLabels[activity.type]}
+                    <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${typeConfig[activity.type]?.bg ?? "bg-gray-100"} ${typeConfig[activity.type]?.text ?? "text-gray-800"} ${typeConfig[activity.type]?.hoverBg ?? ""} ${typeConfig[activity.type]?.hoverText ?? ""}`}>
+                      {typeConfig[activity.type]?.label ?? activity.type}
                     </span>
                     {activity.completed && (
                       <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
