@@ -1,5 +1,11 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Check, Loader2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { toggleActivityCompleted } from "@/actions/activities";
 
 type Activity = {
   id: string;
@@ -17,6 +23,9 @@ export function LeadActivitiesList({
   leadId: string;
   activities: Activity[];
 }) {
+  const router = useRouter();
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
   const typeConfig: Record<string, { label: string; bg: string; text: string; hoverBg: string; hoverText: string }> = {
     call: { label: "Ligação", bg: "bg-blue-100", text: "text-blue-800", hoverBg: "group-hover:bg-blue-200", hoverText: "group-hover:text-blue-900" },
     meeting: { label: "Reunião", bg: "bg-pink-100", text: "text-pink-800", hoverBg: "group-hover:bg-pink-200", hoverText: "group-hover:text-pink-900" },
@@ -26,6 +35,20 @@ export function LeadActivitiesList({
     linkedin: { label: "LinkedIn", bg: "bg-sky-100", text: "text-sky-800", hoverBg: "group-hover:bg-sky-200", hoverText: "group-hover:text-sky-900" },
     instagram: { label: "Instagram", bg: "bg-rose-100", text: "text-rose-800", hoverBg: "group-hover:bg-rose-200", hoverText: "group-hover:text-rose-900" },
     physical_visit: { label: "Visita", bg: "bg-teal-100", text: "text-teal-800", hoverBg: "group-hover:bg-teal-200", hoverText: "group-hover:text-teal-900" },
+  };
+
+  const handleToggle = async (e: React.MouseEvent, activityId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setLoadingId(activityId);
+    try {
+      await toggleActivityCompleted(activityId);
+      router.refresh();
+    } catch {
+      // silently fail
+    } finally {
+      setLoadingId(null);
+    }
   };
 
   return (
@@ -56,13 +79,34 @@ export function LeadActivitiesList({
       ) : (
         <div className="space-y-3">
           {activities.map((activity) => (
-            <Link
+            <div
               key={activity.id}
-              href={`/activities/${activity.id}`}
-              className="group block rounded-lg border border-gray-200 p-4 transition-all duration-200 hover:border-purple-300 hover:bg-purple-50/60 hover:shadow-sm"
+              className="group rounded-lg border border-gray-200 p-4 transition-all duration-200 hover:border-purple-300 hover:bg-purple-50/60 hover:shadow-sm"
             >
-              <div className="flex items-start justify-between">
-                <div className="flex-1">
+              <div className="flex items-start gap-3">
+                {/* Toggle button */}
+                <button
+                  onClick={(e) => handleToggle(e, activity.id)}
+                  disabled={loadingId === activity.id}
+                  className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+                    activity.completed
+                      ? "border-green-500 bg-green-500 text-white"
+                      : "border-gray-300 bg-white hover:border-primary hover:bg-primary/10"
+                  } disabled:opacity-50`}
+                  title={activity.completed ? "Marcar como pendente" : "Marcar como concluída"}
+                >
+                  {loadingId === activity.id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : activity.completed ? (
+                    <Check className="h-3.5 w-3.5" />
+                  ) : null}
+                </button>
+
+                {/* Content - clickable link */}
+                <Link
+                  href={`/activities/${activity.id}`}
+                  className="flex-1 min-w-0"
+                >
                   <div className="flex items-center gap-2">
                     <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${typeConfig[activity.type]?.bg ?? "bg-gray-100"} ${typeConfig[activity.type]?.text ?? "text-gray-800"} ${typeConfig[activity.type]?.hoverBg ?? ""} ${typeConfig[activity.type]?.hoverText ?? ""}`}>
                       {typeConfig[activity.type]?.label ?? activity.type}
@@ -73,7 +117,7 @@ export function LeadActivitiesList({
                       </span>
                     )}
                   </div>
-                  <h3 className="mt-2 font-medium text-gray-900 group-hover:text-purple-900">
+                  <h3 className={`mt-2 font-medium group-hover:text-purple-900 ${activity.completed ? "text-gray-500 line-through" : "text-gray-900"}`}>
                     {activity.subject}
                   </h3>
                   {activity.description && (
@@ -86,22 +130,26 @@ export function LeadActivitiesList({
                       Vencimento: {formatDate(activity.dueDate)}
                     </p>
                   )}
-                </div>
-                <svg
-                  className="h-5 w-5 text-gray-400 group-hover:text-primary"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M9 5l7 7-7 7"
-                  />
-                </svg>
+                </Link>
+
+                {/* Arrow */}
+                <Link href={`/activities/${activity.id}`} className="flex-shrink-0">
+                  <svg
+                    className="h-5 w-5 text-gray-400 group-hover:text-primary"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 5l7 7-7 7"
+                    />
+                  </svg>
+                </Link>
               </div>
-            </Link>
+            </div>
           ))}
         </div>
       )}

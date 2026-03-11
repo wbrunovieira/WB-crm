@@ -375,6 +375,12 @@ export async function toggleActivityCompleted(id: string) {
   if (activity.contactId) {
     revalidatePath(`/contacts/${activity.contactId}`);
   }
+  if (activity.leadId) {
+    revalidatePath(`/leads/${activity.leadId}`);
+  }
+  if (activity.partnerId) {
+    revalidatePath(`/partners/${activity.partnerId}`);
+  }
 
   return updatedActivity;
 }
