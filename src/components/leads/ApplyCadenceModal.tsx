@@ -123,7 +123,7 @@ export function ApplyCadenceModal({ leadId, onClose, onSuccess }: ApplyCadenceMo
                 <label className="block text-sm font-medium text-gray-700 mb-3">
                   Selecione a Cadência *
                 </label>
-                <div className="space-y-3">
+                <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
                   {cadences.map((cadence) => (
                     <div
                       key={cadence.id}
