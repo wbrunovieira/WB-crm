@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Trash2, Zap, Pencil } from "lucide-react";
+import { Trash2, Zap, Pencil, Copy, Check } from "lucide-react";
 import { deleteCadenceStep } from "@/actions/cadence-steps";
 import { CADENCE_CHANNEL_LABELS, type CadenceChannel } from "@/lib/validations/cadence";
 import { CadenceStepEditModal } from "./CadenceStepEditModal";
@@ -24,6 +24,14 @@ export function CadenceStepsList({ steps }: CadenceStepsListProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const [editingStep, setEditingStep] = useState<CadenceStep | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  const handleCopy = async (step: CadenceStep) => {
+    const text = `${step.subject}\n\n${step.description || ""}`.trim();
+    await navigator.clipboard.writeText(text);
+    setCopiedId(step.id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
 
   const handleDelete = async (step: CadenceStep) => {
     if (!confirm(`Excluir etapa do dia ${step.dayNumber}?`)) return;
@@ -154,13 +162,24 @@ export function CadenceStepsList({ steps }: CadenceStepsListProps) {
                           </p>
                           {/* Description */}
                           {step.description && (
-                            <p className="mt-1.5 text-sm text-gray-600 leading-relaxed">
+                            <pre className="mt-1.5 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap font-sans break-words">
                               {step.description}
-                            </p>
+                            </pre>
                           )}
                         </div>
                         {/* Action buttons */}
                         <div className="flex items-center gap-1 ml-3 shrink-0">
+                          <button
+                            onClick={() => handleCopy(step)}
+                            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-[#792990] transition-all"
+                            title="Copiar conteúdo"
+                          >
+                            {copiedId === step.id ? (
+                              <Check className="h-4 w-4 text-green-600" />
+                            ) : (
+                              <Copy className="h-4 w-4" />
+                            )}
+                          </button>
                           <button
                             onClick={() => setEditingStep(step)}
                             className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-[#792990] transition-all"

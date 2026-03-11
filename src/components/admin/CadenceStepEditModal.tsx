@@ -73,7 +73,7 @@ export function CadenceStepEditModal({ step, isOpen, onClose }: CadenceStepEditM
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 rounded-xl bg-white shadow-2xl">
+      <div className="relative w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between border-b px-6 py-4">
           <h2 className="text-lg font-semibold text-gray-900">
@@ -165,11 +165,11 @@ export function CadenceStepEditModal({ step, isOpen, onClose }: CadenceStepEditM
             </label>
             <textarea
               id="edit-description"
-              rows={4}
+              rows={10}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Detalhes sobre o que fazer nesta etapa..."
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary font-mono text-sm"
             />
           </div>
 
