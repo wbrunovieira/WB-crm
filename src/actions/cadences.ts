@@ -113,6 +113,15 @@ export async function getCadences(filters?: {
       icp: {
         select: { id: true, name: true, slug: true },
       },
+      steps: {
+        orderBy: [{ dayNumber: "asc" as const }, { order: "asc" as const }],
+        select: {
+          id: true,
+          dayNumber: true,
+          channel: true,
+          subject: true,
+        },
+      },
       _count: {
         select: {
           steps: true,

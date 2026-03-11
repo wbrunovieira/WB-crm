@@ -91,6 +91,15 @@ export function LeadsFilters({ icps = [] }: LeadsFiltersProps) {
           ))}
         </select>
       )}
+      <select
+        value={searchParams.get("hasCadence")?.toString() || ""}
+        onChange={(e) => handleFilterChange("hasCadence", e.target.value)}
+        className="rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+      >
+        <option value="">Cadência (todos)</option>
+        <option value="no">Sem cadência</option>
+        <option value="yes">Com cadência</option>
+      </select>
     </div>
   );
 }

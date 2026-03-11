@@ -4,7 +4,9 @@ import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import {
   applyLeadCadenceSchema,
+  applyBulkLeadCadenceSchema,
   type ApplyLeadCadenceData,
+  type ApplyBulkLeadCadenceData,
 } from "@/lib/validations/cadence";
 import {
   getAuthenticatedSession,
@@ -130,6 +132,125 @@ export async function applyCadenceToLead(data: ApplyLeadCadenceData) {
   revalidatePath("/activities/calendar");
 
   return result;
+}
+
+/**
+ * Apply a cadence to multiple leads at once
+ */
+export async function applyCadenceToBulkLeads(data: ApplyBulkLeadCadenceData) {
+  const session = await getAuthenticatedSession();
+  const validated = applyBulkLeadCadenceSchema.parse(data);
+  const ownerFilter = await getOwnerFilter();
+
+  // Verify cadence access and get steps
+  const cadence = await prisma.cadence.findFirst({
+    where: {
+      id: validated.cadenceId,
+      ...ownerFilter,
+      status: "active",
+    },
+    include: {
+      steps: {
+        orderBy: [{ dayNumber: "asc" }, { order: "asc" }],
+      },
+    },
+  });
+
+  if (!cadence) {
+    throw new Error("Cadência não encontrada ou inativa");
+  }
+
+  if (cadence.steps.length === 0) {
+    throw new Error("Cadência não possui etapas definidas");
+  }
+
+  // Verify all leads belong to user
+  const leads = await prisma.lead.findMany({
+    where: {
+      id: { in: validated.leadIds },
+      ...ownerFilter,
+    },
+    select: { id: true },
+  });
+
+  const accessibleLeadIds = new Set(leads.map((l) => l.id));
+
+  // Check which leads already have this cadence
+  const existingLeadCadences = await prisma.leadCadence.findMany({
+    where: {
+      leadId: { in: validated.leadIds },
+      cadenceId: validated.cadenceId,
+    },
+    select: { leadId: true },
+  });
+
+  const alreadyAppliedIds = new Set(existingLeadCadences.map((lc) => lc.leadId));
+
+  // Filter to eligible leads only
+  const eligibleLeadIds = validated.leadIds.filter(
+    (id) => accessibleLeadIds.has(id) && !alreadyAppliedIds.has(id)
+  );
+
+  if (eligibleLeadIds.length === 0) {
+    return {
+      applied: 0,
+      skipped: validated.leadIds.length,
+      total: validated.leadIds.length,
+    };
+  }
+
+  const startDate = validated.startDate || new Date();
+
+  // Create all in a single transaction
+  await prisma.$transaction(async (tx) => {
+    for (const leadId of eligibleLeadIds) {
+      const leadCadence = await tx.leadCadence.create({
+        data: {
+          leadId,
+          cadenceId: validated.cadenceId,
+          status: "active",
+          startDate,
+          notes: validated.notes,
+          ownerId: session.user.id,
+        },
+      });
+
+      for (const step of cadence.steps) {
+        const dueDate = addDays(startDate, step.dayNumber - 1);
+
+        const activity = await tx.activity.create({
+          data: {
+            type: step.channel,
+            subject: step.subject,
+            description: step.description,
+            dueDate,
+            completed: false,
+            leadId,
+            ownerId: session.user.id,
+          },
+        });
+
+        await tx.leadCadenceActivity.create({
+          data: {
+            leadCadenceId: leadCadence.id,
+            cadenceStepId: step.id,
+            activityId: activity.id,
+            scheduledDate: dueDate,
+          },
+        });
+      }
+    }
+  });
+
+  revalidatePath("/leads");
+  revalidatePath("/activities");
+  revalidatePath("/activities/calendar");
+
+  return {
+    applied: eligibleLeadIds.length,
+    skipped: validated.leadIds.length - eligibleLeadIds.length,
+    total: validated.leadIds.length,
+  };
 }
 
 /**

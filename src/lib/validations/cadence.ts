@@ -108,6 +108,13 @@ export const applyLeadCadenceSchema = z.object({
   notes: z.string().max(500).optional().nullable(),
 });
 
+export const applyBulkLeadCadenceSchema = z.object({
+  leadIds: z.array(z.string().min(1)).min(1, "Selecione pelo menos um lead"),
+  cadenceId: z.string().min(1, "Cadência é obrigatória"),
+  startDate: z.date().optional(),
+  notes: z.string().max(500).optional().nullable(),
+});
+
 export const updateLeadCadenceSchema = z.object({
   status: leadCadenceStatusEnum.optional(),
   notes: z.string().max(500).optional().nullable(),
@@ -120,6 +127,7 @@ export type CadenceUpdateData = z.infer<typeof cadenceUpdateSchema>;
 export type CadenceStepFormData = z.infer<typeof cadenceStepSchema>;
 export type CadenceStepUpdateData = z.infer<typeof cadenceStepUpdateSchema>;
 export type ApplyLeadCadenceData = z.infer<typeof applyLeadCadenceSchema>;
+export type ApplyBulkLeadCadenceData = z.infer<typeof applyBulkLeadCadenceSchema>;
 export type UpdateLeadCadenceData = z.infer<typeof updateLeadCadenceSchema>;
 export type CadenceStatus = z.infer<typeof cadenceStatusEnum>;
 export type LeadCadenceStatus = z.infer<typeof leadCadenceStatusEnum>;

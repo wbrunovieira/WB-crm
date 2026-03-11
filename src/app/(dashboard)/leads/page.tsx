@@ -2,13 +2,11 @@ import { getLeads } from "@/actions/leads";
 import { getUsers } from "@/actions/users";
 import { getICPs } from "@/actions/icps";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
-import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
 import { LeadsFilters } from "@/components/leads/LeadsFilters";
-import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
-import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 import { AgentLeadGenerationButton } from "@/components/leads/AgentLeadGenerationButton";
 import { LeadResearchNotifications } from "@/components/leads/LeadResearchNotifications";
+import { LeadsTable } from "@/components/leads/LeadsTable";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
@@ -22,6 +20,7 @@ export default async function LeadsPage({
     quality?: string;
     owner?: string;
     icpId?: string;
+    hasCadence?: string;
   };
 }) {
   const session = await getServerSession(authOptions);
@@ -37,19 +36,6 @@ export default async function LeadsPage({
   // Get shared users for all leads (batch query)
   const leadIds = leads.map((lead) => lead.id);
   const sharedUsersMap = await getSharedUsersForEntities("lead", leadIds);
-
-  const statusLabels: Record<string, string> = {
-    new: "Novo",
-    contacted: "Contatado",
-    qualified: "Qualificado",
-    disqualified: "Desqualificado",
-  };
-
-  const qualityLabels: Record<string, string> = {
-    cold: "Frio",
-    warm: "Morno",
-    hot: "Quente",
-  };
 
   return (
     <div className="p-8">
@@ -87,7 +73,7 @@ export default async function LeadsPage({
         <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
           {leads.length} {leads.length === 1 ? "lead" : "leads"}
         </span>
-        {(searchParams.search || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner) && (
+        {(searchParams.search || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner || searchParams.hasCadence) && (
           <span className="text-sm text-gray-500">com os filtros aplicados</span>
         )}
       </div>
@@ -108,145 +94,11 @@ export default async function LeadsPage({
           </Link>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-lg bg-white shadow">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Empresa
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  ICP
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Localização
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Contatos
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Qualidade
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Status
-                </th>
-                <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
-                  Ações
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200 bg-white">
-              {leads.map((lead) => (
-                <tr key={lead.id} className="hover:bg-gray-50">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-2">
-                      <LeadNameCell
-                        id={lead.id}
-                        businessName={lead.businessName}
-                        registeredName={lead.registeredName}
-                      />
-                      {lead.owner && (
-                        <EntityAccessBadges
-                          owner={{ id: lead.owner.id, name: lead.owner.name }}
-                          sharedWith={sharedUsersMap[lead.id] || []}
-                          currentUserId={currentUserId}
-                          compact
-                        />
-                      )}
-                    </div>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    {lead.icps[0]?.icp ? (
-                      <span
-                        className="inline-flex rounded-full bg-purple-100 px-2 text-xs font-semibold leading-5 text-purple-800"
-                      >
-                        {lead.icps[0].icp.name}
-                      </span>
-                    ) : (
-                      <span className="text-sm text-gray-400">-</span>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {lead.city && lead.state
-                      ? `${lead.city}, ${lead.state}`
-                      : lead.city || lead.state || "-"}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {lead._count.leadContacts} contato(s)
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    {lead.quality && (
-                      <span
-                        className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                          lead.quality === "hot"
-                            ? "bg-red-100 text-red-800"
-                            : lead.quality === "warm"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : "bg-blue-100 text-blue-800"
-                        }`}
-                      >
-                        {qualityLabels[lead.quality]}
-                      </span>
-                    )}
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4">
-                    <span
-                      className={`inline-flex rounded-full px-2 text-xs font-semibold leading-5 ${
-                        lead.status === "qualified"
-                          ? "bg-green-100 text-green-800"
-                          : lead.status === "contacted"
-                            ? "bg-blue-100 text-blue-800"
-                            : lead.status === "disqualified"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-gray-100 text-gray-800"
-                      }`}
-                    >
-                      {statusLabels[lead.status]}
-                    </span>
-                  </td>
-                  <td className="whitespace-nowrap px-6 py-4 text-center text-sm">
-                    <div className="flex items-center justify-center gap-2">
-                      <Link
-                        href={`/leads/${lead.id}`}
-                        className="text-gray-600 hover:text-primary"
-                        title="Ver detalhes"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                          <path
-                            fillRule="evenodd"
-                            d="M.458 10C1.732 5.943 5.522 3 10 3s8.268 2.943 9.542 7c-1.274 4.057-5.064 7-9.542 7S1.732 14.057.458 10zM14 10a4 4 0 11-8 0 4 4 0 018 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                      </Link>
-                      <Link
-                        href={`/leads/${lead.id}/edit`}
-                        className="text-gray-600 hover:text-primary"
-                        title="Editar"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          className="h-5 w-5"
-                          viewBox="0 0 20 20"
-                          fill="currentColor"
-                        >
-                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                        </svg>
-                      </Link>
-                      <DeleteLeadIconButton leadId={lead.id} />
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        <LeadsTable
+          leads={leads}
+          sharedUsersMap={sharedUsersMap}
+          currentUserId={currentUserId}
+        />
       )}
     </div>
   );

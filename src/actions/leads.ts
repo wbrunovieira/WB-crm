@@ -22,6 +22,7 @@ export async function getLeads(filters?: {
   quality?: string;
   owner?: string;
   icpId?: string;
+  hasCadence?: string;
 }) {
   const ownerFilter = await getOwnerOrSharedFilter("lead", filters?.owner);
 
@@ -43,6 +44,12 @@ export async function getLeads(filters?: {
         icps: {
           some: { icpId: filters.icpId },
         },
+      }),
+      ...(filters?.hasCadence === "no" && {
+        leadCadences: { none: {} },
+      }),
+      ...(filters?.hasCadence === "yes" && {
+        leadCadences: { some: {} },
       }),
     },
     include: {
@@ -67,6 +74,7 @@ export async function getLeads(filters?: {
       _count: {
         select: {
           leadContacts: true,
+          leadCadences: true,
         },
       },
     },
