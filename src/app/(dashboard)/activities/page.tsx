@@ -10,6 +10,7 @@ import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
 import ToggleCompletedButton from "@/components/activities/ToggleCompletedButton";
 import DeleteActivityButton from "@/components/activities/DeleteActivityButton";
 import { ActivitiesSortSelect } from "@/components/activities/ActivitiesSortSelect";
+import { ActivitiesDateFilter } from "@/components/activities/ActivitiesDateFilter";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { OwnerBadge } from "@/components/shared/OwnerBadge";
 import { getServerSession } from "next-auth";
@@ -18,7 +19,7 @@ import { authOptions } from "@/lib/auth";
 export default async function ActivitiesPage({
   searchParams,
 }: {
-  searchParams: { type?: string; completed?: string; sortBy?: string; owner?: string };
+  searchParams: { type?: string; completed?: string; sortBy?: string; owner?: string; dateFrom?: string; dateTo?: string };
 }) {
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
@@ -31,6 +32,8 @@ export default async function ActivitiesPage({
     }),
     ...(searchParams.sortBy && { sortBy: searchParams.sortBy }),
     ...(searchParams.owner && { owner: searchParams.owner }),
+    ...(searchParams.dateFrom && { dateFrom: searchParams.dateFrom }),
+    ...(searchParams.dateTo && { dateTo: searchParams.dateTo }),
   };
 
   const activities = await getActivities(filters);
@@ -138,8 +141,9 @@ export default async function ActivitiesPage({
             ))}
           </div>
 
-          {/* Sort Selector */}
+          {/* Date Filter, Sort, Owner */}
           <div className="flex items-center gap-4">
+            <ActivitiesDateFilter />
             <ActivitiesSortSelect />
             {isAdmin && users.length > 0 && (
               <OwnerFilter users={users} currentUserId={currentUserId} />

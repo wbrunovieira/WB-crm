@@ -17,6 +17,8 @@ export async function getActivities(filters?: {
   leadId?: string;
   sortBy?: string;
   owner?: string;
+  dateFrom?: string;
+  dateTo?: string;
 }) {
   const ownerFilter = await getOwnerFilter(filters?.owner);
 
@@ -60,6 +62,12 @@ export async function getActivities(filters?: {
       ...(filters?.dealId && { dealId: filters.dealId }),
       ...(filters?.contactId && { contactId: filters.contactId }),
       ...(filters?.leadId && { leadId: filters.leadId }),
+      ...((filters?.dateFrom || filters?.dateTo) && {
+        dueDate: {
+          ...(filters?.dateFrom && { gte: new Date(filters.dateFrom) }),
+          ...(filters?.dateTo && { lte: new Date(`${filters.dateTo}T23:59:59.999Z`) }),
+        },
+      }),
     },
     include: {
       deal: {
