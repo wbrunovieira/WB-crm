@@ -11,6 +11,7 @@ import ToggleCompletedButton from "@/components/activities/ToggleCompletedButton
 import DeleteActivityButton from "@/components/activities/DeleteActivityButton";
 import { ActivitiesSortSelect } from "@/components/activities/ActivitiesSortSelect";
 import { ActivitiesDateFilter } from "@/components/activities/ActivitiesDateFilter";
+import { ShowArchivedToggle } from "@/components/activities/ShowArchivedToggle";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { OwnerBadge } from "@/components/shared/OwnerBadge";
 import { getServerSession } from "next-auth";
@@ -19,7 +20,7 @@ import { authOptions } from "@/lib/auth";
 export default async function ActivitiesPage({
   searchParams,
 }: {
-  searchParams: { type?: string; completed?: string; sortBy?: string; owner?: string; dateFrom?: string; dateTo?: string };
+  searchParams: { type?: string; completed?: string; sortBy?: string; owner?: string; dateFrom?: string; dateTo?: string; showArchived?: string };
 }) {
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
@@ -34,6 +35,7 @@ export default async function ActivitiesPage({
     ...(searchParams.owner && { owner: searchParams.owner }),
     ...(searchParams.dateFrom && { dateFrom: searchParams.dateFrom }),
     ...(searchParams.dateTo && { dateTo: searchParams.dateTo }),
+    ...(searchParams.showArchived === "true" && { includeArchivedLeads: true }),
   };
 
   const activities = await getActivities(filters);
@@ -143,6 +145,7 @@ export default async function ActivitiesPage({
 
           {/* Date Filter, Sort, Owner */}
           <div className="flex items-center gap-4">
+            <ShowArchivedToggle />
             <ActivitiesDateFilter />
             <ActivitiesSortSelect />
             {isAdmin && users.length > 0 && (
@@ -157,7 +160,7 @@ export default async function ActivitiesPage({
         <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
           {activities.length} {activities.length === 1 ? "atividade" : "atividades"}
         </span>
-        {(searchParams.type || searchParams.completed || searchParams.dateFrom || searchParams.dateTo || searchParams.owner) && (
+        {(searchParams.type || searchParams.completed || searchParams.dateFrom || searchParams.dateTo || searchParams.owner || searchParams.showArchived) && (
           <span className="text-sm text-gray-500">com os filtros aplicados</span>
         )}
       </div>

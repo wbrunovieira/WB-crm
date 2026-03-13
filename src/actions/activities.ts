@@ -19,6 +19,7 @@ export async function getActivities(filters?: {
   owner?: string;
   dateFrom?: string;
   dateTo?: string;
+  includeArchivedLeads?: boolean;
 }) {
   const ownerFilter = await getOwnerFilter(filters?.owner);
 
@@ -54,9 +55,19 @@ export async function getActivities(filters?: {
     orderByClause.push({ createdAt: "desc" });
   }
 
+  // By default, exclude activities linked to archived leads
+  const archivedLeadFilter = filters?.includeArchivedLeads
+    ? {}
+    : {
+        NOT: {
+          lead: { isArchived: true },
+        },
+      };
+
   const activities = await prisma.activity.findMany({
     where: {
       ...ownerFilter,
+      ...archivedLeadFilter,
       ...(filters?.type && { type: filters.type }),
       ...(filters?.completed !== undefined && { completed: filters.completed }),
       ...(filters?.dealId && { dealId: filters.dealId }),
@@ -104,6 +115,7 @@ export async function getActivities(filters?: {
         select: {
           id: true,
           businessName: true,
+          isArchived: true,
         },
       },
       partner: {
