@@ -1,6 +1,7 @@
 import { getLeadById } from "@/actions/leads";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
+import { ArchiveLeadButton } from "@/components/leads/ArchiveLeadButton";
 import { LeadContactsList } from "@/components/leads/LeadContactsList";
 import { LeadActivitiesList } from "@/components/leads/LeadActivitiesList";
 import { LeadProductsSection } from "@/components/leads/LeadProductsSection";
@@ -80,6 +81,11 @@ export default async function LeadDetailPage({
               >
                 {statusLabels[lead.status]}
               </span>
+              {lead.isArchived && (
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-800 border border-amber-200">
+                  Arquivado
+                </span>
+              )}
               {lead.labels && lead.labels.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {lead.labels.map((label) => (
@@ -102,18 +108,23 @@ export default async function LeadDetailPage({
           <div className="flex gap-3">
             {!lead.convertedAt && (
               <>
-                <Link
-                  href={`/leads/${lead.id}/edit`}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#792990] px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
-                >
-                  <span className="text-lg">✏️</span>
-                  Editar
-                </Link>
+                {!lead.isArchived && (
+                  <>
+                    <Link
+                      href={`/leads/${lead.id}/edit`}
+                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#792990] px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                    >
+                      <span className="text-lg">✏️</span>
+                      Editar
+                    </Link>
+                    <ConvertLeadButton
+                      leadId={lead.id}
+                      hasContacts={lead.leadContacts.length > 0}
+                    />
+                  </>
+                )}
+                <ArchiveLeadButton leadId={lead.id} isArchived={lead.isArchived} />
                 <DeleteLeadButton leadId={lead.id} />
-                <ConvertLeadButton
-                  leadId={lead.id}
-                  hasContacts={lead.leadContacts.length > 0}
-                />
               </>
             )}
             {lead.convertedAt && lead.convertedOrganization && (

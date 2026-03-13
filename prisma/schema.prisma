@@ -181,6 +181,7 @@ model Lead {
 
   // Status e Conversão
   status        String   @default("new") // new, contacted, qualified, disqualified
+  isArchived    Boolean  @default(false)
   convertedAt   DateTime?
   convertedToOrganizationId  String?  @unique // Lead vira 1 Organization
 

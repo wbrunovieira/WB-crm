@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Zap } from "lucide-react";
+import { Zap, Archive } from "lucide-react";
 import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
 import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
@@ -17,6 +17,7 @@ type Lead = {
   state: string | null;
   status: string;
   quality: string | null;
+  isArchived: boolean;
   owner: { id: string; name: string } | null;
   icps: { icp: { id: string; name: string } }[];
   _count: { leadContacts: number; leadCadences: number };
@@ -153,6 +154,12 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId }: LeadsTableP
                       businessName={lead.businessName}
                       registeredName={lead.registeredName}
                     />
+                    {lead.isArchived && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 text-xs font-semibold leading-5 text-amber-800">
+                        <Archive className="h-3 w-3" />
+                        Arquivado
+                      </span>
+                    )}
                     {lead.owner && (
                       <EntityAccessBadges
                         owner={{ id: lead.owner.id, name: lead.owner.name }}

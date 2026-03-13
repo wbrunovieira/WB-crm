@@ -46,12 +46,21 @@ export const mockLead: Lead = {
   category: 'Tecnologia',
   radius: 5000,
   status: 'qualified',
+  isArchived: false,
   convertedAt: null,
   convertedToOrganizationId: null,
   referredByPartnerId: null,
   ownerId: 'user-test-123',
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
+};
+
+export const mockArchivedLead: Lead = {
+  ...mockLead,
+  id: 'lead-archived-1',
+  businessName: 'Archived Company LTDA',
+  isArchived: true,
+  status: 'contacted',
 };
 
 export const mockLeadContact: LeadContact = {
@@ -96,6 +105,7 @@ export const mockConvertedLead: Lead = {
   ...mockLead,
   id: 'lead-converted-1',
   status: 'qualified',
+  isArchived: false,
   convertedAt: new Date('2024-02-01'),
   convertedToOrganizationId: 'org-test-1',
 };

@@ -100,6 +100,15 @@ export function LeadsFilters({ icps = [] }: LeadsFiltersProps) {
         <option value="no">Sem cadência</option>
         <option value="yes">Com cadência</option>
       </select>
+      <select
+        value={searchParams.get("archived")?.toString() || ""}
+        onChange={(e) => handleFilterChange("archived", e.target.value)}
+        className="rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+      >
+        <option value="">Ativos</option>
+        <option value="yes">Arquivados</option>
+        <option value="all">Todos</option>
+      </select>
     </div>
   );
 }

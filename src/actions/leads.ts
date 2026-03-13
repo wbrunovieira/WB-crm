@@ -23,12 +23,22 @@ export async function getLeads(filters?: {
   owner?: string;
   icpId?: string;
   hasCadence?: string;
+  archived?: string;
 }) {
   const ownerFilter = await getOwnerOrSharedFilter("lead", filters?.owner);
+
+  // Archive filter: default excludes archived, 'yes' = only archived, 'all' = no filter
+  const archiveFilter =
+    filters?.archived === "all"
+      ? {}
+      : filters?.archived === "yes"
+        ? { isArchived: true }
+        : { isArchived: false };
 
   const leads = await prisma.lead.findMany({
     where: {
       ...ownerFilter,
+      ...archiveFilter,
       ...(filters?.search && {
         OR: [
           { businessName: { contains: filters.search, mode: "insensitive" as const } },
@@ -257,6 +267,66 @@ export async function deleteLead(id: string) {
   await prisma.lead.delete({ where: { id } });
 
   revalidatePath("/leads");
+}
+
+// ============ LEAD ARCHIVE ============
+
+export async function archiveLead(id: string) {
+  await getAuthenticatedSession();
+
+  const ownerFilter = await getOwnerOrSharedFilter("lead");
+
+  const lead = await prisma.lead.findFirst({
+    where: { id, ...ownerFilter },
+  });
+
+  if (!lead) {
+    throw new Error("Lead não encontrado");
+  }
+
+  if (lead.convertedAt) {
+    throw new Error("Lead já foi convertido");
+  }
+
+  if (lead.isArchived) {
+    throw new Error("Lead já está arquivado");
+  }
+
+  const updated = await prisma.lead.update({
+    where: { id },
+    data: { isArchived: true },
+  });
+
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${id}`);
+  return updated;
+}
+
+export async function unarchiveLead(id: string) {
+  await getAuthenticatedSession();
+
+  const ownerFilter = await getOwnerOrSharedFilter("lead");
+
+  const lead = await prisma.lead.findFirst({
+    where: { id, ...ownerFilter },
+  });
+
+  if (!lead) {
+    throw new Error("Lead não encontrado");
+  }
+
+  if (!lead.isArchived) {
+    throw new Error("Lead não está arquivado");
+  }
+
+  const updated = await prisma.lead.update({
+    where: { id },
+    data: { isArchived: false },
+  });
+
+  revalidatePath("/leads");
+  revalidatePath(`/leads/${id}`);
+  return updated;
 }
 
 // ============ LEAD CONTACT CRUD ============

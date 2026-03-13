@@ -293,16 +293,15 @@ describe('Leads - getLeads', () => {
 
       await getLeads({ search: 'tech' });
 
-      expect(prismaMock.lead.findMany).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            OR: expect.arrayContaining([
-              { businessName: { contains: 'tech' } },
-              { registeredName: { contains: 'tech' } },
-              { email: { contains: 'tech' } },
-            ]),
-          }),
-        })
+      const call = prismaMock.lead.findMany.mock.calls[0][0];
+      expect(call?.where?.OR).toEqual(
+        expect.arrayContaining([
+          { businessName: { contains: 'tech', mode: 'insensitive' } },
+          { registeredName: { contains: 'tech', mode: 'insensitive' } },
+          { email: { contains: 'tech', mode: 'insensitive' } },
+          { city: { contains: 'tech', mode: 'insensitive' } },
+          { description: { contains: 'tech', mode: 'insensitive' } },
+        ])
       );
     });
   });

@@ -202,6 +202,7 @@ export function createMockLead(ownerId: string, overrides: Partial<{
     facebook: null,
     twitter: null,
     tiktok: null,
+    isArchived: false,
     convertedAt: overrides.convertedAt ?? null,
     convertedToOrganizationId: overrides.convertedToOrganizationId ?? null,
     referredByPartnerId: null,
