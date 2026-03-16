@@ -6,7 +6,7 @@ import { deleteLeadContact } from "@/actions/leads";
 import { useRouter } from "next/navigation";
 import { AddLeadContactModal } from "./AddLeadContactModal";
 import { updateLeadContact } from "@/actions/leads";
-import { Eye, Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase, Copy, Check } from "lucide-react";
+import { Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase, Copy, Check } from "lucide-react";
 
 type LeadContact = {
   id: string;
