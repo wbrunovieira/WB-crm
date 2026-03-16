@@ -621,7 +621,16 @@ export default async function LeadDetailPage({
 
       {/* Lead Activities */}
       <div className="mt-6 mb-8">
-        <LeadActivitiesList leadId={lead.id} activities={lead.activities} />
+        <LeadActivitiesList
+          leadId={lead.id}
+          activities={lead.activities}
+          leadContacts={lead.leadContacts.map((c) => ({
+            id: c.id,
+            name: c.name,
+            role: c.role,
+            isPrimary: c.isPrimary,
+          }))}
+        />
       </div>
     </div>
   );

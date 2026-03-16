@@ -397,6 +397,71 @@ export async function toggleActivityCompleted(id: string) {
   return updatedActivity;
 }
 
+// ============ ACTIVITY LEAD CONTACTS ============
+
+export async function assignLeadContactsToActivity(
+  activityId: string,
+  leadContactIds: string[]
+) {
+  await getAuthenticatedSession();
+
+  const activity = await prisma.activity.findUnique({
+    where: { id: activityId },
+  });
+
+  if (!activity || !(await canAccessRecord(activity.ownerId))) {
+    throw new Error("Atividade não encontrada");
+  }
+
+  if (!activity.leadId) {
+    throw new Error("Atividade não está vinculada a um lead");
+  }
+
+  // Verify all lead contacts belong to this lead
+  const validContacts = await prisma.leadContact.findMany({
+    where: {
+      id: { in: leadContactIds },
+      leadId: activity.leadId,
+    },
+  });
+
+  if (validContacts.length !== leadContactIds.length) {
+    throw new Error("Contatos inválidos para este lead");
+  }
+
+  const updated = await prisma.activity.update({
+    where: { id: activityId },
+    data: { leadContactIds: JSON.stringify(leadContactIds) },
+  });
+
+  revalidatePath(`/leads/${activity.leadId}`);
+  revalidatePath("/activities");
+  return updated;
+}
+
+export async function removeLeadContactsFromActivity(activityId: string) {
+  await getAuthenticatedSession();
+
+  const activity = await prisma.activity.findUnique({
+    where: { id: activityId },
+  });
+
+  if (!activity || !(await canAccessRecord(activity.ownerId))) {
+    throw new Error("Atividade não encontrada");
+  }
+
+  const updated = await prisma.activity.update({
+    where: { id: activityId },
+    data: { leadContactIds: null },
+  });
+
+  if (activity.leadId) {
+    revalidatePath(`/leads/${activity.leadId}`);
+  }
+  revalidatePath("/activities");
+  return updated;
+}
+
 export async function updateActivityDueDate(id: string, newDate: Date) {
   await getAuthenticatedSession();
 

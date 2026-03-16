@@ -3,9 +3,17 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Loader2 } from "lucide-react";
+import { Check, Loader2, UserPlus, Users, X } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { toggleActivityCompleted } from "@/actions/activities";
+import { toggleActivityCompleted, assignLeadContactsToActivity, removeLeadContactsFromActivity } from "@/actions/activities";
+import { toast } from "sonner";
+
+type LeadContact = {
+  id: string;
+  name: string;
+  role: string | null;
+  isPrimary: boolean;
+};
 
 type Activity = {
   id: string;
@@ -14,17 +22,75 @@ type Activity = {
   description: string | null;
   dueDate: Date | null;
   completed: boolean;
+  leadContactIds: string | null;
 };
 
 export function LeadActivitiesList({
   leadId,
   activities,
+  leadContacts = [],
 }: {
   leadId: string;
   activities: Activity[];
+  leadContacts?: LeadContact[];
 }) {
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [assigningActivity, setAssigningActivity] = useState<Activity | null>(null);
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+  const [savingContacts, setSavingContacts] = useState(false);
+
+  const openAssignModal = (e: React.MouseEvent, activity: Activity) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const existing = activity.leadContactIds ? JSON.parse(activity.leadContactIds) as string[] : [];
+    setSelectedContactIds(new Set(existing));
+    setAssigningActivity(activity);
+  };
+
+  const handleSaveContacts = async () => {
+    if (!assigningActivity) return;
+    setSavingContacts(true);
+    try {
+      if (selectedContactIds.size === 0) {
+        await removeLeadContactsFromActivity(assigningActivity.id);
+      } else {
+        await assignLeadContactsToActivity(assigningActivity.id, Array.from(selectedContactIds));
+      }
+      toast.success("Contatos atualizados");
+      setAssigningActivity(null);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar contatos");
+    } finally {
+      setSavingContacts(false);
+    }
+  };
+
+  const toggleContact = (contactId: string) => {
+    setSelectedContactIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(contactId)) {
+        next.delete(contactId);
+      } else {
+        next.add(contactId);
+      }
+      return next;
+    });
+  };
+
+  const getContactNames = (leadContactIdsJson: string | null): string[] => {
+    if (!leadContactIdsJson) return [];
+    try {
+      const ids = JSON.parse(leadContactIdsJson) as string[];
+      return ids.map((id) => {
+        const contact = leadContacts.find((c) => c.id === id);
+        return contact?.name ?? "Desconhecido";
+      });
+    } catch {
+      return [];
+    }
+  };
 
   const typeConfig: Record<string, { label: string; bg: string; text: string; hoverBg: string; hoverText: string }> = {
     call: { label: "Ligação", bg: "bg-blue-100", text: "text-blue-800", hoverBg: "group-hover:bg-blue-200", hoverText: "group-hover:text-blue-900" },
@@ -125,12 +191,41 @@ export function LeadActivitiesList({
                       {activity.description}
                     </p>
                   )}
+                  {/* Assigned contacts */}
+                  {(() => {
+                    const names = getContactNames(activity.leadContactIds);
+                    return names.length > 0 ? (
+                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                        <Users className="h-3.5 w-3.5 text-purple-500 flex-shrink-0" />
+                        {names.map((name, i) => (
+                          <span key={i} className="rounded-md bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                            {name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null;
+                  })()}
                   {activity.dueDate && (
                     <p className="mt-2 text-xs text-gray-500 group-hover:text-gray-600">
                       Vencimento: {formatDate(activity.dueDate)}
                     </p>
                   )}
                 </Link>
+
+                {/* Assign contacts button */}
+                {leadContacts.length > 0 && (
+                  <button
+                    onClick={(e) => openAssignModal(e, activity)}
+                    className={`mt-0.5 flex-shrink-0 rounded-lg p-2 transition-colors ${
+                      activity.leadContactIds
+                        ? "text-purple-500 hover:bg-purple-100 hover:text-purple-700"
+                        : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                    }`}
+                    title="Associar contatos"
+                  >
+                    <UserPlus className="h-4 w-4" />
+                  </button>
+                )}
 
                 {/* Arrow */}
                 <Link href={`/activities/${activity.id}`} className="flex-shrink-0">
@@ -151,6 +246,83 @@ export function LeadActivitiesList({
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Assign Contacts Modal */}
+      {assigningActivity && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setAssigningActivity(null)}>
+          <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b bg-gradient-to-r from-purple-600 to-purple-800 p-4 text-white rounded-t-xl">
+              <h2 className="flex items-center gap-2 text-base font-bold">
+                <UserPlus className="h-5 w-5" />
+                Associar Contatos
+              </h2>
+              <button onClick={() => setAssigningActivity(null)} className="rounded-lg p-1.5 hover:bg-white/20">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <p className="mb-3 text-sm text-gray-600 truncate">
+                {assigningActivity.subject}
+              </p>
+
+              <div className="space-y-2">
+                {leadContacts.map((contact) => (
+                  <label
+                    key={contact.id}
+                    className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
+                      selectedContactIds.has(contact.id)
+                        ? "border-purple-300 bg-purple-50"
+                        : "border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedContactIds.has(contact.id)}
+                      onChange={() => toggleContact(contact.id)}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-gray-900">{contact.name}</p>
+                      {contact.role && (
+                        <p className="text-xs text-gray-500">{contact.role}</p>
+                      )}
+                    </div>
+                    {contact.isPrimary && (
+                      <span className="rounded bg-purple-600 px-1.5 py-0.5 text-[10px] font-medium text-white">
+                        Principal
+                      </span>
+                    )}
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3 border-t bg-gray-50 px-4 py-3 rounded-b-xl">
+              <button
+                onClick={() => setAssigningActivity(null)}
+                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSaveContacts}
+                disabled={savingContacts}
+                className="flex-1 rounded-lg bg-purple-600 px-3 py-2 text-sm font-bold text-white hover:bg-purple-700 disabled:opacity-50"
+              >
+                {savingContacts ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Salvando...
+                  </span>
+                ) : (
+                  "Salvar"
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>
