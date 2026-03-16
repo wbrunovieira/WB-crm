@@ -6,7 +6,7 @@ import { deleteLeadContact } from "@/actions/leads";
 import { useRouter } from "next/navigation";
 import { AddLeadContactModal } from "./AddLeadContactModal";
 import { updateLeadContact } from "@/actions/leads";
-import { Eye, Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase } from "lucide-react";
+import { Eye, Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase, Copy, Check } from "lucide-react";
 
 type LeadContact = {
   id: string;
@@ -20,6 +20,29 @@ type LeadContact = {
   isPrimary: boolean;
 };
 
+function CopyButton({ value }: { value: string }) {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    e.preventDefault();
+    await navigator.clipboard.writeText(value);
+    setCopied(true);
+    toast.success("Copiado!");
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="rounded-md p-1.5 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors"
+      title="Copiar"
+    >
+      {copied ? <Check className="h-4 w-4 text-green-500" /> : <Copy className="h-4 w-4" />}
+    </button>
+  );
+}
+
 function ContactDetailModal({
   contact,
   isOpen,
@@ -32,8 +55,8 @@ function ContactDetailModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md rounded-xl bg-white shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div className="w-full max-w-md rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between border-b bg-gradient-to-r from-purple-600 to-purple-800 p-4 text-white rounded-t-xl">
           <h2 className="flex items-center gap-2 text-lg font-bold">
@@ -55,10 +78,20 @@ function ContactDetailModal({
             <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100">
               <User className="h-8 w-8 text-purple-600" />
             </div>
-            <h3 className="text-xl font-bold text-gray-900">{contact.name}</h3>
+            <div className="flex items-center justify-center gap-2">
+              <h3 className="text-xl font-bold text-gray-900">{contact.name}</h3>
+              <CopyButton value={contact.name} />
+            </div>
             <p className="mt-1 flex items-center justify-center gap-1 text-sm text-gray-600">
               <Briefcase className="h-4 w-4" />
-              {contact.role || <span className="text-gray-400 italic">Cargo não informado</span>}
+              {contact.role ? (
+                <span className="flex items-center gap-1">
+                  {contact.role}
+                  <CopyButton value={contact.role} />
+                </span>
+              ) : (
+                <span className="text-gray-400 italic">Cargo não informado</span>
+              )}
             </p>
             {contact.isPrimary && (
               <span className="mt-2 inline-flex rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-800">
@@ -71,27 +104,28 @@ function ContactDetailModal({
           <div className="space-y-3">
             {/* Email */}
             <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
                 <Mail className="h-5 w-5 text-blue-600" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Email</p>
                 {contact.email ? (
-                  <a href={`mailto:${contact.email}`} className="text-sm font-medium text-gray-900 hover:text-purple-600">
+                  <a href={`mailto:${contact.email}`} className="text-sm font-medium text-gray-900 hover:text-purple-600 break-all">
                     {contact.email}
                   </a>
                 ) : (
                   <span className="text-sm text-gray-400 italic">Não informado</span>
                 )}
               </div>
+              {contact.email && <CopyButton value={contact.email} />}
             </div>
 
             {/* Phone */}
             <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
                 <Phone className="h-5 w-5 text-green-600" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Telefone</p>
                 {contact.phone ? (
                   <a href={`tel:${contact.phone}`} className="text-sm font-medium text-gray-900 hover:text-purple-600">
@@ -101,14 +135,15 @@ function ContactDetailModal({
                   <span className="text-sm text-gray-400 italic">Não informado</span>
                 )}
               </div>
+              {contact.phone && <CopyButton value={contact.phone} />}
             </div>
 
             {/* WhatsApp */}
             <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
                 <MessageCircle className="h-5 w-5 text-green-600" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">WhatsApp</p>
                 {contact.whatsapp ? (
                   <a
@@ -123,14 +158,15 @@ function ContactDetailModal({
                   <span className="text-sm text-gray-400 italic">Não informado</span>
                 )}
               </div>
+              {contact.whatsapp && <CopyButton value={contact.whatsapp} />}
             </div>
 
             {/* LinkedIn */}
             <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
                 <Linkedin className="h-5 w-5 text-blue-700" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">LinkedIn</p>
                 {contact.linkedin ? (
                   <a
@@ -145,14 +181,15 @@ function ContactDetailModal({
                   <span className="text-sm text-gray-400 italic">Não informado</span>
                 )}
               </div>
+              {contact.linkedin && <CopyButton value={contact.linkedin} />}
             </div>
 
             {/* Instagram */}
             <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-pink-100">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-100">
                 <Instagram className="h-5 w-5 text-pink-600" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Instagram</p>
                 {contact.instagram ? (
                   <a
@@ -167,6 +204,7 @@ function ContactDetailModal({
                   <span className="text-sm text-gray-400 italic">Não informado</span>
                 )}
               </div>
+              {contact.instagram && <CopyButton value={contact.instagram} />}
             </div>
           </div>
         </div>
@@ -452,7 +490,8 @@ export function LeadContactsList({
           {leadContacts.map((contact) => (
             <div
               key={contact.id}
-              className="flex items-start justify-between rounded-lg border border-gray-200 p-4 hover:border-purple-200 hover:bg-purple-50/30 transition-colors"
+              onClick={() => setViewingContact(contact)}
+              className="flex items-start justify-between rounded-lg border border-gray-200 p-4 hover:border-purple-200 hover:bg-purple-50/30 transition-colors cursor-pointer"
             >
               <div className="flex-1">
                 <div className="flex items-center gap-2">
@@ -494,14 +533,7 @@ export function LeadContactsList({
                   )}
                 </div>
               </div>
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => setViewingContact(contact)}
-                  className="rounded-lg p-2 text-gray-500 hover:bg-purple-100 hover:text-purple-600 transition-colors"
-                  title="Ver detalhes"
-                >
-                  <Eye className="h-5 w-5" />
-                </button>
+              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 {!isConverted && (
                   <button
                     onClick={() => setEditingContact(contact)}
