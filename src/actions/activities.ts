@@ -20,6 +20,7 @@ export async function getActivities(filters?: {
   dateFrom?: string;
   dateTo?: string;
   includeArchivedLeads?: boolean;
+  outcome?: string;
 }) {
   const ownerFilter = await getOwnerFilter(filters?.owner);
 
@@ -44,12 +45,16 @@ export async function getActivities(filters?: {
         orderByClause.push({ subject: "asc" });
         break;
       default:
+        orderByClause.push({ failedAt: { sort: "asc", nulls: "first" } });
+        orderByClause.push({ skippedAt: { sort: "asc", nulls: "first" } });
         orderByClause.push({ completed: "asc" });
         orderByClause.push({ dueDate: { sort: "asc", nulls: "last" } });
         orderByClause.push({ createdAt: "desc" });
     }
   } else {
-    // Default ordering
+    // Default ordering: pending first, then completed, then failed/skipped at bottom
+    orderByClause.push({ failedAt: { sort: "asc", nulls: "first" } });
+    orderByClause.push({ skippedAt: { sort: "asc", nulls: "first" } });
     orderByClause.push({ completed: "asc" });
     orderByClause.push({ dueDate: { sort: "asc", nulls: "last" } });
     orderByClause.push({ createdAt: "desc" });
@@ -73,6 +78,8 @@ export async function getActivities(filters?: {
       ...(filters?.dealId && { dealId: filters.dealId }),
       ...(filters?.contactId && { contactId: filters.contactId }),
       ...(filters?.leadId && { leadId: filters.leadId }),
+      ...(filters?.outcome === "failed" && { failedAt: { not: null } }),
+      ...(filters?.outcome === "skipped" && { skippedAt: { not: null } }),
       ...((filters?.dateFrom || filters?.dateTo) && {
         dueDate: {
           ...(filters?.dateFrom && { gte: new Date(filters.dateFrom) }),

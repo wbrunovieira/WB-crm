@@ -20,7 +20,7 @@ import { authOptions } from "@/lib/auth";
 export default async function ActivitiesPage({
   searchParams,
 }: {
-  searchParams: { type?: string; completed?: string; sortBy?: string; owner?: string; dateFrom?: string; dateTo?: string; showArchived?: string };
+  searchParams: { type?: string; completed?: string; sortBy?: string; owner?: string; dateFrom?: string; dateTo?: string; showArchived?: string; outcome?: string };
 }) {
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
@@ -36,6 +36,7 @@ export default async function ActivitiesPage({
     ...(searchParams.dateFrom && { dateFrom: searchParams.dateFrom }),
     ...(searchParams.dateTo && { dateTo: searchParams.dateTo }),
     ...(searchParams.showArchived === "true" && { includeArchivedLeads: true }),
+    ...(searchParams.outcome && { outcome: searchParams.outcome }),
   };
 
   const activities = await getActivities(filters);
@@ -87,7 +88,7 @@ export default async function ActivitiesPage({
           <Link
             href="/activities"
             className={`rounded-md px-4 py-2 text-sm font-medium ${
-              !searchParams.type && !searchParams.completed
+              !searchParams.type && !searchParams.completed && !searchParams.outcome
                 ? "bg-primary text-white"
                 : "bg-white text-gray-700 hover:bg-gray-50"
             }`}
@@ -113,6 +114,26 @@ export default async function ActivitiesPage({
             }`}
           >
             Concluídas
+          </Link>
+          <Link
+            href="/activities?outcome=failed"
+            className={`rounded-md px-4 py-2 text-sm font-medium ${
+              searchParams.outcome === "failed"
+                ? "bg-red-600 text-white"
+                : "bg-white text-red-600 border border-red-200 hover:bg-red-50"
+            }`}
+          >
+            Falhadas
+          </Link>
+          <Link
+            href="/activities?outcome=skipped"
+            className={`rounded-md px-4 py-2 text-sm font-medium ${
+              searchParams.outcome === "skipped"
+                ? "bg-amber-600 text-white"
+                : "bg-white text-amber-600 border border-amber-200 hover:bg-amber-50"
+            }`}
+          >
+            Puladas
           </Link>
         </div>
 
@@ -160,7 +181,7 @@ export default async function ActivitiesPage({
         <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
           {activities.length} {activities.length === 1 ? "atividade" : "atividades"}
         </span>
-        {(searchParams.type || searchParams.completed || searchParams.dateFrom || searchParams.dateTo || searchParams.owner || searchParams.showArchived) && (
+        {(searchParams.type || searchParams.completed || searchParams.dateFrom || searchParams.dateTo || searchParams.owner || searchParams.showArchived || searchParams.outcome) && (
           <span className="text-sm text-gray-500">com os filtros aplicados</span>
         )}
       </div>
@@ -169,7 +190,9 @@ export default async function ActivitiesPage({
         {activities.map((activity) => (
           <div
             key={activity.id}
-            className="rounded-lg bg-white p-6 shadow-sm transition-all hover:shadow-md"
+            className={`rounded-lg bg-white p-6 shadow-sm transition-all hover:shadow-md ${
+              activity.failedAt ? "border-l-4 border-red-400" : activity.skippedAt ? "border-l-4 border-amber-400" : ""
+            }`}
           >
             <div className="flex items-start gap-6">
               {/* Date Badge on Left */}
@@ -231,11 +254,32 @@ export default async function ActivitiesPage({
                         Concluída
                       </span>
                     )}
+                    {activity.failedAt && (
+                      <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-semibold text-red-800">
+                        Falhou
+                      </span>
+                    )}
+                    {activity.skippedAt && (
+                      <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
+                        Pulada
+                      </span>
+                    )}
                   </div>
 
                   {activity.description && (
                     <p className="mt-2 text-sm text-gray-600">
                       {activity.description}
+                    </p>
+                  )}
+
+                  {activity.failReason && (
+                    <p className="mt-1 text-sm text-red-600">
+                      Motivo: {activity.failReason}
+                    </p>
+                  )}
+                  {activity.skipReason && (
+                    <p className="mt-1 text-sm text-amber-600">
+                      Motivo: {activity.skipReason}
                     </p>
                   )}
 
