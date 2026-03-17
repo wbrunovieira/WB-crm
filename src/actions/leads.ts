@@ -115,8 +115,10 @@ export async function getLeadById(id: string) {
       },
       activities: {
         orderBy: [
+          { failedAt: { sort: "asc", nulls: "first" } },
+          { skippedAt: { sort: "asc", nulls: "first" } },
           { completed: "asc" },
-          { dueDate: "asc" },
+          { dueDate: { sort: "asc", nulls: "last" } },
           { createdAt: "desc" },
         ],
       },
