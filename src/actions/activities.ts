@@ -485,3 +485,111 @@ export async function updateActivityDueDate(id: string, newDate: Date) {
 
   return updatedActivity;
 }
+
+// ============ ACTIVITY OUTCOMES (Failed / Skipped) ============
+
+export async function markActivityFailed(id: string, reason: string) {
+  await getAuthenticatedSession();
+
+  if (!reason?.trim()) {
+    throw new Error("Informe o motivo da falha");
+  }
+
+  const activity = await prisma.activity.findUnique({ where: { id } });
+  if (!activity || !(await canAccessRecord(activity.ownerId))) {
+    throw new Error("Atividade não encontrada");
+  }
+
+  if (activity.completed) {
+    throw new Error("Atividade já está concluída");
+  }
+  if (activity.skippedAt) {
+    throw new Error("Atividade já foi pulada");
+  }
+  if (activity.failedAt) {
+    throw new Error("Atividade já foi marcada como falha");
+  }
+
+  const updated = await prisma.activity.update({
+    where: { id },
+    data: {
+      failedAt: new Date(),
+      failReason: reason.trim(),
+    },
+  });
+
+  revalidatePath("/activities");
+  if (activity.leadId) revalidatePath(`/leads/${activity.leadId}`);
+  if (activity.dealId) revalidatePath(`/deals/${activity.dealId}`);
+  if (activity.contactId) revalidatePath(`/contacts/${activity.contactId}`);
+  if (activity.partnerId) revalidatePath(`/partners/${activity.partnerId}`);
+
+  return updated;
+}
+
+export async function markActivitySkipped(id: string, reason: string) {
+  await getAuthenticatedSession();
+
+  if (!reason?.trim()) {
+    throw new Error("Informe o motivo para pular a atividade");
+  }
+
+  const activity = await prisma.activity.findUnique({ where: { id } });
+  if (!activity || !(await canAccessRecord(activity.ownerId))) {
+    throw new Error("Atividade não encontrada");
+  }
+
+  if (activity.completed) {
+    throw new Error("Atividade já está concluída");
+  }
+  if (activity.skippedAt) {
+    throw new Error("Atividade já foi pulada");
+  }
+
+  const updated = await prisma.activity.update({
+    where: { id },
+    data: {
+      skippedAt: new Date(),
+      skipReason: reason.trim(),
+    },
+  });
+
+  revalidatePath("/activities");
+  if (activity.leadId) revalidatePath(`/leads/${activity.leadId}`);
+  if (activity.dealId) revalidatePath(`/deals/${activity.dealId}`);
+  if (activity.contactId) revalidatePath(`/contacts/${activity.contactId}`);
+  if (activity.partnerId) revalidatePath(`/partners/${activity.partnerId}`);
+
+  return updated;
+}
+
+export async function revertActivityOutcome(id: string) {
+  await getAuthenticatedSession();
+
+  const activity = await prisma.activity.findUnique({ where: { id } });
+  if (!activity || !(await canAccessRecord(activity.ownerId))) {
+    throw new Error("Atividade não encontrada");
+  }
+
+  if (!activity.failedAt && !activity.skippedAt) {
+    throw new Error("Atividade não está marcada como falha ou pulada");
+  }
+
+  const updated = await prisma.activity.update({
+    where: { id },
+    data: {
+      failedAt: null,
+      failReason: null,
+      skippedAt: null,
+      skipReason: null,
+    },
+  });
+
+  revalidatePath("/activities");
+  if (activity.leadId) revalidatePath(`/leads/${activity.leadId}`);
+  if (activity.dealId) revalidatePath(`/deals/${activity.dealId}`);
+  if (activity.contactId) revalidatePath(`/contacts/${activity.contactId}`);
+  if (activity.partnerId) revalidatePath(`/partners/${activity.partnerId}`);
+
+  return updated;
+}

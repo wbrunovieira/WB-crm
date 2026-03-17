@@ -521,6 +521,13 @@ model Activity {
   description String?
   dueDate     DateTime?
   completed   Boolean   @default(false)
+
+  // Outcome tracking: failed or skipped
+  failedAt    DateTime?
+  failReason  String?
+  skippedAt   DateTime?
+  skipReason  String?
+
   dealId      String?
   contactId       String?   // Primary contact (for backwards compatibility)
   contactIds      String?   // JSON array of contact IDs for multiple contacts

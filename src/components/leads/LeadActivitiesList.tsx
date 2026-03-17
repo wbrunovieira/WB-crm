@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Check, Loader2, UserPlus, Users, X } from "lucide-react";
+import { AlertTriangle, Check, Loader2, RotateCcw, SkipForward, UserPlus, Users, X, XCircle } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { toggleActivityCompleted, assignLeadContactsToActivity, removeLeadContactsFromActivity } from "@/actions/activities";
+import { toggleActivityCompleted, assignLeadContactsToActivity, removeLeadContactsFromActivity, markActivityFailed, markActivitySkipped, revertActivityOutcome } from "@/actions/activities";
 import { toast } from "sonner";
 
 type LeadContact = {
@@ -22,6 +22,10 @@ type Activity = {
   description: string | null;
   dueDate: Date | null;
   completed: boolean;
+  failedAt: Date | null;
+  failReason: string | null;
+  skippedAt: Date | null;
+  skipReason: string | null;
   leadContactIds: string | null;
 };
 
@@ -39,6 +43,9 @@ export function LeadActivitiesList({
   const [assigningActivity, setAssigningActivity] = useState<Activity | null>(null);
   const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
   const [savingContacts, setSavingContacts] = useState(false);
+  const [outcomeModal, setOutcomeModal] = useState<{ activity: Activity; type: "failed" | "skipped" } | null>(null);
+  const [outcomeReason, setOutcomeReason] = useState("");
+  const [outcomeLoading, setOutcomeLoading] = useState(false);
 
   const openAssignModal = (e: React.MouseEvent, activity: Activity) => {
     e.preventDefault();
@@ -117,6 +124,50 @@ export function LeadActivitiesList({
     }
   };
 
+  const openOutcomeModal = (e: React.MouseEvent, activity: Activity, type: "failed" | "skipped") => {
+    e.preventDefault();
+    e.stopPropagation();
+    setOutcomeReason("");
+    setOutcomeModal({ activity, type });
+  };
+
+  const handleSubmitOutcome = async () => {
+    if (!outcomeModal || !outcomeReason.trim()) return;
+    setOutcomeLoading(true);
+    try {
+      if (outcomeModal.type === "failed") {
+        await markActivityFailed(outcomeModal.activity.id, outcomeReason);
+        toast.success("Atividade marcada como falha");
+      } else {
+        await markActivitySkipped(outcomeModal.activity.id, outcomeReason);
+        toast.success("Atividade pulada");
+      }
+      setOutcomeModal(null);
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao atualizar atividade");
+    } finally {
+      setOutcomeLoading(false);
+    }
+  };
+
+  const handleRevert = async (e: React.MouseEvent, activityId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setLoadingId(activityId);
+    try {
+      await revertActivityOutcome(activityId);
+      toast.success("Atividade voltou para pendente");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao reverter");
+    } finally {
+      setLoadingId(null);
+    }
+  };
+
+  const isPending = (a: Activity) => !a.completed && !a.failedAt && !a.skippedAt;
+
   return (
     <div className="rounded-xl bg-white p-6 shadow-md">
       <div className="mb-5 flex items-center justify-between pb-3 border-b-2 border-gray-100">
@@ -147,33 +198,56 @@ export function LeadActivitiesList({
           {activities.map((activity) => (
             <div
               key={activity.id}
-              className="group rounded-lg border border-gray-200 p-4 transition-all duration-200 hover:border-purple-300 hover:shadow-md"
+              className={`group rounded-lg border p-4 transition-all duration-200 ${
+                activity.failedAt
+                  ? "border-red-200 bg-red-50/50"
+                  : activity.skippedAt
+                    ? "border-amber-200 bg-amber-50/50"
+                    : "border-gray-200 hover:border-purple-300 hover:shadow-md"
+              }`}
             >
               <div className="flex items-start gap-3">
                 {/* Toggle button */}
-                <button
-                  onClick={(e) => handleToggle(e, activity.id)}
-                  disabled={loadingId === activity.id}
-                  className={`mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all ${
-                    activity.completed
-                      ? "border-green-500 bg-green-500 text-white"
-                      : "border-gray-300 bg-white hover:border-primary hover:bg-primary/10"
-                  } disabled:opacity-50`}
-                  title={activity.completed ? "Marcar como pendente" : "Marcar como concluída"}
-                >
-                  {loadingId === activity.id ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : activity.completed ? (
-                    <Check className="h-3.5 w-3.5" />
-                  ) : null}
-                </button>
+                {isPending(activity) ? (
+                  <button
+                    onClick={(e) => handleToggle(e, activity.id)}
+                    disabled={loadingId === activity.id}
+                    className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 bg-white hover:border-primary hover:bg-primary/10 transition-all disabled:opacity-50"
+                    title="Marcar como concluída"
+                  >
+                    {loadingId === activity.id && (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    )}
+                  </button>
+                ) : activity.completed ? (
+                  <button
+                    onClick={(e) => handleToggle(e, activity.id)}
+                    disabled={loadingId === activity.id}
+                    className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-green-500 bg-green-500 text-white transition-all disabled:opacity-50"
+                    title="Marcar como pendente"
+                  >
+                    {loadingId === activity.id ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Check className="h-3.5 w-3.5" />
+                    )}
+                  </button>
+                ) : activity.failedAt ? (
+                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-red-400 bg-red-100">
+                    <XCircle className="h-3.5 w-3.5 text-red-600" />
+                  </div>
+                ) : (
+                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-amber-400 bg-amber-100">
+                    <SkipForward className="h-3.5 w-3.5 text-amber-600" />
+                  </div>
+                )}
 
                 {/* Content - clickable link */}
                 <Link
                   href={`/activities/${activity.id}`}
                   className="flex-1 min-w-0"
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${typeConfig[activity.type]?.bg ?? "bg-gray-100"} ${typeConfig[activity.type]?.text ?? "text-gray-800"}`}>
                       {typeConfig[activity.type]?.label ?? activity.type}
                     </span>
@@ -182,13 +256,42 @@ export function LeadActivitiesList({
                         Concluída
                       </span>
                     )}
+                    {activity.failedAt && (
+                      <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                        Falhou
+                      </span>
+                    )}
+                    {activity.skippedAt && (
+                      <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                        Pulada
+                      </span>
+                    )}
                   </div>
-                  <h3 className={`mt-2 font-medium group-hover:text-purple-800 ${activity.completed ? "text-gray-500 line-through" : "text-gray-900"}`}>
+                  <h3 className={`mt-2 font-medium group-hover:text-purple-800 ${
+                    activity.completed
+                      ? "text-gray-500 line-through"
+                      : activity.failedAt || activity.skippedAt
+                        ? "text-gray-500"
+                        : "text-gray-900"
+                  }`}>
                     {activity.subject}
                   </h3>
                   {activity.description && (
                     <p className="mt-1 text-sm text-gray-600 line-clamp-2">
                       {activity.description}
+                    </p>
+                  )}
+                  {/* Fail/Skip reason */}
+                  {activity.failReason && (
+                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">
+                      <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                      {activity.failReason}
+                    </p>
+                  )}
+                  {activity.skipReason && (
+                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600">
+                      <SkipForward className="h-3 w-3 flex-shrink-0" />
+                      {activity.skipReason}
                     </p>
                   )}
                   {/* Assigned contacts */}
@@ -212,40 +315,163 @@ export function LeadActivitiesList({
                   )}
                 </Link>
 
-                {/* Assign contacts button */}
-                {leadContacts.length > 0 && (
-                  <button
-                    onClick={(e) => openAssignModal(e, activity)}
-                    className={`mt-0.5 flex-shrink-0 rounded-lg p-2 transition-colors ${
-                      activity.leadContactIds
-                        ? "text-purple-500 hover:bg-purple-100 hover:text-purple-700"
-                        : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                    }`}
-                    title="Associar contatos"
-                  >
-                    <UserPlus className="h-4 w-4" />
-                  </button>
-                )}
+                {/* Action buttons */}
+                <div className="flex items-center gap-1 flex-shrink-0">
+                  {/* Revert button for failed/skipped */}
+                  {(activity.failedAt || activity.skippedAt) && (
+                    <button
+                      onClick={(e) => handleRevert(e, activity.id)}
+                      disabled={loadingId === activity.id}
+                      className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-50"
+                      title="Voltar para pendente"
+                    >
+                      {loadingId === activity.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <RotateCcw className="h-4 w-4" />
+                      )}
+                    </button>
+                  )}
 
-                {/* Arrow */}
-                <Link href={`/activities/${activity.id}`} className="flex-shrink-0">
-                  <svg
-                    className="h-5 w-5 text-gray-400 group-hover:text-primary"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 5l7 7-7 7"
-                    />
-                  </svg>
-                </Link>
+                  {/* Failed/Skip buttons for pending activities */}
+                  {isPending(activity) && (
+                    <>
+                      <button
+                        onClick={(e) => openOutcomeModal(e, activity, "failed")}
+                        className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                        title="Marcar como falha"
+                      >
+                        <XCircle className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={(e) => openOutcomeModal(e, activity, "skipped")}
+                        className="rounded-lg p-2 text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                        title="Pular atividade"
+                      >
+                        <SkipForward className="h-4 w-4" />
+                      </button>
+                    </>
+                  )}
+
+                  {/* Assign contacts button */}
+                  {leadContacts.length > 0 && isPending(activity) && (
+                    <button
+                      onClick={(e) => openAssignModal(e, activity)}
+                      className={`rounded-lg p-2 transition-colors ${
+                        activity.leadContactIds
+                          ? "text-purple-500 hover:bg-purple-100 hover:text-purple-700"
+                          : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+                      }`}
+                      title="Associar contatos"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                    </button>
+                  )}
+
+                  {/* Arrow */}
+                  <Link href={`/activities/${activity.id}`} className="flex-shrink-0">
+                    <svg
+                      className="h-5 w-5 text-gray-400 group-hover:text-primary"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                  </Link>
+                </div>
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Outcome Modal (Failed / Skipped) */}
+      {outcomeModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setOutcomeModal(null)}>
+          <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className={`flex items-center justify-between border-b p-4 text-white rounded-t-xl ${
+              outcomeModal.type === "failed"
+                ? "bg-gradient-to-r from-red-600 to-red-800"
+                : "bg-gradient-to-r from-amber-500 to-amber-700"
+            }`}>
+              <h2 className="flex items-center gap-2 text-base font-bold">
+                {outcomeModal.type === "failed" ? (
+                  <>
+                    <XCircle className="h-5 w-5" />
+                    Marcar como Falha
+                  </>
+                ) : (
+                  <>
+                    <SkipForward className="h-5 w-5" />
+                    Pular Atividade
+                  </>
+                )}
+              </h2>
+              <button onClick={() => setOutcomeModal(null)} className="rounded-lg p-1.5 hover:bg-white/20">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <p className="mb-1 text-sm font-medium text-gray-900 truncate">
+                {outcomeModal.activity.subject}
+              </p>
+              <p className="mb-4 text-xs text-gray-500">
+                {outcomeModal.type === "failed"
+                  ? "Informe o que aconteceu (ex: email voltou, não atendeu, número errado)"
+                  : "Informe o motivo para pular (ex: sem email cadastrado, sem telefone)"
+                }
+              </p>
+
+              <textarea
+                value={outcomeReason}
+                onChange={(e) => setOutcomeReason(e.target.value)}
+                rows={3}
+                autoFocus
+                placeholder={
+                  outcomeModal.type === "failed"
+                    ? "Email voltou - endereço inválido..."
+                    : "Contato não tem email cadastrado..."
+                }
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            <div className="flex gap-3 border-t bg-gray-50 px-4 py-3 rounded-b-xl">
+              <button
+                onClick={() => setOutcomeModal(null)}
+                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleSubmitOutcome}
+                disabled={outcomeLoading || !outcomeReason.trim()}
+                className={`flex-1 rounded-lg px-3 py-2 text-sm font-bold text-white disabled:opacity-50 ${
+                  outcomeModal.type === "failed"
+                    ? "bg-red-600 hover:bg-red-700"
+                    : "bg-amber-600 hover:bg-amber-700"
+                }`}
+              >
+                {outcomeLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Salvando...
+                  </span>
+                ) : outcomeModal.type === "failed" ? (
+                  "Marcar como Falha"
+                ) : (
+                  "Pular"
+                )}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
