@@ -3,9 +3,10 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Check, Loader2, RotateCcw, SkipForward, UserPlus, Users, X, XCircle } from "lucide-react";
+import { AlertTriangle, Check, Loader2, MessageCircleReply, RotateCcw, SkipForward, UserPlus, Users, X, XCircle } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { toggleActivityCompleted, assignLeadContactsToActivity, removeLeadContactsFromActivity, markActivityFailed, markActivitySkipped, revertActivityOutcome } from "@/actions/activities";
+import { registerLeadReply } from "@/actions/lead-cadences";
 import { toast } from "sonner";
 
 type LeadContact = {
@@ -46,6 +47,10 @@ export function LeadActivitiesList({
   const [outcomeModal, setOutcomeModal] = useState<{ activity: Activity; type: "failed" | "skipped" } | null>(null);
   const [outcomeReason, setOutcomeReason] = useState("");
   const [outcomeLoading, setOutcomeLoading] = useState(false);
+  const [replyModal, setReplyModal] = useState(false);
+  const [replyChannel, setReplyChannel] = useState("email");
+  const [replyNotes, setReplyNotes] = useState("");
+  const [replyLoading, setReplyLoading] = useState(false);
 
   const openAssignModal = (e: React.MouseEvent, activity: Activity) => {
     e.preventDefault();
@@ -166,6 +171,34 @@ export function LeadActivitiesList({
     }
   };
 
+  const handleRegisterReply = async () => {
+    setReplyLoading(true);
+    try {
+      const result = await registerLeadReply(leadId, {
+        channel: replyChannel,
+        notes: replyNotes || undefined,
+      });
+      const msgs: string[] = ["Resposta registrada!"];
+      if (result.cancelledCadences > 0) {
+        msgs.push(`${result.cancelledCadences} cadência(s) cancelada(s)`);
+      }
+      if (result.skippedActivities > 0) {
+        msgs.push(`${result.skippedActivities} atividade(s) pendente(s) cancelada(s)`);
+      }
+      toast.success(msgs.join(" · "));
+      setReplyModal(false);
+      setReplyNotes("");
+      setReplyChannel("email");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao registrar resposta");
+    } finally {
+      setReplyLoading(false);
+    }
+  };
+
+  const hasPendingActivities = activities.some((a) => !a.completed && !a.failedAt && !a.skippedAt);
+
   const isPending = (a: Activity) => !a.completed && !a.failedAt && !a.skippedAt;
 
   return (
@@ -175,13 +208,24 @@ export function LeadActivitiesList({
           <span className="text-2xl">📅</span>
           Atividades ({activities.length})
         </h2>
-        <Link
-          href={`/activities/new?leadId=${leadId}`}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#792990] px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
-        >
-          <span className="text-lg text-white">+</span>
-          Adicionar Atividade
-        </Link>
+        <div className="flex items-center gap-2">
+          {hasPendingActivities && (
+            <button
+              onClick={() => setReplyModal(true)}
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-green-500 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-100 hover:shadow-md transition-all duration-200"
+            >
+              <MessageCircleReply className="h-4 w-4" />
+              Registrar Resposta
+            </button>
+          )}
+          <Link
+            href={`/activities/new?leadId=${leadId}`}
+            className="inline-flex items-center gap-2 rounded-lg bg-[#792990] px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+          >
+            <span className="text-lg text-white">+</span>
+            Adicionar Atividade
+          </Link>
+        </div>
       </div>
 
       {activities.length === 0 ? (
@@ -468,6 +512,80 @@ export function LeadActivitiesList({
                   "Marcar como Falha"
                 ) : (
                   "Pular"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reply Modal */}
+      {replyModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setReplyModal(false)}>
+          <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between border-b p-4 text-white rounded-t-xl bg-gradient-to-r from-green-600 to-green-800">
+              <h2 className="flex items-center gap-2 text-base font-bold">
+                <MessageCircleReply className="h-5 w-5" />
+                Registrar Resposta do Lead
+              </h2>
+              <button onClick={() => setReplyModal(false)} className="rounded-lg p-1.5 hover:bg-white/20">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="p-4">
+              <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                <strong>Atenção:</strong> Ao registrar uma resposta, todas as cadências ativas serão canceladas e as atividades pendentes serão marcadas como puladas.
+              </div>
+
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Canal da resposta
+              </label>
+              <select
+                value={replyChannel}
+                onChange={(e) => setReplyChannel(e.target.value)}
+                className="mb-4 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                <option value="email">E-mail</option>
+                <option value="whatsapp">WhatsApp</option>
+                <option value="linkedin">LinkedIn</option>
+                <option value="call">Ligação</option>
+                <option value="instagram">Instagram</option>
+                <option value="meeting">Reunião</option>
+                <option value="other">Outro</option>
+              </select>
+
+              <label className="mb-1 block text-sm font-medium text-gray-700">
+                Observações (opcional)
+              </label>
+              <textarea
+                value={replyNotes}
+                onChange={(e) => setReplyNotes(e.target.value)}
+                rows={3}
+                placeholder="Ex: Lead respondeu com interesse, quer agendar reunião..."
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+
+            <div className="flex gap-3 border-t bg-gray-50 px-4 py-3 rounded-b-xl">
+              <button
+                onClick={() => setReplyModal(false)}
+                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleRegisterReply}
+                disabled={replyLoading}
+                className="flex-1 rounded-lg bg-green-600 px-3 py-2 text-sm font-bold text-white hover:bg-green-700 disabled:opacity-50"
+              >
+                {replyLoading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Registrando...
+                  </span>
+                ) : (
+                  "Registrar Resposta"
                 )}
               </button>
             </div>

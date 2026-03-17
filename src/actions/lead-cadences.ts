@@ -454,15 +454,39 @@ export async function cancelLeadCadence(id: string) {
     throw new Error("Cadência já finalizada");
   }
 
-  const updated = await prisma.leadCadence.update({
-    where: { id },
-    data: {
-      status: "cancelled",
-      cancelledAt: new Date(),
-    },
+  // Cancel cadence and skip all pending activities
+  const updated = await prisma.$transaction(async (tx) => {
+    // Get all pending activities from this cadence
+    const cadenceActivities = await tx.leadCadenceActivity.findMany({
+      where: { leadCadenceId: id },
+      include: { activity: true },
+    });
+
+    // Skip all pending (not completed, not failed, not skipped) activities
+    const now = new Date();
+    for (const ca of cadenceActivities) {
+      if (!ca.activity.completed && !ca.activity.failedAt && !ca.activity.skippedAt) {
+        await tx.activity.update({
+          where: { id: ca.activity.id },
+          data: {
+            skippedAt: now,
+            skipReason: "Cadência cancelada",
+          },
+        });
+      }
+    }
+
+    return tx.leadCadence.update({
+      where: { id },
+      data: {
+        status: "cancelled",
+        cancelledAt: now,
+      },
+    });
   });
 
   revalidatePath(`/leads/${leadCadence.leadId}`);
+  revalidatePath("/activities");
   return updated;
 }
 
@@ -558,4 +582,104 @@ export async function getAvailableCadencesForLead(leadId: string) {
   });
 
   return cadences;
+}
+
+/**
+ * Register that a lead replied (manually).
+ * Creates a "reply received" activity and cancels all active cadences + pending activities.
+ */
+export async function registerLeadReply(
+  leadId: string,
+  data: { channel: string; notes?: string }
+) {
+  const session = await getAuthenticatedSession();
+  const ownerFilter = await getOwnerFilter();
+
+  // Verify lead access
+  const lead = await prisma.lead.findFirst({
+    where: { id: leadId, ...ownerFilter },
+  });
+
+  if (!lead) {
+    throw new Error("Lead não encontrado");
+  }
+
+  const channelLabels: Record<string, string> = {
+    email: "E-mail",
+    whatsapp: "WhatsApp",
+    linkedin: "LinkedIn",
+    call: "Ligação",
+    instagram: "Instagram",
+    meeting: "Reunião",
+    other: "Outro canal",
+  };
+
+  const channelLabel = channelLabels[data.channel] || data.channel;
+  const now = new Date();
+
+  const result = await prisma.$transaction(async (tx) => {
+    // 1. Create a completed activity registering the reply
+    const replyActivity = await tx.activity.create({
+      data: {
+        type: data.channel === "other" ? "task" : data.channel,
+        subject: `Resposta recebida via ${channelLabel}`,
+        description: data.notes || null,
+        completed: true,
+        leadId,
+        ownerId: session.user.id,
+        dueDate: now,
+      },
+    });
+
+    // 2. Find all active/paused cadences for this lead
+    const activeCadences = await tx.leadCadence.findMany({
+      where: {
+        leadId,
+        status: { in: ["active", "paused"] },
+        ...ownerFilter,
+      },
+      include: {
+        activities: {
+          include: { activity: true },
+        },
+      },
+    });
+
+    let skippedCount = 0;
+
+    // 3. Cancel each cadence and skip pending activities
+    for (const lc of activeCadences) {
+      for (const ca of lc.activities) {
+        if (!ca.activity.completed && !ca.activity.failedAt && !ca.activity.skippedAt) {
+          await tx.activity.update({
+            where: { id: ca.activity.id },
+            data: {
+              skippedAt: now,
+              skipReason: `Lead respondeu via ${channelLabel}`,
+            },
+          });
+          skippedCount++;
+        }
+      }
+
+      await tx.leadCadence.update({
+        where: { id: lc.id },
+        data: {
+          status: "cancelled",
+          cancelledAt: now,
+          notes: `Cancelada automaticamente - lead respondeu via ${channelLabel}`,
+        },
+      });
+    }
+
+    return {
+      replyActivity,
+      cancelledCadences: activeCadences.length,
+      skippedActivities: skippedCount,
+    };
+  });
+
+  revalidatePath(`/leads/${leadId}`);
+  revalidatePath("/activities");
+  return result;
 }

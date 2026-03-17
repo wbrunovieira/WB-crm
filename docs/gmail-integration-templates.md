@@ -2618,6 +2618,447 @@ GOOGLE_CLIENT_SECRET=
 
 ---
 
+## Fase 7 — Detecção de Respostas e Cancelamento Automático de Cadência
+
+### 7.1 Visão Geral
+
+Quando um lead responde (por qualquer canal), o fluxo correto é:
+1. Registrar a resposta no histórico de atividades do lead
+2. Cancelar todas as cadências ativas/pausadas do lead
+3. Pular (skip) todas as atividades pendentes da cadência com motivo automático
+4. Notificar o usuário do CRM
+
+**Dois modos de operação:**
+- **Manual (já implementado)**: Botão "Registrar Resposta" na página do lead — cancela cadências e pula atividades
+- **Automático (esta fase)**: Gmail Watch API detecta resposta em thread conhecida → dispara cancelamento
+
+### 7.2 Fluxo Manual (Implementado)
+
+```
+Página do Lead → Botão [Registrar Resposta]
+  → Modal: seleciona canal (email, whatsapp, linkedin, call, instagram, outro)
+  → Modal: observações opcionais
+  → Server Action: registerLeadReply()
+    → Cria Activity completada "Resposta recebida via {canal}"
+    → Busca todas LeadCadence active/paused do lead
+    → Para cada cadência:
+      → Pula (skip) atividades pendentes com motivo "Lead respondeu via {canal}"
+      → Cancela a LeadCadence com nota explicativa
+    → Retorna: { cancelledCadences, skippedActivities }
+```
+
+**Arquivos implementados:**
+- `src/actions/lead-cadences.ts` → `registerLeadReply(leadId, { channel, notes })`
+- `src/components/leads/LeadActivitiesList.tsx` → Botão + Modal "Registrar Resposta"
+- `cancelLeadCadence()` atualizado para também pular atividades pendentes
+
+### 7.3 Fluxo Automático via Gmail Watch API
+
+```
+Gmail Watch API (Push Notification)
+  → Google Pub/Sub envia POST para /api/email/webhook/gmail
+  → Webhook decodifica historyId do payload
+  → Busca mensagens novas via gmail.users.history.list
+  → Para cada mensagem:
+    → Verifica se threadId existe em EmailLog (email enviado pelo CRM)
+    → Se sim: é uma resposta a um email nosso
+      → Busca a Activity vinculada ao EmailLog
+      → Busca o Lead vinculado à Activity
+      → Executa registerLeadReply() automaticamente
+      → Cria EmailLog com direction: "inbound"
+```
+
+### 7.4 Configuração do Gmail Watch
+
+#### Google Cloud Console:
+1. Ativar **Gmail API** e **Cloud Pub/Sub API**
+2. Criar tópico Pub/Sub: `projects/{PROJECT_ID}/topics/gmail-notifications`
+3. Criar assinatura push apontando para: `https://crm.wbdigitalsolutions.com/api/email/webhook/gmail`
+4. Conceder permissão `gmail-api-push@system.gserviceaccount.com` como Publisher no tópico
+
+#### Arquivo: `src/lib/email/gmail-watch.ts`
+
+```typescript
+import { getValidAccessToken } from "./gmail-client";
+
+const GMAIL_API = "https://gmail.googleapis.com/gmail/v1";
+
+/**
+ * Registra watch para receber notificações de novos emails.
+ * Deve ser chamado ao conectar Gmail e renovado a cada 7 dias (via cron).
+ */
+export async function registerGmailWatch(userId: string) {
+  const accessToken = await getValidAccessToken(userId);
+
+  const response = await fetch(`${GMAIL_API}/users/me/watch`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      topicName: `projects/${process.env.GOOGLE_CLOUD_PROJECT_ID}/topics/gmail-notifications`,
+      labelIds: ["INBOX"],
+    }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to register Gmail watch: ${response.statusText}`);
+  }
+
+  return response.json(); // { historyId, expiration }
+}
+
+/**
+ * Busca mensagens novas desde o último historyId processado.
+ */
+export async function getNewMessages(
+  userId: string,
+  startHistoryId: string
+): Promise<Array<{ id: string; threadId: string }>> {
+  const accessToken = await getValidAccessToken(userId);
+
+  const response = await fetch(
+    `${GMAIL_API}/users/me/history?startHistoryId=${startHistoryId}&historyTypes=messageAdded`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+
+  if (!response.ok) return [];
+
+  const data = await response.json();
+  const messages: Array<{ id: string; threadId: string }> = [];
+
+  for (const record of data.history || []) {
+    for (const msg of record.messagesAdded || []) {
+      // Ignore sent messages (only process incoming)
+      if (!msg.message.labelIds?.includes("SENT")) {
+        messages.push({
+          id: msg.message.id,
+          threadId: msg.message.threadId,
+        });
+      }
+    }
+  }
+
+  return messages;
+}
+
+/**
+ * Busca detalhes de uma mensagem específica.
+ */
+export async function getMessageDetails(
+  userId: string,
+  messageId: string
+): Promise<{ from: string; subject: string; snippet: string; threadId: string }> {
+  const accessToken = await getValidAccessToken(userId);
+
+  const response = await fetch(
+    `${GMAIL_API}/users/me/messages/${messageId}?format=metadata&metadataHeaders=From&metadataHeaders=Subject`,
+    {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    }
+  );
+
+  const data = await response.json();
+  const headers = data.payload?.headers || [];
+
+  return {
+    from: headers.find((h: { name: string }) => h.name === "From")?.value || "",
+    subject: headers.find((h: { name: string }) => h.name === "Subject")?.value || "",
+    snippet: data.snippet || "",
+    threadId: data.threadId,
+  };
+}
+```
+
+### 7.5 Webhook Endpoint
+
+#### Arquivo: `src/app/api/email/webhook/gmail/route.ts`
+
+```typescript
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { getNewMessages, getMessageDetails } from "@/lib/email/gmail-watch";
+import { registerLeadReply } from "@/actions/lead-cadences";
+
+export async function POST(req: Request) {
+  try {
+    const body = await req.json();
+
+    // Pub/Sub sends base64-encoded data
+    const data = JSON.parse(
+      Buffer.from(body.message.data, "base64").toString()
+    );
+
+    const { emailAddress, historyId } = data;
+
+    // Find user by email
+    const user = await prisma.user.findFirst({
+      where: { email: emailAddress },
+    });
+
+    if (!user) {
+      return NextResponse.json({ status: "user_not_found" });
+    }
+
+    // Get the last processed historyId for this user
+    const account = await prisma.account.findFirst({
+      where: { userId: user.id, provider: "google" },
+    });
+
+    if (!account) {
+      return NextResponse.json({ status: "no_google_account" });
+    }
+
+    const lastHistoryId = (account as Record<string, unknown>).lastHistoryId as string || historyId;
+
+    // Fetch new messages since last check
+    const newMessages = await getNewMessages(user.id, lastHistoryId);
+
+    for (const msg of newMessages) {
+      // Check if this threadId matches any email we sent
+      const existingLog = await prisma.emailLog.findFirst({
+        where: { gmailThreadId: msg.threadId },
+        include: {
+          activity: {
+            select: { leadId: true },
+          },
+        },
+      });
+
+      if (existingLog && existingLog.activity.leadId) {
+        // This is a reply to an email we sent to a lead!
+        const details = await getMessageDetails(user.id, msg.id);
+
+        // Register the reply (cancels cadences + skips activities)
+        await registerLeadReply(existingLog.activity.leadId, {
+          channel: "email",
+          notes: `Resposta automática detectada: "${details.subject}" - ${details.snippet}`,
+        });
+
+        // Save inbound email log
+        await prisma.emailLog.create({
+          data: {
+            activityId: existingLog.activityId,
+            fromEmail: details.from,
+            toEmail: emailAddress,
+            subject: details.subject,
+            bodyHtml: details.snippet,
+            gmailMessageId: msg.id,
+            gmailThreadId: msg.threadId,
+            status: "received",
+            direction: "inbound",
+          },
+        });
+      }
+    }
+
+    // Update last processed historyId
+    await prisma.account.updateMany({
+      where: { userId: user.id, provider: "google" },
+      data: { lastHistoryId: historyId } as Record<string, unknown>,
+    });
+
+    return NextResponse.json({ status: "ok", processed: newMessages.length });
+  } catch (error) {
+    console.error("Gmail webhook error:", error);
+    return NextResponse.json({ status: "error" }, { status: 500 });
+  }
+}
+```
+
+### 7.6 Alterações no Modelo EmailLog
+
+Adicionar campo `direction` ao modelo:
+
+```prisma
+model EmailLog {
+  // ... campos existentes
+  direction       String    @default("outbound") // "outbound" (enviado) ou "inbound" (recebido)
+
+  @@index([direction])
+}
+```
+
+Migration:
+```sql
+ALTER TABLE "email_logs" ADD COLUMN IF NOT EXISTS "direction" TEXT NOT NULL DEFAULT 'outbound';
+CREATE INDEX "email_logs_direction_idx" ON "email_logs"("direction");
+```
+
+### 7.7 Alterações no Modelo Account
+
+Adicionar campo para tracking do Gmail Watch:
+
+```prisma
+// Adicionar ao Account (ou criar campo customizado)
+// lastHistoryId: String? — último historyId processado do Gmail Watch
+```
+
+Migration:
+```sql
+ALTER TABLE "accounts" ADD COLUMN IF NOT EXISTS "lastHistoryId" TEXT;
+```
+
+### 7.8 Renovação do Watch (Cron)
+
+O Gmail Watch expira a cada 7 dias. Criar um cron job ou API route para renovar:
+
+#### Arquivo: `src/app/api/cron/gmail-watch-renew/route.ts`
+
+```typescript
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
+import { registerGmailWatch } from "@/lib/email/gmail-watch";
+
+// Chamar via cron a cada 6 dias
+export async function GET(req: Request) {
+  // Verify cron secret
+  const authHeader = req.headers.get("authorization");
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const accounts = await prisma.account.findMany({
+    where: {
+      provider: "google",
+      refresh_token: { not: null },
+    },
+    select: { userId: true },
+  });
+
+  const results = [];
+  for (const account of accounts) {
+    try {
+      const result = await registerGmailWatch(account.userId);
+      results.push({ userId: account.userId, status: "ok", expiration: result.expiration });
+    } catch (error) {
+      results.push({ userId: account.userId, status: "error", error: String(error) });
+    }
+  }
+
+  return NextResponse.json({ renewed: results.length, results });
+}
+```
+
+Crontab no servidor:
+```bash
+# Renovar Gmail Watch a cada 6 dias (domingos e quartas às 4:00)
+0 4 * * 0,3 curl -H "Authorization: Bearer $CRON_SECRET" https://crm.wbdigitalsolutions.com/api/cron/gmail-watch-renew
+```
+
+### 7.9 Scopes Adicionais do Gmail OAuth
+
+Adicionar ao fluxo OAuth (Fase 2):
+```
+https://www.googleapis.com/auth/gmail.readonly
+```
+
+Isso permite ler mensagens recebidas. Já estava listado como opcional na Fase 2, agora é **obrigatório** para a Fase 7.
+
+### 7.10 Testes — Fase 7
+
+#### `tests/unit/actions/register-lead-reply.test.ts`
+
+```typescript
+import { describe, it, expect, vi, beforeEach } from "vitest";
+import { prismaMock } from "../../setup";
+
+const mockSession = {
+  user: { id: "user-1", email: "test@example.com", name: "Test", role: "admin" },
+  expires: "2026-12-31",
+};
+
+vi.mock("next-auth", () => ({
+  getServerSession: vi.fn(() => Promise.resolve(mockSession)),
+}));
+
+vi.mock("next/cache", () => ({
+  revalidatePath: vi.fn(),
+}));
+
+describe("registerLeadReply", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("should create reply activity and cancel active cadences", async () => {
+    // Test: lead with active cadence and pending activities
+    // After registerLeadReply:
+    //   - New completed activity "Resposta recebida via E-mail"
+    //   - LeadCadence status → cancelled
+    //   - Pending activities → skipped with reason
+  });
+
+  it("should handle lead with no active cadences", async () => {
+    // Test: lead without cadences — should still create reply activity
+    // Result: cancelledCadences: 0, skippedActivities: 0
+  });
+
+  it("should skip only pending activities (not completed/failed/skipped)", async () => {
+    // Test: cadence with mix of completed and pending activities
+    // Only pending activities should be skipped
+  });
+
+  it("should throw if lead not found", async () => {
+    // Test: invalid leadId
+  });
+
+  it("should handle multiple active cadences", async () => {
+    // Test: lead with 2+ active cadences — all should be cancelled
+  });
+});
+```
+
+#### `tests/unit/lib/gmail-watch.test.ts`
+
+```typescript
+import { describe, it, expect, vi } from "vitest";
+
+describe("Gmail Watch", () => {
+  it("should register watch and return historyId + expiration", async () => {
+    // Mock fetch to Gmail API /users/me/watch
+  });
+
+  it("should fetch new messages filtering out SENT", async () => {
+    // Mock history.list response with mix of sent and received
+    // Only received messages should be returned
+  });
+
+  it("should extract message details (from, subject, snippet)", async () => {
+    // Mock messages.get with metadata
+  });
+});
+```
+
+#### `tests/unit/api/gmail-webhook.test.ts`
+
+```typescript
+import { describe, it, expect, vi } from "vitest";
+
+describe("Gmail Webhook", () => {
+  it("should process incoming reply and trigger registerLeadReply", async () => {
+    // Mock: Pub/Sub payload → decode → find user → find matching EmailLog thread
+    // Verify: registerLeadReply called with correct leadId
+    // Verify: inbound EmailLog created
+  });
+
+  it("should ignore messages not matching any sent email thread", async () => {
+    // Mock: new message with unknown threadId
+    // Verify: no registerLeadReply call
+  });
+
+  it("should handle user not found gracefully", async () => {
+    // Mock: emailAddress not in database
+    // Verify: returns { status: "user_not_found" }
+  });
+});
+```
+
+---
+
 ## Ordem de Implementação
 
 ```
@@ -2627,6 +3068,7 @@ Fase 3: Gmail client + envio individual + lote      (requer Fase 2)
 Fase 4: UI (botões, modal lote, settings)           (requer Fase 3)
 Fase 5: Tracking abertura/clique                    (requer Fase 3, paralelo à 4)
 Fase 6: Histórico + métricas                        (requer Fase 3, paralelo à 4/5)
+Fase 7: Detecção de respostas + cancel automático   (requer Fase 3 + 6, manual já implementado)
 ```
 
 ## Glossário
@@ -2637,3 +3079,6 @@ Fase 6: Histórico + métricas                        (requer Fase 3, paralelo �
 | **Envio em Lote** | Enviar email de **todas** as atividades pendentes de uma etapa da cadência para **todos** os leads com cadência ativa, pelo botão na etapa (admin ou lead) |
 | **Template** | Texto do subject/description do CadenceStep com `{{variáveis}}` |
 | **Preview** | Tela de confirmação antes do envio em lote, mostrando quem receberá e quem será ignorado (sem email) |
+| **Registrar Resposta** | Ação manual do usuário ao receber resposta de um lead por qualquer canal — cria atividade de registro e cancela cadências ativas |
+| **Gmail Watch** | API do Gmail que envia push notifications via Google Pub/Sub quando novos emails chegam na inbox |
+| **Inbound** | Email recebido (resposta do lead). Oposto de outbound (email enviado pelo CRM) |
