@@ -23,6 +23,7 @@ type Activity = {
   description: string | null;
   dueDate: Date | null;
   completed: boolean;
+  completedAt: Date | null;
   failedAt: Date | null;
   failReason: string | null;
   skippedAt: Date | null;
@@ -297,7 +298,7 @@ export function LeadActivitiesList({
                     </span>
                     {activity.completed && (
                       <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                        Concluída
+                        Concluída{activity.completedAt && ` em ${formatDate(activity.completedAt)}`}
                       </span>
                     )}
                     {activity.failedAt && (

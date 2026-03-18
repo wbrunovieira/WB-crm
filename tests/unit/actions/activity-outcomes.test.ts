@@ -18,6 +18,7 @@ const baseActivity = {
   description: 'Corpo do email',
   dueDate: new Date('2024-12-31'),
   completed: false,
+  completedAt: null,
   skippedAt: null,
   skipReason: null,
   failedAt: null,

@@ -15,6 +15,7 @@ const mockActivity = {
   description: 'Enviar mensagem no LinkedIn',
   dueDate: new Date('2024-02-01'),
   completed: false,
+  completedAt: null,
   failedAt: null,
   failReason: null,
   skippedAt: null,

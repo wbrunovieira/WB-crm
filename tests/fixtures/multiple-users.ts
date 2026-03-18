@@ -279,6 +279,7 @@ export function createMockActivity(ownerId: string, overrides: Partial<{
     description: null,
     dueDate: null,
     completed: false,
+    completedAt: null,
     failedAt: null,
     failReason: null,
     skippedAt: null,

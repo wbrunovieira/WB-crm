@@ -8,6 +8,7 @@ import {
   getOwnerFilter,
   canAccessRecord,
 } from "@/lib/permissions";
+import { addDays } from "date-fns";
 
 export async function getActivities(filters?: {
   type?: string;
@@ -380,14 +381,67 @@ export async function toggleActivityCompleted(id: string) {
     throw new Error("Atividade não encontrada");
   }
 
+  const isCompleting = !activity.completed;
+
   const updatedActivity = await prisma.activity.update({
     where: { id },
     data: {
-      completed: !activity.completed,
+      completed: isCompleting,
+      completedAt: isCompleting ? new Date() : null,
     },
   });
 
+  // When completing a cadence activity late, recalculate subsequent activity dates
+  if (isCompleting && activity.dueDate) {
+    const now = new Date();
+    const dueDate = new Date(activity.dueDate);
+    // Compare dates only (ignore time) using UTC to avoid timezone issues
+    const nowDayUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+    const dueDayUTC = Date.UTC(dueDate.getUTCFullYear(), dueDate.getUTCMonth(), dueDate.getUTCDate());
+    const isLate = nowDayUTC > dueDayUTC;
+
+    if (isLate) {
+      // Check if this activity belongs to a cadence
+      const cadenceLink = await prisma.leadCadenceActivity.findFirst({
+        where: { activityId: id },
+        include: { cadenceStep: { select: { id: true, dayNumber: true } } },
+      });
+
+      if (cadenceLink) {
+        const completedDayNumber = cadenceLink.cadenceStep.dayNumber;
+
+        // Get all subsequent activities in this cadence
+        const subsequentActivities = await prisma.leadCadenceActivity.findMany({
+          where: {
+            leadCadenceId: cadenceLink.leadCadenceId,
+            cadenceStep: { dayNumber: { gt: completedDayNumber } },
+          },
+          include: {
+            cadenceStep: { select: { id: true, dayNumber: true } },
+            activity: {
+              select: { id: true, completed: true, failedAt: true, skippedAt: true, dueDate: true },
+            },
+          },
+          orderBy: { scheduledDate: "asc" },
+        });
+
+        // Recalculate only pending activities
+        for (const sa of subsequentActivities) {
+          if (!sa.activity.completed && !sa.activity.failedAt && !sa.activity.skippedAt) {
+            const daysDiff = sa.cadenceStep.dayNumber - completedDayNumber;
+            const newDueDate = addDays(now, daysDiff);
+            await prisma.activity.update({
+              where: { id: sa.activity.id },
+              data: { dueDate: newDueDate },
+            });
+          }
+        }
+      }
+    }
+  }
+
   revalidatePath("/activities");
+  revalidatePath("/activities/calendar");
   if (activity.dealId) {
     revalidatePath(`/deals/${activity.dealId}`);
   }

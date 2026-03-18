@@ -521,6 +521,7 @@ model Activity {
   description String?
   dueDate     DateTime?
   completed   Boolean   @default(false)
+  completedAt DateTime?
 
   // Outcome tracking: failed or skipped
   failedAt    DateTime?

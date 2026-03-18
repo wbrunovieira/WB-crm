@@ -7,6 +7,7 @@ export const mockActivity: Activity = {
   description: 'Apresentar detalhes do projeto de e-commerce',
   dueDate: new Date('2024-12-31T14:00:00'),
   completed: false,
+  completedAt: null,
   failedAt: null,
   failReason: null,
   skippedAt: null,
