@@ -50,11 +50,17 @@ export async function getLeads(filters?: {
     });
   }
   if (filters?.contactSearch) {
+    // Use raw SQL with unaccent for accent-insensitive search on contact name/email
+    const contactMatchIds = await prisma.$queryRaw<{ leadId: string }[]>`
+      SELECT DISTINCT "leadId" FROM lead_contacts
+      WHERE unaccent(name) ILIKE '%' || unaccent(${filters.contactSearch}) || '%'
+         OR unaccent(COALESCE(email, '')) ILIKE '%' || unaccent(${filters.contactSearch}) || '%'
+    `;
+    const matchingLeadIds = contactMatchIds.map((r) => r.leadId);
     searchConditions.push({
       OR: [
+        { id: { in: matchingLeadIds } },
         { email: { contains: filters.contactSearch, mode: "insensitive" as const } },
-        { leadContacts: { some: { email: { contains: filters.contactSearch, mode: "insensitive" as const } } } },
-        { leadContacts: { some: { name: { contains: filters.contactSearch, mode: "insensitive" as const } } } },
       ],
     });
   }
