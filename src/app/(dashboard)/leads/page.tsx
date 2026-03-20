@@ -16,7 +16,7 @@ export default async function LeadsPage({
 }: {
   searchParams: {
     search?: string;
-    emailSearch?: string;
+    contactSearch?: string;
     status?: string;
     quality?: string;
     owner?: string;
@@ -75,7 +75,7 @@ export default async function LeadsPage({
         <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
           {leads.length} {leads.length === 1 ? "lead" : "leads"}
         </span>
-        {(searchParams.search || searchParams.emailSearch || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner || searchParams.hasCadence || searchParams.archived) && (
+        {(searchParams.search || searchParams.contactSearch || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner || searchParams.hasCadence || searchParams.archived) && (
           <span className="text-sm text-gray-500">com os filtros aplicados</span>
         )}
       </div>

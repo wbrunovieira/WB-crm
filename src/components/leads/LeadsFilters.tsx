@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useDebouncedCallback } from "@/lib/hooks/useDebouncedCallback";
-import { Mail, Search } from "lucide-react";
+import { Search, UserSearch } from "lucide-react";
 
 interface ICP {
   id: string;
@@ -30,13 +30,13 @@ export function LeadsFilters({ icps = [] }: LeadsFiltersProps) {
     router.replace(`${pathname}?${params.toString()}`);
   }, 300);
 
-  const handleEmailSearch = useDebouncedCallback((term: string) => {
+  const handleContactSearch = useDebouncedCallback((term: string) => {
     const params = new URLSearchParams(searchParams);
 
     if (term) {
-      params.set("emailSearch", term);
+      params.set("contactSearch", term);
     } else {
-      params.delete("emailSearch");
+      params.delete("contactSearch");
     }
 
     router.replace(`${pathname}?${params.toString()}`);
@@ -70,13 +70,13 @@ export function LeadsFilters({ icps = [] }: LeadsFiltersProps) {
       </div>
       <div className="relative w-64">
         <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-          <Mail className="h-5 w-5 text-gray-400" />
+          <UserSearch className="h-5 w-5 text-gray-400" />
         </div>
         <input
           type="text"
-          placeholder="Buscar por email..."
-          defaultValue={searchParams.get("emailSearch")?.toString()}
-          onChange={(e) => handleEmailSearch(e.target.value)}
+          placeholder="Buscar por contato (nome ou email)..."
+          defaultValue={searchParams.get("contactSearch")?.toString()}
+          onChange={(e) => handleContactSearch(e.target.value)}
           className="w-full rounded-md border border-gray-300 pl-10 pr-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
         />
       </div>

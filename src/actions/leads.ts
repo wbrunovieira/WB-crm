@@ -18,7 +18,7 @@ import {
 
 export async function getLeads(filters?: {
   search?: string;
-  emailSearch?: string;
+  contactSearch?: string;
   status?: string;
   quality?: string;
   owner?: string;
@@ -49,11 +49,12 @@ export async function getLeads(filters?: {
       ],
     });
   }
-  if (filters?.emailSearch) {
+  if (filters?.contactSearch) {
     searchConditions.push({
       OR: [
-        { email: { contains: filters.emailSearch, mode: "insensitive" as const } },
-        { leadContacts: { some: { email: { contains: filters.emailSearch, mode: "insensitive" as const } } } },
+        { email: { contains: filters.contactSearch, mode: "insensitive" as const } },
+        { leadContacts: { some: { email: { contains: filters.contactSearch, mode: "insensitive" as const } } } },
+        { leadContacts: { some: { name: { contains: filters.contactSearch, mode: "insensitive" as const } } } },
       ],
     });
   }
