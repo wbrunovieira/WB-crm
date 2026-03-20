@@ -629,6 +629,7 @@ export default async function LeadDetailPage({
             name: c.name,
             role: c.role,
             isPrimary: c.isPrimary,
+            isActive: c.isActive,
           }))}
         />
       </div>

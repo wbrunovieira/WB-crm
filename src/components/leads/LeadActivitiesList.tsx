@@ -14,6 +14,7 @@ type LeadContact = {
   name: string;
   role: string | null;
   isPrimary: boolean;
+  isActive: boolean;
 };
 
 type Activity = {
@@ -399,7 +400,7 @@ export function LeadActivitiesList({
                   )}
 
                   {/* Assign contacts button */}
-                  {leadContacts.length > 0 && isPending(activity) && (
+                  {leadContacts.some((c) => c.isActive) && isPending(activity) && (
                     <button
                       onClick={(e) => openAssignModal(e, activity)}
                       className={`rounded-lg p-2 transition-colors ${
@@ -613,8 +614,8 @@ export function LeadActivitiesList({
                 {assigningActivity.subject}
               </p>
 
-              <div className="space-y-2">
-                {leadContacts.map((contact) => (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {leadContacts.filter((c) => c.isActive).map((contact) => (
                   <label
                     key={contact.id}
                     className={`flex items-center gap-3 rounded-lg border p-3 cursor-pointer transition-colors ${
