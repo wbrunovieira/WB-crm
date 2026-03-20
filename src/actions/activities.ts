@@ -139,6 +139,27 @@ export async function getActivities(filters?: {
           email: true,
         },
       },
+      cadenceActivity: {
+        select: {
+          id: true,
+          leadCadence: {
+            select: {
+              cadence: {
+                select: {
+                  id: true,
+                  name: true,
+                  icp: {
+                    select: {
+                      id: true,
+                      name: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
     orderBy: orderByClause,
   });

@@ -17,6 +17,35 @@ import { OwnerBadge } from "@/components/shared/OwnerBadge";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
+// Generate consistent color for cadence name
+const CADENCE_COLORS = [
+  { border: "border-purple-400", badge: "bg-purple-100 text-purple-800" },
+  { border: "border-cyan-400", badge: "bg-cyan-100 text-cyan-800" },
+  { border: "border-emerald-400", badge: "bg-emerald-100 text-emerald-800" },
+  { border: "border-orange-400", badge: "bg-orange-100 text-orange-800" },
+  { border: "border-pink-400", badge: "bg-pink-100 text-pink-800" },
+  { border: "border-sky-400", badge: "bg-sky-100 text-sky-800" },
+  { border: "border-lime-400", badge: "bg-lime-100 text-lime-800" },
+  { border: "border-violet-400", badge: "bg-violet-100 text-violet-800" },
+];
+
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i);
+    hash |= 0;
+  }
+  return Math.abs(hash);
+}
+
+function getCadenceBorderColor(name: string): string {
+  return CADENCE_COLORS[hashString(name) % CADENCE_COLORS.length].border;
+}
+
+function getCadenceBadgeColor(name: string): string {
+  return CADENCE_COLORS[hashString(name) % CADENCE_COLORS.length].badge;
+}
+
 export default async function ActivitiesPage({
   searchParams,
 }: {
@@ -187,12 +216,24 @@ export default async function ActivitiesPage({
       </div>
 
       <div className="space-y-4">
-        {activities.map((activity) => (
+        {activities.map((activity) => {
+          // Determine border color: failed/skipped take priority, then cadence color
+          const cadenceName = activity.cadenceActivity?.leadCadence?.cadence?.name;
+          const cadenceBorderColor = cadenceName
+            ? getCadenceBorderColor(cadenceName)
+            : "";
+          const borderClass = activity.failedAt
+            ? "border-l-4 border-red-400"
+            : activity.skippedAt
+              ? "border-l-4 border-amber-400"
+              : cadenceBorderColor
+                ? `border-l-4 ${cadenceBorderColor}`
+                : "";
+
+          return (
           <div
             key={activity.id}
-            className={`rounded-lg bg-white p-6 shadow-sm transition-all hover:shadow-md ${
-              activity.failedAt ? "border-l-4 border-red-400" : activity.skippedAt ? "border-l-4 border-amber-400" : ""
-            }`}
+            className={`rounded-lg bg-white p-6 shadow-sm transition-all hover:shadow-md ${borderClass}`}
           >
             <div className="flex items-start gap-6">
               {/* Date Badge on Left */}
@@ -262,6 +303,16 @@ export default async function ActivitiesPage({
                     {activity.skippedAt && (
                       <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-semibold text-amber-800">
                         Pulada
+                      </span>
+                    )}
+                    {activity.cadenceActivity?.leadCadence?.cadence && (
+                      <span className={`rounded-full px-2 py-1 text-xs font-semibold ${getCadenceBadgeColor(activity.cadenceActivity.leadCadence.cadence.name)}`}>
+                        {activity.cadenceActivity.leadCadence.cadence.name}
+                      </span>
+                    )}
+                    {activity.cadenceActivity?.leadCadence?.cadence?.icp && (
+                      <span className="rounded-full bg-indigo-100 px-2 py-1 text-xs font-semibold text-indigo-800">
+                        {activity.cadenceActivity.leadCadence.cadence.icp.name}
                       </span>
                     )}
                   </div>
@@ -477,7 +528,8 @@ export default async function ActivitiesPage({
               </div>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {activities.length === 0 && (
