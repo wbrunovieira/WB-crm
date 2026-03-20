@@ -18,6 +18,7 @@ import {
 
 export async function getLeads(filters?: {
   search?: string;
+  emailSearch?: string;
   status?: string;
   quality?: string;
   owner?: string;
@@ -35,19 +36,34 @@ export async function getLeads(filters?: {
         ? { isArchived: true }
         : { isArchived: false };
 
+  // Build search conditions that need AND combination
+  const searchConditions: Record<string, unknown>[] = [];
+  if (filters?.search) {
+    searchConditions.push({
+      OR: [
+        { businessName: { contains: filters.search, mode: "insensitive" as const } },
+        { registeredName: { contains: filters.search, mode: "insensitive" as const } },
+        { email: { contains: filters.search, mode: "insensitive" as const } },
+        { city: { contains: filters.search, mode: "insensitive" as const } },
+        { description: { contains: filters.search, mode: "insensitive" as const } },
+      ],
+    });
+  }
+  if (filters?.emailSearch) {
+    searchConditions.push({
+      OR: [
+        { email: { contains: filters.emailSearch, mode: "insensitive" as const } },
+        { leadContacts: { some: { email: { contains: filters.emailSearch, mode: "insensitive" as const } } } },
+      ],
+    });
+  }
+
   const leads = await prisma.lead.findMany({
     where: {
       ...ownerFilter,
       ...archiveFilter,
-      ...(filters?.search && {
-        OR: [
-          { businessName: { contains: filters.search, mode: "insensitive" as const } },
-          { registeredName: { contains: filters.search, mode: "insensitive" as const } },
-          { email: { contains: filters.search, mode: "insensitive" as const } },
-          { city: { contains: filters.search, mode: "insensitive" as const } },
-          { description: { contains: filters.search, mode: "insensitive" as const } },
-        ],
-      }),
+      ...(searchConditions.length === 1 ? searchConditions[0] : {}),
+      ...(searchConditions.length > 1 ? { AND: searchConditions } : {}),
       ...(filters?.status && { status: filters.status }),
       ...(filters?.quality && { quality: filters.quality }),
       ...(filters?.icpId && {
