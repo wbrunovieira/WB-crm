@@ -350,6 +350,7 @@ export function createMockLeadContact(leadId: string, overrides: Partial<{
     linkedin: null,
     instagram: null,
     isPrimary: overrides.isPrimary ?? false,
+    isActive: true,
     leadId,
     convertedToContactId: overrides.convertedToContactId ?? null,
     createdAt: new Date(),

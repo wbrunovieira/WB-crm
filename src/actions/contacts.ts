@@ -240,3 +240,26 @@ export async function deleteContact(id: string) {
 
   revalidatePath("/contacts");
 }
+
+export async function toggleContactStatus(id: string) {
+  await getAuthenticatedSession();
+
+  const contact = await prisma.contact.findUnique({ where: { id } });
+
+  if (!contact || !(await canAccessEntity("contact", id, contact.ownerId))) {
+    throw new Error("Contato não encontrado");
+  }
+
+  const newStatus = contact.status === "active" ? "inactive" : "active";
+
+  const updated = await prisma.contact.update({
+    where: { id },
+    data: { status: newStatus },
+  });
+
+  revalidatePath("/contacts");
+  if (contact.organizationId) revalidatePath(`/organizations/${contact.organizationId}`);
+  if (contact.leadId) revalidatePath(`/leads/${contact.leadId}`);
+  if (contact.partnerId) revalidatePath(`/partners/${contact.partnerId}`);
+  return updated;
+}

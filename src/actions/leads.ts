@@ -438,6 +438,27 @@ export async function deleteLeadContact(id: string) {
   revalidatePath(`/leads/${leadContact.leadId}`);
 }
 
+export async function toggleLeadContactActive(id: string) {
+  await getAuthenticatedSession();
+
+  const leadContact = await prisma.leadContact.findUnique({
+    where: { id },
+    include: { lead: true },
+  });
+
+  if (!leadContact || !(await canAccessEntity("lead", leadContact.leadId, leadContact.lead.ownerId))) {
+    throw new Error("Contato não encontrado");
+  }
+
+  const updated = await prisma.leadContact.update({
+    where: { id },
+    data: { isActive: !leadContact.isActive },
+  });
+
+  revalidatePath(`/leads/${leadContact.leadId}`);
+  return updated;
+}
+
 // ============ LEAD CONVERSION ============
 
 export async function convertLeadToOrganization(leadId: string) {

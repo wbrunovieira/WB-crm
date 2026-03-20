@@ -2,11 +2,11 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { deleteLeadContact } from "@/actions/leads";
+import { deleteLeadContact, toggleLeadContactActive } from "@/actions/leads";
 import { useRouter } from "next/navigation";
 import { AddLeadContactModal } from "./AddLeadContactModal";
 import { updateLeadContact } from "@/actions/leads";
-import { Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase, Copy, Check } from "lucide-react";
+import { Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase, Copy, Check, UserX, UserCheck } from "lucide-react";
 
 type LeadContact = {
   id: string;
@@ -18,6 +18,7 @@ type LeadContact = {
   linkedin: string | null;
   instagram: string | null;
   isPrimary: boolean;
+  isActive: boolean;
 };
 
 function CopyButton({ value }: { value: string }) {
@@ -422,6 +423,20 @@ export function LeadContactsList({
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewingContact, setViewingContact] = useState<LeadContact | null>(null);
   const [editingContact, setEditingContact] = useState<LeadContact | null>(null);
+  const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  async function handleToggleActive(contactId: string, isActive: boolean) {
+    setTogglingId(contactId);
+    try {
+      await toggleLeadContactActive(contactId);
+      toast.success(isActive ? "Contato desativado" : "Contato reativado");
+      router.refresh();
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao alterar status");
+    } finally {
+      setTogglingId(null);
+    }
+  }
 
   async function handleDelete(contactId: string) {
     if (isConverted) {
@@ -491,14 +506,23 @@ export function LeadContactsList({
             <div
               key={contact.id}
               onClick={() => setViewingContact(contact)}
-              className="flex items-start justify-between rounded-lg border border-gray-200 p-4 hover:border-purple-200 hover:bg-purple-50/30 transition-colors cursor-pointer"
+              className={`flex items-start justify-between rounded-lg border p-4 transition-colors cursor-pointer ${
+                contact.isActive
+                  ? "border-gray-200 hover:border-purple-200 hover:bg-purple-50/30"
+                  : "border-gray-100 bg-gray-50 opacity-50"
+              }`}
             >
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="font-medium text-gray-900">{contact.name}</h3>
+                  <h3 className={`font-medium ${contact.isActive ? "text-gray-900" : "text-gray-500 line-through"}`}>{contact.name}</h3>
                   {contact.isPrimary && (
                     <span className="inline-flex rounded bg-purple-600 px-2 py-0.5 text-xs font-medium text-white">
                       Principal
+                    </span>
+                  )}
+                  {!contact.isActive && (
+                    <span className="inline-flex rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                      Desativado
                     </span>
                   )}
                 </div>
@@ -534,7 +558,19 @@ export function LeadContactsList({
                 </div>
               </div>
               <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-                {!isConverted && (
+                <button
+                  onClick={() => handleToggleActive(contact.id, contact.isActive)}
+                  disabled={togglingId === contact.id}
+                  className={`rounded-lg p-2 transition-colors disabled:opacity-50 ${
+                    contact.isActive
+                      ? "text-gray-500 hover:bg-orange-100 hover:text-orange-600"
+                      : "text-gray-500 hover:bg-green-100 hover:text-green-600"
+                  }`}
+                  title={contact.isActive ? "Desativar contato" : "Reativar contato"}
+                >
+                  {contact.isActive ? <UserX className="h-5 w-5" /> : <UserCheck className="h-5 w-5" />}
+                </button>
+                {!isConverted && contact.isActive && (
                   <button
                     onClick={() => setEditingContact(contact)}
                     className="rounded-lg p-2 text-gray-500 hover:bg-purple-100 hover:text-purple-600 transition-colors"
@@ -543,7 +579,7 @@ export function LeadContactsList({
                     <Pencil className="h-5 w-5" />
                   </button>
                 )}
-                {!isConverted && (
+                {!isConverted && contact.isActive && (
                   <button
                     onClick={() => handleDelete(contact.id)}
                     disabled={deletingId === contact.id}

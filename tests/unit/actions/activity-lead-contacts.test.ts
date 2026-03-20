@@ -42,6 +42,7 @@ const mockLeadContact2 = {
   linkedin: 'in/mariasantos',
   instagram: '@mariasantos',
   isPrimary: false,
+  isActive: true,
   convertedToContactId: null,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),

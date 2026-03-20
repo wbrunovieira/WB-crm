@@ -626,7 +626,7 @@ describe('Activities Actions', () => {
       expect(result.completed).toBe(true);
       expect(mockPrisma.activity.update).toHaveBeenCalledWith({
         where: { id: 'activity-1' },
-        data: { completed: true },
+        data: expect.objectContaining({ completed: true, completedAt: expect.any(Date) }),
       });
     });
 
@@ -644,7 +644,7 @@ describe('Activities Actions', () => {
       expect(result.completed).toBe(false);
       expect(mockPrisma.activity.update).toHaveBeenCalledWith({
         where: { id: 'activity-1' },
-        data: { completed: false },
+        data: expect.objectContaining({ completed: false, completedAt: null }),
       });
     });
 

@@ -8,6 +8,7 @@ import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { OrganizationContactsList } from "@/components/organizations/OrganizationContactsList";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
@@ -240,48 +241,15 @@ export default async function OrganizationDetailPage({
 
       {/* Contacts, Deals, and Projects */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div className="rounded-lg bg-white p-6 shadow">
-          <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
-            <h2 className="text-lg font-bold text-gray-900">
-              Contatos ({organization.contacts.length})
-            </h2>
-            <Link
-              href={`/contacts/new?organizationId=${organization.id}`}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
-            >
-              + Novo Contato
-            </Link>
-          </div>
-          {organization.contacts.length === 0 ? (
-            <div className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
-              <p className="text-sm text-gray-500 mb-3">Nenhum contato vinculado</p>
-              <Link
-                href={`/contacts/new?organizationId=${organization.id}`}
-                className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
-              >
-                Criar Primeiro Contato
-              </Link>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {organization.contacts.map((contact) => (
-                <li key={contact.id} className="text-sm">
-                  <Link
-                    href={`/contacts/${contact.id}`}
-                    className="font-medium text-gray-100 hover:text-purple-200 hover:underline"
-                  >
-                    {contact.name}
-                  </Link>
-                  {contact.email && (
-                    <span className="ml-2 text-gray-400">
-                      • {contact.email}
-                    </span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <OrganizationContactsList
+          organizationId={organization.id}
+          contacts={organization.contacts.map((c) => ({
+            id: c.id,
+            name: c.name,
+            email: c.email,
+            status: c.status,
+          }))}
+        />
 
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
