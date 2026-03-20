@@ -9,6 +9,14 @@ import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 import { BulkApplyCadenceModal } from "@/components/leads/BulkApplyCadenceModal";
 
+type LeadContact = {
+  id: string;
+  name: string;
+  email: string | null;
+  role: string | null;
+  isActive: boolean;
+};
+
 type Lead = {
   id: string;
   businessName: string;
@@ -20,6 +28,7 @@ type Lead = {
   isArchived: boolean;
   owner: { id: string; name: string } | null;
   icps: { icp: { id: string; name: string } }[];
+  leadContacts?: LeadContact[];
   _count: { leadContacts: number; leadCadences: number };
 };
 
@@ -29,6 +38,7 @@ interface LeadsTableProps {
   leads: Lead[];
   sharedUsersMap: Record<string, SharedUser[]>;
   currentUserId: string;
+  contactSearch?: string;
 }
 
 const statusLabels: Record<string, string> = {
@@ -44,7 +54,11 @@ const qualityLabels: Record<string, string> = {
   hot: "Quente",
 };
 
-export function LeadsTable({ leads, sharedUsersMap, currentUserId }: LeadsTableProps) {
+function normalize(str: string): string {
+  return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+}
+
+export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch }: LeadsTableProps) {
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
@@ -184,8 +198,31 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId }: LeadsTableP
                     ? `${lead.city}, ${lead.state}`
                     : lead.city || lead.state || "-"}
                 </td>
-                <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                  {lead._count.leadContacts} contato(s)
+                <td className="px-6 py-4 text-sm text-gray-500">
+                  {contactSearch && lead.leadContacts ? (() => {
+                    const term = normalize(contactSearch);
+                    const matches = lead.leadContacts.filter(
+                      (c) =>
+                        c.isActive &&
+                        (normalize(c.name).includes(term) ||
+                          (c.email && normalize(c.email).includes(term)))
+                    );
+                    return matches.length > 0 ? (
+                      <div className="space-y-1">
+                        {matches.map((c) => (
+                          <div key={c.id} className="flex flex-col">
+                            <span className="font-medium text-gray-800 text-xs">{c.name}</span>
+                            {c.role && <span className="text-[11px] text-gray-400">{c.role}</span>}
+                            {c.email && <span className="text-[11px] text-purple-600">{c.email}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span>{lead._count.leadContacts} contato(s)</span>
+                    );
+                  })() : (
+                    <span>{lead._count.leadContacts} contato(s)</span>
+                  )}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
                   {lead.quality && (

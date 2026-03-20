@@ -100,6 +100,7 @@ export default async function LeadsPage({
           leads={leads}
           sharedUsersMap={sharedUsersMap}
           currentUserId={currentUserId}
+          contactSearch={searchParams.contactSearch}
         />
       )}
     </div>
