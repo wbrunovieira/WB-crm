@@ -208,12 +208,12 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
                           (c.email && normalize(c.email).includes(term)))
                     );
                     return matches.length > 0 ? (
-                      <div className="space-y-1">
+                      <div className="space-y-1.5">
                         {matches.map((c) => (
-                          <div key={c.id} className="flex flex-col">
-                            <span className="font-medium text-gray-800 text-xs">{c.name}</span>
-                            {c.role && <span className="text-[11px] text-gray-400">{c.role}</span>}
-                            {c.email && <span className="text-[11px] text-purple-600">{c.email}</span>}
+                          <div key={c.id} className="rounded-md bg-purple-50 border border-purple-200 px-2 py-1.5">
+                            <span className="font-semibold text-purple-900 text-xs">{c.name}</span>
+                            {c.role && <span className="ml-1 text-[11px] text-purple-700">· {c.role}</span>}
+                            {c.email && <p className="text-[11px] text-purple-600 font-medium">{c.email}</p>}
                           </div>
                         ))}
                       </div>
