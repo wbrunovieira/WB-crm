@@ -161,6 +161,9 @@ model Lead {
   equityCapital   Float?
   businessStatus  String?
 
+  // Idiomas da empresa (JSON: [{code, isPrimary}])
+  languages String?
+
   // Atividades (deprecated - usar CNAEs)
   primaryActivity     String?
   secondaryActivities String?
@@ -248,6 +251,9 @@ model LeadContact {
   isPrimary Boolean @default(false) // Contato principal
   isActive  Boolean @default(true)  // Desativar ao invés de excluir
 
+  // Idiomas do contato (JSON: [{code, isPrimary}])
+  languages String?
+
   // Conversão
   convertedToContactId String?  @unique // LeadContact vira 1 Contact
 
@@ -290,6 +296,9 @@ model Organization {
   description    String?
   companyOwner   String?
   companySize    String?
+
+  // Idiomas da empresa (JSON: [{code, isPrimary}])
+  languages String?
 
   // Atividades CNAE (empresas brasileiras)
   primaryCNAEId       String? // CNAE primário
@@ -400,6 +409,7 @@ model Contact {
   birthDate          DateTime?
   notes              String?
   preferredLanguage  String?   @default("pt-BR")
+  languages          String?   // JSON: [{code, isPrimary}] - multiple languages
   source             String?   // referral, website, event, cold_call, etc
 
   // Lead tracking - veio de qual LeadContact

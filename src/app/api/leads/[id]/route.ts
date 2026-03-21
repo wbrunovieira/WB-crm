@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { leadSchema } from "@/lib/validations/lead";
+import { languagesToJson } from "@/lib/validations/languages";
 import { getSessionOrInternal } from "@/lib/internal-auth";
 
 /**
@@ -203,10 +204,19 @@ export async function PUT(
     }
 
     const validated = leadSchema.parse(body);
+    const { languages, labelIds, ...rest } = validated;
 
     const lead = await prisma.lead.update({
       where: { id: params.id },
-      data: validated,
+      data: {
+        ...rest,
+        languages: languagesToJson(languages),
+        ...(labelIds && {
+          labels: {
+            set: labelIds.map((id) => ({ id })),
+          },
+        }),
+      },
       include: {
         leadContacts: true,
         owner: {

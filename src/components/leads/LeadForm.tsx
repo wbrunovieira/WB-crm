@@ -14,6 +14,7 @@ import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
 import { brazilianStates } from "@/lib/lists/brazilian-states";
 import { getActiveICPsForSelect } from "@/actions/icps";
+import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 
 type Lead = {
   id?: string;
@@ -59,6 +60,7 @@ type Lead = {
   category?: string | null;
   radius?: number | null;
   status?: string;
+  languages?: string | null;
   labels?: { id: string; name: string; color: string }[];
 };
 
@@ -99,6 +101,12 @@ export function LeadForm({ lead }: LeadFormProps) {
   const [availableIcps, setAvailableIcps] = useState<{ id: string; name: string }[]>([]);
   const [loadingIcps, setLoadingIcps] = useState(true);
   const [contacts, setContacts] = useState<ContactFormData[]>([]);
+  const [leadLanguages, setLeadLanguages] = useState<LanguageEntry[]>(() => {
+    if (lead?.languages) {
+      try { return JSON.parse(lead.languages); } catch { return []; }
+    }
+    return [];
+  });
 
   // Load available ICPs and current ICP (for both new and edit)
   useEffect(() => {
@@ -199,6 +207,7 @@ export function LeadForm({ lead }: LeadFormProps) {
         ? parseInt(formData.get("radius") as string)
         : undefined,
       status: (getString("status") || "new") as "new" | "contacted" | "qualified" | "disqualified",
+      languages: leadLanguages.length > 0 ? leadLanguages : null,
     };
 
     try {
@@ -805,6 +814,15 @@ export function LeadForm({ lead }: LeadFormProps) {
           )}
         </div>
       )}
+
+      {/* Idiomas */}
+      <div className="rounded-lg bg-[#1a0022] p-6">
+        <LanguageSelector
+          value={leadLanguages}
+          onChange={setLeadLanguages}
+          darkMode
+        />
+      </div>
 
       {/* Redes Sociais */}
       <div className="rounded-lg bg-[#1a0022] p-6">

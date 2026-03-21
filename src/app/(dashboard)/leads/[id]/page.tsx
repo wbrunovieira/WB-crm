@@ -15,6 +15,7 @@ import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
+import { LanguageBadges } from "@/components/shared/LanguageSelector";
 
 export default async function LeadDetailPage({
   params,
@@ -250,6 +251,12 @@ export default async function LeadDetailPage({
                 </dd>
               </div>
             )}
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Idiomas</dt>
+              <dd className="mt-1">
+                <LanguageBadges languages={lead.languages} />
+              </dd>
+            </div>
           </dl>
         </div>
 

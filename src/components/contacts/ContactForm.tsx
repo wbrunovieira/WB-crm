@@ -7,6 +7,7 @@ import { createContact, updateContact } from "@/actions/contacts";
 import { getCompaniesList, CompanyOption } from "@/actions/companies-list";
 import { getLeadContactsList } from "@/actions/leads-list";
 import { departments, contactSources, contactStatuses } from "@/lib/lists/departments-list";
+import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 
 interface ContactFormProps {
   contact?: {
@@ -27,6 +28,7 @@ interface ContactFormProps {
     birthDate: Date | null;
     notes: string | null;
     preferredLanguage: string | null;
+    languages: string | null;
     source: string | null;
     sourceLeadContactId: string | null;
   };
@@ -46,6 +48,17 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId, partne
   const [selectedLeadContact, setSelectedLeadContact] = useState(
     contact?.sourceLeadContactId || ""
   );
+  const [languages, setLanguages] = useState<LanguageEntry[]>(() => {
+    if (contact?.languages) {
+      try {
+        const parsed = JSON.parse(contact.languages);
+        if (Array.isArray(parsed)) return parsed;
+      } catch {
+        // ignore parse errors
+      }
+    }
+    return [];
+  });
 
   // Determine initial company selection
   const initialCompanyId = contact?.organizationId || contact?.leadId || contact?.partnerId || preselectedOrganizationId || leadId || partnerId || "";
@@ -101,7 +114,8 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId, partne
         isPrimary: formData.get("isPrimary") === "on",
         birthDate: formData.get("birthDate") as string,
         notes: formData.get("notes") as string,
-        preferredLanguage: formData.get("preferredLanguage") as string,
+        preferredLanguage: languages.find((l) => l.isPrimary)?.code || languages[0]?.code || "pt-BR",
+        languages: languages.length > 0 ? languages : null,
         source: formData.get("source") as string,
         sourceLeadContactId: formData.get("sourceLeadContactId") as string,
       };
@@ -358,19 +372,7 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId, partne
           </div>
 
           <div>
-            <label htmlFor="preferredLanguage" className="block text-sm font-medium text-gray-700">
-              Idioma Preferencial
-            </label>
-            <select
-              id="preferredLanguage"
-              name="preferredLanguage"
-              defaultValue={contact?.preferredLanguage || "pt-BR"}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              <option value="pt-BR">Português (BR)</option>
-              <option value="en">English</option>
-              <option value="es">Español</option>
-            </select>
+            <LanguageSelector value={languages} onChange={setLanguages} />
           </div>
 
           <div>

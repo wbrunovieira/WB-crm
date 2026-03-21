@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { leadContactSchema } from "@/lib/validations/lead";
+import { languagesToJson } from "@/lib/validations/languages";
 import { getSessionOrInternal } from "@/lib/internal-auth";
 
 /**
@@ -176,9 +177,11 @@ export async function POST(
       });
     }
 
+    const { languages, ...rest } = validated;
     const contact = await prisma.leadContact.create({
       data: {
-        ...validated,
+        ...rest,
+        languages: languagesToJson(languages),
         leadId: params.id,
       },
     });

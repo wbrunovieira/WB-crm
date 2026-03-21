@@ -17,6 +17,7 @@ export const contactSchema = z.object({
   birthDate: z.string().optional(), // Will be converted to Date in the action
   notes: z.string().optional(),
   preferredLanguage: z.string().optional(),
+  languages: z.array(z.object({ code: z.string(), isPrimary: z.boolean() })).optional().nullable(),
   source: z.string().optional(),
   sourceLeadContactId: z.string().optional().nullable(),
 });

@@ -66,6 +66,9 @@ export const leadSchema = z.object({
 
   // Labels (multiple)
   labelIds: z.array(z.string()).optional(),
+
+  // Idiomas (JSON)
+  languages: z.array(z.object({ code: z.string(), isPrimary: z.boolean() })).optional().nullable(),
 });
 
 export const leadContactSchema = z.object({
@@ -77,6 +80,7 @@ export const leadContactSchema = z.object({
   linkedin: z.string().optional(),
   instagram: z.string().optional(),
   isPrimary: z.boolean().optional(),
+  languages: z.array(z.object({ code: z.string(), isPrimary: z.boolean() })).optional().nullable(),
 });
 
 export type LeadFormData = z.infer<typeof leadSchema>;

@@ -8,6 +8,7 @@ import {
   getOwnerOrSharedFilter,
   canAccessEntity,
 } from "@/lib/permissions";
+import { languagesToJson } from "@/lib/validations/languages";
 
 export async function getContacts(filters?: {
   search?: string;
@@ -174,6 +175,7 @@ export async function createContact(data: ContactFormData) {
       birthDate: validated.birthDate ? new Date(validated.birthDate) : null,
       notes: validated.notes || null,
       preferredLanguage: validated.preferredLanguage || "pt-BR",
+      languages: languagesToJson(validated.languages),
       source: validated.source || null,
       sourceLeadContactId: validated.sourceLeadContactId || null,
       ownerId: session.user.id,
@@ -217,6 +219,7 @@ export async function updateContact(id: string, data: ContactFormData) {
       birthDate: validated.birthDate ? new Date(validated.birthDate) : null,
       notes: validated.notes || null,
       preferredLanguage: validated.preferredLanguage,
+      languages: languagesToJson(validated.languages),
       source: validated.source || null,
       sourceLeadContactId: validated.sourceLeadContactId || null,
     },

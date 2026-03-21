@@ -101,9 +101,10 @@ describe('Leads - createLead', () => {
         quality: 'hot',
       };
 
+      const { languages: _languages, labelIds: _labelIds, ...leadDataRest } = leadData;
       const createdLead = {
         ...createMockLead(userA.id),
-        ...leadData,
+        ...leadDataRest,
       };
 
       prismaMock.lead.create.mockResolvedValue(createdLead);

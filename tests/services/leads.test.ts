@@ -74,13 +74,14 @@ function createMockLead(overrides: Partial<LeadWithRelations> = {}): LeadWithRel
     contacts: [],
     primaryCNAE: null,
     secondaryCNAEs: [],
-    languages: [],
-    frameworks: [],
-    hosting: [],
-    databases: [],
-    erps: [],
-    crms: [],
-    ecommerces: [],
+    languages: null,
+    leadLanguages: [],
+    leadFrameworks: [],
+    leadHosting: [],
+    leadDatabases: [],
+    leadERPs: [],
+    leadCRMs: [],
+    leadEcommerces: [],
     products: [],
     ...overrides,
   } as LeadWithRelations;
@@ -361,12 +362,12 @@ describe("Leads Service", () => {
   describe("mapTechProfileForTransfer", () => {
     it("should map tech profile IDs correctly", () => {
       const lead = createMockLead({
-        languages: [
+        leadLanguages: [
           { language: { id: "lang-1", name: "JavaScript" } },
           { language: { id: "lang-2", name: "TypeScript" } },
         ] as any,
-        frameworks: [{ framework: { id: "fw-1", name: "React" } }] as any,
-        databases: [{ database: { id: "db-1", name: "PostgreSQL" } }] as any,
+        leadFrameworks: [{ framework: { id: "fw-1", name: "React" } }] as any,
+        leadDatabases: [{ database: { id: "db-1", name: "PostgreSQL" } }] as any,
       });
 
       const result = mapTechProfileForTransfer(lead);
@@ -417,7 +418,7 @@ describe("Leads Service", () => {
             phone: "+55 11 88888-8888",
           }),
         ],
-        languages: [{ language: { id: "l1", name: "JS" } }] as any,
+        leadLanguages: [{ language: { id: "l1", name: "JS" } }] as any,
       });
 
       const score = calculateLeadScore(lead);
@@ -448,7 +449,7 @@ describe("Leads Service", () => {
         companyRegistrationID: "12.345.678/0001-99",
         primaryCNAEId: "cnae-1",
         contacts: [createMockLeadContact()],
-        languages: [{ language: { id: "l1", name: "JS" } }],
+        leadLanguages: [{ language: { id: "l1", name: "JS" } }],
       });
 
       const score = calculateLeadScore(lead);

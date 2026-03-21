@@ -7,6 +7,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import ActivityTimeline from "@/components/activities/ActivityTimeline";
 import { formatDate } from "@/lib/utils";
+import { LanguageBadges } from "@/components/shared/LanguageSelector";
 
 export default async function ContactDetailPage({
   params,
@@ -70,6 +71,12 @@ export default async function ContactDetailPage({
               </dt>
               <dd className="mt-1 text-sm text-gray-900">
                 {formatDate(contact.createdAt)}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-sm font-medium text-gray-500">Idiomas</dt>
+              <dd className="mt-1">
+                <LanguageBadges languages={contact.languages as string | null} />
               </dd>
             </div>
           </dl>

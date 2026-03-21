@@ -6,7 +6,8 @@ import { deleteLeadContact, toggleLeadContactActive } from "@/actions/leads";
 import { useRouter } from "next/navigation";
 import { AddLeadContactModal } from "./AddLeadContactModal";
 import { updateLeadContact } from "@/actions/leads";
-import { Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase, Copy, Check, UserX, UserCheck } from "lucide-react";
+import { Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase, Copy, Check, UserX, UserCheck, Globe } from "lucide-react";
+import { LanguageBadges, LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 
 type LeadContact = {
   id: string;
@@ -19,6 +20,7 @@ type LeadContact = {
   instagram: string | null;
   isPrimary: boolean;
   isActive: boolean;
+  languages: string | null;
 };
 
 function CopyButton({ value }: { value: string }) {
@@ -207,6 +209,19 @@ function ContactDetailModal({
               </div>
               {contact.instagram && <CopyButton value={contact.instagram} />}
             </div>
+
+            {/* Languages */}
+            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100">
+                <Globe className="h-5 w-5 text-indigo-600" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Idiomas</p>
+                <div className="mt-1">
+                  <LanguageBadges languages={contact.languages} />
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -237,6 +252,11 @@ function EditContactModal({
 }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const parseLanguages = (json: string | null): LanguageEntry[] => {
+    if (!json) return [];
+    try { return JSON.parse(json); } catch { return []; }
+  };
+
   const [form, setForm] = useState({
     name: contact.name,
     role: contact.role || "",
@@ -246,6 +266,7 @@ function EditContactModal({
     linkedin: contact.linkedin || "",
     instagram: contact.instagram || "",
     isPrimary: contact.isPrimary,
+    languages: parseLanguages(contact.languages),
   });
 
   if (!isOpen) return null;
@@ -264,6 +285,7 @@ function EditContactModal({
         linkedin: form.linkedin || undefined,
         instagram: form.instagram || undefined,
         isPrimary: form.isPrimary,
+        languages: form.languages.length > 0 ? form.languages : null,
       });
       toast.success("Contato atualizado!");
       onSuccess();
@@ -366,6 +388,11 @@ function EditContactModal({
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
+
+          <LanguageSelector
+            value={form.languages}
+            onChange={(langs) => setForm((prev) => ({ ...prev, languages: langs }))}
+          />
 
           <div className="flex items-center gap-2">
             <input
@@ -529,6 +556,9 @@ export function LeadContactsList({
                 {contact.role && (
                   <p className="text-sm text-gray-500">{contact.role}</p>
                 )}
+                <div className="mt-1">
+                  <LanguageBadges languages={contact.languages} />
+                </div>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
                   {contact.email && (
                     <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1">

@@ -12,6 +12,7 @@ import { OrganizationContactsList } from "@/components/organizations/Organizatio
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
+import { LanguageBadges } from "@/components/shared/LanguageSelector";
 
 export default async function OrganizationDetailPage({
   params,
@@ -104,6 +105,10 @@ export default async function OrganizationDetailPage({
               <dd className="mt-1 text-sm text-gray-900">
                 {formatDate(organization.createdAt)}
               </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Idiomas</dt>
+              <dd className="mt-1"><LanguageBadges languages={organization.languages} /></dd>
             </div>
           </dl>
         </div>
@@ -248,6 +253,7 @@ export default async function OrganizationDetailPage({
             name: c.name,
             email: c.email,
             status: c.status,
+            languages: c.languages,
           }))}
         />
 

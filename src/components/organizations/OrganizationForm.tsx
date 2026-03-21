@@ -10,6 +10,7 @@ import {
 import { MultiLabelSelect } from "@/components/shared/MultiLabelSelect";
 import { setOrganizationLabels } from "@/actions/organization-labels";
 import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
+import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
 import { brazilianStates } from "@/lib/lists/brazilian-states";
@@ -56,6 +57,7 @@ interface OrganizationFormProps {
     hostingValue: number | null;
     hostingReminderDays: number;
     hostingNotes: string | null;
+    languages?: string | null;
   };
 }
 
@@ -69,6 +71,12 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
     organization?.primaryCNAE || null
   );
   const [hasHosting, setHasHosting] = useState(organization?.hasHosting || false);
+  const [orgLanguages, setOrgLanguages] = useState<LanguageEntry[]>(() => {
+    if (organization?.languages) {
+      try { return JSON.parse(organization.languages); } catch { return []; }
+    }
+    return [];
+  });
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -108,6 +116,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         facebook: formData.get("facebook") as string,
         twitter: formData.get("twitter") as string,
         tiktok: formData.get("tiktok") as string,
+        languages: orgLanguages.length > 0 ? orgLanguages : null,
         // Hosting
         hasHosting: hasHosting,
         hostingRenewalDate: formData.get("hostingRenewalDate") as string,
@@ -677,6 +686,11 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Languages */}
+      <div className="space-y-6">
+        <LanguageSelector value={orgLanguages} onChange={setOrgLanguages} />
       </div>
 
       {/* Social Media */}

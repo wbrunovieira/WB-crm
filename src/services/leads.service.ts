@@ -14,13 +14,13 @@ export interface LeadWithRelations extends Lead {
   contacts?: LeadContact[];
   primaryCNAE?: CNAE | null;
   secondaryCNAEs?: Array<{ cnae: CNAE }>;
-  languages?: Array<{ language: { id: string; name: string } }>;
-  frameworks?: Array<{ framework: { id: string; name: string } }>;
-  hosting?: Array<{ hosting: { id: string; name: string } }>;
-  databases?: Array<{ database: { id: string; name: string } }>;
-  erps?: Array<{ erp: { id: string; name: string } }>;
-  crms?: Array<{ crm: { id: string; name: string } }>;
-  ecommerces?: Array<{ ecommerce: { id: string; name: string } }>;
+  leadLanguages?: Array<{ language: { id: string; name: string } }>;
+  leadFrameworks?: Array<{ framework: { id: string; name: string } }>;
+  leadHosting?: Array<{ hosting: { id: string; name: string } }>;
+  leadDatabases?: Array<{ database: { id: string; name: string } }>;
+  leadERPs?: Array<{ erp: { id: string; name: string } }>;
+  leadCRMs?: Array<{ crm: { id: string; name: string } }>;
+  leadEcommerces?: Array<{ ecommerce: { id: string; name: string } }>;
   products?: Array<{
     product: { id: string; name: string };
     interestLevel?: string;
@@ -222,13 +222,13 @@ export function mapTechProfileForTransfer(lead: LeadWithRelations): {
   ecommerceIds: string[];
 } {
   return {
-    languageIds: lead.languages?.map((l) => l.language.id) || [],
-    frameworkIds: lead.frameworks?.map((f) => f.framework.id) || [],
-    hostingIds: lead.hosting?.map((h) => h.hosting.id) || [],
-    databaseIds: lead.databases?.map((d) => d.database.id) || [],
-    erpIds: lead.erps?.map((e) => e.erp.id) || [],
-    crmIds: lead.crms?.map((c) => c.crm.id) || [],
-    ecommerceIds: lead.ecommerces?.map((e) => e.ecommerce.id) || [],
+    languageIds: lead.leadLanguages?.map((l) => l.language.id) || [],
+    frameworkIds: lead.leadFrameworks?.map((f) => f.framework.id) || [],
+    hostingIds: lead.leadHosting?.map((h) => h.hosting.id) || [],
+    databaseIds: lead.leadDatabases?.map((d) => d.database.id) || [],
+    erpIds: lead.leadERPs?.map((e) => e.erp.id) || [],
+    crmIds: lead.leadCRMs?.map((c) => c.crm.id) || [],
+    ecommerceIds: lead.leadEcommerces?.map((e) => e.ecommerce.id) || [],
   };
 }
 
@@ -285,9 +285,9 @@ export function calculateLeadScore(lead: LeadWithRelations): number {
 
   // Tech profile (10 points)
   const hasTechProfile =
-    (lead.languages?.length ?? 0) > 0 ||
-    (lead.frameworks?.length ?? 0) > 0 ||
-    (lead.databases?.length ?? 0) > 0;
+    (lead.leadLanguages?.length ?? 0) > 0 ||
+    (lead.leadFrameworks?.length ?? 0) > 0 ||
+    (lead.leadDatabases?.length ?? 0) > 0;
   if (hasTechProfile) score += 10;
 
   return Math.min(score, 100);

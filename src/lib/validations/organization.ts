@@ -38,6 +38,9 @@ export const organizationSchema = z.object({
   twitter: z.string().optional(),
   tiktok: z.string().optional(),
 
+  // Idiomas (JSON)
+  languages: z.array(z.object({ code: z.string(), isPrimary: z.boolean() })).optional().nullable(),
+
   // Labels (multiple)
   labelIds: z.array(z.string()).optional(),
 

@@ -6,12 +6,14 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toggleContactStatus } from "@/actions/contacts";
 import { UserX, UserCheck, Loader2 } from "lucide-react";
+import { LanguageBadges } from "@/components/shared/LanguageSelector";
 
 type Contact = {
   id: string;
   name: string;
   email: string | null;
   status: string;
+  languages: string | null;
 };
 
 export function OrganizationContactsList({
@@ -84,6 +86,9 @@ export function OrganizationContactsList({
                   </Link>
                   {contact.email && (
                     <span className="text-gray-400">• {contact.email}</span>
+                  )}
+                  {contact.languages && (
+                    <LanguageBadges languages={contact.languages} />
                   )}
                   {!isActive && (
                     <span className="inline-flex rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">

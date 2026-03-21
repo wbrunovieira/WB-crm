@@ -13,6 +13,7 @@ import {
   getOwnerOrSharedFilter,
   canAccessEntity,
 } from "@/lib/permissions";
+import { languagesToJson } from "@/lib/validations/languages";
 
 // ============ LEAD CRUD ============
 
@@ -168,9 +169,11 @@ export async function createLead(data: LeadFormData) {
   const session = await getAuthenticatedSession();
   const validated = leadSchema.parse(data);
 
+  const { languages, labelIds, ...rest } = validated;
   const lead = await prisma.lead.create({
     data: {
-      ...validated,
+      ...rest,
+      languages: languagesToJson(languages),
       ownerId: session.user.id,
     },
   });
@@ -196,9 +199,11 @@ export async function createLeadWithContacts(
   // Use transaction to ensure all-or-nothing
   const result = await prisma.$transaction(async (tx) => {
     // 1. Create the lead
+    const { languages: leadLanguages, labelIds: _labelIds, ...leadRest } = validatedLead;
     const lead = await tx.lead.create({
       data: {
-        ...validatedLead,
+        ...leadRest,
+        languages: languagesToJson(leadLanguages),
         ownerId: session.user.id,
       },
     });
@@ -228,9 +233,11 @@ export async function createLeadWithContacts(
           }
         }
 
+        const { languages: contactLangs, ...contactRest } = contactData;
         const contact = await tx.leadContact.create({
           data: {
-            ...contactData,
+            ...contactRest,
+            languages: languagesToJson(contactLangs),
             isPrimary,
             leadId: lead.id,
           },
@@ -262,9 +269,13 @@ export async function updateLead(id: string, data: LeadFormData) {
     throw new Error("Lead não encontrado");
   }
 
+  const { languages, labelIds, ...rest } = validated;
   const lead = await prisma.lead.update({
     where: { id },
-    data: validated,
+    data: {
+      ...rest,
+      languages: languagesToJson(languages),
+    },
   });
 
   revalidatePath("/leads");
@@ -393,9 +404,11 @@ export async function createLeadContact(leadId: string, data: LeadContactFormDat
     });
   }
 
+  const { languages, ...rest } = validated;
   const contact = await prisma.leadContact.create({
     data: {
-      ...validated,
+      ...rest,
+      languages: languagesToJson(languages),
       leadId,
     },
   });
@@ -428,9 +441,13 @@ export async function updateLeadContact(
     });
   }
 
+  const { languages, ...rest } = validated;
   const updated = await prisma.leadContact.update({
     where: { id },
-    data: validated,
+    data: {
+      ...rest,
+      languages: languagesToJson(languages),
+    },
   });
 
   revalidatePath(`/leads/${leadContact.leadId}`);

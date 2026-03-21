@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { leadContactSchema } from "@/lib/validations/lead";
+import { languagesToJson } from "@/lib/validations/languages";
 import { getSessionOrInternal } from "@/lib/internal-auth";
 
 /**
@@ -173,9 +174,13 @@ export async function PUT(
       });
     }
 
+    const { languages, ...rest } = validated;
     const contact = await prisma.leadContact.update({
       where: { id: params.contactId },
-      data: validated,
+      data: {
+        ...rest,
+        languages: languagesToJson(languages),
+      },
     });
 
     return NextResponse.json(contact);

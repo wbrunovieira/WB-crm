@@ -75,15 +75,16 @@ function createLead(overrides: Partial<LeadWithRelations> = {}): LeadWithRelatio
     updatedAt: new Date(),
     // Relations
     contacts: [],
+    languages: null,
     primaryCNAE: null,
     secondaryCNAEs: [],
-    languages: [],
-    frameworks: [],
-    hosting: [],
-    databases: [],
-    erps: [],
-    crms: [],
-    ecommerces: [],
+    leadLanguages: [],
+    leadFrameworks: [],
+    leadHosting: [],
+    leadDatabases: [],
+    leadERPs: [],
+    leadCRMs: [],
+    leadEcommerces: [],
     products: [],
     ...overrides,
   } as LeadWithRelations;
@@ -472,13 +473,13 @@ describe("mapCNAEsForTransfer", () => {
 describe("mapTechProfileForTransfer", () => {
   it("maps all tech profile categories", () => {
     const lead = createLead({
-      languages: [{ language: { id: "lang-1", name: "JavaScript" } }] as any,
-      frameworks: [{ framework: { id: "fw-1", name: "React" } }] as any,
-      hosting: [{ hosting: { id: "host-1", name: "AWS" } }] as any,
-      databases: [{ database: { id: "db-1", name: "PostgreSQL" } }] as any,
-      erps: [{ erp: { id: "erp-1", name: "SAP" } }] as any,
-      crms: [{ crm: { id: "crm-1", name: "Salesforce" } }] as any,
-      ecommerces: [{ ecommerce: { id: "ec-1", name: "Shopify" } }] as any,
+      leadLanguages: [{ language: { id: "lang-1", name: "JavaScript" } }] as any,
+      leadFrameworks: [{ framework: { id: "fw-1", name: "React" } }] as any,
+      leadHosting: [{ hosting: { id: "host-1", name: "AWS" } }] as any,
+      leadDatabases: [{ database: { id: "db-1", name: "PostgreSQL" } }] as any,
+      leadERPs: [{ erp: { id: "erp-1", name: "SAP" } }] as any,
+      leadCRMs: [{ crm: { id: "crm-1", name: "Salesforce" } }] as any,
+      leadEcommerces: [{ ecommerce: { id: "ec-1", name: "Shopify" } }] as any,
     });
 
     const result = mapTechProfileForTransfer(lead);
@@ -494,7 +495,7 @@ describe("mapTechProfileForTransfer", () => {
 
   it("handles multiple items per category", () => {
     const lead = createLead({
-      languages: [
+      leadLanguages: [
         { language: { id: "lang-1", name: "JavaScript" } },
         { language: { id: "lang-2", name: "TypeScript" } },
         { language: { id: "lang-3", name: "Python" } },
@@ -518,8 +519,8 @@ describe("mapTechProfileForTransfer", () => {
 
   it("handles undefined categories", () => {
     const lead = createLead({
-      languages: undefined,
-      frameworks: undefined,
+      leadLanguages: undefined,
+      leadFrameworks: undefined,
     });
     const result = mapTechProfileForTransfer(lead);
     expect(result.languageIds).toEqual([]);
@@ -731,7 +732,7 @@ describe("calculateLeadScore", () => {
       const base = createLead({ businessName: "Company" });
       const withLangs = createLead({
         businessName: "Company",
-        languages: [{ language: { id: "l1", name: "JS" } }] as any,
+        leadLanguages: [{ language: { id: "l1", name: "JS" } }] as any,
       });
       const diff = calculateLeadScore(withLangs) - calculateLeadScore(base);
       expect(diff).toBe(10);
@@ -741,7 +742,7 @@ describe("calculateLeadScore", () => {
       const base = createLead({ businessName: "Company" });
       const withFw = createLead({
         businessName: "Company",
-        frameworks: [{ framework: { id: "f1", name: "React" } }] as any,
+        leadFrameworks: [{ framework: { id: "f1", name: "React" } }] as any,
       });
       const diff = calculateLeadScore(withFw) - calculateLeadScore(base);
       expect(diff).toBe(10);
@@ -751,7 +752,7 @@ describe("calculateLeadScore", () => {
       const base = createLead({ businessName: "Company" });
       const withDb = createLead({
         businessName: "Company",
-        databases: [{ database: { id: "d1", name: "PostgreSQL" } }] as any,
+        leadDatabases: [{ database: { id: "d1", name: "PostgreSQL" } }] as any,
       });
       const diff = calculateLeadScore(withDb) - calculateLeadScore(base);
       expect(diff).toBe(10);
@@ -760,13 +761,13 @@ describe("calculateLeadScore", () => {
     it("only gives 10 points total for tech profile (no stacking)", () => {
       const withAll = createLead({
         businessName: "Company",
-        languages: [{ language: { id: "l1", name: "JS" } }] as any,
-        frameworks: [{ framework: { id: "f1", name: "React" } }] as any,
-        databases: [{ database: { id: "d1", name: "PostgreSQL" } }] as any,
+        leadLanguages: [{ language: { id: "l1", name: "JS" } }] as any,
+        leadFrameworks: [{ framework: { id: "f1", name: "React" } }] as any,
+        leadDatabases: [{ database: { id: "d1", name: "PostgreSQL" } }] as any,
       });
       const withOne = createLead({
         businessName: "Company",
-        languages: [{ language: { id: "l1", name: "JS" } }] as any,
+        leadLanguages: [{ language: { id: "l1", name: "JS" } }] as any,
       });
       expect(calculateLeadScore(withAll)).toBe(calculateLeadScore(withOne));
     });
@@ -786,7 +787,7 @@ describe("calculateLeadScore", () => {
         companyRegistrationID: "12.345.678/0001-99",
         primaryCNAEId: "cnae-1",
         contacts: [createLeadContact({ isPrimary: true })],
-        languages: [{ language: { id: "l1", name: "JS" } }],
+        leadLanguages: [{ language: { id: "l1", name: "JS" } }],
       });
       expect(calculateLeadScore(maxLead)).toBeLessThanOrEqual(100);
     });

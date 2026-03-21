@@ -6,6 +6,7 @@ import {
   organizationSchema,
   OrganizationFormData,
 } from "@/lib/validations/organization";
+import { languagesToJson } from "@/lib/validations/languages";
 import {
   getAuthenticatedSession,
   getOwnerOrSharedFilter,
@@ -163,6 +164,7 @@ export async function createOrganization(data: OrganizationFormData) {
       facebook: validated.facebook || null,
       twitter: validated.twitter || null,
       tiktok: validated.tiktok || null,
+      languages: languagesToJson(validated.languages),
       // Hosting
       hasHosting: validated.hasHosting || false,
       hostingRenewalDate: validated.hostingRenewalDate ? new Date(validated.hostingRenewalDate) : null,
@@ -220,6 +222,7 @@ export async function updateOrganization(
       facebook: validated.facebook || null,
       twitter: validated.twitter || null,
       tiktok: validated.tiktok || null,
+      languages: languagesToJson(validated.languages),
       // Hosting
       hasHosting: validated.hasHosting || false,
       hostingRenewalDate: validated.hostingRenewalDate ? new Date(validated.hostingRenewalDate) : null,

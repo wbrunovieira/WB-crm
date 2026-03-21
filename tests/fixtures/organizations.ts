@@ -37,6 +37,7 @@ export const mockOrganization: Organization = {
   hostingValue: null,
   hostingReminderDays: 30,
   hostingNotes: null,
+  languages: null,
   ownerId: 'user-test-123',
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),

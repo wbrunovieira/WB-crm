@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { createLeadContact } from "@/actions/leads";
+import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 
 type AddLeadContactModalProps = {
   leadId: string;
@@ -18,6 +19,7 @@ export function AddLeadContactModal({
 }: AddLeadContactModalProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [languages, setLanguages] = useState<LanguageEntry[]>([]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -40,6 +42,7 @@ export function AddLeadContactModal({
       linkedin: getString("linkedin"),
       instagram: getString("instagram"),
       isPrimary: formData.get("isPrimary") === "on",
+      languages: languages.length > 0 ? languages : null,
     };
 
     try {
@@ -194,6 +197,12 @@ export function AddLeadContactModal({
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
+
+          <LanguageSelector
+            value={languages}
+            onChange={setLanguages}
+            darkMode
+          />
 
           <div className="flex items-center">
             <input

@@ -18,6 +18,7 @@ export const mockContact: Contact = {
   birthDate: new Date('1980-05-15'),
   notes: 'Contato principal da empresa',
   preferredLanguage: 'pt-BR',
+  languages: null,
   source: 'website',
   sourceLeadContactId: null,
   ownerId: 'user-test-123',
