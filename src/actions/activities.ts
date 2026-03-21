@@ -256,6 +256,11 @@ export async function createActivity(data: ActivityFormData) {
     ? validated.contactIds[0]
     : null;
 
+  // Convert leadContactIds array to JSON string
+  const leadContactIdsJson = validated.leadContactIds && validated.leadContactIds.length > 0
+    ? JSON.stringify(validated.leadContactIds)
+    : null;
+
   const activity = await prisma.activity.create({
     data: {
       type: validated.type,
@@ -266,6 +271,7 @@ export async function createActivity(data: ActivityFormData) {
       dealId: validated.dealId,
       contactId: primaryContactId,
       contactIds: contactIdsJson,
+      leadContactIds: leadContactIdsJson,
       leadId: validated.leadId,
       partnerId: validated.partnerId,
       ownerId: session.user.id,
@@ -324,6 +330,11 @@ export async function updateActivity(id: string, data: ActivityFormData) {
     ? validated.contactIds[0]
     : null;
 
+  // Convert leadContactIds array to JSON string
+  const leadContactIdsJson = validated.leadContactIds && validated.leadContactIds.length > 0
+    ? JSON.stringify(validated.leadContactIds)
+    : null;
+
   const activity = await prisma.activity.update({
     where: { id },
     data: {
@@ -335,6 +346,7 @@ export async function updateActivity(id: string, data: ActivityFormData) {
       dealId: validated.dealId,
       contactId: primaryContactId,
       contactIds: contactIdsJson,
+      leadContactIds: leadContactIdsJson,
       leadId: validated.leadId,
       partnerId: validated.partnerId,
     },

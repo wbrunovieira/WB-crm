@@ -17,6 +17,17 @@ export async function getLeadsList() {
     select: {
       id: true,
       businessName: true,
+      leadContacts: {
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          isPrimary: true,
+        },
+        orderBy: [{ isPrimary: "desc" }, { name: "asc" }],
+      },
     },
     orderBy: {
       businessName: "asc",

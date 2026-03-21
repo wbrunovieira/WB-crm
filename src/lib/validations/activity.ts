@@ -35,6 +35,7 @@ export const activitySchema = z.object({
   dealId: z.string().optional().nullable(),
   contactId: z.string().optional().nullable(),
   contactIds: z.array(z.string()).optional().nullable(),
+  leadContactIds: z.array(z.string()).optional().nullable(),
   leadId: z.string().optional().nullable(),
   partnerId: z.string().optional().nullable(),
 });
