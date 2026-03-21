@@ -1,13 +1,31 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, Check, Loader2, MessageCircleReply, RotateCcw, SkipForward, UserPlus, Users, X, XCircle } from "lucide-react";
+import { AlertTriangle, ArrowDownUp, Calendar, Check, GripVertical, Loader2, MessageCircleReply, RotateCcw, SkipForward, UserPlus, Users, X, XCircle } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { toggleActivityCompleted, assignLeadContactsToActivity, removeLeadContactsFromActivity, markActivityFailed, markActivitySkipped, revertActivityOutcome } from "@/actions/activities";
+import { updateLeadActivityOrder, resetLeadActivityOrder } from "@/actions/leads";
 import { registerLeadReply } from "@/actions/lead-cadences";
 import { toast } from "sonner";
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from "@dnd-kit/core";
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 
 type LeadContact = {
   id: string;
@@ -32,13 +50,256 @@ type Activity = {
   leadContactIds: string | null;
 };
 
+function SortableActivityItem({
+  activity,
+  isPending,
+  loadingId,
+  handleToggle,
+  openOutcomeModal,
+  handleRevert,
+  openAssignModal,
+  getContactNames,
+  leadContacts,
+  typeConfig,
+}: {
+  activity: Activity;
+  isPending: (a: Activity) => boolean;
+  loadingId: string | null;
+  handleToggle: (e: React.MouseEvent, id: string) => void;
+  openOutcomeModal: (e: React.MouseEvent, activity: Activity, type: "failed" | "skipped") => void;
+  handleRevert: (e: React.MouseEvent, id: string) => void;
+  openAssignModal: (e: React.MouseEvent, activity: Activity) => void;
+  getContactNames: (ids: string | null) => string[];
+  leadContacts: LeadContact[];
+  typeConfig: Record<string, { label: string; bg: string; text: string }>;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({ id: activity.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 50 : undefined,
+    opacity: isDragging ? 0.8 : undefined,
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`group rounded-lg border p-4 transition-all duration-200 ${
+        isDragging ? "shadow-xl ring-2 ring-purple-300" : ""
+      } ${
+        activity.failedAt
+          ? "border-red-200 bg-red-50/50"
+          : activity.skippedAt
+            ? "border-amber-200 bg-amber-50/50"
+            : "border-gray-200 hover:border-purple-300 hover:shadow-md bg-white"
+      }`}
+    >
+      <div className="flex items-start gap-3">
+        {/* Drag handle */}
+        <button
+          {...attributes}
+          {...listeners}
+          className="mt-1 flex-shrink-0 cursor-grab touch-none text-gray-300 hover:text-gray-500 active:cursor-grabbing"
+          tabIndex={-1}
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+
+        {/* Toggle button */}
+        {isPending(activity) ? (
+          <button
+            onClick={(e) => handleToggle(e, activity.id)}
+            disabled={loadingId === activity.id}
+            className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 bg-white hover:border-primary hover:bg-primary/10 transition-all disabled:opacity-50"
+            title="Marcar como concluída"
+          >
+            {loadingId === activity.id && (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            )}
+          </button>
+        ) : activity.completed ? (
+          <button
+            onClick={(e) => handleToggle(e, activity.id)}
+            disabled={loadingId === activity.id}
+            className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-green-500 bg-green-500 text-white transition-all disabled:opacity-50"
+            title="Marcar como pendente"
+          >
+            {loadingId === activity.id ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Check className="h-3.5 w-3.5" />
+            )}
+          </button>
+        ) : activity.failedAt ? (
+          <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-red-400 bg-red-100">
+            <XCircle className="h-3.5 w-3.5 text-red-600" />
+          </div>
+        ) : (
+          <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-amber-400 bg-amber-100">
+            <SkipForward className="h-3.5 w-3.5 text-amber-600" />
+          </div>
+        )}
+
+        {/* Content - clickable link */}
+        <Link
+          href={`/activities/${activity.id}`}
+          className="flex-1 min-w-0"
+        >
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${typeConfig[activity.type]?.bg ?? "bg-gray-100"} ${typeConfig[activity.type]?.text ?? "text-gray-800"}`}>
+              {typeConfig[activity.type]?.label ?? activity.type}
+            </span>
+            {activity.completed && (
+              <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                Concluída{activity.completedAt && ` em ${formatDate(activity.completedAt)}`}
+              </span>
+            )}
+            {activity.failedAt && (
+              <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                Falhou
+              </span>
+            )}
+            {activity.skippedAt && (
+              <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                Pulada
+              </span>
+            )}
+          </div>
+          <h3 className={`mt-2 font-medium group-hover:text-purple-800 ${
+            activity.completed
+              ? "text-gray-500 line-through"
+              : activity.failedAt || activity.skippedAt
+                ? "text-gray-500"
+                : "text-gray-900"
+          }`}>
+            {activity.subject}
+          </h3>
+          {activity.description && (
+            <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+              {activity.description}
+            </p>
+          )}
+          {activity.failReason && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">
+              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+              {activity.failReason}
+            </p>
+          )}
+          {activity.skipReason && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600">
+              <SkipForward className="h-3 w-3 flex-shrink-0" />
+              {activity.skipReason}
+            </p>
+          )}
+          {(() => {
+            const names = getContactNames(activity.leadContactIds);
+            return names.length > 0 ? (
+              <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                <Users className="h-3.5 w-3.5 text-purple-500 flex-shrink-0" />
+                {names.map((name, i) => (
+                  <span key={i} className="rounded-md bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                    {name}
+                  </span>
+                ))}
+              </div>
+            ) : null;
+          })()}
+          {activity.dueDate && (
+            <p className="mt-2 text-xs text-gray-500 group-hover:text-gray-600">
+              Vencimento: {formatDate(activity.dueDate)}
+            </p>
+          )}
+        </Link>
+
+        {/* Action buttons */}
+        <div className="flex items-center gap-1 flex-shrink-0">
+          {(activity.failedAt || activity.skippedAt) && (
+            <button
+              onClick={(e) => handleRevert(e, activity.id)}
+              disabled={loadingId === activity.id}
+              className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-50"
+              title="Voltar para pendente"
+            >
+              {loadingId === activity.id ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <RotateCcw className="h-4 w-4" />
+              )}
+            </button>
+          )}
+
+          {isPending(activity) && (
+            <>
+              <button
+                onClick={(e) => openOutcomeModal(e, activity, "failed")}
+                className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                title="Marcar como falha"
+              >
+                <XCircle className="h-4 w-4" />
+              </button>
+              <button
+                onClick={(e) => openOutcomeModal(e, activity, "skipped")}
+                className="rounded-lg p-2 text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                title="Pular atividade"
+              >
+                <SkipForward className="h-4 w-4" />
+              </button>
+            </>
+          )}
+
+          {leadContacts.some((c) => c.isActive) && isPending(activity) && (
+            <button
+              onClick={(e) => openAssignModal(e, activity)}
+              className={`rounded-lg p-2 transition-colors ${
+                activity.leadContactIds
+                  ? "text-purple-500 hover:bg-purple-100 hover:text-purple-700"
+                  : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              }`}
+              title="Associar contatos"
+            >
+              <UserPlus className="h-4 w-4" />
+            </button>
+          )}
+
+          <Link href={`/activities/${activity.id}`} className="flex-shrink-0">
+            <svg
+              className="h-5 w-5 text-gray-400 group-hover:text-primary"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 5l7 7-7 7"
+              />
+            </svg>
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function LeadActivitiesList({
   leadId,
   activities,
+  activityOrder,
   leadContacts = [],
 }: {
   leadId: string;
   activities: Activity[];
+  activityOrder?: string | null;
   leadContacts?: LeadContact[];
 }) {
   const router = useRouter();
@@ -53,6 +314,72 @@ export function LeadActivitiesList({
   const [replyChannel, setReplyChannel] = useState("email");
   const [replyNotes, setReplyNotes] = useState("");
   const [replyLoading, setReplyLoading] = useState(false);
+  const [savingOrder, setSavingOrder] = useState(false);
+
+  const hasCustomOrder = !!activityOrder;
+
+  // Sort activities based on custom order or default (server order by date)
+  const sortedActivities = useMemo(() => {
+    if (!activityOrder) return activities;
+    try {
+      const order = JSON.parse(activityOrder) as string[];
+      const orderMap = new Map(order.map((id, idx) => [id, idx]));
+      return [...activities].sort((a, b) => {
+        const aIdx = orderMap.get(a.id) ?? Infinity;
+        const bIdx = orderMap.get(b.id) ?? Infinity;
+        return aIdx - bIdx;
+      });
+    } catch {
+      return activities;
+    }
+  }, [activities, activityOrder]);
+
+  const [orderedActivities, setOrderedActivities] = useState(sortedActivities);
+
+  // Keep in sync with server data
+  if (JSON.stringify(orderedActivities.map(a => a.id)) !== JSON.stringify(sortedActivities.map(a => a.id))
+    && !savingOrder) {
+    setOrderedActivities(sortedActivities);
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+
+    const oldIndex = orderedActivities.findIndex((a) => a.id === active.id);
+    const newIndex = orderedActivities.findIndex((a) => a.id === over.id);
+    const newOrder = arrayMove(orderedActivities, oldIndex, newIndex);
+    setOrderedActivities(newOrder);
+
+    setSavingOrder(true);
+    try {
+      await updateLeadActivityOrder(leadId, newOrder.map((a) => a.id));
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar ordem");
+      setOrderedActivities(sortedActivities);
+    } finally {
+      setSavingOrder(false);
+    }
+  };
+
+  const handleResetOrder = async () => {
+    setSavingOrder(true);
+    try {
+      await resetLeadActivityOrder(leadId);
+      toast.success("Ordem restaurada por data");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao restaurar ordem");
+    } finally {
+      setSavingOrder(false);
+    }
+  };
 
   const openAssignModal = (e: React.MouseEvent, activity: Activity) => {
     e.preventDefault();
@@ -211,6 +538,23 @@ export function LeadActivitiesList({
           Atividades ({activities.length})
         </h2>
         <div className="flex items-center gap-2">
+          {hasCustomOrder && (
+            <button
+              onClick={handleResetOrder}
+              disabled={savingOrder}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all disabled:opacity-50"
+              title="Voltar a ordenar por data"
+            >
+              <Calendar className="h-3.5 w-3.5" />
+              Ordenar por data
+            </button>
+          )}
+          {!hasCustomOrder && activities.length > 1 && (
+            <span className="inline-flex items-center gap-1 text-xs text-gray-400">
+              <ArrowDownUp className="h-3 w-3" />
+              Arraste para reordenar
+            </span>
+          )}
           {hasPendingActivities && (
             <button
               onClick={() => setReplyModal(true)}
@@ -240,201 +584,34 @@ export function LeadActivitiesList({
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {activities.map((activity) => (
-            <div
-              key={activity.id}
-              className={`group rounded-lg border p-4 transition-all duration-200 ${
-                activity.failedAt
-                  ? "border-red-200 bg-red-50/50"
-                  : activity.skippedAt
-                    ? "border-amber-200 bg-amber-50/50"
-                    : "border-gray-200 hover:border-purple-300 hover:shadow-md"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                {/* Toggle button */}
-                {isPending(activity) ? (
-                  <button
-                    onClick={(e) => handleToggle(e, activity.id)}
-                    disabled={loadingId === activity.id}
-                    className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 bg-white hover:border-primary hover:bg-primary/10 transition-all disabled:opacity-50"
-                    title="Marcar como concluída"
-                  >
-                    {loadingId === activity.id && (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    )}
-                  </button>
-                ) : activity.completed ? (
-                  <button
-                    onClick={(e) => handleToggle(e, activity.id)}
-                    disabled={loadingId === activity.id}
-                    className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-green-500 bg-green-500 text-white transition-all disabled:opacity-50"
-                    title="Marcar como pendente"
-                  >
-                    {loadingId === activity.id ? (
-                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                    ) : (
-                      <Check className="h-3.5 w-3.5" />
-                    )}
-                  </button>
-                ) : activity.failedAt ? (
-                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-red-400 bg-red-100">
-                    <XCircle className="h-3.5 w-3.5 text-red-600" />
-                  </div>
-                ) : (
-                  <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-amber-400 bg-amber-100">
-                    <SkipForward className="h-3.5 w-3.5 text-amber-600" />
-                  </div>
-                )}
-
-                {/* Content - clickable link */}
-                <Link
-                  href={`/activities/${activity.id}`}
-                  className="flex-1 min-w-0"
-                >
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${typeConfig[activity.type]?.bg ?? "bg-gray-100"} ${typeConfig[activity.type]?.text ?? "text-gray-800"}`}>
-                      {typeConfig[activity.type]?.label ?? activity.type}
-                    </span>
-                    {activity.completed && (
-                      <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                        Concluída{activity.completedAt && ` em ${formatDate(activity.completedAt)}`}
-                      </span>
-                    )}
-                    {activity.failedAt && (
-                      <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                        Falhou
-                      </span>
-                    )}
-                    {activity.skippedAt && (
-                      <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                        Pulada
-                      </span>
-                    )}
-                  </div>
-                  <h3 className={`mt-2 font-medium group-hover:text-purple-800 ${
-                    activity.completed
-                      ? "text-gray-500 line-through"
-                      : activity.failedAt || activity.skippedAt
-                        ? "text-gray-500"
-                        : "text-gray-900"
-                  }`}>
-                    {activity.subject}
-                  </h3>
-                  {activity.description && (
-                    <p className="mt-1 text-sm text-gray-600 line-clamp-2">
-                      {activity.description}
-                    </p>
-                  )}
-                  {/* Fail/Skip reason */}
-                  {activity.failReason && (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">
-                      <AlertTriangle className="h-3 w-3 flex-shrink-0" />
-                      {activity.failReason}
-                    </p>
-                  )}
-                  {activity.skipReason && (
-                    <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600">
-                      <SkipForward className="h-3 w-3 flex-shrink-0" />
-                      {activity.skipReason}
-                    </p>
-                  )}
-                  {/* Assigned contacts */}
-                  {(() => {
-                    const names = getContactNames(activity.leadContactIds);
-                    return names.length > 0 ? (
-                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                        <Users className="h-3.5 w-3.5 text-purple-500 flex-shrink-0" />
-                        {names.map((name, i) => (
-                          <span key={i} className="rounded-md bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
-                            {name}
-                          </span>
-                        ))}
-                      </div>
-                    ) : null;
-                  })()}
-                  {activity.dueDate && (
-                    <p className="mt-2 text-xs text-gray-500 group-hover:text-gray-600">
-                      Vencimento: {formatDate(activity.dueDate)}
-                    </p>
-                  )}
-                </Link>
-
-                {/* Action buttons */}
-                <div className="flex items-center gap-1 flex-shrink-0">
-                  {/* Revert button for failed/skipped */}
-                  {(activity.failedAt || activity.skippedAt) && (
-                    <button
-                      onClick={(e) => handleRevert(e, activity.id)}
-                      disabled={loadingId === activity.id}
-                      className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors disabled:opacity-50"
-                      title="Voltar para pendente"
-                    >
-                      {loadingId === activity.id ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <RotateCcw className="h-4 w-4" />
-                      )}
-                    </button>
-                  )}
-
-                  {/* Failed/Skip buttons for pending activities */}
-                  {isPending(activity) && (
-                    <>
-                      <button
-                        onClick={(e) => openOutcomeModal(e, activity, "failed")}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
-                        title="Marcar como falha"
-                      >
-                        <XCircle className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={(e) => openOutcomeModal(e, activity, "skipped")}
-                        className="rounded-lg p-2 text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
-                        title="Pular atividade"
-                      >
-                        <SkipForward className="h-4 w-4" />
-                      </button>
-                    </>
-                  )}
-
-                  {/* Assign contacts button */}
-                  {leadContacts.some((c) => c.isActive) && isPending(activity) && (
-                    <button
-                      onClick={(e) => openAssignModal(e, activity)}
-                      className={`rounded-lg p-2 transition-colors ${
-                        activity.leadContactIds
-                          ? "text-purple-500 hover:bg-purple-100 hover:text-purple-700"
-                          : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-                      }`}
-                      title="Associar contatos"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                    </button>
-                  )}
-
-                  {/* Arrow */}
-                  <Link href={`/activities/${activity.id}`} className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-gray-400 group-hover:text-primary"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 5l7 7-7 7"
-                      />
-                    </svg>
-                  </Link>
-                </div>
-              </div>
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={orderedActivities.map((a) => a.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-3">
+              {orderedActivities.map((activity) => (
+                <SortableActivityItem
+                  key={activity.id}
+                  activity={activity}
+                  isPending={isPending}
+                  loadingId={loadingId}
+                  handleToggle={handleToggle}
+                  openOutcomeModal={openOutcomeModal}
+                  handleRevert={handleRevert}
+                  openAssignModal={openAssignModal}
+                  getContactNames={getContactNames}
+                  leadContacts={leadContacts}
+                  typeConfig={typeConfig}
+                />
+              ))}
             </div>
-          ))}
-        </div>
+          </SortableContext>
+        </DndContext>
       )}
 
       {/* Outcome Modal (Failed / Skipped) */}

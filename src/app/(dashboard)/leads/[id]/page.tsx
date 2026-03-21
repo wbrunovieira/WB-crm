@@ -631,6 +631,7 @@ export default async function LeadDetailPage({
         <LeadActivitiesList
           leadId={lead.id}
           activities={lead.activities}
+          activityOrder={lead.activityOrder}
           leadContacts={lead.leadContacts.map((c) => ({
             id: c.id,
             name: c.name,

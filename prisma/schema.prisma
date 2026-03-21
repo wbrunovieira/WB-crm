@@ -194,6 +194,9 @@ model Lead {
   // Referral tracking
   referredByPartnerId String?
 
+  // Custom activity order (JSON: array of activity IDs)
+  activityOrder String?
+
   // Owner e timestamps
   ownerId   String
   createdAt DateTime @default(now())

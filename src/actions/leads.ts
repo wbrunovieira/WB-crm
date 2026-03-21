@@ -682,3 +682,54 @@ export async function convertLeadToOrganization(leadId: string) {
 
   return result;
 }
+
+// ============ LEAD ACTIVITY ORDER ============
+
+export async function updateLeadActivityOrder(
+  leadId: string,
+  activityIds: string[]
+) {
+  await getAuthenticatedSession();
+
+  if (activityIds.length === 0) {
+    throw new Error("Lista de atividades não pode ser vazia");
+  }
+
+  const ownerFilter = await getOwnerOrSharedFilter("lead");
+  const lead = await prisma.lead.findFirst({
+    where: { id: leadId, ...ownerFilter },
+  });
+
+  if (!lead) {
+    throw new Error("Lead não encontrado");
+  }
+
+  const updated = await prisma.lead.update({
+    where: { id: leadId },
+    data: { activityOrder: JSON.stringify(activityIds) },
+  });
+
+  revalidatePath(`/leads/${leadId}`);
+  return updated;
+}
+
+export async function resetLeadActivityOrder(leadId: string) {
+  await getAuthenticatedSession();
+
+  const ownerFilter = await getOwnerOrSharedFilter("lead");
+  const lead = await prisma.lead.findFirst({
+    where: { id: leadId, ...ownerFilter },
+  });
+
+  if (!lead) {
+    throw new Error("Lead não encontrado");
+  }
+
+  const updated = await prisma.lead.update({
+    where: { id: leadId },
+    data: { activityOrder: null },
+  });
+
+  revalidatePath(`/leads/${leadId}`);
+  return updated;
+}
