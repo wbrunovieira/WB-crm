@@ -336,9 +336,10 @@ export function LeadActivitiesList({
 
   const [orderedActivities, setOrderedActivities] = useState(sortedActivities);
 
-  // Keep in sync with server data
-  if (JSON.stringify(orderedActivities.map(a => a.id)) !== JSON.stringify(sortedActivities.map(a => a.id))
-    && !savingOrder) {
+  // Keep in sync with server data (compare full data, not just IDs)
+  const sortedKey = JSON.stringify(sortedActivities);
+  const orderedKey = JSON.stringify(orderedActivities);
+  if (sortedKey !== orderedKey && !savingOrder) {
     setOrderedActivities(sortedActivities);
   }
 
