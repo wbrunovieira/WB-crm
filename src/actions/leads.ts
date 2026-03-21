@@ -175,6 +175,9 @@ export async function createLead(data: LeadFormData) {
       ...rest,
       languages: languagesToJson(languages),
       ownerId: session.user.id,
+      ...(labelIds && labelIds.length > 0 && {
+        labels: { connect: labelIds.map((id) => ({ id })) },
+      }),
     },
   });
 
@@ -199,12 +202,15 @@ export async function createLeadWithContacts(
   // Use transaction to ensure all-or-nothing
   const result = await prisma.$transaction(async (tx) => {
     // 1. Create the lead
-    const { languages: leadLanguages, labelIds: _labelIds, ...leadRest } = validatedLead;
+    const { languages: leadLanguages, labelIds, ...leadRest } = validatedLead;
     const lead = await tx.lead.create({
       data: {
         ...leadRest,
         languages: languagesToJson(leadLanguages),
         ownerId: session.user.id,
+        ...(labelIds && labelIds.length > 0 && {
+          labels: { connect: labelIds.map((id) => ({ id })) },
+        }),
       },
     });
 
@@ -275,6 +281,9 @@ export async function updateLead(id: string, data: LeadFormData) {
     data: {
       ...rest,
       languages: languagesToJson(languages),
+      ...(labelIds && {
+        labels: { set: labelIds.map((id) => ({ id })) },
+      }),
     },
   });
 
