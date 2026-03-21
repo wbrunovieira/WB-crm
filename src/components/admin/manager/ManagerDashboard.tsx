@@ -7,6 +7,7 @@ import { DealsChart } from "./DealsChart";
 import { ActivitiesChart } from "./ActivitiesChart";
 import { StageChangesChart } from "./StageChangesChart";
 import { UserPerformanceTable } from "./UserPerformanceTable";
+import { ActivityCalendar } from "./ActivityCalendar";
 import type { ManagerStats } from "@/actions/admin-manager";
 import type { PeriodOption } from "@/lib/validations/manager";
 
@@ -82,9 +83,15 @@ export function ManagerDashboard({
         </div>
       </div>
 
+      {/* Activity Calendar Heatmap */}
+      <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Calendario de Atividades</h2>
+        <ActivityCalendar />
+      </div>
+
       {/* User Performance Table */}
       <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">Performance por Usuário</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">Performance por Usuario</h2>
         <UserPerformanceTable byUser={stats.byUser} />
       </div>
     </div>

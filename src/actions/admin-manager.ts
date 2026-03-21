@@ -610,3 +610,93 @@ export async function getTimelineData(input: DateRangeInput) {
 
   return timeline;
 }
+
+// ==================== Activity Calendar ====================
+
+export interface DailyActivityData {
+  date: string; // YYYY-MM-DD
+  total: number;
+  completed: number;
+  pending: number;
+  failed: number;
+  skipped: number;
+  byType: Record<string, number>;
+}
+
+/**
+ * Get daily activity data for calendar heatmap
+ */
+export async function getActivityCalendarData(
+  year: number,
+  month: number
+): Promise<DailyActivityData[]> {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    throw new Error("Não autorizado");
+  }
+
+  if (session.user.role?.toLowerCase() !== "admin") {
+    throw new Error("Acesso restrito a administradores");
+  }
+
+  const startDate = new Date(year, month - 1, 1);
+  const endDate = new Date(year, month, 0, 23, 59, 59, 999);
+
+  const activities = await prisma.activity.findMany({
+    where: {
+      OR: [
+        { dueDate: { gte: startDate, lte: endDate } },
+        { createdAt: { gte: startDate, lte: endDate }, dueDate: null },
+      ],
+    },
+    select: {
+      id: true,
+      type: true,
+      completed: true,
+      failedAt: true,
+      skippedAt: true,
+      dueDate: true,
+      createdAt: true,
+    },
+  });
+
+  const dayMap = new Map<string, DailyActivityData>();
+
+  activities.forEach((activity) => {
+    const date = (activity.dueDate || activity.createdAt)
+      .toISOString()
+      .split("T")[0];
+
+    if (!dayMap.has(date)) {
+      dayMap.set(date, {
+        date,
+        total: 0,
+        completed: 0,
+        pending: 0,
+        failed: 0,
+        skipped: 0,
+        byType: {},
+      });
+    }
+
+    const day = dayMap.get(date)!;
+    day.total++;
+
+    if (activity.completed) {
+      day.completed++;
+    } else if (activity.failedAt) {
+      day.failed++;
+    } else if (activity.skippedAt) {
+      day.skipped++;
+    } else {
+      day.pending++;
+    }
+
+    day.byType[activity.type] = (day.byType[activity.type] || 0) + 1;
+  });
+
+  return Array.from(dayMap.values()).sort((a, b) =>
+    a.date.localeCompare(b.date)
+  );
+}

@@ -7,3 +7,4 @@ export { DealsChart } from "./DealsChart";
 export { ActivitiesChart } from "./ActivitiesChart";
 export { StageChangesChart } from "./StageChangesChart";
 export { UserPerformanceTable } from "./UserPerformanceTable";
+export { ActivityCalendar } from "./ActivityCalendar";
