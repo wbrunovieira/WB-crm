@@ -621,6 +621,10 @@ export interface DailyActivityData {
   failed: number;
   skipped: number;
   byType: Record<string, number>;
+  completedByType: Record<string, number>;
+  pendingByType: Record<string, number>;
+  failedByType: Record<string, number>;
+  skippedByType: Record<string, number>;
 }
 
 /**
@@ -685,23 +689,30 @@ export async function getActivityCalendarData(
         failed: 0,
         skipped: 0,
         byType: {},
+        completedByType: {},
+        pendingByType: {},
+        failedByType: {},
+        skippedByType: {},
       });
     }
 
     const day = dayMap.get(dateStr)!;
     day.total++;
+    day.byType[activity.type] = (day.byType[activity.type] || 0) + 1;
 
     if (activity.completed) {
       day.completed++;
+      day.completedByType[activity.type] = (day.completedByType[activity.type] || 0) + 1;
     } else if (activity.failedAt) {
       day.failed++;
+      day.failedByType[activity.type] = (day.failedByType[activity.type] || 0) + 1;
     } else if (activity.skippedAt) {
       day.skipped++;
+      day.skippedByType[activity.type] = (day.skippedByType[activity.type] || 0) + 1;
     } else {
       day.pending++;
+      day.pendingByType[activity.type] = (day.pendingByType[activity.type] || 0) + 1;
     }
-
-    day.byType[activity.type] = (day.byType[activity.type] || 0) + 1;
   };
 
   activities.forEach((activity) => {
