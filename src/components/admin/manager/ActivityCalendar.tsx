@@ -296,24 +296,91 @@ export function ActivityCalendar() {
                   )}
                 </div>
 
-                <div className="border-t border-[#792990]/30 pt-2 space-y-1">
-                  <p className="text-[10px] uppercase tracking-wider text-gray-500 font-medium">Por tipo</p>
-                  {Object.entries(hoveredDay.byType)
-                    .sort(([, a], [, b]) => b - a)
-                    .map(([type, count]) => (
-                      <div key={type} className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <div
-                            className="w-2 h-2 rounded-full"
-                            style={{ backgroundColor: activityTypeLabels[type]?.color || "#888" }}
-                          />
-                          <span className="text-xs text-gray-300">
-                            {activityTypeLabels[type]?.label || type}
-                          </span>
-                        </div>
-                        <span className="text-xs font-semibold text-white">{count}</span>
-                      </div>
-                    ))}
+                <div className="border-t border-[#792990]/30 pt-2 space-y-2">
+                  {hoveredDay.completed > 0 && Object.keys(hoveredDay.completedByType || {}).length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase tracking-wider text-green-400/70 font-medium">Concluidas</p>
+                      {Object.entries(hoveredDay.completedByType)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([type, count]) => (
+                          <div key={type} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: activityTypeLabels[type]?.color || "#888" }}
+                              />
+                              <span className="text-xs text-gray-300">
+                                {activityTypeLabels[type]?.label || type}
+                              </span>
+                            </div>
+                            <span className="text-xs font-semibold text-green-400">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                  {hoveredDay.pending > 0 && Object.keys(hoveredDay.pendingByType || {}).length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase tracking-wider text-yellow-400/70 font-medium">Pendentes</p>
+                      {Object.entries(hoveredDay.pendingByType)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([type, count]) => (
+                          <div key={type} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: activityTypeLabels[type]?.color || "#888" }}
+                              />
+                              <span className="text-xs text-gray-300">
+                                {activityTypeLabels[type]?.label || type}
+                              </span>
+                            </div>
+                            <span className="text-xs font-semibold text-yellow-400">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                  {hoveredDay.failed > 0 && Object.keys(hoveredDay.failedByType || {}).length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase tracking-wider text-red-400/70 font-medium">Falharam</p>
+                      {Object.entries(hoveredDay.failedByType)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([type, count]) => (
+                          <div key={type} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: activityTypeLabels[type]?.color || "#888" }}
+                              />
+                              <span className="text-xs text-gray-300">
+                                {activityTypeLabels[type]?.label || type}
+                              </span>
+                            </div>
+                            <span className="text-xs font-semibold text-red-400">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                  {hoveredDay.skipped > 0 && Object.keys(hoveredDay.skippedByType || {}).length > 0 && (
+                    <div className="space-y-1">
+                      <p className="text-[10px] uppercase tracking-wider text-amber-400/70 font-medium">Puladas</p>
+                      {Object.entries(hoveredDay.skippedByType)
+                        .sort(([, a], [, b]) => b - a)
+                        .map(([type, count]) => (
+                          <div key={type} className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div
+                                className="w-2 h-2 rounded-full"
+                                style={{ backgroundColor: activityTypeLabels[type]?.color || "#888" }}
+                              />
+                              <span className="text-xs text-gray-300">
+                                {activityTypeLabels[type]?.label || type}
+                              </span>
+                            </div>
+                            <span className="text-xs font-semibold text-amber-400">{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

@@ -189,6 +189,17 @@ describe("getActivityCalendarData", () => {
       whatsapp: 1,
       task: 1,
     });
+    expect(march23!.completedByType).toEqual({
+      email: 1,
+      call: 1,
+    });
+    expect(march23!.pendingByType).toEqual({
+      task: 1,
+    });
+    expect(march23!.failedByType).toEqual({
+      whatsapp: 1,
+    });
+    expect(march23!.skippedByType).toEqual({});
   });
 
   it("should query activities that were completed/failed/skipped within the month", async () => {
