@@ -643,17 +643,29 @@ export async function getActivityCalendarData(
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59, 999);
 
+  // Fetch activities that:
+  // - Were completed/failed/skipped during this month (outcome date in range)
+  // - OR are pending with dueDate in this month
+  // - OR are pending with no dueDate but created in this month
   const activities = await prisma.activity.findMany({
     where: {
       OR: [
-        { dueDate: { gte: startDate, lte: endDate } },
-        { createdAt: { gte: startDate, lte: endDate }, dueDate: null },
+        { completedAt: { gte: startDate, lte: endDate } },
+        { failedAt: { gte: startDate, lte: endDate } },
+        { skippedAt: { gte: startDate, lte: endDate } },
+        // Legacy completed without completedAt: use dueDate
+        { completed: true, completedAt: null, dueDate: { gte: startDate, lte: endDate } },
+        { completed: true, completedAt: null, dueDate: null, createdAt: { gte: startDate, lte: endDate } },
+        // Pending activities
+        { dueDate: { gte: startDate, lte: endDate }, completed: false, failedAt: null, skippedAt: null },
+        { dueDate: null, createdAt: { gte: startDate, lte: endDate }, completed: false, failedAt: null, skippedAt: null },
       ],
     },
     select: {
       id: true,
       type: true,
       completed: true,
+      completedAt: true,
       failedAt: true,
       skippedAt: true,
       dueDate: true,
@@ -663,14 +675,10 @@ export async function getActivityCalendarData(
 
   const dayMap = new Map<string, DailyActivityData>();
 
-  activities.forEach((activity) => {
-    const date = (activity.dueDate || activity.createdAt)
-      .toISOString()
-      .split("T")[0];
-
-    if (!dayMap.has(date)) {
-      dayMap.set(date, {
-        date,
+  const addToDay = (dateStr: string, activity: typeof activities[0]) => {
+    if (!dayMap.has(dateStr)) {
+      dayMap.set(dateStr, {
+        date: dateStr,
         total: 0,
         completed: 0,
         pending: 0,
@@ -680,7 +688,7 @@ export async function getActivityCalendarData(
       });
     }
 
-    const day = dayMap.get(date)!;
+    const day = dayMap.get(dateStr)!;
     day.total++;
 
     if (activity.completed) {
@@ -694,6 +702,23 @@ export async function getActivityCalendarData(
     }
 
     day.byType[activity.type] = (day.byType[activity.type] || 0) + 1;
+  };
+
+  activities.forEach((activity) => {
+    // Resolved activities go on the date they were resolved
+    // Pending activities go on their dueDate (or createdAt if no dueDate)
+    let date: string;
+    if (activity.completed && activity.completedAt) {
+      date = activity.completedAt.toISOString().split("T")[0];
+    } else if (activity.failedAt) {
+      date = activity.failedAt.toISOString().split("T")[0];
+    } else if (activity.skippedAt) {
+      date = activity.skippedAt.toISOString().split("T")[0];
+    } else {
+      date = (activity.dueDate || activity.createdAt).toISOString().split("T")[0];
+    }
+
+    addToDay(date, activity);
   });
 
   return Array.from(dayMap.values()).sort((a, b) =>
