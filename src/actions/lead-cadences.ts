@@ -491,6 +491,82 @@ export async function cancelLeadCadence(id: string) {
 }
 
 /**
+ * Cancel ALL active/paused lead cadences for a given cadence template.
+ * Skips only pending activities (preserves completed/failed/skipped).
+ */
+export async function cancelAllActiveCadences(cadenceId: string) {
+  await getAuthenticatedSession();
+  const ownerFilter = await getOwnerFilter();
+
+  const cadence = await prisma.cadence.findFirst({
+    where: { id: cadenceId, ...ownerFilter },
+  });
+
+  if (!cadence) {
+    throw new Error("Cadência não encontrada");
+  }
+
+  const activeLeadCadences = await prisma.leadCadence.findMany({
+    where: {
+      cadenceId,
+      status: { in: ["active", "paused"] },
+    },
+  });
+
+  if (activeLeadCadences.length === 0) {
+    throw new Error("Nenhuma cadência ativa para cancelar");
+  }
+
+  let skippedActivitiesCount = 0;
+
+  await prisma.$transaction(async (tx) => {
+    const now = new Date();
+
+    for (const lc of activeLeadCadences) {
+      const cadenceActivities = await tx.leadCadenceActivity.findMany({
+        where: { leadCadenceId: lc.id },
+        include: { activity: true },
+      });
+
+      for (const ca of cadenceActivities) {
+        if (!ca.activity.completed && !ca.activity.failedAt && !ca.activity.skippedAt) {
+          await tx.activity.update({
+            where: { id: ca.activity.id },
+            data: {
+              skippedAt: now,
+              skipReason: "Cadência cancelada",
+            },
+          });
+          skippedActivitiesCount++;
+        }
+      }
+
+      await tx.leadCadence.update({
+        where: { id: lc.id },
+        data: {
+          status: "cancelled",
+          cancelledAt: now,
+        },
+      });
+    }
+  });
+
+  const leadIds = Array.from(new Set(activeLeadCadences.map((lc) => lc.leadId)));
+  for (const leadId of leadIds) {
+    revalidatePath(`/leads/${leadId}`);
+  }
+  revalidatePath("/activities");
+  revalidatePath("/activities/calendar");
+  revalidatePath(`/admin/cadences/${cadenceId}`);
+  revalidatePath("/admin/cadences");
+
+  return {
+    cancelledCount: activeLeadCadences.length,
+    skippedActivitiesCount,
+  };
+}
+
+/**
  * Mark a lead cadence as completed
  */
 export async function completeLeadCadence(id: string) {

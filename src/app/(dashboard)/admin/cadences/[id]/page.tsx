@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Target, Users, Calendar, Zap } from "lucide-react";
-import { getCadenceById } from "@/actions/cadences";
+import { getCadenceById, getActiveLeadCadencesCount } from "@/actions/cadences";
 import { getICPs } from "@/actions/icps";
 import { CadenceStepForm } from "@/components/admin/CadenceStepForm";
 import { CadenceStepsList } from "@/components/admin/CadenceStepsList";
@@ -14,9 +14,10 @@ interface CadenceDetailPageProps {
 export default async function CadenceDetailPage({ params }: CadenceDetailPageProps) {
   const { id } = await params;
 
-  const [cadence, icps] = await Promise.all([
+  const [cadence, icps, activeLeadCadencesCount] = await Promise.all([
     getCadenceById(id),
     getICPs(),
+    getActiveLeadCadencesCount(id),
   ]);
 
   if (!cadence) {
@@ -47,6 +48,7 @@ export default async function CadenceDetailPage({ params }: CadenceDetailPagePro
           icpId: cadence.icpId,
           status: cadence.status,
           icp: cadence.icp,
+          activeLeadCadencesCount,
         }}
         icps={icpOptions}
       />

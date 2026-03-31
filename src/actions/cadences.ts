@@ -169,6 +169,20 @@ export async function getCadenceById(id: string) {
 }
 
 /**
+ * Count active/paused lead cadences for a cadence
+ */
+export async function getActiveLeadCadencesCount(cadenceId: string) {
+  await getAuthenticatedSession();
+
+  return prisma.leadCadence.count({
+    where: {
+      cadenceId,
+      status: { in: ["active", "paused"] },
+    },
+  });
+}
+
+/**
  * Update a Cadence
  */
 export async function updateCadence(id: string, data: CadenceUpdateData) {
