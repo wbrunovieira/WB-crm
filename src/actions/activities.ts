@@ -76,6 +76,11 @@ export async function getActivities(filters?: {
       ...archivedLeadFilter,
       ...(filters?.type && { type: filters.type }),
       ...(filters?.completed !== undefined && { completed: filters.completed }),
+      // When filtering pending (completed=false without outcome), exclude skipped/failed
+      ...(filters?.completed === false && !filters?.outcome && {
+        skippedAt: null,
+        failedAt: null,
+      }),
       ...(filters?.dealId && { dealId: filters.dealId }),
       ...(filters?.contactId && { contactId: filters.contactId }),
       ...(filters?.leadId && { leadId: filters.leadId }),

@@ -55,10 +55,14 @@ export default async function ActivitiesPage({
   const isAdmin = session?.user?.role === "admin";
   const currentUserId = session?.user?.id || "";
 
+  // Default to pending (completed=false) when no status filter is specified
+  const hasStatusFilter = searchParams.completed !== undefined || searchParams.outcome !== undefined;
+  const effectiveCompleted = hasStatusFilter ? searchParams.completed : "false";
+
   const filters = {
     ...(searchParams.type && { type: searchParams.type }),
-    ...(searchParams.completed && {
-      completed: searchParams.completed === "true",
+    ...(effectiveCompleted && effectiveCompleted !== "all" && {
+      completed: effectiveCompleted === "true",
     }),
     ...(searchParams.sortBy && { sortBy: searchParams.sortBy }),
     ...(searchParams.owner && { owner: searchParams.owner }),
@@ -115,9 +119,9 @@ export default async function ActivitiesPage({
         {/* Status Filters */}
         <div className="flex gap-4">
           <Link
-            href="/activities"
+            href="/activities?completed=all"
             className={`rounded-md px-4 py-2 text-sm font-medium ${
-              !searchParams.type && !searchParams.completed && !searchParams.outcome
+              searchParams.completed === "all"
                 ? "bg-primary text-white"
                 : "bg-white text-gray-700 hover:bg-gray-50"
             }`}
@@ -127,7 +131,7 @@ export default async function ActivitiesPage({
           <Link
             href="/activities?completed=false"
             className={`rounded-md px-4 py-2 text-sm font-medium ${
-              searchParams.completed === "false"
+              searchParams.completed === "false" || (!searchParams.completed && !searchParams.outcome)
                 ? "bg-primary text-white"
                 : "bg-white text-gray-700 hover:bg-gray-50"
             }`}
