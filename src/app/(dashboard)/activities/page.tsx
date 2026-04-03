@@ -14,6 +14,7 @@ import { ActivitiesDateFilter } from "@/components/activities/ActivitiesDateFilt
 import { ShowArchivedToggle } from "@/components/activities/ShowArchivedToggle";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { OwnerBadge } from "@/components/shared/OwnerBadge";
+import { ActivityOutcomeButtons } from "@/components/activities/ActivityOutcomeButtons";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -241,19 +242,30 @@ export default async function ActivitiesPage({
           >
             <div className="flex items-start gap-6">
               {/* Date Badge on Left */}
-              {activity.dueDate && (
-                <div className="flex flex-col items-center justify-center rounded-lg bg-blue-50 border-2 border-blue-200 px-4 py-3 min-w-[80px]">
-                  <span className="text-2xl font-bold text-blue-700">
-                    {new Date(activity.dueDate).getDate()}
-                  </span>
-                  <span className="text-xs font-medium text-blue-600 uppercase">
-                    {new Date(activity.dueDate).toLocaleDateString("pt-BR", { month: "short" })}
-                  </span>
-                  <span className="text-xs text-blue-500">
-                    {new Date(activity.dueDate).getFullYear()}
-                  </span>
-                </div>
-              )}
+              <div className={`flex flex-col items-center justify-center rounded-lg px-4 py-3 min-w-[80px] ${
+                activity.dueDate
+                  ? "bg-blue-50 border-2 border-blue-200"
+                  : "bg-gray-50 border-2 border-gray-200"
+              }`}>
+                {activity.dueDate ? (
+                  <>
+                    <span className="text-2xl font-bold text-blue-700">
+                      {new Date(activity.dueDate).getDate()}
+                    </span>
+                    <span className="text-xs font-medium text-blue-600 uppercase">
+                      {new Date(activity.dueDate).toLocaleDateString("pt-BR", { month: "short" })}
+                    </span>
+                    <span className="text-xs text-blue-500">
+                      {new Date(activity.dueDate).getFullYear()}
+                    </span>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-lg font-bold text-gray-400">--</span>
+                    <span className="text-[10px] font-medium text-gray-400 uppercase">Sem data</span>
+                  </>
+                )}
+              </div>
 
               <div className="flex items-start gap-4 flex-1">
                 <ToggleCompletedButton
@@ -516,8 +528,14 @@ export default async function ActivitiesPage({
                   </div>
                 </div>
 
-                {/* Edit and Delete Buttons */}
+                {/* Action Buttons */}
                 <div className="flex items-center gap-2 ml-auto">
+                  <ActivityOutcomeButtons
+                    activityId={activity.id}
+                    completed={activity.completed}
+                    failedAt={activity.failedAt}
+                    skippedAt={activity.skippedAt}
+                  />
                   <Link
                     href={`/activities/${activity.id}/edit`}
                     className="text-gray-600 hover:text-primary"
