@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const dealSchema = z.object({
   title: z.string().min(2, "Título deve ter no mínimo 2 caracteres"),
+  description: z.string().optional().nullable(),
   value: z.number().min(0, "Valor deve ser maior ou igual a zero"),
   currency: z.string().default("BRL"),
   status: z.enum(["open", "won", "lost"]).default("open"),

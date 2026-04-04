@@ -41,6 +41,7 @@ export const mockStageWon: Stage = {
 export const mockDeal: Deal = {
   id: 'deal-test-1',
   title: 'Desenvolvimento de E-commerce',
+  description: null,
   value: 50000,
   currency: 'BRL',
   status: 'open',

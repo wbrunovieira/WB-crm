@@ -53,6 +53,13 @@ export default async function DealDetailPage({
         </div>
       </div>
 
+      {deal.description && (
+        <div className="mb-6 rounded-lg bg-white p-6 shadow">
+          <h2 className="mb-2 text-lg font-semibold">Descrição</h2>
+          <p className="whitespace-pre-wrap text-sm text-gray-700">{deal.description}</p>
+        </div>
+      )}
+
       <div className="grid gap-6 md:grid-cols-2">
         <div className="rounded-lg bg-white p-6 shadow">
           <h2 className="mb-4 text-lg font-semibold">Informações Básicas</h2>

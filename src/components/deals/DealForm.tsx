@@ -27,6 +27,7 @@ type Stage = {
 type Deal = {
   id: string;
   title: string;
+  description: string | null;
   value: number;
   currency: string;
   status: string;
@@ -57,6 +58,7 @@ export default function DealForm({
 
   const [formData, setFormData] = useState({
     title: deal?.title || "",
+    description: deal?.description || "",
     value: deal?.value || 0,
     currency: deal?.currency || "BRL",
     status: deal?.status || "open",
@@ -76,6 +78,7 @@ export default function DealForm({
     try {
       const data = {
         title: formData.title,
+        description: formData.description || null,
         value: Number(formData.value),
         currency: formData.currency,
         status: formData.status as "open" | "won" | "lost",
@@ -125,6 +128,23 @@ export default function DealForm({
           required
           value={formData.title}
           onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
+        />
+      </div>
+
+      <div>
+        <label
+          htmlFor="description"
+          className="block text-sm font-medium text-gray-700"
+        >
+          Descrição / Observações
+        </label>
+        <textarea
+          id="description"
+          rows={4}
+          value={formData.description}
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          placeholder="Registre aqui propostas enviadas, condições negociadas, observações..."
           className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
         />
       </div>

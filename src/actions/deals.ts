@@ -162,6 +162,7 @@ export async function createDeal(data: DealFormData) {
   const deal = await prisma.deal.create({
     data: {
       title: validated.title,
+      description: validated.description,
       value: validated.value,
       currency: validated.currency,
       status: validated.status,
@@ -215,6 +216,7 @@ export async function updateDeal(id: string, data: DealFormData) {
     where: { id },
     data: {
       title: validated.title,
+      description: validated.description,
       value: validated.value,
       currency: validated.currency,
       status: validated.status,

@@ -476,6 +476,7 @@ model Stage {
 model Deal {
   id                String        @id @default(cuid())
   title             String
+  description       String?
   value             Float         @default(0)
   currency          String        @default("BRL")
   status            String        @default("open") // open, won, lost
