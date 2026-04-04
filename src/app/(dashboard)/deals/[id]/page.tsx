@@ -195,7 +195,7 @@ export default async function DealDetailPage({
       <div className="mt-6 rounded-lg bg-white p-6 shadow">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">
-            Timeline de Atividades ({deal.activities.length})
+            Timeline ({deal.activities.length + (deal.stageHistory?.length || 0)})
           </h2>
           <Link
             href={`/activities/new?dealId=${deal.id}`}
@@ -204,7 +204,7 @@ export default async function DealDetailPage({
             + Nova Atividade
           </Link>
         </div>
-        <ActivityTimeline activities={deal.activities} showLinks={false} />
+        <ActivityTimeline activities={deal.activities} stageChanges={deal.stageHistory} showLinks={false} />
       </div>
 
       {/* Entity Management Panel (Admin Only) */}

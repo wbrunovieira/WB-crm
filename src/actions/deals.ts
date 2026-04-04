@@ -149,6 +149,16 @@ export async function getDealById(id: string) {
           createdAt: "desc",
         },
       },
+      stageHistory: {
+        include: {
+          fromStage: { select: { id: true, name: true } },
+          toStage: { select: { id: true, name: true } },
+          changedBy: { select: { id: true, name: true, email: true } },
+        },
+        orderBy: {
+          changedAt: "desc",
+        },
+      },
     },
   });
 
