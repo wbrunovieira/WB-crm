@@ -75,12 +75,12 @@ export async function getDeals(filters?: {
     const monthStart = new Date(year, month - 1, 1);
     const monthEnd = new Date(year, month, 1);
 
-    // OR: status is open, OR status is won/lost AND updatedAt within month
+    // OR: status is open, OR status is won/lost AND closedAt within month
     additionalFilters.OR = [
       { status: "open" },
       {
         status: { in: ["won", "lost"] },
-        updatedAt: { gte: monthStart, lt: monthEnd },
+        closedAt: { gte: monthStart, lt: monthEnd },
       },
     ];
   }
@@ -256,6 +256,17 @@ export async function updateDeal(id: string, data: DealFormData) {
   // Check if stage changed
   const stageChanged = validated.stageId && existingDeal.stageId !== validated.stageId;
 
+  // Set closedAt when status changes to won/lost, clear when reopening
+  const statusChanged = validated.status !== existingDeal.status;
+  let closedAt: Date | null | undefined;
+  if (statusChanged) {
+    if (validated.status === "won" || validated.status === "lost") {
+      closedAt = existingDeal.closedAt || new Date();
+    } else {
+      closedAt = null;
+    }
+  }
+
   const deal = await prisma.deal.update({
     where: { id },
     data: {
@@ -268,6 +279,7 @@ export async function updateDeal(id: string, data: DealFormData) {
       contactId: validated.contactId,
       organizationId: validated.organizationId,
       expectedCloseDate: validated.expectedCloseDate,
+      ...(closedAt !== undefined && { closedAt }),
     },
     include: {
       contact: true,
@@ -321,9 +333,31 @@ export async function updateDealStage(id: string, stageId: string) {
   // Only record if stage actually changed
   const stageChanged = deal.stageId !== stageId;
 
+  // Auto-sync status based on stage probability
+  const targetStage = await prisma.stage.findUnique({
+    where: { id: stageId },
+    select: { probability: true },
+  });
+
+  let newStatus = deal.status;
+  if (targetStage) {
+    if (targetStage.probability === 0) {
+      newStatus = "lost";
+    } else if (targetStage.probability === 100) {
+      newStatus = "won";
+    } else if (deal.status !== "open") {
+      newStatus = "open";
+    }
+  }
+
+  // Set closedAt when closing, clear when reopening
+  const closedAt = (newStatus === "won" || newStatus === "lost")
+    ? (deal.closedAt || new Date())  // Keep existing closedAt if already set
+    : null;
+
   const updatedDeal = await prisma.deal.update({
     where: { id },
-    data: { stageId },
+    data: { stageId, status: newStatus, closedAt },
     include: {
       contact: true,
       organization: true,

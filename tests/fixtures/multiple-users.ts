@@ -108,6 +108,7 @@ export function createMockDeal(ownerId: string, overrides: Partial<{
     value: overrides.value || 10000,
     currency: 'BRL',
     status: overrides.status || 'open',
+    closedAt: null,
     stageId: 'stage-1',
     contactId: null,
     organizationId: null,

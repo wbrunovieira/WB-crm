@@ -480,6 +480,7 @@ model Deal {
   value             Float         @default(0)
   currency          String        @default("BRL")
   status            String        @default("open") // open, won, lost
+  closedAt          DateTime?     // When the deal was won/lost
   stageId           String
   contactId         String?
   organizationId    String?

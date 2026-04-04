@@ -38,6 +38,16 @@ export const mockStageWon: Stage = {
   updatedAt: new Date('2024-01-01'),
 };
 
+export const mockStageLost: Stage = {
+  id: 'stage-test-4',
+  name: 'Perdido',
+  order: 4,
+  pipelineId: 'pipeline-test-1',
+  probability: 0,
+  createdAt: new Date('2024-01-01'),
+  updatedAt: new Date('2024-01-01'),
+};
+
 export const mockDeal: Deal = {
   id: 'deal-test-1',
   title: 'Desenvolvimento de E-commerce',
@@ -45,6 +55,7 @@ export const mockDeal: Deal = {
   value: 50000,
   currency: 'BRL',
   status: 'open',
+  closedAt: null,
   stageId: 'stage-test-1',
   contactId: 'contact-test-1',
   organizationId: 'org-test-1',

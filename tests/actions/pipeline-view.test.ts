@@ -87,6 +87,9 @@ describe('Pipeline View Actions', () => {
   beforeEach(() => {
     mockReset(mockPrisma);
     mockSession = null;
+    // Required by getOwnerOrSharedFilter
+    mockPrisma.sharedEntity.findMany.mockResolvedValue([]);
+    mockPrisma.sharedEntity.findFirst.mockResolvedValue(null);
   });
 
   // ===========================================

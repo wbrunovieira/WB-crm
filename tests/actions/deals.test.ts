@@ -592,6 +592,7 @@ describe('Deals Actions', () => {
       mockSession = sessionUserA;
       const existingDeal = createMockDeal(userA.id, { id: 'deal-1' });
       mockPrisma.deal.findUnique.mockResolvedValue(existingDeal as any);
+      mockPrisma.stage.findUnique.mockResolvedValue({ id: 'stage-2', name: 'Proposta', probability: 30, order: 2, pipelineId: 'p1', createdAt: new Date(), updatedAt: new Date() } as any);
       mockPrisma.deal.update.mockResolvedValue({
         ...existingDeal,
         stageId: 'stage-2',
@@ -603,7 +604,7 @@ describe('Deals Actions', () => {
       expect(mockPrisma.deal.update).toHaveBeenCalledWith(
         expect.objectContaining({
           where: { id: 'deal-1' },
-          data: { stageId: 'stage-2' },
+          data: expect.objectContaining({ stageId: 'stage-2', status: 'open' }),
         })
       );
     });
@@ -665,6 +666,89 @@ describe('Deals Actions', () => {
       mockPrisma.deal.findUnique.mockResolvedValue(userADeal as any);
 
       await expect(updateDealStage('deal-a', 'stage-2')).rejects.toThrow('Negócio não encontrado');
+    });
+
+    // ===========================================
+    // Auto-sync status based on stage probability
+    // ===========================================
+    it('should auto-set status to "won" and closedAt when moving to stage with probability 100%', async () => {
+      mockSession = sessionUserA;
+      const existingDeal = createMockDeal(userA.id, { id: 'deal-1', status: 'open' });
+      mockPrisma.deal.findUnique.mockResolvedValue(existingDeal as any);
+      mockPrisma.stage.findUnique.mockResolvedValue({ id: 'stage-won', name: 'Ganho', probability: 100, order: 5, pipelineId: 'p1', createdAt: new Date(), updatedAt: new Date() } as any);
+      mockPrisma.deal.update.mockResolvedValue({ ...existingDeal, stageId: 'stage-won', status: 'won' } as any);
+
+      await updateDealStage('deal-1', 'stage-won');
+
+      expect(mockPrisma.deal.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            stageId: 'stage-won',
+            status: 'won',
+            closedAt: expect.any(Date),
+          }),
+        })
+      );
+    });
+
+    it('should auto-set status to "lost" and closedAt when moving to stage with probability 0%', async () => {
+      mockSession = sessionUserA;
+      const existingDeal = createMockDeal(userA.id, { id: 'deal-1', status: 'open' });
+      mockPrisma.deal.findUnique.mockResolvedValue(existingDeal as any);
+      mockPrisma.stage.findUnique.mockResolvedValue({ id: 'stage-lost', name: 'Perdido', probability: 0, order: 6, pipelineId: 'p1', createdAt: new Date(), updatedAt: new Date() } as any);
+      mockPrisma.deal.update.mockResolvedValue({ ...existingDeal, stageId: 'stage-lost', status: 'lost' } as any);
+
+      await updateDealStage('deal-1', 'stage-lost');
+
+      expect(mockPrisma.deal.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            stageId: 'stage-lost',
+            status: 'lost',
+            closedAt: expect.any(Date),
+          }),
+        })
+      );
+    });
+
+    it('should clear closedAt when moving from terminal stage back to active stage', async () => {
+      mockSession = sessionUserA;
+      const wonDeal = { ...createMockDeal(userA.id, { id: 'deal-1', status: 'won' }), closedAt: new Date('2026-02-15') };
+      mockPrisma.deal.findUnique.mockResolvedValue(wonDeal as any);
+      mockPrisma.stage.findUnique.mockResolvedValue({ id: 'stage-negotiation', name: 'Negociação', probability: 60, order: 3, pipelineId: 'p1', createdAt: new Date(), updatedAt: new Date() } as any);
+      mockPrisma.deal.update.mockResolvedValue({ ...wonDeal, stageId: 'stage-negotiation', status: 'open', closedAt: null } as any);
+
+      await updateDealStage('deal-1', 'stage-negotiation');
+
+      expect(mockPrisma.deal.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            stageId: 'stage-negotiation',
+            status: 'open',
+            closedAt: null,
+          }),
+        })
+      );
+    });
+
+    it('should keep status "open" and closedAt null when moving between active stages', async () => {
+      mockSession = sessionUserA;
+      const existingDeal = createMockDeal(userA.id, { id: 'deal-1', status: 'open' });
+      mockPrisma.deal.findUnique.mockResolvedValue(existingDeal as any);
+      mockPrisma.stage.findUnique.mockResolvedValue({ id: 'stage-proposal', name: 'Proposta', probability: 30, order: 2, pipelineId: 'p1', createdAt: new Date(), updatedAt: new Date() } as any);
+      mockPrisma.deal.update.mockResolvedValue({ ...existingDeal, stageId: 'stage-proposal', status: 'open' } as any);
+
+      await updateDealStage('deal-1', 'stage-proposal');
+
+      expect(mockPrisma.deal.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            stageId: 'stage-proposal',
+            status: 'open',
+            closedAt: null,
+          }),
+        })
+      );
     });
   });
 
