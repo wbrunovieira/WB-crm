@@ -196,7 +196,7 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
                 </span>
               )}
             </div>
-            <h3 className={`text-base font-semibold ${isInactive ? "text-gray-700" : "text-gray-900"}`}>
+            <h3 className={`text-base font-semibold ${isInactive ? "text-gray-900" : "text-gray-900"}`}>
               {item.product.name}
             </h3>
             {item.product.description && (

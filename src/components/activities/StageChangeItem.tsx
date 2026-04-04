@@ -51,13 +51,13 @@ export function StageChangeItem({ stageChange }: { stageChange: StageChange }) {
           <div className="inline-flex items-center gap-1.5 text-sm">
             {stageChange.fromStage ? (
               <>
-                <span className="rounded-full bg-gray-100 px-2 py-0.5 text-xs font-semibold text-gray-600">
+                <span className="rounded-full bg-gray-600 px-2 py-0.5 text-xs font-semibold text-white">
                   {stageChange.fromStage.name}
                 </span>
                 <ArrowRight className="h-3 w-3 text-gray-400" />
               </>
             ) : null}
-            <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-semibold text-primary">
+            <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-semibold text-white">
               {stageChange.toStage.name}
             </span>
           </div>
