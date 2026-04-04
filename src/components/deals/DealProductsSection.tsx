@@ -18,7 +18,7 @@ interface DealProduct {
   discount: number;
   totalValue: number;
   status: string;
-  removedAt: string | null;
+  removedAt: Date | null;
   description: string | null;
   deliveryTime: number | null;
   product: {
