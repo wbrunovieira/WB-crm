@@ -1,7 +1,6 @@
 import { formatDate } from "@/lib/utils";
 import ActivityTypeIcon from "./ActivityTypeIcon";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
 import { StageChangeItem } from "./StageChangeItem";
 
 type Activity = {
