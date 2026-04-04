@@ -318,3 +318,23 @@ export async function updateDealStage(id: string, stageId: string) {
   revalidatePath("/pipeline");
   return updatedDeal;
 }
+
+export async function updateStageHistoryDate(historyId: string, newDate: Date) {
+  await getAuthenticatedSession();
+
+  const history = await prisma.dealStageHistory.findUnique({
+    where: { id: historyId },
+    select: { dealId: true },
+  });
+
+  if (!history) {
+    throw new Error("Registro não encontrado");
+  }
+
+  await prisma.dealStageHistory.update({
+    where: { id: historyId },
+    data: { changedAt: newDate },
+  });
+
+  revalidatePath(`/deals/${history.dealId}`);
+}
