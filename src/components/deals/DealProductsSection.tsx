@@ -32,14 +32,19 @@ interface DealProduct {
   };
 }
 
-const statusLabels: Record<string, string> = {
-  removed: "Removido",
-  cancelled: "Cancelado",
-};
-
-const statusColors: Record<string, string> = {
-  removed: "bg-red-100 text-red-700 border-red-200",
-  cancelled: "bg-amber-100 text-amber-700 border-amber-200",
+const statusConfig: Record<string, { label: string; badge: string; border: string; bg: string }> = {
+  removed: {
+    label: "Removido",
+    badge: "bg-red-600 text-white",
+    border: "border-red-300",
+    bg: "bg-red-50",
+  },
+  cancelled: {
+    label: "Cancelado",
+    badge: "bg-amber-600 text-white",
+    border: "border-amber-300",
+    bg: "bg-amber-50",
+  },
 };
 
 export function DealProductsSection({ dealId }: DealProductsSectionProps) {
@@ -162,13 +167,14 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
 
   const renderProductCard = (item: DealProduct) => {
     const isInactive = item.status !== "active";
+    const config = statusConfig[item.status];
 
     return (
       <div
         key={item.id}
         className={`rounded-lg border p-4 transition-shadow ${
           isInactive
-            ? "border-gray-200 bg-gray-100 opacity-60"
+            ? `${config?.border || "border-gray-300"} ${config?.bg || "bg-gray-50"}`
             : "border-gray-200 bg-gray-50 hover:shadow-md"
         }`}
       >
@@ -181,24 +187,20 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
                   backgroundColor: item.product.businessLine.color || "#792990",
                 }}
               />
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+              <span className={`text-xs font-semibold uppercase tracking-wide ${isInactive ? "text-gray-400" : "text-gray-500"}`}>
                 {item.product.businessLine.name}
               </span>
-              {isInactive && (
-                <span
-                  className={`inline-flex items-center rounded-full border px-2 py-0.5 text-xs font-semibold ${
-                    statusColors[item.status] || "bg-gray-100 text-gray-600 border-gray-200"
-                  }`}
-                >
-                  {statusLabels[item.status] || item.status}
+              {isInactive && config && (
+                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-bold ${config.badge}`}>
+                  {config.label}
                 </span>
               )}
             </div>
-            <h3 className={`text-base font-semibold ${isInactive ? "text-gray-500 line-through" : "text-gray-900"}`}>
+            <h3 className={`text-base font-semibold ${isInactive ? "text-gray-700" : "text-gray-900"}`}>
               {item.product.name}
             </h3>
             {item.product.description && (
-              <p className="mt-1 text-sm text-gray-600">
+              <p className={`mt-1 text-sm ${isInactive ? "text-gray-500" : "text-gray-600"}`}>
                 {item.product.description}
               </p>
             )}
@@ -216,31 +218,31 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
           )}
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 pt-3 border-t border-gray-200">
+        <div className={`grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 pt-3 border-t ${isInactive ? "border-gray-200/60" : "border-gray-200"}`}>
           <div>
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">
               Quantidade
             </span>
-            <span className="text-sm font-bold text-gray-900">
+            <span className={`text-sm font-bold ${isInactive ? "text-gray-500" : "text-gray-900"}`}>
               {item.quantity}x
             </span>
           </div>
 
           <div>
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">
               Preço Unit.
             </span>
-            <span className="text-sm font-bold text-gray-900">
+            <span className={`text-sm font-bold ${isInactive ? "text-gray-500" : "text-gray-900"}`}>
               {formatCurrency(item.unitPrice)}
             </span>
           </div>
 
           {item.discount > 0 && (
             <div>
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">
                 Desconto
               </span>
-              <span className="text-sm font-bold text-red-600">
+              <span className={`text-sm font-bold ${isInactive ? "text-gray-500" : "text-red-600"}`}>
                 -{formatCurrency(item.discount)}
               </span>
             </div>
@@ -248,10 +250,10 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
 
           {item.deliveryTime && (
             <div>
-              <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+              <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">
                 Prazo
               </span>
-              <span className="text-sm font-bold text-blue-600">
+              <span className={`text-sm font-bold ${isInactive ? "text-gray-500" : "text-blue-600"}`}>
                 {item.deliveryTime} dias
               </span>
             </div>
@@ -259,20 +261,28 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
         </div>
 
         {item.description && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">
+          <div className={`mt-3 pt-3 border-t ${isInactive ? "border-gray-200/60" : "border-gray-200"}`}>
+            <span className="text-xs font-semibold text-gray-400 uppercase tracking-wide block mb-1">
               Descrição / Customizações:
             </span>
-            <p className="text-sm text-gray-700">{item.description}</p>
+            <p className={`text-sm ${isInactive ? "text-gray-500" : "text-gray-700"}`}>{item.description}</p>
           </div>
         )}
 
-        <div className={`mt-3 pt-3 border-t border-gray-200 rounded-md p-2 ${isInactive ? "bg-gray-50" : "bg-white"}`}>
+        <div className={`mt-3 pt-3 border-t rounded-md p-2 ${
+          isInactive
+            ? `${config?.border || "border-gray-200"} border bg-white/60`
+            : "border-gray-200 bg-white"
+        }`}>
           <div className="flex justify-between items-center">
-            <span className="text-sm font-semibold text-gray-600">
+            <span className={`text-sm font-semibold ${isInactive ? "text-gray-500" : "text-gray-600"}`}>
               Valor Total:
             </span>
-            <span className={`text-lg font-bold ${isInactive ? "text-gray-400 line-through" : "text-primary"}`}>
+            <span className={`text-lg font-bold ${
+              isInactive
+                ? "text-gray-400 line-through decoration-2"
+                : "text-primary"
+            }`}>
               {formatCurrency(item.totalValue)}
             </span>
           </div>
