@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { AlertTriangle, Loader2 } from "lucide-react";
 
 interface ConfirmDialogProps {
@@ -103,14 +103,14 @@ export function useConfirmDialog() {
     cancelLabel?: string;
     variant?: "danger" | "warning" | "default";
     loading: boolean;
-    resolve: ((value: boolean) => void) | null;
   }>({
     isOpen: false,
     title: "",
     message: "",
     loading: false,
-    resolve: null,
   });
+
+  const resolveRef = useRef<((value: boolean) => void) | null>(null);
 
   const confirm = useCallback(
     (options: {
@@ -121,11 +121,11 @@ export function useConfirmDialog() {
       variant?: "danger" | "warning" | "default";
     }): Promise<boolean> => {
       return new Promise((resolve) => {
+        resolveRef.current = resolve;
         setState({
           isOpen: true,
           ...options,
           loading: false,
-          resolve,
         });
       });
     },
@@ -133,14 +133,16 @@ export function useConfirmDialog() {
   );
 
   const handleConfirm = useCallback(() => {
-    state.resolve?.(true);
-    setState((prev) => ({ ...prev, isOpen: false, resolve: null }));
-  }, [state.resolve]);
+    resolveRef.current?.(true);
+    resolveRef.current = null;
+    setState((prev) => ({ ...prev, isOpen: false }));
+  }, []);
 
   const handleCancel = useCallback(() => {
-    state.resolve?.(false);
-    setState((prev) => ({ ...prev, isOpen: false, resolve: null }));
-  }, [state.resolve]);
+    resolveRef.current?.(false);
+    resolveRef.current = null;
+    setState((prev) => ({ ...prev, isOpen: false }));
+  }, []);
 
   const dialogProps: ConfirmDialogProps = {
     isOpen: state.isOpen,
