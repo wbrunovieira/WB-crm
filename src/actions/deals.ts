@@ -17,6 +17,7 @@ export async function getDeals(filters?: {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
   owner?: string;
+  closedMonth?: string; // "YYYY-MM" to filter won/lost by month, "all" to show all, undefined = current month
 }) {
   const ownerFilter = await getOwnerOrSharedFilter("deal", filters?.owner);
 
@@ -26,11 +27,6 @@ export async function getDeals(filters?: {
   // Search filter (simple title search)
   if (filters?.search) {
     additionalFilters.title = { contains: filters.search };
-  }
-
-  // Status filter
-  if (filters?.status && filters.status !== "all") {
-    additionalFilters.status = filters.status;
   }
 
   // Stage filter
@@ -49,6 +45,44 @@ export async function getDeals(filters?: {
     } else if (filters.valueRange === "100000+") {
       additionalFilters.value = { gte: 100000 };
     }
+  }
+
+  // Date filtering for won/lost deals
+  // Default behavior: show all open deals + won/lost only from current month
+  // When user explicitly selects a status (won/lost), show all of that status (no date filter)
+  // When closedMonth is "all", show everything
+  // When closedMonth is "YYYY-MM", filter won/lost to that month
+  const closedMonth = filters?.closedMonth;
+  const explicitStatus = filters?.status && filters.status !== "all";
+
+  if (explicitStatus) {
+    // User explicitly filtered by status — show all of that status, no date restriction
+    additionalFilters.status = filters.status;
+  } else if (closedMonth === "all") {
+    // Show all deals regardless of date
+  } else {
+    // Default: all open + won/lost from selected month (or current month)
+    const now = new Date();
+    let year: number, month: number;
+
+    if (closedMonth && /^\d{4}-\d{2}$/.test(closedMonth)) {
+      [year, month] = closedMonth.split("-").map(Number);
+    } else {
+      year = now.getFullYear();
+      month = now.getMonth() + 1;
+    }
+
+    const monthStart = new Date(year, month - 1, 1);
+    const monthEnd = new Date(year, month, 1);
+
+    // OR: status is open, OR status is won/lost AND updatedAt within month
+    additionalFilters.OR = [
+      { status: "open" },
+      {
+        status: { in: ["won", "lost"] },
+        updatedAt: { gte: monthStart, lt: monthEnd },
+      },
+    ];
   }
 
   // Combine owner filter with additional filters

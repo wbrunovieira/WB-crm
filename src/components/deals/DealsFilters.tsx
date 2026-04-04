@@ -1,12 +1,30 @@
 "use client";
 
+import { useMemo } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { SearchInput } from "@/components/shared/SearchInput";
+
+function getMonthOptions() {
+  const now = new Date();
+  const options: { value: string; label: string }[] = [];
+
+  // Current month (default)
+  for (let i = 0; i < 12; i++) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const label = d.toLocaleDateString("pt-BR", { month: "long", year: "numeric" });
+    options.push({ value, label: label.charAt(0).toUpperCase() + label.slice(1) });
+  }
+
+  return options;
+}
 
 export function DealsFilters() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+
+  const monthOptions = useMemo(() => getMonthOptions(), []);
 
   const handleFilterChange = (key: string, value: string) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -17,6 +35,8 @@ export function DealsFilters() {
     }
     router.replace(`${pathname}?${params.toString()}`);
   };
+
+  const currentStatus = searchParams.get("status") || "all";
 
   return (
     <div className="space-y-4">
@@ -30,7 +50,7 @@ export function DealsFilters() {
       <div className="flex flex-wrap gap-3">
         {/* Status Filter */}
         <select
-          value={searchParams.get("status") || "all"}
+          value={currentStatus}
           onChange={(e) => handleFilterChange("status", e.target.value)}
           className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
         >
@@ -39,6 +59,22 @@ export function DealsFilters() {
           <option value="won">Ganhos</option>
           <option value="lost">Perdidos</option>
         </select>
+
+        {/* Closed Month Filter - shown when status is "all" (default view with date-filtered won/lost) */}
+        {currentStatus === "all" && (
+          <select
+            value={searchParams.get("closedMonth") || monthOptions[0]?.value}
+            onChange={(e) => handleFilterChange("closedMonth", e.target.value)}
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+          >
+            <option value="all">Ganhos/Perdidos: Todos</option>
+            {monthOptions.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                Ganhos/Perdidos: {opt.label}
+              </option>
+            ))}
+          </select>
+        )}
 
         {/* Value Range Filter */}
         <select

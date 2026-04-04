@@ -1,15 +1,55 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { getOwnerOrSharedFilter } from "@/lib/permissions";
 
 export async function getPipelineView(pipelineId?: string) {
-  const session = await getServerSession(authOptions);
+  const ownerFilter = await getOwnerOrSharedFilter("deal");
 
-  if (!session?.user) {
-    throw new Error("Não autorizado");
-  }
+  // Build deal filter: only open deals + proper ownership/sharing
+  const dealWhere = {
+    status: "open",
+    ...ownerFilter,
+  };
+
+  const dealInclude = {
+    contact: {
+      select: {
+        id: true,
+        name: true,
+        email: true,
+      },
+    },
+    organization: {
+      select: {
+        id: true,
+        name: true,
+      },
+    },
+    activities: {
+      where: {
+        completed: false,
+      },
+      orderBy: [
+        {
+          dueDate: {
+            sort: "asc" as const,
+            nulls: "last" as const,
+          },
+        },
+        {
+          createdAt: "desc" as const,
+        },
+      ],
+      take: 1,
+      select: {
+        id: true,
+        subject: true,
+        type: true,
+        dueDate: true,
+      },
+    },
+  };
 
   // Get default pipeline or specified pipeline
   const pipeline = pipelineId
@@ -20,51 +60,9 @@ export async function getPipelineView(pipelineId?: string) {
             orderBy: { order: "asc" },
             include: {
               deals: {
-                where: {
-                  ownerId: session.user.id,
-                  status: "open",
-                },
-                include: {
-                  contact: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                    },
-                  },
-                  organization: {
-                    select: {
-                      id: true,
-                      name: true,
-                    },
-                  },
-                  activities: {
-                    where: {
-                      completed: false,
-                    },
-                    orderBy: [
-                      {
-                        dueDate: {
-                          sort: "asc",
-                          nulls: "last",
-                        },
-                      },
-                      {
-                        createdAt: "desc",
-                      },
-                    ],
-                    take: 1,
-                    select: {
-                      id: true,
-                      subject: true,
-                      type: true,
-                      dueDate: true,
-                    },
-                  },
-                },
-                orderBy: {
-                  createdAt: "desc",
-                },
+                where: dealWhere,
+                include: dealInclude,
+                orderBy: { createdAt: "desc" },
               },
             },
           },
@@ -77,51 +75,9 @@ export async function getPipelineView(pipelineId?: string) {
             orderBy: { order: "asc" },
             include: {
               deals: {
-                where: {
-                  ownerId: session.user.id,
-                  status: "open",
-                },
-                include: {
-                  contact: {
-                    select: {
-                      id: true,
-                      name: true,
-                      email: true,
-                    },
-                  },
-                  organization: {
-                    select: {
-                      id: true,
-                      name: true,
-                    },
-                  },
-                  activities: {
-                    where: {
-                      completed: false,
-                    },
-                    orderBy: [
-                      {
-                        dueDate: {
-                          sort: "asc",
-                          nulls: "last",
-                        },
-                      },
-                      {
-                        createdAt: "desc",
-                      },
-                    ],
-                    take: 1,
-                    select: {
-                      id: true,
-                      subject: true,
-                      type: true,
-                      dueDate: true,
-                    },
-                  },
-                },
-                orderBy: {
-                  createdAt: "desc",
-                },
+                where: dealWhere,
+                include: dealInclude,
+                orderBy: { createdAt: "desc" },
               },
             },
           },

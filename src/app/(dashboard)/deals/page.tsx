@@ -20,6 +20,7 @@ export default async function DealsPage({
     sortBy?: string;
     displayMode?: string;
     owner?: string;
+    closedMonth?: string;
   };
 }) {
   const session = await getServerSession(authOptions);
@@ -56,6 +57,7 @@ export default async function DealsPage({
     valueRange: searchParams.valueRange,
     sortBy: searchParams.sortBy,
     owner: searchParams.owner,
+    closedMonth: searchParams.closedMonth,
   });
 
   // Get shared users for all deals (batch query)
