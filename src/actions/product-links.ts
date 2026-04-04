@@ -247,6 +247,19 @@ export async function addProductToDeal(data: DealProductFormData) {
   });
 
   if (existing) {
+    // If product was removed/cancelled, reactivate it with new data
+    if (existing.status !== "active") {
+      const reactivated = await prisma.dealProduct.update({
+        where: { id: existing.id },
+        data: {
+          ...validated,
+          status: "active",
+          removedAt: null,
+        },
+      });
+      revalidatePath(`/deals/${validated.dealId}`);
+      return reactivated;
+    }
     throw new Error("Este produto já está vinculado ao deal");
   }
 
@@ -285,7 +298,10 @@ export async function updateDealProduct(
   return dealProduct;
 }
 
-export async function removeProductFromDeal(id: string) {
+export async function removeProductFromDeal(
+  id: string,
+  status: "removed" | "cancelled" = "removed"
+) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {
@@ -297,8 +313,12 @@ export async function removeProductFromDeal(id: string) {
     select: { dealId: true },
   });
 
-  await prisma.dealProduct.delete({
+  await prisma.dealProduct.update({
     where: { id },
+    data: {
+      status,
+      removedAt: new Date(),
+    },
   });
 
   if (dealProduct) {
@@ -307,6 +327,28 @@ export async function removeProductFromDeal(id: string) {
 }
 
 export async function getDealProducts(dealId: string) {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user) {
+    throw new Error("Não autorizado");
+  }
+
+  const dealProducts = await prisma.dealProduct.findMany({
+    where: { dealId, status: "active" },
+    include: {
+      product: {
+        include: {
+          businessLine: true,
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return dealProducts;
+}
+
+export async function getAllDealProducts(dealId: string) {
   const session = await getServerSession(authOptions);
 
   if (!session?.user) {

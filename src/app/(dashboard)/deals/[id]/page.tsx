@@ -37,9 +37,12 @@ export default async function DealDetailPage({
         <div className="mt-4 flex items-start justify-between">
           <div>
             <h1 className="text-3xl font-bold">{deal.title}</h1>
-            <p className="mt-2 text-2xl font-semibold text-primary">
-              {formatCurrency(deal.value, deal.currency)}
-            </p>
+            <div className="mt-3 inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-primary px-5 py-2.5 shadow-md">
+              <span className="text-sm font-medium text-purple-200">Valor</span>
+              <span className="text-2xl font-bold text-white tracking-tight">
+                {formatCurrency(deal.value, deal.currency)}
+              </span>
+            </div>
           </div>
           <div className="flex gap-2">
             <Link

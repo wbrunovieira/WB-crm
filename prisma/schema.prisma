@@ -747,6 +747,10 @@ model DealProduct {
   discount    Float    @default(0) // Discount in currency
   totalValue  Float    // (quantity * unitPrice) - discount
 
+  // Soft-delete status: active, removed (cut during negotiation), cancelled (cancelled by client)
+  status      String   @default("active")
+  removedAt   DateTime? // When the product was removed/cancelled
+
   // Additional info
   description String?  // Customizations, specifications
   deliveryTime Int?    // Estimated delivery in days
@@ -761,6 +765,7 @@ model DealProduct {
   @@unique([dealId, productId])
   @@index([dealId])
   @@index([productId])
+  @@index([status])
   @@map("deal_products")
 }
 

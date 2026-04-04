@@ -51,6 +51,7 @@ import {
   updateDealProduct,
   removeProductFromDeal,
   getDealProducts,
+  getAllDealProducts,
   addProductToPartner,
   updatePartnerProduct,
   removeProductFromPartner,
@@ -127,6 +128,8 @@ function createMockDealProduct(overrides: Partial<{
   unitPrice: number;
   discount: number;
   totalValue: number;
+  status: string;
+  removedAt: Date | null;
 }> = {}) {
   return {
     id: overrides.id || `dp-${Date.now()}`,
@@ -136,6 +139,8 @@ function createMockDealProduct(overrides: Partial<{
     unitPrice: overrides.unitPrice ?? 1000,
     discount: overrides.discount ?? 0,
     totalValue: overrides.totalValue ?? 1000,
+    status: overrides.status ?? 'active',
+    removedAt: overrides.removedAt ?? null,
     description: null,
     deliveryTime: null,
     createdAt: new Date(),
@@ -448,7 +453,7 @@ describe('Product Links Actions', () => {
   });
 
   // ===========================================
-  // Deal Products Tests
+  // Deal Products Tests (Soft-Delete with status)
   // ===========================================
   describe('Deal Products', () => {
     describe('addProductToDeal', () => {
@@ -461,31 +466,59 @@ describe('Product Links Actions', () => {
         totalValue: 1900,
       };
 
-      it('should add product to deal', async () => {
+      it('should add product to deal with status "active"', async () => {
         mockSession = sessionUserA;
         mockPrisma.dealProduct.findUnique.mockResolvedValue(null);
         mockPrisma.dealProduct.create.mockResolvedValue(
-          createMockDealProduct({ dealId: CUID_DEAL_1, productId: CUID_PROD_1, quantity: 2, unitPrice: 1000, discount: 100, totalValue: 1900 }) as any
+          createMockDealProduct({ dealId: CUID_DEAL_1, productId: CUID_PROD_1, quantity: 2, unitPrice: 1000, discount: 100, totalValue: 1900, status: 'active' }) as any
         );
 
         const result = await addProductToDeal(validDealProductData);
 
         expect(result.dealId).toBe(CUID_DEAL_1);
         expect(result.productId).toBe(CUID_PROD_1);
-        expect(mockPrisma.dealProduct.create).toHaveBeenCalledWith({
-          data: validDealProductData,
-        });
+        expect(result.status).toBe('active');
       });
 
-      it('should throw error when product already linked to deal', async () => {
+      it('should throw error when active product already linked to deal', async () => {
         mockSession = sessionUserA;
         mockPrisma.dealProduct.findUnique.mockResolvedValue(
-          createMockDealProduct() as any
+          createMockDealProduct({ status: 'active' }) as any
         );
 
         await expect(addProductToDeal(validDealProductData)).rejects.toThrow(
           'Este produto já está vinculado ao deal'
         );
+      });
+
+      it('should reactivate a removed product instead of creating duplicate', async () => {
+        mockSession = sessionUserA;
+        const removedProduct = createMockDealProduct({
+          id: 'dp-existing',
+          dealId: CUID_DEAL_1,
+          productId: CUID_PROD_1,
+          status: 'removed',
+        });
+        mockPrisma.dealProduct.findUnique.mockResolvedValue(removedProduct as any);
+        mockPrisma.dealProduct.update.mockResolvedValue(
+          createMockDealProduct({ id: 'dp-existing', dealId: CUID_DEAL_1, productId: CUID_PROD_1, quantity: 2, unitPrice: 1000, discount: 100, totalValue: 1900, status: 'active' }) as any
+        );
+
+        const result = await addProductToDeal(validDealProductData);
+
+        expect(result.status).toBe('active');
+        expect(mockPrisma.dealProduct.update).toHaveBeenCalledWith({
+          where: { id: 'dp-existing' },
+          data: expect.objectContaining({
+            status: 'active',
+            removedAt: null,
+            quantity: 2,
+            unitPrice: 1000,
+            discount: 100,
+            totalValue: 1900,
+          }),
+        });
+        expect(mockPrisma.dealProduct.create).not.toHaveBeenCalled();
       });
 
       it('should throw "Não autorizado" without session', async () => {
@@ -537,18 +570,46 @@ describe('Product Links Actions', () => {
       });
     });
 
-    describe('removeProductFromDeal', () => {
-      it('should remove product from deal', async () => {
+    describe('removeProductFromDeal (soft-delete)', () => {
+      it('should set status to "removed" instead of deleting', async () => {
         mockSession = sessionUserA;
         mockPrisma.dealProduct.findUnique.mockResolvedValue(
-          createMockDealProduct({ id: 'dp-1' }) as any
+          createMockDealProduct({ id: 'dp-1', dealId: 'deal-1', status: 'active' }) as any
         );
-        mockPrisma.dealProduct.delete.mockResolvedValue({} as any);
+        mockPrisma.dealProduct.update.mockResolvedValue(
+          createMockDealProduct({ id: 'dp-1', status: 'removed' }) as any
+        );
 
         await removeProductFromDeal('dp-1');
 
-        expect(mockPrisma.dealProduct.delete).toHaveBeenCalledWith({
+        expect(mockPrisma.dealProduct.update).toHaveBeenCalledWith({
           where: { id: 'dp-1' },
+          data: {
+            status: 'removed',
+            removedAt: expect.any(Date),
+          },
+        });
+        // Must NOT call delete
+        expect(mockPrisma.dealProduct.delete).not.toHaveBeenCalled();
+      });
+
+      it('should accept optional status parameter for cancellation', async () => {
+        mockSession = sessionUserA;
+        mockPrisma.dealProduct.findUnique.mockResolvedValue(
+          createMockDealProduct({ id: 'dp-1', dealId: 'deal-1', status: 'active' }) as any
+        );
+        mockPrisma.dealProduct.update.mockResolvedValue(
+          createMockDealProduct({ id: 'dp-1', status: 'cancelled' }) as any
+        );
+
+        await removeProductFromDeal('dp-1', 'cancelled');
+
+        expect(mockPrisma.dealProduct.update).toHaveBeenCalledWith({
+          where: { id: 'dp-1' },
+          data: {
+            status: 'cancelled',
+            removedAt: expect.any(Date),
+          },
         });
       });
 
@@ -559,11 +620,11 @@ describe('Product Links Actions', () => {
       });
     });
 
-    describe('getDealProducts', () => {
-      it('should return products for a deal', async () => {
+    describe('getDealProducts (active only)', () => {
+      it('should return only active products for a deal', async () => {
         mockSession = sessionUserA;
         const dealProducts = [{
-          ...createMockDealProduct({ id: 'dp-1' }),
+          ...createMockDealProduct({ id: 'dp-1', status: 'active' }),
           product: { id: 'prod-1', name: 'Product 1', businessLine: { id: 'bl-1' } },
         }];
 
@@ -572,6 +633,64 @@ describe('Product Links Actions', () => {
         const result = await getDealProducts('deal-1');
 
         expect(result).toHaveLength(1);
+        expect(mockPrisma.dealProduct.findMany).toHaveBeenCalledWith({
+          where: { dealId: 'deal-1', status: 'active' },
+          include: {
+            product: {
+              include: {
+                businessLine: true,
+              },
+            },
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+      });
+
+      it('should not return removed or cancelled products', async () => {
+        mockSession = sessionUserA;
+        mockPrisma.dealProduct.findMany.mockResolvedValue([]);
+
+        const result = await getDealProducts('deal-1');
+
+        expect(result).toEqual([]);
+        // Verify filter includes status: 'active'
+        expect(mockPrisma.dealProduct.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: { dealId: 'deal-1', status: 'active' },
+          })
+        );
+      });
+
+      it('should throw "Não autorizado" without session', async () => {
+        mockSession = null;
+
+        await expect(getDealProducts('deal-1')).rejects.toThrow('Não autorizado');
+      });
+    });
+
+    describe('getAllDealProducts (including removed/cancelled)', () => {
+      it('should return all products regardless of status', async () => {
+        mockSession = sessionUserA;
+        const allProducts = [
+          {
+            ...createMockDealProduct({ id: 'dp-1', status: 'active' }),
+            product: { id: 'prod-1', name: 'Product 1', businessLine: { id: 'bl-1' } },
+          },
+          {
+            ...createMockDealProduct({ id: 'dp-2', productId: 'prod-2', status: 'removed' }),
+            product: { id: 'prod-2', name: 'Product 2', businessLine: { id: 'bl-1' } },
+          },
+          {
+            ...createMockDealProduct({ id: 'dp-3', productId: 'prod-3', status: 'cancelled' }),
+            product: { id: 'prod-3', name: 'Product 3', businessLine: { id: 'bl-1' } },
+          },
+        ];
+
+        mockPrisma.dealProduct.findMany.mockResolvedValue(allProducts as any);
+
+        const result = await getAllDealProducts('deal-1');
+
+        expect(result).toHaveLength(3);
         expect(mockPrisma.dealProduct.findMany).toHaveBeenCalledWith({
           where: { dealId: 'deal-1' },
           include: {
@@ -588,7 +707,7 @@ describe('Product Links Actions', () => {
       it('should throw "Não autorizado" without session', async () => {
         mockSession = null;
 
-        await expect(getDealProducts('deal-1')).rejects.toThrow('Não autorizado');
+        await expect(getAllDealProducts('deal-1')).rejects.toThrow('Não autorizado');
       });
     });
   });
