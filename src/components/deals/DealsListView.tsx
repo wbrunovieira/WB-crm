@@ -4,7 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Trophy, CalendarPlus } from "lucide-react";
+import { Trophy, CalendarPlus, XCircle } from "lucide-react";
 import { DealStageSelect } from "./DealStageSelect";
 import { DealStatusSelect } from "./DealStatusSelect";
 import { DealCard } from "./DealCard";
@@ -174,6 +174,7 @@ export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin =
     const nextActivity = deal.activities && deal.activities.length > 0 ? deal.activities[0] : null;
     const hasNoActivity = !nextActivity && deal.status === "open";
     const isWon = deal.status === "won";
+    const isLost = deal.status === "lost";
 
     const getActivityTypeIcon = (type: string) => {
       switch (type) {
@@ -192,6 +193,9 @@ export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin =
       if (isWon) {
         return { borderLeft: "4px solid #22c55e" };
       }
+      if (isLost) {
+        return { borderLeft: "4px solid #ef4444" };
+      }
       if (hasNoActivity) {
         return {
           borderLeft: "4px solid #ef4444",
@@ -203,6 +207,7 @@ export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin =
 
     const getRowClass = () => {
       if (isWon) return "hover:bg-gray-50 bg-green-50/10";
+      if (isLost) return "hover:bg-gray-50 bg-red-50/10";
       if (hasNoActivity) return "hover:bg-gray-50 bg-red-50/10";
       return "hover:bg-gray-50";
     };
@@ -234,6 +239,12 @@ export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin =
                 <div className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-0.5 text-green-700 border border-green-300">
                   <Trophy className="h-3 w-3" />
                   <span className="text-xs font-semibold">Ganho</span>
+                </div>
+              )}
+              {isLost && (
+                <div className="flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-red-700 border border-red-300">
+                  <XCircle className="h-3 w-3" />
+                  <span className="text-xs font-semibold">Perdido</span>
                 </div>
               )}
             </div>
