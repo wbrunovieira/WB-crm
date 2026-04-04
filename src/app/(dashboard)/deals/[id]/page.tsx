@@ -7,6 +7,8 @@ import ActivityTimeline from "@/components/activities/ActivityTimeline";
 import { DealProductsSection } from "@/components/deals/DealProductsSection";
 import { DealTechStackSection } from "@/components/deals/DealTechStackSection";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
+import { DealStageSelect } from "@/components/deals/DealStageSelect";
+import { DealStatusSelect } from "@/components/deals/DealStatusSelect";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
@@ -70,30 +72,29 @@ export default async function DealDetailPage({
             <div>
               <dt className="text-sm font-medium text-gray-500">Status</dt>
               <dd className="mt-1">
-                <span
-                  className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold ${
-                    deal.status === "won"
-                      ? "bg-green-100 text-green-800"
-                      : deal.status === "lost"
-                        ? "bg-red-100 text-red-800"
-                        : "bg-yellow-100 text-yellow-800"
-                  }`}
-                >
-                  {deal.status === "won"
-                    ? "Ganho"
-                    : deal.status === "lost"
-                      ? "Perdido"
-                      : "Aberto"}
-                </span>
+                <DealStatusSelect
+                  dealId={deal.id}
+                  currentStatus={deal.status as "open" | "won" | "lost"}
+                  dealData={{
+                    title: deal.title,
+                    value: deal.value,
+                    currency: deal.currency,
+                    stageId: deal.stageId,
+                    contactId: deal.contactId,
+                    organizationId: deal.organizationId,
+                    expectedCloseDate: deal.expectedCloseDate,
+                  }}
+                />
               </dd>
             </div>
 
             <div>
               <dt className="text-sm font-medium text-gray-500">Estágio</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                <span className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-primary">
-                  {deal.stage.pipeline.name} - {deal.stage.name}
-                </span>
+              <dd className="mt-1">
+                <DealStageSelect
+                  dealId={deal.id}
+                  currentStageId={deal.stageId}
+                />
               </dd>
             </div>
 
