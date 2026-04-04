@@ -6,6 +6,8 @@ import Link from "next/link";
 import { Eye, EyeOff, Trash2, Zap, Target, Users, ChevronRight } from "lucide-react";
 import { deleteCadence, updateCadence } from "@/actions/cadences";
 import { CADENCE_STATUS_LABELS, type CadenceStatus } from "@/lib/validations/cadence";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 type Cadence = {
   id: string;
@@ -33,6 +35,7 @@ type CadencesListProps = {
 export function CadencesList({ cadences }: CadencesListProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleStatus = async (cadence: Cadence) => {
     setLoading(cadence.id);
@@ -41,21 +44,27 @@ export function CadencesList({ cadences }: CadencesListProps) {
       await updateCadence(cadence.id, { status: newStatus });
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao atualizar status");
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar status");
     } finally {
       setLoading(null);
     }
   };
 
   const handleDelete = async (cadence: Cadence) => {
-    if (!confirm(`Excluir cadência "${cadence.name}"?`)) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Excluir cadência "${cadence.name}"?`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setLoading(cadence.id);
     try {
       await deleteCadence(cadence.id);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao excluir");
+      toast.error(error instanceof Error ? error.message : "Erro ao excluir");
     } finally {
       setLoading(null);
     }
@@ -89,6 +98,7 @@ export function CadencesList({ cadences }: CadencesListProps) {
   }
 
   return (
+    <>
     <div className="col-span-2 space-y-4">
       <h2 className="text-lg font-semibold text-gray-900">
         Cadências ({cadences.length})
@@ -176,5 +186,7 @@ export function CadencesList({ cadences }: CadencesListProps) {
         ))}
       </div>
     </div>
+    <ConfirmDialog {...dialogProps} />
+    </>
   );
 }

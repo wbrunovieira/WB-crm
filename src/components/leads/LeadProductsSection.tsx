@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { getLeadProducts, removeProductFromLead } from "@/actions/product-links";
 import { X, Package } from "lucide-react";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface LeadProductsSectionProps {
   leadId: string;
@@ -41,6 +43,7 @@ export function LeadProductsSection({ leadId, isConverted }: LeadProductsSection
   const [products, setProducts] = useState<LeadProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -66,14 +69,20 @@ export function LeadProductsSection({ leadId, isConverted }: LeadProductsSection
   };
 
   const handleRemove = async (id: string, productName: string) => {
-    if (!confirm(`Remover "${productName}" deste lead?`)) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Remover "${productName}" deste lead?`,
+      confirmLabel: "Remover",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setRemoving(id);
     try {
       await removeProductFromLead(id);
       await refreshProducts();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao remover produto");
+      toast.error(error instanceof Error ? error.message : "Erro ao remover produto");
     } finally {
       setRemoving(null);
     }
@@ -106,6 +115,7 @@ export function LeadProductsSection({ leadId, isConverted }: LeadProductsSection
   }
 
   return (
+    <>
     <div className="mt-6 rounded-xl bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
       <div className="flex items-center justify-between mb-5 pb-3 border-b-2 border-gray-100">
         <div className="flex items-center gap-2">
@@ -197,5 +207,8 @@ export function LeadProductsSection({ leadId, isConverted }: LeadProductsSection
         ))}
       </div>
     </div>
+
+    <ConfirmDialog {...dialogProps} />
+    </>
   );
 }

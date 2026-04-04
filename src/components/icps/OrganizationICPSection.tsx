@@ -17,6 +17,8 @@ import type {
   EstimatedDecisionTime,
   PerceivedUrgency,
 } from "@/lib/validations/icp";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 // Label mappings with tooltips
 const FIT_STATUS_LABELS: Record<ICPFitStatus, { label: string; tip: string }> = {
@@ -153,6 +155,7 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
   const [showForm, setShowForm] = useState(false);
   const [selectedICP, setSelectedICP] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -244,7 +247,13 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
   };
 
   const handleUnlink = async (icpId: string) => {
-    if (!confirm("Remover vínculo com este ICP?")) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: "Remover vínculo com este ICP?",
+      confirmLabel: "Remover",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setUnlinking(icpId);
     try {
@@ -252,7 +261,7 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
       await loadData();
       router.refresh();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Erro ao remover vínculo");
+      toast.error(err instanceof Error ? err.message : "Erro ao remover vínculo");
     } finally {
       setUnlinking(null);
     }
@@ -866,6 +875,8 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
           ))}
         </div>
       )}
+
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

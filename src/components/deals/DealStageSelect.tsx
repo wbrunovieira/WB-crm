@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { updateDealStage } from "@/actions/deals";
 import { getStages } from "@/actions/stages";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 type Stage = {
   id: string;
@@ -54,7 +55,7 @@ export function DealStageSelect({
       console.error("Erro ao atualizar estágio:", error);
       // Revert on error
       setSelectedStageId(currentStageId);
-      alert("Erro ao atualizar estágio");
+      toast.error("Erro ao atualizar estágio");
     } finally {
       setIsUpdating(false);
     }

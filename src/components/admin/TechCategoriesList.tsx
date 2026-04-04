@@ -7,6 +7,8 @@ import {
   deleteTechCategory,
 } from "@/actions/tech-categories";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface TechCategory {
   id: string;
@@ -29,6 +31,7 @@ interface TechCategoriesListProps {
 export function TechCategoriesList({ categories }: TechCategoriesListProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
@@ -37,7 +40,7 @@ export function TechCategoriesList({ categories }: TechCategoriesListProps) {
       router.refresh();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao atualizar categoria";
-      alert(message);
+      toast.error(message);
     } finally {
       setLoading(null);
     }
@@ -45,15 +48,19 @@ export function TechCategoriesList({ categories }: TechCategoriesListProps) {
 
   const handleDelete = async (id: string, name: string, dealCount: number) => {
     if (dealCount > 0) {
-      alert(
+      toast.warning(
         `Não é possível excluir "${name}" pois possui ${dealCount} deal(s) vinculado(s).`
       );
       return;
     }
 
-    if (!confirm(`Tem certeza que deseja excluir "${name}"?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Tem certeza que deseja excluir "${name}"?`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setLoading(id);
     try {
@@ -61,7 +68,7 @@ export function TechCategoriesList({ categories }: TechCategoriesListProps) {
       router.refresh();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao excluir categoria";
-      alert(message);
+      toast.error(message);
     } finally {
       setLoading(null);
     }
@@ -81,6 +88,7 @@ export function TechCategoriesList({ categories }: TechCategoriesListProps) {
   }
 
   return (
+    <>
     <div className="space-y-3">
       {categories.map((category) => (
         <div
@@ -160,5 +168,7 @@ export function TechCategoriesList({ categories }: TechCategoriesListProps) {
         </div>
       ))}
     </div>
+    <ConfirmDialog {...dialogProps} />
+    </>
   );
 }

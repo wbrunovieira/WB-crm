@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { updatePipeline, deletePipeline, setDefaultPipeline } from "@/actions/pipelines";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface PipelineManagerProps {
   pipeline: {
@@ -17,6 +19,7 @@ export function PipelineManager({ pipeline }: PipelineManagerProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(pipeline.name);
   const [isSaving, setIsSaving] = useState(false);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   async function handleSave() {
     if (!name.trim()) return;
@@ -27,7 +30,7 @@ export function PipelineManager({ pipeline }: PipelineManagerProps) {
       setIsEditing(false);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao atualizar pipeline");
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar pipeline");
     } finally {
       setIsSaving(false);
     }
@@ -38,19 +41,25 @@ export function PipelineManager({ pipeline }: PipelineManagerProps) {
       await setDefaultPipeline(pipeline.id);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao definir como padrão");
+      toast.error(error instanceof Error ? error.message : "Erro ao definir como padrão");
     }
   }
 
   async function handleDelete() {
-    if (!confirm(`Tem certeza que deseja excluir o pipeline "${pipeline.name}"?`)) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Tem certeza que deseja excluir o pipeline "${pipeline.name}"?`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     try {
       await deletePipeline(pipeline.id);
       router.push("/pipelines");
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao excluir pipeline");
+      toast.error(error instanceof Error ? error.message : "Erro ao excluir pipeline");
     }
   }
 
@@ -115,6 +124,8 @@ export function PipelineManager({ pipeline }: PipelineManagerProps) {
           Excluir
         </button>
       </div>
+
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

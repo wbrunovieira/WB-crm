@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 import {
   getActiveTechProfileLanguages,
   getActiveTechProfileFrameworks,
@@ -120,7 +121,7 @@ export function AddTechProfileModal({ entityId, entityType, isOpen, onClose, onS
       onSuccess();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao adicionar";
-      alert(message);
+      toast.warning(message);
     } finally {
       setAdding(null);
     }

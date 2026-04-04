@@ -20,6 +20,8 @@ import {
   removeCRMFromOrganization,
   removeEcommerceFromOrganization,
 } from "@/actions/organization-tech-profile";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface TechItem {
   id: string;
@@ -41,9 +43,16 @@ interface TechProfileBadgeProps {
 
 export function TechProfileBadge({ title, items, entityId, entityType, profileType, onUpdate }: TechProfileBadgeProps) {
   const [removing, setRemoving] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const handleRemove = async (itemId: string, itemName: string) => {
-    if (!confirm(`Remover "${itemName}"?`)) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Remover "${itemName}"?`,
+      confirmLabel: "Remover",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setRemoving(itemId);
     try {
@@ -71,7 +80,7 @@ export function TechProfileBadge({ title, items, entityId, entityType, profileTy
       await onUpdate();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao remover";
-      alert(message);
+      toast.error(message);
     } finally {
       setRemoving(null);
     }
@@ -112,6 +121,7 @@ export function TechProfileBadge({ title, items, entityId, entityType, profileTy
           </div>
         ))}
       </div>
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 import { getActiveTechCategories } from "@/actions/tech-categories";
 import { getActiveTechLanguages } from "@/actions/tech-languages";
 import { getActiveTechFrameworks } from "@/actions/tech-frameworks";
@@ -88,7 +89,7 @@ export function AddTechStackToDealModal({
       onSuccess();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao adicionar categoria";
-      alert(message);
+      toast.warning(message);
     } finally {
       setAdding(null);
     }
@@ -101,7 +102,7 @@ export function AddTechStackToDealModal({
       onSuccess();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao adicionar linguagem";
-      alert(message);
+      toast.warning(message);
     } finally {
       setAdding(null);
     }
@@ -114,7 +115,7 @@ export function AddTechStackToDealModal({
       onSuccess();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao adicionar framework";
-      alert(message);
+      toast.warning(message);
     } finally {
       setAdding(null);
     }

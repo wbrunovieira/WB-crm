@@ -19,6 +19,8 @@ import {
   deleteTechProfileEcommerce,
 } from "@/actions/tech-profile-options";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 type TechProfileType = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
 
@@ -43,6 +45,7 @@ interface TechProfileGenericListProps {
 export function TechProfileGenericList({ type, items, countKeys }: TechProfileGenericListProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
@@ -59,7 +62,7 @@ export function TechProfileGenericList({ type, items, countKeys }: TechProfileGe
       router.refresh();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao atualizar";
-      alert(message);
+      toast.error(message);
     } finally {
       setLoading(null);
     }
@@ -67,15 +70,19 @@ export function TechProfileGenericList({ type, items, countKeys }: TechProfileGe
 
   const handleDelete = async (id: string, name: string, totalCount: number) => {
     if (totalCount > 0) {
-      alert(
+      toast.warning(
         `Não é possível excluir "${name}" pois possui ${totalCount} lead(s)/organização(ões) vinculado(s).`
       );
       return;
     }
 
-    if (!confirm(`Tem certeza que deseja excluir "${name}"?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Tem certeza que deseja excluir "${name}"?`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setLoading(id);
     try {
@@ -91,7 +98,7 @@ export function TechProfileGenericList({ type, items, countKeys }: TechProfileGe
       router.refresh();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao excluir";
-      alert(message);
+      toast.error(message);
     } finally {
       setLoading(null);
     }
@@ -111,6 +118,7 @@ export function TechProfileGenericList({ type, items, countKeys }: TechProfileGe
   }
 
   return (
+    <>
     <div className="space-y-3">
       {items.map((item) => {
         const leadCount = item._count[countKeys.lead] || 0;
@@ -194,5 +202,7 @@ export function TechProfileGenericList({ type, items, countKeys }: TechProfileGe
         );
       })}
     </div>
+    <ConfirmDialog {...dialogProps} />
+    </>
   );
 }

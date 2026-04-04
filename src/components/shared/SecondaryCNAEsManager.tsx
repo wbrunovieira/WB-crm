@@ -11,6 +11,8 @@ import {
   searchCNAEs,
 } from "@/actions/cnaes";
 import { Plus, X, Search } from "lucide-react";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface CNAE {
   id: string;
@@ -32,6 +34,7 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
   const [searching, setSearching] = useState(false);
   const [adding, setAdding] = useState<string | null>(null);
   const [removing, setRemoving] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const loadCNAEs = useCallback(async () => {
     setLoading(true);
@@ -90,14 +93,20 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
       setShowAdd(false);
     } catch (err) {
       const error = err as Error;
-      alert(error.message || "Erro ao adicionar CNAE");
+      toast.error(error.message || "Erro ao adicionar CNAE");
     } finally {
       setAdding(null);
     }
   };
 
   const handleRemove = async (cnaeId: string, description: string) => {
-    if (!confirm(`Remover "${description}"?`)) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Remover "${description}"?`,
+      confirmLabel: "Remover",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setRemoving(cnaeId);
     try {
@@ -109,7 +118,7 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
       await loadCNAEs();
     } catch (err) {
       const error = err as Error;
-      alert(error.message || "Erro ao remover CNAE");
+      toast.error(error.message || "Erro ao remover CNAE");
     } finally {
       setRemoving(null);
     }
@@ -217,6 +226,8 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
           ))}
         </div>
       )}
+
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

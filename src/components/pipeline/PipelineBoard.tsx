@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation";
 import StageColumn from "./StageColumn";
 import DealCard from "./DealCard";
 import { AVAILABLE_CURRENCIES } from "@/lib/utils";
+import { toast } from "sonner";
 
 type Deal = {
   id: string;
@@ -98,7 +99,7 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
       router.refresh();
     } catch (error) {
       console.error("Error updating deal stage:", error);
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Erro ao mover negócio"

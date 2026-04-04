@@ -3,6 +3,7 @@
 import { toggleActivityCompleted } from "@/actions/activities";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { toast } from "sonner";
 import { ScheduleNextActivityModal } from "./ScheduleNextActivityModal";
 
 interface ToggleCompletedButtonProps {
@@ -56,7 +57,7 @@ export default function ToggleCompletedButton({
 
       router.refresh();
     } catch (error) {
-      alert(
+      toast.error(
         error instanceof Error
           ? error.message
           : "Erro ao atualizar atividade"

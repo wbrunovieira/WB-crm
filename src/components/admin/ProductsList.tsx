@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toggleProductActive, deleteProduct } from "@/actions/products";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface Product {
   id: string;
@@ -35,6 +37,7 @@ interface ProductsListProps {
 export function ProductsList({ products }: ProductsListProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
@@ -42,7 +45,7 @@ export function ProductsList({ products }: ProductsListProps) {
       await toggleProductActive(id);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao atualizar produto");
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar produto");
     } finally {
       setLoading(null);
     }
@@ -50,22 +53,26 @@ export function ProductsList({ products }: ProductsListProps) {
 
   const handleDelete = async (id: string, name: string, totalLinks: number) => {
     if (totalLinks > 0) {
-      alert(
+      toast.warning(
         `Não é possível excluir "${name}" pois possui ${totalLinks} vínculo(s) ativo(s).`
       );
       return;
     }
 
-    if (!confirm(`Tem certeza que deseja excluir "${name}"?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Tem certeza que deseja excluir "${name}"?`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setLoading(id);
     try {
       await deleteProduct(id);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao excluir produto");
+      toast.error(error instanceof Error ? error.message : "Erro ao excluir produto");
     } finally {
       setLoading(null);
     }
@@ -99,6 +106,7 @@ export function ProductsList({ products }: ProductsListProps) {
   }, {} as Record<string, { name: string; color: string | null; products: Product[] }>);
 
   return (
+    <>
     <div className="space-y-6">
       {Object.values(groupedProducts).map((group) => (
         <div key={group.name}>
@@ -209,5 +217,7 @@ export function ProductsList({ products }: ProductsListProps) {
         </div>
       ))}
     </div>
+    <ConfirmDialog {...dialogProps} />
+    </>
   );
 }

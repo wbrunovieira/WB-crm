@@ -4,6 +4,7 @@ import { useState } from "react";
 import { updateDeal } from "@/actions/deals";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
+import { toast } from "sonner";
 
 type DealStatusSelectProps = {
   dealId: string;
@@ -78,7 +79,7 @@ export function DealStatusSelect({
       console.error("Erro ao atualizar status:", error);
       // Revert on error
       setSelectedStatus(currentStatus);
-      alert("Erro ao atualizar status");
+      toast.error("Erro ao atualizar status");
     } finally {
       setIsUpdating(false);
     }

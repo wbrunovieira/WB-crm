@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { createStage, updateStage, deleteStage, reorderStages } from "@/actions/stages";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface Stage {
   id: string;
@@ -25,6 +27,7 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const [formData, setFormData] = useState({
     name: "",
@@ -47,7 +50,7 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
       setIsCreating(false);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao criar estágio");
+      toast.error(error instanceof Error ? error.message : "Erro ao criar estágio");
     }
   }
 
@@ -72,20 +75,26 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
       setEditingId(null);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao atualizar estágio");
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar estágio");
     }
   }
 
   async function handleDelete(stageId: string) {
     const stage = stages.find((s) => s.id === stageId);
-    if (!confirm(`Tem certeza que deseja excluir o estágio "${stage?.name}"?`)) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Tem certeza que deseja excluir o estágio "${stage?.name}"?`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     try {
       await deleteStage(stageId);
       setStages(stages.filter((s) => s.id !== stageId));
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao excluir estágio");
+      toast.error(error instanceof Error ? error.message : "Erro ao excluir estágio");
     }
   }
 
@@ -132,7 +141,7 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
       await reorderStages(pipelineId, stageIds);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao reordenar estágios");
+      toast.error(error instanceof Error ? error.message : "Erro ao reordenar estágios");
       setStages(initialStages);
     } finally {
       setDraggedIndex(null);
@@ -318,6 +327,8 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
           <p className="text-gray-500">Nenhum estágio configurado. Clique em &quot;Adicionar Estágio&quot; para começar.</p>
         </div>
       )}
+
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
 import { restoreICPVersion } from "@/actions/icps";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface Version {
   id: string;
@@ -28,18 +30,23 @@ export function ICPVersionHistory({ icpId, versions }: ICPVersionHistoryProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [expandedVersion, setExpandedVersion] = useState<number | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const handleRestore = async (versionNumber: number) => {
-    if (!confirm(`Restaurar para a versão ${versionNumber}? Uma nova versão será criada com o conteúdo restaurado.`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Restaurar para a versão ${versionNumber}? Uma nova versão será criada com o conteúdo restaurado.`,
+      confirmLabel: "Restaurar",
+      variant: "warning",
+    });
+    if (!confirmed) return;
 
     setLoading(true);
     try {
       await restoreICPVersion(icpId, versionNumber);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao restaurar versão");
+      toast.error(error instanceof Error ? error.message : "Erro ao restaurar versão");
     } finally {
       setLoading(false);
     }
@@ -50,6 +57,7 @@ export function ICPVersionHistory({ icpId, versions }: ICPVersionHistoryProps) {
   }
 
   return (
+    <>
     <div className="space-y-2">
       {versions.map((version, index) => {
         const isLatest = index === 0;
@@ -139,5 +147,7 @@ export function ICPVersionHistory({ icpId, versions }: ICPVersionHistoryProps) {
         );
       })}
     </div>
+    <ConfirmDialog {...dialogProps} />
+    </>
   );
 }

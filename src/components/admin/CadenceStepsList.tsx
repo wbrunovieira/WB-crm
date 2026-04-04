@@ -6,6 +6,8 @@ import { Trash2, Zap, Pencil, Copy, Check } from "lucide-react";
 import { deleteCadenceStep } from "@/actions/cadence-steps";
 import { CADENCE_CHANNEL_LABELS, type CadenceChannel } from "@/lib/validations/cadence";
 import { CadenceStepEditModal } from "./CadenceStepEditModal";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 type CadenceStep = {
   id: string;
@@ -25,6 +27,7 @@ export function CadenceStepsList({ steps }: CadenceStepsListProps) {
   const [loading, setLoading] = useState<string | null>(null);
   const [editingStep, setEditingStep] = useState<CadenceStep | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const handleCopy = async (step: CadenceStep) => {
     const text = `${step.subject}\n\n${step.description || ""}`.trim();
@@ -34,14 +37,20 @@ export function CadenceStepsList({ steps }: CadenceStepsListProps) {
   };
 
   const handleDelete = async (step: CadenceStep) => {
-    if (!confirm(`Excluir etapa do dia ${step.dayNumber}?`)) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Excluir etapa do dia ${step.dayNumber}?`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setLoading(step.id);
     try {
       await deleteCadenceStep(step.id);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao excluir");
+      toast.error(error instanceof Error ? error.message : "Erro ao excluir");
     } finally {
       setLoading(null);
     }
@@ -214,6 +223,7 @@ export function CadenceStepsList({ steps }: CadenceStepsListProps) {
           onClose={() => setEditingStep(null)}
         />
       )}
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

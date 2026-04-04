@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { getDealProducts, removeProductFromDeal } from "@/actions/product-links";
 import { X, Package, Plus } from "lucide-react";
 import { AddProductToDealModal } from "./AddProductToDealModal";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { toast } from "sonner";
 
 interface DealProductsSectionProps {
   dealId: string;
@@ -33,6 +35,7 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   useEffect(() => {
     const loadProducts = async () => {
@@ -58,14 +61,21 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
   };
 
   const handleRemove = async (id: string, productName: string) => {
-    if (!confirm(`Remover "${productName}" deste deal?`)) return;
+    const confirmed = await confirm({
+      title: "Remover Produto",
+      message: `Remover "${productName}" deste deal?`,
+      confirmLabel: "Remover",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setRemoving(id);
     try {
       await removeProductFromDeal(id);
       await refreshProducts();
+      toast.success(`"${productName}" removido com sucesso`);
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao remover produto");
+      toast.error(error instanceof Error ? error.message : "Erro ao remover produto");
     } finally {
       setRemoving(null);
     }
@@ -286,6 +296,7 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
       onClose={() => setIsModalOpen(false)}
       onSuccess={refreshProducts}
     />
+    <ConfirmDialog {...dialogProps} />
     </>
   );
 }

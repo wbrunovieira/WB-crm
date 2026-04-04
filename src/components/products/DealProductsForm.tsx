@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
+import { toast } from "sonner";
 
 interface Product {
   id: string;
@@ -73,7 +74,7 @@ export function DealProductsForm({
     if (!product) return;
 
     if (selectedProducts.some((sp) => sp.productId === product.id)) {
-      alert("Este produto já foi adicionado");
+      toast.warning("Este produto já foi adicionado");
       return;
     }
 

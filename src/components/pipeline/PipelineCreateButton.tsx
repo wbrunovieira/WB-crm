@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { createPipeline } from "@/actions/pipelines";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 export function PipelineCreateButton() {
   const router = useRouter();
@@ -23,7 +24,7 @@ export function PipelineCreateButton() {
       router.push(`/pipelines/${pipeline.id}`);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao criar pipeline");
+      toast.error(error instanceof Error ? error.message : "Erro ao criar pipeline");
     } finally {
       setIsSaving(false);
     }

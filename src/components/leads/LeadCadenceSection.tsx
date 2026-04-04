@@ -20,6 +20,8 @@ import {
   cancelLeadCadence,
   completeLeadCadence,
 } from "@/actions/lead-cadences";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ApplyCadenceModal } from "./ApplyCadenceModal";
 import {
   LEAD_CADENCE_STATUS_LABELS,
@@ -43,6 +45,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [expandedCadence, setExpandedCadence] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   useEffect(() => {
     async function loadCadences() {
@@ -59,7 +62,13 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
   }, [leadId]);
 
   const handlePause = async (id: string) => {
-    if (!confirm("Pausar esta cadência?")) return;
+    const confirmed = await confirm({
+      title: "Pausar Cadência",
+      message: "Pausar esta cadência?",
+      confirmLabel: "Pausar",
+      variant: "warning",
+    });
+    if (!confirmed) return;
     setActionLoading(id);
     try {
       await pauseLeadCadence(id);
@@ -67,14 +76,20 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
       setCadences(data);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao pausar");
+      toast.error(error instanceof Error ? error.message : "Erro ao pausar");
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleResume = async (id: string) => {
-    if (!confirm("Retomar esta cadência? As datas das atividades pendentes serão ajustadas.")) return;
+    const confirmed = await confirm({
+      title: "Retomar Cadência",
+      message: "Retomar esta cadência? As datas das atividades pendentes serão ajustadas.",
+      confirmLabel: "Retomar",
+      variant: "default",
+    });
+    if (!confirmed) return;
     setActionLoading(id);
     try {
       await resumeLeadCadence(id);
@@ -82,14 +97,20 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
       setCadences(data);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao retomar");
+      toast.error(error instanceof Error ? error.message : "Erro ao retomar");
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleCancel = async (id: string) => {
-    if (!confirm("Cancelar esta cadência? Esta ação não pode ser desfeita.")) return;
+    const confirmed = await confirm({
+      title: "Cancelar Cadência",
+      message: "Cancelar esta cadência? Esta ação não pode ser desfeita.",
+      confirmLabel: "Cancelar",
+      variant: "danger",
+    });
+    if (!confirmed) return;
     setActionLoading(id);
     try {
       await cancelLeadCadence(id);
@@ -97,14 +118,20 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
       setCadences(data);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao cancelar");
+      toast.error(error instanceof Error ? error.message : "Erro ao cancelar");
     } finally {
       setActionLoading(null);
     }
   };
 
   const handleComplete = async (id: string) => {
-    if (!confirm("Marcar cadência como concluída?")) return;
+    const confirmed = await confirm({
+      title: "Concluir Cadência",
+      message: "Marcar cadência como concluída?",
+      confirmLabel: "Concluir",
+      variant: "default",
+    });
+    if (!confirmed) return;
     setActionLoading(id);
     try {
       await completeLeadCadence(id);
@@ -112,7 +139,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
       setCadences(data);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao completar");
+      toast.error(error instanceof Error ? error.message : "Erro ao completar");
     } finally {
       setActionLoading(null);
     }
@@ -371,6 +398,8 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
           onSuccess={handleApplySuccess}
         />
       )}
+
+      <ConfirmDialog {...dialogProps} />
     </>
   );
 }

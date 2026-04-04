@@ -16,6 +16,8 @@ import {
   Target
 } from "lucide-react";
 import { deleteICP, updateICP } from "@/actions/icps";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface ICP {
   id: string;
@@ -191,6 +193,7 @@ function ICPCard({ icp, loading, onToggleStatus, onDelete }: {
 export function ICPsList({ icps }: ICPsListProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleStatus = async (icp: ICP) => {
     setLoading(icp.id);
@@ -202,7 +205,7 @@ export function ICPsList({ icps }: ICPsListProps) {
       });
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao alterar status");
+      toast.error(error instanceof Error ? error.message : "Erro ao alterar status");
     } finally {
       setLoading(null);
     }
@@ -212,20 +215,26 @@ export function ICPsList({ icps }: ICPsListProps) {
     const totalLinks = icp._count.leads + icp._count.organizations;
 
     if (totalLinks > 0) {
-      alert(
+      toast.warning(
         `Não é possível excluir "${icp.name}" pois está vinculado a ${icp._count.leads} lead(s) e ${icp._count.organizations} organização(ões).`
       );
       return;
     }
 
-    if (!confirm(`Tem certeza que deseja excluir "${icp.name}"?`)) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Tem certeza que deseja excluir "${icp.name}"?`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setLoading(icp.id);
     try {
       await deleteICP(icp.id);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao excluir ICP");
+      toast.error(error instanceof Error ? error.message : "Erro ao excluir ICP");
     } finally {
       setLoading(null);
     }
@@ -248,6 +257,7 @@ export function ICPsList({ icps }: ICPsListProps) {
   }
 
   return (
+    <>
     <div className="col-span-2 space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-lg font-semibold text-gray-900">
@@ -270,5 +280,7 @@ export function ICPsList({ icps }: ICPsListProps) {
         ))}
       </div>
     </div>
+    <ConfirmDialog {...dialogProps} />
+    </>
   );
 }

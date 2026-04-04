@@ -7,6 +7,8 @@ import {
   deleteTechLanguage,
 } from "@/actions/tech-languages";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface TechLanguage {
   id: string;
@@ -27,6 +29,7 @@ interface TechLanguagesListProps {
 export function TechLanguagesList({ languages }: TechLanguagesListProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
@@ -35,7 +38,7 @@ export function TechLanguagesList({ languages }: TechLanguagesListProps) {
       router.refresh();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao atualizar linguagem";
-      alert(message);
+      toast.error(message);
     } finally {
       setLoading(null);
     }
@@ -43,15 +46,19 @@ export function TechLanguagesList({ languages }: TechLanguagesListProps) {
 
   const handleDelete = async (id: string, name: string, dealCount: number) => {
     if (dealCount > 0) {
-      alert(
+      toast.warning(
         `Não é possível excluir "${name}" pois possui ${dealCount} deal(s) vinculado(s).`
       );
       return;
     }
 
-    if (!confirm(`Tem certeza que deseja excluir "${name}"?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Tem certeza que deseja excluir "${name}"?`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setLoading(id);
     try {
@@ -59,7 +66,7 @@ export function TechLanguagesList({ languages }: TechLanguagesListProps) {
       router.refresh();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao excluir linguagem";
-      alert(message);
+      toast.error(message);
     } finally {
       setLoading(null);
     }
@@ -79,6 +86,7 @@ export function TechLanguagesList({ languages }: TechLanguagesListProps) {
   }
 
   return (
+    <>
     <div className="space-y-3">
       {languages.map((language) => (
         <div
@@ -151,5 +159,7 @@ export function TechLanguagesList({ languages }: TechLanguagesListProps) {
         </div>
       ))}
     </div>
+    <ConfirmDialog {...dialogProps} />
+    </>
   );
 }

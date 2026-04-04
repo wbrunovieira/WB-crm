@@ -3,6 +3,8 @@
 import { useState, useEffect } from "react";
 import { getDealTechStack, removeCategoryFromDeal, removeLanguageFromDeal, removeFrameworkFromDeal, setPrimaryLanguage } from "@/actions/deal-tech-stack";
 import { X, Code, Plus, Star } from "lucide-react";
+import { toast } from "sonner";
+import { ConfirmDialog, useConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { AddTechStackToDealModal } from "./AddTechStackToDealModal";
 
 interface DealTechStackSectionProps {
@@ -59,6 +61,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
   const [loading, setLoading] = useState(true);
   const [removing, setRemoving] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   useEffect(() => {
     const loadTechStack = async () => {
@@ -84,7 +87,13 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
   };
 
   const handleRemoveCategory = async (categoryId: string, categoryName: string) => {
-    if (!confirm(`Remover categoria "${categoryName}"?`)) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Remover categoria "${categoryName}"?`,
+      confirmLabel: "Remover",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setRemoving(categoryId);
     try {
@@ -92,14 +101,20 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
       await refreshTechStack();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao remover categoria";
-      alert(message);
+      toast.error(message);
     } finally {
       setRemoving(null);
     }
   };
 
   const handleRemoveLanguage = async (languageId: string, languageName: string) => {
-    if (!confirm(`Remover linguagem "${languageName}"?`)) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Remover linguagem "${languageName}"?`,
+      confirmLabel: "Remover",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setRemoving(languageId);
     try {
@@ -107,14 +122,20 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
       await refreshTechStack();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao remover linguagem";
-      alert(message);
+      toast.error(message);
     } finally {
       setRemoving(null);
     }
   };
 
   const handleRemoveFramework = async (frameworkId: string, frameworkName: string) => {
-    if (!confirm(`Remover framework "${frameworkName}"?`)) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Remover framework "${frameworkName}"?`,
+      confirmLabel: "Remover",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setRemoving(frameworkId);
     try {
@@ -122,7 +143,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
       await refreshTechStack();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao remover framework";
-      alert(message);
+      toast.error(message);
     } finally {
       setRemoving(null);
     }
@@ -135,7 +156,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
       await refreshTechStack();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao definir linguagem principal";
-      alert(message);
+      toast.error(message);
     } finally {
       setRemoving(null);
     }
@@ -168,6 +189,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
           onClose={() => setIsModalOpen(false)}
           onSuccess={refreshTechStack}
         />
+        <ConfirmDialog {...dialogProps} />
       </>
     );
   }
@@ -199,6 +221,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
           onClose={() => setIsModalOpen(false)}
           onSuccess={refreshTechStack}
         />
+        <ConfirmDialog {...dialogProps} />
       </>
     );
   }
@@ -360,6 +383,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
         onClose={() => setIsModalOpen(false)}
         onSuccess={refreshTechStack}
       />
+      <ConfirmDialog {...dialogProps} />
     </>
   );
 }

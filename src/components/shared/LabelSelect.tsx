@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { getLabels, createLabel, updateLabel, deleteLabel, type Label } from "@/actions/labels";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface LabelSelectProps {
   value?: string | null;
@@ -29,6 +30,7 @@ export function LabelSelect({ value, onChange, placeholder = "Selecione uma labe
   const [newLabelName, setNewLabelName] = useState("");
   const [newLabelColor, setNewLabelColor] = useState(DEFAULT_COLORS[0]);
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   useEffect(() => {
     loadLabels();
@@ -81,7 +83,13 @@ export function LabelSelect({ value, onChange, placeholder = "Selecione uma labe
   }
 
   async function handleDeleteLabel(labelId: string) {
-    if (!confirm("Tem certeza que deseja excluir esta label?")) return;
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: "Tem certeza que deseja excluir esta label?",
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     await deleteLabel(labelId);
     setLabels(labels.filter((l) => l.id !== labelId));
@@ -264,6 +272,8 @@ export function LabelSelect({ value, onChange, placeholder = "Selecione uma labe
           )}
         </div>
       )}
+
+      <ConfirmDialog {...dialogProps} />
     </div>
   );
 }

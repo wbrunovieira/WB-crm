@@ -7,6 +7,8 @@ import {
   deleteTechFramework,
 } from "@/actions/tech-frameworks";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface TechFramework {
   id: string;
@@ -28,6 +30,7 @@ interface TechFrameworksListProps {
 export function TechFrameworksList({ frameworks }: TechFrameworksListProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
@@ -36,7 +39,7 @@ export function TechFrameworksList({ frameworks }: TechFrameworksListProps) {
       router.refresh();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao atualizar framework";
-      alert(message);
+      toast.error(message);
     } finally {
       setLoading(null);
     }
@@ -44,15 +47,19 @@ export function TechFrameworksList({ frameworks }: TechFrameworksListProps) {
 
   const handleDelete = async (id: string, name: string, dealCount: number) => {
     if (dealCount > 0) {
-      alert(
+      toast.warning(
         `Não é possível excluir "${name}" pois possui ${dealCount} deal(s) vinculado(s).`
       );
       return;
     }
 
-    if (!confirm(`Tem certeza que deseja excluir "${name}"?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Tem certeza que deseja excluir "${name}"?`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setLoading(id);
     try {
@@ -60,7 +67,7 @@ export function TechFrameworksList({ frameworks }: TechFrameworksListProps) {
       router.refresh();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao excluir framework";
-      alert(message);
+      toast.error(message);
     } finally {
       setLoading(null);
     }
@@ -80,6 +87,7 @@ export function TechFrameworksList({ frameworks }: TechFrameworksListProps) {
   }
 
   return (
+    <>
     <div className="space-y-3">
       {frameworks.map((framework) => (
         <div
@@ -160,5 +168,7 @@ export function TechFrameworksList({ frameworks }: TechFrameworksListProps) {
         </div>
       ))}
     </div>
+    <ConfirmDialog {...dialogProps} />
+    </>
   );
 }

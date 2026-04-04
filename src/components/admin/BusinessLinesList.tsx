@@ -7,6 +7,8 @@ import {
   deleteBusinessLine,
 } from "@/actions/business-lines";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface BusinessLine {
   id: string;
@@ -29,6 +31,7 @@ interface BusinessLinesListProps {
 export function BusinessLinesList({ businessLines }: BusinessLinesListProps) {
   const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
+  const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
@@ -36,7 +39,7 @@ export function BusinessLinesList({ businessLines }: BusinessLinesListProps) {
       await toggleBusinessLineActive(id);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao atualizar linha de negócio");
+      toast.error(error instanceof Error ? error.message : "Erro ao atualizar linha de negócio");
     } finally {
       setLoading(null);
     }
@@ -44,22 +47,26 @@ export function BusinessLinesList({ businessLines }: BusinessLinesListProps) {
 
   const handleDelete = async (id: string, name: string, productCount: number) => {
     if (productCount > 0) {
-      alert(
+      toast.warning(
         `Não é possível excluir "${name}" pois possui ${productCount} produto(s) vinculado(s).`
       );
       return;
     }
 
-    if (!confirm(`Tem certeza que deseja excluir "${name}"?`)) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Confirmar",
+      message: `Tem certeza que deseja excluir "${name}"?`,
+      confirmLabel: "Excluir",
+      variant: "danger",
+    });
+    if (!confirmed) return;
 
     setLoading(id);
     try {
       await deleteBusinessLine(id);
       router.refresh();
     } catch (error) {
-      alert(error instanceof Error ? error.message : "Erro ao excluir linha de negócio");
+      toast.error(error instanceof Error ? error.message : "Erro ao excluir linha de negócio");
     } finally {
       setLoading(null);
     }
@@ -79,6 +86,7 @@ export function BusinessLinesList({ businessLines }: BusinessLinesListProps) {
   }
 
   return (
+    <>
     <div className="space-y-3">
       {businessLines.map((line) => (
         <div
@@ -156,5 +164,7 @@ export function BusinessLinesList({ businessLines }: BusinessLinesListProps) {
         </div>
       ))}
     </div>
+    <ConfirmDialog {...dialogProps} />
+    </>
   );
 }
