@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { X, Send, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { sendWhatsAppMessage } from "@/actions/whatsapp";
@@ -16,6 +17,7 @@ export default function WhatsAppSendModal({
   name,
   onClose,
 }: WhatsAppSendModalProps) {
+  const router = useRouter();
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -39,11 +41,12 @@ export default function WhatsAppSendModal({
 
     setSending(true);
     try {
-      const result = await sendWhatsAppMessage(to, trimmed);
+      const result = await sendWhatsAppMessage(to, trimmed, name);
       if (result.success) {
         toast.success("Mensagem enviada!", {
           description: `WhatsApp para ${name}`,
         });
+        router.refresh();
         onClose();
       } else {
         toast.error("Erro ao enviar mensagem", {
