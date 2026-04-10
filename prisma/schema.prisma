@@ -570,7 +570,10 @@ model Activity {
   @@index([contactId])
   @@index([leadId])
   @@index([partnerId])
+  gotoCallId  String?  @unique // GoTo conversationSpaceId — previne Activity duplicada
+
   @@index([dueDate])
+  @@index([gotoCallId])
   @@map("activities")
 }
 
