@@ -429,6 +429,170 @@ tests/integration/api/goto-webhook-retry.test.ts
 
 ---
 
+## Fase 6 — Gravação de Áudio, Player e Transcrição com Whisper
+
+**Objetivo**: Após cada ligação, baixar automaticamente o arquivo de áudio do GoTo, armazená-lo, disponibilizar um player diretamente no histórico de atividades do CRM e gerar a transcrição em texto usando o modelo Whisper já utilizado em outro app do usuário.
+
+> **Pré-requisito**: Fase 3 concluída (registro automático de atividade via webhook). A gravação é baixada no mesmo fluxo do webhook `REPORT_SUMMARY`.
+
+> **Atenção na implementação**: Antes de implementar a integração com o Whisper, perguntar ao usuário como prefere conectar com o modelo existente — pode ser via API HTTP, SDK compartilhado, chamada direta ao serviço, ou outra forma. Não assumir a interface sem confirmar.
+
+### Como funciona a API de Gravação do GoTo
+
+O relatório pós-chamada (`REPORT_SUMMARY`) inclui, desde fev/2025, um campo `recordings[]` nos participantes com o `recordingId`. Com ele:
+
+```
+GET /recording/v1/recordings/{recordingId}/content
+→ retorna o arquivo de áudio (MP3 ou WAV)
+→ scope necessário: cr.v1.read (já planejado nas fases anteriores)
+```
+
+Não há URLs assinadas — o download exige o Bearer token OAuth ativo, então o áudio é baixado server-side e armazenado no servidor do CRM.
+
+### O que fazer
+
+#### 6a. Storage de áudio
+
+Definir onde os arquivos de áudio ficam armazenados:
+- **Opção A — filesystem local** no servidor (`/opt/wb-crm/recordings/`), servido via rota Next.js protegida por auth
+- **Opção B — S3/R2** (Cloudflare R2 ou AWS S3) com URL assinada por tempo limitado
+
+> Recomendação: Opção A para começar (sem custo adicional, servidor já existe). Migrar para S3 se o volume crescer.
+
+#### 6b. Migration de banco — campos na `Activity`
+
+```prisma
+model Activity {
+  // ...campos existentes
+  recordingId        String?   // recordingId do GoTo
+  recordingPath      String?   // caminho local ou URL do storage
+  recordingDuration  Int?      // duração em segundos
+  transcription      String?   // texto completo da transcrição
+  transcriptionStatus String?  @default("pending") // pending | processing | done | failed
+}
+```
+
+#### 6c. Serviço de download de gravação
+
+`/src/lib/goto/recording-downloader.ts`
+- `downloadRecording(recordingId, accessToken)` — chama `GET /recording/v1/recordings/{id}/content`, retorna buffer do áudio
+- `saveRecording(buffer, activityId)` — salva no filesystem em `/opt/wb-crm/recordings/{activityId}.mp3` e retorna o path
+- Integrado ao webhook da Fase 3: após criar a `Activity`, verifica se `recordings[]` existe no relatório e dispara o download
+
+#### 6d. Rota de streaming de áudio (protegida)
+
+`/src/app/api/recordings/[activityId]/route.ts`
+- Verifica sessão do usuário e ownership da Activity
+- Serve o arquivo de áudio com headers corretos (`Content-Type: audio/mpeg`, `Accept-Ranges: bytes`) para suportar seek no player
+- Nunca expõe o path real do filesystem
+
+#### 6e. Serviço de transcrição
+
+`/src/lib/whisper/transcriber.ts`
+
+> **NOTA PARA IMPLEMENTAÇÃO**: antes de escrever este serviço, perguntar ao usuário:
+> - Como o Whisper está hospedado no outro app? (API REST própria, OpenAI API, self-hosted, etc.)
+> - Qual o endpoint/interface de entrada? (URL + auth? SDK? fila de mensagens?)
+> - O retorno já vem com timestamps por segmento ou só texto puro?
+
+Interface esperada (a confirmar com o usuário):
+```typescript
+interface TranscriptionResult {
+  text: string           // texto completo
+  segments?: Array<{     // opcional: trechos com timestamps
+    start: number        // segundos
+    end: number
+    text: string
+  }>
+  language?: string      // idioma detectado
+}
+
+async function transcribeAudio(audioPath: string): Promise<TranscriptionResult>
+```
+
+#### 6f. Worker de transcrição
+
+`/src/lib/whisper/transcription-worker.ts`
+- Chamado após `saveRecording()` de forma assíncrona (não bloqueia o webhook)
+- Atualiza `Activity.transcriptionStatus = "processing"`
+- Envia áudio para o Whisper e aguarda resultado
+- Salva `Activity.transcription` e `Activity.transcriptionStatus = "done"`
+- Em caso de erro: `transcriptionStatus = "failed"` (sem crash do webhook)
+
+#### 6g. Componente UI — Player + Transcrição
+
+`/src/components/activities/CallRecordingPlayer.tsx` (client component)
+
+```
+┌─────────────────────────────────────────────┐
+│ 📞 Ligação realizada — 8min 32s             │
+│ 10/04/2026 às 10:23 · Bruno → (71) 3599-7905│
+│                                             │
+│  ▶ ──────────────────────── 8:32  ⬇ baixar │
+│                                             │
+│ 📝 Transcrição                        ▼    │
+│  Boa tarde, falo com João da Mosello?       │
+│  Sim, pode falar.                           │
+│  Estava entrando em contato sobre...        │
+│                                             │
+│  ⏳ Processando transcrição...              │  ← estado intermediário
+└─────────────────────────────────────────────┘
+```
+
+- Player HTML5 nativo (`<audio>`) apontando para `/api/recordings/{activityId}`
+- Botão de download do áudio original
+- Seção de transcrição expansível/colapsável
+- Estados: `pending` (aguardando gravação), `processing` (spinner), `done` (texto), `failed` (mensagem de erro + botão retry)
+- Polling a cada 5s enquanto `transcriptionStatus === "processing"`
+
+Integrado ao `ActivityTimeline` existente — aparece apenas em activities do tipo `call` que tenham `recordingId`.
+
+### Testes (TDD)
+
+```
+tests/unit/lib/goto/recording-downloader.test.ts
+  ✓ chama GET /recording/v1/recordings/{id}/content com Bearer token
+  ✓ salva arquivo no path correto
+  ✓ retorna path do arquivo salvo
+  ✓ lança erro se recordingId inválido (404 do GoTo)
+  ✓ não falha o webhook se download falhar (erro isolado)
+
+tests/unit/lib/whisper/transcription-worker.test.ts
+  ✓ atualiza transcriptionStatus para "processing" antes de chamar Whisper
+  ✓ salva texto da transcrição e status "done" ao completar
+  ✓ salva status "failed" se Whisper retornar erro
+  ✓ não lança exceção — erros são capturados e logados
+
+tests/unit/actions/recording.test.ts
+  ✓ apenas dono da Activity pode acessar gravação
+  ✓ Activity sem recordingPath retorna 404
+
+tests/integration/api/recordings-route.test.ts
+  ✓ retorna 401 sem sessão
+  ✓ retorna 403 se Activity pertence a outro usuário
+  ✓ retorna stream de áudio com Content-Type correto
+  ✓ suporta header Range para seek no player
+```
+
+### Entrega da Fase 6
+
+- [ ] Confirmar com o usuário a interface do Whisper antes de implementar
+- [ ] Testes escritos e passando
+- [ ] Migration com campos de gravação na `Activity` aplicada
+- [ ] `recording-downloader.ts` integrado ao webhook da Fase 3
+- [ ] Rota `/api/recordings/[activityId]` implementada e protegida
+- [ ] `transcription-worker.ts` implementado (após confirmar interface Whisper)
+- [ ] `CallRecordingPlayer` integrado ao `ActivityTimeline`
+- [ ] `git commit -m "feat: call recording download, audio player and whisper transcription"`
+- [ ] Deploy (`deploy-with-migrations.yml`)
+- [ ] Teste em produção:
+  - Fazer ligação de teste
+  - Confirmar que áudio aparece no histórico de atividades do Lead
+  - Confirmar que player reproduz o áudio sem baixar
+  - Confirmar que transcrição aparece após processamento
+
+---
+
 ## Sequência de Deploy por Fase
 
 ```
@@ -437,6 +601,7 @@ Fase 2  →  quick-deploy.yml           (sem migrations)
 Fase 3  →  deploy-with-migrations.yml (com migration se gotoCallId adicionado)
 Fase 4  →  deploy-with-migrations.yml (nova tabela Integration)
 Fase 5  →  deploy-with-migrations.yml (nova tabela CallRetrySession)
+Fase 6  →  deploy-with-migrations.yml (campos recording* e transcription* na Activity)
 ```
 
 ## Comandos de Deploy (referência)
