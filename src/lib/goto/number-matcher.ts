@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 
 export interface MatchResult {
   entityType: "contact" | "lead" | "partner";
@@ -16,11 +17,11 @@ function digitsOnly(phone: string): string {
 }
 
 /**
- * Gera variações do número para busca:
+ * Gera variações digit-only do número para busca.
  * "+5571999998888" → ["5571999998888", "71999998888", "999998888"]
  * Cobre: com código país, só DDD+número, só número local
  */
-function phoneVariations(phone: string): string[] {
+export function phoneVariations(phone: string): string[] {
   const digits = digitsOnly(phone);
   const variations = new Set<string>();
 
@@ -50,11 +51,55 @@ function phoneVariations(phone: string): string[] {
   return Array.from(variations).filter((v) => v.length >= 8);
 }
 
-function buildPhoneOrCondition(variations: string[]) {
-  return variations.flatMap((v) => [
-    { phone: { contains: v } },
-    { whatsapp: { contains: v } },
-  ]);
+/**
+ * Usa regexp_replace no PostgreSQL para normalizar os números armazenados
+ * (que podem estar formatados como "(71) 3599-7905") antes de comparar.
+ *
+ * Isso garante que "+557135997905" bate com "(71) 3599-7905" no banco.
+ */
+async function findContactByPhone(
+  variations: string[],
+  ownerId: string
+): Promise<string | null> {
+  const result = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM contacts
+    WHERE "ownerId" = ${ownerId}
+      AND (
+        regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') = ANY(${variations}::text[])
+        OR regexp_replace(COALESCE(whatsapp, ''), '[^0-9]', '', 'g') = ANY(${variations}::text[])
+      )
+    LIMIT 1
+  `;
+  return result[0]?.id ?? null;
+}
+
+async function findLeadByPhone(
+  variations: string[],
+  ownerId: string
+): Promise<string | null> {
+  const result = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM leads
+    WHERE "ownerId" = ${ownerId}
+      AND regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') = ANY(${variations}::text[])
+    LIMIT 1
+  `;
+  return result[0]?.id ?? null;
+}
+
+async function findPartnerByPhone(
+  variations: string[],
+  ownerId: string
+): Promise<string | null> {
+  const result = await prisma.$queryRaw<Array<{ id: string }>>`
+    SELECT id FROM partners
+    WHERE "ownerId" = ${ownerId}
+      AND (
+        regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') = ANY(${variations}::text[])
+        OR regexp_replace(COALESCE(whatsapp, ''), '[^0-9]', '', 'g') = ANY(${variations}::text[])
+      )
+    LIMIT 1
+  `;
+  return result[0]?.id ?? null;
 }
 
 export async function matchPhoneToEntity(
@@ -62,57 +107,23 @@ export async function matchPhoneToEntity(
   ownerId: string
 ): Promise<MatchResult | null> {
   const variations = phoneVariations(dialedNumber);
-  const orConditions = buildPhoneOrCondition(variations);
 
   // 1. Busca Contact
-  const contact = await prisma.contact.findFirst({
-    where: {
-      ownerId,
-      OR: orConditions,
-    },
-    select: { id: true },
-  });
-
-  if (contact) {
-    return {
-      entityType: "contact",
-      entityId: contact.id,
-      contactId: contact.id,
-    };
+  const contactId = await findContactByPhone(variations, ownerId);
+  if (contactId) {
+    return { entityType: "contact", entityId: contactId, contactId };
   }
 
   // 2. Busca Lead
-  const lead = await prisma.lead.findFirst({
-    where: {
-      ownerId,
-      OR: orConditions,
-    },
-    select: { id: true },
-  });
-
-  if (lead) {
-    return {
-      entityType: "lead",
-      entityId: lead.id,
-      leadId: lead.id,
-    };
+  const leadId = await findLeadByPhone(variations, ownerId);
+  if (leadId) {
+    return { entityType: "lead", entityId: leadId, leadId };
   }
 
   // 3. Busca Partner
-  const partner = await prisma.partner.findFirst({
-    where: {
-      ownerId,
-      OR: orConditions,
-    },
-    select: { id: true },
-  });
-
-  if (partner) {
-    return {
-      entityType: "partner",
-      entityId: partner.id,
-      partnerId: partner.id,
-    };
+  const partnerId = await findPartnerByPhone(variations, ownerId);
+  if (partnerId) {
+    return { entityType: "partner", entityId: partnerId, partnerId };
   }
 
   return null;
