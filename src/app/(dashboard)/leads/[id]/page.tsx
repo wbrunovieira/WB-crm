@@ -1,5 +1,6 @@
 import { getLeadById } from "@/actions/leads";
 import { PhoneLink } from "@/components/ui/phone-link";
+import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
 import { ArchiveLeadButton } from "@/components/leads/ArchiveLeadButton";
@@ -225,9 +226,9 @@ export default async function LeadDetailPage({
             {lead.whatsapp && (
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">WhatsApp</dt>
-                <dd className="text-base font-mono text-gray-900 flex items-center gap-2">
-                  <span>💬</span>
-                  {lead.whatsapp}
+                <dd className="text-base font-mono text-gray-900 flex items-center gap-2 flex-wrap">
+                  <span>{lead.whatsapp}</span>
+                  <WhatsAppButton to={lead.whatsapp} name={lead.businessName} variant="icon" />
                 </dd>
               </div>
             )}

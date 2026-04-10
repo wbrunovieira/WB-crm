@@ -1,5 +1,6 @@
 import { getContactById } from "@/actions/contacts";
 import { PhoneLink } from "@/components/ui/phone-link";
+import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import { DeleteContactButton } from "@/components/contacts/DeleteContactButton";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
@@ -61,6 +62,15 @@ export default async function ContactDetailPage({
                 {!contact.phone && "-"}
               </dd>
             </div>
+            {contact.whatsapp && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">WhatsApp</dt>
+                <dd className="mt-1 flex items-center gap-2 text-sm text-gray-900 flex-wrap">
+                  <span className="font-mono">{contact.whatsapp}</span>
+                  <WhatsAppButton to={contact.whatsapp} name={contact.name} variant="icon" />
+                </dd>
+              </div>
+            )}
             <div>
               <dt className="text-sm font-medium text-gray-500">Organização</dt>
               <dd className="mt-1 text-sm text-gray-900">
