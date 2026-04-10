@@ -242,71 +242,90 @@ cd deploy/ansible && ansible-playbook -i inventory/production.yml playbooks/depl
 
 ---
 
-## Fase 2 — UI: botão Click-to-WhatsApp com modal de envio
+## Fase 2 — UI: botão Click-to-WhatsApp com modal de envio ✅ CONCLUÍDA (2026-04-10)
 
-**Objetivo**: enviar mensagem WhatsApp diretamente do perfil do Lead/Contact no CRM, com Activity atualizada automaticamente via webhook (sem duplicação).
+**Objetivo**: enviar mensagem WhatsApp diretamente do perfil do Lead/Contact no CRM, com Activity criada imediatamente (sem depender do webhook).
 
-### Componentes a criar/modificar
+### O que foi implementado
 
-**Server Action:**
-- `src/actions/whatsapp.ts` — `sendWhatsAppMessage(to, text, entityRef)`:
-  1. Chama Evolution API `POST /message/sendText/wbdigital`
-  2. Retorna `{ success, messageId }` — Activity será criada pelo webhook automaticamente
-  3. Se webhook falhar: fallback cria Activity diretamente
+**Server Actions (`src/actions/whatsapp.ts`):**
+- `sendWhatsAppMessage(to, text, contactName)` — envia texto via Evolution API e chama `processWhatsAppMessage` diretamente após o envio (não aguarda webhook). Idempotência garantida pelo `messageId @unique` caso o webhook chegue depois.
+- `sendWhatsAppMedia(input)` — envia imagem/vídeo/documento/áudio via `sendMedia` da Evolution API e cria Activity com o `mediaLabel` correto.
 
-**Componente de modal:**
-- `src/components/whatsapp/WhatsAppSendModal.tsx` — modal com:
-  - Cabeçalho: nome do contato + número
-  - Textarea para digitar a mensagem
-  - Botão enviar com loading state
-  - Toast de sucesso/erro
-  - Fecha após envio
+**Modal (`src/components/whatsapp/WhatsAppSendModal.tsx`):**
+- Cabeçalho verde WhatsApp com nome e número
+- Textarea com Ctrl+Enter para enviar
+- **Emoji picker** com 5 categorias (Recentes, Rostos, Gestos, Símbolos, Negócios) — insere no cursor, sem dependência externa
+- **Anexo de mídia** — abre seletor de arquivos (imagem, vídeo, PDF, Word, Excel…), preview de imagem em thumbnail, envia via `sendMediaMessage`
+- **Templates** — painel expansível carregado sob demanda, agrupado por categoria, clique aplica o texto
+- `router.refresh()` após envio para atualizar a timeline sem recarregar
 
-**Integração nas páginas de detalhe:**
-- `src/components/leads/LeadHeader.tsx` — botão WhatsApp verde ao lado do telefone (visível somente se `lead.whatsapp` preenchido)
-- `src/components/contacts/ContactHeader.tsx` — mesmo padrão
+**Botão (`src/components/whatsapp/WhatsAppButton.tsx`):**
+- Variante `icon` (círculo verde) nas páginas de Lead e Contact
+- Variante `badge` disponível para outros contextos
+
+**Evolution client (`src/lib/evolution/client.ts`):**
+- `sendTextMessage()` — texto simples
+- `sendMediaMessage()` — suporte a `image | video | document | audio` com base64 ou URL
+
+**Admin — Templates WhatsApp:**
+- Model `WhatsAppTemplate` (global, sem ownerId — gerenciado pelo admin)
+- `src/actions/whatsapp-templates.ts` — CRUD com verificação de role admin
+- `src/app/(dashboard)/admin/whatsapp-templates/page.tsx` — formulário + lista agrupada por categoria
+- `src/components/admin/WhatsAppTemplateForm.tsx` e `WhatsAppTemplatesList.tsx`
+- Card na página `/admin`
+
+**Fix aplicado:** mensagens enviadas pelo CRM não criavam Activity (webhook `fromMe: true` inconsistente) → corrigido chamando `processWhatsAppMessage` diretamente na action.
 
 ### Critérios de teste (Fase 2)
-- [ ] Botão WhatsApp aparece apenas quando `whatsapp` preenchido
-- [ ] Modal abre com número pré-preenchido
-- [ ] Enviar → mensagem chega no WhatsApp do destinatário
-- [ ] Activity aparece na timeline automaticamente (via webhook)
-- [ ] Mensagem de erro exibida se número inválido
-
-### Deploy
-```bash
-git add . && git commit -m "feat: click-to-WhatsApp send modal on Lead/Contact" && git push
-cd deploy/ansible && ansible-playbook -i inventory/production.yml playbooks/quick-deploy.yml
-```
+- [x] Botão WhatsApp aparece apenas quando `whatsapp` preenchido
+- [x] Modal abre com nome e número do contato
+- [x] Enviar texto → mensagem chega no WhatsApp do destinatário
+- [x] Activity aparece na timeline imediatamente após enviar (sem recarregar)
+- [x] Emoji inserido no cursor ao clicar no picker
+- [x] Arquivo anexado mostra preview; ao enviar, aparece como 📷/📄 na Activity
+- [x] Template selecionado preenche o textarea
+- [x] Admin consegue criar/editar/desativar templates em `/admin/whatsapp-templates`
 
 ---
 
-## Fase 3 — UX: timeline estilo chat
+## Fase 3 — UX: timeline estilo chat ✅ CONCLUÍDA (2026-04-10)
 
 **Objetivo**: atividades WhatsApp exibidas como conversa visual, diferenciando enviado de recebido.
 
-### Melhorias
+### O que foi implementado
 
-**`src/components/activities/ActivityTimeline.tsx`** — atividades WhatsApp:
-- Ícone verde + logo WhatsApp
-- Badge "WhatsApp" verde
-- Log de conversa com bolhinhas: enviadas à direita (verde-claro), recebidas à esquerda (branco)
-- Data/hora de cada linha do log
-- Suporte a renderização de `mediaLabel` com ícone
+**`src/components/whatsapp/WhatsAppMessageLog.tsx`** (client component):
+- Parseia o log de conversa (`[HH:MM] Sender: texto`) linha a linha
+- Mensagens enviadas ("Você") → bolinha à direita, fundo verde claro `#DCF8C6`
+- Mensagens recebidas → bolinha à esquerda, fundo branco com borda
+- Timestamp compacto ao lado de cada bolinha
+- **Colapsado por padrão** com `previewCount` configurável
+- Botão "Ver mais (N mensagens)" / "Ver menos" para expandir
+
+**`src/components/activities/ActivityTimeline.tsx`**:
+- Avatar verde com ícone WhatsApp para atividades do tipo `whatsapp`
+- Badge "WhatsApp" verde no lugar do badge "Concluída"
+- Usa `WhatsAppMessageLog` com `previewCount=3` (timeline compacta)
+- Card com fundo `#f0fdf4` e borda `#25D366/20`
+
+**`src/app/(dashboard)/activities/page.tsx`** (lista de atividades):
+- Atividades WhatsApp renderizadas com `WhatsAppMessageLog` em vez de `<p>` simples
+
+**`src/app/(dashboard)/activities/[id]/page.tsx`** (detalhe):
+- Descrição WhatsApp renderizada com todas as mensagens expandidas
+- Botão "← Voltar" usa `router.back()` (volta para a página de origem — Lead, Contact, etc.) em vez de hardcoded `/activities`
 
 **Filtro na lista de atividades:**
-- Chip "WhatsApp" filtra apenas atividades de tipo `whatsapp`
+- Chip "💬 WhatsApp" já existente filtra atividades do tipo `whatsapp`
 
 ### Critérios de teste (Fase 3)
-- [ ] Atividades recebidas e enviadas visualmente distintas
-- [ ] Log de conversa legível cronologicamente
-- [ ] Filtro WhatsApp funciona na lista de atividades
-
-### Deploy
-```bash
-git add . && git commit -m "feat: WhatsApp chat-style timeline view" && git push
-cd deploy/ansible && ansible-playbook -i inventory/production.yml playbooks/quick-deploy.yml
-```
+- [x] Atividades recebidas e enviadas visualmente distintas (bolinha esq/dir)
+- [x] Log de conversa legível cronologicamente com horário em cada linha
+- [x] Timeline compacta (3 linhas) com expand para ver mais
+- [x] Detalhe da atividade mostra todas as mensagens
+- [x] Botão Voltar retorna para a página de origem
+- [x] Filtro WhatsApp funciona na lista de atividades
 
 ---
 
@@ -358,7 +377,7 @@ cd deploy/ansible && ansible-playbook -i inventory/production.yml playbooks/depl
 | Fase | Descrição | Status |
 |---|---|---|
 | 1 | Backend: webhook + sessões agrupadas + WhatsAppMessage | ✅ Concluída (2026-04-10) |
-| 2 | UI: Click-to-WhatsApp com modal de envio | ✅ Concluída (2026-04-10) |
-| 3 | UX: timeline estilo chat | 🔲 Pendente |
+| 2 | UI: modal de envio + emoji + mídia + templates + admin | ✅ Concluída (2026-04-10) |
+| 3 | UX: timeline estilo chat com bolinhas e expand | ✅ Concluída (2026-04-10) |
 | 4 | Matching: números desconhecidos | 🔲 Pendente |
 | 5 | Mídia: Google Drive + transcrição Whisper | 🔲 Pendente |
