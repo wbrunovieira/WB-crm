@@ -48,6 +48,7 @@ type Activity = {
   skippedAt: Date | null;
   skipReason: string | null;
   leadContactIds: string | null;
+  gotoCallId?: string | null;
 };
 
 function SortableActivityItem({
@@ -115,7 +116,14 @@ function SortableActivityItem({
         </button>
 
         {/* Toggle button */}
-        {isPending(activity) ? (
+        {activity.gotoCallId ? (
+          /* GoTo auto-logged — ícone fixo, sem toggle */
+          <div className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-blue-400 bg-blue-500">
+            <svg className="h-3.5 w-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
+          </div>
+        ) : isPending(activity) ? (
           <button
             onClick={(e) => handleToggle(e, activity.id)}
             disabled={loadingId === activity.id}
@@ -158,20 +166,28 @@ function SortableActivityItem({
             <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${typeConfig[activity.type]?.bg ?? "bg-gray-100"} ${typeConfig[activity.type]?.text ?? "text-gray-800"}`}>
               {typeConfig[activity.type]?.label ?? activity.type}
             </span>
-            {activity.completed && (
-              <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                Concluída{activity.completedAt && ` em ${formatDate(activity.completedAt)}`}
+            {activity.gotoCallId ? (
+              <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                GoTo
               </span>
-            )}
-            {activity.failedAt && (
-              <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                Falhou
-              </span>
-            )}
-            {activity.skippedAt && (
-              <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                Pulada
-              </span>
+            ) : (
+              <>
+                {activity.completed && (
+                  <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                    Concluída{activity.completedAt && ` em ${formatDate(activity.completedAt)}`}
+                  </span>
+                )}
+                {activity.failedAt && (
+                  <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                    Falhou
+                  </span>
+                )}
+                {activity.skippedAt && (
+                  <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                    Pulada
+                  </span>
+                )}
+              </>
             )}
           </div>
           <h3 className={`mt-2 font-medium group-hover:text-purple-800 ${
@@ -183,7 +199,7 @@ function SortableActivityItem({
           }`}>
             {activity.subject}
           </h3>
-          {activity.description && (
+          {activity.description && !activity.gotoCallId && (
             <p className="mt-1 text-sm text-gray-600 line-clamp-2">
               {activity.description}
             </p>
@@ -222,7 +238,7 @@ function SortableActivityItem({
 
         {/* Action buttons */}
         <div className="flex items-center gap-1 flex-shrink-0">
-          {(activity.failedAt || activity.skippedAt) && (
+          {!activity.gotoCallId && (activity.failedAt || activity.skippedAt) && (
             <button
               onClick={(e) => handleRevert(e, activity.id)}
               disabled={loadingId === activity.id}
@@ -237,7 +253,7 @@ function SortableActivityItem({
             </button>
           )}
 
-          {isPending(activity) && (
+          {!activity.gotoCallId && isPending(activity) && (
             <>
               <button
                 onClick={(e) => openOutcomeModal(e, activity, "failed")}
@@ -256,7 +272,7 @@ function SortableActivityItem({
             </>
           )}
 
-          {leadContacts.some((c) => c.isActive) && isPending(activity) && (
+          {!activity.gotoCallId && leadContacts.some((c) => c.isActive) && isPending(activity) && (
             <button
               onClick={(e) => openAssignModal(e, activity)}
               className={`rounded-lg p-2 transition-colors ${
