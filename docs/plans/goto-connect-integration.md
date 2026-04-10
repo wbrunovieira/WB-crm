@@ -275,13 +275,168 @@ tests/integration/api/goto-oauth-callback.test.ts
 
 ---
 
+## Fase 5 — Auto-Dial com Retry Automático no Ocupado
+
+**Objetivo**: Ao clicar em "Ligar com retry", o CRM aciona o GoTo desktop para discar via API (sem WebRTC). Se a chamada terminar com ocupado ou sem resposta, o sistema aguarda um delay configurável e tenta novamente até atingir o limite de tentativas. Cada tentativa bem-sucedida gera uma Activity automaticamente (via Fase 3).
+
+> **Pré-requisito**: Fases 2, 3 e 4 concluídas (webhook receiver, registro de atividade e credenciais OAuth configuradas).
+
+### Como funciona a API
+
+O GoTo tem dois endpoints de chamada com mecânicas distintas:
+- `POST /web-calls/v1/calls` — WebRTC no browser (complexo, áudio no app)
+- `POST /calls/v2/calls` — aciona o **GoTo desktop** para discar (simples, sem WebRTC)
+
+Usamos o segundo. O CRM envia o número e o `lineId` do usuário; o GoTo desktop abre e disca:
+
+```json
+POST https://api.goto.com/calls/v2/calls
+Authorization: Bearer {access_token}
+
+{
+  "dialString": "+557135997905",
+  "from": { "lineId": "LINE_ID_DO_USUARIO" }
+}
+```
+
+**Detecção de ocupado** via códigos de causa ISDN Q.850 no relatório pós-chamada:
+
+| Código | Significado | Ação do retry |
+|---|---|---|
+| `16` | Atendida normalmente | Parar — Fase 3 registra a atividade |
+| `17` | Ocupado (`USER_BUSY`) | Aguardar delay e tentar novamente |
+| `18` / `19` | Sem resposta (`NO_ANSWER`) | Aguardar delay e tentar novamente |
+| `21` | Rejeitada | Parar sem retry |
+
+### O que fazer
+
+#### 5a. Novo scope OAuth
+
+Adicionar scope `calls.v2.initiate` ao OAuth Client no GoTo Developer Portal.
+
+#### 5b. Migration de banco — tabela `CallRetrySession`
+
+```prisma
+model CallRetrySession {
+  id              String    @id @default(cuid())
+  entityType      String    // "lead" | "contact" | "organization" | "partner"
+  entityId        String
+  dialNumber      String    // número discado
+  lineId          String    // lineId GoTo do usuário
+  maxAttempts     Int       @default(5)
+  delaySeconds    Int       @default(45)
+  attemptCount    Int       @default(0)
+  status          String    @default("pending") // pending | dialing | waiting | completed | cancelled | failed
+  lastCauseCode   Int?      // último código ISDN Q.850
+  lastCallId      String?   // último conversationSpaceId GoTo
+  nextAttemptAt   DateTime?
+  completedAt     DateTime?
+  ownerId         String
+  owner           User      @relation(fields: [ownerId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+```
+
+#### 5c. Server Action — iniciar sessão de retry
+
+`/src/actions/goto-retry.ts`
+- `startCallRetry(entityType, entityId, dialNumber, options)` — cria `CallRetrySession` e dispara primeira tentativa
+- `cancelCallRetry(sessionId)` — cancela sessão em andamento
+- `getCallRetryStatus(sessionId)` — retorna status atual para polling da UI
+
+#### 5d. Serviço de discagem
+
+`/src/lib/goto/call-initiator.ts`
+- `initiateCall(dialNumber, lineId, accessToken)` — chama `POST /calls/v2/calls` e retorna `conversationSpaceId`
+- `getUserLineId(userId)` — busca `lineId` GoTo do usuário via `GET /voice-admin/v1/lines`
+
+#### 5e. Lógica de retry no webhook
+
+Atualizar `/src/app/api/goto/webhook/route.ts`:
+- Ao receber `REPORT_SUMMARY`, verificar se o `conversationSpaceId` pertence a uma `CallRetrySession` ativa
+- Checar código de causa (`16` → concluído, `17/18/19` → agendar próxima tentativa, `21` → cancelar)
+- Se retry: atualizar `attemptCount`, `nextAttemptAt`, `status = "waiting"`
+- Disparar próxima tentativa via `setTimeout` server-side ou registrar em fila
+
+#### 5f. Componente UI — botão com retry
+
+`/src/components/ui/call-with-retry-button.tsx` (client component)
+- Dropdown no número de telefone:
+  - "Ligar agora" → `tel:` link (Fase 1)
+  - "Ligar com retry automático" → inicia sessão de retry
+- Painel de status (polling a cada 5s em `getCallRetryStatus`):
+
+```
+┌──────────────────────────────────────┐
+│ 📞 Tentativa 2 de 5                  │
+│ Ocupado — próxima em 38s             │
+│ ████████████░░░░░░░░░  [Cancelar]    │
+└──────────────────────────────────────┘
+```
+
+- Ao completar: "✅ Chamada atendida — atividade registrada" ou "❌ Limite atingido sem resposta"
+
+#### 5g. Configurações por usuário
+
+Salvar na tabela `User` (ou `Integration`):
+- `gotoLineId` — lineId GoTo do usuário (preenchido na Fase 4 ou manualmente)
+- Padrão de tentativas e delay configurável na UI de admin
+
+### Testes (TDD)
+
+```
+tests/unit/lib/goto/call-initiator.test.ts
+  ✓ chama POST /calls/v2/calls com dialNumber e lineId corretos
+  ✓ retorna conversationSpaceId da resposta
+  ✓ lança erro se lineId não configurado
+  ✓ lança UnauthorizedError se token inválido
+
+tests/unit/lib/goto/retry-engine.test.ts
+  ✓ cause code 16 → status "completed", sem nova tentativa
+  ✓ cause code 17 → status "waiting", agendamento de nova tentativa
+  ✓ cause code 18 → status "waiting", agendamento de nova tentativa
+  ✓ cause code 21 → status "cancelled", sem nova tentativa
+  ✓ attemptCount >= maxAttempts → status "failed", sem nova tentativa
+  ✓ cancelCallRetry muda status para "cancelled" e impede próxima tentativa
+
+tests/unit/actions/goto-retry.test.ts
+  ✓ startCallRetry cria CallRetrySession no banco
+  ✓ startCallRetry respeita ownerId do usuário logado
+  ✓ cancelCallRetry apenas o dono pode cancelar
+  ✓ getCallRetryStatus retorna dados corretos por sessionId
+
+tests/integration/api/goto-webhook-retry.test.ts
+  ✓ REPORT_SUMMARY com cause 17 atualiza sessão e agenda retry
+  ✓ REPORT_SUMMARY com cause 16 finaliza sessão como "completed"
+  ✓ sessão cancelada ignora REPORT_SUMMARY subsequente
+  ✓ limite de tentativas atingido muda status para "failed"
+```
+
+### Entrega da Fase 5
+
+- [ ] Testes escritos e passando
+- [ ] Migration `CallRetrySession` aplicada
+- [ ] `call-initiator.ts` e `retry-engine.ts` implementados
+- [ ] Webhook atualizado para processar retry
+- [ ] Botão `CallWithRetryButton` implementado e aplicado em Lead/Contact/Organization/Partner
+- [ ] `git commit -m "feat: auto-dial with busy retry via goto calls v2 api"`
+- [ ] Deploy (`deploy-with-migrations.yml`)
+- [ ] Teste em produção:
+  - Ligar para número ocupado, confirmar que UI mostra "Tentativa 2 de 5"
+  - Confirmar que ao atender, Activity é criada automaticamente
+  - Confirmar que botão Cancelar interrompe o ciclo
+
+---
+
 ## Sequência de Deploy por Fase
 
 ```
-Fase 1  →  quick-deploy.yml          (sem migrations)
-Fase 2  →  quick-deploy.yml          (sem migrations)
+Fase 1  →  quick-deploy.yml           (sem migrations)
+Fase 2  →  quick-deploy.yml           (sem migrations)
 Fase 3  →  deploy-with-migrations.yml (com migration se gotoCallId adicionado)
 Fase 4  →  deploy-with-migrations.yml (nova tabela Integration)
+Fase 5  →  deploy-with-migrations.yml (nova tabela CallRetrySession)
 ```
 
 ## Comandos de Deploy (referência)
@@ -302,7 +457,7 @@ ssh root@45.90.123.190 "pm2 logs wb-crm --lines 50"
 ## Checklist de Pré-requisitos (fazer antes de começar)
 
 - [ ] Criar conta no GoTo Developer Portal: https://developer.goto.com/
-- [ ] Criar OAuth Client com os scopes: `call-events.v1.notifications.manage`, `call-events.v1.events.read`, `cr.v1.read`
+- [ ] Criar OAuth Client com os scopes: `call-events.v1.notifications.manage`, `call-events.v1.events.read`, `cr.v1.read`, `calls.v2.initiate` (necessário na Fase 5), `users.v1.lines.read` (necessário na Fase 5)
 - [ ] Anotar `Client ID` e `Client Secret` (mostrado apenas uma vez)
 - [ ] Identificar `Account Key` da conta GoTo (disponível no Developer Portal após autenticar)
 - [ ] Confirmar que `crm.wbdigitalsolutions.com` está acessível via HTTPS (necessário para GoTo enviar webhooks)
