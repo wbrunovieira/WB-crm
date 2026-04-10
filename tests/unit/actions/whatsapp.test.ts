@@ -22,11 +22,21 @@ vi.mock("next-auth", () => ({
   getServerSession: vi.fn(),
 }));
 
+vi.mock("@/lib/evolution/message-activity-creator", () => ({
+  processWhatsAppMessage: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("@/lib/logger", () => ({
+  logger: { child: () => ({ warn: vi.fn(), info: vi.fn(), debug: vi.fn() }) },
+}));
+
 import { sendTextMessage } from "@/lib/evolution/client";
 import { getServerSession } from "next-auth";
+import { processWhatsAppMessage } from "@/lib/evolution/message-activity-creator";
 
 const mockSendText = vi.mocked(sendTextMessage);
 const mockGetSession = vi.mocked(getServerSession);
+const mockProcessMessage = vi.mocked(processWhatsAppMessage);
 
 const SESSION = {
   user: { id: "user-123", name: "Bruno", email: "bruno@wb.com", role: "admin" },
@@ -40,8 +50,10 @@ const SEND_RESPONSE = {
 };
 
 beforeEach(() => {
+  vi.clearAllMocks();
   mockGetSession.mockResolvedValue(SESSION as any);
   mockSendText.mockResolvedValue(SEND_RESPONSE);
+  mockProcessMessage.mockResolvedValue(undefined);
 });
 
 describe("sendWhatsAppMessage — autenticação", () => {
@@ -115,5 +127,47 @@ describe("sendWhatsAppMessage — tratamento de erros", () => {
     await expect(
       sendWhatsAppMessage("5511999998888", "Olá!")
     ).resolves.toBeDefined();
+  });
+
+  it("retorna success mesmo se processWhatsAppMessage falhar", async () => {
+    mockProcessMessage.mockRejectedValue(new Error("DB error"));
+
+    const result = await sendWhatsAppMessage("5511999998888", "Olá!");
+
+    expect(result.success).toBe(true);
+    expect(result.messageId).toBe("MSGKEY-ABC123");
+  });
+});
+
+describe("sendWhatsAppMessage — criação de Activity", () => {
+  it("chama processWhatsAppMessage após envio bem-sucedido", async () => {
+    await sendWhatsAppMessage("5511999998888", "Olá, tudo bem?");
+
+    expect(mockProcessMessage).toHaveBeenCalledOnce();
+  });
+
+  it("passa fromMe=true e o texto correto para processWhatsAppMessage", async () => {
+    await sendWhatsAppMessage("5511999998888", "Mensagem de teste", "João");
+
+    const [data, ownerId] = mockProcessMessage.mock.calls[0];
+    expect(data.key.fromMe).toBe(true);
+    expect(data.message?.conversation).toBe("Mensagem de teste");
+    expect(data.pushName).toBe("João");
+    expect(ownerId).toBe("user-123");
+  });
+
+  it("usa remoteJid da resposta da API quando disponível", async () => {
+    await sendWhatsAppMessage("5511999998888", "Olá!");
+
+    const [data] = mockProcessMessage.mock.calls[0];
+    expect(data.key.remoteJid).toBe("5511999998888@s.whatsapp.net");
+  });
+
+  it("não chama processWhatsAppMessage se Evolution API falhar", async () => {
+    mockSendText.mockRejectedValue(new Error("timeout"));
+
+    await sendWhatsAppMessage("5511999998888", "Olá!");
+
+    expect(mockProcessMessage).not.toHaveBeenCalled();
   });
 });
