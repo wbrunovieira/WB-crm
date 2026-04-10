@@ -177,7 +177,8 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
 
         {/* Kanban view */}
         {viewMode === "kanban" && (
-          <div className="flex flex-1 gap-4 overflow-x-auto px-8 pb-8 pt-2">
+          <div className="flex flex-1 gap-4 overflow-x-auto px-8 pb-8 pt-2"
+               style={{ background: "linear-gradient(135deg, #f5f0fa 0%, #ede8f5 50%, #e8e0f0 100%)" }}>
             {pipeline.stages.map((stage) => (
               <StageColumn
                 key={stage.id}

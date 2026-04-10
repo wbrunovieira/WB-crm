@@ -45,42 +45,44 @@ export default function StageColumn({ stage, isDragging, displayCurrency = "BRL"
 
   return (
     <div className="flex w-80 flex-shrink-0 flex-col">
-      <div className="mb-4 rounded-lg bg-white p-4 shadow">
+      {/* Stage header */}
+      <div className="mb-3 rounded-xl bg-white/80 p-4 shadow-sm backdrop-blur-sm border border-purple-100">
         <div className="flex items-center justify-between">
           <div>
             <h3 className="font-semibold text-gray-900">{stage.name}</h3>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-purple-500/80">
               {stage.deals.length} {stage.deals.length === 1 ? "negócio" : "negócios"}
             </p>
           </div>
           <div className="text-right">
-            <p className="text-xs text-gray-500">Total</p>
-            <p className="text-sm font-semibold text-gray-900">
+            <p className="text-xs text-gray-400">Total</p>
+            <p className="text-sm font-bold text-gray-900">
               {formatCurrency(totalValue, displayCurrency)}
             </p>
           </div>
         </div>
-        <div className="mt-2">
-          <div className="h-2 overflow-hidden rounded-full bg-gray-200">
+        <div className="mt-3">
+          <div className="h-1.5 overflow-hidden rounded-full bg-purple-100">
             <div
               className="h-full bg-primary transition-all"
               style={{ width: `${stage.probability}%` }}
             />
           </div>
-          <p className="mt-1 text-xs text-gray-500">
+          <p className="mt-1 text-xs text-purple-400">
             {stage.probability}% de probabilidade
           </p>
         </div>
       </div>
 
+      {/* Drop zone */}
       <div
         ref={setNodeRef}
-        className={`flex-1 space-y-3 rounded-lg border-2 border-dashed p-3 transition-colors ${
+        className={`flex-1 space-y-2.5 rounded-xl border-2 border-dashed p-3 transition-all duration-200 ${
           isOver
-            ? "border-primary bg-blue-50"
+            ? "border-primary bg-purple-50 shadow-inner"
             : isDragging
-              ? "border-gray-300 bg-gray-50"
-              : "border-transparent bg-gray-100"
+              ? "border-purple-300 bg-purple-50/50"
+              : "border-purple-200/60 bg-white/40"
         }`}
         style={{ minHeight: "500px" }}
       >
@@ -92,7 +94,7 @@ export default function StageColumn({ stage, isDragging, displayCurrency = "BRL"
 
         {stage.deals.length === 0 && (
           <div className="flex h-full items-center justify-center">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-purple-300">
               Arraste negócios para cá
             </p>
           </div>
