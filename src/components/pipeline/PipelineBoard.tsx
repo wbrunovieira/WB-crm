@@ -14,8 +14,11 @@ import { updateDealStage } from "@/actions/deals";
 import { useRouter } from "next/navigation";
 import StageColumn from "./StageColumn";
 import DealCard from "./DealCard";
+import DealRow from "./DealRow";
+import PipelineListView from "./PipelineListView";
 import { AVAILABLE_CURRENCIES } from "@/lib/utils";
 import { toast } from "sonner";
+import { LayoutGrid, List } from "lucide-react";
 
 type Deal = {
   id: string;
@@ -51,11 +54,14 @@ type PipelineBoardProps = {
   pipeline: Pipeline;
 };
 
+type ViewMode = "kanban" | "list";
+
 export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
   const router = useRouter();
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState("BRL");
+  const [viewMode, setViewMode] = useState<ViewMode>("kanban");
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -100,12 +106,16 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
     } catch (error) {
       console.error("Error updating deal stage:", error);
       toast.error(
-        error instanceof Error
-          ? error.message
-          : "Erro ao mover negócio"
+        error instanceof Error ? error.message : "Erro ao mover negócio"
       );
     }
   };
+
+  // Find probability of the active deal's current stage (for list drag overlay)
+  const activeDealStageProbability = activeDeal
+    ? (pipeline.stages.find((s) => s.deals.some((d) => d.id === activeDeal.id))
+        ?.probability ?? 0)
+    : 0;
 
   return (
     <DndContext
@@ -114,14 +124,44 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
       onDragEnd={handleDragEnd}
     >
       <div className="flex h-full flex-col">
-        {/* Currency Selector */}
-        <div className="mb-4 flex justify-end px-8 pt-4">
+        {/* Toolbar */}
+        <div className="flex items-center justify-between px-8 pb-2 pt-4">
+          {/* View toggle */}
+          <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
+            <button
+              onClick={() => setViewMode("kanban")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === "kanban"
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              <LayoutGrid className="h-4 w-4" />
+              Kanban
+            </button>
+            <button
+              onClick={() => setViewMode("list")}
+              className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                viewMode === "list"
+                  ? "bg-primary text-white shadow-sm"
+                  : "text-gray-600 hover:bg-gray-100"
+              }`}
+            >
+              <List className="h-4 w-4" />
+              Lista
+            </button>
+          </div>
+
+          {/* Currency selector */}
           <div className="flex items-center gap-2">
-            <label htmlFor="currency-select-kanban" className="text-sm font-medium text-gray-700">
+            <label
+              htmlFor="currency-select"
+              className="text-sm font-medium text-gray-700"
+            >
               Moeda do Total:
             </label>
             <select
-              id="currency-select-kanban"
+              id="currency-select"
               value={displayCurrency}
               onChange={(e) => setDisplayCurrency(e.target.value)}
               className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
@@ -135,24 +175,50 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
           </div>
         </div>
 
-        {/* Kanban Columns */}
-        <div className="flex flex-1 gap-4 overflow-x-auto px-8 pb-8">
-          {pipeline.stages.map((stage) => (
-            <StageColumn
-              key={stage.id}
-              stage={stage}
+        {/* Kanban view */}
+        {viewMode === "kanban" && (
+          <div className="flex flex-1 gap-4 overflow-x-auto px-8 pb-8 pt-2">
+            {pipeline.stages.map((stage) => (
+              <StageColumn
+                key={stage.id}
+                stage={stage}
+                isDragging={isDragging}
+                displayCurrency={displayCurrency}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* List view */}
+        {viewMode === "list" && (
+          <div className="flex-1 overflow-y-auto">
+            <PipelineListView
+              stages={pipeline.stages}
               isDragging={isDragging}
               displayCurrency={displayCurrency}
+              activeDealId={activeDeal?.id ?? null}
             />
-          ))}
-        </div>
+          </div>
+        )}
       </div>
 
+      {/* Drag overlay */}
       <DragOverlay>
         {activeDeal ? (
-          <div className="rotate-3 opacity-80">
-            <DealCard deal={activeDeal} isDragging />
-          </div>
+          viewMode === "kanban" ? (
+            <div className="rotate-3 opacity-80">
+              <DealCard deal={activeDeal} isDragging />
+            </div>
+          ) : (
+            <div className="opacity-90 shadow-xl">
+              <DealRow
+                deal={activeDeal}
+                displayCurrency={displayCurrency}
+                stageProbability={activeDealStageProbability}
+                isDragging
+              />
+            </div>
+          )
         ) : null}
       </DragOverlay>
     </DndContext>
