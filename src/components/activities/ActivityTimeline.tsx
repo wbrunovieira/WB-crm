@@ -11,6 +11,7 @@ type Activity = {
   dueDate: Date | null;
   completed: boolean;
   createdAt: Date;
+  gotoCallId?: string | null;
   deal?: {
     id: string;
     title: string;
@@ -102,15 +103,36 @@ function ActivityItem({
   activity: Activity;
   showLinks: boolean;
 }) {
+  const isGoto = Boolean(activity.gotoCallId);
+
   return (
     <div className="relative flex items-start space-x-3">
       <div className="relative">
         <div
           className={`flex h-10 w-10 items-center justify-center rounded-full ring-8 ring-white ${
-            activity.completed ? "bg-green-500" : "bg-gray-100"
+            isGoto
+              ? "bg-blue-500"
+              : activity.completed
+                ? "bg-green-500"
+                : "bg-gray-100"
           }`}
         >
-          {activity.completed ? (
+          {isGoto ? (
+            /* Ícone de telefone para ligações automáticas do GoTo */
+            <svg
+              className="h-5 w-5 text-white"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"
+              />
+            </svg>
+          ) : activity.completed ? (
             <svg
               className="h-5 w-5 text-white"
               fill="none"
@@ -131,22 +153,32 @@ function ActivityItem({
       </div>
       <div className="min-w-0 flex-1">
         <div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Link
               href={`/activities/${activity.id}`}
               className="text-sm font-medium text-gray-900 hover:text-primary"
             >
               {activity.subject}
             </Link>
-            {activity.completed && (
+            {isGoto && (
+              <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                GoTo
+              </span>
+            )}
+            {!isGoto && activity.completed && (
               <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
                 Concluída
+              </span>
+            )}
+            {!isGoto && !activity.completed && (
+              <span className="rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+                Agendada
               </span>
             )}
           </div>
           <p className="mt-0.5 text-sm text-gray-500">
             {formatDate(activity.createdAt)}
-            {activity.dueDate && (
+            {!isGoto && activity.dueDate && (
               <span className="ml-2">
                 • Vencimento: {formatDate(activity.dueDate)}
               </span>
