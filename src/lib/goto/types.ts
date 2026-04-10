@@ -85,20 +85,31 @@ export interface GoToCallEvent {
 
 // ─── Call Events Report ───────────────────────────────────────────────────────
 
-export interface GoToRecordingRef {
-  recordingId: string;
-  transcriptId?: string;
+export interface GoToRecording {
+  id: string;
+  startTimestamp: string;
+  transcriptEnabled: boolean;
+}
+
+export interface GoToReportParticipantType {
+  value: "LINE" | "PHONE_NUMBER";
+  // LINE fields
+  lineId?: string;
+  extensionNumber?: string;
+  userId?: string;
+  userKey?: string;
+  // PHONE_NUMBER fields
+  phoneNumberId?: string;
+  number?: string; // GoTo system number used
+  callee?: { name: string; number: string }; // actual dialed (OUTBOUND) or caller (INBOUND)
 }
 
 export interface GoToReportParticipant {
-  participantId: string;
+  id: string;
   legId: string;
-  type: GoToParticipantType;
-  extensionNumber?: string;
-  phoneNumber?: string;
-  lineId?: string;
+  type: GoToReportParticipantType;
   causeCode?: number; // ISDN Q.850 — 16=answered, 17=busy, 18/19=no answer
-  recordings?: GoToRecordingRef[];
+  recordings?: GoToRecording[];
 }
 
 export interface GoToCallReport {
