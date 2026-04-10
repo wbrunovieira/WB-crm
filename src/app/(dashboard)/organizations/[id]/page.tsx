@@ -1,4 +1,5 @@
 import { getOrganizationById } from "@/actions/organizations";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { OrganizationProjects } from "@/components/organizations/OrganizationProjects";
 import { OrganizationActivities } from "@/components/organizations/OrganizationActivities";
@@ -85,7 +86,8 @@ export default async function OrganizationDetailPage({
             <div>
               <dt className="text-sm font-medium text-gray-500">Telefone</dt>
               <dd className="mt-1 text-sm text-gray-900">
-                {organization.phone || "-"}
+                <PhoneLink phone={organization.phone} className="text-gray-900 hover:text-primary" />
+                {!organization.phone && "-"}
               </dd>
             </div>
             <div>

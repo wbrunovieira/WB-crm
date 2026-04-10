@@ -1,4 +1,5 @@
 import { getPartnerById } from "@/actions/partners";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -168,7 +169,9 @@ export default async function PartnerDetailPage({
             {partner.phone && (
               <div>
                 <dt className="text-sm font-medium text-gray-500">Telefone</dt>
-                <dd className="mt-1 text-sm text-gray-900">{partner.phone}</dd>
+                <dd className="mt-1 text-sm text-gray-900">
+                  <PhoneLink phone={partner.phone} className="text-gray-900 hover:text-primary" />
+                </dd>
               </div>
             )}
             {partner.whatsapp && (

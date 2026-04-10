@@ -1,4 +1,5 @@
 import { getOrganizations } from "@/actions/organizations";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { getUsers } from "@/actions/users";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
@@ -136,7 +137,8 @@ export default async function OrganizationsPage({
                     {org.industry || "-"}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
-                    {org.phone || "-"}
+                    <PhoneLink phone={org.phone} className="text-gray-500 hover:text-primary" />
+                    {!org.phone && "-"}
                   </td>
                   <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-500">
                     {org._count.contacts}

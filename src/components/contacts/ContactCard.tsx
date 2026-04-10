@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Mail, Phone, MessageCircle, Building2, Briefcase, Edit, Star } from "lucide-react";
+import { Mail, MessageCircle, Building2, Briefcase, Edit, Star } from "lucide-react";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { DeleteContactButton } from "./DeleteContactButton";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 
@@ -114,13 +115,7 @@ export function ContactCard({ contact, showOwnerBadge, currentUserId, sharedWith
 
             {contact.phone && (
               <div className="flex items-center gap-2">
-                <Phone className="h-4 w-4 text-gray-400 flex-shrink-0" />
-                <a
-                  href={`tel:${contact.phone}`}
-                  className="text-gray-600 hover:text-primary"
-                >
-                  {contact.phone}
-                </a>
+                <PhoneLink phone={contact.phone} />
               </div>
             )}
 

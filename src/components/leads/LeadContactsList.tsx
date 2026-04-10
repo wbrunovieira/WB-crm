@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { AddLeadContactModal } from "./AddLeadContactModal";
 import { updateLeadContact } from "@/actions/leads";
 import { Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase, Copy, Check, UserX, UserCheck, Globe } from "lucide-react";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { LanguageBadges, LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 
 type LeadContact = {
@@ -131,9 +132,7 @@ function ContactDetailModal({
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Telefone</p>
                 {contact.phone ? (
-                  <a href={`tel:${contact.phone}`} className="text-sm font-medium text-gray-900 hover:text-purple-600">
-                    {contact.phone}
-                  </a>
+                  <PhoneLink phone={contact.phone} className="text-sm font-medium text-gray-900 hover:text-purple-600" />
                 ) : (
                   <span className="text-sm text-gray-400 italic">Não informado</span>
                 )}

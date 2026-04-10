@@ -1,4 +1,5 @@
 import { getContactById } from "@/actions/contacts";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { DeleteContactButton } from "@/components/contacts/DeleteContactButton";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
@@ -56,7 +57,8 @@ export default async function ContactDetailPage({
             <div>
               <dt className="text-sm font-medium text-gray-500">Telefone</dt>
               <dd className="mt-1 text-sm text-gray-900">
-                {contact.phone || "-"}
+                <PhoneLink phone={contact.phone} className="text-gray-900 hover:text-primary" />
+                {!contact.phone && "-"}
               </dd>
             </div>
             <div>
