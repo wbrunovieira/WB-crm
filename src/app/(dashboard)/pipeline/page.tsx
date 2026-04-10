@@ -34,7 +34,7 @@ export default async function PipelineViewPage({
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-hidden" style={{ background: "#792990" }}>
         <PipelineBoard pipeline={pipelineData} />
       </div>
     </div>
