@@ -358,7 +358,7 @@ cd deploy/ansible && ansible-playbook -i inventory/production.yml playbooks/depl
 | Fase | Descrição | Status |
 |---|---|---|
 | 1 | Backend: webhook + sessões agrupadas + WhatsAppMessage | ✅ Concluída (2026-04-10) |
-| 2 | UI: Click-to-WhatsApp com modal de envio | 🔲 Pendente |
+| 2 | UI: Click-to-WhatsApp com modal de envio | ✅ Concluída (2026-04-10) |
 | 3 | UX: timeline estilo chat | 🔲 Pendente |
 | 4 | Matching: números desconhecidos | 🔲 Pendente |
 | 5 | Mídia: Google Drive + transcrição Whisper | 🔲 Pendente |
