@@ -1662,6 +1662,19 @@ model Notification {
   @@map("notifications")
 }
 
+model WhatsAppTemplate {
+  id        String   @id @default(cuid())
+  name      String                        // ex: "Boas-vindas", "Follow-up"
+  text      String                        // corpo da mensagem (suporta \n)
+  category  String?                       // ex: "vendas", "suporte", "cobrança"
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@map("whatsapp_templates")
+}
+
 model WhatsAppMessage {
   id            String   @id @default(cuid())
   messageId     String   @unique  // key.id do WhatsApp — idempotência
