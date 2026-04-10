@@ -1,4 +1,5 @@
 import { getLeadById } from "@/actions/leads";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
 import { ArchiveLeadButton } from "@/components/leads/ArchiveLeadButton";
@@ -216,7 +217,9 @@ export default async function LeadDetailPage({
             {lead.phone && (
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Telefone</dt>
-                <dd className="text-base font-mono text-gray-900">{lead.phone}</dd>
+                <dd className="text-base font-mono text-gray-900">
+                  <PhoneLink phone={lead.phone} className="text-gray-900 hover:text-primary" />
+                </dd>
               </div>
             )}
             {lead.whatsapp && (
