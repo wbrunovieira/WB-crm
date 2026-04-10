@@ -5,6 +5,8 @@ import { formatDate } from "@/lib/utils";
 import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
 import DeleteActivityButton from "@/components/activities/DeleteActivityButton";
 import CopyButton from "@/components/CopyButton";
+import BackButton from "@/components/ui/BackButton";
+import WhatsAppMessageLog from "@/components/whatsapp/WhatsAppMessageLog";
 
 export default async function ActivityDetailPage({
   params,
@@ -28,12 +30,7 @@ export default async function ActivityDetailPage({
     <div className="p-8">
       <div className="mb-8">
         <div className="flex items-center gap-2">
-          <Link
-            href="/activities"
-            className="text-gray-500 hover:text-gray-700"
-          >
-            ← Voltar
-          </Link>
+          <BackButton label="← Voltar" />
         </div>
         <div className="mt-4 flex items-start justify-between">
           <div className="flex items-start gap-4">
@@ -76,7 +73,16 @@ export default async function ActivityDetailPage({
               <div>
                 <dt className="text-sm font-medium text-gray-500">Descrição</dt>
                 <dd className="mt-1 text-sm text-gray-900">
-                  {activity.description}
+                  {activity.type === "whatsapp" ? (
+                    <div className="rounded-xl border border-[#25D366]/20 bg-[#f0fdf4] p-3">
+                      <WhatsAppMessageLog
+                        description={activity.description}
+                        previewCount={100}
+                      />
+                    </div>
+                  ) : (
+                    activity.description
+                  )}
                 </dd>
               </div>
             )}
