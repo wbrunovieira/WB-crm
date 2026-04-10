@@ -134,7 +134,7 @@ Grupos têm `remoteJid@g.us` com múltiplos participantes. Vincular a um único 
 
 ---
 
-## Fase 1 — Backend: webhook + registro automático de atividades ✅ CONCLUÍDA
+## Fase 1 — Backend: webhook + registro automático de atividades ✅ CONCLUÍDA (2026-04-10)
 
 **Objetivo**: toda mensagem WhatsApp (enviada ou recebida, de qualquer dispositivo) gerar Activity automática no CRM vinculada ao Lead/Contact/Partner correspondente, com mensagens da mesma sessão agrupadas.
 
@@ -357,7 +357,7 @@ cd deploy/ansible && ansible-playbook -i inventory/production.yml playbooks/depl
 
 | Fase | Descrição | Status |
 |---|---|---|
-| 1 | Backend: webhook + sessões agrupadas + WhatsAppMessage | 🔲 Pendente |
+| 1 | Backend: webhook + sessões agrupadas + WhatsAppMessage | ✅ Concluída (2026-04-10) |
 | 2 | UI: Click-to-WhatsApp com modal de envio | 🔲 Pendente |
 | 3 | UX: timeline estilo chat | 🔲 Pendente |
 | 4 | Matching: números desconhecidos | 🔲 Pendente |
