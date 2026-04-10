@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { logger } from "@/lib/logger";
 import { syncCallReports } from "@/lib/goto/call-report-syncer";
+import { getValidAccessToken } from "@/lib/goto/token-manager";
 
 const log = logger.child({ context: "goto-sync" });
 
@@ -17,11 +18,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const accessToken = process.env.GOTO_ACCESS_TOKEN;
-  if (!accessToken) {
-    log.warn("GoTo sync: GOTO_ACCESS_TOKEN não configurado");
+  let accessToken: string;
+  try {
+    accessToken = await getValidAccessToken();
+  } catch (err) {
+    log.warn("GoTo sync: falha ao obter access_token", {
+      error: err instanceof Error ? err.message : String(err),
+    });
     return NextResponse.json(
-      { error: "GOTO_ACCESS_TOKEN not configured" },
+      { error: "Could not obtain GoTo access token" },
       { status: 503 }
     );
   }
