@@ -19,8 +19,11 @@ function calcDurationSeconds(callCreated: string, callEnded: string): number {
 }
 
 function getDialedNumber(report: GoToCallReport): string | null {
-  const external = report.participants.find((p) => p.type === "PHONE_NUMBER");
-  return external?.phoneNumber ?? null;
+  const external = report.participants.find((p) => p.type.value === "PHONE_NUMBER");
+  if (!external) return null;
+  // OUTBOUND: callee.number is the external number dialed
+  // INBOUND: number is the external caller's number
+  return external.type.callee?.number ?? external.type.number ?? null;
 }
 
 function buildSubject(

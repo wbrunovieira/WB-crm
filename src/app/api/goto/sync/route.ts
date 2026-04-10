@@ -1,0 +1,47 @@
+import { NextRequest, NextResponse } from "next/server";
+import { logger } from "@/lib/logger";
+import { syncCallReports } from "@/lib/goto/call-report-syncer";
+
+const log = logger.child({ context: "goto-sync" });
+
+function validateSecret(req: NextRequest): boolean {
+  const expectedSecret = process.env.GOTO_WEBHOOK_SECRET;
+  if (!expectedSecret) return false;
+  const url = new URL(req.url);
+  return url.searchParams.get("secret") === expectedSecret;
+}
+
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  if (!validateSecret(req)) {
+    log.warn("GoTo sync: secret inválido ou ausente");
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const accessToken = process.env.GOTO_ACCESS_TOKEN;
+  if (!accessToken) {
+    log.warn("GoTo sync: GOTO_ACCESS_TOKEN não configurado");
+    return NextResponse.json(
+      { error: "GOTO_ACCESS_TOKEN not configured" },
+      { status: 503 }
+    );
+  }
+
+  const ownerId = process.env.GOTO_DEFAULT_OWNER_ID;
+  if (!ownerId) {
+    log.warn("GoTo sync: GOTO_DEFAULT_OWNER_ID não configurado");
+    return NextResponse.json(
+      { error: "GOTO_DEFAULT_OWNER_ID not configured" },
+      { status: 503 }
+    );
+  }
+
+  try {
+    const result = await syncCallReports(accessToken, ownerId);
+    return NextResponse.json({ ok: true, ...result }, { status: 200 });
+  } catch (err) {
+    log.error("GoTo sync: erro ao sincronizar", {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return NextResponse.json({ error: "Sync failed" }, { status: 500 });
+  }
+}

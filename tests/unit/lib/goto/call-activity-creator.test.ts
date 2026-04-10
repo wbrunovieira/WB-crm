@@ -34,17 +34,22 @@ const baseReport: GoToCallReport = {
   callEnded: "2026-04-10T14:08:32.000Z", // 8m32s = 512s
   participants: [
     {
-      participantId: "p1",
+      id: "p1",
       legId: "leg1",
-      type: "LINE",
-      extensionNumber: "1042",
-      lineId: "line-xyz",
+      type: {
+        value: "LINE",
+        lineId: "line-xyz",
+        extensionNumber: "1042",
+      },
     },
     {
-      participantId: "p2",
+      id: "p2",
       legId: "leg2",
-      type: "PHONE_NUMBER",
-      phoneNumber: "+557135997905",
+      type: {
+        value: "PHONE_NUMBER",
+        number: "+551150264203",
+        callee: { name: "", number: "+557135997905" },
+      },
       causeCode: 16, // atendida
     },
   ],
