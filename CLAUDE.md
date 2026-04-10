@@ -51,6 +51,14 @@ npx vitest run tests/unit/example.test.ts
 
 Test structure follows AAA pattern (Arrange, Act, Assert) with fixtures from `@/tests/fixtures`.
 
+Test subdirectories:
+- `/tests/unit/` — Server Actions, validations, utilities
+- `/tests/integration/` — API and database integration tests
+- `/tests/actions/` — Entity-specific server action tests
+- `/tests/security/` — Data isolation and API isolation tests
+- `/tests/auth/` — Route protection and authorization tests
+- `/tests/e2e/` — End-to-end tests
+
 ## Environment Setup
 
 ### Database (PostgreSQL via Docker)
@@ -251,10 +259,9 @@ The system includes an admin area (`/dashboard/admin`) for managing:
 All admin entities use slugs for URL-friendly identifiers and support active/inactive states.
 
 ### Key Libraries
-- **@dnd-kit/core** & **@dnd-kit/sortable** - Drag & Drop for Kanban pipeline view
-- **Zod** - Schema validation (schemas in `/src/lib/validations/`)
+- **@dnd-kit/core** & **@dnd-kit/sortable** - Drag & Drop for Kanban pipeline view (`PipelineBoard.tsx` uses `DndContext` with `PointerSensor`, `activationConstraint: { distance: 8 }`)
+- **Zod** - Schema validation (schemas in `/src/lib/validations/`); exported as `type EntityFormData = z.infer<typeof entitySchema>`
 - **date-fns** - Date formatting
-- **Zustand** - Optional state management (for complex client-side state)
 - **Sonner** - Toast notifications (customized in `globals.css`)
 - **shadcn/ui** - UI component library (not installed via npm, copied directly into `/src/components`)
 
@@ -271,6 +278,8 @@ See `/docs/arquitetura-projeto.md` for complete architecture and 7-phase impleme
 
 ### Architecture Patterns
 - **Server vs Client**: Default to Server Components; only use `"use client"` when needed (forms, interactivity, hooks)
+- **Forms**: Use plain `useState` for form state — no form library (react-hook-form etc.). Pattern: `useState` for data, manual change handlers, `try/catch` with `setError` for submission errors, `useRouter.push()` for post-submit navigation
+- **Error Handling**: Custom error classes in `/src/lib/errors.ts` — `AppError` base with subclasses: `NotFoundError`, `UnauthorizedError`, `ForbiddenError`, `ValidationError`, `ConflictError`, `InternalError`. Use type guards (`isAppError()`, `isNotFoundError()`) for pattern matching. `ValidationError.fromZodError()` converts Zod errors to structured field errors. `withErrorHandling()` wraps async functions
 - **Validation**: Define Zod schemas in `/src/lib/validations/` and reuse them for both server and client validation
 - **Revalidation**: Always call `revalidatePath()` after mutations to update the UI cache
 - **Deprecated Fields**: Lead model has deprecated fields `primaryActivity` and `secondaryActivities` - use CNAE system instead (`primaryCNAEId`, `secondaryCNAEs` junction table, or `internationalActivity` for non-Brazilian companies)
