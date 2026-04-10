@@ -127,13 +127,13 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
         {/* Toolbar */}
         <div className="flex items-center justify-between px-8 pb-2 pt-4">
           {/* View toggle */}
-          <div className="flex items-center gap-1 rounded-lg border border-gray-200 bg-white p-1 shadow-sm">
+          <div className="flex items-center gap-1 rounded-lg border border-white/20 bg-white/10 p-1 backdrop-blur-sm">
             <button
               onClick={() => setViewMode("kanban")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 viewMode === "kanban"
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-gray-600 hover:bg-gray-100"
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-white/80 hover:bg-white/20 hover:text-white"
               }`}
             >
               <LayoutGrid className="h-4 w-4" />
@@ -143,8 +143,8 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
               onClick={() => setViewMode("list")}
               className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 viewMode === "list"
-                  ? "bg-primary text-white shadow-sm"
-                  : "text-gray-600 hover:bg-gray-100"
+                  ? "bg-white text-primary shadow-sm"
+                  : "text-white/80 hover:bg-white/20 hover:text-white"
               }`}
             >
               <List className="h-4 w-4" />
@@ -156,7 +156,7 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
           <div className="flex items-center gap-2">
             <label
               htmlFor="currency-select"
-              className="text-sm font-medium text-gray-700"
+              className="text-sm font-medium text-white/80"
             >
               Moeda do Total:
             </label>
@@ -164,10 +164,10 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
               id="currency-select"
               value={displayCurrency}
               onChange={(e) => setDisplayCurrency(e.target.value)}
-              className="rounded-md border border-gray-300 px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="rounded-md border border-white/20 bg-white/10 px-3 py-1.5 text-sm text-white backdrop-blur-sm focus:border-white/40 focus:outline-none focus:ring-1 focus:ring-white/40"
             >
               {AVAILABLE_CURRENCIES.map((currency) => (
-                <option key={currency.code} value={currency.code}>
+                <option key={currency.code} value={currency.code} className="text-gray-900 bg-white">
                   {currency.symbol} {currency.name}
                 </option>
               ))}
@@ -177,8 +177,7 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
 
         {/* Kanban view */}
         {viewMode === "kanban" && (
-          <div className="flex flex-1 gap-4 overflow-x-auto px-8 pb-8 pt-2"
-               style={{ background: "linear-gradient(135deg, #f5f0fa 0%, #ede8f5 50%, #e8e0f0 100%)" }}>
+          <div className="flex flex-1 gap-4 overflow-x-auto px-8 pb-8 pt-2">
             {pipeline.stages.map((stage) => (
               <StageColumn
                 key={stage.id}
