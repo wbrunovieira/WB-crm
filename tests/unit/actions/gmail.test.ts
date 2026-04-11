@@ -13,7 +13,7 @@ vi.mock("@/lib/google/gmail", () => ({
 
 vi.mock("@/lib/prisma", () => ({
   prisma: {
-    activity: { create: vi.fn() },
+    activity: { create: vi.fn(), updateMany: vi.fn() },
   },
 }));
 
@@ -40,6 +40,7 @@ import { getServerSession } from "next-auth";
 
 const mockSendEmail = vi.mocked(sendEmail);
 const mockActivityCreate = vi.mocked(prisma.activity.create);
+const mockActivityUpdateMany = vi.mocked(prisma.activity.updateMany);
 const mockGetSession = vi.mocked(getServerSession);
 
 const SESSION = {
@@ -60,6 +61,7 @@ beforeEach(() => {
   mockGetSession.mockResolvedValue(SESSION as never);
   mockSendEmail.mockResolvedValue(SEND_RESULT);
   mockActivityCreate.mockResolvedValue({ id: "activity-1" } as never);
+  mockActivityUpdateMany.mockResolvedValue({ count: 0 } as never);
 });
 
 // ---------------------------------------------------------------------------
@@ -183,7 +185,7 @@ describe("sendGmailMessage — Activity criada", () => {
 });
 
 // ---------------------------------------------------------------------------
-describe("sendGmailMessage — reply com threadId", () => {
+describe("sendGmailMessage — reply com threadId (Phase 2a/2b)", () => {
   it("passa threadId para sendEmail quando fornecido", async () => {
     await sendGmailMessage({ ...VALID_INPUT, threadId: "thread-abc" });
 
@@ -196,5 +198,26 @@ describe("sendGmailMessage — reply com threadId", () => {
     const result = await sendGmailMessage(VALID_INPUT);
 
     expect(result.threadId).toBe("thread-abc");
+  });
+
+  it("marca e-mails recebidos da mesma thread como respondidos ao enviar reply", async () => {
+    await sendGmailMessage({ ...VALID_INPUT, threadId: "thread-abc" });
+
+    expect(mockActivityUpdateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          emailThreadId: "thread-abc",
+          emailReplied: false,
+          emailFromAddress: expect.objectContaining({ not: null }),
+        }),
+        data: { emailReplied: true },
+      })
+    );
+  });
+
+  it("não chama updateMany quando não há threadId (e-mail novo, não reply)", async () => {
+    await sendGmailMessage(VALID_INPUT); // sem threadId
+
+    expect(mockActivityUpdateMany).not.toHaveBeenCalled();
   });
 });

@@ -43,6 +43,8 @@ interface GmailComposeModalProps {
   leadId?: string;
   organizationId?: string;
   dealId?: string;
+  threadId?: string;
+  initialSubject?: string;
   onClose: () => void;
 }
 
@@ -63,10 +65,12 @@ export default function GmailComposeModal({
   leadId,
   organizationId,
   dealId,
+  threadId,
+  initialSubject,
   onClose,
 }: GmailComposeModalProps) {
   const router = useRouter();
-  const [subject, setSubject] = useState("");
+  const [subject, setSubject] = useState(initialSubject ?? "");
   const [cc, setCc] = useState("");
   const [showCc, setShowCc] = useState(false);
   const [sending, setSending] = useState(false);
@@ -161,6 +165,7 @@ export default function GmailComposeModal({
         leadId,
         organizationId,
         dealId,
+        threadId,
         attachments: attachments.length > 0 ? attachments : undefined,
       });
 

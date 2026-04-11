@@ -577,6 +577,9 @@ model Activity {
   emailMessageId   String?  @unique // Gmail Message-ID — previne Activity duplicada
   emailThreadId    String?           // Gmail Thread-ID — para agrupar e responder na mesma thread
   emailSubject     String?           // Assunto do e-mail (para busca e exibição)
+  emailFromAddress String?           // E-mail do remetente (para reply em e-mails recebidos)
+  emailFromName    String?           // Nome do remetente
+  emailReplied     Boolean  @default(false) // false = aguardando resposta; true = já respondido
 
   whatsappMessages WhatsAppMessage[]
 

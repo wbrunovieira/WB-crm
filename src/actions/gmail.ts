@@ -79,6 +79,18 @@ export async function sendGmailMessage(input: SendGmailInput): Promise<SendGmail
       .trim()
       .slice(0, 500);
 
+    // Se é um reply, marca o e-mail recebido original como respondido
+    if (validated.threadId) {
+      await prisma.activity.updateMany({
+        where: {
+          emailThreadId: validated.threadId,
+          emailReplied: false,
+          emailFromAddress: { not: null },
+        },
+        data: { emailReplied: true },
+      });
+    }
+
     await prisma.activity.create({
       data: {
         type: "email",

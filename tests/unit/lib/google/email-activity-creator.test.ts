@@ -246,3 +246,34 @@ describe("processIncomingEmail — threadId (Phase 2a)", () => {
     expect(mockActivityCreate).not.toHaveBeenCalled();
   });
 });
+
+// ---------------------------------------------------------------------------
+describe("processIncomingEmail — remetente (Phase 2a/2b)", () => {
+  it("salva emailFromAddress com o e-mail do remetente", async () => {
+    await processIncomingEmail(BASE_EMAIL, OWNER_ID);
+
+    const call = mockActivityCreate.mock.calls[0][0];
+    expect(call.data.emailFromAddress).toBe("cliente@empresa.com");
+  });
+
+  it("salva emailFromName com o nome do remetente", async () => {
+    await processIncomingEmail(BASE_EMAIL, OWNER_ID);
+
+    const call = mockActivityCreate.mock.calls[0][0];
+    expect(call.data.emailFromName).toBe("João Silva");
+  });
+
+  it("salva emailFromAddress mesmo quando e-mail não vinculado a nenhuma entidade", async () => {
+    await processIncomingEmail(BASE_EMAIL, OWNER_ID);
+
+    const call = mockActivityCreate.mock.calls[0][0];
+    expect(call.data.emailFromAddress).toBe("cliente@empresa.com");
+  });
+
+  it("cria Activity com emailReplied = false (aguardando resposta)", async () => {
+    await processIncomingEmail(BASE_EMAIL, OWNER_ID);
+
+    const call = mockActivityCreate.mock.calls[0][0];
+    expect(call.data.emailReplied).toBe(false);
+  });
+});

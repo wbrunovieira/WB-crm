@@ -3,7 +3,9 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowDownUp, Calendar, Check, GripVertical, Loader2, MessageCircleReply, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin } from "lucide-react";
+import { AlertTriangle, ArrowDownUp, Calendar, Check, GripVertical, Loader2, MessageCircleReply, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock } from "lucide-react";
+import dynamic from "next/dynamic";
+const GmailComposeModal = dynamic(() => import("@/components/gmail/GmailComposeModal"), { ssr: false });
 import { formatDate } from "@/lib/utils";
 import { toggleActivityCompleted, assignLeadContactsToActivity, removeLeadContactsFromActivity, markActivityFailed, markActivitySkipped, revertActivityOutcome } from "@/actions/activities";
 import { updateLeadActivityOrder, resetLeadActivityOrder } from "@/actions/leads";
@@ -89,6 +91,12 @@ type Activity = {
   skipReason: string | null;
   leadContactIds: string | null;
   gotoCallId?: string | null;
+  // Campos de e-mail
+  emailThreadId?: string | null;
+  emailSubject?: string | null;
+  emailFromAddress?: string | null;
+  emailFromName?: string | null;
+  emailReplied?: boolean | null;
 };
 
 function SortableActivityItem({
@@ -99,6 +107,7 @@ function SortableActivityItem({
   openOutcomeModal,
   handleRevert,
   openAssignModal,
+  openReplyModal,
   getContactNames,
   leadContacts,
   typeConfig,
@@ -110,6 +119,7 @@ function SortableActivityItem({
   openOutcomeModal: (e: React.MouseEvent, activity: Activity, type: "failed" | "skipped") => void;
   handleRevert: (e: React.MouseEvent, id: string) => void;
   openAssignModal: (e: React.MouseEvent, activity: Activity) => void;
+  openReplyModal: (activity: Activity) => void;
   getContactNames: (ids: string | null) => string[];
   leadContacts: LeadContact[];
   typeConfig: Record<string, { label: string; bg: string; text: string; border: string; dot: string }>;
@@ -207,6 +217,12 @@ function SortableActivityItem({
               <ActivityTypeIcon type={activity.type} className="h-3.5 w-3.5" />
               {typeConfig[activity.type]?.label ?? activity.type}
             </span>
+            {activity.type === "email" && activity.emailFromAddress && !activity.emailReplied && (
+              <span className="inline-flex items-center gap-1 rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                <Clock className="h-3 w-3" />
+                Aguardando resposta
+              </span>
+            )}
             {activity.gotoCallId ? (
               <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
                 GoTo
@@ -313,6 +329,16 @@ function SortableActivityItem({
             </>
           )}
 
+          {activity.type === "email" && activity.emailFromAddress && !activity.emailReplied && (
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); openReplyModal(activity); }}
+              className="rounded-lg p-2 text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+              title="Responder e-mail"
+            >
+              <Reply className="h-4 w-4" />
+            </button>
+          )}
+
           {!activity.gotoCallId && leadContacts.some((c) => c.isActive) && isPending(activity) && (
             <button
               onClick={(e) => openAssignModal(e, activity)}
@@ -367,6 +393,7 @@ export function LeadActivitiesList({
   const [outcomeModal, setOutcomeModal] = useState<{ activity: Activity; type: "failed" | "skipped" } | null>(null);
   const [outcomeReason, setOutcomeReason] = useState("");
   const [outcomeLoading, setOutcomeLoading] = useState(false);
+  const [replyingToActivity, setReplyingToActivity] = useState<Activity | null>(null);
   const [replyModal, setReplyModal] = useState(false);
   const [replyChannel, setReplyChannel] = useState("email");
   const [replyNotes, setReplyNotes] = useState("");
@@ -663,6 +690,7 @@ export function LeadActivitiesList({
                   openOutcomeModal={openOutcomeModal}
                   handleRevert={handleRevert}
                   openAssignModal={openAssignModal}
+                  openReplyModal={setReplyingToActivity}
                   getContactNames={getContactNames}
                   leadContacts={leadContacts}
                   typeConfig={typeConfig}
@@ -829,6 +857,18 @@ export function LeadActivitiesList({
             </div>
           </div>
         </div>
+      )}
+
+      {/* Gmail Reply Modal */}
+      {replyingToActivity && replyingToActivity.emailFromAddress && (
+        <GmailComposeModal
+          to={replyingToActivity.emailFromAddress}
+          name={replyingToActivity.emailFromName ?? replyingToActivity.emailFromAddress}
+          leadId={leadId}
+          threadId={replyingToActivity.emailThreadId ?? undefined}
+          initialSubject={replyingToActivity.emailSubject ? `Re: ${replyingToActivity.emailSubject}` : undefined}
+          onClose={() => { setReplyingToActivity(null); router.refresh(); }}
+        />
       )}
 
       {/* Assign Contacts Modal */}
