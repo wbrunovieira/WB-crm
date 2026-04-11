@@ -103,7 +103,7 @@
       when: migrations.rc is defined and migrations.rc != 0 and 'Error' in (migrations.stdout | default(''))
 
     - name: Build Next.js
-      raw: cd {{ app_dir }} && NODE_ENV=production npm run build
+      raw: cd {{ app_dir }} && NODE_OPTIONS="--max-old-space-size=4096" NODE_ENV=production npm run build
       register: build_result
 
     - name: Restart PM2
