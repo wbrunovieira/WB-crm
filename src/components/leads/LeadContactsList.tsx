@@ -9,6 +9,7 @@ import { updateLeadContact } from "@/actions/leads";
 import { Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase, Copy, Check, UserX, UserCheck, Globe } from "lucide-react";
 import { PhoneLink } from "@/components/ui/phone-link";
 import { LanguageBadges, LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
+import GmailButton from "@/components/gmail/GmailButton";
 
 type LeadContact = {
   id: string;
@@ -49,10 +50,12 @@ function CopyButton({ value }: { value: string }) {
 
 function ContactDetailModal({
   contact,
+  leadId,
   isOpen,
   onClose,
 }: {
   contact: LeadContact;
+  leadId: string;
   isOpen: boolean;
   onClose: () => void;
 }) {
@@ -121,7 +124,12 @@ function ContactDetailModal({
                   <span className="text-sm text-gray-400 italic">Não informado</span>
                 )}
               </div>
-              {contact.email && <CopyButton value={contact.email} />}
+              {contact.email && (
+                <div className="flex items-center gap-1">
+                  <GmailButton to={contact.email} name={contact.name} leadId={leadId} variant="icon" />
+                  <CopyButton value={contact.email} />
+                </div>
+              )}
             </div>
 
             {/* Phone */}
@@ -633,6 +641,7 @@ export function LeadContactsList({
       {viewingContact && (
         <ContactDetailModal
           contact={viewingContact}
+          leadId={leadId}
           isOpen={!!viewingContact}
           onClose={() => setViewingContact(null)}
         />
