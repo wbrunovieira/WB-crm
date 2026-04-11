@@ -19,6 +19,7 @@ vi.mock("@/lib/prisma", () => ({
       create: vi.fn(),
     },
     contact: { findFirst: vi.fn() },
+    leadContact: { findFirst: vi.fn() },
     lead: { findFirst: vi.fn() },
     organization: { findFirst: vi.fn() },
   },
@@ -34,6 +35,7 @@ import { prisma } from "@/lib/prisma";
 const mockActivityFindUnique = vi.mocked(prisma.activity.findUnique);
 const mockActivityCreate = vi.mocked(prisma.activity.create);
 const mockContactFindFirst = vi.mocked(prisma.contact.findFirst);
+const mockLeadContactFindFirst = vi.mocked(prisma.leadContact.findFirst);
 const mockLeadFindFirst = vi.mocked(prisma.lead.findFirst);
 const mockOrgFindFirst = vi.mocked(prisma.organization.findFirst);
 
@@ -53,6 +55,7 @@ beforeEach(() => {
   mockActivityFindUnique.mockResolvedValue(null);
   mockActivityCreate.mockResolvedValue({ id: "activity-new" } as never);
   mockContactFindFirst.mockResolvedValue(null);
+  mockLeadContactFindFirst.mockResolvedValue(null);
   mockLeadFindFirst.mockResolvedValue(null);
   mockOrgFindFirst.mockResolvedValue(null);
 });
@@ -149,6 +152,39 @@ describe("processIncomingEmail — vínculo por e-mail do remetente", () => {
     const call = mockActivityCreate.mock.calls[0][0];
     expect(call.data.leadId).toBe("lead-1");
     expect(call.data.contactId).toBeUndefined();
+  });
+
+  it("vincula ao Lead quando e-mail encontrado em LeadContact (sem Contact)", async () => {
+    mockContactFindFirst.mockResolvedValue(null);
+    mockLeadContactFindFirst.mockResolvedValue({ leadId: "lead-via-contact" } as never);
+
+    await processIncomingEmail(BASE_EMAIL, OWNER_ID);
+
+    const call = mockActivityCreate.mock.calls[0][0];
+    expect(call.data.leadId).toBe("lead-via-contact");
+    expect(call.data.contactId).toBeUndefined();
+  });
+
+  it("prioriza Contact sobre LeadContact", async () => {
+    mockContactFindFirst.mockResolvedValue({ id: "contact-1" } as never);
+    mockLeadContactFindFirst.mockResolvedValue({ leadId: "lead-via-contact" } as never);
+
+    await processIncomingEmail(BASE_EMAIL, OWNER_ID);
+
+    const call = mockActivityCreate.mock.calls[0][0];
+    expect(call.data.contactId).toBe("contact-1");
+    expect(call.data.leadId).toBeUndefined();
+  });
+
+  it("prioriza LeadContact sobre e-mail geral do Lead", async () => {
+    mockContactFindFirst.mockResolvedValue(null);
+    mockLeadContactFindFirst.mockResolvedValue({ leadId: "lead-via-contact" } as never);
+    mockLeadFindFirst.mockResolvedValue({ id: "lead-direct" } as never);
+
+    await processIncomingEmail(BASE_EMAIL, OWNER_ID);
+
+    const call = mockActivityCreate.mock.calls[0][0];
+    expect(call.data.leadId).toBe("lead-via-contact");
   });
 
   it("prioriza Contact sobre Lead quando ambos têm o e-mail", async () => {

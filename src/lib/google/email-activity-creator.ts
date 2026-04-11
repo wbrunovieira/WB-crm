@@ -17,12 +17,20 @@ async function matchEmailToEntity(
   email: string,
   ownerId: string
 ): Promise<{ contactId?: string; leadId?: string; organizationId?: string }> {
-  // Prioridade: Contact > Lead > Organization
+  // Prioridade: Contact > LeadContact (→ Lead pai) > Lead (e-mail geral) > Organization
+
   const contact = await prisma.contact.findFirst({
     where: { email, ownerId },
     select: { id: true },
   });
   if (contact) return { contactId: contact.id };
+
+  // E-mail de um contato específico do lead — vincula ao lead pai
+  const leadContact = await prisma.leadContact.findFirst({
+    where: { email, lead: { ownerId } },
+    select: { leadId: true },
+  });
+  if (leadContact) return { leadId: leadContact.leadId };
 
   const lead = await prisma.lead.findFirst({
     where: { email, ownerId },
