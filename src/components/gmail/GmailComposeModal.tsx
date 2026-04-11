@@ -65,6 +65,31 @@ export default function GmailComposeModal({
   async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
     if (files.length === 0) return;
+
+    const MAX_FILE_MB = 15;
+    const MAX_TOTAL_MB = 20;
+    const MAX_FILE_BYTES = MAX_FILE_MB * 1024 * 1024;
+    const MAX_TOTAL_BYTES = MAX_TOTAL_MB * 1024 * 1024;
+
+    const oversized = files.find((f) => f.size > MAX_FILE_BYTES);
+    if (oversized) {
+      setError(
+        `O arquivo "${oversized.name}" tem ${formatBytes(oversized.size)} e excede o limite de ${MAX_FILE_MB} MB por arquivo.`
+      );
+      e.target.value = "";
+      return;
+    }
+
+    const currentTotal = attachments.reduce((sum, a) => sum + a.size, 0);
+    const newTotal = currentTotal + files.reduce((sum, f) => sum + f.size, 0);
+    if (newTotal > MAX_TOTAL_BYTES) {
+      setError(
+        `O total dos anexos (${formatBytes(newTotal)}) excede o limite de ${MAX_TOTAL_MB} MB por e-mail.`
+      );
+      e.target.value = "";
+      return;
+    }
+
     const converted = await Promise.all(
       files.map(async (f) => ({
         filename: f.name,
@@ -74,7 +99,6 @@ export default function GmailComposeModal({
       }))
     );
     setAttachments((prev) => [...prev, ...converted]);
-    // reset so same file can be re-added after removal
     e.target.value = "";
   }
 
