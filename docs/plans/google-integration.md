@@ -500,8 +500,13 @@ npm install googleapis google-auth-library
 | Fase | Descrição | Status |
 |---|---|---|
 | 0 | OAuth2: conectar conta Google + painel admin | ✅ Concluída |
-| 1 | Gmail: envio de e-mail com Activity + templates | ✅ Concluída |
-| 2 | Gmail: recebimento automático via polling | ✅ Concluída |
+| 1 | Gmail: envio de e-mail com Activity | ✅ Concluída |
+| 1a | Gmail: editor de texto rico (bold, italic, listas, links, tamanho, alinhamento) | ✅ Concluída |
+| 1b | Gmail: anexos no compose (multipart/mixed, validação de tamanho, Nginx 25 MB) | ✅ Concluída |
+| 1c | Gmail: templates com variáveis dinâmicas (`/admin/gmail-templates`) | ✅ Concluída |
+| 2 | Gmail: recebimento automático via polling + vínculo LeadContact | ✅ Concluída |
+| 2a | Gmail: reply a e-mails recebidos (com threadId) | 🔲 Pendente |
+| 2b | Gmail: indicador visual "aguardando resposta" | 🔲 Pendente |
 | 3 | Drive: estrutura de pastas + Propostas para Leads | 🔲 Pendente |
 | 4 | Meet: agendamento de reuniões com convite | 🔲 Pendente |
 | 5 | Meet: gravações detectadas e exibidas no perfil | 🔲 Pendente |
