@@ -1714,3 +1714,17 @@ model WhatsAppMessage {
   @@index([timestamp])
   @@map("whatsapp_messages")
 }
+
+model GmailTemplate {
+  id        String   @id @default(cuid())
+  name      String                        // ex: "Boas-vindas", "Follow-up comercial"
+  subject   String                        // assunto do e-mail (pode conter variáveis)
+  body      String                        // HTML do corpo (pode conter variáveis)
+  category  String?                       // ex: "vendas", "suporte", "cobrança"
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@map("gmail_templates")
+}

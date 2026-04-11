@@ -1,9 +1,12 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { X, Send, Loader2, Paperclip, FileText } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { X, Send, Loader2, Paperclip, FileText, ChevronDown, LayoutTemplate } from "lucide-react";
 import { sendGmailMessage } from "@/actions/gmail";
+import { getActiveGmailTemplates } from "@/actions/gmail-templates";
+import { applyVariables } from "@/lib/gmail-variables";
 import RichTextEditor, { RichTextEditorHandle } from "@/components/gmail/RichTextEditor";
 
 interface AttachmentFile {
@@ -35,6 +38,7 @@ async function fileToBase64(file: File): Promise<string> {
 interface GmailComposeModalProps {
   to: string;
   name: string;
+  companyName?: string;
   contactId?: string;
   leadId?: string;
   organizationId?: string;
@@ -42,9 +46,18 @@ interface GmailComposeModalProps {
   onClose: () => void;
 }
 
+interface TemplateOption {
+  id: string;
+  name: string;
+  subject: string;
+  body: string;
+  category: string | null;
+}
+
 export default function GmailComposeModal({
   to,
   name,
+  companyName,
   contactId,
   leadId,
   organizationId,
@@ -52,6 +65,7 @@ export default function GmailComposeModal({
   onClose,
 }: GmailComposeModalProps) {
   const router = useRouter();
+  const { data: session } = useSession();
   const [subject, setSubject] = useState("");
   const [cc, setCc] = useState("");
   const [showCc, setShowCc] = useState(false);
@@ -59,8 +73,27 @@ export default function GmailComposeModal({
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
+  const [templates, setTemplates] = useState<TemplateOption[]>([]);
+  const [showTemplates, setShowTemplates] = useState(false);
   const editorRef = useRef<RichTextEditorHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Carrega templates ativos ao abrir o modal
+  useEffect(() => {
+    getActiveGmailTemplates().then(setTemplates).catch(() => {});
+  }, []);
+
+  function applyTemplate(template: TemplateOption) {
+    const values = {
+      nome: name,
+      email: to,
+      empresa: companyName ?? "",
+      usuario: session?.user?.name ?? "",
+    };
+    setSubject(applyVariables(template.subject, values));
+    editorRef.current?.setHTML(applyVariables(template.body, values));
+    setShowTemplates(false);
+  }
 
   async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
     const files = Array.from(e.target.files ?? []);
@@ -291,6 +324,50 @@ export default function GmailComposeModal({
             >
               <Paperclip className="h-4 w-4" />
             </button>
+
+            {/* Template picker */}
+            {templates.length > 0 && (
+              <div className="relative">
+                <button
+                  type="button"
+                  title="Usar template"
+                  onClick={() => setShowTemplates((v) => !v)}
+                  disabled={sending || sent}
+                  className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-1.5 text-xs text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50"
+                >
+                  <LayoutTemplate className="h-3.5 w-3.5" />
+                  Templates
+                  <ChevronDown className={`h-3 w-3 transition-transform ${showTemplates ? "rotate-180" : ""}`} />
+                </button>
+
+                {showTemplates && (
+                  <div className="absolute bottom-full left-0 mb-1 z-50 w-64 rounded-lg border border-gray-200 bg-white shadow-lg">
+                    <div className="border-b px-3 py-2">
+                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                        Selecionar template
+                      </p>
+                    </div>
+                    <ul className="max-h-56 overflow-y-auto py-1">
+                      {templates.map((t) => (
+                        <li key={t.id}>
+                          <button
+                            type="button"
+                            onClick={() => applyTemplate(t)}
+                            className="flex w-full flex-col px-3 py-2 text-left hover:bg-gray-50 transition-colors"
+                          >
+                            <span className="text-sm font-medium text-gray-800">{t.name}</span>
+                            {t.category && (
+                              <span className="text-xs text-gray-400">{t.category}</span>
+                            )}
+                            <span className="truncate text-xs text-gray-500">{t.subject}</span>
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <button

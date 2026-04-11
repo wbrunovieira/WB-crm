@@ -25,6 +25,7 @@ export interface RichTextEditorHandle {
   isEmpty: () => boolean;
   focus: () => void;
   setHTML: (html: string) => void;
+  insertAtCursor: (text: string) => void;
 }
 
 interface RichTextEditorProps {
@@ -47,6 +48,11 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
       focus: () => editorRef.current?.focus(),
       setHTML: (html: string) => {
         if (editorRef.current) editorRef.current.innerHTML = html;
+      },
+      insertAtCursor: (text: string) => {
+        if (!editorRef.current) return;
+        editorRef.current.focus();
+        document.execCommand("insertText", false, text);
       },
     }));
 
