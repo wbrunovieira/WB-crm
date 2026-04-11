@@ -22,6 +22,10 @@ export const mockActivity: Activity = {
   gotoCallId: null,
   emailMessageId: null,
   emailSubject: null,
+  emailThreadId: null,
+  emailFromAddress: null,
+  emailFromName: null,
+  emailReplied: false,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
 };
