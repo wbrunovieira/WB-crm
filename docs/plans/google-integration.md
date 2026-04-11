@@ -437,7 +437,7 @@ Após o horário de término de cada reunião com `status: "scheduled"`, um job 
 | Business Plus | ✅ | ✅ (arquivo .docx no Drive) |
 | Enterprise | ✅ | ✅ |
 
-**Decisão**: verificar qual plano da WB Digital Solutions. Se Business Plus ou Enterprise → usar transcrição nativa do Google (arquivo `.docx` salvo no Drive junto com o `.mp4`). Caso contrário → usar o sistema Whisper já disponível (mesmo pipeline pendente para o GoTo e WhatsApp).
+**Plano atual: Business Standard** → sem transcrição nativa. Usar sistema Whisper (mesmo pipeline pendente para GoTo e WhatsApp). Transcrição Google seria disponível a partir do Business Plus.
 
 ### Backend (TDD)
 
@@ -499,9 +499,9 @@ npm install googleapis google-auth-library
 
 | Fase | Descrição | Status |
 |---|---|---|
-| 0 | OAuth2: conectar conta Google + painel admin | 🔲 Pendente |
-| 1 | Gmail: envio de e-mail com Activity + templates | 🔲 Pendente |
-| 2 | Gmail: recebimento automático via polling | 🔲 Pendente |
+| 0 | OAuth2: conectar conta Google + painel admin | ✅ Concluída |
+| 1 | Gmail: envio de e-mail com Activity + templates | ✅ Concluída |
+| 2 | Gmail: recebimento automático via polling | ✅ Concluída |
 | 3 | Drive: estrutura de pastas + Propostas para Leads | 🔲 Pendente |
 | 4 | Meet: agendamento de reuniões com convite | 🔲 Pendente |
 | 5 | Meet: gravações detectadas e exibidas no perfil | 🔲 Pendente |

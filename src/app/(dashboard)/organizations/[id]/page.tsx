@@ -1,4 +1,5 @@
 import { getOrganizationById } from "@/actions/organizations";
+import GmailButton from "@/components/gmail/GmailButton";
 import { PhoneLink } from "@/components/ui/phone-link";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { OrganizationProjects } from "@/components/organizations/OrganizationProjects";
@@ -83,6 +84,22 @@ export default async function OrganizationDetailPage({
                 )}
               </dd>
             </div>
+            {organization.email && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Email</dt>
+                <dd className="mt-1 flex items-center gap-2 text-sm text-gray-900">
+                  <a href={`mailto:${organization.email}`} className="hover:text-primary hover:underline">
+                    {organization.email}
+                  </a>
+                  <GmailButton
+                    to={organization.email}
+                    name={organization.name}
+                    organizationId={organization.id}
+                    variant="icon"
+                  />
+                </dd>
+              </div>
+            )}
             <div>
               <dt className="text-sm font-medium text-gray-500">Telefone</dt>
               <dd className="mt-1 text-sm text-gray-900">
