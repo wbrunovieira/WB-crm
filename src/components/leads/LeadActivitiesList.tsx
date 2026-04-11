@@ -111,6 +111,7 @@ function SortableActivityItem({
   getContactNames,
   leadContacts,
   typeConfig,
+  receivedThreadIds,
 }: {
   activity: Activity;
   isPending: (a: Activity) => boolean;
@@ -123,6 +124,7 @@ function SortableActivityItem({
   getContactNames: (ids: string | null) => string[];
   leadContacts: LeadContact[];
   typeConfig: Record<string, { label: string; bg: string; text: string; border: string; dot: string }>;
+  receivedThreadIds: Set<string>;
 }) {
   const {
     attributes,
@@ -221,6 +223,18 @@ function SortableActivityItem({
               <span className="inline-flex items-center gap-1 rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
                 <Clock className="h-3 w-3" />
                 Aguardando resposta
+              </span>
+            )}
+            {activity.type === "email" && activity.emailFromAddress && activity.emailReplied && (
+              <span className="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                <Check className="h-3 w-3" />
+                Respondido
+              </span>
+            )}
+            {activity.type === "email" && !activity.emailFromAddress && activity.emailThreadId && receivedThreadIds.has(activity.emailThreadId) && (
+              <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 border border-blue-200">
+                <Reply className="h-3 w-3" />
+                Resposta enviada
               </span>
             )}
             {activity.gotoCallId ? (
@@ -623,6 +637,17 @@ export function LeadActivitiesList({
 
   const isPending = (a: Activity) => !a.completed && !a.failedAt && !a.skippedAt;
 
+  // Set de threadIds de e-mails recebidos — usado para marcar respostas enviadas
+  const receivedThreadIds = useMemo(
+    () =>
+      new Set(
+        activities
+          .filter((a) => a.type === "email" && a.emailFromAddress && a.emailThreadId)
+          .map((a) => a.emailThreadId!)
+      ),
+    [activities]
+  );
+
   return (
     <div className="rounded-xl bg-white p-6 shadow-md">
       <div className="mb-5 flex items-center justify-between pb-3 border-b-2 border-gray-100">
@@ -701,6 +726,7 @@ export function LeadActivitiesList({
                   getContactNames={getContactNames}
                   leadContacts={leadContacts}
                   typeConfig={typeConfig}
+                  receivedThreadIds={receivedThreadIds}
                 />
               ))}
             </div>
