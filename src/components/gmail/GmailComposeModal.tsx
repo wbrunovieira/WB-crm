@@ -2,7 +2,7 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { X, Send, Loader2, Paperclip, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Send, Loader2 } from "lucide-react";
 import { sendGmailMessage } from "@/actions/gmail";
 
 interface GmailComposeModalProps {
