@@ -18,6 +18,31 @@ export function formatDate(date: Date | string | null): string {
   return new Intl.DateTimeFormat("pt-BR", { timeZone: "UTC" }).format(d);
 }
 
+export function formatTime(date: Date | string | null): string {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  return new Intl.DateTimeFormat("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    timeZone: "America/Sao_Paulo",
+  }).format(d);
+}
+
+export function formatRelativeTime(date: Date | string | null): string {
+  if (!date) return "";
+  const d = typeof date === "string" ? new Date(date) : date;
+  const diffMs = Date.now() - d.getTime();
+  const diffMin = Math.floor(diffMs / 60_000);
+  const diffHour = Math.floor(diffMs / 3_600_000);
+  const diffDay = Math.floor(diffMs / 86_400_000);
+
+  if (diffMin < 1) return "agora";
+  if (diffMin < 60) return `há ${diffMin} min`;
+  if (diffHour < 24) return `há ${diffHour}h`;
+  if (diffDay < 7) return `há ${diffDay} dia${diffDay !== 1 ? "s" : ""}`;
+  return formatDate(d);
+}
+
 // Exchange rates - BRL as base (1 BRL = X of target currency)
 const EXCHANGE_RATES_TO_BRL: { [key: string]: number } = {
   BRL: 1,
