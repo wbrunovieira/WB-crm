@@ -7,11 +7,20 @@ import { logger } from "@/lib/logger";
 
 const log = logger.child({ context: "google-callback" });
 
+/** Base URL para redirects — usa NEXTAUTH_URL para funcionar atrás de proxy (Nginx) */
+function baseUrl(): string {
+  return process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+}
+
+function redirect(path: string) {
+  return NextResponse.redirect(new URL(path, baseUrl()));
+}
+
 export async function GET(req: NextRequest) {
   const session = await getServerSession(authOptions);
 
   if (session?.user?.role?.toLowerCase() !== "admin") {
-    return NextResponse.redirect(new URL("/admin?error=unauthorized", req.url));
+    return redirect("/admin?error=unauthorized");
   }
 
   const code = req.nextUrl.searchParams.get("code");
@@ -19,22 +28,19 @@ export async function GET(req: NextRequest) {
 
   if (error) {
     log.warn("Usuário recusou consentimento Google", { error });
-    return NextResponse.redirect(new URL("/admin/google?error=consent_denied", req.url));
+    return redirect("/admin/google?error=consent_denied");
   }
 
   if (!code) {
-    return NextResponse.redirect(new URL("/admin/google?error=no_code", req.url));
+    return redirect("/admin/google?error=no_code");
   }
 
   try {
-    // Troca o code por tokens usando um único cliente (code é de uso único)
     const client = createOAuth2Client();
     const { tokens } = await client.getToken(code);
 
-    // Busca email usando o access_token já obtido (reutiliza o mesmo cliente)
     const email = await fetchGoogleEmail(tokens.access_token!, client);
 
-    // Persiste tudo em uma única operação
     await saveToken({
       accessToken: tokens.access_token!,
       refreshToken: tokens.refresh_token!,
@@ -44,11 +50,11 @@ export async function GET(req: NextRequest) {
     });
 
     log.info("Conta Google conectada com sucesso", { email });
-    return NextResponse.redirect(new URL("/admin/google?success=true", req.url));
+    return redirect("/admin/google?success=true");
   } catch (err) {
     log.error("Falha ao conectar conta Google", {
       error: err instanceof Error ? err.message : String(err),
     });
-    return NextResponse.redirect(new URL("/admin/google?error=token_exchange", req.url));
+    return redirect("/admin/google?error=token_exchange");
   }
 }
