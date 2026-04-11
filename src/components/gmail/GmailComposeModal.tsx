@@ -132,7 +132,7 @@ export default function GmailComposeModal({
       });
 
       if (!result) {
-        setError("O servidor não respondeu. O anexo pode ser grande demais — tente sem o anexo ou use um arquivo menor.");
+        setError("Erro de comunicação com o servidor. Tente novamente.");
         return;
       }
 
