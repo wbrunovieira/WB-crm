@@ -214,3 +214,35 @@ describe("processIncomingEmail — vínculo por e-mail do remetente", () => {
     await expect(processIncomingEmail(BASE_EMAIL, OWNER_ID)).resolves.not.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+describe("processIncomingEmail — threadId (Phase 2a)", () => {
+  it("salva emailThreadId quando threadId fornecido no e-mail", async () => {
+    await processIncomingEmail(
+      { ...BASE_EMAIL, threadId: "gmail-thread-xyz" },
+      OWNER_ID
+    );
+
+    const call = mockActivityCreate.mock.calls[0][0];
+    expect(call.data.emailThreadId).toBe("gmail-thread-xyz");
+  });
+
+  it("não define emailThreadId quando threadId ausente", async () => {
+    await processIncomingEmail(BASE_EMAIL, OWNER_ID);
+
+    const call = mockActivityCreate.mock.calls[0][0];
+    const data = call.data as Record<string, unknown>;
+    expect(data.emailThreadId).toBeUndefined();
+  });
+
+  it("mantém idempotência independente do threadId", async () => {
+    mockActivityFindUnique.mockResolvedValue({ id: "existing" } as never);
+
+    await processIncomingEmail(
+      { ...BASE_EMAIL, threadId: "gmail-thread-xyz" },
+      OWNER_ID
+    );
+
+    expect(mockActivityCreate).not.toHaveBeenCalled();
+  });
+});

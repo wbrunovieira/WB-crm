@@ -64,7 +64,12 @@ describe("buildMimeMessage", () => {
     expect(decoded).toContain("To: cliente@example.com");
     expect(decoded).toContain("Subject: Proposta WB Digital");
     expect(decoded).toContain("Content-Type: text/html");
-    expect(decoded).toContain("<p>Olá!</p>");
+
+    // Corpo é base64 dentro do MIME (Content-Transfer-Encoding: base64)
+    // Extrair e decodificar o body para verificar o conteúdo original
+    const bodyB64 = decoded.split("\r\n\r\n").slice(1).join("\r\n\r\n").trim();
+    const bodyDecoded = Buffer.from(bodyB64, "base64").toString("utf-8");
+    expect(bodyDecoded).toContain("<p>Olá!</p>");
   });
 
   it("inclui From quando fornecido", () => {

@@ -64,10 +64,12 @@ beforeEach(() => {
 
 // ---------------------------------------------------------------------------
 describe("sendGmailMessage — autenticação", () => {
-  it("lança erro se não autenticado", async () => {
+  it("retorna erro se não autenticado", async () => {
     mockGetSession.mockResolvedValue(null);
 
-    await expect(sendGmailMessage(VALID_INPUT)).rejects.toThrow(/não autorizado/i);
+    const result = await sendGmailMessage(VALID_INPUT);
+    expect(result.success).toBe(false);
+    expect(result.error).toMatch(/não autorizado/i);
   });
 
   it("prossegue quando autenticado", async () => {
@@ -78,16 +80,20 @@ describe("sendGmailMessage — autenticação", () => {
 
 // ---------------------------------------------------------------------------
 describe("sendGmailMessage — validação", () => {
-  it("lança erro quando 'to' está vazio", async () => {
-    await expect(sendGmailMessage({ ...VALID_INPUT, to: "" })).rejects.toThrow();
+  it("retorna erro quando 'to' está vazio", async () => {
+    const result = await sendGmailMessage({ ...VALID_INPUT, to: "" });
+    expect(result.success).toBe(false);
+    expect(result.error).toBeDefined();
   });
 
-  it("lança erro quando 'subject' está vazio", async () => {
-    await expect(sendGmailMessage({ ...VALID_INPUT, subject: "" })).rejects.toThrow();
+  it("retorna erro quando 'subject' está vazio", async () => {
+    const result = await sendGmailMessage({ ...VALID_INPUT, subject: "" });
+    expect(result.success).toBe(false);
   });
 
-  it("lança erro quando 'html' está vazio", async () => {
-    await expect(sendGmailMessage({ ...VALID_INPUT, html: "" })).rejects.toThrow();
+  it("retorna erro quando 'html' está vazio", async () => {
+    const result = await sendGmailMessage({ ...VALID_INPUT, html: "" });
+    expect(result.success).toBe(false);
   });
 });
 
@@ -166,5 +172,29 @@ describe("sendGmailMessage — Activity criada", () => {
     await sendGmailMessage(VALID_INPUT);
 
     expect(mockActivityCreate).not.toHaveBeenCalled();
+  });
+
+  it("Activity contém emailThreadId do resultado do envio", async () => {
+    await sendGmailMessage(VALID_INPUT);
+
+    const call = mockActivityCreate.mock.calls[0][0];
+    expect(call.data.emailThreadId).toBe("thread-abc");
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe("sendGmailMessage — reply com threadId", () => {
+  it("passa threadId para sendEmail quando fornecido", async () => {
+    await sendGmailMessage({ ...VALID_INPUT, threadId: "thread-abc" });
+
+    expect(mockSendEmail).toHaveBeenCalledWith(
+      expect.objectContaining({ threadId: "thread-abc" })
+    );
+  });
+
+  it("resultado contém threadId da thread Gmail", async () => {
+    const result = await sendGmailMessage(VALID_INPUT);
+
+    expect(result.threadId).toBe("thread-abc");
   });
 });

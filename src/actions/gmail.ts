@@ -85,6 +85,7 @@ export async function sendGmailMessage(input: SendGmailInput): Promise<SendGmail
         subject: validated.subject,
         description: bodyPreview,
         emailMessageId: messageId,
+        emailThreadId: threadId,
         emailSubject: validated.subject,
         completed: true,
         completedAt: new Date(),

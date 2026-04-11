@@ -575,6 +575,7 @@ model Activity {
   @@index([partnerId])
   gotoCallId       String?  @unique // GoTo conversationSpaceId — previne Activity duplicada
   emailMessageId   String?  @unique // Gmail Message-ID — previne Activity duplicada
+  emailThreadId    String?           // Gmail Thread-ID — para agrupar e responder na mesma thread
   emailSubject     String?           // Assunto do e-mail (para busca e exibição)
 
   whatsappMessages WhatsAppMessage[]
