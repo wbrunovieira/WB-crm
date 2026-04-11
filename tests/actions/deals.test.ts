@@ -87,6 +87,8 @@ describe('Deals Actions', () => {
         contactId: validDealData.contactId ?? null,
         organizationId: validDealData.organizationId ?? null,
         expectedCloseDate: validDealData.expectedCloseDate ?? null,
+        description: null,
+        closedAt: null,
         ownerId: userA.id,
         createdAt: new Date(),
         updatedAt: new Date(),
