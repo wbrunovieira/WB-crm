@@ -61,6 +61,7 @@ const VALID_TOKEN = {
   expiresAt: new Date(Date.now() + 60 * 60 * 1000), // 1h no futuro
   scope: "gmail",
   email: EMAIL,
+  gmailHistoryId: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };

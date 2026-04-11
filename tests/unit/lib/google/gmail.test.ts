@@ -107,7 +107,7 @@ describe("sendEmail", () => {
     );
 
     expect(mockGmail.users.messages.send).toHaveBeenCalledOnce();
-    const callArg = mockGmail.users.messages.send.mock.calls[0][0] as { userId: string; requestBody: { raw: string; threadId?: string } };
+    const callArg = vi.mocked(mockGmail.users.messages.send).mock.calls[0][0] as { userId: string; requestBody: { raw: string; threadId?: string } };
     expect(callArg.userId).toBe("me");
     expect(callArg.requestBody.raw).toBeDefined();
   });
@@ -132,7 +132,7 @@ describe("sendEmail", () => {
       mockGmail as never
     );
 
-    const callArg = mockGmail.users.messages.send.mock.calls[0][0] as { requestBody: { threadId?: string } };
+    const callArg = vi.mocked(mockGmail.users.messages.send).mock.calls[0][0] as { requestBody: { threadId?: string } };
     expect(callArg.requestBody.threadId).toBe("thread-xyz");
   });
 

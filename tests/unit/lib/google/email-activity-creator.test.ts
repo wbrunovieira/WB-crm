@@ -204,9 +204,10 @@ describe("processIncomingEmail — vínculo por e-mail do remetente", () => {
     await processIncomingEmail(BASE_EMAIL, OWNER_ID);
 
     const call = mockActivityCreate.mock.calls[0][0];
-    expect(call.data.contactId).toBeUndefined();
-    expect(call.data.leadId).toBeUndefined();
-    expect(call.data.organizationId).toBeUndefined();
+    const data = call.data as Record<string, unknown>;
+    expect(data.contactId).toBeUndefined();
+    expect(data.leadId).toBeUndefined();
+    expect(data.organizationId).toBeUndefined();
   });
 
   it("não lança erro quando e-mail do remetente é desconhecido", async () => {

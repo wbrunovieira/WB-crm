@@ -31,6 +31,7 @@ const STORED_TOKEN = {
   expiresAt: new Date(Date.now() + 3600 * 1000),
   scope: "gmail drive calendar",
   email: "admin@wbdigitalsolutions.com",
+  gmailHistoryId: null,
   createdAt: new Date(),
   updatedAt: new Date(),
 };
