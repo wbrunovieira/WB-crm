@@ -10,6 +10,12 @@ import { logger } from "@/lib/logger";
 
 const log = logger.child({ context: "gmail-action" });
 
+const attachmentSchema = z.object({
+  filename: z.string().min(1),
+  mimeType: z.string().min(1),
+  data: z.string().min(1), // base64
+});
+
 const sendGmailSchema = z.object({
   to: z.string().email("E-mail do destinatário inválido"),
   subject: z.string().min(1, "Assunto obrigatório"),
@@ -19,6 +25,7 @@ const sendGmailSchema = z.object({
   leadId: z.string().optional(),
   organizationId: z.string().optional(),
   dealId: z.string().optional(),
+  attachments: z.array(attachmentSchema).optional(),
 });
 
 export type SendGmailInput = z.infer<typeof sendGmailSchema>;
@@ -48,6 +55,7 @@ export async function sendGmailMessage(input: SendGmailInput): Promise<SendGmail
       subject: validated.subject,
       html: validated.html,
       threadId: validated.threadId,
+      attachments: validated.attachments,
     });
 
     messageId = result.messageId;

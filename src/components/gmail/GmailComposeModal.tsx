@@ -2,9 +2,35 @@
 
 import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { X, Send, Loader2 } from "lucide-react";
+import { X, Send, Loader2, Paperclip, FileText } from "lucide-react";
 import { sendGmailMessage } from "@/actions/gmail";
 import RichTextEditor, { RichTextEditorHandle } from "@/components/gmail/RichTextEditor";
+
+interface AttachmentFile {
+  filename: string;
+  mimeType: string;
+  data: string; // base64
+  size: number;
+}
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+async function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      // result is "data:mime;base64,XXX" — strip prefix
+      const result = reader.result as string;
+      resolve(result.split(",")[1]);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
 interface GmailComposeModalProps {
   to: string;
@@ -32,7 +58,29 @@ export default function GmailComposeModal({
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+  const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const editorRef = useRef<RichTextEditorHandle>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  async function handleFilesSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
+    const converted = await Promise.all(
+      files.map(async (f) => ({
+        filename: f.name,
+        mimeType: f.type || "application/octet-stream",
+        data: await fileToBase64(f),
+        size: f.size,
+      }))
+    );
+    setAttachments((prev) => [...prev, ...converted]);
+    // reset so same file can be re-added after removal
+    e.target.value = "";
+  }
+
+  function removeAttachment(index: number) {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  }
 
   async function handleSend() {
     const bodyEmpty = editorRef.current?.isEmpty() ?? true;
@@ -56,6 +104,7 @@ export default function GmailComposeModal({
         leadId,
         organizationId,
         dealId,
+        attachments: attachments.length > 0 ? attachments : undefined,
       });
 
       if (result.success) {
@@ -144,6 +193,29 @@ export default function GmailComposeModal({
           />
         </div>
 
+        {/* Attachments list */}
+        {attachments.length > 0 && (
+          <div className="mx-3 mb-1 flex flex-wrap gap-1.5">
+            {attachments.map((att, i) => (
+              <div
+                key={i}
+                className="flex items-center gap-1.5 rounded-full border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs text-gray-700"
+              >
+                <FileText className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                <span className="max-w-[140px] truncate">{att.filename}</span>
+                <span className="text-gray-400">({formatBytes(att.size)})</span>
+                <button
+                  type="button"
+                  onClick={() => removeAttachment(i)}
+                  className="ml-0.5 text-gray-400 hover:text-red-500 transition-colors"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {/* Error */}
         {error && (
           <p className="mx-3 mb-2 rounded bg-red-50 px-3 py-2 text-xs text-red-600">{error}</p>
@@ -158,19 +230,40 @@ export default function GmailComposeModal({
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t px-3 py-2">
-          <button
-            onClick={handleSend}
-            disabled={sending || sent}
-            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
-          >
-            {sending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
-            {sending ? "Enviando..." : "Enviar"}
-            {!sending && <span className="ml-1 text-xs opacity-70">Ctrl+Enter</span>}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleSend}
+              disabled={sending || sent}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
+            >
+              {sending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              {sending ? "Enviando..." : "Enviar"}
+              {!sending && <span className="ml-1 text-xs opacity-70">Ctrl+Enter</span>}
+            </button>
+
+            {/* Hidden file input */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              multiple
+              className="hidden"
+              onChange={handleFilesSelected}
+            />
+            <button
+              type="button"
+              title="Anexar arquivo"
+              onClick={() => fileInputRef.current?.click()}
+              disabled={sending || sent}
+              className="rounded-lg border border-gray-200 p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50"
+            >
+              <Paperclip className="h-4 w-4" />
+            </button>
+          </div>
+
           <button
             onClick={onClose}
             className="text-sm text-gray-500 hover:text-gray-700"
