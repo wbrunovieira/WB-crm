@@ -504,6 +504,7 @@ npm install googleapis google-auth-library
 | 1a | Gmail: editor de texto rico (bold, italic, listas, links, tamanho, alinhamento) | ✅ Concluída |
 | 1b | Gmail: anexos no compose (multipart/mixed, validação de tamanho, Nginx 25 MB) | ✅ Concluída |
 | 1c | Gmail: templates com variáveis dinâmicas (`/admin/gmail-templates`) | ✅ Concluída |
+| 1c-fix | Gmail: crash ao abrir modal (useSession sem SessionProvider → senderName prop) | ✅ Concluída |
 | 2 | Gmail: recebimento automático via polling + vínculo LeadContact | ✅ Concluída |
 | 2a | Gmail: reply a e-mails recebidos (com threadId) | 🔲 Pendente |
 | 2b | Gmail: indicador visual "aguardando resposta" | 🔲 Pendente |

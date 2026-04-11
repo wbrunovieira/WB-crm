@@ -5,6 +5,7 @@ const log = logger.child({ context: "email-activity-creator" });
 
 export interface IncomingEmail {
   messageId: string;
+  threadId?: string;
   from: string;
   fromName: string;
   subject: string;
@@ -85,6 +86,7 @@ export async function processIncomingEmail(
       subject: email.subject || "(sem assunto)",
       description: bodyPreview,
       emailMessageId: email.messageId,
+      emailThreadId: email.threadId,
       emailSubject: email.subject,
       completed: true,
       completedAt: email.receivedAt,
