@@ -792,17 +792,19 @@ export function LeadActivitiesList({
               <option value="instagram_dm">Instagram DM</option>
               <option value="physical_visit">Visita</option>
             </select>
-            {(["all","pending","completed","failed","skipped"] as const).map((s) => (
+            {([
+              { key: "all",       label: "Todas",      active: "bg-gray-700 text-white",         inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200" },
+              { key: "pending",   label: "Pendentes",  active: "bg-blue-600 text-white",          inactive: "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100" },
+              { key: "completed", label: "Concluídas", active: "bg-green-600 text-white",         inactive: "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100" },
+              { key: "failed",    label: "Falha",      active: "bg-red-600 text-white",           inactive: "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100" },
+              { key: "skipped",   label: "Puladas",    active: "bg-amber-500 text-white",         inactive: "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100" },
+            ] as const).map(({ key, label, active, inactive }) => (
               <button
-                key={s}
-                onClick={() => setFilterStatus(s)}
-                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
-                  filterStatus === s
-                    ? "bg-purple-700 text-white"
-                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                }`}
+                key={key}
+                onClick={() => setFilterStatus(key)}
+                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${filterStatus === key ? active : inactive}`}
               >
-                {{ all:"Todas", pending:"Pendentes", completed:"Concluídas", failed:"Falha", skipped:"Puladas" }[s]}
+                {label}
               </button>
             ))}
             {(searchQuery || filterType !== "all" || filterStatus !== "all") && (
