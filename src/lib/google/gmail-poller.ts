@@ -28,10 +28,10 @@ export interface PollResult {
 
 /** Extrai from, fromName e subject dos cabeçalhos MIME */
 export function parseEmailHeaders(
-  headers: Array<{ name: string; value: string }>
+  headers: Array<{ name?: string | null; value?: string | null }>
 ): ParsedHeaders {
   const get = (name: string) =>
-    headers.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? "";
+    headers.find((h) => h.name?.toLowerCase() === name.toLowerCase())?.value ?? "";
 
   const fromRaw = get("From");
   const subject = get("Subject") || "(sem assunto)";
@@ -134,7 +134,7 @@ export async function pollNewEmails(
       const { from, fromName, subject } = parseEmailHeaders(headers);
       const body = extractBody(msg.payload ?? {});
 
-      const dateHeader = headers.find((h) => h.name.toLowerCase() === "date")?.value;
+      const dateHeader = headers.find((h) => h.name?.toLowerCase() === "date")?.value;
       const receivedAt = dateHeader ? new Date(dateHeader) : new Date();
 
       emails.push({

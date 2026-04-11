@@ -20,6 +20,8 @@ export const mockActivity: Activity = {
   partnerId: null,
   ownerId: 'user-test-123',
   gotoCallId: null,
+  emailMessageId: null,
+  emailSubject: null,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
 };
