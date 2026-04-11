@@ -59,9 +59,27 @@ export async function processIncomingEmail(
   // 1. Idempotência — verificar se já foi processado
   const existing = await prisma.activity.findUnique({
     where: { emailMessageId: email.messageId },
+    select: { id: true, emailFromAddress: true },
   });
   if (existing) {
-    log.debug("E-mail já processado, ignorando", { messageId: email.messageId });
+    // Se a activity existe mas foi criada como e-mail enviado (sem emailFromAddress),
+    // atualizar com os dados do remetente para ativar o badge "aguardando resposta"
+    if (!existing.emailFromAddress && email.from) {
+      await prisma.activity.update({
+        where: { id: existing.id },
+        data: {
+          emailFromAddress: email.from,
+          emailFromName: email.fromName,
+          emailReplied: false,
+        },
+      });
+      log.info("Activity atualizada com remetente do e-mail recebido", {
+        messageId: email.messageId,
+        from: email.from,
+      });
+    } else {
+      log.debug("E-mail já processado, ignorando", { messageId: email.messageId });
+    }
     return;
   }
 

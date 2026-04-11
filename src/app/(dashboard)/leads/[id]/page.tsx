@@ -2,6 +2,7 @@ import { getLeadById } from "@/actions/leads";
 import { PhoneLink } from "@/components/ui/phone-link";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import GmailButton from "@/components/gmail/GmailButton";
+import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
 import { ArchiveLeadButton } from "@/components/leads/ArchiveLeadButton";
@@ -636,6 +637,9 @@ export default async function LeadDetailPage({
 
       {/* Lead Activities */}
       <div className="mt-6 mb-8">
+        <div className="mb-3 flex justify-end">
+          <GmailSyncButton revalidateUrl={`/leads/${lead.id}`} />
+        </div>
         <LeadActivitiesList
           leadId={lead.id}
           activities={lead.activities}

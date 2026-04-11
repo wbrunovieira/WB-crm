@@ -1,5 +1,6 @@
 import { getOrganizationById } from "@/actions/organizations";
 import GmailButton from "@/components/gmail/GmailButton";
+import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { PhoneLink } from "@/components/ui/phone-link";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { OrganizationProjects } from "@/components/organizations/OrganizationProjects";
@@ -367,6 +368,9 @@ export default async function OrganizationDetailPage({
 
       {/* Activities */}
       <div className="mt-6">
+        <div className="mb-3 flex justify-end">
+          <GmailSyncButton revalidateUrl={`/organizations/${organization.id}`} />
+        </div>
         <OrganizationActivities
           activities={organization.activities}
           organizationId={organization.id}

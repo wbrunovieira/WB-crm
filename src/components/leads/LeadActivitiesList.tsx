@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowDownUp, Calendar, Check, GripVertical, Loader2, MessageCircleReply, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock } from "lucide-react";
 import dynamic from "next/dynamic";
 const GmailComposeModal = dynamic(() => import("@/components/gmail/GmailComposeModal"), { ssr: false });
-import { formatDate } from "@/lib/utils";
+import { formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
 import { toggleActivityCompleted, assignLeadContactsToActivity, removeLeadContactsFromActivity, markActivityFailed, markActivitySkipped, revertActivityOutcome } from "@/actions/activities";
 import { updateLeadActivityOrder, resetLeadActivityOrder } from "@/actions/leads";
 import { registerLeadReply } from "@/actions/lead-cadences";
@@ -286,11 +286,18 @@ function SortableActivityItem({
               </div>
             ) : null;
           })()}
-          {activity.dueDate && (
-            <p className="mt-2 text-xs text-gray-500 group-hover:text-gray-600">
-              Vencimento: {formatDate(activity.dueDate)}
-            </p>
-          )}
+          {(() => {
+            const dateRef = activity.completedAt ?? activity.dueDate;
+            if (!dateRef) return null;
+            const label = activity.completedAt ? (activity.emailFromAddress ? "Recebido" : "Enviado") : "Vencimento";
+            return (
+              <p className="mt-2 flex items-center gap-2 text-xs text-gray-500 group-hover:text-gray-600">
+                <span>{label}: {formatDate(dateRef)} às {formatTime(dateRef)}</span>
+                <span className="text-gray-400">·</span>
+                <span className="text-gray-400 italic">{formatRelativeTime(dateRef)}</span>
+              </p>
+            );
+          })()}
         </Link>
 
         {/* Action buttons */}
