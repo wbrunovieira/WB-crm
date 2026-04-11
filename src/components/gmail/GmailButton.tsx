@@ -11,6 +11,8 @@ const GmailComposeModal = dynamic(() => import("./GmailComposeModal"), {
 interface GmailButtonProps {
   to: string;
   name: string;
+  companyName?: string;
+  senderName?: string;
   contactId?: string;
   leadId?: string;
   organizationId?: string;
@@ -21,6 +23,8 @@ interface GmailButtonProps {
 export default function GmailButton({
   to,
   name,
+  companyName,
+  senderName,
   contactId,
   leadId,
   organizationId,
@@ -43,6 +47,8 @@ export default function GmailButton({
           <GmailComposeModal
             to={to}
             name={name}
+            companyName={companyName}
+            senderName={senderName}
             contactId={contactId}
             leadId={leadId}
             organizationId={organizationId}
@@ -67,6 +73,8 @@ export default function GmailButton({
         <GmailComposeModal
           to={to}
           name={name}
+          companyName={companyName}
+          senderName={senderName}
           contactId={contactId}
           leadId={leadId}
           organizationId={organizationId}

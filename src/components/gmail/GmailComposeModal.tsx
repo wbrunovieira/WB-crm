@@ -2,7 +2,6 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
 import { X, Send, Loader2, Paperclip, FileText, ChevronDown, LayoutTemplate } from "lucide-react";
 import { sendGmailMessage } from "@/actions/gmail";
 import { getActiveGmailTemplates } from "@/actions/gmail-templates";
@@ -39,6 +38,7 @@ interface GmailComposeModalProps {
   to: string;
   name: string;
   companyName?: string;
+  senderName?: string;
   contactId?: string;
   leadId?: string;
   organizationId?: string;
@@ -58,6 +58,7 @@ export default function GmailComposeModal({
   to,
   name,
   companyName,
+  senderName,
   contactId,
   leadId,
   organizationId,
@@ -65,7 +66,6 @@ export default function GmailComposeModal({
   onClose,
 }: GmailComposeModalProps) {
   const router = useRouter();
-  const { data: session } = useSession();
   const [subject, setSubject] = useState("");
   const [cc, setCc] = useState("");
   const [showCc, setShowCc] = useState(false);
@@ -88,7 +88,7 @@ export default function GmailComposeModal({
       nome: name,
       email: to,
       empresa: companyName ?? "",
-      usuario: session?.user?.name ?? "",
+      usuario: senderName ?? "",
     };
     setSubject(applyVariables(template.subject, values));
     editorRef.current?.setHTML(applyVariables(template.body, values));
