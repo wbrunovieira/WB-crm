@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowDownUp, Calendar, Check, GripVertical, Loader2, MessageCircleReply, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock } from "lucide-react";
+import { AlertTriangle, ArrowDownUp, Calendar, Check, GripVertical, Loader2, MessageCircleReply, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock, Search } from "lucide-react";
 import dynamic from "next/dynamic";
 const GmailComposeModal = dynamic(() => import("@/components/gmail/GmailComposeModal"), { ssr: false });
 import { formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
@@ -112,6 +112,8 @@ function SortableActivityItem({
   leadContacts,
   typeConfig,
   receivedThreadIds,
+  hasPrev,
+  hasNext,
 }: {
   activity: Activity;
   isPending: (a: Activity) => boolean;
@@ -125,6 +127,8 @@ function SortableActivityItem({
   leadContacts: LeadContact[];
   typeConfig: Record<string, { label: string; bg: string; text: string; border: string; dot: string }>;
   receivedThreadIds: Set<string>;
+  hasPrev: boolean;
+  hasNext: boolean;
 }) {
   const {
     attributes,
@@ -134,6 +138,8 @@ function SortableActivityItem({
     transition,
     isDragging,
   } = useSortable({ id: activity.id });
+
+
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -146,7 +152,7 @@ function SortableActivityItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group rounded-lg border border-l-4 p-4 transition-all duration-200 ${
+      className={`relative group rounded-lg border border-l-4 p-4 transition-all duration-200 ${
         isDragging ? "shadow-xl ring-2 ring-purple-300" : ""
       } ${
         activity.failedAt
@@ -156,6 +162,14 @@ function SortableActivityItem({
             : `border-gray-200 ${typeConfig[activity.type]?.border ?? "border-l-gray-400"} hover:shadow-md bg-white`
       }`}
     >
+      {/* Thread connector lines */}
+      {hasPrev && (
+        <div className="absolute -top-3 left-6 h-3 w-0.5 bg-blue-300 z-10" />
+      )}
+      {hasNext && (
+        <div className="absolute -bottom-3 left-6 h-3 w-0.5 bg-blue-300 z-10" />
+      )}
+
       <div className="flex items-start gap-3">
         {/* Drag handle */}
         <button
@@ -415,6 +429,9 @@ export function LeadActivitiesList({
   const [outcomeReason, setOutcomeReason] = useState("");
   const [outcomeLoading, setOutcomeLoading] = useState(false);
   const [replyingToActivity, setReplyingToActivity] = useState<Activity | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [replyModal, setReplyModal] = useState(false);
   const [replyChannel, setReplyChannel] = useState("email");
   const [replyNotes, setReplyNotes] = useState("");
@@ -456,6 +473,11 @@ export function LeadActivitiesList({
   const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
     if (!over || active.id === over.id) return;
+
+    // Não permite reordenar atividades concluídas/falha/puladas
+    const activeActivity = orderedActivities.find((a) => a.id === active.id);
+    const overActivity = orderedActivities.find((a) => a.id === over.id);
+    if (!activeActivity || !overActivity || !isPending(activeActivity) || !isPending(overActivity)) return;
 
     const oldIndex = orderedActivities.findIndex((a) => a.id === active.id);
     const newIndex = orderedActivities.findIndex((a) => a.id === over.id);
@@ -637,6 +659,55 @@ export function LeadActivitiesList({
 
   const isPending = (a: Activity) => !a.completed && !a.failedAt && !a.skippedAt;
 
+  // Pending na ordem drag customizada; done ordenado por data de conclusão/falha/skip (mais recente primeiro)
+  const displayActivities = useMemo(() => {
+    const pending = orderedActivities.filter(isPending);
+    const done = [...orderedActivities]
+      .filter((a) => !isPending(a))
+      .sort((a, b) => {
+        const aDate = (a.completedAt ?? a.failedAt ?? a.skippedAt)?.getTime() ?? 0;
+        const bDate = (b.completedAt ?? b.failedAt ?? b.skippedAt)?.getTime() ?? 0;
+        return bDate - aDate;
+      });
+    return [...pending, ...done];
+  }, [orderedActivities]);
+
+  // Atividades filtradas por busca + tipo + status
+  const filteredActivities = useMemo(() => {
+    return displayActivities.filter((a) => {
+      if (filterType !== "all" && a.type !== filterType) return false;
+      if (filterStatus === "pending" && !isPending(a)) return false;
+      if (filterStatus === "completed" && (!a.completed || a.failedAt || a.skippedAt)) return false;
+      if (filterStatus === "failed" && !a.failedAt) return false;
+      if (filterStatus === "skipped" && !a.skippedAt) return false;
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        return (
+          a.subject.toLowerCase().includes(q) ||
+          (a.description ?? "").toLowerCase().includes(q) ||
+          (a.emailFromAddress ?? "").toLowerCase().includes(q) ||
+          (a.emailFromName ?? "").toLowerCase().includes(q)
+        );
+      }
+      return true;
+    });
+  }, [displayActivities, filterType, filterStatus, searchQuery]);
+
+  // Mapa de conectores de thread: hasPrev/hasNext para linhas visuais
+  const threadConnectors = useMemo(() => {
+    const map = new Map<string, { hasPrev: boolean; hasNext: boolean }>();
+    for (let i = 0; i < filteredActivities.length; i++) {
+      const a = filteredActivities[i];
+      if (!a.emailThreadId) continue;
+      const prev = filteredActivities[i - 1];
+      const next = filteredActivities[i + 1];
+      const hasPrev = prev?.emailThreadId === a.emailThreadId;
+      const hasNext = next?.emailThreadId === a.emailThreadId;
+      if (hasPrev || hasNext) map.set(a.id, { hasPrev, hasNext });
+    }
+    return map;
+  }, [filteredActivities]);
+
   // Set de threadIds de e-mails recebidos — usado para marcar respostas enviadas
   const receivedThreadIds = useMemo(
     () =>
@@ -692,14 +763,68 @@ export function LeadActivitiesList({
         </div>
       </div>
 
+      {/* Busca e filtros */}
+      {activities.length > 0 && (
+        <div className="mb-4 space-y-2">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-gray-400" />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar atividades..."
+              className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-600 focus:border-primary focus:outline-none"
+            >
+              <option value="all">Todos os tipos</option>
+              <option value="call">Ligação</option>
+              <option value="email">E-mail</option>
+              <option value="meeting">Reunião</option>
+              <option value="task">Tarefa</option>
+              <option value="whatsapp">WhatsApp</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="instagram_dm">Instagram DM</option>
+              <option value="physical_visit">Visita</option>
+            </select>
+            {(["all","pending","completed","failed","skipped"] as const).map((s) => (
+              <button
+                key={s}
+                onClick={() => setFilterStatus(s)}
+                className={`rounded-full px-3 py-1 text-xs font-medium transition-colors ${
+                  filterStatus === s
+                    ? "bg-purple-700 text-white"
+                    : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                }`}
+              >
+                {{ all:"Todas", pending:"Pendentes", completed:"Concluídas", failed:"Falha", skipped:"Puladas" }[s]}
+              </button>
+            ))}
+            {(searchQuery || filterType !== "all" || filterStatus !== "all") && (
+              <button
+                onClick={() => { setSearchQuery(""); setFilterType("all"); setFilterStatus("all"); }}
+                className="flex items-center gap-1 rounded-full px-2 py-1 text-xs text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-3 w-3" /> Limpar
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {activities.length === 0 ? (
         <div className="text-center py-8">
-          <p className="text-sm text-gray-500">
-            Nenhuma atividade registrada ainda.
-          </p>
-          <p className="mt-2 text-xs text-gray-400">
-            Adicione atividades para acompanhar o progresso deste lead.
-          </p>
+          <p className="text-sm text-gray-500">Nenhuma atividade registrada ainda.</p>
+          <p className="mt-2 text-xs text-gray-400">Adicione atividades para acompanhar o progresso deste lead.</p>
+        </div>
+      ) : filteredActivities.length === 0 ? (
+        <div className="text-center py-6">
+          <p className="text-sm text-gray-400">Nenhuma atividade encontrada para os filtros aplicados.</p>
         </div>
       ) : (
         <DndContext
@@ -708,27 +833,32 @@ export function LeadActivitiesList({
           onDragEnd={handleDragEnd}
         >
           <SortableContext
-            items={orderedActivities.map((a) => a.id)}
+            items={filteredActivities.map((a) => a.id)}
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-3">
-              {orderedActivities.map((activity) => (
-                <SortableActivityItem
-                  key={activity.id}
-                  activity={activity}
-                  isPending={isPending}
-                  loadingId={loadingId}
-                  handleToggle={handleToggle}
-                  openOutcomeModal={openOutcomeModal}
-                  handleRevert={handleRevert}
-                  openAssignModal={openAssignModal}
-                  openReplyModal={setReplyingToActivity}
-                  getContactNames={getContactNames}
-                  leadContacts={leadContacts}
-                  typeConfig={typeConfig}
-                  receivedThreadIds={receivedThreadIds}
-                />
-              ))}
+              {filteredActivities.map((activity) => {
+                const conn = threadConnectors.get(activity.id);
+                return (
+                  <SortableActivityItem
+                    key={activity.id}
+                    activity={activity}
+                    isPending={isPending}
+                    loadingId={loadingId}
+                    handleToggle={handleToggle}
+                    openOutcomeModal={openOutcomeModal}
+                    handleRevert={handleRevert}
+                    openAssignModal={openAssignModal}
+                    openReplyModal={setReplyingToActivity}
+                    getContactNames={getContactNames}
+                    leadContacts={leadContacts}
+                    typeConfig={typeConfig}
+                    receivedThreadIds={receivedThreadIds}
+                    hasPrev={conn?.hasPrev ?? false}
+                    hasNext={conn?.hasNext ?? false}
+                  />
+                );
+              })}
             </div>
           </SortableContext>
         </DndContext>
