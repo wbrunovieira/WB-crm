@@ -62,8 +62,17 @@ function extractBody(payload: gmail_v1.Schema$MessagePart): string {
   const html = parts.find((p) => p.mimeType === "text/html");
   if (html?.body?.data) {
     const raw = Buffer.from(html.body.data, "base64url").toString("utf-8");
-    // Remove tags HTML para preview simples
-    return raw.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+    // Remove tags HTML e decodifica entidades para preview limpo
+    return raw
+      .replace(/<[^>]+>/g, " ")
+      .replace(/&nbsp;/gi, " ")
+      .replace(/&amp;/gi, "&")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&quot;/gi, '"')
+      .replace(/&#39;/gi, "'")
+      .replace(/\s+/g, " ")
+      .trim();
   }
 
   return "";

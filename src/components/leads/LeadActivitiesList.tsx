@@ -72,7 +72,7 @@ function SortableActivityItem({
   openAssignModal: (e: React.MouseEvent, activity: Activity) => void;
   getContactNames: (ids: string | null) => string[];
   leadContacts: LeadContact[];
-  typeConfig: Record<string, { label: string; bg: string; text: string }>;
+  typeConfig: Record<string, { label: string; bg: string; text: string; border: string; dot: string }>;
 }) {
   const {
     attributes,
@@ -94,14 +94,14 @@ function SortableActivityItem({
     <div
       ref={setNodeRef}
       style={style}
-      className={`group rounded-lg border p-4 transition-all duration-200 ${
+      className={`group rounded-lg border border-l-4 p-4 transition-all duration-200 ${
         isDragging ? "shadow-xl ring-2 ring-purple-300" : ""
       } ${
         activity.failedAt
-          ? "border-red-200 bg-red-50/50"
+          ? "border-red-200 border-l-red-500 bg-red-50/50"
           : activity.skippedAt
-            ? "border-amber-200 bg-amber-50/50"
-            : "border-gray-200 hover:border-purple-300 hover:shadow-md bg-white"
+            ? "border-amber-200 border-l-amber-500 bg-amber-50/50"
+            : `border-gray-200 ${typeConfig[activity.type]?.border ?? "border-l-gray-400"} hover:shadow-md bg-white`
       }`}
     >
       <div className="flex items-start gap-3">
@@ -163,7 +163,8 @@ function SortableActivityItem({
           className="flex-1 min-w-0"
         >
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${typeConfig[activity.type]?.bg ?? "bg-gray-100"} ${typeConfig[activity.type]?.text ?? "text-gray-800"}`}>
+            <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ${typeConfig[activity.type]?.bg ?? "bg-gray-100"} ${typeConfig[activity.type]?.text ?? "text-gray-800"}`}>
+              <span className={`h-2 w-2 rounded-full ${typeConfig[activity.type]?.dot ?? "bg-gray-400"}`} />
               {typeConfig[activity.type]?.label ?? activity.type}
             </span>
             {activity.gotoCallId ? (
@@ -450,15 +451,16 @@ export function LeadActivitiesList({
     }
   };
 
-  const typeConfig: Record<string, { label: string; bg: string; text: string }> = {
-    call: { label: "Ligação", bg: "bg-blue-100", text: "text-blue-800" },
-    meeting: { label: "Reunião", bg: "bg-pink-100", text: "text-pink-800" },
-    email: { label: "E-mail", bg: "bg-purple-100", text: "text-purple-800" },
-    task: { label: "Tarefa", bg: "bg-amber-100", text: "text-amber-800" },
-    whatsapp: { label: "WhatsApp", bg: "bg-green-100", text: "text-green-800" },
-    linkedin: { label: "LinkedIn", bg: "bg-sky-100", text: "text-sky-800" },
-    instagram: { label: "Instagram", bg: "bg-rose-100", text: "text-rose-800" },
-    physical_visit: { label: "Visita", bg: "bg-teal-100", text: "text-teal-800" },
+  const typeConfig: Record<string, { label: string; bg: string; text: string; border: string; dot: string }> = {
+    call:           { label: "Ligação",      bg: "bg-violet-100", text: "text-violet-800", border: "border-l-violet-500",  dot: "bg-violet-500" },
+    meeting:        { label: "Reunião",      bg: "bg-amber-100",  text: "text-amber-800",  border: "border-l-amber-500",   dot: "bg-amber-500" },
+    email:          { label: "E-mail",       bg: "bg-blue-100",   text: "text-blue-800",   border: "border-l-blue-500",    dot: "bg-blue-500" },
+    task:           { label: "Tarefa",       bg: "bg-slate-100",  text: "text-slate-700",  border: "border-l-slate-400",   dot: "bg-slate-400" },
+    whatsapp:       { label: "WhatsApp",     bg: "bg-emerald-100",text: "text-emerald-800",border: "border-l-emerald-500", dot: "bg-emerald-500" },
+    linkedin:       { label: "LinkedIn",     bg: "bg-sky-100",    text: "text-sky-800",    border: "border-l-sky-600",     dot: "bg-sky-600" },
+    instagram_dm:   { label: "Instagram DM",bg: "bg-pink-100",   text: "text-pink-800",   border: "border-l-pink-500",    dot: "bg-pink-500" },
+    instagram:      { label: "Instagram",    bg: "bg-pink-100",   text: "text-pink-800",   border: "border-l-pink-500",    dot: "bg-pink-500" },
+    physical_visit: { label: "Visita",       bg: "bg-teal-100",   text: "text-teal-800",   border: "border-l-teal-500",    dot: "bg-teal-500" },
   };
 
   const handleToggle = async (e: React.MouseEvent, activityId: string) => {
