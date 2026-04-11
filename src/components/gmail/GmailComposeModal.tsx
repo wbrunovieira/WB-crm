@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { X, Send, Loader2 } from "lucide-react";
 import { sendGmailMessage } from "@/actions/gmail";
+import RichTextEditor, { RichTextEditorHandle } from "@/components/gmail/RichTextEditor";
 
 interface GmailComposeModalProps {
   to: string;
@@ -26,16 +27,16 @@ export default function GmailComposeModal({
 }: GmailComposeModalProps) {
   const router = useRouter();
   const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
   const [cc, setCc] = useState("");
   const [showCc, setShowCc] = useState(false);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const editorRef = useRef<RichTextEditorHandle>(null);
 
   async function handleSend() {
-    if (!subject.trim() || !body.trim()) {
+    const bodyEmpty = editorRef.current?.isEmpty() ?? true;
+    if (!subject.trim() || bodyEmpty) {
       setError("Preencha o assunto e o corpo do e-mail.");
       return;
     }
@@ -44,11 +45,8 @@ export default function GmailComposeModal({
     setError(null);
 
     try {
-      // Converte quebras de linha em HTML simples
-      const html = `<div style="font-family: sans-serif; font-size: 14px; line-height: 1.5;">${body
-        .split("\n")
-        .map((line) => `<p style="margin: 0 0 8px;">${line || "&nbsp;"}</p>`)
-        .join("")}</div>`;
+      const rawHtml = editorRef.current?.getHTML() ?? "";
+      const html = `<div style="font-family: sans-serif; font-size: 14px; line-height: 1.5;">${rawHtml}</div>`;
 
       const result = await sendGmailMessage({
         to,
@@ -74,7 +72,7 @@ export default function GmailComposeModal({
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLDivElement>) {
     if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
       e.preventDefault();
       handleSend();
@@ -138,15 +136,13 @@ export default function GmailComposeModal({
         </div>
 
         {/* Body */}
-        <textarea
-          ref={textareaRef}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder="Escreva sua mensagem..."
-          rows={10}
-          className="flex-1 resize-none px-3 py-3 text-sm text-gray-900 outline-none placeholder:text-gray-400"
-        />
+        <div className="flex-1 px-3 py-2">
+          <RichTextEditor
+            ref={editorRef}
+            onKeyDown={handleKeyDown}
+            minHeight={200}
+          />
+        </div>
 
         {/* Error */}
         {error && (
