@@ -94,133 +94,109 @@ src/
 
 ## Plano de Implementação por Etapas
 
-### FASE 1 - Fundação (Semana 1-2) ✅ CONCLUÍDA
+### FASE 1 - Fundação ✅ CONCLUÍDA
 
-#### Etapa 1.1: Setup Inicial ✅
+- [x] Next.js 14+, TypeScript, Tailwind CSS v4, ESLint/Prettier
+- [x] PostgreSQL via Docker, Prisma, migrations, seed
+- [x] NextAuth.js com Credentials provider + middleware de proteção de rotas
+- [x] Dashboard básico com layout
 
-- [x] Inicializar projeto Next.js com TypeScript
-- [x] Configurar Tailwind CSS v4 (nova configuração CSS-based)
-- [x] Configurar ESLint e Prettier
-- [x] Configurar variáveis de ambiente
+### FASE 2 - Entidades Core ✅ CONCLUÍDA
 
-#### Etapa 1.2: Banco de Dados ✅
+- [x] CRUD de Contatos, Organizações, Negócios, Atividades
+- [x] Pipeline Kanban com drag-and-drop (@dnd-kit)
+- [x] Calendário de atividades
+- [x] Sistema de Leads com LeadContacts e conversão Lead → Organization / LeadContact → Contact
+- [x] Partners (agência, consultoria, indicador, etc.) com atividades e referrals
+- [x] Papéis de usuário (admin / sdr / closer) com isolamento de dados por `ownerId`
+- [x] Compartilhamento de entidades entre usuários (SharedEntity)
 
-- [x] Configurar SQLite (ambiente local simplificado)
-- [x] Configurar Prisma
-- [x] Criar schema completo (User, Organization, Contact, Deal, Pipeline, Stage, Activity)
-- [x] Gerar e executar migrations
-- [x] Criar seed com usuário teste e pipeline padrão
+### FASE 3 - Integrações de Comunicação ✅ CONCLUÍDA
 
-#### Etapa 1.3: Autenticação ✅
+#### WhatsApp via Evolution API ✅
 
-- [x] Configurar NextAuth.js com Prisma Adapter
-- [x] Criar páginas de login/registro
-- [x] Implementar middleware de autenticação
-- [x] Proteger rotas do dashboard
-- [x] Criar dashboard básico com layout
+- [x] Webhook `MESSAGES_UPSERT`: mensagens enviadas e recebidas geram Activity automaticamente
+- [x] Agrupamento em sessões de 2 horas (`WhatsAppMessage` + Activity por sessão)
+- [x] Botão "Enviar WhatsApp" com modal de envio, emojis, templates e histórico
+- [x] Timeline estilo chat com bolinhas e expand de sessões
 
-### FASE 2 - Funcionalidades Básicas (Semana 3-4)
+#### Gmail via Google API ✅
 
-#### Etapa 2.1: Gestão de Contatos ✅
+- [x] OAuth2 com conta única da empresa (token persistido em `GoogleToken`)
+- [x] Envio de e-mail com editor rich text, anexos e templates com variáveis dinâmicas
+- [x] Recebimento automático via polling (5 min) — e-mail de lead/contato gera Activity
+- [x] Reply com threadId (encadeia na thread Gmail correta)
+- [x] Badges visuais: "Aguardando resposta" / "Respondido" / "Resposta enviada"
+- [x] Botão de sincronização manual em páginas de Lead e Organization
+- [x] Thread connector — linha visual ligando cards da mesma cadeia de respostas
+- [x] Busca por texto + filtros por tipo e status nas listas de atividade
+- [x] Ordenação: pendentes por drag-and-drop; concluídas/falhas/puladas por data de resolução
 
-- [x] CRUD de contatos (Create, Read, Update, Delete)
-- [x] Listagem de contatos com busca
-- [x] Formulário de criação/edição de contato
-- [x] Visualização detalhada de contato com negócios e atividades
+### FASE 4 - Dados Avançados ✅ CONCLUÍDA
 
-#### Etapa 2.2: Gestão de Organizações ✅
+- [x] Classificações CNAE (primária + secundárias) para Lead e Organization
+- [x] Tech Profile: rastrear stack atual de Leads e Organizations (linguagens, frameworks, hosting, banco, ERP, CRM, e-commerce)
+- [x] Tech Stack em Deals: categorias, linguagens e frameworks requeridos
+- [x] Produtos e Linhas de Negócio (admin) com vínculos a Lead, Organization, Deal e Partner
+- [x] Área admin: `/admin` para Business Lines, Products, Tech Stack, Tech Profile, Gmail Templates
+- [x] Integração com projetos externos via API e `externalProjectIds` (JSON) em Organization
+- [x] ICP (Ideal Customer Profile) scoring em Organizations
 
-- [x] CRUD de organizações
-- [x] Listagem de organizações com contadores
-- [x] Vincular contatos a organizações via dropdown
-- [x] Visualização detalhada de organização com contatos e negócios
+### FASE 5 - Google Drive + Propostas 🔲 PRÓXIMA
 
-### FASE 3 - Pipeline de Vendas (Semana 5-6) ✅ CONCLUÍDA
+**Objetivo**: armazenar propostas, gravações e anexos organizados no Google Drive, com envio de proposta diretamente pelo CRM.
 
-#### Etapa 3.1: Estrutura do Pipeline ✅
+#### 5.1 — Drive: estrutura de pastas + upload
 
-- [x] CRUD de pipelines
-- [x] CRUD de estágios (stages)
-- [x] Configurar pipeline padrão
-- [x] Função de reordenar estágios (backend pronto)
+- [ ] `src/lib/google/drive.ts` — `getOrCreateFolder`, `uploadFile`, `getFileUrl`, `deleteFile`
+- [ ] `src/lib/google/drive-folders.ts` — `getEntityFolder(entityType, entityId)` cria/recupera pasta `WB-CRM/[Tipo]/[Nome]/` e persiste `driveFolderId` no banco
+- [ ] Campos `driveFolderId` em Lead e Organization (migration)
 
-#### Etapa 3.2: Gestão de Negócios (Deals) ✅
+#### 5.2 — Propostas para Leads e Deals
 
-- [x] CRUD de negócios
-- [x] Vincular negócios a contatos/organizações
-- [x] Atribuir negócios a estágios
-- [x] Listagem de negócios em tabela
+- [ ] Model `Proposal` no Prisma (title, status, driveFileId, driveUrl, leadId, dealId)
+- [ ] Server actions: `createProposal`, `uploadProposalFile`, `sendProposalByEmail`, `updateProposalStatus`, `deleteProposal`
+- [ ] `ProposalUploadModal` — upload de PDF, título, status, botão "Salvar no Drive"
+- [ ] `ProposalsList` — lista de propostas com link para Drive e botão de envio por e-mail
+- [ ] Seção "Propostas" nas páginas de Lead e Deal
 
-### FASE 4 - Visualização do Pipeline (Semana 7-8) ✅ CONCLUÍDA
+**Status de proposta**: `draft` (cinza) → `sent` (azul) → `accepted` (verde) | `rejected` (vermelho)
 
-#### Etapa 4.1: Interface Kanban ✅
+#### Testes (TDD)
 
-- [x] Criar layout Kanban com colunas por estágio
-- [x] Exibir cards de negócios em cada estágio
-- [x] Mostrar valor total por estágio
-- [x] Indicadores visuais de status
+- [ ] `tests/unit/lib/google/drive.test.ts`
+- [ ] `tests/unit/actions/proposals.test.ts`
 
-#### Etapa 4.2: Drag & Drop ✅
+### FASE 6 - Google Meet: agendamento e gravações 🔲
 
-- [x] Implementar drag & drop entre estágios
-- [x] Atualizar status do negócio ao mover
-- [x] Animações de transição
-- [x] Feedback visual durante drag
+- [ ] `src/lib/google/calendar.ts` — `createMeetEvent`, `cancelMeetEvent`
+- [ ] `src/actions/meetings.ts` — `scheduleMeeting`, `cancelMeeting`, `getMeetings`
+- [ ] `ScheduleMeetingModal` — título, data/hora, e-mails convidados pré-preenchidos
+- [ ] `MeetingsList` — reuniões futuras e passadas com botão "Entrar no Meet"
+- [ ] Activity do tipo `meeting` gerada automaticamente ao agendar
+- [ ] Detecção automática de gravações no Drive (cron 15 min) → `recordingDriveId`
+- [ ] Player de gravação na seção da reunião
 
-### FASE 5 - Atividades (Semana 9-10) ✅ CONCLUÍDA
+### FASE 7 - WhatsApp: matching avançado + mídia 🔲
 
-#### Etapa 5.1: Gestão de Atividades ✅
+- [ ] Matching de números desconhecidos: sugestão de vínculo manual ao usuário
+- [ ] Mídia (áudio, imagem, documento) → download → Google Drive → link permanente
+- [ ] Transcrição de áudios via Whisper API (mesma pipeline futura do GoTo)
 
-- [x] CRUD de atividades (call, meeting, email, task)
-- [x] Vincular atividades a negócios/contatos
-- [x] Agendar atividades com data/hora
-- [x] Marcar atividades como concluídas
+### FASE 8 - Dashboard e Relatórios 🔲
 
-#### Etapa 5.2: Timeline e Calendário ✅
+- [ ] Métricas principais (deals ganhos/perdidos/em andamento por período)
+- [ ] Gráfico de funil de conversão por estágio
+- [ ] Atividades do dia e próximas ao vencimento
+- [ ] Relatório de performance por usuário (SDR vs Closer)
+- [ ] Exportação CSV
 
-- [x] Timeline de atividades por negócio
-- [x] Visualização em calendário
-- [x] Filtros por tipo e status
-- [ ] Notificações de atividades pendentes (não implementado)
+### FASE 9 - GoTo Connect: chamadas e voicemail 🔲
 
-### FASE 6 - Dashboard e Relatórios (Semana 11-12)
-
-#### Etapa 6.1: Dashboard Principal
-
-- [ ] Métricas principais (negócios ganhos, perdidos, em andamento)
-- [ ] Gráfico de funil de vendas
-- [ ] Atividades do dia
-- [ ] Negócios próximos ao fechamento
-
-#### Etapa 6.2: Relatórios Básicos
-
-- [ ] Relatório de performance por usuário
-- [ ] Relatório de conversão por estágio
-- [ ] Exportação de dados (CSV)
-- [ ] Filtros por período
-
-### FASE 7 - Melhorias e Polimento (Semana 13-14)
-
-#### Etapa 7.1: UX/UI
-
-- [ ] Responsividade mobile
-- [ ] Loading states e skeleton screens
-- [ ] Mensagens de erro amigáveis
-- [ ] Toasts de sucesso/erro
-
-#### Etapa 7.2: Performance
-
-- [ ] Otimizar queries do Prisma
-- [ ] Implementar paginação
-- [ ] Caching com React Query (opcional)
-- [ ] Otimizar imagens e assets
-
-#### Etapa 7.3: Funcionalidades Extras
-
-- [ ] Busca global
-- [ ] Filtros avançados
-- [ ] Comentários em negócios
-- [ ] Upload de arquivos (anexos)
+- [ ] OAuth GoTo Connect + persistência de token
+- [ ] Webhook de chamadas → Activity do tipo `call` com duração
+- [ ] Gravações de chamada → download → Drive + transcrição Whisper
+- [ ] Clique para ligar (Click-to-Call) do perfil do Lead/Contato
 
 ## Fluxo de Dados
 
@@ -285,7 +261,10 @@ NEXTAUTH_URL="http://localhost:3000"
 
 ## Próximos Passos
 
-1. Inicializar projeto Next.js: `npx create-next-app@latest wb-crm`
-2. Configurar dependências principais
-3. Começar pela Fase 1 - Etapa 1.1
-4. Implementar de forma iterativa, testando cada funcionalidade antes de avançar
+**Fase atual**: FASE 5 — Google Drive + Propostas
+
+1. Criar migration adicionando `driveFolderId` em Lead e Organization
+2. Implementar `src/lib/google/drive.ts` com TDD (`tests/unit/lib/google/drive.test.ts`)
+3. Implementar `src/lib/google/drive-folders.ts` — helper de pasta por entidade
+4. Criar model `Proposal` + migration + server actions (TDD)
+5. Construir `ProposalUploadModal` e `ProposalsList` + seção nas páginas de Lead e Deal
