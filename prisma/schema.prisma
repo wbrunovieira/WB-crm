@@ -574,6 +574,8 @@ model Activity {
   @@index([leadId])
   @@index([partnerId])
   gotoCallId       String?  @unique // GoTo conversationSpaceId — previne Activity duplicada
+  emailMessageId   String?  @unique // Gmail Message-ID — previne Activity duplicada
+  emailSubject     String?           // Assunto do e-mail (para busca e exibição)
 
   whatsappMessages WhatsAppMessage[]
 
@@ -1660,6 +1662,20 @@ model Notification {
   @@index([read])
   @@index([jobId])
   @@map("notifications")
+}
+
+model GoogleToken {
+  id           String   @id @default(cuid())
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String
+  email           String   // email da conta Google conectada
+  gmailHistoryId  String?  // último historyId processado pelo polling (Fase 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("google_tokens")
 }
 
 model WhatsAppTemplate {

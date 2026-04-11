@@ -1,6 +1,7 @@
 import { getLeadById } from "@/actions/leads";
 import { PhoneLink } from "@/components/ui/phone-link";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
+import GmailButton from "@/components/gmail/GmailButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
 import { ArchiveLeadButton } from "@/components/leads/ArchiveLeadButton";
@@ -235,8 +236,11 @@ export default async function LeadDetailPage({
             {lead.email && (
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Email</dt>
-                <dd className="text-base text-gray-700 hover:text-purple-600 hover:underline font-medium">
-                  <a href={`mailto:${lead.email}`}>{lead.email}</a>
+                <dd className="flex items-center gap-2 text-base text-gray-700 font-medium">
+                  <a href={`mailto:${lead.email}`} className="hover:text-purple-600 hover:underline">
+                    {lead.email}
+                  </a>
+                  <GmailButton to={lead.email} name={lead.businessName} leadId={lead.id} variant="icon" />
                 </dd>
               </div>
             )}

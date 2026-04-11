@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package, Briefcase, Code, Database, Target, Zap, MessageSquare } from "lucide-react";
+import { Package, Briefcase, Code, Database, Target, Zap, MessageSquare, Mail } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -133,6 +133,26 @@ export default function AdminPage() {
             </div>
           </div>
         </Link>
+        {/* Google Integration Card */}
+        <Link
+          href="/admin/google"
+          className="group block rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-all hover:border-blue-500"
+        >
+          <div className="flex items-center gap-4">
+            <div className="rounded-lg bg-blue-100 p-3 group-hover:bg-blue-600 transition-colors">
+              <Mail className="h-6 w-6 text-blue-600 group-hover:text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-blue-600">
+                Google
+              </h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Conecte Gmail, Drive e Meet
+              </p>
+            </div>
+          </div>
+        </Link>
+
         {/* WhatsApp Templates Card */}
         <Link
           href="/admin/whatsapp-templates"

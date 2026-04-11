@@ -1,6 +1,7 @@
 import { getContactById } from "@/actions/contacts";
 import { PhoneLink } from "@/components/ui/phone-link";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
+import GmailButton from "@/components/gmail/GmailButton";
 import { DeleteContactButton } from "@/components/contacts/DeleteContactButton";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
@@ -51,8 +52,15 @@ export default async function ContactDetailPage({
           <dl className="space-y-4">
             <div>
               <dt className="text-sm font-medium text-gray-500">Email</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {contact.email || "-"}
+              <dd className="mt-1 flex items-center gap-2 text-sm text-gray-900">
+                {contact.email ? (
+                  <>
+                    <a href={`mailto:${contact.email}`} className="hover:text-primary hover:underline">
+                      {contact.email}
+                    </a>
+                    <GmailButton to={contact.email} name={contact.name} contactId={contact.id} variant="icon" />
+                  </>
+                ) : "-"}
               </dd>
             </div>
             <div>
