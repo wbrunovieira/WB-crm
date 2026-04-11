@@ -506,8 +506,12 @@ npm install googleapis google-auth-library
 | 1c | Gmail: templates com variáveis dinâmicas (`/admin/gmail-templates`) | ✅ Concluída |
 | 1c-fix | Gmail: crash ao abrir modal (useSession sem SessionProvider → senderName prop) | ✅ Concluída |
 | 2 | Gmail: recebimento automático via polling + vínculo LeadContact | ✅ Concluída |
-| 2a | Gmail: reply a e-mails recebidos (com threadId) | 🔲 Pendente |
-| 2b | Gmail: indicador visual "aguardando resposta" | 🔲 Pendente |
+| 2a | Gmail: reply a e-mails recebidos (com threadId) | ✅ Concluída |
+| 2b | Gmail: indicador visual "aguardando resposta" / "respondido" / "resposta enviada" | ✅ Concluída |
+| 2c | Gmail: sincronização manual (botão Sync em Lead e Organization) | ✅ Concluída |
+| 2d | Gmail: thread connector visual entre cards da mesma cadeia de respostas | ✅ Concluída |
+| 2e | Gmail: busca + filtros de atividades (tipo, status, texto) | ✅ Concluída |
+| 2f | Gmail: ordenação — pendentes por drag-and-drop; concluídas/falhas/puladas por data de resolução | ✅ Concluída |
 | 3 | Drive: estrutura de pastas + Propostas para Leads | 🔲 Pendente |
 | 4 | Meet: agendamento de reuniões com convite | 🔲 Pendente |
 | 5 | Meet: gravações detectadas e exibidas no perfil | 🔲 Pendente |
