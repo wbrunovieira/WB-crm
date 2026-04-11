@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
+import { google } from "googleapis";
 import { isInternalRequest, getSessionOrInternal } from "@/lib/internal-auth";
 import { getStoredToken, updateHistoryId } from "@/lib/google/token-store";
+import { getAuthenticatedClient } from "@/lib/google/auth";
 import { pollNewEmails } from "@/lib/google/gmail-poller";
 import { processIncomingEmail } from "@/lib/google/email-activity-creator";
 import { logger } from "@/lib/logger";
@@ -31,19 +33,31 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  // Se não há historyId salvo, inicializar com historyId atual (sem processar passado)
+  // Primeiro poll: buscar historyId atual via getProfile (historyId=1 é inválido na API)
   if (!token.gmailHistoryId) {
-    log.info("Primeiro poll: inicializando historyId sem processar e-mails anteriores");
+    log.info("Primeiro poll: obtendo historyId atual via getProfile");
 
-    // Faz um poll vazio apenas para obter o historyId atual
-    const { newHistoryId } = await pollNewEmails("1");
-    await updateHistoryId(newHistoryId);
+    try {
+      const auth = await getAuthenticatedClient();
+      const gmail = google.gmail({ version: "v1", auth });
+      const profile = await gmail.users.getProfile({ userId: "me" });
+      const currentHistoryId = profile.data.historyId!;
 
-    return NextResponse.json({
-      processed: 0,
-      message: "historyId inicializado — próximo poll processará novos e-mails",
-      newHistoryId,
-    });
+      await updateHistoryId(currentHistoryId);
+
+      log.info("historyId inicializado", { currentHistoryId });
+
+      return NextResponse.json({
+        processed: 0,
+        message: "historyId inicializado — próximo poll processará novos e-mails",
+        newHistoryId: currentHistoryId,
+      });
+    } catch (err) {
+      log.error("Falha ao obter historyId inicial", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+      return NextResponse.json({ error: "Falha ao inicializar historyId" }, { status: 500 });
+    }
   }
 
   try {
@@ -51,7 +65,6 @@ export async function GET(req: NextRequest) {
 
     let processed = 0;
 
-    // Buscar o ownerId do admin para vincular as Activities
     const { prisma } = await import("@/lib/prisma");
     const adminUser = await prisma.user.findFirst({
       where: { role: "admin" },
@@ -74,7 +87,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    // Persistir novo historyId para o próximo poll
     await updateHistoryId(newHistoryId);
 
     log.info("Poll Gmail concluído", { processed, newHistoryId });
