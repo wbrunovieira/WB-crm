@@ -131,6 +131,11 @@ export default function GmailComposeModal({
         attachments: attachments.length > 0 ? attachments : undefined,
       });
 
+      if (!result) {
+        setError("O servidor não respondeu. O anexo pode ser grande demais — tente sem o anexo ou use um arquivo menor.");
+        return;
+      }
+
       if (result.success) {
         setSent(true);
         router.refresh();
