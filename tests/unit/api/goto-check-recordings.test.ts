@@ -2,17 +2,15 @@
  * GoTo Check Recordings Cron Tests
  *
  * Tests for src/app/api/goto/check-recordings/route.ts
- * RULE: When a test fails, fix the IMPLEMENTATION, never the test.
+ * Pipeline: S3 → WB Transcritor (no Google Drive)
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { NextRequest } from "next/server";
 
-vi.mock("@/lib/goto/recording-downloader", () => ({
-  downloadCallRecording: vi.fn(),
-}));
-vi.mock("@/lib/google/goto-drive-uploader", () => ({
-  uploadCallRecordingToDrive: vi.fn(),
+vi.mock("@/lib/goto/s3-recording", () => ({
+  findRecordingKey: vi.fn(),
+  downloadRecordingFromS3: vi.fn(),
 }));
 vi.mock("@/lib/transcriptor", () => ({
   submitAudioForTranscription: vi.fn(),
@@ -20,8 +18,7 @@ vi.mock("@/lib/transcriptor", () => ({
   getTranscriptionResult: vi.fn(),
 }));
 
-import { downloadCallRecording } from "@/lib/goto/recording-downloader";
-import { uploadCallRecordingToDrive } from "@/lib/google/goto-drive-uploader";
+import { findRecordingKey, downloadRecordingFromS3 } from "@/lib/goto/s3-recording";
 import {
   submitAudioForTranscription,
   getTranscriptionStatus,
@@ -29,8 +26,8 @@ import {
 } from "@/lib/transcriptor";
 import { prismaMock } from "../../setup";
 
-const mockDownload = vi.mocked(downloadCallRecording);
-const mockUpload = vi.mocked(uploadCallRecordingToDrive);
+const mockFindKey = vi.mocked(findRecordingKey);
+const mockDownload = vi.mocked(downloadRecordingFromS3);
 const mockSubmit = vi.mocked(submitAudioForTranscription);
 const mockStatus = vi.mocked(getTranscriptionStatus);
 const mockResult = vi.mocked(getTranscriptionResult);
@@ -44,12 +41,10 @@ function makeRequest(secret = "test-secret"): NextRequest {
 beforeEach(() => {
   vi.clearAllMocks();
   process.env.CRON_SECRET = "test-secret";
+  process.env.AWS_S3_GOTO_BUCKET = "wb-crm-goto-recordings";
 
+  mockFindKey.mockResolvedValue("2026/04/12/timestamp~callId~phone~phone~rec-abc.mp3");
   mockDownload.mockResolvedValue({ buffer: Buffer.from("audio"), contentType: "audio/mpeg" });
-  mockUpload.mockResolvedValue({
-    fileId: "drive-file-xyz",
-    webViewLink: "https://drive.google.com/file/d/drive-file-xyz/view",
-  });
   mockSubmit.mockResolvedValue({ jobId: "job-abc", status: "pending" });
 });
 
@@ -68,17 +63,13 @@ describe("GET /api/goto/check-recordings — auth", () => {
   });
 });
 
-describe("Pass 1 — download + upload + submit transcription", () => {
-  it("processa activity com gotoRecordingId sem Drive ID", async () => {
+describe("Pass 1 — find in S3 + submit transcription", () => {
+  it("processa activity com gotoRecordingId sem gotoRecordingUrl", async () => {
     prismaMock.activity.findMany
       .mockResolvedValueOnce([
-        {
-          id: "act-1",
-          gotoRecordingId: "rec-abc",
-          subject: "Ligação realizada",
-        },
+        { id: "act-1", gotoRecordingId: "rec-abc", completedAt: new Date() },
       ] as never)
-      .mockResolvedValueOnce([] as never); // Pass 2: no pending jobs
+      .mockResolvedValueOnce([] as never);
 
     prismaMock.activity.update.mockResolvedValue({} as never);
 
@@ -86,20 +77,15 @@ describe("Pass 1 — download + upload + submit transcription", () => {
     const res = await GET(makeRequest());
     const body = await res.json();
 
-    expect(mockDownload).toHaveBeenCalledWith("rec-abc");
-    expect(mockUpload).toHaveBeenCalledWith(
-      expect.any(Buffer),
-      expect.stringContaining("act-1"),
-      "audio/mpeg"
-    );
-    expect(mockSubmit).toHaveBeenCalled();
+    expect(mockFindKey).toHaveBeenCalledWith("rec-abc", expect.any(Date));
+    expect(mockDownload).toHaveBeenCalledWith("2026/04/12/timestamp~callId~phone~phone~rec-abc.mp3");
+    expect(mockSubmit).toHaveBeenCalledWith(expect.any(Buffer), expect.stringContaining("act-1"));
 
     expect(prismaMock.activity.update).toHaveBeenCalledWith(
       expect.objectContaining({
         where: { id: "act-1" },
         data: expect.objectContaining({
-          gotoRecordingDriveId: "drive-file-xyz",
-          gotoRecordingUrl: "https://drive.google.com/file/d/drive-file-xyz/view",
+          gotoRecordingUrl: "2026/04/12/timestamp~callId~phone~phone~rec-abc.mp3",
           gotoTranscriptionJobId: "job-abc",
         }),
       })
@@ -107,20 +93,35 @@ describe("Pass 1 — download + upload + submit transcription", () => {
 
     expect(body.pass1Processed).toBe(1);
   });
+
+  it("marca s3_not_found_yet quando arquivo ainda não chegou no S3", async () => {
+    mockFindKey.mockResolvedValue(null);
+
+    prismaMock.activity.findMany
+      .mockResolvedValueOnce([
+        { id: "act-1", gotoRecordingId: "rec-abc", completedAt: new Date() },
+      ] as never)
+      .mockResolvedValueOnce([] as never);
+
+    const { GET } = await import("@/app/api/goto/check-recordings/route");
+    const res = await GET(makeRequest());
+    const body = await res.json();
+
+    expect(mockDownload).not.toHaveBeenCalled();
+    expect(mockSubmit).not.toHaveBeenCalled();
+    expect(body.results[0].action).toBe("s3_not_found_yet");
+  });
 });
 
 describe("Pass 2 — poll transcription jobs", () => {
   it("salva transcript quando job está done", async () => {
     prismaMock.activity.findMany
-      .mockResolvedValueOnce([] as never) // Pass 1: no pending downloads
+      .mockResolvedValueOnce([] as never)
       .mockResolvedValueOnce([
         { id: "act-2", gotoTranscriptionJobId: "job-done-123" },
       ] as never);
 
-    mockStatus.mockResolvedValueOnce({
-      jobId: "job-done-123",
-      status: "done",
-    });
+    mockStatus.mockResolvedValueOnce({ jobId: "job-done-123", status: "done" });
     mockResult.mockResolvedValueOnce({
       jobId: "job-done-123",
       text: "Olá, vamos falar sobre o contrato?",

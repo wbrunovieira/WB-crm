@@ -13,7 +13,7 @@ type Activity = {
   completedAt?: Date | null;
   createdAt: Date;
   gotoCallId?: string | null;
-  gotoRecordingDriveId?: string | null;
+  gotoRecordingUrl?: string | null;
   gotoTranscriptText?: string | null;
   deal?: {
     id: string;
@@ -350,7 +350,7 @@ function ActivityItem({ activity, showLinks }: { activity: Activity; showLinks: 
         )}
 
         {/* GoTo: audio player + transcript */}
-        {isGoto && activity.gotoRecordingDriveId && (
+        {isGoto && activity.gotoRecordingUrl && (
           <div className="mt-2 space-y-2">
             <audio
               controls
