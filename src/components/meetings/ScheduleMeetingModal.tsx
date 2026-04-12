@@ -248,7 +248,7 @@ export default function ScheduleMeetingModal({
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="Ex: Apresentação da proposta"
+                placeholder="Ex: ClienteABC - Apresentação da proposta - 13/04"
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
               />
             </div>
