@@ -32,25 +32,52 @@ export interface MeetingFiles {
  * We search by title prefix (first 15 chars) without date filter to avoid missing
  * files created before or after scheduled start time.
  */
-export async function findMeetingFiles(meetingTitle: string): Promise<MeetingFiles> {
+export async function findMeetingFiles(
+  meetingTitle: string,
+  scheduledStartAt: Date
+): Promise<MeetingFiles> {
   const auth = await getAuthenticatedClient();
   const drive = google.drive({ version: "v3", auth });
 
-  // Use first 15 chars — enough to identify the meeting, short enough to avoid escaping issues
-  const titlePrefix = meetingTitle.slice(0, 15).replace(/'/g, "\\'");
+  // Search only in "Meet Recordings" folder — where Google Meet always saves files
+  const folderRes = await drive.files.list({
+    q: `name = 'Meet Recordings' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+    fields: "files(id)",
+    pageSize: 1,
+  });
+
+  const meetFolder = folderRes.data.files?.[0];
+
+  // Recordings can appear up to 2 hours after the meeting, but must be created
+  // no earlier than 2 hours before the scheduled start
+  const minTime = new Date(scheduledStartAt.getTime() - 2 * 60 * 60 * 1000).toISOString();
+
+  const folderFilter = meetFolder
+    ? `'${meetFolder.id}' in parents and`
+    : "";
 
   const res = await drive.files.list({
-    q: `name contains '${titlePrefix}' and trashed = false`,
+    q: `${folderFilter} trashed = false and createdTime > '${minTime}'`,
     fields: "files(id, name, webViewLink, createdTime, mimeType)",
     orderBy: "createdTime desc",
-    pageSize: 20,
+    pageSize: 30,
   });
 
   const files = res.data.files ?? [];
 
-  const recording = files.find((f) => f.mimeType === "video/mp4") ?? null;
+  // Google Meet names files exactly as "[Title] - YYYY/MM/DD HH:MM GMT±N - Recording"
+  // Use startsWith for precise match — avoids picking up other meetings with similar titles
+  const titleLower = meetingTitle.toLowerCase();
+  const titleMatches = files.filter((f) =>
+    f.name?.toLowerCase().startsWith(titleLower)
+  );
+
+  // Fall back to all files in the folder only if no title match
+  const candidates = titleMatches.length > 0 ? titleMatches : files;
+
+  const recording = candidates.find((f) => f.mimeType === "video/mp4") ?? null;
   const nativeTranscript =
-    files.find(
+    candidates.find(
       (f) =>
         f.mimeType === "application/vnd.google-apps.document" ||
         f.mimeType === "text/plain"
