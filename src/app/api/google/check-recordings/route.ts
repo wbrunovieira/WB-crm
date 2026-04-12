@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { findMeetingRecording, moveRecordingToFolder } from "@/lib/google/recording-detector";
+import { findMeetingFiles, moveRecordingToFolder } from "@/lib/google/recording-detector";
 import { getMeetEvent, extractAttendees } from "@/lib/google/calendar";
 import { getAuthenticatedClient } from "@/lib/google/auth";
 import { google } from "googleapis";
@@ -85,12 +85,26 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      // 5. Search for recording in Drive
-      const recording = await findMeetingRecording(meeting.googleEventId);
+      // 5. Search for recording + native transcript in Drive (by meeting title)
+      const { recording, nativeTranscript } = await findMeetingFiles(
+        meeting.title,
+        new Date(meeting.startAt.getTime() - 5 * 60 * 1000) // 5 min before scheduled start
+      );
+
+      // Save native transcript URL if Google Meet generated one
+      if (nativeTranscript) {
+        await prisma.meeting.update({
+          where: { id: meeting.id },
+          data: { nativeTranscriptUrl: nativeTranscript.webViewLink },
+        });
+      }
 
       if (!recording) {
         // Recording not ready yet — retry next cycle
-        results.push({ meetingId: meeting.id, action: "ended_no_recording_yet" });
+        results.push({
+          meetingId: meeting.id,
+          action: nativeTranscript ? "ended_native_transcript_found_no_recording_yet" : "ended_no_recording_yet",
+        });
         continue;
       }
 
