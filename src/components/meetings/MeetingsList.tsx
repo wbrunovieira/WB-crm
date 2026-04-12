@@ -174,6 +174,7 @@ export default function MeetingsList({
                   <MeetingCard
                     key={m.id}
                     meeting={m}
+                    suggestedContacts={suggestedContacts}
                     expandedTranscript={expandedTranscript}
                     onToggleTranscript={setExpandedTranscript}
                     onCancel={handleCancel}
@@ -195,6 +196,7 @@ export default function MeetingsList({
                   <MeetingCard
                     key={m.id}
                     meeting={m}
+                    suggestedContacts={suggestedContacts}
                     expandedTranscript={expandedTranscript}
                     onToggleTranscript={setExpandedTranscript}
                     onCancel={handleCancel}
@@ -243,17 +245,20 @@ export default function MeetingsList({
 
 function MeetingCard({
   meeting,
+  suggestedContacts,
   expandedTranscript,
   onToggleTranscript,
   onCancel,
   onEdit,
 }: {
   meeting: Meeting;
+  suggestedContacts: SuggestedContact[];
   expandedTranscript: string | null;
   onToggleTranscript: (id: string | null) => void;
   onCancel: (id: string) => Promise<void>;
   onEdit: (meeting: Meeting) => void;
 }) {
+  const contactByEmail = new Map(suggestedContacts.map((c) => [c.email, c]));
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
@@ -306,13 +311,21 @@ function MeetingCard({
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {externalAttendees.map((a) => {
                 const rsvp = RSVP_CONFIG[a.responseStatus] ?? RSVP_CONFIG.needsAction;
+                const contact = contactByEmail.get(a.email);
                 return (
                   <span
                     key={a.email}
                     title={a.email}
                     className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${rsvp.color}`}
                   >
-                    <span className="max-w-[140px] truncate">{a.email}</span>
+                    {contact ? (
+                      <>
+                        <span className="font-semibold">{contact.name}</span>
+                        {contact.role && <span className="opacity-60">· {contact.role}</span>}
+                      </>
+                    ) : (
+                      <span className="max-w-[140px] truncate">{a.email}</span>
+                    )}
                     <span className="opacity-70">· {rsvp.label}</span>
                   </span>
                 );

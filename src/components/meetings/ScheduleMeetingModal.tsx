@@ -87,9 +87,9 @@ export default function ScheduleMeetingModal({
     [30, 60, 90, 120].includes(initialDuration) ? initialDuration : 60
   );
 
-  // Selected contact IDs — pre-select contacts whose emails appear in initialData (edit) or all (new)
+  // Selected contact IDs — in edit mode, pre-select contacts already in meeting; in new mode, none selected
   const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(() => {
-    if (!initialData) return new Set(suggestedContacts.map((c) => c.id));
+    if (!initialData) return new Set();
     try {
       const parsed = JSON.parse(initialData.attendeeEmails);
       const emails = new Set<string>(
@@ -99,7 +99,7 @@ export default function ScheduleMeetingModal({
       );
       return new Set(suggestedContacts.filter((c) => emails.has(c.email)).map((c) => c.id));
     } catch {
-      return new Set(suggestedContacts.map((c) => c.id));
+      return new Set();
     }
   });
 
@@ -154,6 +154,11 @@ export default function ScheduleMeetingModal({
       seen.add(e);
       return true;
     });
+
+    if (attendeeEmails.length === 0) {
+      setError("É necessário pelo menos um convidado");
+      return;
+    }
 
     setLoading(true);
     try {
