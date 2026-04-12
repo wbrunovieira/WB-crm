@@ -227,72 +227,110 @@ function SortableActivityItem({
           </div>
         )}
 
-        {/* Content - clickable link */}
-        <Link
-          href={`/activities/${activity.id}`}
-          className="flex-1 min-w-0"
-        >
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ${typeConfig[activity.type]?.bg ?? "bg-gray-100"} ${typeConfig[activity.type]?.text ?? "text-gray-800"}`}>
-              <ActivityTypeIcon type={activity.type} className="h-3.5 w-3.5" />
-              {typeConfig[activity.type]?.label ?? activity.type}
-            </span>
-            {activity.type === "email" && activity.emailFromAddress && !activity.emailReplied && (
-              <span className="inline-flex items-center gap-1 rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
-                <Clock className="h-3 w-3" />
-                Aguardando resposta
+        {/* Content — link wraps header only; player stays outside to avoid navigation */}
+        <div className="flex-1 min-w-0">
+          <Link href={`/activities/${activity.id}`} className="block">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ${typeConfig[activity.type]?.bg ?? "bg-gray-100"} ${typeConfig[activity.type]?.text ?? "text-gray-800"}`}>
+                <ActivityTypeIcon type={activity.type} className="h-3.5 w-3.5" />
+                {typeConfig[activity.type]?.label ?? activity.type}
               </span>
+              {activity.type === "email" && activity.emailFromAddress && !activity.emailReplied && (
+                <span className="inline-flex items-center gap-1 rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+                  <Clock className="h-3 w-3" />
+                  Aguardando resposta
+                </span>
+              )}
+              {activity.type === "email" && activity.emailFromAddress && activity.emailReplied && (
+                <span className="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                  <Check className="h-3 w-3" />
+                  Respondido
+                </span>
+              )}
+              {activity.type === "email" && !activity.emailFromAddress && activity.emailThreadId && receivedThreadIds.has(activity.emailThreadId) && (
+                <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 border border-blue-200">
+                  <Reply className="h-3 w-3" />
+                  Resposta enviada
+                </span>
+              )}
+              {activity.gotoCallId ? (
+                <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  GoTo
+                </span>
+              ) : (
+                <>
+                  {activity.completed && (
+                    <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                      Concluída{activity.completedAt && ` em ${formatDate(activity.completedAt)}`}
+                    </span>
+                  )}
+                  {activity.failedAt && (
+                    <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+                      Falhou
+                    </span>
+                  )}
+                  {activity.skippedAt && (
+                    <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      Pulada
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+            <h3 className={`mt-2 font-medium group-hover:text-purple-800 ${
+              activity.completed
+                ? "text-gray-500 line-through"
+                : activity.failedAt || activity.skippedAt
+                  ? "text-gray-500"
+                  : "text-gray-900"
+            }`}>
+              {activity.subject}
+            </h3>
+            {activity.description && !activity.gotoCallId && (
+              <p className="mt-1 text-sm text-gray-600 line-clamp-2">
+                {activity.description}
+              </p>
             )}
-            {activity.type === "email" && activity.emailFromAddress && activity.emailReplied && (
-              <span className="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                <Check className="h-3 w-3" />
-                Respondido
-              </span>
+            {activity.failReason && (
+              <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">
+                <AlertTriangle className="h-3 w-3 flex-shrink-0" />
+                {activity.failReason}
+              </p>
             )}
-            {activity.type === "email" && !activity.emailFromAddress && activity.emailThreadId && receivedThreadIds.has(activity.emailThreadId) && (
-              <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 border border-blue-200">
-                <Reply className="h-3 w-3" />
-                Resposta enviada
-              </span>
+            {activity.skipReason && (
+              <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600">
+                <SkipForward className="h-3 w-3 flex-shrink-0" />
+                {activity.skipReason}
+              </p>
             )}
-            {activity.gotoCallId ? (
-              <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                GoTo
-              </span>
-            ) : (
-              <>
-                {activity.completed && (
-                  <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
-                    Concluída{activity.completedAt && ` em ${formatDate(activity.completedAt)}`}
-                  </span>
-                )}
-                {activity.failedAt && (
-                  <span className="rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
-                    Falhou
-                  </span>
-                )}
-                {activity.skippedAt && (
-                  <span className="rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
-                    Pulada
-                  </span>
-                )}
-              </>
-            )}
-          </div>
-          <h3 className={`mt-2 font-medium group-hover:text-purple-800 ${
-            activity.completed
-              ? "text-gray-500 line-through"
-              : activity.failedAt || activity.skippedAt
-                ? "text-gray-500"
-                : "text-gray-900"
-          }`}>
-            {activity.subject}
-          </h3>
-          {activity.description && !activity.gotoCallId && (
-            <p className="mt-1 text-sm text-gray-600 line-clamp-2">
-              {activity.description}
-            </p>
-          )}
+            {(() => {
+              const names = getContactNames(activity.leadContactIds);
+              return names.length > 0 ? (
+                <div className="mt-2 flex items-center gap-1.5 flex-wrap">
+                  <Users className="h-3.5 w-3.5 text-purple-500 flex-shrink-0" />
+                  {names.map((name, i) => (
+                    <span key={i} className="rounded-md bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+                      {name}
+                    </span>
+                  ))}
+                </div>
+              ) : null;
+            })()}
+            {(() => {
+              const dateRef = activity.completedAt ?? activity.dueDate;
+              if (!dateRef) return null;
+              const label = activity.completedAt ? (activity.emailFromAddress ? "Recebido" : "Enviado") : "Vencimento";
+              return (
+                <p className="mt-2 flex items-center gap-2 text-xs text-gray-500 group-hover:text-gray-600">
+                  <span>{label}: {formatDate(dateRef)} às {formatTime(dateRef)}</span>
+                  <span className="text-gray-400">·</span>
+                  <span className="text-gray-400 italic">{formatRelativeTime(dateRef)}</span>
+                </p>
+              );
+            })()}
+          </Link>
+
+          {/* GoTo player — fora do Link para não navegar ao clicar */}
           {activity.gotoCallId && activity.gotoRecordingUrl && (
             <div className="mt-2">
               <GoToCallPlayer
@@ -304,44 +342,7 @@ function SortableActivityItem({
               />
             </div>
           )}
-          {activity.failReason && (
-            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">
-              <AlertTriangle className="h-3 w-3 flex-shrink-0" />
-              {activity.failReason}
-            </p>
-          )}
-          {activity.skipReason && (
-            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-amber-600">
-              <SkipForward className="h-3 w-3 flex-shrink-0" />
-              {activity.skipReason}
-            </p>
-          )}
-          {(() => {
-            const names = getContactNames(activity.leadContactIds);
-            return names.length > 0 ? (
-              <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                <Users className="h-3.5 w-3.5 text-purple-500 flex-shrink-0" />
-                {names.map((name, i) => (
-                  <span key={i} className="rounded-md bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
-                    {name}
-                  </span>
-                ))}
-              </div>
-            ) : null;
-          })()}
-          {(() => {
-            const dateRef = activity.completedAt ?? activity.dueDate;
-            if (!dateRef) return null;
-            const label = activity.completedAt ? (activity.emailFromAddress ? "Recebido" : "Enviado") : "Vencimento";
-            return (
-              <p className="mt-2 flex items-center gap-2 text-xs text-gray-500 group-hover:text-gray-600">
-                <span>{label}: {formatDate(dateRef)} às {formatTime(dateRef)}</span>
-                <span className="text-gray-400">·</span>
-                <span className="text-gray-400 italic">{formatRelativeTime(dateRef)}</span>
-              </p>
-            );
-          })()}
-        </Link>
+        </div>
 
         {/* Action buttons */}
         <div className="flex items-center gap-1 flex-shrink-0">
