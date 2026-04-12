@@ -91,6 +91,8 @@ type Activity = {
   skipReason: string | null;
   leadContactIds: string | null;
   gotoCallId?: string | null;
+  gotoRecordingDriveId?: string | null;
+  gotoTranscriptText?: string | null;
   // Campos de e-mail
   emailThreadId?: string | null;
   emailSubject?: string | null;
@@ -288,6 +290,29 @@ function SortableActivityItem({
             <p className="mt-1 text-sm text-gray-600 line-clamp-2">
               {activity.description}
             </p>
+          )}
+          {activity.gotoCallId && activity.gotoRecordingDriveId && (
+            <div className="mt-2 space-y-1.5">
+              <audio
+                controls
+                preload="none"
+                className="w-full rounded"
+                style={{ height: "32px" }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <source src={`/api/goto/recordings/${activity.id}`} type="audio/mpeg" />
+              </audio>
+              {activity.gotoTranscriptText && (
+                <details className="rounded border border-blue-200 bg-blue-50" onClick={(e) => e.stopPropagation()}>
+                  <summary className="cursor-pointer px-2 py-1 text-xs font-semibold text-blue-700 select-none">
+                    Transcrição
+                  </summary>
+                  <p className="whitespace-pre-wrap px-2 pb-2 pt-0.5 text-xs text-blue-900 leading-relaxed">
+                    {activity.gotoTranscriptText}
+                  </p>
+                </details>
+              )}
+            </div>
           )}
           {activity.failReason && (
             <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">

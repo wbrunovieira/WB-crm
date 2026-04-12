@@ -26,6 +26,14 @@ function getDialedNumber(report: GoToCallReport): string | null {
   return external.type.callee?.number ?? external.type.number ?? null;
 }
 
+function getRecordingId(report: GoToCallReport): string | null {
+  for (const participant of report.participants) {
+    const rec = participant.recordings?.[0];
+    if (rec?.id) return rec.id;
+  }
+  return null;
+}
+
 function buildSubject(
   direction: "INBOUND" | "OUTBOUND",
   dialedNumber: string | null,
@@ -56,9 +64,10 @@ export async function createCallActivity(
     return;
   }
 
-  // 2. Calcular duração
+  // 2. Calcular duração e extrair recording
   const durationSeconds = calcDurationSeconds(callCreated, callEnded);
   const dialedNumber = getDialedNumber(report);
+  const recordingId = getRecordingId(report);
 
   // 3. Encontrar entidade pelo número discado
   let matchResult = null;
@@ -85,6 +94,7 @@ export async function createCallActivity(
       completedAt: new Date(callEnded),
       dueDate: new Date(callCreated),
       gotoCallId: conversationSpaceId,
+      gotoRecordingId: recordingId,
       ownerId,
       // Vínculo com entidade encontrada
       contactId: matchResult?.contactId ?? null,
@@ -97,6 +107,7 @@ export async function createCallActivity(
     conversationSpaceId,
     direction,
     durationSeconds,
+    hasRecording: !!recordingId,
     entityType: matchResult?.entityType ?? "none",
     entityId: matchResult?.entityId,
   });
