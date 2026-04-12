@@ -76,13 +76,27 @@ async function findLeadByPhone(
   variations: string[],
   ownerId: string
 ): Promise<string | null> {
-  const result = await prisma.$queryRaw<Array<{ id: string }>>`
+  // Busca primeiro no campo phone do lead
+  const byLead = await prisma.$queryRaw<Array<{ id: string }>>`
     SELECT id FROM leads
     WHERE "ownerId" = ${ownerId}
       AND regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') = ANY(${variations}::text[])
     LIMIT 1
   `;
-  return result[0]?.id ?? null;
+  if (byLead[0]) return byLead[0].id;
+
+  // Busca também nos contatos do lead (lead_contacts)
+  const byContact = await prisma.$queryRaw<Array<{ "leadId": string }>>`
+    SELECT lc."leadId" FROM lead_contacts lc
+    JOIN leads l ON l.id = lc."leadId"
+    WHERE l."ownerId" = ${ownerId}
+      AND (
+        regexp_replace(COALESCE(lc.phone, ''), '[^0-9]', '', 'g') = ANY(${variations}::text[])
+        OR regexp_replace(COALESCE(lc.whatsapp, ''), '[^0-9]', '', 'g') = ANY(${variations}::text[])
+      )
+    LIMIT 1
+  `;
+  return byContact[0]?.["leadId"] ?? null;
 }
 
 async function findPartnerByPhone(
