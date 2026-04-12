@@ -11,12 +11,16 @@ import {
   Clock,
   Send,
   Loader2,
+  Download,
+  Eye,
+  MonitorDown,
 } from "lucide-react";
 import { updateProposalStatus, deleteProposal } from "@/actions/proposals";
 import type { ProposalStatus } from "@/actions/proposals";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
 import ProposalUploadModal from "./ProposalUploadModal";
+import ProposalViewer from "./ProposalViewer";
 
 interface Proposal {
   id: string;
@@ -81,6 +85,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
   const [showModal, setShowModal] = useState(false);
   const [updating, setUpdating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [viewing, setViewing] = useState<Proposal | null>(null);
 
   async function handleStatusChange(id: string, status: ProposalStatus) {
     setUpdating(id);
@@ -114,7 +119,6 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
   }
 
   function handleCreated() {
-    // Re-fetch is handled by revalidatePath on the server; parent page will refresh
     window.location.reload();
   }
 
@@ -151,86 +155,125 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
             const statusCfg = STATUS_CONFIG[proposal.status] ?? STATUS_CONFIG.draft;
             const isUpdating = updating === proposal.id;
             const isDeleting = deleting === proposal.id;
+            const hasFile = !!proposal.driveFileId;
 
             return (
               <li
                 key={proposal.id}
-                className="flex items-start gap-3 rounded-lg border border-gray-100 bg-gray-50 px-4 py-3"
+                className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3"
               >
-                <FileText size={20} className="mt-0.5 flex-shrink-0 text-purple-500" />
+                {/* Linha principal */}
+                <div className="flex items-start gap-3">
+                  <FileText size={20} className="mt-0.5 flex-shrink-0 text-purple-500" />
 
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium text-gray-900 text-sm">{proposal.title}</span>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusCfg.color}`}
-                    >
-                      {statusCfg.icon}
-                      {statusCfg.label}
-                    </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-medium text-gray-900 text-sm">{proposal.title}</span>
+                      <span
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusCfg.color}`}
+                      >
+                        {statusCfg.icon}
+                        {statusCfg.label}
+                      </span>
+                    </div>
+
+                    {proposal.description && (
+                      <p className="mt-0.5 text-xs text-gray-500">{proposal.description}</p>
+                    )}
+
+                    <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                      <span>Criada em {formatDate(proposal.createdAt)}</span>
+                      {proposal.sentAt && (
+                        <span>Enviada em {formatDate(proposal.sentAt)}</span>
+                      )}
+                      {proposal.fileName && (
+                        <span>
+                          {proposal.fileName}
+                          {proposal.fileSize ? ` · ${formatBytes(proposal.fileSize)}` : ""}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
-                  {proposal.description && (
-                    <p className="mt-0.5 text-xs text-gray-500">{proposal.description}</p>
-                  )}
-
-                  <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-400">
-                    <span>Criada em {formatDate(proposal.createdAt)}</span>
-                    {proposal.sentAt && (
-                      <span>Enviada em {formatDate(proposal.sentAt)}</span>
+                  {/* Seletor de status + delete */}
+                  <div className="flex flex-shrink-0 items-center gap-2">
+                    {isUpdating ? (
+                      <Loader2 size={15} className="animate-spin text-gray-400" />
+                    ) : (
+                      <select
+                        value={proposal.status}
+                        onChange={(e) => handleStatusChange(proposal.id, e.target.value as ProposalStatus)}
+                        className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:border-primary focus:outline-none"
+                      >
+                        {STATUS_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
                     )}
-                    {proposal.fileName && (
-                      <span>
-                        {proposal.fileName}
-                        {proposal.fileSize ? ` · ${formatBytes(proposal.fileSize)}` : ""}
-                      </span>
+
+                    {isDeleting ? (
+                      <Loader2 size={15} className="animate-spin text-red-400" />
+                    ) : (
+                      <button
+                        onClick={() => handleDelete(proposal.id)}
+                        title="Remover proposta"
+                        className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                      >
+                        <Trash2 size={15} />
+                      </button>
                     )}
                   </div>
                 </div>
 
-                {/* Ações */}
-                <div className="flex flex-shrink-0 items-center gap-2">
-                  {proposal.driveUrl && (
+                {/* Barra de ações do arquivo */}
+                {hasFile && (
+                  <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-200 pt-3">
+                    {/* 1. Visualizar no CRM */}
+                    <button
+                      onClick={() => setViewing(proposal)}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100"
+                    >
+                      <Eye size={13} />
+                      Visualizar
+                    </button>
+
+                    {/* 2. Download para a máquina */}
                     <a
-                      href={proposal.driveUrl}
+                      href={`/api/proposals/${proposal.id}/file`}
+                      download={proposal.fileName ?? true}
+                      className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                      <Download size={13} />
+                      Download
+                    </a>
+
+                    {/* 3. Abrir com app padrão da máquina */}
+                    <a
+                      href={`/api/proposals/${proposal.id}/file?inline=true`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      title="Abrir no Google Drive"
-                      className="rounded-md p-1.5 text-gray-400 hover:bg-gray-200 hover:text-primary"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
                     >
-                      <ExternalLink size={15} />
+                      <MonitorDown size={13} />
+                      Abrir com app
                     </a>
-                  )}
 
-                  {/* Seletor de status */}
-                  {isUpdating ? (
-                    <Loader2 size={15} className="animate-spin text-gray-400" />
-                  ) : (
-                    <select
-                      value={proposal.status}
-                      onChange={(e) => handleStatusChange(proposal.id, e.target.value as ProposalStatus)}
-                      className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:border-primary focus:outline-none"
-                    >
-                      {STATUS_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {isDeleting ? (
-                    <Loader2 size={15} className="animate-spin text-red-400" />
-                  ) : (
-                    <button
-                      onClick={() => handleDelete(proposal.id)}
-                      title="Remover proposta"
-                      className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
-                    >
-                      <Trash2 size={15} />
-                    </button>
-                  )}
-                </div>
+                    {/* 4. Abrir no Google Drive */}
+                    {proposal.driveUrl && (
+                      <a
+                        href={proposal.driveUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                      >
+                        <ExternalLink size={13} />
+                        Abrir no Drive
+                      </a>
+                    )}
+                  </div>
+                )}
               </li>
             );
           })}
@@ -243,6 +286,14 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
           dealId={dealId}
           onClose={() => setShowModal(false)}
           onCreated={handleCreated}
+        />
+      )}
+
+      {viewing && (
+        <ProposalViewer
+          proposalId={viewing.id}
+          fileName={viewing.fileName}
+          onClose={() => setViewing(null)}
         />
       )}
     </div>
