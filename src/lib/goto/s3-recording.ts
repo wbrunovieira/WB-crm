@@ -62,6 +62,59 @@ export async function findRecordingKey(
 }
 
 /**
+ * Extracts the callId from a GoTo S3 key.
+ * Format: {yyyy}/{MM}/{dd}/{timestamp}~{callId}~{phone}~{phone}~{recordingId}.mp3
+ */
+export function extractCallIdFromKey(s3Key: string): string | null {
+  const filename = s3Key.split("/").pop() ?? "";
+  const parts = filename.split("~");
+  return parts.length >= 2 ? parts[1] : null;
+}
+
+/**
+ * Extracts the recording timestamp (ms) from a GoTo S3 key.
+ * The timestamp is the ISO8601 string before the first ~.
+ * Returns null if the timestamp can't be parsed.
+ */
+export function extractTimestampFromKey(s3Key: string): number | null {
+  const filename = s3Key.split("/").pop() ?? "";
+  const iso = filename.split("~")[0];
+  const ms = Date.parse(iso);
+  return isNaN(ms) ? null : ms;
+}
+
+/**
+ * Given the agent S3 key, finds the sibling recording key
+ * (same callId, different recordingId) — the client track.
+ * Returns { key, offsetMs } where offsetMs = client start − agent start.
+ */
+export async function findSiblingRecordingKey(
+  agentKey: string
+): Promise<{ key: string; offsetMs: number } | null> {
+  const callId = extractCallIdFromKey(agentKey);
+  if (!callId) return null;
+
+  const prefix = agentKey.substring(0, agentKey.lastIndexOf("/") + 1);
+  const agentTs = extractTimestampFromKey(agentKey) ?? 0;
+
+  const client = getClient();
+  const res = await client.send(
+    new ListObjectsV2Command({ Bucket: BUCKET(), Prefix: prefix })
+  );
+
+  const sibling = res.Contents?.find(
+    (obj) => obj.Key && obj.Key !== agentKey && obj.Key.includes(`~${callId}~`)
+  );
+
+  if (!sibling?.Key) return null;
+
+  const siblingTs = extractTimestampFromKey(sibling.Key) ?? agentTs;
+  const offsetMs = siblingTs - agentTs;
+
+  return { key: sibling.Key, offsetMs };
+}
+
+/**
  * Downloads a recording from S3 by its key.
  * Returns a Buffer with the MP3 content.
  */
