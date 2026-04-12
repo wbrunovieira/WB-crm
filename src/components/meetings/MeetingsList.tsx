@@ -15,7 +15,7 @@ import {
 import { cancelMeeting } from "@/actions/meetings";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
-import ScheduleMeetingModal from "./ScheduleMeetingModal";
+import ScheduleMeetingModal, { type SuggestedContact } from "./ScheduleMeetingModal";
 
 interface Meeting {
   id: string;
@@ -38,8 +38,8 @@ interface Props {
   leadId?: string;
   contactId?: string;
   dealId?: string;
-  /** Pre-filled attendee emails */
-  defaultEmails?: string[];
+  /** Contacts shown as clickable chips in the schedule modal */
+  suggestedContacts?: SuggestedContact[];
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -108,7 +108,7 @@ export default function MeetingsList({
   leadId,
   contactId,
   dealId,
-  defaultEmails = [],
+  suggestedContacts = [],
 }: Props) {
   const [meetings, setMeetings] = useState(initial);
   const [showModal, setShowModal] = useState(false);
@@ -216,7 +216,7 @@ export default function MeetingsList({
           leadId={leadId}
           contactId={contactId}
           dealId={dealId}
-          defaultEmails={defaultEmails}
+          suggestedContacts={suggestedContacts}
           onClose={() => setShowModal(false)}
           onCreated={handleCreated}
         />
