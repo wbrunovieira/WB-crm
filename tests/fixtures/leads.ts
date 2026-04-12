@@ -51,6 +51,7 @@ export const mockLead: Lead = {
   convertedToOrganizationId: null,
   languages: null,
   activityOrder: null,
+  driveFolderId: null,
   referredByPartnerId: null,
   ownerId: 'user-test-123',
   createdAt: new Date('2024-01-01'),
