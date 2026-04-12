@@ -42,16 +42,18 @@ vi.mock("@/lib/google/calendar", () => ({
   createMeetEvent: vi.fn(),
   cancelMeetEvent: vi.fn(),
   getMeetEvent: vi.fn(),
+  updateMeetEvent: vi.fn(),
 }));
 
 import {
   getMeetings,
   scheduleMeeting,
   cancelMeeting,
+  updateMeeting,
 } from "@/actions/meetings";
 import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { createMeetEvent, cancelMeetEvent } from "@/lib/google/calendar";
+import { createMeetEvent, cancelMeetEvent, updateMeetEvent } from "@/lib/google/calendar";
 
 const mockGetServerSession = vi.mocked(getServerSession);
 const mockMeetingCreate = vi.mocked(prisma.meeting.create);
@@ -62,6 +64,7 @@ const mockActivityCreate = vi.mocked(prisma.activity.create);
 const mockActivityUpdate = vi.mocked(prisma.activity.update);
 const mockCreateMeetEvent = vi.mocked(createMeetEvent);
 const mockCancelMeetEvent = vi.mocked(cancelMeetEvent);
+const mockUpdateMeetEvent = vi.mocked(updateMeetEvent);
 
 const SESSION = {
   user: { id: "user-1", email: "user@wb.com", role: "closer", name: "Bruno" },
@@ -252,5 +255,76 @@ describe("cancelMeeting", () => {
   it("lança erro se não autenticado", async () => {
     mockGetServerSession.mockResolvedValue(null as never);
     await expect(cancelMeeting("meeting-1")).rejects.toThrow("Não autorizado");
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe("updateMeeting", () => {
+  const scheduledMeeting = {
+    id: "meeting-1",
+    googleEventId: "evt-abc123",
+    activityId: "activity-1",
+    ownerId: "user-1",
+    status: "scheduled",
+    title: "Reunião Original",
+    attendeeEmails: JSON.stringify([{ email: "old@empresa.com", responseStatus: "needsAction" }]),
+    leadId: "lead-1",
+    dealId: null,
+    contactId: null,
+  };
+
+  it("atualiza título, horário e convidados no Calendar e no banco", async () => {
+    mockMeetingFindUnique.mockResolvedValue(scheduledMeeting as never);
+    mockUpdateMeetEvent.mockResolvedValue({
+      attendees: [{ email: "novo@empresa.com", responseStatus: "needsAction" }],
+    });
+    mockActivityUpdate.mockResolvedValue({} as never);
+    mockMeetingUpdate.mockResolvedValue({ ...scheduledMeeting, title: "Reunião Atualizada" } as never);
+
+    const result = await updateMeeting("meeting-1", {
+      title: "Reunião Atualizada",
+      startAt: FUTURE_DATE,
+      endAt: END_DATE,
+      attendeeEmails: ["novo@empresa.com"],
+    });
+
+    expect(mockUpdateMeetEvent).toHaveBeenCalledWith(
+      "evt-abc123",
+      expect.objectContaining({
+        title: "Reunião Atualizada",
+        attendeeEmails: ["novo@empresa.com"],
+      })
+    );
+
+    expect(mockMeetingUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: { id: "meeting-1" },
+        data: expect.objectContaining({
+          title: "Reunião Atualizada",
+          attendeeEmails: JSON.stringify([{ email: "novo@empresa.com", responseStatus: "needsAction" }]),
+        }),
+      })
+    );
+
+    expect(result).toMatchObject({ title: "Reunião Atualizada" });
+  });
+
+  it("lança erro se reunião não pertence ao usuário", async () => {
+    mockMeetingFindUnique.mockResolvedValue({ ...scheduledMeeting, ownerId: "other-user" } as never);
+
+    await expect(updateMeeting("meeting-1", { title: "Novo título" })).rejects.toThrow();
+  });
+
+  it("lança erro se reunião não está agendada", async () => {
+    mockMeetingFindUnique.mockResolvedValue({ ...scheduledMeeting, status: "cancelled" } as never);
+
+    await expect(updateMeeting("meeting-1", { title: "Novo título" })).rejects.toThrow(
+      "Somente reuniões agendadas podem ser editadas"
+    );
+  });
+
+  it("lança erro se não autenticado", async () => {
+    mockGetServerSession.mockResolvedValue(null as never);
+    await expect(updateMeeting("meeting-1", { title: "Teste" })).rejects.toThrow("Não autorizado");
   });
 });

@@ -95,6 +95,39 @@ export async function getMeetEvent(googleEventId: string) {
   return data;
 }
 
+export async function updateMeetEvent(
+  googleEventId: string,
+  opts: Partial<Omit<CreateMeetEventOptions, "timeZone">> & { timeZone?: string }
+): Promise<{ attendees: MeetAttendee[] }> {
+  const auth = await getAuthenticatedClient();
+  const calendar = google.calendar({ version: "v3", auth });
+
+  const tz = opts.timeZone ?? "America/Sao_Paulo";
+
+  const requestBody: Record<string, unknown> = {};
+  if (opts.title) requestBody.summary = opts.title;
+  if (opts.description !== undefined) requestBody.description = opts.description;
+  if (opts.startAt) requestBody.start = { dateTime: opts.startAt.toISOString(), timeZone: tz };
+  if (opts.endAt) requestBody.end = { dateTime: opts.endAt.toISOString(), timeZone: tz };
+  if (opts.attendeeEmails) requestBody.attendees = opts.attendeeEmails.map((email) => ({ email }));
+
+  const { data } = await calendar.events.patch({
+    calendarId: "primary",
+    eventId: googleEventId,
+    sendUpdates: "all",
+    requestBody,
+  });
+
+  const attendees: MeetAttendee[] = (data.attendees ?? []).map((a) => ({
+    email: a.email!,
+    responseStatus: (a.responseStatus ?? "needsAction") as MeetAttendee["responseStatus"],
+    organizer: a.organizer ?? false,
+    self: a.self ?? false,
+  }));
+
+  return { attendees };
+}
+
 /** Extracts the attendee list with RSVP statuses from a raw Calendar event */
 export function extractAttendees(
   event: Awaited<ReturnType<typeof getMeetEvent>>

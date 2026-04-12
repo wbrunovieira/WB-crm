@@ -4,18 +4,18 @@ import { useState } from "react";
 import {
   Video,
   Plus,
-  ExternalLink,
   Clock,
   CheckCircle,
   XCircle,
   Loader2,
   Play,
   FileText,
+  Pencil,
 } from "lucide-react";
 import { cancelMeeting } from "@/actions/meetings";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
-import ScheduleMeetingModal, { type SuggestedContact } from "./ScheduleMeetingModal";
+import ScheduleMeetingModal, { type SuggestedContact, type MeetingInitialData } from "./ScheduleMeetingModal";
 
 interface Meeting {
   id: string;
@@ -112,6 +112,7 @@ export default function MeetingsList({
 }: Props) {
   const [meetings, setMeetings] = useState(initial);
   const [showModal, setShowModal] = useState(false);
+  const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [expandedTranscript, setExpandedTranscript] = useState<string | null>(null);
 
   const now = new Date();
@@ -176,6 +177,7 @@ export default function MeetingsList({
                     expandedTranscript={expandedTranscript}
                     onToggleTranscript={setExpandedTranscript}
                     onCancel={handleCancel}
+                    onEdit={setEditingMeeting}
                   />
                 ))}
               </ul>
@@ -196,6 +198,7 @@ export default function MeetingsList({
                     expandedTranscript={expandedTranscript}
                     onToggleTranscript={setExpandedTranscript}
                     onCancel={handleCancel}
+                    onEdit={setEditingMeeting}
                   />
                 ))}
               </ul>
@@ -214,6 +217,24 @@ export default function MeetingsList({
           onCreated={handleCreated}
         />
       )}
+
+      {editingMeeting && (
+        <ScheduleMeetingModal
+          leadId={leadId}
+          contactId={contactId}
+          dealId={dealId}
+          suggestedContacts={suggestedContacts}
+          meetingId={editingMeeting.id}
+          initialData={{
+            title: editingMeeting.title,
+            startAt: new Date(editingMeeting.startAt),
+            endAt: editingMeeting.endAt ? new Date(editingMeeting.endAt) : null,
+            attendeeEmails: editingMeeting.attendeeEmails,
+          }}
+          onClose={() => setEditingMeeting(null)}
+          onCreated={handleCreated}
+        />
+      )}
     </div>
   );
 }
@@ -225,11 +246,13 @@ function MeetingCard({
   expandedTranscript,
   onToggleTranscript,
   onCancel,
+  onEdit,
 }: {
   meeting: Meeting;
   expandedTranscript: string | null;
   onToggleTranscript: (id: string | null) => void;
   onCancel: (id: string) => Promise<void>;
+  onEdit: (meeting: Meeting) => void;
 }) {
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -310,6 +333,16 @@ function MeetingCard({
               <Video size={12} />
               Entrar
             </a>
+          )}
+
+          {isScheduled && !confirmingCancel && (
+            <button
+              onClick={() => onEdit(meeting)}
+              className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
+              title="Editar reunião"
+            >
+              <Pencil size={13} />
+            </button>
           )}
 
           {isScheduled && !confirmingCancel && (
