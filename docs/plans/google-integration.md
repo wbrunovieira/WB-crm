@@ -512,7 +512,7 @@ npm install googleapis google-auth-library
 | 2d | Gmail: thread connector visual entre cards da mesma cadeia de respostas | ✅ Concluída |
 | 2e | Gmail: busca + filtros de atividades (tipo, status, texto) | ✅ Concluída |
 | 2f | Gmail: ordenação — pendentes por drag-and-drop; concluídas/falhas/puladas por data de resolução | ✅ Concluída |
-| 3 | Drive: estrutura de pastas + Propostas para Leads | 🔲 Pendente |
+| 3 | Drive: estrutura de pastas + Propostas para Leads/Deals + viewer (PDF/Office) | ✅ Concluída |
 | 4 | Meet: agendamento de reuniões com convite | 🔲 Pendente |
 | 5 | Meet: gravações detectadas e exibidas no perfil | 🔲 Pendente |
 | 6 | Transcrição: Google nativo (Business Plus) ou Whisper | 🔲 Pendente |
