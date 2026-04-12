@@ -19,6 +19,7 @@ vi.mock("@/lib/prisma", () => ({
   prisma: {
     meeting: {
       findMany: vi.fn(),
+      findFirst: vi.fn(),
       findUnique: vi.fn(),
       create: vi.fn(),
       update: vi.fn(),
@@ -58,6 +59,7 @@ import { createMeetEvent, cancelMeetEvent, updateMeetEvent } from "@/lib/google/
 const mockGetServerSession = vi.mocked(getServerSession);
 const mockMeetingCreate = vi.mocked(prisma.meeting.create);
 const mockMeetingFindMany = vi.mocked(prisma.meeting.findMany);
+const mockMeetingFindFirst = vi.mocked(prisma.meeting.findFirst);
 const mockMeetingUpdate = vi.mocked(prisma.meeting.update);
 const mockMeetingFindUnique = vi.mocked(prisma.meeting.findUnique);
 const mockActivityCreate = vi.mocked(prisma.activity.create);
@@ -211,6 +213,71 @@ describe("scheduleMeeting", () => {
         attendeeEmails: [],
       })
     ).rejects.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe("scheduleMeeting - título único", () => {
+  const BASE_INPUT = {
+    title: "Cliente ABC - 2026-04-13 14:00",
+    startAt: FUTURE_DATE,
+    endAt: END_DATE,
+    attendeeEmails: ["client@empresa.com"],
+    leadId: "lead-1",
+  };
+
+  it("lança erro se já existe reunião com o mesmo título (case-insensitive)", async () => {
+    // Simula reunião existente com título semelhante
+    mockMeetingFindFirst.mockResolvedValue({
+      id: "meeting-existing",
+      title: "cliente abc - 2026-04-13 14:00",
+      status: "scheduled",
+    } as never);
+
+    await expect(scheduleMeeting(BASE_INPUT)).rejects.toThrow(
+      /título.*já existe|já existe.*reunião/i
+    );
+
+    expect(mockMeetingFindFirst).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: expect.objectContaining({
+          title: expect.objectContaining({ equals: BASE_INPUT.title, mode: "insensitive" }),
+          status: expect.objectContaining({ not: "cancelled" }),
+        }),
+      })
+    );
+  });
+
+  it("ignora reuniões canceladas ao validar unicidade do título", async () => {
+    // Existe uma reunião cancelada com o mesmo título → deve permitir criar
+    mockMeetingFindFirst.mockResolvedValue(null as never);
+
+    mockCreateMeetEvent.mockResolvedValue({
+      googleEventId: "evt-new",
+      meetLink: "https://meet.google.com/new",
+      attendees: [{ email: "client@empresa.com", responseStatus: "needsAction" }],
+    });
+    mockActivityCreate.mockResolvedValue({ id: "act-1" } as never);
+    mockMeetingCreate.mockResolvedValue({ id: "meeting-new", title: BASE_INPUT.title } as never);
+
+    const result = await scheduleMeeting(BASE_INPUT);
+
+    expect(result).toMatchObject({ id: "meeting-new" });
+  });
+
+  it("cria reunião normalmente quando título é único", async () => {
+    mockMeetingFindFirst.mockResolvedValue(null as never);
+
+    mockCreateMeetEvent.mockResolvedValue({
+      googleEventId: "evt-abc",
+      meetLink: "https://meet.google.com/abc",
+      attendees: [{ email: "client@empresa.com", responseStatus: "needsAction" }],
+    });
+    mockActivityCreate.mockResolvedValue({ id: "act-1" } as never);
+    mockMeetingCreate.mockResolvedValue({ id: "meeting-1", title: BASE_INPUT.title } as never);
+
+    await expect(scheduleMeeting(BASE_INPUT)).resolves.toMatchObject({ id: "meeting-1" });
+    expect(mockMeetingCreate).toHaveBeenCalledOnce();
   });
 });
 

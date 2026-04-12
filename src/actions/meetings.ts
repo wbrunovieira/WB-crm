@@ -77,6 +77,20 @@ export async function scheduleMeeting(input: ScheduleMeetingInput) {
 
   const validated = scheduleMeetingSchema.parse(input);
 
+  // 0. Unique title check — Google Meet names recordings "[Title] - date - Recording",
+  //    so duplicate titles would cause the wrong recording to be captured.
+  const duplicate = await prisma.meeting.findFirst({
+    where: {
+      title: { equals: validated.title, mode: "insensitive" },
+      status: { not: "cancelled" },
+    },
+  });
+  if (duplicate) {
+    throw new Error(
+      `Já existe uma reunião com este título. Use um título único — sugestão: "${validated.title} - ${validated.startAt.toLocaleDateString("pt-BR")} ${validated.startAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}"`
+    );
+  }
+
   // 1. Create Google Calendar event with Meet link
   const { googleEventId, meetLink, attendees } = await createMeetEvent({
     title: validated.title,
