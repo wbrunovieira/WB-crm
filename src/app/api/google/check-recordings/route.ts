@@ -27,10 +27,18 @@ export async function GET(req: NextRequest) {
 
   const now = new Date();
 
+  // Also catch meetings that started >30min ago but endAt is null or in the future
+  // (handles early terminations where the user ends the call before scheduled end)
+  const earlyEndCutoff = new Date(now.getTime() - 30 * 60 * 1000);
+
   const endedMeetings = await prisma.meeting.findMany({
     where: {
       status: "scheduled",
-      endAt: { lt: now },
+      OR: [
+        { endAt: { lt: now } },
+        { endAt: null, startAt: { lt: earlyEndCutoff } },
+        { endAt: { gt: now }, startAt: { lt: earlyEndCutoff } },
+      ],
     },
     include: {
       lead: { select: { id: true, businessName: true } },
@@ -52,11 +60,14 @@ export async function GET(req: NextRequest) {
         // Non-fatal — keep existing attendeeEmails
       }
 
-      // 2. Mark meeting as ended (and refresh attendee statuses)
+      // 2. Mark meeting as ended, set actualEndAt, refresh attendee statuses
       await prisma.meeting.update({
         where: { id: meeting.id },
         data: {
           status: "ended",
+          actualEndAt: now,
+          // Set actualStartAt = scheduled startAt if not already set
+          ...(meeting.actualStartAt ? {} : { actualStartAt: meeting.startAt }),
           ...(updatedAttendees ? { attendeeEmails: updatedAttendees } : {}),
         },
       });
