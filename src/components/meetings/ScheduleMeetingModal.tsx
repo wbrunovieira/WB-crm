@@ -141,6 +141,17 @@ export default function ScheduleMeetingModal({
     const startAt = new Date(`${startDate}T${startTime}:00`);
     if (isNaN(startAt.getTime())) { setError("Data/hora inválida"); return; }
 
+    const year = startAt.getFullYear();
+    if (year < 2024 || year > 2100) {
+      setError(`Ano inválido (${year}). Verifique a data informada.`);
+      return;
+    }
+
+    if (!isEditMode && startAt < new Date()) {
+      setError("A data e hora da reunião devem ser no futuro.");
+      return;
+    }
+
     const endAt = new Date(startAt.getTime() + durationMinutes * 60 * 1000);
 
     // Merge: selected contact emails + non-empty custom emails (deduplicated)
@@ -252,7 +263,6 @@ export default function ScheduleMeetingModal({
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
-                  min={new Date().toISOString().split("T")[0]}
                   className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
                 />
               </div>
