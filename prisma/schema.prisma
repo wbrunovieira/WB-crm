@@ -1726,8 +1726,10 @@ model Meeting {
   title           String
   googleEventId   String?   @unique // Google Calendar event ID
   meetLink        String?            // meet.google.com/xxx-xxxx-xxx
-  startAt         DateTime           // Meeting start time
-  endAt           DateTime?          // Meeting end time (set when ended)
+  startAt         DateTime           // Scheduled start time
+  endAt           DateTime?          // Scheduled end time
+  actualStartAt   DateTime?          // Actual start time (when meeting really began)
+  actualEndAt     DateTime?          // Actual end time (when meeting really ended)
   attendeeEmails  String             // JSON array of attendee emails
   status          String    @default("scheduled") // scheduled | ended | cancelled
 
