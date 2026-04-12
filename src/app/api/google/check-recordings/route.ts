@@ -282,7 +282,11 @@ async function processRecording(
     scheduledStartAt
   );
 
-  // ── Strategy 1: Google native transcript (preferred) ─────────────────────
+  // ── Strategy 1: Google native doc (Gemini notes + optional raw transcript) ─
+  // Google always creates "Anotações do Gemini" (AI summary).
+  // The raw transcript section (📖 Transcrição) only appears when the user
+  // explicitly enables transcription in the meeting. When it's absent, we still
+  // save the summary but fall through to video transcription as fallback.
   if (nativeTranscript) {
     let meetingSummary: string | null = null;
     let transcriptText: string | null = null;
@@ -296,6 +300,7 @@ async function processRecording(
       console.error(`Failed to export native transcript for meeting ${meeting.id}:`, err);
     }
 
+    // Save whatever we got from the doc (summary and/or transcript)
     await prisma.meeting.update({
       where: { id: meeting.id },
       data: {
@@ -308,17 +313,20 @@ async function processRecording(
       },
     });
 
-    results.push({
-      meetingId: meeting.id,
-      action: meetingSummary || transcriptText
-        ? "google_transcript_saved"
-        : "google_transcript_url_saved_export_failed",
-    });
-    return true;
+    // If the doc has a raw transcript, we're done — no need for video transcription
+    if (transcriptText) {
+      results.push({ meetingId: meeting.id, action: "google_transcript_saved" });
+      return true;
+    }
+
+    // Doc exists but no raw transcript (user didn't enable it) → fall through
+    // to video transcription. We still return the summary saved above.
+    results.push({ meetingId: meeting.id, action: "google_summary_saved_no_transcript" });
   }
 
   // ── Strategy 2: Fallback — custom video transcription ────────────────────
-  if (!recording) return false;
+  // Used when: (a) no native doc at all, or (b) doc exists but has no raw transcript.
+  if (!recording) return nativeTranscript !== null; // true if we at least saved the summary
 
   const auth = await getAuthenticatedClient();
   const drive = google.drive({ version: "v3", auth });
