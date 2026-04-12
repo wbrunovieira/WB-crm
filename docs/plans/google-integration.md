@@ -541,5 +541,4 @@ npm install googleapis google-auth-library
 | Seção Reuniões em Deals | MeetingsList ainda não aparece nas páginas de Deal | Média |
 | Badge de origem da transcrição | Indicar visualmente "Transcrição Google" vs "Transcrição Whisper" | Baixa |
 | Busca dentro da transcrição | Campo de busca client-side dentro do texto da transcrição | Baixa |
-| Mover gravação para WB-CRM/Reuniões/ | Organizar gravações em subpasta por entidade no Drive | Baixa |
 | Renovar cron tokens | O refresh token Google pode expirar; adicionar alerta no painel admin | Média |
