@@ -27,6 +27,8 @@ interface Meeting {
   meetLink: string | null;
   startAt: Date;
   endAt: Date | null;
+  actualStartAt: Date | null;
+  actualEndAt: Date | null;
   attendeeEmails: string; // JSON array
   status: string; // scheduled | ended | cancelled
   recordingDriveId: string | null;
@@ -366,12 +368,26 @@ function MeetingCard({
           </div>
 
           {/* Date/time */}
-          <p className="mt-0.5 text-xs text-gray-500">
-            {formatDateTime(meeting.startAt)}
-            {meeting.endAt && (
-              <> — {new Date(meeting.endAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</>
+          <div className="mt-0.5 space-y-0.5">
+            <p className="text-xs text-gray-500">
+              <span className="font-medium text-gray-400">Agendado:</span>{" "}
+              {formatDateTime(meeting.startAt)}
+              {meeting.endAt && (
+                <> — {new Date(meeting.endAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</>
+              )}
+            </p>
+            {meeting.status === "ended" && meeting.actualEndAt && (
+              <p className="text-xs text-green-600">
+                <span className="font-medium">Encerrado:</span>{" "}
+                {meeting.actualStartAt
+                  ? `${new Date(meeting.actualStartAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} — `
+                  : ""}
+                {new Date(meeting.actualEndAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                {", "}
+                {new Date(meeting.actualEndAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+              </p>
             )}
-          </p>
+          </div>
 
           {/* Attendees with RSVP status */}
           {externalAttendees.length > 0 && (
