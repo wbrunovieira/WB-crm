@@ -597,7 +597,12 @@ model Activity {
   @@index([contactId])
   @@index([leadId])
   @@index([partnerId])
-  gotoCallId       String?  @unique // GoTo conversationSpaceId — previne Activity duplicada
+  gotoCallId             String?  @unique // GoTo conversationSpaceId — previne Activity duplicada
+  gotoRecordingId        String?           // GoTo recording ID (cr.v1.read)
+  gotoRecordingDriveId   String?           // Google Drive file ID do áudio
+  gotoRecordingUrl       String?           // Drive URL para player
+  gotoTranscriptionJobId String?           // Job ID do serviço de transcrição
+  gotoTranscriptText     String?           // Texto transcrito da ligação
   emailMessageId   String?  @unique // Gmail Message-ID — previne Activity duplicada
   emailThreadId    String?           // Gmail Thread-ID — para agrupar e responder na mesma thread
   emailSubject     String?           // Assunto do e-mail (para busca e exibição)

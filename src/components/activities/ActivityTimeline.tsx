@@ -13,6 +13,8 @@ type Activity = {
   completedAt?: Date | null;
   createdAt: Date;
   gotoCallId?: string | null;
+  gotoRecordingDriveId?: string | null;
+  gotoTranscriptText?: string | null;
   deal?: {
     id: string;
     title: string;
@@ -337,12 +339,36 @@ function ActivityItem({ activity, showLinks }: { activity: Activity; showLinks: 
         </p>
 
         {/* Description */}
-        {activity.description && (
+        {activity.description && !isGoto && (
           <div className={`mt-2 rounded-lg border p-3 text-sm text-gray-700 ${config.descriptionBg} ${config.descriptionBorder}`}>
             {activity.type === "whatsapp" ? (
               <WhatsAppMessageLog description={activity.description} previewCount={3} />
             ) : (
               <p className="whitespace-pre-line">{activity.description}</p>
+            )}
+          </div>
+        )}
+
+        {/* GoTo: audio player + transcript */}
+        {isGoto && activity.gotoRecordingDriveId && (
+          <div className="mt-2 space-y-2">
+            <audio
+              controls
+              preload="none"
+              className="w-full rounded-md"
+              style={{ height: "36px" }}
+            >
+              <source src={`/api/goto/recordings/${activity.id}`} type="audio/mpeg" />
+            </audio>
+            {activity.gotoTranscriptText && (
+              <details className="rounded-md border border-blue-200 bg-blue-50">
+                <summary className="cursor-pointer px-3 py-2 text-xs font-semibold text-blue-700 select-none">
+                  Transcrição da ligação
+                </summary>
+                <p className="whitespace-pre-wrap px-3 pb-3 pt-1 text-xs text-blue-900 leading-relaxed">
+                  {activity.gotoTranscriptText}
+                </p>
+              </details>
             )}
           </div>
         )}

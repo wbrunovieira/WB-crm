@@ -2,7 +2,13 @@
  * Transcriptor API Client
  *
  * Integrates with the WB transcription service at transcritor.wbdigitalsolutions.com
- * Async flow: submit video → get job_id → poll status → fetch result when done
+ * Async flow: submit file → get job_id → poll status → fetch result when done
+ *
+ * Endpoints:
+ *   POST /transcriptions/video  — vídeo MP4 (Meet recordings)
+ *   POST /transcriptions/audio  — áudio MP3/WAV/M4A/FLAC/OGG (GoTo calls)
+ *   GET  /transcriptions/{id}   — status: pending | processing | done | failed
+ *   GET  /transcriptions/{id}/result — { text, language, duration_seconds }
  */
 
 // Read env vars lazily at call time so tests can set them in beforeEach
@@ -57,6 +63,36 @@ export async function submitVideoForTranscription(
   if (!res.ok) {
     const body = await res.text();
     throw new Error(`Transcriptor upload failed ${res.status}: ${body}`);
+  }
+
+  const data = await res.json();
+  return { jobId: data.job_id, status: data.status };
+}
+
+// ---------------------------------------------------------------------------
+// submitAudioForTranscription
+//
+// Uploads an audio Buffer to the transcriptor API.
+// Accepts: mp3, wav, m4a, flac, ogg
+// Returns { jobId, status: "pending" }.
+
+export async function submitAudioForTranscription(
+  buffer: Buffer,
+  fileName: string
+): Promise<{ jobId: string; status: string }> {
+  const formData = new FormData();
+  // Use File (not Blob) so the filename is preserved in the multipart request
+  formData.append("file", new File([new Uint8Array(buffer)], fileName, { type: "audio/mpeg" }));
+
+  const res = await fetch(`${baseUrl()}/transcriptions/audio`, {
+    method: "POST",
+    headers: headers(),
+    body: formData,
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Transcriptor audio upload failed ${res.status}: ${body}`);
   }
 
   const data = await res.json();
