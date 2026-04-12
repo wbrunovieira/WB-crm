@@ -1,3 +1,4 @@
+import { Readable } from "stream";
 import { google } from "googleapis";
 import { getAuthenticatedClient } from "./auth";
 
@@ -75,11 +76,16 @@ export async function uploadFile(opts: UploadFileOptions): Promise<UploadFileRes
     requestBody.parents = [opts.folderId];
   }
 
+  // googleapis requer um Readable stream — converte Buffer quando necessário
+  const body = Buffer.isBuffer(opts.content)
+    ? Readable.from(opts.content)
+    : opts.content;
+
   const { data } = await drive.files.create({
     requestBody,
     media: {
       mimeType: opts.mimeType,
-      body: opts.content,
+      body,
     },
     fields: "id,webViewLink",
   });
