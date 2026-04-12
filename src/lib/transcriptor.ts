@@ -33,11 +33,18 @@ export interface TranscriptionJob {
   error?: string;
 }
 
+export interface TranscriptionSegment {
+  start: number;
+  end: number;
+  text: string;
+}
+
 export interface TranscriptionResult {
   jobId: string;
   text: string;
   language: string;
   durationSeconds: number;
+  segments: TranscriptionSegment[];
 }
 
 // ---------------------------------------------------------------------------
@@ -146,5 +153,6 @@ export async function getTranscriptionResult(jobId: string): Promise<Transcripti
     text: data.text,
     language: data.language,
     durationSeconds: data.duration_seconds,
+    segments: (data.segments ?? []) as TranscriptionSegment[],
   };
 }
