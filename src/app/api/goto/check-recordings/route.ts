@@ -59,9 +59,9 @@ async function getClientName(activity: {
   if (activity.leadId) {
     const l = await prisma.lead.findUnique({
       where: { id: activity.leadId },
-      select: { businessName: true },
+      select: { businessName: true, registeredName: true },
     });
-    return l?.businessName ?? "Cliente";
+    return l?.businessName ?? l?.registeredName ?? "Cliente";
   }
   if (activity.partnerId) {
     const p = await prisma.partner.findUnique({
