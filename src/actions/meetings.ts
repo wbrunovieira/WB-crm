@@ -68,7 +68,7 @@ export async function scheduleMeeting(input: ScheduleMeetingInput) {
   const validated = scheduleMeetingSchema.parse(input);
 
   // 1. Create Google Calendar event with Meet link
-  const { googleEventId, meetLink } = await createMeetEvent({
+  const { googleEventId, meetLink, attendees } = await createMeetEvent({
     title: validated.title,
     startAt: validated.startAt,
     endAt: validated.endAt,
@@ -100,7 +100,8 @@ export async function scheduleMeeting(input: ScheduleMeetingInput) {
       meetLink,
       startAt: validated.startAt,
       endAt: validated.endAt,
-      attendeeEmails: JSON.stringify(validated.attendeeEmails),
+      // Store as [{email, responseStatus}] — starts as needsAction for all
+      attendeeEmails: JSON.stringify(attendees),
       status: "scheduled",
       leadId: validated.leadId,
       contactId: validated.contactId,

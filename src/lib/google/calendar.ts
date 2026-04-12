@@ -11,9 +11,18 @@ interface CreateMeetEventOptions {
   timeZone?: string;
 }
 
+export interface MeetAttendee {
+  email: string;
+  /** needsAction | accepted | declined | tentative */
+  responseStatus: "needsAction" | "accepted" | "declined" | "tentative";
+  organizer?: boolean;
+  self?: boolean;
+}
+
 interface CreateMeetEventResult {
   googleEventId: string;
   meetLink: string | null;
+  attendees: MeetAttendee[];
 }
 
 export async function createMeetEvent(
@@ -43,9 +52,17 @@ export async function createMeetEvent(
     },
   });
 
+  const attendees: MeetAttendee[] = (data.attendees ?? []).map((a) => ({
+    email: a.email!,
+    responseStatus: (a.responseStatus ?? "needsAction") as MeetAttendee["responseStatus"],
+    organizer: a.organizer ?? false,
+    self: a.self ?? false,
+  }));
+
   return {
     googleEventId: data.id!,
     meetLink: data.hangoutLink ?? null,
+    attendees,
   };
 }
 
@@ -76,4 +93,16 @@ export async function getMeetEvent(googleEventId: string) {
   });
 
   return data;
+}
+
+/** Extracts the attendee list with RSVP statuses from a raw Calendar event */
+export function extractAttendees(
+  event: Awaited<ReturnType<typeof getMeetEvent>>
+): MeetAttendee[] {
+  return (event.attendees ?? []).map((a) => ({
+    email: a.email!,
+    responseStatus: (a.responseStatus ?? "needsAction") as MeetAttendee["responseStatus"],
+    organizer: a.organizer ?? false,
+    self: a.self ?? false,
+  }));
 }
