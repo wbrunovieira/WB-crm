@@ -142,40 +142,46 @@ src/
 - [x] Integração com projetos externos via API e `externalProjectIds` (JSON) em Organization
 - [x] ICP (Ideal Customer Profile) scoring em Organizations
 
-### FASE 5 - Google Drive + Propostas 🔲 PRÓXIMA
+### FASE 5 - Google Drive + Propostas ✅ CONCLUÍDA
 
-**Objetivo**: armazenar propostas, gravações e anexos organizados no Google Drive, com envio de proposta diretamente pelo CRM.
+- [x] `src/lib/google/drive.ts` — `getOrCreateFolder`, `uploadFile`, `getFileUrl`, `deleteFile` (Buffer → Readable stream fix)
+- [x] `src/lib/google/drive-folders.ts` — pasta `WB-CRM/Propostas/[Lead]/` criada/recuperada automaticamente, `driveFolderId` persistido
+- [x] Campos `driveFolderId` em Lead e Organization, model `Proposal` — migration segura com `IF NOT EXISTS`
+- [x] Server actions: `getProposals`, `createProposal` (upload Drive), `updateProposalStatus`, `deleteProposal` (remove do Drive)
+- [x] `ProposalUploadModal` — título, descrição, upload PDF/Word/Excel/PPT ≤25 MB → Drive
+- [x] `ProposalsList` — badges de status, 4 ações por arquivo:
+  - **Visualizar**: modal fullscreen com iframe (PDF nativo; Word/Excel via Microsoft Office Online)
+  - **Download**: força save-as na máquina local
+  - **Abrir com app**: `inline=true` → browser/OS decide o app
+  - **Abrir no Drive**: link direto para a interface do Google Drive
+- [x] API route `/api/proposals/[id]/file` — serve arquivo via OAuth sem exigir login Google no browser
+- [x] Seção "Propostas" nas páginas de Lead e Deal
+- [x] 16 testes TDD (drive + proposals actions)
 
-#### 5.1 — Drive: estrutura de pastas + upload
+### FASE 6 - Google Meet: agendamento e gravações 🔲 PRÓXIMA
 
-- [ ] `src/lib/google/drive.ts` — `getOrCreateFolder`, `uploadFile`, `getFileUrl`, `deleteFile`
-- [ ] `src/lib/google/drive-folders.ts` — `getEntityFolder(entityType, entityId)` cria/recupera pasta `WB-CRM/[Tipo]/[Nome]/` e persiste `driveFolderId` no banco
-- [ ] Campos `driveFolderId` em Lead e Organization (migration)
+**Objetivo**: agendar reuniões do Google Meet diretamente do perfil do Lead/Contato/Organização, com convite enviado por e-mail e reunião listada no perfil.
 
-#### 5.2 — Propostas para Leads e Deals
-
-- [ ] Model `Proposal` no Prisma (title, status, driveFileId, driveUrl, leadId, dealId)
-- [ ] Server actions: `createProposal`, `uploadProposalFile`, `sendProposalByEmail`, `updateProposalStatus`, `deleteProposal`
-- [ ] `ProposalUploadModal` — upload de PDF, título, status, botão "Salvar no Drive"
-- [ ] `ProposalsList` — lista de propostas com link para Drive e botão de envio por e-mail
-- [ ] Seção "Propostas" nas páginas de Lead e Deal
-
-**Status de proposta**: `draft` (cinza) → `sent` (azul) → `accepted` (verde) | `rejected` (vermelho)
-
-#### Testes (TDD)
-
-- [ ] `tests/unit/lib/google/drive.test.ts`
-- [ ] `tests/unit/actions/proposals.test.ts`
-
-### FASE 6 - Google Meet: agendamento e gravações 🔲
+#### 6.1 — Agendamento
 
 - [ ] `src/lib/google/calendar.ts` — `createMeetEvent`, `cancelMeetEvent`
 - [ ] `src/actions/meetings.ts` — `scheduleMeeting`, `cancelMeeting`, `getMeetings`
-- [ ] `ScheduleMeetingModal` — título, data/hora, e-mails convidados pré-preenchidos
-- [ ] `MeetingsList` — reuniões futuras e passadas com botão "Entrar no Meet"
+- [ ] Model `Meeting` no Prisma (googleEventId, meetLink, attendeeEmails, status, leadId, dealId…)
+- [ ] `ScheduleMeetingModal` — título, data/hora, e-mails convidados pré-preenchidos com e-mail do Lead/Contato
+- [ ] `MeetingsList` — seção de reuniões no perfil da entidade: futuras e passadas, botão "Entrar no Meet"
 - [ ] Activity do tipo `meeting` gerada automaticamente ao agendar
-- [ ] Detecção automática de gravações no Drive (cron 15 min) → `recordingDriveId`
-- [ ] Player de gravação na seção da reunião
+
+#### 6.2 — Gravações (requer Google Workspace Business Standard+)
+
+- [ ] `src/lib/google/recording-detector.ts` — busca gravação no Drive após término da reunião
+- [ ] Cron/endpoint `/api/google/check-recordings` a cada 15 min
+- [ ] Gravação movida para `WB-CRM/Reuniões/[Entidade]/` e `recordingDriveId` salvo
+- [ ] Player inline usando a rota de arquivo do Drive (mesmo padrão das propostas)
+
+#### Testes (TDD)
+
+- [ ] `tests/unit/lib/google/calendar.test.ts`
+- [ ] `tests/unit/actions/meetings.test.ts`
 
 ### FASE 7 - WhatsApp: matching avançado + mídia 🔲
 
@@ -261,10 +267,11 @@ NEXTAUTH_URL="http://localhost:3000"
 
 ## Próximos Passos
 
-**Fase atual**: FASE 5 — Google Drive + Propostas
+**Fase atual**: FASE 6 — Google Meet: agendamento e gravações
 
-1. Criar migration adicionando `driveFolderId` em Lead e Organization
-2. Implementar `src/lib/google/drive.ts` com TDD (`tests/unit/lib/google/drive.test.ts`)
-3. Implementar `src/lib/google/drive-folders.ts` — helper de pasta por entidade
-4. Criar model `Proposal` + migration + server actions (TDD)
-5. Construir `ProposalUploadModal` e `ProposalsList` + seção nas páginas de Lead e Deal
+1. Criar model `Meeting` no Prisma + migration
+2. Implementar `src/lib/google/calendar.ts` com TDD
+3. Criar `src/actions/meetings.ts` — `scheduleMeeting`, `cancelMeeting`, `getMeetings`
+4. Construir `ScheduleMeetingModal` e `MeetingsList`
+5. Adicionar seção "Reuniões" nas páginas de Lead, Contact e Deal
+6. (Opcional, depende do plano Google Workspace) detector de gravações via cron
