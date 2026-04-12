@@ -513,6 +513,33 @@ npm install googleapis google-auth-library
 | 2e | Gmail: busca + filtros de atividades (tipo, status, texto) | ✅ Concluída |
 | 2f | Gmail: ordenação — pendentes por drag-and-drop; concluídas/falhas/puladas por data de resolução | ✅ Concluída |
 | 3 | Drive: estrutura de pastas + Propostas para Leads/Deals + viewer (PDF/Office) | ✅ Concluída |
-| 4 | Meet: agendamento de reuniões com convite | 🔲 Pendente |
-| 5 | Meet: gravações detectadas e exibidas no perfil | 🔲 Pendente |
-| 6 | Transcrição: Google nativo (Business Plus) ou Whisper | 🔲 Pendente |
+| 4 | Meet: agendamento de reuniões com convite e edição | ✅ Concluída |
+| 4a | Meet: validação de título único (client-side, bypass Next.js sanitization) | ✅ Concluída |
+| 4b | Meet: contatos do lead como chips selecionáveis no modal | ✅ Concluída |
+| 4c | Meet: cancelamento inline com confirmação + edição de reuniões agendadas | ✅ Concluída |
+| 4d | Meet: ordenação — próximas (asc) e histórico (desc), endAt inválido ocultado | ✅ Concluída |
+| 5 | Meet: gravações detectadas automaticamente e exibidas no perfil | ✅ Concluída |
+| 5a | Meet: Pass 0 Drive-first — detecta reuniões iniciadas antes/depois do horário agendado | ✅ Concluída |
+| 5b | Meet: Pass 1 time-based fallback — detecta reuniões sem gravação (horário passou) | ✅ Concluída |
+| 5c | Meet: Pass 2 retry — reprocessa reuniões ended sem arquivo (Drive pode demorar >15min) | ✅ Concluída |
+| 5d | Meet: horários reais (actualStartAt / actualEndAt) exibidos no card do histórico | ✅ Concluída |
+| 5e | Meet: cron `check-recordings` registrado no servidor (*/15 * * * *) | ✅ Concluída |
+| 6 | Transcrição: Google nativo (Gemini notes + transcript) como fonte primária | ✅ Concluída |
+| 6a | Transcrição: vídeo Whisper como fallback quando doc Google não tem seção de transcrição | ✅ Concluída |
+| 6b | Transcrição: campo `meetingSummary` editável na UI com botão copiar | ✅ Concluída |
+| 6c | Transcrição: `transcriptText` exibido com botão copiar | ✅ Concluída |
+| 6d | Transcrição: cron `check-transcriptions` registrado no servidor (*/15 * * * *) | ✅ Concluída |
+
+---
+
+## O que falta (próximas melhorias)
+
+| Item | Descrição | Prioridade |
+|---|---|---|
+| Seção Reuniões em Organizações | MeetingsList ainda não aparece nas páginas de Organization | Alta |
+| Seção Reuniões em Contatos | MeetingsList ainda não aparece nas páginas de Contact | Alta |
+| Seção Reuniões em Deals | MeetingsList ainda não aparece nas páginas de Deal | Média |
+| Badge de origem da transcrição | Indicar visualmente "Transcrição Google" vs "Transcrição Whisper" | Baixa |
+| Busca dentro da transcrição | Campo de busca client-side dentro do texto da transcrição | Baixa |
+| Mover gravação para WB-CRM/Reuniões/ | Organizar gravações em subpasta por entidade no Drive | Baixa |
+| Renovar cron tokens | O refresh token Google pode expirar; adicionar alerta no painel admin | Média |
