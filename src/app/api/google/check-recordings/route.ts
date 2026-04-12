@@ -112,7 +112,10 @@ export async function GET(req: NextRequest) {
               });
             }
 
-            const found = await processRecording(meeting, meeting.startAt, now, results);
+            // Pass now as scheduledStartAt: the meeting just ended (detected by Drive),
+            // so the date filter in findMeetingFiles should look back from now, not
+            // from the scheduled start (which may be hours in the future).
+            const found = await processRecording(meeting, now, now, results);
             if (!found) {
               results.push({ meetingId: meeting.id, action: "drive_detected_recording_pending" });
             }
@@ -203,7 +206,10 @@ export async function GET(req: NextRequest) {
 
   for (const meeting of waitingForRecording) {
     try {
-      const found = await processRecording(meeting, meeting.startAt, now, results);
+      // Use actualEndAt as the reference time for Drive search — the recording
+      // was created around when the meeting ended, not when it was scheduled.
+      const searchRef = meeting.actualEndAt ?? meeting.startAt;
+      const found = await processRecording(meeting, searchRef, now, results);
       if (!found) {
         results.push({ meetingId: meeting.id, action: "recording_still_pending" });
       }
