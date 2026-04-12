@@ -11,18 +11,23 @@ import { submitVideoForTranscription } from "@/lib/transcriptor";
  *
  * Cron endpoint — runs every 15 minutes.
  *
- * Pass 1 — scheduled → ended:
- *   Finds meetings whose time has passed, marks as ended, completes the linked
- *   Activity, then searches for recording + transcript.
+ * Pass 0 — Drive-first detection (catches meetings started early or late):
+ *   Lists all new files in "Meet Recordings" folder (last 6h).
+ *   Extracts the meeting title from the filename and finds matching scheduled
+ *   meetings in the DB. This detects meetings regardless of scheduled time —
+ *   a meeting scheduled for 17:00 that ran at 11:00 is caught immediately.
  *
- * Pass 2 — ended, no recording/transcript yet:
- *   Retries for meetings already marked ended but still missing files.
- *   This handles the case where Google takes >15min to process recordings.
+ * Pass 1 — scheduled → ended (time-based fallback):
+ *   Finds meetings whose scheduled time has passed. Catches meetings where
+ *   no recording was created (e.g. host forgot to record).
  *
- * Transcript strategy (priority order):
- *   1. Google Meet native transcript (Google Doc) — has speaker diarization.
- *      Export as text, split into meetingSummary (Gemini AI notes) + transcriptText (raw).
- *   2. Fallback: custom video transcription (if user forgot to enable transcript).
+ * Pass 2 — ended, files still pending:
+ *   Retries recording/transcript search for ended meetings with no files yet.
+ *   Google can take >15min to process recordings.
+ *
+ * Transcript strategy (priority):
+ *   1. Google Meet native transcript doc → meetingSummary + transcriptText
+ *   2. Fallback: custom video transcription (if user forgot to enable transcript)
  *
  * Secured by CRON_SECRET header.
  */
@@ -33,12 +38,101 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
-  const earlyEndCutoff = new Date(now.getTime() - 30 * 60 * 1000);
+  const results: { meetingId: string; action: string; error?: string }[] = [];
 
-  // ── Pass 1: scheduled → ended ────────────────────────────────────────────
+  // ── Pass 0: Drive-first — detect early/late meetings via new Drive files ──
+  // Searches "Meet Recordings" for files created in the last 6 hours,
+  // extracts meeting title from filename, matches to scheduled meetings.
+  const pass0Ids = new Set<string>();
+  try {
+    const auth = await getAuthenticatedClient();
+    const drive = google.drive({ version: "v3", auth });
+
+    const folderRes = await drive.files.list({
+      q: `name = 'Meet Recordings' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`,
+      fields: "files(id)",
+      pageSize: 1,
+    });
+    const meetFolder = folderRes.data.files?.[0];
+
+    if (meetFolder) {
+      const since6h = new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString();
+      const recentFiles = await drive.files.list({
+        q: `'${meetFolder.id}' in parents and trashed = false and createdTime > '${since6h}'`,
+        fields: "files(id, name, mimeType, createdTime)",
+        orderBy: "createdTime desc",
+        pageSize: 50,
+      });
+
+      // Extract unique meeting titles from filenames.
+      // Google Meet names files: "[Title] - YYYY/MM/DD HH:MM GMT±N - Recording"
+      const titlesInDrive = new Set<string>();
+      for (const f of recentFiles.data.files ?? []) {
+        const match = f.name?.match(/^(.+?) - \d{4}\/\d{2}\/\d{2}/);
+        if (match) titlesInDrive.add(match[1].toLowerCase());
+      }
+
+      if (titlesInDrive.size > 0) {
+        // Find scheduled meetings whose title matches a file in Drive
+        const scheduledMeetings = await prisma.meeting.findMany({
+          where: { status: "scheduled" },
+          include: {
+            lead: { select: { id: true, businessName: true } },
+            deal: { select: { id: true, title: true } },
+            activity: { select: { id: true, completed: true } },
+          },
+        });
+
+        for (const meeting of scheduledMeetings) {
+          if (!titlesInDrive.has(meeting.title.toLowerCase())) continue;
+
+          pass0Ids.add(meeting.id);
+          try {
+            // Fetch final RSVP statuses
+            let updatedAttendees: string | undefined;
+            try {
+              const event = await getMeetEvent(meeting.googleEventId!);
+              updatedAttendees = JSON.stringify(extractAttendees(event));
+            } catch { /* non-fatal */ }
+
+            await prisma.meeting.update({
+              where: { id: meeting.id },
+              data: {
+                status: "ended",
+                actualEndAt: now,
+                actualStartAt: meeting.actualStartAt ?? now,
+                ...(updatedAttendees ? { attendeeEmails: updatedAttendees } : {}),
+              },
+            });
+
+            if (meeting.activityId && meeting.activity && !meeting.activity.completed) {
+              await prisma.activity.update({
+                where: { id: meeting.activityId },
+                data: { completed: true, completedAt: now },
+              });
+            }
+
+            const found = await processRecording(meeting, meeting.startAt, now, results);
+            if (!found) {
+              results.push({ meetingId: meeting.id, action: "drive_detected_recording_pending" });
+            }
+          } catch (err) {
+            console.error(`Pass 0 error for meeting ${meeting.id}:`, err);
+            results.push({ meetingId: meeting.id, action: "error", error: String(err) });
+          }
+        }
+      }
+    }
+  } catch (err) {
+    console.error("Pass 0 Drive scan error:", err);
+  }
+
+  // ── Pass 1: time-based fallback (catches meetings with no recording) ───────
+  const earlyEndCutoff = new Date(now.getTime() - 30 * 60 * 1000);
   const scheduledEnded = await prisma.meeting.findMany({
     where: {
       status: "scheduled",
+      id: { notIn: Array.from(pass0Ids) }, // already handled by Pass 0
       OR: [
         { endAt: { lt: now } },
         { endAt: null, startAt: { lt: earlyEndCutoff } },
@@ -52,37 +146,14 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  // ── Pass 2: ended but recording/transcript not yet found ─────────────────
-  const waitingForRecording = await prisma.meeting.findMany({
-    where: {
-      status: "ended",
-      recordingDriveId: null,
-      googleEventId: { not: null },
-      // Only retry for meetings that ended in the last 4 hours
-      actualEndAt: { gt: new Date(now.getTime() - 4 * 60 * 60 * 1000) },
-    },
-    include: {
-      lead: { select: { id: true, businessName: true } },
-      deal: { select: { id: true, title: true } },
-      activity: { select: { id: true, completed: true } },
-    },
-  });
-
-  const results: { meetingId: string; action: string; error?: string }[] = [];
-
-  // ── Process Pass 1 ───────────────────────────────────────────────────────
   for (const meeting of scheduledEnded) {
     try {
-      // 1. Fetch final attendee RSVP statuses
       let updatedAttendees: string | undefined;
       try {
         const event = await getMeetEvent(meeting.googleEventId!);
         updatedAttendees = JSON.stringify(extractAttendees(event));
-      } catch {
-        // Non-fatal — keep existing attendeeEmails
-      }
+      } catch { /* non-fatal */ }
 
-      // 2. Mark as ended, set actual times
       await prisma.meeting.update({
         where: { id: meeting.id },
         data: {
@@ -93,7 +164,6 @@ export async function GET(req: NextRequest) {
         },
       });
 
-      // 3. Complete linked Activity
       if (meeting.activityId && meeting.activity && !meeting.activity.completed) {
         await prisma.activity.update({
           where: { id: meeting.activityId },
@@ -106,18 +176,31 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      // 4. Search Drive for recording + transcript
       const found = await processRecording(meeting, meeting.startAt, now, results);
       if (!found) {
         results.push({ meetingId: meeting.id, action: "ended_recording_pending" });
       }
     } catch (err) {
-      console.error(`Error processing meeting ${meeting.id}:`, err);
+      console.error(`Pass 1 error for meeting ${meeting.id}:`, err);
       results.push({ meetingId: meeting.id, action: "error", error: String(err) });
     }
   }
 
-  // ── Process Pass 2: retry for already-ended meetings ─────────────────────
+  // ── Pass 2: retry for ended meetings still missing files ──────────────────
+  const waitingForRecording = await prisma.meeting.findMany({
+    where: {
+      status: "ended",
+      recordingDriveId: null,
+      googleEventId: { not: null },
+      actualEndAt: { gt: new Date(now.getTime() - 4 * 60 * 60 * 1000) },
+    },
+    include: {
+      lead: { select: { id: true, businessName: true } },
+      deal: { select: { id: true, title: true } },
+      activity: { select: { id: true, completed: true } },
+    },
+  });
+
   for (const meeting of waitingForRecording) {
     try {
       const found = await processRecording(meeting, meeting.startAt, now, results);
@@ -125,13 +208,15 @@ export async function GET(req: NextRequest) {
         results.push({ meetingId: meeting.id, action: "recording_still_pending" });
       }
     } catch (err) {
-      console.error(`Error retrying recording for ${meeting.id}:`, err);
+      console.error(`Pass 2 error for meeting ${meeting.id}:`, err);
       results.push({ meetingId: meeting.id, action: "error", error: String(err) });
     }
   }
 
   return NextResponse.json({
-    processedNew: scheduledEnded.length,
+    processedNew: pass0Ids.size + scheduledEnded.length,
+    pass0DriveDetected: pass0Ids.size,
+    pass1TimeBased: scheduledEnded.length,
     retriedRecording: waitingForRecording.length,
     results,
     checkedAt: now.toISOString(),
@@ -140,10 +225,6 @@ export async function GET(req: NextRequest) {
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
-/**
- * Exports a Google Doc as plain text via Drive API.
- * Google Meet transcripts include speaker names: "Bruno Vieira: Olá..."
- */
 async function exportGoogleDocText(fileId: string): Promise<string> {
   const auth = await getAuthenticatedClient();
   const drive = google.drive({ version: "v3", auth });
@@ -155,35 +236,23 @@ async function exportGoogleDocText(fileId: string): Promise<string> {
 }
 
 /**
- * Splits the exported Google Meet doc into two parts:
- * - meetingSummary: the "📝 Observações" section (Gemini AI notes, topics, action items)
- * - transcriptText: the "📖 Transcrição" section (raw transcript with speaker names)
- *
- * Returns whichever sections are present.
+ * Splits the exported Google Meet doc:
+ * - meetingSummary: "📝 Observações" section (Gemini AI notes)
+ * - transcriptText: "📖 Transcrição" section (raw with speaker names)
  */
 function parseGoogleMeetDoc(text: string): {
   meetingSummary: string | null;
   transcriptText: string | null;
 } {
-  // The doc always has "📖" before the raw transcript section
-  const transcriptMarker = "📖";
-  const idx = text.indexOf(transcriptMarker);
-
+  const idx = text.indexOf("📖");
   if (idx === -1) {
-    // No transcript section — entire content goes to summary
     return { meetingSummary: text || null, transcriptText: null };
   }
-
-  const summaryRaw = text.slice(0, idx).trim();
-  const transcriptRaw = text.slice(idx).trim();
-
   return {
-    meetingSummary: summaryRaw || null,
-    transcriptText: transcriptRaw || null,
+    meetingSummary: text.slice(0, idx).trim() || null,
+    transcriptText: text.slice(idx).trim() || null,
   };
 }
-
-// ── Main recording/transcript logic ──────────────────────────────────────────
 
 async function processRecording(
   meeting: {
@@ -207,12 +276,7 @@ async function processRecording(
     scheduledStartAt
   );
 
-  // ── Strategy 1: Google Meet native transcript (preferred) ─────────────────
-  // The native transcript is a Google Doc with:
-  //   • "📝 Observações" — Gemini AI notes, summary, topics, action items → meetingSummary
-  //   • "📖 Transcrição" — raw transcript with speaker names → transcriptText
-  // This is richer than our custom video transcription and requires no video download.
-
+  // ── Strategy 1: Google native transcript (preferred) ─────────────────────
   if (nativeTranscript) {
     let meetingSummary: string | null = null;
     let transcriptText: string | null = null;
@@ -248,9 +312,6 @@ async function processRecording(
   }
 
   // ── Strategy 2: Fallback — custom video transcription ────────────────────
-  // Used when user forgot to enable transcription in Google Meet.
-  // Downloads the .mp4 from Drive and submits to our transcription service.
-
   if (!recording) return false;
 
   const auth = await getAuthenticatedClient();
@@ -277,9 +338,6 @@ async function processRecording(
     },
   });
 
-  results.push({
-    meetingId: meeting.id,
-    action: "recording_saved_video_transcription_queued",
-  });
+  results.push({ meetingId: meeting.id, action: "recording_saved_video_transcription_queued" });
   return true;
 }
