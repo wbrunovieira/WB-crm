@@ -91,7 +91,7 @@ type Activity = {
   skipReason: string | null;
   leadContactIds: string | null;
   gotoCallId?: string | null;
-  gotoRecordingDriveId?: string | null;
+  gotoRecordingUrl?: string | null;
   gotoTranscriptText?: string | null;
   // Campos de e-mail
   emailThreadId?: string | null;
@@ -291,7 +291,7 @@ function SortableActivityItem({
               {activity.description}
             </p>
           )}
-          {activity.gotoCallId && activity.gotoRecordingDriveId && (
+          {activity.gotoCallId && activity.gotoRecordingUrl && (
             <div className="mt-2 space-y-1.5">
               <audio
                 controls

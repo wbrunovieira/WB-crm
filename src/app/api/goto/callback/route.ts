@@ -7,7 +7,7 @@ const log = logger.child({ context: "goto-callback" });
 
 function persistTokensToEnv(tokens: {
   accessToken: string;
-  refreshToken: string;
+  refreshToken?: string;
   expiresAt: number;
 }) {
   try {
@@ -16,7 +16,7 @@ function persistTokensToEnv(tokens: {
     execSync(
       [
         `sed -i 's|^GOTO_ACCESS_TOKEN=.*|GOTO_ACCESS_TOKEN="${escapeForSed(tokens.accessToken)}"|' ${envPath}`,
-        `sed -i 's|^GOTO_REFRESH_TOKEN=.*|GOTO_REFRESH_TOKEN="${escapeForSed(tokens.refreshToken)}"|' ${envPath}`,
+        tokens.refreshToken ? `sed -i 's|^GOTO_REFRESH_TOKEN=.*|GOTO_REFRESH_TOKEN="${escapeForSed(tokens.refreshToken)}"|' ${envPath}` : "true",
         `sed -i 's|^GOTO_TOKEN_EXPIRES_AT=.*|GOTO_TOKEN_EXPIRES_AT="${tokens.expiresAt}"|' ${envPath}`,
       ].join(" && ")
     );

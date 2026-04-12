@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { downloadCallRecording } from "@/lib/goto/recording-downloader";
-import { uploadCallRecordingToDrive } from "@/lib/google/goto-drive-uploader";
+import { findRecordingKey, downloadRecordingFromS3 } from "@/lib/goto/s3-recording";
 import {
   submitAudioForTranscription,
   getTranscriptionStatus,
@@ -13,9 +12,10 @@ import {
  *
  * Cron endpoint — runs every 15 minutes.
  *
- * Pass 1 — Download + upload + submit transcription:
- *   Finds activities with gotoRecordingId but no gotoRecordingDriveId (created in last 4h).
- *   Downloads audio from GoTo API → uploads to Google Drive → submits for transcription.
+ * Pass 1 — Find in S3 + submit transcription:
+ *   Finds activities with gotoRecordingId but no gotoRecordingUrl (last 4h).
+ *   Finds the MP3 in S3 → downloads → submits for transcription.
+ *   Saves S3 key in gotoRecordingUrl.
  *
  * Pass 2 — Poll pending transcription jobs:
  *   Finds activities with gotoTranscriptionJobId set.
@@ -32,45 +32,40 @@ export async function GET(req: NextRequest) {
   const now = new Date();
   const results: { activityId: string; action: string; error?: string }[] = [];
 
-  // ── Pass 1: Download recording → Drive → transcription ──────────────────
+  // ── Pass 1: Find in S3 → download → submit transcription ────────────────
   const since4h = new Date(now.getTime() - 4 * 60 * 60 * 1000);
   const pendingDownload = await prisma.activity.findMany({
     where: {
       gotoRecordingId: { not: null },
-      gotoRecordingDriveId: null,
+      gotoRecordingUrl: null,
       completedAt: { gte: since4h },
     },
-    select: { id: true, gotoRecordingId: true, subject: true },
+    select: { id: true, gotoRecordingId: true, completedAt: true },
   });
 
   for (const activity of pendingDownload) {
     try {
-      const { buffer, contentType } = await downloadCallRecording(
-        activity.gotoRecordingId!
-      );
+      const callDate = activity.completedAt ?? now;
+      const s3Key = await findRecordingKey(activity.gotoRecordingId!, callDate);
 
-      // File name: ligacao-{activityId}.mp3 (safe for Drive)
-      const ext = contentType.includes("wav") ? "wav" : contentType.includes("flac") ? "flac" : "mp3";
-      const fileName = `ligacao-${activity.id}.${ext}`;
+      if (!s3Key) {
+        results.push({ activityId: activity.id, action: "s3_not_found_yet" });
+        continue;
+      }
 
-      const { fileId, webViewLink } = await uploadCallRecordingToDrive(
-        buffer,
-        fileName,
-        contentType
-      );
-
+      const { buffer } = await downloadRecordingFromS3(s3Key);
+      const fileName = `ligacao-${activity.id}.mp3`;
       const { jobId } = await submitAudioForTranscription(buffer, fileName);
 
       await prisma.activity.update({
         where: { id: activity.id },
         data: {
-          gotoRecordingDriveId: fileId,
-          gotoRecordingUrl: webViewLink,
+          gotoRecordingUrl: s3Key,
           gotoTranscriptionJobId: jobId,
         },
       });
 
-      results.push({ activityId: activity.id, action: "recording_uploaded_transcription_queued" });
+      results.push({ activityId: activity.id, action: "s3_found_transcription_queued", s3Key } as never);
     } catch (err) {
       console.error(`Pass 1 error for activity ${activity.id}:`, err);
       results.push({ activityId: activity.id, action: "error", error: String(err) });
@@ -99,7 +94,6 @@ export async function GET(req: NextRequest) {
         });
         results.push({ activityId: activity.id, action: "transcription_saved" });
       } else if (status === "failed") {
-        console.error(`Transcription job ${jobId} failed:`, error);
         await prisma.activity.update({
           where: { id: activity.id },
           data: { gotoTranscriptionJobId: null },
