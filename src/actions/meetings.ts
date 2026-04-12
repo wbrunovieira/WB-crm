@@ -5,7 +5,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createMeetEvent, cancelMeetEvent } from "@/lib/google/calendar";
+import { createMeetEvent, cancelMeetEvent, updateMeetEvent } from "@/lib/google/calendar";
 
 // ---------------------------------------------------------------------------
 // Schemas
@@ -22,10 +22,20 @@ const scheduleMeetingSchema = z.object({
   dealId: z.string().optional(),
 });
 
+const updateMeetingSchema = z.object({
+  title: z.string().min(1, "Título é obrigatório").optional(),
+  startAt: z.date().optional(),
+  endAt: z.date().optional(),
+  attendeeEmails: z.array(z.string().email()).optional(),
+  description: z.string().optional(),
+  timeZone: z.string().optional(),
+});
+
 // ---------------------------------------------------------------------------
 // Types
 
 export type ScheduleMeetingInput = z.infer<typeof scheduleMeetingSchema>;
+export type UpdateMeetingInput = z.infer<typeof updateMeetingSchema>;
 
 // ---------------------------------------------------------------------------
 // getMeetings
@@ -159,4 +169,77 @@ export async function cancelMeeting(meetingId: string) {
   if (meeting.leadId) revalidatePath(`/leads/${meeting.leadId}`);
   if (meeting.dealId) revalidatePath(`/deals/${meeting.dealId}`);
   if (meeting.contactId) revalidatePath(`/contacts/${meeting.contactId}`);
+}
+
+// ---------------------------------------------------------------------------
+// updateMeeting
+
+export async function updateMeeting(meetingId: string, input: UpdateMeetingInput) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Não autorizado");
+
+  const validated = updateMeetingSchema.parse(input);
+
+  const meeting = await prisma.meeting.findUnique({
+    where: { id: meetingId },
+  });
+
+  if (!meeting) throw new Error("Reunião não encontrada");
+
+  if (session.user.role !== "admin" && meeting.ownerId !== session.user.id) {
+    throw new Error("Acesso negado");
+  }
+
+  if (meeting.status !== "scheduled") {
+    throw new Error("Somente reuniões agendadas podem ser editadas");
+  }
+
+  // Update Google Calendar event
+  let updatedAttendees = JSON.parse(meeting.attendeeEmails as string) as Array<{
+    email: string;
+    responseStatus: string;
+  }>;
+
+  if (meeting.googleEventId) {
+    const result = await updateMeetEvent(meeting.googleEventId, {
+      title: validated.title,
+      startAt: validated.startAt,
+      endAt: validated.endAt,
+      attendeeEmails: validated.attendeeEmails,
+      description: validated.description,
+      timeZone: validated.timeZone,
+    });
+    updatedAttendees = result.attendees;
+  }
+
+  // Build update data
+  const updateData: Record<string, unknown> = {
+    attendeeEmails: JSON.stringify(updatedAttendees),
+  };
+  if (validated.title !== undefined) updateData.title = validated.title;
+  if (validated.startAt !== undefined) updateData.startAt = validated.startAt;
+  if (validated.endAt !== undefined) updateData.endAt = validated.endAt;
+
+  // Update activity dueDate and subject if timing/title changed
+  if (meeting.activityId && (validated.startAt || validated.title)) {
+    const activityData: Record<string, unknown> = {};
+    if (validated.startAt) activityData.dueDate = validated.startAt;
+    if (validated.title) activityData.subject = `Reunião: ${validated.title}`;
+    await prisma.activity.update({
+      where: { id: meeting.activityId },
+      data: activityData,
+    });
+  }
+
+  const updated = await prisma.meeting.update({
+    where: { id: meetingId },
+    data: updateData,
+  });
+
+  // Revalidate
+  if (meeting.leadId) revalidatePath(`/leads/${meeting.leadId}`);
+  if (meeting.dealId) revalidatePath(`/deals/${meeting.dealId}`);
+  if (meeting.contactId) revalidatePath(`/contacts/${meeting.contactId}`);
+
+  return updated;
 }

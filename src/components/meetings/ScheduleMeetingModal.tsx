@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Video, Plus, Trash2, Loader2, UserCheck, User } from "lucide-react";
-import { scheduleMeeting } from "@/actions/meetings";
+import { scheduleMeeting, updateMeeting } from "@/actions/meetings";
 import { toast } from "sonner";
 
 export interface SuggestedContact {
@@ -12,14 +12,52 @@ export interface SuggestedContact {
   role?: string | null;
 }
 
+export interface MeetingInitialData {
+  title: string;
+  description?: string;
+  startAt: Date;
+  endAt: Date | null;
+  attendeeEmails: string; // JSON string [{email, responseStatus}] or string[]
+}
+
 interface Props {
   leadId?: string;
   contactId?: string;
   dealId?: string;
   /** Contacts from the lead/deal to show as clickable chips */
   suggestedContacts?: SuggestedContact[];
+  /** When provided, switches modal to edit mode */
+  meetingId?: string;
+  initialData?: MeetingInitialData;
   onClose: () => void;
   onCreated: () => void;
+}
+
+function parseInitialEmails(
+  initialData: MeetingInitialData | undefined,
+  suggestedContacts: SuggestedContact[]
+): string[] {
+  if (!initialData) return [""];
+  try {
+    const parsed = JSON.parse(initialData.attendeeEmails);
+    const emails: string[] = Array.isArray(parsed)
+      ? parsed.map((a: unknown) => (typeof a === "string" ? a : (a as { email: string }).email))
+      : [];
+    // Remove emails that match suggested contacts (those go to chips)
+    const suggestedEmails = new Set(suggestedContacts.map((c) => c.email));
+    const custom = emails.filter((e) => !suggestedEmails.has(e));
+    return custom.length > 0 ? custom : [""];
+  } catch {
+    return [""];
+  }
+}
+
+function toDateTimeInputs(date: Date): { date: string; time: string } {
+  const d = new Date(date);
+  const datePart = d.toISOString().split("T")[0];
+  const hours = String(d.getHours()).padStart(2, "0");
+  const minutes = String(d.getMinutes()).padStart(2, "0");
+  return { date: datePart, time: `${hours}:${minutes}` };
 }
 
 export default function ScheduleMeetingModal({
@@ -27,20 +65,48 @@ export default function ScheduleMeetingModal({
   contactId,
   dealId,
   suggestedContacts = [],
+  meetingId,
+  initialData,
   onClose,
   onCreated,
 }: Props) {
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [durationMinutes, setDurationMinutes] = useState(60);
+  const isEditMode = !!meetingId;
 
-  // Selected contact IDs (from suggestedContacts)
-  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+  // Pre-fill from initialData when editing
+  const initialStart = initialData ? toDateTimeInputs(new Date(initialData.startAt)) : null;
+  const initialDuration =
+    initialData && initialData.endAt
+      ? Math.round((new Date(initialData.endAt).getTime() - new Date(initialData.startAt).getTime()) / 60000)
+      : 60;
+
+  const [title, setTitle] = useState(initialData?.title ?? "");
+  const [description, setDescription] = useState(initialData?.description ?? "");
+  const [startDate, setStartDate] = useState(initialStart?.date ?? "");
+  const [startTime, setStartTime] = useState(initialStart?.time ?? "");
+  const [durationMinutes, setDurationMinutes] = useState(
+    [30, 60, 90, 120].includes(initialDuration) ? initialDuration : 60
+  );
+
+  // Selected contact IDs — pre-select contacts whose emails appear in initialData (edit) or all (new)
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(() => {
+    if (!initialData) return new Set(suggestedContacts.map((c) => c.id));
+    try {
+      const parsed = JSON.parse(initialData.attendeeEmails);
+      const emails = new Set<string>(
+        Array.isArray(parsed)
+          ? parsed.map((a: unknown) => (typeof a === "string" ? a : (a as { email: string }).email))
+          : []
+      );
+      return new Set(suggestedContacts.filter((c) => emails.has(c.email)).map((c) => c.id));
+    } catch {
+      return new Set(suggestedContacts.map((c) => c.id));
+    }
+  });
 
   // Free-form email inputs (for anyone not in suggestedContacts)
-  const [customEmails, setCustomEmails] = useState<string[]>([""]);
+  const [customEmails, setCustomEmails] = useState<string[]>(
+    parseInitialEmails(initialData, suggestedContacts)
+  );
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -91,20 +157,31 @@ export default function ScheduleMeetingModal({
 
     setLoading(true);
     try {
-      await scheduleMeeting({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        startAt,
-        endAt,
-        attendeeEmails,
-        leadId,
-        contactId,
-        dealId,
-      });
-      toast.success("Reunião agendada! Convite enviado por e-mail.");
+      if (isEditMode && meetingId) {
+        await updateMeeting(meetingId, {
+          title: title.trim(),
+          description: description.trim() || undefined,
+          startAt,
+          endAt,
+          attendeeEmails,
+        });
+        toast.success("Reunião atualizada! Os convidados foram notificados.");
+      } else {
+        await scheduleMeeting({
+          title: title.trim(),
+          description: description.trim() || undefined,
+          startAt,
+          endAt,
+          attendeeEmails,
+          leadId,
+          contactId,
+          dealId,
+        });
+        toast.success("Reunião agendada! Convite enviado por e-mail.");
+      }
       onCreated();
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "Erro ao agendar reunião";
+      const msg = err instanceof Error ? err.message : "Erro ao salvar reunião";
       setError(msg);
       toast.error(msg);
     } finally {
@@ -127,7 +204,9 @@ export default function ScheduleMeetingModal({
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Video size={18} className="text-purple-600" />
-            <h2 className="text-base font-semibold text-gray-900">Agendar Reunião</h2>
+            <h2 className="text-base font-semibold text-gray-900">
+              {isEditMode ? "Editar Reunião" : "Agendar Reunião"}
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -335,7 +414,7 @@ export default function ScheduleMeetingModal({
               ) : (
                 <>
                   <Video size={14} />
-                  Agendar Reunião
+                  {isEditMode ? "Salvar Alterações" : "Agendar Reunião"}
                 </>
               )}
             </button>

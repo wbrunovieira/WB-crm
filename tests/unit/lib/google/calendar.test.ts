@@ -36,6 +36,7 @@ import {
   createMeetEvent,
   cancelMeetEvent,
   getMeetEvent,
+  updateMeetEvent,
 } from "@/lib/google/calendar";
 
 const mockGetAuthenticatedClient = vi.mocked(getAuthenticatedClient);
@@ -189,6 +190,50 @@ describe("getMeetEvent", () => {
     expect(result).toMatchObject({
       id: "event-abc123",
       status: "confirmed",
+    });
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe("updateMeetEvent", () => {
+  it("atualiza título, horário e convidados com sendUpdates all", async () => {
+    const cal = getCalendarMock();
+    cal.events.patch.mockResolvedValue({
+      data: {
+        id: "event-abc123",
+        summary: "Reunião Atualizada",
+        hangoutLink: "https://meet.google.com/abc-defg-hij",
+        attendees: [
+          { email: "novo@empresa.com", responseStatus: "needsAction" },
+        ],
+      },
+    });
+
+    const newStart = new Date("2026-04-20T14:00:00-03:00");
+    const newEnd = new Date("2026-04-20T15:00:00-03:00");
+
+    const result = await updateMeetEvent("event-abc123", {
+      title: "Reunião Atualizada",
+      startAt: newStart,
+      endAt: newEnd,
+      attendeeEmails: ["novo@empresa.com"],
+    });
+
+    expect(cal.events.patch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        calendarId: "primary",
+        eventId: "event-abc123",
+        sendUpdates: "all",
+        requestBody: expect.objectContaining({
+          summary: "Reunião Atualizada",
+          attendees: [{ email: "novo@empresa.com" }],
+        }),
+      })
+    );
+
+    expect(result.attendees[0]).toMatchObject({
+      email: "novo@empresa.com",
+      responseStatus: "needsAction",
     });
   });
 });
