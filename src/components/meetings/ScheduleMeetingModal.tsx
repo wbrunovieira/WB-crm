@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { X, Video, Plus, Trash2, Loader2, UserCheck, User } from "lucide-react";
-import { scheduleMeeting, updateMeeting } from "@/actions/meetings";
+import { scheduleMeeting, updateMeeting, checkMeetingTitleExists } from "@/actions/meetings";
 import { toast } from "sonner";
 
 export interface SuggestedContact {
@@ -171,7 +171,27 @@ export default function ScheduleMeetingModal({
       return;
     }
 
+    // Check title uniqueness client-side before submitting.
+    // Next.js 14 sanitizes Server Action error messages in production, so
+    // validation errors must be surfaced from client code, not from throws.
     setLoading(true);
+    try {
+      const conflictTitle = await checkMeetingTitleExists(
+        title.trim(),
+        isEditMode ? meetingId : undefined
+      );
+      if (conflictTitle) {
+        const suggestion = `${title.trim()} - ${startDate.split("-").reverse().join("/")} ${startTime}`;
+        setError(
+          `Já existe uma reunião com o título "${conflictTitle}". Use um nome único — sugestão: "${suggestion}"`
+        );
+        setLoading(false);
+        return;
+      }
+    } catch {
+      // Non-fatal: if check fails, let the server action handle it
+    }
+
     try {
       if (isEditMode && meetingId) {
         await updateMeeting(meetingId, {

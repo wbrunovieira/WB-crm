@@ -77,20 +77,6 @@ export async function scheduleMeeting(input: ScheduleMeetingInput) {
 
   const validated = scheduleMeetingSchema.parse(input);
 
-  // 0. Unique title check — Google Meet names recordings "[Title] - date - Recording",
-  //    so duplicate titles would cause the wrong recording to be captured.
-  const duplicate = await prisma.meeting.findFirst({
-    where: {
-      title: { equals: validated.title, mode: "insensitive" },
-      status: { not: "cancelled" },
-    },
-  });
-  if (duplicate) {
-    throw new Error(
-      `Já existe uma reunião com este título. Use um título único — sugestão: "${validated.title} - ${validated.startAt.toLocaleDateString("pt-BR")} ${validated.startAt.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}"`
-    );
-  }
-
   // 1. Create Google Calendar event with Meet link
   const { googleEventId, meetLink, attendees } = await createMeetEvent({
     title: validated.title,
@@ -183,6 +169,32 @@ export async function cancelMeeting(meetingId: string) {
   if (meeting.leadId) revalidatePath(`/leads/${meeting.leadId}`);
   if (meeting.dealId) revalidatePath(`/deals/${meeting.dealId}`);
   if (meeting.contactId) revalidatePath(`/contacts/${meeting.contactId}`);
+}
+
+// ---------------------------------------------------------------------------
+// checkMeetingTitleExists
+// Lightweight check called by the modal client-side BEFORE submitting.
+// Returns the existing meeting title if a conflict exists, null if available.
+// (Server Actions throw messages are sanitized in Next.js production builds,
+//  so validation errors must originate from client code, not from throws.)
+
+export async function checkMeetingTitleExists(
+  title: string,
+  excludeMeetingId?: string
+): Promise<string | null> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Não autorizado");
+
+  const duplicate = await prisma.meeting.findFirst({
+    where: {
+      title: { equals: title.trim(), mode: "insensitive" },
+      status: { not: "cancelled" },
+      ...(excludeMeetingId ? { id: { not: excludeMeetingId } } : {}),
+    },
+    select: { title: true },
+  });
+
+  return duplicate?.title ?? null;
 }
 
 // ---------------------------------------------------------------------------
