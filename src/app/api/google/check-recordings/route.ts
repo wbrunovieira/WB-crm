@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { findMeetingFiles, moveRecordingToFolder } from "@/lib/google/recording-detector";
+import { findMeetingFiles } from "@/lib/google/recording-detector";
 import { getMeetEvent, extractAttendees } from "@/lib/google/calendar";
 import { getAuthenticatedClient } from "@/lib/google/auth";
 import { google } from "googleapis";
@@ -9,13 +9,19 @@ import { submitVideoForTranscription } from "@/lib/transcriptor";
 /**
  * GET /api/google/check-recordings
  *
- * Cron endpoint — runs every 15 minutes (configured in n8n or system cron).
- * 1. Finds meetings that have ended (endAt < now, status=scheduled).
- * 2. Marks meeting as ended and completes the linked Activity.
- * 3. Searches Drive for the recording file.
- * 4. Moves recording to WB-CRM/Reuniões/[Entity name]/.
- * 5. Downloads the recording and submits to the transcriptor API.
- * 6. Saves transcriptionJobId to Meeting for polling by check-transcriptions.
+ * Cron endpoint — runs every 15 minutes.
+ *
+ * Pass 1 — scheduled → ended:
+ *   Finds meetings whose time has passed (endAt < now OR startAt > 30min ago),
+ *   marks as ended, completes the linked Activity, then searches for recording.
+ *
+ * Pass 2 — ended, no recording yet:
+ *   Retries recording search for meetings already marked ended but with no file yet.
+ *   This handles the case where Google takes >15min to process the recording.
+ *
+ * Recording strategy (no file move required):
+ *   We save the original Drive URL (no scope to move files created by Meet).
+ *   We download the video content for transcription only.
  *
  * Secured by CRON_SECRET header.
  */
@@ -26,12 +32,10 @@ export async function GET(req: NextRequest) {
   }
 
   const now = new Date();
-
-  // Also catch meetings that started >30min ago but endAt is null or in the future
-  // (handles early terminations where the user ends the call before scheduled end)
   const earlyEndCutoff = new Date(now.getTime() - 30 * 60 * 1000);
 
-  const endedMeetings = await prisma.meeting.findMany({
+  // ── Pass 1: scheduled → ended ────────────────────────────────────────────
+  const scheduledEnded = await prisma.meeting.findMany({
     where: {
       status: "scheduled",
       OR: [
@@ -47,11 +51,28 @@ export async function GET(req: NextRequest) {
     },
   });
 
+  // ── Pass 2: ended but recording not yet found ────────────────────────────
+  const waitingForRecording = await prisma.meeting.findMany({
+    where: {
+      status: "ended",
+      recordingDriveId: null,
+      googleEventId: { not: null },
+      // Only retry for meetings that ended in the last 4 hours
+      actualEndAt: { gt: new Date(now.getTime() - 4 * 60 * 60 * 1000) },
+    },
+    include: {
+      lead: { select: { id: true, businessName: true } },
+      deal: { select: { id: true, title: true } },
+      activity: { select: { id: true, completed: true } },
+    },
+  });
+
   const results: { meetingId: string; action: string; error?: string }[] = [];
 
-  for (const meeting of endedMeetings) {
+  // ── Process Pass 1 first ─────────────────────────────────────────────────
+  for (const meeting of scheduledEnded) {
     try {
-      // 1. Fetch final attendee RSVP statuses from Google Calendar
+      // 1. Fetch final attendee RSVP statuses
       let updatedAttendees: string | undefined;
       try {
         const event = await getMeetEvent(meeting.googleEventId!);
@@ -60,13 +81,12 @@ export async function GET(req: NextRequest) {
         // Non-fatal — keep existing attendeeEmails
       }
 
-      // 2. Mark meeting as ended, set actualEndAt, refresh attendee statuses
+      // 2. Mark as ended, set actual times
       await prisma.meeting.update({
         where: { id: meeting.id },
         data: {
           status: "ended",
           actualEndAt: now,
-          // Set actualStartAt = scheduled startAt if not already set
           ...(meeting.actualStartAt ? {} : { actualStartAt: meeting.startAt }),
           ...(updatedAttendees ? { attendeeEmails: updatedAttendees } : {}),
         },
@@ -85,81 +105,100 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      // 5. Search for recording + native transcript in Drive (by meeting title)
-      const { recording, nativeTranscript } = await findMeetingFiles(
-        meeting.title,
-        new Date(meeting.startAt.getTime() - 5 * 60 * 1000) // 5 min before scheduled start
-      );
-
-      // Save native transcript URL if Google Meet generated one
-      if (nativeTranscript) {
-        await prisma.meeting.update({
-          where: { id: meeting.id },
-          data: { nativeTranscriptUrl: nativeTranscript.webViewLink },
-        });
+      // 4. Search Drive for recording + Gemini transcript
+      const recordingResult = await processRecording(meeting, now, results);
+      if (!recordingResult) {
+        // Not found yet — Pass 2 will retry on next cron run
+        results.push({ meetingId: meeting.id, action: "ended_recording_pending" });
       }
-
-      if (!recording) {
-        // Recording not ready yet — retry next cycle
-        results.push({
-          meetingId: meeting.id,
-          action: nativeTranscript ? "ended_native_transcript_found_no_recording_yet" : "ended_no_recording_yet",
-        });
-        continue;
-      }
-
-      // 6. Move recording to WB-CRM/Reuniões/[entity]/
-      const entityName =
-        meeting.lead?.businessName ??
-        meeting.deal?.title ??
-        "Geral";
-
-      const { fileId, webViewLink } = await moveRecordingToFolder(
-        recording.fileId,
-        entityName
-      );
-
-      // 5. Download recording from Drive as Buffer
-      const auth = await getAuthenticatedClient();
-      const drive = google.drive({ version: "v3", auth });
-
-      const fileRes = await drive.files.get(
-        { fileId, alt: "media" },
-        { responseType: "arraybuffer" }
-      );
-      const buffer = Buffer.from(fileRes.data as ArrayBuffer);
-
-      // 6. Submit to transcriptor API
-      const { jobId: transcriptionJobId } = await submitVideoForTranscription(
-        buffer,
-        `reuniao-${meeting.id}.mp4`
-      );
-
-      // 7. Persist recording + transcription job
-      await prisma.meeting.update({
-        where: { id: meeting.id },
-        data: {
-          recordingDriveId: fileId,
-          recordingUrl: webViewLink,
-          recordingMovedAt: now,
-          transcriptionJobId,
-        },
-      });
-
-      results.push({ meetingId: meeting.id, action: "recording_saved_transcription_queued" });
     } catch (err) {
       console.error(`Error processing meeting ${meeting.id}:`, err);
-      results.push({
-        meetingId: meeting.id,
-        action: "error",
-        error: String(err),
-      });
+      results.push({ meetingId: meeting.id, action: "error", error: String(err) });
+    }
+  }
+
+  // ── Process Pass 2: retry recording for already-ended meetings ───────────
+  for (const meeting of waitingForRecording) {
+    try {
+      const found = await processRecording(meeting, now, results);
+      if (!found) {
+        results.push({ meetingId: meeting.id, action: "recording_still_pending" });
+      }
+    } catch (err) {
+      console.error(`Error retrying recording for ${meeting.id}:`, err);
+      results.push({ meetingId: meeting.id, action: "error", error: String(err) });
     }
   }
 
   return NextResponse.json({
-    processed: endedMeetings.length,
+    processedNew: scheduledEnded.length,
+    retriedRecording: waitingForRecording.length,
     results,
     checkedAt: now.toISOString(),
   });
+}
+
+// ── Shared recording/transcript logic ────────────────────────────────────────
+
+async function processRecording(
+  meeting: {
+    id: string;
+    title: string;
+    googleEventId: string | null;
+    nativeTranscriptUrl?: string | null;
+    lead?: { id: string; businessName: string } | null;
+    deal?: { id: string; title: string } | null;
+    activity?: { id: string; completed: boolean } | null;
+    activityId?: string | null;
+    actualStartAt?: Date | null;
+    startAt: Date;
+  },
+  now: Date,
+  results: { meetingId: string; action: string; error?: string }[]
+): Promise<boolean> {
+  const { recording, nativeTranscript } = await findMeetingFiles(meeting.title);
+
+  // Save Gemini transcript URL if found and not already saved
+  if (nativeTranscript && !meeting.nativeTranscriptUrl) {
+    await prisma.meeting.update({
+      where: { id: meeting.id },
+      data: { nativeTranscriptUrl: nativeTranscript.webViewLink },
+    });
+  }
+
+  if (!recording) return false;
+
+  // Download recording for transcription (read via drive.readonly scope)
+  const auth = await getAuthenticatedClient();
+  const drive = google.drive({ version: "v3", auth });
+
+  const fileRes = await drive.files.get(
+    { fileId: recording.fileId, alt: "media" },
+    { responseType: "arraybuffer" }
+  );
+  const buffer = Buffer.from(fileRes.data as ArrayBuffer);
+
+  // Submit to our transcriptor
+  const { jobId: transcriptionJobId } = await submitVideoForTranscription(
+    buffer,
+    `reuniao-${meeting.id}.mp4`
+  );
+
+  // Save recording URL directly (no move — avoids needing drive scope)
+  await prisma.meeting.update({
+    where: { id: meeting.id },
+    data: {
+      recordingDriveId: recording.fileId,
+      recordingUrl: recording.webViewLink,
+      recordingMovedAt: now,
+      transcriptionJobId,
+      ...(nativeTranscript ? { nativeTranscriptUrl: nativeTranscript.webViewLink } : {}),
+    },
+  });
+
+  results.push({
+    meetingId: meeting.id,
+    action: "recording_saved_transcription_queued",
+  });
+  return true;
 }
