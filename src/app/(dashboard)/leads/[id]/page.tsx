@@ -1,6 +1,8 @@
 import { getLeadById } from "@/actions/leads";
 import { getProposals } from "@/actions/proposals";
+import { getMeetings } from "@/actions/meetings";
 import ProposalsList from "@/components/proposals/ProposalsList";
+import MeetingsList from "@/components/meetings/MeetingsList";
 import { PhoneLink } from "@/components/ui/phone-link";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import GmailButton from "@/components/gmail/GmailButton";
@@ -28,10 +30,11 @@ export default async function LeadDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [lead, session, proposals] = await Promise.all([
+  const [lead, session, proposals, meetings] = await Promise.all([
     getLeadById(params.id),
     getServerSession(authOptions),
     getProposals({ leadId: params.id }),
+    getMeetings({ leadId: params.id }),
   ]);
 
   if (!lead) {
@@ -641,6 +644,18 @@ export default async function LeadDetailPage({
       {/* Proposals */}
       <div className="mt-6">
         <ProposalsList proposals={proposals} leadId={lead.id} />
+      </div>
+
+      {/* Meetings */}
+      <div className="mt-6">
+        <MeetingsList
+          meetings={meetings}
+          leadId={lead.id}
+          defaultEmails={lead.leadContacts
+            .filter((c) => c.email && c.isActive !== false)
+            .map((c) => c.email!)
+            .filter(Boolean)}
+        />
       </div>
 
       {/* Lead Activities */}

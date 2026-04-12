@@ -36,6 +36,17 @@ nextauth_url: "https://{{ app_domain }}"
 webhook_secret: "{{ vault_webhook_secret }}"
 internal_api_key: "{{ vault_internal_api_key }}"
 
+# Google OAuth
+google_client_id: "{{ vault_google_client_id }}"
+google_client_secret: "{{ vault_google_client_secret }}"
+
+# Transcriptor API
+transcriptor_base_url: "https://transcritor.wbdigitalsolutions.com"
+transcriptor_api_key: "{{ vault_transcriptor_api_key }}"
+
+# Cron security
+cron_secret: "{{ vault_cron_secret }}"
+
 # Certbot email
 certbot_email: bruno@wbdigitalsolutions.com
 
