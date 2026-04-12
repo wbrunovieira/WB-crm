@@ -130,8 +130,12 @@ export default function MeetingsList({
   }
 
   const now = new Date();
-  const upcoming = meetings.filter((m) => m.status === "scheduled" && new Date(m.startAt) >= now);
-  const past = meetings.filter((m) => m.status !== "scheduled" || new Date(m.startAt) < now);
+  const upcoming = meetings
+    .filter((m) => m.status === "scheduled" && new Date(m.startAt) >= now)
+    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()); // soonest first
+  const past = meetings
+    .filter((m) => m.status !== "scheduled" || new Date(m.startAt) < now)
+    .sort((a, b) => new Date(b.startAt).getTime() - new Date(a.startAt).getTime()); // most recent first
 
   async function handleCancel(id: string) {
     try {
@@ -372,7 +376,7 @@ function MeetingCard({
             <p className="text-xs text-gray-500">
               <span className="font-medium text-gray-400">Agendado:</span>{" "}
               {formatDateTime(meeting.startAt)}
-              {meeting.endAt && (
+              {meeting.endAt && new Date(meeting.endAt) > new Date(meeting.startAt) && (
                 <> — {new Date(meeting.endAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</>
               )}
             </p>

@@ -59,7 +59,7 @@ export async function getMeetings({
 
   return prisma.meeting.findMany({
     where,
-    orderBy: { startAt: "asc" },
+    orderBy: { startAt: "desc" },
     include: {
       activity: {
         select: { id: true, completed: true, completedAt: true },
