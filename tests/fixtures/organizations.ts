@@ -30,6 +30,7 @@ export const mockOrganization: Organization = {
   tiktok: null,
   sourceLeadId: null,
   externalProjectIds: null,
+  driveFolderId: null,
   // Hosting
   hasHosting: false,
   hostingRenewalDate: null,

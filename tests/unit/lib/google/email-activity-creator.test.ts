@@ -17,6 +17,7 @@ vi.mock("@/lib/prisma", () => ({
     activity: {
       findUnique: vi.fn(),
       create: vi.fn(),
+      update: vi.fn(),
     },
     contact: { findFirst: vi.fn() },
     leadContact: { findFirst: vi.fn() },

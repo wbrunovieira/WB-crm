@@ -1,4 +1,6 @@
 import { getDealById } from "@/actions/deals";
+import { getProposals } from "@/actions/proposals";
+import ProposalsList from "@/components/proposals/ProposalsList";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -17,9 +19,10 @@ export default async function DealDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [deal, session] = await Promise.all([
+  const [deal, session, proposals] = await Promise.all([
     getDealById(params.id),
     getServerSession(authOptions),
+    getProposals({ dealId: params.id }),
   ]);
 
   if (!deal) {
@@ -191,6 +194,11 @@ export default async function DealDetailPage({
 
       {/* Tech Stack do Deal */}
       <DealTechStackSection dealId={deal.id} />
+
+      {/* Proposals */}
+      <div className="mt-6">
+        <ProposalsList proposals={proposals} dealId={deal.id} />
+      </div>
 
       <div className="mt-6 rounded-lg bg-white p-6 shadow">
         <div className="mb-4 flex items-center justify-between">
