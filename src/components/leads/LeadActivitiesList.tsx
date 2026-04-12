@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowDownUp, Calendar, Check, GripVertical, Loader2, MessageCircleReply, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock, Search } from "lucide-react";
 import dynamic from "next/dynamic";
 const GmailComposeModal = dynamic(() => import("@/components/gmail/GmailComposeModal"), { ssr: false });
+const GoToCallPlayer = dynamic(() => import("@/components/activities/GoToCallPlayer"), { ssr: false });
 import { formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
 import { toggleActivityCompleted, assignLeadContactsToActivity, removeLeadContactsFromActivity, markActivityFailed, markActivitySkipped, revertActivityOutcome } from "@/actions/activities";
 import { updateLeadActivityOrder, resetLeadActivityOrder } from "@/actions/leads";
@@ -92,6 +93,7 @@ type Activity = {
   leadContactIds: string | null;
   gotoCallId?: string | null;
   gotoRecordingUrl?: string | null;
+  gotoRecordingUrl2?: string | null;
   gotoTranscriptText?: string | null;
   // Campos de e-mail
   emailThreadId?: string | null;
@@ -292,26 +294,14 @@ function SortableActivityItem({
             </p>
           )}
           {activity.gotoCallId && activity.gotoRecordingUrl && (
-            <div className="mt-2 space-y-1.5">
-              <audio
-                controls
-                preload="none"
-                className="w-full rounded"
-                style={{ height: "32px" }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <source src={`/api/goto/recordings/${activity.id}`} type="audio/mpeg" />
-              </audio>
-              {activity.gotoTranscriptText && (
-                <details className="rounded border border-blue-200 bg-blue-50" onClick={(e) => e.stopPropagation()}>
-                  <summary className="cursor-pointer px-2 py-1 text-xs font-semibold text-blue-700 select-none">
-                    Transcrição
-                  </summary>
-                  <p className="whitespace-pre-wrap px-2 pb-2 pt-0.5 text-xs text-blue-900 leading-relaxed">
-                    {activity.gotoTranscriptText}
-                  </p>
-                </details>
-              )}
+            <div className="mt-2">
+              <GoToCallPlayer
+                activityId={activity.id}
+                agentKey={activity.gotoRecordingUrl}
+                clientKey={activity.gotoRecordingUrl2}
+                transcriptText={activity.gotoTranscriptText}
+                compact
+              />
             </div>
           )}
           {activity.failReason && (
