@@ -70,9 +70,34 @@ function formatDateTime(date: Date): string {
   }).format(new Date(date));
 }
 
-function parseEmails(json: string): string[] {
+interface Attendee {
+  email: string;
+  responseStatus: "needsAction" | "accepted" | "declined" | "tentative";
+  organizer?: boolean;
+  self?: boolean;
+}
+
+const RSVP_CONFIG: Record<
+  Attendee["responseStatus"],
+  { label: string; color: string }
+> = {
+  accepted:    { label: "Aceitou",    color: "bg-green-100 text-green-700" },
+  declined:    { label: "Recusou",    color: "bg-red-100 text-red-700" },
+  tentative:   { label: "Talvez",     color: "bg-yellow-100 text-yellow-700" },
+  needsAction: { label: "Pendente",   color: "bg-gray-100 text-gray-500" },
+};
+
+function parseAttendees(json: string): Attendee[] {
   try {
-    return JSON.parse(json);
+    const parsed = JSON.parse(json);
+    // Support both old format (string[]) and new format ({email, responseStatus}[])
+    if (Array.isArray(parsed) && parsed.length > 0) {
+      if (typeof parsed[0] === "string") {
+        return parsed.map((email: string) => ({ email, responseStatus: "needsAction" as const }));
+      }
+      return parsed as Attendee[];
+    }
+    return [];
   } catch {
     return [];
   }
@@ -222,7 +247,9 @@ function MeetingCard({
   const hasRecording = !!meeting.recordingUrl;
   const hasTranscript = !!meeting.transcriptText;
   const isTranscriptOpen = expandedTranscript === meeting.id;
-  const attendees = parseEmails(meeting.attendeeEmails);
+  const attendees = parseAttendees(meeting.attendeeEmails);
+  // Exclude the organizer (self) from the display list
+  const externalAttendees = attendees.filter((a) => !a.self);
 
   return (
     <li className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
@@ -249,11 +276,23 @@ function MeetingCard({
             )}
           </p>
 
-          {/* Attendees */}
-          {attendees.length > 0 && (
-            <p className="mt-1 text-xs text-gray-400 truncate">
-              Convidados: {attendees.join(", ")}
-            </p>
+          {/* Attendees with RSVP status */}
+          {externalAttendees.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {externalAttendees.map((a) => {
+                const rsvp = RSVP_CONFIG[a.responseStatus] ?? RSVP_CONFIG.needsAction;
+                return (
+                  <span
+                    key={a.email}
+                    title={a.email}
+                    className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${rsvp.color}`}
+                  >
+                    <span className="max-w-[140px] truncate">{a.email}</span>
+                    <span className="opacity-70">· {rsvp.label}</span>
+                  </span>
+                );
+              })}
+            </div>
           )}
         </div>
 

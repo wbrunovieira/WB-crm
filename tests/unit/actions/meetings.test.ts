@@ -113,6 +113,9 @@ describe("scheduleMeeting", () => {
     mockCreateMeetEvent.mockResolvedValue({
       googleEventId: "evt-abc123",
       meetLink: "https://meet.google.com/abc-xyz",
+      attendees: [
+        { email: "client@empresa.com", responseStatus: "needsAction" },
+      ],
     });
 
     const activity = {

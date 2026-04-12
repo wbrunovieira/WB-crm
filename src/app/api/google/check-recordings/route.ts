@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { findMeetingRecording, moveRecordingToFolder } from "@/lib/google/recording-detector";
+import { getMeetEvent, extractAttendees } from "@/lib/google/calendar";
 import { getAuthenticatedClient } from "@/lib/google/auth";
 import { google } from "googleapis";
 import { submitVideoForTranscription } from "@/lib/transcriptor";
@@ -42,13 +43,25 @@ export async function GET(req: NextRequest) {
 
   for (const meeting of endedMeetings) {
     try {
-      // 1. Mark meeting as ended
+      // 1. Fetch final attendee RSVP statuses from Google Calendar
+      let updatedAttendees: string | undefined;
+      try {
+        const event = await getMeetEvent(meeting.googleEventId!);
+        updatedAttendees = JSON.stringify(extractAttendees(event));
+      } catch {
+        // Non-fatal — keep existing attendeeEmails
+      }
+
+      // 2. Mark meeting as ended (and refresh attendee statuses)
       await prisma.meeting.update({
         where: { id: meeting.id },
-        data: { status: "ended" },
+        data: {
+          status: "ended",
+          ...(updatedAttendees ? { attendeeEmails: updatedAttendees } : {}),
+        },
       });
 
-      // 2. Complete linked Activity
+      // 3. Complete linked Activity
       if (meeting.activityId && meeting.activity && !meeting.activity.completed) {
         await prisma.activity.update({
           where: { id: meeting.activityId },
@@ -61,7 +74,7 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      // 3. Search for recording in Drive
+      // 5. Search for recording in Drive
       const recording = await findMeetingRecording(meeting.googleEventId);
 
       if (!recording) {
@@ -70,7 +83,7 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      // 4. Move recording to WB-CRM/Reuniões/[entity]/
+      // 6. Move recording to WB-CRM/Reuniões/[entity]/
       const entityName =
         meeting.lead?.businessName ??
         meeting.deal?.title ??

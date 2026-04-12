@@ -72,6 +72,10 @@ describe("createMeetEvent", () => {
         summary: "Reunião WB",
         start: { dateTime: "2026-04-15T10:00:00-03:00" },
         end: { dateTime: "2026-04-15T11:00:00-03:00" },
+        attendees: [
+          { email: "cliente@empresa.com", responseStatus: "needsAction" },
+          { email: "user@wbdigital.com", responseStatus: "accepted", self: true },
+        ],
       },
     });
 
@@ -106,6 +110,18 @@ describe("createMeetEvent", () => {
     expect(result).toMatchObject({
       googleEventId: "event-abc123",
       meetLink: "https://meet.google.com/abc-defg-hij",
+    });
+
+    // Should return attendees with RSVP status
+    expect(result.attendees).toHaveLength(2);
+    expect(result.attendees[0]).toMatchObject({
+      email: "cliente@empresa.com",
+      responseStatus: "needsAction",
+    });
+    expect(result.attendees[1]).toMatchObject({
+      email: "user@wbdigital.com",
+      responseStatus: "accepted",
+      self: true,
     });
   });
 
