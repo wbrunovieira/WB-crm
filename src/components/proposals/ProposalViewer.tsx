@@ -5,44 +5,73 @@ import { X, FileText, Download } from "lucide-react";
 interface Props {
   proposalId: string;
   fileName: string | null;
-  mimeType?: string | null;
   onClose: () => void;
 }
 
-// Tipos suportados para preview inline
-const PREVIEW_SUPPORTED = [
+/** Determina o tipo pelo nome do arquivo quando mimeType não está disponível */
+function getMimeTypeFromFileName(name: string | null): string {
+  if (!name) return "application/octet-stream";
+  const ext = name.split(".").pop()?.toLowerCase() ?? "";
+  const map: Record<string, string> = {
+    pdf:  "application/pdf",
+    png:  "image/png",
+    jpg:  "image/jpeg",
+    jpeg: "image/jpeg",
+    webp: "image/webp",
+    gif:  "image/gif",
+    doc:  "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls:  "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ppt:  "application/vnd.ms-powerpoint",
+    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+  };
+  return map[ext] ?? "application/octet-stream";
+}
+
+const DIRECT_PREVIEW = new Set([
   "application/pdf",
   "image/png",
   "image/jpeg",
   "image/webp",
-];
+  "image/gif",
+]);
 
-// Tipos que o Google Docs pode renderizar via embed
-const GOOGLE_DOCS_SUPPORTED = [
+const OFFICE_TYPES = new Set([
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
   "application/vnd.ms-excel",
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
   "application/vnd.ms-powerpoint",
   "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-];
+]);
 
-export default function ProposalViewer({ proposalId, fileName, mimeType, onClose }: Props) {
+export default function ProposalViewer({ proposalId, fileName, onClose }: Props) {
   const fileUrl = `/api/proposals/${proposalId}/file?inline=true`;
   const downloadUrl = `/api/proposals/${proposalId}/file`;
 
-  const isDirectPreview = mimeType && PREVIEW_SUPPORTED.includes(mimeType);
-  const isGoogleDocsPreview = mimeType && GOOGLE_DOCS_SUPPORTED.includes(mimeType);
+  const mimeType = getMimeTypeFromFileName(fileName);
+  const isDirectPreview = DIRECT_PREVIEW.has(mimeType);
+  const isOffice = OFFICE_TYPES.has(mimeType);
 
-  // URL para Google Docs Viewer (funciona com URLs acessíveis pelo servidor Google)
-  // Como nossa rota requer auth, usamos o viewer do Drive diretamente via iframe inline
-  const iframeSrc = isGoogleDocsPreview
-    ? `https://docs.google.com/viewer?url=${encodeURIComponent(
-        `${process.env.NEXT_PUBLIC_APP_URL ?? ""}${fileUrl}`
-      )}&embedded=true`
-    : fileUrl;
+  // Para Office: usa o Microsoft Office Online Viewer (não requer autenticação Google)
+  // A nossa rota /api/proposals/[id]/file está acessível no servidor, porém o
+  // Office Online precisa de URL pública — neste caso usamos o Google Docs Viewer
+  // apontando para o URL completo da produção.
+  const appUrl = typeof window !== "undefined"
+    ? window.location.origin
+    : "https://crm.wbdigitalsolutions.com";
 
-  const canPreview = isDirectPreview || isGoogleDocsPreview;
+  const officeViewerSrc = `https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+    `${appUrl}${fileUrl}`
+  )}`;
+
+  // iframeSrc escolhido por prioridade
+  const iframeSrc = isDirectPreview
+    ? fileUrl
+    : isOffice
+    ? officeViewerSrc
+    : null;
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-black/80" onClick={onClose}>
@@ -58,7 +87,7 @@ export default function ProposalViewer({ proposalId, fileName, mimeType, onClose
         <div className="flex items-center gap-3">
           <a
             href={downloadUrl}
-            download
+            download={fileName ?? true}
             className="flex items-center gap-1.5 rounded-md bg-purple-600 px-3 py-1.5 text-xs font-medium hover:bg-purple-700"
             onClick={(e) => e.stopPropagation()}
           >
@@ -75,27 +104,24 @@ export default function ProposalViewer({ proposalId, fileName, mimeType, onClose
       </div>
 
       {/* Conteúdo */}
-      <div
-        className="flex-1 overflow-hidden"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {canPreview ? (
+      <div className="flex-1 overflow-hidden bg-gray-100" onClick={(e) => e.stopPropagation()}>
+        {iframeSrc ? (
           <iframe
             src={iframeSrc}
             className="h-full w-full border-0"
             title={fileName ?? "Visualizar documento"}
           />
         ) : (
-          <div className="flex h-full flex-col items-center justify-center gap-4 text-white">
-            <FileText size={64} className="text-gray-500" />
+          <div className="flex h-full flex-col items-center justify-center gap-4 text-gray-700">
+            <FileText size={64} className="text-gray-400" />
             <p className="text-lg font-medium">Visualização não disponível</p>
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-500">
               Este formato não suporta preview. Use Download para abrir com seu aplicativo.
             </p>
             <a
               href={downloadUrl}
-              download
-              className="mt-2 flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-3 font-medium hover:bg-purple-700"
+              download={fileName ?? true}
+              className="mt-2 flex items-center gap-2 rounded-lg bg-purple-600 px-6 py-3 font-medium text-white hover:bg-purple-700"
             >
               <Download size={18} />
               Baixar arquivo
