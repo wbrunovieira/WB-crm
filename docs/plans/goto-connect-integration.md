@@ -319,47 +319,201 @@ tests/integration/api/goto-webhook-retry.test.ts
 
 ---
 
-## Fase 6 — Gravação de Áudio, Player e Transcrição com Whisper
+## Fase 6 — Gravação de Áudio no Drive, Player e Transcrição ✅ PLANEJADA
 
-**Objetivo**: Baixar automaticamente o áudio das ligações GoTo, disponibilizar player no histórico e gerar transcrição com Whisper.
+**Objetivo**: Baixar automaticamente o áudio das ligações GoTo, salvar no Google Drive, disponibilizar player inline no histórico de atividades e gerar transcrição com o serviço WB Transcritor.
 
 > **Pré-requisito**: Fase 3 concluída. Os relatórios GoTo já incluem `recordings[].id` nos participantes.
 
-> **Atenção na implementação**: Antes de implementar, perguntar ao usuário como conectar com o modelo Whisper existente (API REST própria, SDK, fila, etc.).
+### Como funcionam as gravações GoTo
 
-### Como funciona
-
-O relatório `GoToCallReport` já retorna `recordings[{ id, startTimestamp }]` em cada participante. Com o `recordingId`:
+O relatório `GoToCallReport` retorna `recordings[{ id, startTimestamp }]` em cada participante. Com o `recordingId`:
 
 ```
 GET /recording/v1/recordings/{recordingId}/content
+Authorization: Bearer {access_token}
 → retorna o arquivo de áudio (MP3/WAV)
-→ scope necessário: cr.v1.read (já configurado)
+→ scope cr.v1.read já está configurado
 ```
 
-### O que fazer
+### Serviço de Transcrição (WB Transcritor)
 
-- Migration: campos `recordingId`, `recordingPath`, `transcription`, `transcriptionStatus` na `Activity`
-- `recording-downloader.ts` — download e armazenamento local em `/opt/wb-crm/recordings/`
-- `/api/recordings/[activityId]` — serve áudio com autenticação e suporte a `Range` headers
-- `transcription-worker.ts` — integração com Whisper (confirmar interface com o usuário)
-- `CallRecordingPlayer.tsx` — player HTML5 + transcrição expansível no `ActivityTimeline`
+O mesmo serviço já usado para vídeos do Meet. Para áudio, usa endpoint diferente:
 
-### Testes (TDD)
+```
+POST https://transcritor.wbdigitalsolutions.com/transcriptions/audio
+X-API-Key: <TRANSCRIPTOR_API_KEY>
+Content-Type: multipart/form-data
+Body: file=<arquivo .mp3/.wav/.m4a/.flac/.ogg>
+
+→ 202 Accepted: { "job_id": "abc123", "status": "pending" }
+
+GET /transcriptions/{job_id}          → status: pending | processing | done | failed
+GET /transcriptions/{job_id}/result   → { text, language, duration_seconds }
+```
+
+### Arquitetura
+
+```
+GoTo sync (Fase 3)
+  └─ cria Activity com gotoRecordingId preenchido (quando a ligação tem gravação)
+
+Cron check-goto-recordings (*/15 min)
+  ├─ Pass 1: Activities com gotoRecordingId mas sem gotoRecordingDriveId
+  │   ├─ Download do áudio via GoTo API
+  │   ├─ Upload para Google Drive (WB-CRM/GoTo/Gravações/)
+  │   ├─ Salva gotoRecordingDriveId + gotoRecordingUrl
+  │   └─ Envia para transcrição → salva gotoTranscriptionJobId
+  └─ Pass 2: Activities com gotoTranscriptionJobId pendente
+      ├─ Consulta status no Transcritor
+      └─ Se done: salva gotoTranscriptText + limpa jobId
+
+UI (ActivityTimeline / LeadActivitiesList)
+  └─ Atividade GoTo com gravação:
+      ├─ 🎵 player HTML5 (proxy /api/goto/recordings/[activityId] → Drive stream)
+      └─ 📄 transcrição expansível (quando disponível)
+```
+
+### Migration de banco
+
+Campos a adicionar na tabela `activities`:
+
+```sql
+ALTER TABLE "activities" ADD COLUMN "gotoRecordingId"        TEXT;
+ALTER TABLE "activities" ADD COLUMN "gotoRecordingDriveId"   TEXT;
+ALTER TABLE "activities" ADD COLUMN "gotoRecordingUrl"       TEXT;
+ALTER TABLE "activities" ADD COLUMN "gotoTranscriptionJobId" TEXT;
+ALTER TABLE "activities" ADD COLUMN "gotoTranscriptText"     TEXT;
+```
+
+### Backend — arquivos a criar/modificar (TDD)
+
+#### `src/lib/transcriptor.ts` — adicionar função de áudio
+
+```typescript
+// Novo — usa POST /transcriptions/audio (formatos: mp3, wav, m4a, flac, ogg)
+export async function submitAudioForTranscription(
+  buffer: Buffer,
+  fileName: string
+): Promise<{ jobId: string; status: string }>
+```
+
+#### `src/lib/goto/recording-downloader.ts` — download do GoTo
+
+```typescript
+// Baixa o áudio da ligação para um Buffer
+export async function downloadCallRecording(recordingId: string): Promise<{ buffer: Buffer; contentType: string }>
+```
+
+#### `src/lib/google/goto-drive-uploader.ts` — upload para Drive
+
+```typescript
+// Faz upload do buffer para WB-CRM/GoTo/Gravações/ e retorna { fileId, webViewLink }
+export async function uploadCallRecordingToDrive(
+  buffer: Buffer,
+  fileName: string,
+  contentType: string
+): Promise<{ fileId: string; webViewLink: string }>
+```
+
+#### `src/lib/goto/call-activity-creator.ts` — ajuste
+
+Ao criar a Activity, verificar se `recordings[0].id` existe no participante GoTo e salvar `gotoRecordingId` já no momento da criação.
+
+#### `src/app/api/goto/check-recordings/route.ts` — novo cron endpoint
+
+```
+GET /api/goto/check-recordings
+Header: x-cron-secret
+
+Pass 1: Activities com gotoRecordingId != null AND gotoRecordingDriveId IS NULL (até 4h atrás)
+  → download GoTo → upload Drive → submit transcrição → salva IDs
+
+Pass 2: Activities com gotoTranscriptionJobId != null (até 24h atrás)
+  → poll status → se done: salva gotoTranscriptText, limpa gotoTranscriptionJobId
+```
+
+#### `src/app/api/goto/recordings/[activityId]/route.ts` — proxy de áudio
+
+```
+GET /api/goto/recordings/[activityId]
+→ verifica auth do usuário
+→ busca gotoRecordingDriveId do banco
+→ faz proxy do conteúdo do Drive com suporte a Range headers (para seek no player HTML5)
+```
+
+### Frontend
+
+#### `ActivityTimeline.tsx` / `LeadActivitiesList.tsx` — ajustar card GoTo
+
+Quando `gotoRecordingUrl` ou `gotoRecordingDriveId` presente:
+
+```tsx
+{/* Player de áudio inline */}
+<audio controls preload="none" className="w-full mt-2 rounded">
+  <source src={`/api/goto/recordings/${activity.id}`} />
+</audio>
+
+{/* Transcrição expansível */}
+{activity.gotoTranscriptText && (
+  <details className="mt-2">
+    <summary>Transcrição</summary>
+    <p>{activity.gotoTranscriptText}</p>
+  </details>
+)}
+```
+
+### Testes (TDD — escrever antes da implementação)
 
 ```
 tests/unit/lib/goto/recording-downloader.test.ts
-tests/unit/lib/whisper/transcription-worker.test.ts
-tests/unit/actions/recording.test.ts
-tests/integration/api/recordings-route.test.ts
+  ✓ baixa áudio com Bearer token válido
+  ✓ renova token se expirado antes do download
+  ✓ lança erro se recordingId inválido (404)
+  ✓ retorna contentType correto (audio/mpeg, audio/wav)
+
+tests/unit/lib/google/goto-drive-uploader.test.ts
+  ✓ cria pasta WB-CRM/GoTo/Gravações/ se não existir
+  ✓ reutiliza pasta existente (não duplica)
+  ✓ retorna fileId e webViewLink após upload
+
+tests/unit/lib/transcriptor-audio.test.ts
+  ✓ submitAudioForTranscription envia multipart/form-data para /transcriptions/audio
+  ✓ retorna jobId e status "pending"
+  ✓ lança erro se API Key inválida (401)
+  ✓ lança erro se formato não suportado
+
+tests/unit/api/goto-check-recordings.test.ts
+  ✓ Pass 1: activities sem Drive ID → download + upload + submit
+  ✓ Pass 1: activity com mais de 4h ignorada (timeout)
+  ✓ Pass 2: job done → salva transcript, limpa jobId
+  ✓ Pass 2: job processing → mantém jobId, não altera texto
+  ✓ Pass 2: job failed → limpa jobId, registra erro
+  ✓ protegido por x-cron-secret
+
+tests/integration/api/goto-recordings-proxy.test.ts
+  ✓ retorna áudio do Drive com Range header correto
+  ✓ 401 se não autenticado
+  ✓ 404 se activity não tem gravação
+```
+
+### Cron a registrar no servidor
+
+```bash
+*/15 * * * * curl -s -X GET 'https://crm.wbdigitalsolutions.com/api/goto/check-recordings' \
+  -H 'x-cron-secret: <CRON_SECRET>' >> /var/log/goto-check-recordings.log 2>&1
 ```
 
 ### Entrega da Fase 6
 
-- [ ] Confirmar interface do Whisper com o usuário
-- [ ] Testes escritos e passando
-- [ ] Migration aplicada
-- [ ] `git commit -m "feat: call recording download, audio player and whisper transcription"`
+- [ ] Testes escritos e passando (TDD)
+- [ ] `submitAudioForTranscription` adicionado ao `transcriptor.ts`
+- [ ] Migration aplicada em produção
+- [ ] `recording-downloader.ts` + `goto-drive-uploader.ts` implementados
+- [ ] `check-recordings` cron endpoint criado e registrado
+- [ ] Proxy `/api/goto/recordings/[activityId]` com Range headers
+- [ ] Player HTML5 + transcrição expansível no `ActivityTimeline`
+- [ ] `git commit -m "feat: goto call recording → google drive + audio player + transcription"`
 - [ ] Deploy (`deploy-with-migrations.yml`)
 
 ---
@@ -431,5 +585,5 @@ Fase 3    →  deploy-with-migrations.yml ✅ (gotoCallId adicionado)
 Fase 3b   →  quick-deploy.yml           (só componentes) ✅
 Fase 4    →  deploy-with-migrations.yml (nova tabela Integration)
 Fase 5    →  deploy-with-migrations.yml (nova tabela CallRetrySession)
-Fase 6    →  deploy-with-migrations.yml (campos recording* na Activity)
+Fase 6    →  deploy-with-migrations.yml (campos gotoRecording* + gotoTranscript* na Activity)
 ```
