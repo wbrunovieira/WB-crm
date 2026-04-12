@@ -15,17 +15,66 @@ import { getOrCreateFolder } from "./drive";
 const ROOT_FOLDER_NAME = "WB-CRM";
 const MEETINGS_FOLDER_NAME = "Reuniões";
 
-/** Returns Drive file metadata for the recording if found, null otherwise */
+export interface RecordingFile {
+  fileId: string;
+  webViewLink: string;
+}
+
+export interface MeetingFiles {
+  recording: RecordingFile | null;
+  /** Google Meet transcription doc saved to Drive (if user enabled it in Meet) */
+  nativeTranscript: RecordingFile | null;
+}
+
+/**
+ * Searches Drive for recording (.mp4) and native transcript (Google Doc) for a meeting.
+ * Google Meet names files as "[Title] (YYYY-MM-DD at HH:MM GMT±N).mp4"
+ * and transcripts as "[Title] - Transcrição (YYYY-MM-DD ...)" or similar.
+ * We search by title prefix (first 20 chars) to match both.
+ */
+export async function findMeetingFiles(
+  meetingTitle: string,
+  minCreatedTime: Date
+): Promise<MeetingFiles> {
+  const auth = await getAuthenticatedClient();
+  const drive = google.drive({ version: "v3", auth });
+
+  // Use the first 20 chars of the title to avoid punctuation issues in Drive query
+  const titlePrefix = meetingTitle.slice(0, 20).replace(/'/g, "\\'");
+  const minTime = minCreatedTime.toISOString();
+
+  const res = await drive.files.list({
+    q: `name contains '${titlePrefix}' and trashed = false and createdTime > '${minTime}'`,
+    fields: "files(id, name, webViewLink, createdTime, mimeType)",
+    orderBy: "createdTime desc",
+    pageSize: 20,
+  });
+
+  const files = res.data.files ?? [];
+
+  const recording = files.find((f) => f.mimeType === "video/mp4") ?? null;
+  const nativeTranscript =
+    files.find(
+      (f) =>
+        f.mimeType === "application/vnd.google-apps.document" ||
+        f.mimeType === "text/plain"
+    ) ?? null;
+
+  return {
+    recording: recording ? { fileId: recording.id!, webViewLink: recording.webViewLink! } : null,
+    nativeTranscript: nativeTranscript
+      ? { fileId: nativeTranscript.id!, webViewLink: nativeTranscript.webViewLink! }
+      : null,
+  };
+}
+
+/** @deprecated Use findMeetingFiles instead */
 export async function findMeetingRecording(
   googleEventId: string
 ): Promise<{ fileId: string; webViewLink: string } | null> {
   const auth = await getAuthenticatedClient();
   const drive = google.drive({ version: "v3", auth });
 
-  // Google Meet recordings are named after the meeting title and contain the event short code
-  // The description/properties of the file sometimes contains the meeting ID
-  // Best strategy: search in "Meet Recordings" folder by name containing the event short code
-  // The event ID suffix (last segment) often appears in the file name
   const shortCode = googleEventId.split("_").pop() ?? googleEventId;
 
   const res = await drive.files.list({
@@ -37,9 +86,7 @@ export async function findMeetingRecording(
 
   const files = res.data.files ?? [];
   if (files.length === 0) return null;
-
-  const file = files[0];
-  return { fileId: file.id!, webViewLink: file.webViewLink! };
+  return { fileId: files[0].id!, webViewLink: files[0].webViewLink! };
 }
 
 /** Moves recording to WB-CRM/Reuniões/[folderName]/ and returns new location */
