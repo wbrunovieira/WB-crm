@@ -11,8 +11,11 @@ import {
   Play,
   FileText,
   Pencil,
+  Copy,
+  Check,
+  NotebookPen,
 } from "lucide-react";
-import { cancelMeeting } from "@/actions/meetings";
+import { cancelMeeting, updateMeetingSummary } from "@/actions/meetings";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
 import ScheduleMeetingModal, { type SuggestedContact, type MeetingInitialData } from "./ScheduleMeetingModal";
@@ -29,6 +32,8 @@ interface Meeting {
   recordingDriveId: string | null;
   recordingUrl: string | null;
   transcriptText: string | null;
+  nativeTranscriptUrl: string | null;
+  meetingSummary: string | null;
   activityId: string | null;
   activity?: { id: string; completed: boolean; completedAt: Date | null } | null;
 }
@@ -114,6 +119,13 @@ export default function MeetingsList({
   const [showModal, setShowModal] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [expandedTranscript, setExpandedTranscript] = useState<string | null>(null);
+  const [expandedSummary, setExpandedSummary] = useState<string | null>(null);
+
+  function handleSummaryUpdated(meetingId: string, newSummary: string | null) {
+    setMeetings((prev) =>
+      prev.map((m) => (m.id === meetingId ? { ...m, meetingSummary: newSummary } : m))
+    );
+  }
 
   const now = new Date();
   const upcoming = meetings.filter((m) => m.status === "scheduled" && new Date(m.startAt) >= now);
@@ -176,7 +188,10 @@ export default function MeetingsList({
                     meeting={m}
                     suggestedContacts={suggestedContacts}
                     expandedTranscript={expandedTranscript}
+                    expandedSummary={expandedSummary}
                     onToggleTranscript={setExpandedTranscript}
+                    onToggleSummary={setExpandedSummary}
+                    onSummaryUpdated={handleSummaryUpdated}
                     onCancel={handleCancel}
                     onEdit={setEditingMeeting}
                   />
@@ -198,7 +213,10 @@ export default function MeetingsList({
                     meeting={m}
                     suggestedContacts={suggestedContacts}
                     expandedTranscript={expandedTranscript}
+                    expandedSummary={expandedSummary}
                     onToggleTranscript={setExpandedTranscript}
+                    onToggleSummary={setExpandedSummary}
+                    onSummaryUpdated={handleSummaryUpdated}
                     onCancel={handleCancel}
                     onEdit={setEditingMeeting}
                   />
@@ -243,31 +261,61 @@ export default function MeetingsList({
 
 // ---------------------------------------------------------------------------
 
+function CopyButton({ text }: { text: string }) {
+  const [copied, setCopied] = useState(false);
+  function handleCopy() {
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+  return (
+    <button
+      onClick={handleCopy}
+      title="Copiar"
+      className="rounded p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+    >
+      {copied ? <Check size={13} className="text-green-500" /> : <Copy size={13} />}
+    </button>
+  );
+}
+
 function MeetingCard({
   meeting,
   suggestedContacts,
   expandedTranscript,
+  expandedSummary,
   onToggleTranscript,
+  onToggleSummary,
+  onSummaryUpdated,
   onCancel,
   onEdit,
 }: {
   meeting: Meeting;
   suggestedContacts: SuggestedContact[];
   expandedTranscript: string | null;
+  expandedSummary: string | null;
   onToggleTranscript: (id: string | null) => void;
+  onToggleSummary: (id: string | null) => void;
+  onSummaryUpdated: (id: string, summary: string | null) => void;
   onCancel: (id: string) => Promise<void>;
   onEdit: (meeting: Meeting) => void;
 }) {
   const contactByEmail = new Map(suggestedContacts.map((c) => [c.email, c]));
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [editingSummary, setEditingSummary] = useState(false);
+  const [summaryDraft, setSummaryDraft] = useState(meeting.meetingSummary ?? "");
+  const [savingSummary, setSavingSummary] = useState(false);
 
   const statusCfg = STATUS_CONFIG[meeting.status] ?? STATUS_CONFIG.scheduled;
   const isScheduled = meeting.status === "scheduled";
   const isEnded = meeting.status === "ended";
   const hasRecording = !!meeting.recordingUrl;
   const hasTranscript = !!meeting.transcriptText;
+  const hasSummary = !!meeting.meetingSummary;
   const isTranscriptOpen = expandedTranscript === meeting.id;
+  const isSummaryOpen = expandedSummary === meeting.id;
   const attendees = parseAttendees(meeting.attendeeEmails);
   const externalAttendees = attendees.filter((a) => !a.self);
 
@@ -279,6 +327,25 @@ function MeetingCard({
       setCancelling(false);
       setConfirmingCancel(false);
     }
+  }
+
+  async function handleSaveSummary() {
+    setSavingSummary(true);
+    try {
+      await updateMeetingSummary(meeting.id, summaryDraft);
+      onSummaryUpdated(meeting.id, summaryDraft.trim() || null);
+      setEditingSummary(false);
+      toast.success("Resumo salvo.");
+    } catch {
+      toast.error("Erro ao salvar resumo.");
+    } finally {
+      setSavingSummary(false);
+    }
+  }
+
+  function handleCancelEditSummary() {
+    setSummaryDraft(meeting.meetingSummary ?? "");
+    setEditingSummary(false);
   }
 
   return (
@@ -367,7 +434,7 @@ function MeetingCard({
             </button>
           )}
 
-          {/* Inline confirmation — replaces the buttons above */}
+          {/* Inline cancel confirmation */}
           {isScheduled && confirmingCancel && (
             <div className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5">
               {cancelling ? (
@@ -396,8 +463,8 @@ function MeetingCard({
         </div>
       </div>
 
-      {/* Recording + Transcript (ended meetings) */}
-      {isEnded && (hasRecording || hasTranscript) && (
+      {/* Action bar: recording, summary, transcript (ended meetings) */}
+      {isEnded && (hasRecording || hasTranscript || hasSummary || true) && (
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-200 pt-3">
           {hasRecording && (
             <a
@@ -411,6 +478,19 @@ function MeetingCard({
             </a>
           )}
 
+          {/* Summary button — always show for ended meetings so user can add manually */}
+          <button
+            onClick={() => onToggleSummary(isSummaryOpen ? null : meeting.id)}
+            className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+              hasSummary
+                ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
+                : "border-dashed border-gray-300 bg-white text-gray-400 hover:border-amber-300 hover:text-amber-600"
+            }`}
+          >
+            <NotebookPen size={13} />
+            {isSummaryOpen ? "Ocultar Resumo" : hasSummary ? "Ver Resumo" : "Adicionar Resumo"}
+          </button>
+
           {hasTranscript && (
             <button
               onClick={() => onToggleTranscript(isTranscriptOpen ? null : meeting.id)}
@@ -423,10 +503,72 @@ function MeetingCard({
         </div>
       )}
 
-      {/* Transcript text (expanded) */}
+      {/* Summary panel (expanded) */}
+      {isSummaryOpen && (
+        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3">
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold text-amber-800">Resumo da Reunião</p>
+            <div className="flex items-center gap-1">
+              {!editingSummary && meeting.meetingSummary && (
+                <CopyButton text={meeting.meetingSummary} />
+              )}
+              {!editingSummary && (
+                <button
+                  onClick={() => { setSummaryDraft(meeting.meetingSummary ?? ""); setEditingSummary(true); }}
+                  title="Editar resumo"
+                  className="rounded p-1 text-amber-500 hover:bg-amber-100 hover:text-amber-700"
+                >
+                  <Pencil size={13} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {editingSummary ? (
+            <div className="space-y-2">
+              <textarea
+                value={summaryDraft}
+                onChange={(e) => setSummaryDraft(e.target.value)}
+                rows={8}
+                className="w-full rounded-md border border-amber-300 bg-white px-3 py-2 text-xs text-gray-700 leading-relaxed focus:border-amber-500 focus:outline-none"
+                placeholder="Escreva o resumo da reunião..."
+              />
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleSaveSummary}
+                  disabled={savingSummary}
+                  className="flex items-center gap-1.5 rounded-md bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700 disabled:opacity-60"
+                >
+                  {savingSummary ? <Loader2 size={12} className="animate-spin" /> : <Check size={12} />}
+                  Salvar
+                </button>
+                <button
+                  onClick={handleCancelEditSummary}
+                  className="rounded-md px-3 py-1.5 text-xs font-medium text-gray-600 hover:bg-amber-100"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          ) : (
+            <p className="whitespace-pre-wrap text-xs text-amber-900 leading-relaxed">
+              {meeting.meetingSummary || (
+                <span className="italic text-amber-500">
+                  Nenhum resumo ainda. Clique no lápis para adicionar.
+                </span>
+              )}
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Transcript panel (expanded) */}
       {isTranscriptOpen && meeting.transcriptText && (
         <div className="mt-3 rounded-md border border-gray-200 bg-white p-3">
-          <p className="text-xs font-semibold text-gray-600 mb-2">Transcrição</p>
+          <div className="mb-2 flex items-center justify-between">
+            <p className="text-xs font-semibold text-gray-600">Transcrição</p>
+            <CopyButton text={meeting.transcriptText} />
+          </div>
           <p className="whitespace-pre-wrap text-xs text-gray-700 leading-relaxed">
             {meeting.transcriptText}
           </p>

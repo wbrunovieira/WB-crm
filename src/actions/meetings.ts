@@ -186,6 +186,31 @@ export async function cancelMeeting(meetingId: string) {
 }
 
 // ---------------------------------------------------------------------------
+// updateMeetingSummary
+
+export async function updateMeetingSummary(meetingId: string, summary: string) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Não autorizado");
+
+  const meeting = await prisma.meeting.findUnique({ where: { id: meetingId } });
+  if (!meeting) throw new Error("Reunião não encontrada");
+  if (session.user.role !== "admin" && meeting.ownerId !== session.user.id) {
+    throw new Error("Acesso negado");
+  }
+
+  const updated = await prisma.meeting.update({
+    where: { id: meetingId },
+    data: { meetingSummary: summary.trim() || null },
+  });
+
+  if (meeting.leadId) revalidatePath(`/leads/${meeting.leadId}`);
+  if (meeting.dealId) revalidatePath(`/deals/${meeting.dealId}`);
+  if (meeting.contactId) revalidatePath(`/contacts/${meeting.contactId}`);
+
+  return updated;
+}
+
+// ---------------------------------------------------------------------------
 // updateMeeting
 
 export async function updateMeeting(meetingId: string, input: UpdateMeetingInput) {

@@ -12,16 +12,17 @@ import { submitVideoForTranscription } from "@/lib/transcriptor";
  * Cron endpoint — runs every 15 minutes.
  *
  * Pass 1 — scheduled → ended:
- *   Finds meetings whose time has passed (endAt < now OR startAt > 30min ago),
- *   marks as ended, completes the linked Activity, then searches for recording.
+ *   Finds meetings whose time has passed, marks as ended, completes the linked
+ *   Activity, then searches for recording + transcript.
  *
- * Pass 2 — ended, no recording yet:
- *   Retries recording search for meetings already marked ended but with no file yet.
- *   This handles the case where Google takes >15min to process the recording.
+ * Pass 2 — ended, no recording/transcript yet:
+ *   Retries for meetings already marked ended but still missing files.
+ *   This handles the case where Google takes >15min to process recordings.
  *
- * Recording strategy (no file move required):
- *   We save the original Drive URL (no scope to move files created by Meet).
- *   We download the video content for transcription only.
+ * Transcript strategy (priority order):
+ *   1. Google Meet native transcript (Google Doc) — has speaker diarization.
+ *      Export as text, split into meetingSummary (Gemini AI notes) + transcriptText (raw).
+ *   2. Fallback: custom video transcription (if user forgot to enable transcript).
  *
  * Secured by CRON_SECRET header.
  */
@@ -51,7 +52,7 @@ export async function GET(req: NextRequest) {
     },
   });
 
-  // ── Pass 2: ended but recording not yet found ────────────────────────────
+  // ── Pass 2: ended but recording/transcript not yet found ─────────────────
   const waitingForRecording = await prisma.meeting.findMany({
     where: {
       status: "ended",
@@ -69,7 +70,7 @@ export async function GET(req: NextRequest) {
 
   const results: { meetingId: string; action: string; error?: string }[] = [];
 
-  // ── Process Pass 1 first ─────────────────────────────────────────────────
+  // ── Process Pass 1 ───────────────────────────────────────────────────────
   for (const meeting of scheduledEnded) {
     try {
       // 1. Fetch final attendee RSVP statuses
@@ -105,10 +106,9 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      // 4. Search Drive for recording + Gemini transcript
-      const recordingResult = await processRecording(meeting, now, results);
-      if (!recordingResult) {
-        // Not found yet — Pass 2 will retry on next cron run
+      // 4. Search Drive for recording + transcript
+      const found = await processRecording(meeting, meeting.startAt, now, results);
+      if (!found) {
         results.push({ meetingId: meeting.id, action: "ended_recording_pending" });
       }
     } catch (err) {
@@ -117,10 +117,10 @@ export async function GET(req: NextRequest) {
     }
   }
 
-  // ── Process Pass 2: retry recording for already-ended meetings ───────────
+  // ── Process Pass 2: retry for already-ended meetings ─────────────────────
   for (const meeting of waitingForRecording) {
     try {
-      const found = await processRecording(meeting, now, results);
+      const found = await processRecording(meeting, meeting.startAt, now, results);
       if (!found) {
         results.push({ meetingId: meeting.id, action: "recording_still_pending" });
       }
@@ -138,7 +138,52 @@ export async function GET(req: NextRequest) {
   });
 }
 
-// ── Shared recording/transcript logic ────────────────────────────────────────
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+/**
+ * Exports a Google Doc as plain text via Drive API.
+ * Google Meet transcripts include speaker names: "Bruno Vieira: Olá..."
+ */
+async function exportGoogleDocText(fileId: string): Promise<string> {
+  const auth = await getAuthenticatedClient();
+  const drive = google.drive({ version: "v3", auth });
+  const res = await drive.files.export(
+    { fileId, mimeType: "text/plain" },
+    { responseType: "arraybuffer" }
+  );
+  return Buffer.from(res.data as ArrayBuffer).toString("utf-8").trim();
+}
+
+/**
+ * Splits the exported Google Meet doc into two parts:
+ * - meetingSummary: the "📝 Observações" section (Gemini AI notes, topics, action items)
+ * - transcriptText: the "📖 Transcrição" section (raw transcript with speaker names)
+ *
+ * Returns whichever sections are present.
+ */
+function parseGoogleMeetDoc(text: string): {
+  meetingSummary: string | null;
+  transcriptText: string | null;
+} {
+  // The doc always has "📖" before the raw transcript section
+  const transcriptMarker = "📖";
+  const idx = text.indexOf(transcriptMarker);
+
+  if (idx === -1) {
+    // No transcript section — entire content goes to summary
+    return { meetingSummary: text || null, transcriptText: null };
+  }
+
+  const summaryRaw = text.slice(0, idx).trim();
+  const transcriptRaw = text.slice(idx).trim();
+
+  return {
+    meetingSummary: summaryRaw || null,
+    transcriptText: transcriptRaw || null,
+  };
+}
+
+// ── Main recording/transcript logic ──────────────────────────────────────────
 
 async function processRecording(
   meeting: {
@@ -153,22 +198,61 @@ async function processRecording(
     actualStartAt?: Date | null;
     startAt: Date;
   },
+  scheduledStartAt: Date,
   now: Date,
   results: { meetingId: string; action: string; error?: string }[]
 ): Promise<boolean> {
-  const { recording, nativeTranscript } = await findMeetingFiles(meeting.title);
+  const { recording, nativeTranscript } = await findMeetingFiles(
+    meeting.title,
+    scheduledStartAt
+  );
 
-  // Save Gemini transcript URL if found and not already saved
-  if (nativeTranscript && !meeting.nativeTranscriptUrl) {
+  // ── Strategy 1: Google Meet native transcript (preferred) ─────────────────
+  // The native transcript is a Google Doc with:
+  //   • "📝 Observações" — Gemini AI notes, summary, topics, action items → meetingSummary
+  //   • "📖 Transcrição" — raw transcript with speaker names → transcriptText
+  // This is richer than our custom video transcription and requires no video download.
+
+  if (nativeTranscript) {
+    let meetingSummary: string | null = null;
+    let transcriptText: string | null = null;
+
+    try {
+      const rawText = await exportGoogleDocText(nativeTranscript.fileId);
+      const parsed = parseGoogleMeetDoc(rawText);
+      meetingSummary = parsed.meetingSummary;
+      transcriptText = parsed.transcriptText;
+    } catch (err) {
+      console.error(`Failed to export native transcript for meeting ${meeting.id}:`, err);
+    }
+
     await prisma.meeting.update({
       where: { id: meeting.id },
-      data: { nativeTranscriptUrl: nativeTranscript.webViewLink },
+      data: {
+        nativeTranscriptUrl: nativeTranscript.webViewLink,
+        ...(meetingSummary !== null ? { meetingSummary } : {}),
+        ...(transcriptText !== null ? { transcriptText, transcribedAt: now } : {}),
+        ...(recording
+          ? { recordingDriveId: recording.fileId, recordingUrl: recording.webViewLink, recordingMovedAt: now }
+          : {}),
+      },
     });
+
+    results.push({
+      meetingId: meeting.id,
+      action: meetingSummary || transcriptText
+        ? "google_transcript_saved"
+        : "google_transcript_url_saved_export_failed",
+    });
+    return true;
   }
+
+  // ── Strategy 2: Fallback — custom video transcription ────────────────────
+  // Used when user forgot to enable transcription in Google Meet.
+  // Downloads the .mp4 from Drive and submits to our transcription service.
 
   if (!recording) return false;
 
-  // Download recording for transcription (read via drive.readonly scope)
   const auth = await getAuthenticatedClient();
   const drive = google.drive({ version: "v3", auth });
 
@@ -178,13 +262,11 @@ async function processRecording(
   );
   const buffer = Buffer.from(fileRes.data as ArrayBuffer);
 
-  // Submit to our transcriptor
   const { jobId: transcriptionJobId } = await submitVideoForTranscription(
     buffer,
     `reuniao-${meeting.id}.mp4`
   );
 
-  // Save recording URL directly (no move — avoids needing drive scope)
   await prisma.meeting.update({
     where: { id: meeting.id },
     data: {
@@ -192,13 +274,12 @@ async function processRecording(
       recordingUrl: recording.webViewLink,
       recordingMovedAt: now,
       transcriptionJobId,
-      ...(nativeTranscript ? { nativeTranscriptUrl: nativeTranscript.webViewLink } : {}),
     },
   });
 
   results.push({
     meetingId: meeting.id,
-    action: "recording_saved_transcription_queued",
+    action: "recording_saved_video_transcription_queued",
   });
   return true;
 }

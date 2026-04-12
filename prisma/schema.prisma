@@ -1743,6 +1743,7 @@ model Meeting {
   transcriptText      String?   // Full transcription text (from our transcriptor API)
   transcribedAt       DateTime? // When transcription was completed
   nativeTranscriptUrl String?   // Google Meet's own transcript doc URL (if user enabled it)
+  meetingSummary      String?   // AI notes from Google Meet (Gemini): summary, topics, action items
 
   // Relations to CRM entities
   leadId     String?
