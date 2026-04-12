@@ -28,23 +28,19 @@ export interface MeetingFiles {
 
 /**
  * Searches Drive for recording (.mp4) and native transcript (Google Doc) for a meeting.
- * Google Meet names files as "[Title] (YYYY-MM-DD at HH:MM GMT±N).mp4"
- * and transcripts as "[Title] - Transcrição (YYYY-MM-DD ...)" or similar.
- * We search by title prefix (first 20 chars) to match both.
+ * Google Meet names files as "[Title] - YYYY/MM/DD HH:MM GMT±N" or similar.
+ * We search by title prefix (first 15 chars) without date filter to avoid missing
+ * files created before or after scheduled start time.
  */
-export async function findMeetingFiles(
-  meetingTitle: string,
-  minCreatedTime: Date
-): Promise<MeetingFiles> {
+export async function findMeetingFiles(meetingTitle: string): Promise<MeetingFiles> {
   const auth = await getAuthenticatedClient();
   const drive = google.drive({ version: "v3", auth });
 
-  // Use the first 20 chars of the title to avoid punctuation issues in Drive query
-  const titlePrefix = meetingTitle.slice(0, 20).replace(/'/g, "\\'");
-  const minTime = minCreatedTime.toISOString();
+  // Use first 15 chars — enough to identify the meeting, short enough to avoid escaping issues
+  const titlePrefix = meetingTitle.slice(0, 15).replace(/'/g, "\\'");
 
   const res = await drive.files.list({
-    q: `name contains '${titlePrefix}' and trashed = false and createdTime > '${minTime}'`,
+    q: `name contains '${titlePrefix}' and trashed = false`,
     fields: "files(id, name, webViewLink, createdTime, mimeType)",
     orderBy: "createdTime desc",
     pageSize: 20,
