@@ -112,7 +112,6 @@ export default function MeetingsList({
 }: Props) {
   const [meetings, setMeetings] = useState(initial);
   const [showModal, setShowModal] = useState(false);
-  const [cancelling, setCancelling] = useState<string | null>(null);
   const [expandedTranscript, setExpandedTranscript] = useState<string | null>(null);
 
   const now = new Date();
@@ -120,18 +119,14 @@ export default function MeetingsList({
   const past = meetings.filter((m) => m.status !== "scheduled" || new Date(m.startAt) < now);
 
   async function handleCancel(id: string) {
-    if (!confirm("Cancelar esta reunião? Os convidados serão notificados.")) return;
-    setCancelling(id);
     try {
       await cancelMeeting(id);
       setMeetings((prev) =>
         prev.map((m) => (m.id === id ? { ...m, status: "cancelled" } : m))
       );
-      toast.success("Reunião cancelada");
+      toast.success("Reunião cancelada. Os convidados foram notificados.");
     } catch {
       toast.error("Erro ao cancelar reunião");
-    } finally {
-      setCancelling(null);
     }
   }
 
@@ -181,7 +176,6 @@ export default function MeetingsList({
                     expandedTranscript={expandedTranscript}
                     onToggleTranscript={setExpandedTranscript}
                     onCancel={handleCancel}
-                    cancelling={cancelling}
                   />
                 ))}
               </ul>
@@ -202,7 +196,6 @@ export default function MeetingsList({
                     expandedTranscript={expandedTranscript}
                     onToggleTranscript={setExpandedTranscript}
                     onCancel={handleCancel}
-                    cancelling={cancelling}
                   />
                 ))}
               </ul>
@@ -232,24 +225,33 @@ function MeetingCard({
   expandedTranscript,
   onToggleTranscript,
   onCancel,
-  cancelling,
 }: {
   meeting: Meeting;
   expandedTranscript: string | null;
   onToggleTranscript: (id: string | null) => void;
-  onCancel: (id: string) => void;
-  cancelling: string | null;
+  onCancel: (id: string) => Promise<void>;
 }) {
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+
   const statusCfg = STATUS_CONFIG[meeting.status] ?? STATUS_CONFIG.scheduled;
-  const isCancelling = cancelling === meeting.id;
   const isScheduled = meeting.status === "scheduled";
   const isEnded = meeting.status === "ended";
   const hasRecording = !!meeting.recordingUrl;
   const hasTranscript = !!meeting.transcriptText;
   const isTranscriptOpen = expandedTranscript === meeting.id;
   const attendees = parseAttendees(meeting.attendeeEmails);
-  // Exclude the organizer (self) from the display list
   const externalAttendees = attendees.filter((a) => !a.self);
+
+  async function handleConfirmCancel() {
+    setCancelling(true);
+    try {
+      await onCancel(meeting.id);
+    } finally {
+      setCancelling(false);
+      setConfirmingCancel(false);
+    }
+  }
 
   return (
     <li className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
@@ -298,7 +300,7 @@ function MeetingCard({
 
         {/* Actions */}
         <div className="flex flex-shrink-0 items-center gap-2">
-          {isScheduled && meeting.meetLink && (
+          {isScheduled && meeting.meetLink && !confirmingCancel && (
             <a
               href={meeting.meetLink}
               target="_blank"
@@ -310,16 +312,41 @@ function MeetingCard({
             </a>
           )}
 
-          {isScheduled && !isCancelling && (
+          {isScheduled && !confirmingCancel && (
             <button
-              onClick={() => onCancel(meeting.id)}
+              onClick={() => setConfirmingCancel(true)}
               className="rounded-md px-2 py-1.5 text-xs text-red-500 hover:bg-red-50"
             >
               Cancelar
             </button>
           )}
 
-          {isCancelling && <Loader2 size={14} className="animate-spin text-gray-400" />}
+          {/* Inline confirmation — replaces the buttons above */}
+          {isScheduled && confirmingCancel && (
+            <div className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5">
+              {cancelling ? (
+                <Loader2 size={13} className="animate-spin text-red-500" />
+              ) : (
+                <>
+                  <span className="text-xs text-red-700 font-medium">
+                    Cancelar e notificar convidados?
+                  </span>
+                  <button
+                    onClick={handleConfirmCancel}
+                    className="rounded bg-red-500 px-2 py-0.5 text-xs font-semibold text-white hover:bg-red-600"
+                  >
+                    Sim
+                  </button>
+                  <button
+                    onClick={() => setConfirmingCancel(false)}
+                    className="rounded px-2 py-0.5 text-xs font-medium text-red-500 hover:bg-red-100"
+                  >
+                    Não
+                  </button>
+                </>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
