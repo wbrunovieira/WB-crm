@@ -1,16 +1,23 @@
 "use client";
 
 import { useState } from "react";
-import { X, Video, Plus, Trash2, Loader2 } from "lucide-react";
+import { X, Video, Plus, Trash2, Loader2, UserCheck, User } from "lucide-react";
 import { scheduleMeeting } from "@/actions/meetings";
 import { toast } from "sonner";
+
+export interface SuggestedContact {
+  id: string;
+  name: string;
+  email: string;
+  role?: string | null;
+}
 
 interface Props {
   leadId?: string;
   contactId?: string;
   dealId?: string;
-  /** Pre-filled attendee emails from lead contacts */
-  defaultEmails?: string[];
+  /** Contacts from the lead/deal to show as clickable chips */
+  suggestedContacts?: SuggestedContact[];
   onClose: () => void;
   onCreated: () => void;
 }
@@ -19,7 +26,7 @@ export default function ScheduleMeetingModal({
   leadId,
   contactId,
   dealId,
-  defaultEmails = [],
+  suggestedContacts = [],
   onClose,
   onCreated,
 }: Props) {
@@ -28,43 +35,59 @@ export default function ScheduleMeetingModal({
   const [startDate, setStartDate] = useState("");
   const [startTime, setStartTime] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(60);
-  const [emails, setEmails] = useState<string[]>(defaultEmails.length > 0 ? defaultEmails : [""]);
+
+  // Selected contact IDs (from suggestedContacts)
+  const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
+
+  // Free-form email inputs (for anyone not in suggestedContacts)
+  const [customEmails, setCustomEmails] = useState<string[]>([""]);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
-  function addEmail() {
-    setEmails((prev) => [...prev, ""]);
+  function toggleContact(id: string) {
+    setSelectedContactIds((prev) => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
   }
 
-  function removeEmail(idx: number) {
-    setEmails((prev) => prev.filter((_, i) => i !== idx));
+  function addCustomEmail() {
+    setCustomEmails((prev) => [...prev, ""]);
   }
 
-  function updateEmail(idx: number, value: string) {
-    setEmails((prev) => prev.map((e, i) => (i === idx ? value : e)));
+  function removeCustomEmail(idx: number) {
+    setCustomEmails((prev) => prev.filter((_, i) => i !== idx));
+  }
+
+  function updateCustomEmail(idx: number, value: string) {
+    setCustomEmails((prev) => prev.map((e, i) => (i === idx ? value : e)));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
 
-    if (!title.trim()) {
-      setError("Título é obrigatório");
-      return;
-    }
-    if (!startDate || !startTime) {
-      setError("Data e hora de início são obrigatórios");
-      return;
-    }
+    if (!title.trim()) { setError("Título é obrigatório"); return; }
+    if (!startDate || !startTime) { setError("Data e hora de início são obrigatórios"); return; }
 
     const startAt = new Date(`${startDate}T${startTime}:00`);
-    if (isNaN(startAt.getTime())) {
-      setError("Data/hora inválida");
-      return;
-    }
+    if (isNaN(startAt.getTime())) { setError("Data/hora inválida"); return; }
 
     const endAt = new Date(startAt.getTime() + durationMinutes * 60 * 1000);
-    const attendeeEmails = emails.filter((e) => e.trim().length > 0);
+
+    // Merge: selected contact emails + non-empty custom emails (deduplicated)
+    const contactEmails = suggestedContacts
+      .filter((c) => selectedContactIds.has(c.id))
+      .map((c) => c.email);
+    const freeEmails = customEmails.map((e) => e.trim()).filter(Boolean);
+    const seen = new Set<string>();
+    const attendeeEmails = [...contactEmails, ...freeEmails].filter((e) => {
+      if (seen.has(e)) return false;
+      seen.add(e);
+      return true;
+    });
 
     setLoading(true);
     try {
@@ -89,17 +112,19 @@ export default function ScheduleMeetingModal({
     }
   }
 
+  const selectedCount = selectedContactIds.size + customEmails.filter((e) => e.trim()).length;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-lg rounded-xl bg-white shadow-2xl"
+        className="w-full max-w-lg rounded-xl bg-white shadow-2xl max-h-[90vh] flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 flex-shrink-0">
           <div className="flex items-center gap-2">
             <Video size={18} className="text-purple-600" />
             <h2 className="text-base font-semibold text-gray-900">Agendar Reunião</h2>
@@ -112,121 +137,184 @@ export default function ScheduleMeetingModal({
           </button>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-4 px-6 py-5">
-          {error && (
-            <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
-          )}
+        {/* Form (scrollable) */}
+        <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto">
+          <div className="space-y-4 px-6 py-5">
+            {error && (
+              <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-600">{error}</p>
+            )}
 
-          {/* Title */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Título <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Ex: Apresentação da proposta"
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Date + Time */}
-          <div className="grid grid-cols-2 gap-3">
+            {/* Title */}
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">
-                Data <span className="text-red-500">*</span>
+                Título <span className="text-red-500">*</span>
               </label>
               <input
-                type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
-                min={new Date().toISOString().split("T")[0]}
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ex: Apresentação da proposta"
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
               />
             </div>
+
+            {/* Date + Time */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Data <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => setStartDate(e.target.value)}
+                  min={new Date().toISOString().split("T")[0]}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Hora <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="time"
+                  value={startTime}
+                  onChange={(e) => setStartTime(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Duration */}
+            <div>
+              <label className="mb-1 block text-sm font-medium text-gray-700">Duração</label>
+              <select
+                value={durationMinutes}
+                onChange={(e) => setDurationMinutes(Number(e.target.value))}
+                className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+              >
+                <option value={30}>30 minutos</option>
+                <option value={60}>1 hora</option>
+                <option value={90}>1h30</option>
+                <option value={120}>2 horas</option>
+              </select>
+            </div>
+
+            {/* Description */}
             <div>
               <label className="mb-1 block text-sm font-medium text-gray-700">
-                Hora <span className="text-red-500">*</span>
+                Descrição (opcional)
               </label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={2}
+                placeholder="Pauta da reunião..."
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
               />
             </div>
-          </div>
 
-          {/* Duration */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">Duração</label>
-            <select
-              value={durationMinutes}
-              onChange={(e) => setDurationMinutes(Number(e.target.value))}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
-            >
-              <option value={30}>30 minutos</option>
-              <option value={60}>1 hora</option>
-              <option value={90}>1h30</option>
-              <option value={120}>2 horas</option>
-            </select>
-          </div>
+            {/* ── Attendees ────────────────────────────────────── */}
+            <div>
+              <div className="mb-2 flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  Convidados
+                  {selectedCount > 0 && (
+                    <span className="ml-1.5 rounded-full bg-purple-100 px-1.5 py-0.5 text-xs font-semibold text-purple-700">
+                      {selectedCount}
+                    </span>
+                  )}
+                </label>
+              </div>
 
-          {/* Description */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Descrição (opcional)
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              placeholder="Pauta da reunião..."
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
-            />
-          </div>
-
-          {/* Attendees */}
-          <div>
-            <label className="mb-1 block text-sm font-medium text-gray-700">
-              Convidados (e-mails)
-            </label>
-            <div className="space-y-2">
-              {emails.map((email, idx) => (
-                <div key={idx} className="flex items-center gap-2">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => updateEmail(idx, e.target.value)}
-                    placeholder="convidado@empresa.com"
-                    className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
-                  />
-                  {emails.length > 1 && (
-                    <button
-                      type="button"
-                      onClick={() => removeEmail(idx)}
-                      className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
-                    >
-                      <Trash2 size={14} />
-                    </button>
+              {/* Suggested contacts panel */}
+              {suggestedContacts.length > 0 && (
+                <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
+                    Contatos do lead
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {suggestedContacts.map((c) => {
+                      const selected = selectedContactIds.has(c.id);
+                      return (
+                        <button
+                          key={c.id}
+                          type="button"
+                          onClick={() => toggleContact(c.id)}
+                          title={c.email}
+                          className={`flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-medium transition-colors ${
+                            selected
+                              ? "border-purple-400 bg-purple-100 text-purple-800"
+                              : "border-gray-200 bg-white text-gray-700 hover:border-purple-300 hover:bg-purple-50"
+                          }`}
+                        >
+                          {selected ? (
+                            <UserCheck size={12} className="text-purple-600" />
+                          ) : (
+                            <User size={12} className="text-gray-400" />
+                          )}
+                          <span className="max-w-[120px] truncate">{c.name}</span>
+                          {c.role && (
+                            <span className="opacity-60">· {c.role}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {/* Show emails of selected contacts */}
+                  {selectedContactIds.size > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {suggestedContacts
+                        .filter((c) => selectedContactIds.has(c.id))
+                        .map((c) => (
+                          <span
+                            key={c.id}
+                            className="inline-block rounded bg-purple-50 px-1.5 py-0.5 text-xs text-purple-600"
+                          >
+                            {c.email}
+                          </span>
+                        ))}
+                    </div>
                   )}
                 </div>
-              ))}
-              <button
-                type="button"
-                onClick={addEmail}
-                className="flex items-center gap-1.5 text-xs font-medium text-purple-600 hover:text-purple-700"
-              >
-                <Plus size={13} />
-                Adicionar convidado
-              </button>
+              )}
+
+              {/* Custom email inputs */}
+              <div className="space-y-2">
+                {customEmails.map((email, idx) => (
+                  <div key={idx} className="flex items-center gap-2">
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => updateCustomEmail(idx, e.target.value)}
+                      placeholder="outro@empresa.com"
+                      className="flex-1 rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                    />
+                    {customEmails.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeCustomEmail(idx)}
+                        className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    )}
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={addCustomEmail}
+                  className="flex items-center gap-1.5 text-xs font-medium text-purple-600 hover:text-purple-700"
+                >
+                  <Plus size={13} />
+                  Adicionar outro e-mail
+                </button>
+              </div>
             </div>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-end gap-3 border-t border-gray-200 pt-4">
+          <div className="flex items-center justify-end gap-3 border-t border-gray-200 px-6 py-4 flex-shrink-0">
             <button
               type="button"
               onClick={onClose}

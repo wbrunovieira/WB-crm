@@ -208,7 +208,11 @@ export default async function DealDetailPage({
         <MeetingsList
           meetings={meetings}
           dealId={deal.id}
-          defaultEmails={[deal.contact?.email].filter(Boolean) as string[]}
+          suggestedContacts={
+            deal.contact?.email
+              ? [{ id: deal.contact.id, name: deal.contact.name, email: deal.contact.email, role: deal.contact.role }]
+              : []
+          }
         />
       </div>
 

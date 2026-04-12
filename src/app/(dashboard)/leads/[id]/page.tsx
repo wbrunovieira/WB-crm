@@ -651,10 +651,21 @@ export default async function LeadDetailPage({
         <MeetingsList
           meetings={meetings}
           leadId={lead.id}
-          defaultEmails={lead.leadContacts
-            .filter((c) => c.email && c.isActive !== false)
-            .map((c) => c.email!)
-            .filter(Boolean)}
+          suggestedContacts={[
+            // Lead's own email (if any)
+            ...(lead.email
+              ? [{ id: `lead-${lead.id}`, name: lead.businessName, email: lead.email, role: "Empresa" }]
+              : []),
+            // Individual lead contacts with email
+            ...lead.leadContacts
+              .filter((c) => c.email && c.isActive !== false)
+              .map((c) => ({
+                id: c.id,
+                name: c.name,
+                email: c.email!,
+                role: c.role,
+              })),
+          ]}
         />
       </div>
 
