@@ -276,9 +276,16 @@ export default function GoToCallPlayer({
               return (
                 <div
                   key={i}
-                  className={`px-3 py-2 transition-colors cursor-pointer hover:bg-gray-50 ${isActive ? "bg-yellow-50" : ""}`}
+                  className={`px-3 py-2 transition-colors cursor-pointer border-l-2 ${
+                    isActive
+                      ? isAgent
+                        ? "bg-blue-600 border-l-blue-800"
+                        : "bg-violet-600 border-l-violet-800"
+                      : isAgent
+                        ? "bg-white border-l-blue-300 hover:bg-blue-50"
+                        : "bg-white border-l-violet-300 hover:bg-violet-50"
+                  }`}
                   onClick={() => {
-                    // Click on segment → seek to that moment
                     const agent = agentAudio.current;
                     if (!agent) return;
                     const targetTime = isAgent ? seg.start : seg.start + offset;
@@ -287,14 +294,16 @@ export default function GoToCallPlayer({
                   }}
                 >
                   <div className="flex items-baseline gap-2">
-                    <span className={`text-xs font-semibold ${isAgent ? "text-blue-700" : "text-violet-700"}`}>
+                    <span className={`text-xs font-semibold ${
+                      isActive ? "text-white" : isAgent ? "text-blue-700" : "text-violet-700"
+                    }`}>
                       {seg.speakerName}
                     </span>
-                    <span className="text-xs text-gray-400">
+                    <span className={`text-xs ${isActive ? "text-white/70" : "text-gray-500"}`}>
                       {fmt(seg.start)}
                     </span>
                   </div>
-                  <p className="mt-0.5 text-sm leading-snug text-gray-800">
+                  <p className={`mt-0.5 text-sm leading-snug ${isActive ? "text-white font-medium" : "text-gray-900"}`}>
                     {seg.text}
                   </p>
                 </div>
