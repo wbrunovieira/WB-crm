@@ -158,30 +158,43 @@ src/
 - [x] Seção "Propostas" nas páginas de Lead e Deal
 - [x] 16 testes TDD (drive + proposals actions)
 
-### FASE 6 - Google Meet: agendamento e gravações 🔲 PRÓXIMA
+### FASE 6 - Google Meet: agendamento e gravações ✅ CONCLUÍDA
 
-**Objetivo**: agendar reuniões do Google Meet diretamente do perfil do Lead/Contato/Organização, com convite enviado por e-mail e reunião listada no perfil.
+**Google Workspace Standard** — gravações automáticas habilitadas.
 
-#### 6.1 — Agendamento
+#### 6.1 — Agendamento ✅
 
-- [ ] `src/lib/google/calendar.ts` — `createMeetEvent`, `cancelMeetEvent`
-- [ ] `src/actions/meetings.ts` — `scheduleMeeting`, `cancelMeeting`, `getMeetings`
-- [ ] Model `Meeting` no Prisma (googleEventId, meetLink, attendeeEmails, status, leadId, dealId…)
-- [ ] `ScheduleMeetingModal` — título, data/hora, e-mails convidados pré-preenchidos com e-mail do Lead/Contato
-- [ ] `MeetingsList` — seção de reuniões no perfil da entidade: futuras e passadas, botão "Entrar no Meet"
-- [ ] Activity do tipo `meeting` gerada automaticamente ao agendar
+- [x] `src/lib/google/calendar.ts` — `createMeetEvent`, `cancelMeetEvent`, `getMeetEvent`
+- [x] `src/actions/meetings.ts` — `scheduleMeeting`, `cancelMeeting`, `getMeetings`
+- [x] Model `Meeting` no Prisma (googleEventId, meetLink, attendeeEmails, status, leadId, dealId, activityId @unique…)
+- [x] `ScheduleMeetingModal` — título, data/hora, duração, e-mails convidados pré-preenchidos
+- [x] `MeetingsList` — seção de reuniões no perfil: futuras (botão "Entrar") e históricas (gravação + transcrição)
+- [x] Activity do tipo `meeting` gerada automaticamente (pendente) ao agendar
+- [x] Seção "Reuniões" nas páginas de Lead e Deal
 
-#### 6.2 — Gravações (requer Google Workspace Business Standard+)
+#### 6.2 — Gravações ✅
 
-- [ ] `src/lib/google/recording-detector.ts` — busca gravação no Drive após término da reunião
-- [ ] Cron/endpoint `/api/google/check-recordings` a cada 15 min
-- [ ] Gravação movida para `WB-CRM/Reuniões/[Entidade]/` e `recordingDriveId` salvo
-- [ ] Player inline usando a rota de arquivo do Drive (mesmo padrão das propostas)
+- [x] `src/lib/google/recording-detector.ts` — busca gravação no Drive após término da reunião
+- [x] `src/app/api/google/check-recordings/route.ts` — cron a cada 15 min (autenticado via `CRON_SECRET`)
+  - Detecta reuniões encerradas, completa Activity vinculada, move gravação para `WB-CRM/Reuniões/[Entidade]/`
+- [x] `recordingDriveId` e `recordingUrl` salvos na Meeting; player direto no `MeetingsList`
 
-#### Testes (TDD)
+#### 6.3 — Transcrição ✅
 
-- [ ] `tests/unit/lib/google/calendar.test.ts`
-- [ ] `tests/unit/actions/meetings.test.ts`
+- [x] `src/lib/transcriptor.ts` — cliente para a API `transcritor.wbdigitalsolutions.com`
+  - `submitVideoForTranscription(buffer, fileName)` → retorna `jobId`
+  - `getTranscriptionStatus(jobId)` → polling de status (pending/processing/done/failed)
+  - `getTranscriptionResult(jobId)` → busca texto final
+- [x] `check-recordings` atualizado: após mover gravação, baixa o vídeo do Drive e submete ao transcritor, salva `transcriptionJobId`
+- [x] `src/app/api/google/check-transcriptions/route.ts` — cron a cada 5 min, faz polling dos jobs pendentes e salva `transcriptText + transcribedAt`
+- [x] Transcrição exibida de forma expansível no `MeetingsList`
+- [x] Campo `transcriptionJobId` adicionado ao model `Meeting`
+
+#### Testes (TDD) ✅
+
+- [x] `tests/unit/lib/google/calendar.test.ts` — 5 testes
+- [x] `tests/unit/actions/meetings.test.ts` — 8 testes
+- [x] `tests/unit/lib/transcriptor.test.ts` — 6 testes
 
 ### FASE 7 - WhatsApp: matching avançado + mídia 🔲
 
@@ -267,11 +280,6 @@ NEXTAUTH_URL="http://localhost:3000"
 
 ## Próximos Passos
 
-**Fase atual**: FASE 6 — Google Meet: agendamento e gravações
+**Fase atual**: FASE 7 — WhatsApp: matching avançado + mídia
 
-1. Criar model `Meeting` no Prisma + migration
-2. Implementar `src/lib/google/calendar.ts` com TDD
-3. Criar `src/actions/meetings.ts` — `scheduleMeeting`, `cancelMeeting`, `getMeetings`
-4. Construir `ScheduleMeetingModal` e `MeetingsList`
-5. Adicionar seção "Reuniões" nas páginas de Lead, Contact e Deal
-6. (Opcional, depende do plano Google Workspace) detector de gravações via cron
+**Fase 6 concluída** — Google Meet completo (agendamento, gravações, transcrição)

@@ -1,6 +1,8 @@
 import { getDealById } from "@/actions/deals";
 import { getProposals } from "@/actions/proposals";
+import { getMeetings } from "@/actions/meetings";
 import ProposalsList from "@/components/proposals/ProposalsList";
+import MeetingsList from "@/components/meetings/MeetingsList";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -19,10 +21,11 @@ export default async function DealDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [deal, session, proposals] = await Promise.all([
+  const [deal, session, proposals, meetings] = await Promise.all([
     getDealById(params.id),
     getServerSession(authOptions),
     getProposals({ dealId: params.id }),
+    getMeetings({ dealId: params.id }),
   ]);
 
   if (!deal) {
@@ -198,6 +201,15 @@ export default async function DealDetailPage({
       {/* Proposals */}
       <div className="mt-6">
         <ProposalsList proposals={proposals} dealId={deal.id} />
+      </div>
+
+      {/* Meetings */}
+      <div className="mt-6">
+        <MeetingsList
+          meetings={meetings}
+          dealId={deal.id}
+          defaultEmails={[deal.contact?.email].filter(Boolean) as string[]}
+        />
       </div>
 
       <div className="mt-6 rounded-lg bg-white p-6 shadow">
