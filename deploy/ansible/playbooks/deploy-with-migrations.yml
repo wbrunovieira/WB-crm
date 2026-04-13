@@ -30,7 +30,8 @@
     app_dir: /opt/wb-crm
     app_name: wb-crm
     github_branch: main
-    backup_dir: /opt/wb-crm-backups
+    backup_script: /opt/backups/backup-crm.sh
+    backup_dir: /opt/backups/crm
     timestamp: "{{ lookup('pipe', 'date +%Y%m%d_%H%M%S') }}"
     # Docker PostgreSQL container
     db_container: crm_postgres
@@ -45,36 +46,25 @@
           ==========================
           App: {{ app_name }}
           Branch: {{ github_branch }}
-          Backup: {{ backup_dir }}/pre_migration_{{ timestamp }}.sql
+          Backup: via /opt/backups/backup-crm.sh → Google Drive
 
     # ============ PRE-MIGRATION BACKUP ============
-    - name: Ensure backup directory exists
-      raw: mkdir -p {{ backup_dir }}
-
-    - name: Create pre-migration database backup via Docker
-      raw: |
-        docker exec {{ db_container }} pg_dump -U {{ db_user }} -d {{ db_name }} -Fc -f /tmp/backup_{{ timestamp }}.sql && \
-        docker cp {{ db_container }}:/tmp/backup_{{ timestamp }}.sql {{ backup_dir }}/pre_migration_{{ timestamp }}.sql && \
-        docker exec {{ db_container }} rm /tmp/backup_{{ timestamp }}.sql && \
-        echo "Backup created successfully"
+    - name: Run backup script (uploads to Google Drive, sem uso de espaço permanente)
+      raw: bash {{ backup_script }} 2>&1
       register: backup_result
-      ignore_errors: yes
 
-    - name: Verify backup was created
-      raw: test -s {{ backup_dir }}/pre_migration_{{ timestamp }}.sql && echo "BACKUP_OK" || echo "BACKUP_FAILED"
-      register: backup_check
-
-    - name: Fail if backup failed
+    - name: Verify backup script succeeded
       fail:
         msg: |
           ❌ DATABASE BACKUP FAILED
           Cannot proceed with migrations without a backup.
-          Check database credentials and connectivity.
-      when: "'BACKUP_FAILED' in backup_check.stdout"
+          Output:
+          {{ backup_result.stdout }}
+      when: backup_result.rc != 0
 
     - name: Display backup success
       debug:
-        msg: "✅ Database backup created: pre_migration_{{ timestamp }}.sql"
+        msg: "✅ Backup enviado ao Google Drive via {{ backup_script }}"
 
     # ============ CODE UPDATE ============
     - name: Pull latest code from GitHub
@@ -165,14 +155,15 @@
           ✅ DEPLOY WITH MIGRATIONS COMPLETE
           ===================================
           Commit: {{ git_pull.stdout_lines | last }}
-          Backup: pre_migration_{{ timestamp }}.sql
+          Backup: Google Drive → gdrive:backups/wb-crm/
           Health: {{ 'OK' if health_check.stdout | trim in ['200', '307'] else 'FAILED' }}
           URL: https://crm.wbdigitalsolutions.com
 
-          📝 ROLLBACK COMMAND (if needed):
-          ansible-playbook -i inventory/production.yml playbooks/rollback.yml \
-            -e "backup_file=pre_migration_{{ timestamp }}.sql"
-
-    # ============ CLEANUP OLD BACKUPS ============
-    - name: Remove backups older than 7 days
-      raw: find {{ backup_dir }} -name "pre_migration_*.sql" -mtime +7 -delete 2>/dev/null || true
+          📝 ROLLBACK (se necessário):
+          1. Baixe o backup mais recente do Google Drive:
+             rclone copy gdrive:backups/wb-crm/ /tmp/restore/ --include "crm-backup-*.tar.gz"
+          2. Extraia e restaure:
+             tar -xzf /tmp/restore/crm-backup-YYYY-MM-DD_HH-MM-SS.tar.gz -C /tmp/restore/
+             docker exec -i crm_postgres pg_restore -U crm_user -d crm_db --clean --if-exists < /tmp/restore/crm-backup-*/database.dump
+          3. Reverta código:
+             cd /opt/wb-crm && git reset --hard HEAD~1 && pm2 restart wb-crm
