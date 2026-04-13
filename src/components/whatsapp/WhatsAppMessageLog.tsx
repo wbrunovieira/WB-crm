@@ -194,17 +194,35 @@ function ImagePreview({ messageId }: { messageId: string }) {
 
 function DocumentDownload({ messageId, label }: { messageId: string; label: string | null }) {
   const fileName = label?.replace("📄 ", "") ?? "documento";
+  const inlineSrc = `/api/evolution/media/${messageId}?inline=true`;
+  const downloadSrc = `/api/evolution/media/${messageId}`;
+
   return (
-    <a
-      href={`/api/evolution/media/${messageId}`}
-      download={fileName}
-      onClick={(e) => e.stopPropagation()}
-      className="mt-1 flex items-center gap-1.5 rounded border border-gray-200 bg-white/60 px-2 py-1 text-xs text-gray-700 hover:bg-gray-50"
-    >
-      <FileText className="h-3.5 w-3.5 text-gray-500 flex-shrink-0" />
-      <span className="truncate max-w-[160px]">{fileName}</span>
-      <Download className="h-3 w-3 text-gray-400 flex-shrink-0 ml-auto" />
-    </a>
+    <div className="mt-2 min-w-[220px] rounded border border-gray-200 bg-white/60 overflow-hidden">
+      {/* Header clicável — abre em nova aba para preview */}
+      <a
+        href={inlineSrc}
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={(e) => e.stopPropagation()}
+        className="flex items-center gap-2 px-3 py-2 hover:bg-gray-50 transition-colors"
+      >
+        <FileText className="h-5 w-5 text-red-500 flex-shrink-0" />
+        <span className="truncate text-xs font-medium text-gray-800 flex-1">{fileName}</span>
+      </a>
+      {/* Rodapé com botão de download explícito */}
+      <div className="border-t border-gray-200 px-3 py-1.5 flex justify-end">
+        <a
+          href={downloadSrc}
+          download={fileName}
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-1 text-[10px] text-[#128C7E] hover:text-[#075E54]"
+        >
+          <Download className="h-3 w-3" />
+          Baixar
+        </a>
+      </div>
+    </div>
   );
 }
 
