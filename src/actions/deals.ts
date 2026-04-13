@@ -182,6 +182,23 @@ export async function getDealById(id: string) {
         orderBy: {
           createdAt: "desc",
         },
+        include: {
+          whatsappMessages: {
+            where: { mediaDriveId: { not: null } },
+            select: {
+              id: true,
+              fromMe: true,
+              pushName: true,
+              timestamp: true,
+              messageType: true,
+              mediaDriveId: true,
+              mediaMimeType: true,
+              mediaLabel: true,
+              mediaTranscriptText: true,
+            },
+            orderBy: { timestamp: "asc" },
+          },
+        },
       },
       stageHistory: {
         include: {

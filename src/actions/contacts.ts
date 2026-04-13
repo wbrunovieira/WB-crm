@@ -135,6 +135,23 @@ export async function getContactById(id: string) {
         orderBy: {
           dueDate: "desc",
         },
+        include: {
+          whatsappMessages: {
+            where: { mediaDriveId: { not: null } },
+            select: {
+              id: true,
+              fromMe: true,
+              pushName: true,
+              timestamp: true,
+              messageType: true,
+              mediaDriveId: true,
+              mediaMimeType: true,
+              mediaLabel: true,
+              mediaTranscriptText: true,
+            },
+            orderBy: { timestamp: "asc" },
+          },
+        },
       },
       owner: {
         select: {

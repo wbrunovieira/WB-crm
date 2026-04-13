@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { StageChangeItem } from "./StageChangeItem";
 import WhatsAppMessageLog from "@/components/whatsapp/WhatsAppMessageLog";
+import type { WhatsAppMediaMessage } from "@/components/whatsapp/WhatsAppMessageLog";
 
 const GoToCallPlayer = dynamic(() => import("./GoToCallPlayer"), { ssr: false });
 
@@ -21,6 +22,7 @@ type Activity = {
   gotoRecordingUrl?: string | null;
   gotoRecordingUrl2?: string | null;
   gotoTranscriptText?: string | null;
+  whatsappMessages?: WhatsAppMediaMessage[];
   deal?: {
     id: string;
     title: string;
@@ -348,7 +350,7 @@ function ActivityItem({ activity, showLinks }: { activity: Activity; showLinks: 
         {activity.description && !isGoto && (
           <div className={`mt-2 rounded-lg border p-3 text-sm text-gray-700 ${config.descriptionBg} ${config.descriptionBorder}`}>
             {activity.type === "whatsapp" ? (
-              <WhatsAppMessageLog description={activity.description} previewCount={3} />
+              <WhatsAppMessageLog description={activity.description} mediaMessages={activity.whatsappMessages} previewCount={3} />
             ) : (
               <p className="whitespace-pre-line">{activity.description}</p>
             )}

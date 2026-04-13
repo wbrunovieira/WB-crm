@@ -7,6 +7,8 @@ import { AlertTriangle, ArrowDownUp, Calendar, Check, GripVertical, Loader2, Mes
 import dynamic from "next/dynamic";
 const GmailComposeModal = dynamic(() => import("@/components/gmail/GmailComposeModal"), { ssr: false });
 const GoToCallPlayer = dynamic(() => import("@/components/activities/GoToCallPlayer"), { ssr: false });
+import WhatsAppMessageLog from "@/components/whatsapp/WhatsAppMessageLog";
+import type { WhatsAppMediaMessage } from "@/components/whatsapp/WhatsAppMessageLog";
 import { formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
 import { toggleActivityCompleted, assignLeadContactsToActivity, removeLeadContactsFromActivity, markActivityFailed, markActivitySkipped, revertActivityOutcome } from "@/actions/activities";
 import { updateLeadActivityOrder, resetLeadActivityOrder } from "@/actions/leads";
@@ -156,6 +158,7 @@ type Activity = {
   gotoRecordingUrl2?: string | null;
   gotoTranscriptText?: string | null;
   gotoCallOutcome?: string | null;
+  whatsappMessages?: WhatsAppMediaMessage[];
   // Campos de e-mail
   emailThreadId?: string | null;
   emailSubject?: string | null;
@@ -345,10 +348,17 @@ function SortableActivityItem({
             }`}>
               {activity.subject}
             </h3>
-            {activity.description && !activity.gotoCallId && (
+            {activity.description && !activity.gotoCallId && activity.type !== "whatsapp" && (
               <p className="mt-1 text-sm text-gray-600 line-clamp-2">
                 {activity.description}
               </p>
+            )}
+            {activity.type === "whatsapp" && activity.description && !activity.gotoCallId && (
+              <WhatsAppMessageLog
+                description={activity.description}
+                mediaMessages={activity.whatsappMessages}
+                previewCount={3}
+              />
             )}
             {activity.failReason && (
               <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">

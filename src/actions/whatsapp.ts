@@ -2,11 +2,54 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 import { sendTextMessage, sendMediaMessage, type MediaType } from "@/lib/evolution/client";
 import { processWhatsAppMessage } from "@/lib/evolution/message-activity-creator";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ context: "whatsapp-action" });
+
+export interface WhatsAppMediaMessage {
+  id: string;
+  fromMe: boolean;
+  pushName: string | null;
+  timestamp: Date;
+  messageType: string;
+  mediaDriveId: string | null;
+  mediaMimeType: string | null;
+  mediaLabel: string | null;
+  mediaTranscriptText: string | null;
+}
+
+/**
+ * Retorna as mensagens WhatsApp com mídia (Drive) para uma Activity.
+ * Usado para renderizar players inline no chat log.
+ */
+export async function getWhatsAppMediaMessages(
+  activityId: string
+): Promise<WhatsAppMediaMessage[]> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return [];
+
+  return prisma.whatsAppMessage.findMany({
+    where: {
+      activityId,
+      mediaDriveId: { not: null },
+    },
+    select: {
+      id: true,
+      fromMe: true,
+      pushName: true,
+      timestamp: true,
+      messageType: true,
+      mediaDriveId: true,
+      mediaMimeType: true,
+      mediaLabel: true,
+      mediaTranscriptText: true,
+    },
+    orderBy: { timestamp: "asc" },
+  });
+}
 
 interface SendResult {
   success: boolean;

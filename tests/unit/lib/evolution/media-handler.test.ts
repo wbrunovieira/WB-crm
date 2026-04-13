@@ -112,7 +112,7 @@ beforeEach(() => {
   mockGetFolder.mockResolvedValue("folder-id-whatsapp");
   mockUpload.mockResolvedValue({ id: "drive-file-id", webViewLink: "https://drive.google.com/file/d/drive-file-id/view" });
   mockDownload.mockResolvedValue({ base64: Buffer.from("audio-content").toString("base64"), mimeType: "audio/ogg", fileName: "audio.ogg" });
-  mockSubmitTranscription.mockResolvedValue({ jobId: "job-123" });
+  mockSubmitTranscription.mockResolvedValue({ jobId: "job-123", status: "pending" });
   mockPrismaUpdate.mockResolvedValue({} as any);
 });
 

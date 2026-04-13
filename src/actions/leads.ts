@@ -145,6 +145,23 @@ export async function getLeadById(id: string) {
           { dueDate: { sort: "asc", nulls: "last" } },
           { createdAt: "desc" },
         ],
+        include: {
+          whatsappMessages: {
+            where: { mediaDriveId: { not: null } },
+            select: {
+              id: true,
+              fromMe: true,
+              pushName: true,
+              timestamp: true,
+              messageType: true,
+              mediaDriveId: true,
+              mediaMimeType: true,
+              mediaLabel: true,
+              mediaTranscriptText: true,
+            },
+            orderBy: { timestamp: "asc" },
+          },
+        },
       },
       convertedOrganization: {
         include: {
