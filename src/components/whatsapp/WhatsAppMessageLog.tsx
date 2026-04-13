@@ -85,11 +85,11 @@ function AudioPlayer({ messageId, transcript }: { messageId: string; transcript:
   const src = `/api/evolution/media/${messageId}?inline=true`;
 
   return (
-    <div className="mt-1 space-y-1">
+    <div className="mt-2 space-y-2 min-w-[240px]">
       <audio
         controls
         preload="none"
-        className="h-8 w-full max-w-[220px]"
+        className="h-10 w-full"
         src={src}
         onClick={(e) => e.stopPropagation()}
       />
@@ -97,13 +97,13 @@ function AudioPlayer({ messageId, transcript }: { messageId: string; transcript:
         <div>
           <button
             onClick={(e) => { e.stopPropagation(); setShowTranscript((v) => !v); }}
-            className="flex items-center gap-1 text-[10px] text-[#128C7E] hover:text-[#075E54]"
+            className="flex items-center gap-1 text-xs font-medium text-[#128C7E] hover:text-[#075E54]"
           >
-            {showTranscript ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+            {showTranscript ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
             {showTranscript ? "Ocultar transcrição" : "Ver transcrição"}
           </button>
           {showTranscript && (
-            <p className="mt-0.5 rounded bg-white/60 px-2 py-1 text-[10px] leading-snug text-gray-700 italic border border-gray-200">
+            <p className="mt-1 rounded-md bg-white/70 px-2.5 py-1.5 text-xs leading-snug text-gray-700 italic border border-gray-200">
               {transcript}
             </p>
           )}
@@ -245,7 +245,7 @@ function MessageRow({ line }: { line: ParsedLine }) {
       <Avatar name={line.sender} fromMe={line.fromMe} />
 
       {/* Bubble + meta */}
-      <div className={`flex max-w-[78%] flex-col gap-0.5 ${line.fromMe ? "items-end" : "items-start"}`}>
+      <div className={`flex max-w-[85%] flex-col gap-0.5 ${line.fromMe ? "items-end" : "items-start"}`}>
         {/* Sender name */}
         <span className={`text-[10px] font-semibold ${line.fromMe ? "text-[#128C7E]" : "text-gray-500"}`}>
           {line.sender}
@@ -253,7 +253,7 @@ function MessageRow({ line }: { line: ParsedLine }) {
 
         {/* Bubble */}
         <div
-          className={`rounded-lg px-3 py-1.5 text-xs leading-relaxed ${
+          className={`w-full rounded-lg px-3 py-2 text-xs leading-relaxed ${
             line.fromMe
               ? "rounded-tr-none bg-[#DCF8C6] text-gray-800"
               : "rounded-tl-none bg-white ring-1 ring-gray-200 text-gray-800"
