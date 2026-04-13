@@ -3,6 +3,7 @@ import { getOrCreateFolder } from "./drive";
 
 const ROOT_FOLDER_NAME = "WB-CRM";
 const PROPOSALS_FOLDER_NAME = "Propostas";
+const WHATSAPP_FOLDER_NAME = "WhatsApp";
 
 let rootFolderId: string | null = null;
 
@@ -38,6 +39,24 @@ export async function getLeadFolder(leadId: string, leadName: string): Promise<s
   });
 
   return folderId;
+}
+
+let whatsAppRootFolderId: string | null = null;
+
+async function getWhatsAppRootFolder(): Promise<string> {
+  if (whatsAppRootFolderId) return whatsAppRootFolderId;
+  const root = await getRootFolder();
+  whatsAppRootFolderId = await getOrCreateFolder(WHATSAPP_FOLDER_NAME, root);
+  return whatsAppRootFolderId;
+}
+
+/**
+ * Retorna (ou cria) a pasta do Drive para uma conversa WhatsApp.
+ * Estrutura: WB-CRM/WhatsApp/{entityName}/
+ */
+export async function getWhatsAppFolder(entityName: string): Promise<string> {
+  const whatsAppRoot = await getWhatsAppRootFolder();
+  return getOrCreateFolder(entityName, whatsAppRoot);
 }
 
 /**

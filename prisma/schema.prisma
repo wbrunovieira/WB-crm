@@ -1814,10 +1814,14 @@ model WhatsAppMessage {
   remoteJid     String            // "5511999998888@s.whatsapp.net"
   fromMe        Boolean           // true = enviado por nós, false = recebido
   messageType   String            // "conversation" | "audioMessage" | "imageMessage" | ...
+  pushName      String?           // nome exibido do contato no WhatsApp (para speaker attribution)
   text          String?           // texto puro extraído (null para mídia sem legenda)
-  mediaLabel    String?           // "🎤 Áudio (45s)", "📷 Imagem", "📄 arquivo.pdf"
-  mediaUrl      String?           // URL CDN WhatsApp (uso futuro — Google Drive)
-  mediaMimeType String?           // mime type (uso futuro)
+  mediaLabel              String?  // "🎤 Áudio (45s)", "📷 Imagem", "📄 arquivo.pdf"
+  mediaUrl                String?  // URL de visualização no Google Drive
+  mediaMimeType           String?  // mime type do arquivo de mídia
+  mediaDriveId            String?  // Google Drive file ID (para servir via API)
+  mediaTranscriptionJobId String?  // WB Transcritor job ID (áudio/vídeo)
+  mediaTranscriptText     String?  // Transcrição final com atribuição de speaker
   timestamp     DateTime          // horário real da mensagem
   activityId    String?           // Activity que agrupa esta sessão
   ownerId       String

@@ -9,7 +9,7 @@
  * - Atualiza Activity existente quando sessão está aberta
  * - Cria WhatsAppMessage para cada mensagem (idempotência)
  * - Vincula a Contact/Lead/Partner quando número encontrado
- * - Cria Activity sem vínculo para números desconhecidos
+ * - IGNORA mensagens de números desconhecidos (sem vínculo no CRM)
  * - Não processa mensagem já existente (idempotência por messageId)
  *
  * RULE: When a test fails, fix the IMPLEMENTATION, never the test.
@@ -21,6 +21,11 @@ import {
   extractMediaLabel,
   processWhatsAppMessage,
 } from "@/lib/evolution/message-activity-creator";
+
+vi.mock("@/lib/evolution/media-handler", () => ({
+  processMessageMedia: vi.fn().mockResolvedValue(undefined),
+  isDownloadableMedia: vi.fn().mockReturnValue(false),
+}));
 import { prismaMock } from "../../../setup";
 import type { EvolutionWebhookData } from "@/lib/evolution/types";
 
@@ -128,8 +133,15 @@ function makeExistingMessage(activityId: string, minutesAgo = 10) {
   };
 }
 
+const defaultMatch = {
+  entityType: "lead" as const,
+  entityId: "lead-1",
+  leadId: "lead-1",
+};
+
 beforeEach(() => {
-  mockMatch.mockResolvedValue(null);
+  // Por padrão retorna um lead válido para que os testes de sessão funcionem
+  mockMatch.mockResolvedValue(defaultMatch);
   prismaMock.whatsAppMessage.findUnique.mockResolvedValue(null);
   prismaMock.whatsAppMessage.findFirst.mockResolvedValue(null);
   prismaMock.whatsAppMessage.create.mockResolvedValue({ id: "wamsg-1" } as any);
@@ -449,20 +461,13 @@ describe("processWhatsAppMessage — vinculação de entidade", () => {
     );
   });
 
-  it("cria Activity sem vínculo para número desconhecido", async () => {
+  it("IGNORA mensagem quando número não encontrado no CRM", async () => {
     mockMatch.mockResolvedValue(null);
 
     await processWhatsAppMessage(baseData, OWNER_ID);
 
-    expect(prismaMock.activity.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          contactId: null,
-          leadId: null,
-          partnerId: null,
-        }),
-      })
-    );
+    expect(prismaMock.activity.create).not.toHaveBeenCalled();
+    expect(prismaMock.whatsAppMessage.create).not.toHaveBeenCalled();
   });
 });
 
@@ -479,11 +484,12 @@ describe("processWhatsAppMessage — resiliência", () => {
     ).resolves.not.toThrow();
   });
 
-  it("ainda cria Activity mesmo se match falhar (sem vínculo)", async () => {
+  it("IGNORA mensagem se match falhar (número não identificado)", async () => {
     mockMatch.mockRejectedValue(new Error("DB timeout"));
 
     await processWhatsAppMessage(baseData, OWNER_ID);
 
-    expect(prismaMock.activity.create).toHaveBeenCalled();
+    expect(prismaMock.activity.create).not.toHaveBeenCalled();
+    expect(prismaMock.whatsAppMessage.create).not.toHaveBeenCalled();
   });
 });

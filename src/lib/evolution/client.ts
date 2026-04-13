@@ -60,3 +60,42 @@ export async function sendMediaMessage(opts: SendMediaOptions): Promise<SendResp
     mimetype: opts.mimetype,
   });
 }
+
+export interface DownloadMediaResult {
+  base64: string;
+  mimeType: string;
+  fileName: string;
+}
+
+/**
+ * Baixa a mídia de uma mensagem via Evolution API.
+ * Retorna base64 + mimeType + fileName.
+ */
+export async function downloadMediaMessage(payload: {
+  key: { id: string; fromMe: boolean; remoteJid: string };
+  message: Record<string, unknown> | null;
+}): Promise<DownloadMediaResult> {
+  const res = await fetch(
+    `${EVOLUTION_API_URL}/chat/getBase64FromMediaMessage/${EVOLUTION_INSTANCE}`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: EVOLUTION_API_KEY,
+      },
+      body: JSON.stringify({ message: payload }),
+    }
+  );
+
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Evolution media download error ${res.status}: ${text}`);
+  }
+
+  const data = await res.json();
+  return {
+    base64: data.base64 as string,
+    mimeType: (data.mimetype ?? data.mimeType ?? "application/octet-stream") as string,
+    fileName: (data.fileName ?? "media") as string,
+  };
+}

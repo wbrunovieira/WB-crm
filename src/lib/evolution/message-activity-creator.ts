@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { matchPhoneToEntity, extractPhoneFromJid } from "./number-matcher";
+import { isDownloadableMedia, processMessageMedia } from "./media-handler";
 import type { EvolutionWebhookData } from "./types";
 
 const log = logger.child({ context: "evolution-message-creator" });
@@ -97,22 +98,27 @@ export async function processWhatsAppMessage(
     where: { messageId: key.id },
   });
   if (existing) {
-    log.debug("Mensagem WhatsApp já processada, ignorando", {
-      messageId: key.id,
-    });
+    log.debug("Mensagem WhatsApp já processada, ignorando", { messageId: key.id });
     return;
   }
 
   // 2. Extrair número e buscar entidade no CRM
   const phone = extractPhoneFromJid(key.remoteJid);
-  let match = null;
+  let match: Awaited<ReturnType<typeof matchPhoneToEntity>> = null;
   try {
     match = await matchPhoneToEntity(phone, ownerId);
   } catch (err) {
-    log.warn("Falha ao buscar entidade pelo número, continuando sem vínculo", {
+    log.warn("Falha ao buscar entidade pelo número, ignorando mensagem", {
       phone,
       error: err instanceof Error ? err.message : String(err),
     });
+  }
+
+  // 3. Número não encontrado no CRM — ignorar silenciosamente
+  //    (número pode ser pessoal ou contato não cadastrado)
+  if (!match) {
+    log.debug("Número desconhecido — mensagem ignorada", { phone, messageId: key.id });
+    return;
   }
 
   const timestamp = new Date(messageTimestamp * 1000);
@@ -120,7 +126,7 @@ export async function processWhatsAppMessage(
   const mediaLabel = extractMediaLabel(data);
   const messageLine = formatMessageLine(data);
 
-  // 3. Buscar sessão aberta: última mensagem deste remoteJid nas últimas 2h
+  // 4. Buscar sessão aberta: última mensagem deste remoteJid nas últimas 2h
   const windowStart = new Date(Date.now() - SESSION_WINDOW_MS);
   const lastMessage = await prisma.whatsAppMessage.findFirst({
     where: {
@@ -137,7 +143,7 @@ export async function processWhatsAppMessage(
   let activityId: string;
 
   if (lastMessage?.activityId && lastMessage.activity) {
-    // 4a. Sessão aberta — adicionar linha ao log da Activity
+    // 5a. Sessão aberta — adicionar linha ao log da Activity
     const currentDescription = lastMessage.activity.description ?? "";
     const newDescription = currentDescription + "\n" + messageLine;
 
@@ -148,12 +154,9 @@ export async function processWhatsAppMessage(
 
     activityId = lastMessage.activityId;
 
-    log.debug("Mensagem adicionada à sessão existente", {
-      activityId,
-      messageId: key.id,
-    });
+    log.debug("Mensagem adicionada à sessão existente", { activityId, messageId: key.id });
   } else {
-    // 4b. Nova sessão — criar Activity
+    // 5b. Nova sessão — criar Activity
     const activity = await prisma.activity.create({
       data: {
         type: "whatsapp",
@@ -163,9 +166,9 @@ export async function processWhatsAppMessage(
         completedAt: timestamp,
         dueDate: timestamp,
         ownerId,
-        contactId: match?.contactId ?? null,
-        leadId: match?.leadId ?? null,
-        partnerId: match?.partnerId ?? null,
+        contactId: match.contactId ?? null,
+        leadId: match.leadId ?? null,
+        partnerId: match.partnerId ?? null,
       },
     });
 
@@ -173,19 +176,20 @@ export async function processWhatsAppMessage(
 
     log.info("Nova sessão WhatsApp criada", {
       activityId,
-      entityType: match?.entityType ?? "none",
-      entityId: match?.entityId,
+      entityType: match.entityType,
+      entityId: match.entityId,
       messageId: key.id,
     });
   }
 
-  // 5. Registrar WhatsAppMessage individual
-  await prisma.whatsAppMessage.create({
+  // 6. Registrar WhatsAppMessage individual
+  const waMessage = await prisma.whatsAppMessage.create({
     data: {
       messageId: key.id,
       remoteJid: key.remoteJid,
       fromMe: key.fromMe,
       messageType: data.messageType,
+      pushName: data.pushName ?? null,
       text,
       mediaLabel,
       timestamp,
@@ -193,4 +197,21 @@ export async function processWhatsAppMessage(
       ownerId,
     },
   });
+
+  // 7. Processar mídia em background (download → Drive → transcrição)
+  if (isDownloadableMedia(data.messageType)) {
+    const senderName = key.fromMe ? "Você" : (data.pushName ?? "Cliente");
+    const entityName = data.pushName ?? phone;
+    processMessageMedia({
+      data,
+      whatsAppMessageId: waMessage.id,
+      entityName,
+      senderName,
+    }).catch((err) => {
+      log.error("Erro ao processar mídia WhatsApp (background)", {
+        messageId: key.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
+  }
 }
