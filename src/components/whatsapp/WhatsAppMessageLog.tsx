@@ -48,9 +48,9 @@ function parseLine(raw: string): ParsedLine | null {
   };
 }
 
-/** Formato HH:MM de um Date no timezone local */
+/** Formato HH:MM em UTC — deve coincidir com o que o servidor grava na descrição */
 function toHHMM(date: Date): string {
-  return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+  return date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "UTC" });
 }
 
 /**
@@ -248,7 +248,7 @@ function MessageRow({ line }: { line: ParsedLine }) {
         )}
 
         {/* Texto ou label da mídia */}
-        <span className={line.media ? "text-gray-400 italic text-[10px]" : ""}>
+        <span className={line.media ? "text-gray-500 italic text-[10px]" : ""}>
           {line.text}
         </span>
 

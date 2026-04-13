@@ -71,6 +71,7 @@ function formatMessageLine(data: EvolutionWebhookData): string {
   const time = date.toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "UTC",
   });
   const sender = data.key.fromMe ? "Você" : (data.pushName ?? "Cliente");
   const content =
