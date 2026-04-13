@@ -127,6 +127,7 @@ describe("Pass 2 — poll transcription jobs", () => {
       text: "Olá, vamos falar sobre o contrato?",
       language: "pt",
       durationSeconds: 65,
+      segments: [],
     });
     prismaMock.activity.update.mockResolvedValue({} as never);
 

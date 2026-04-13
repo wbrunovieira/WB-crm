@@ -70,6 +70,66 @@ function ActivityTypeIcon({ type, className }: { type: string; className?: strin
   }
 }
 
+function GoToOutcomeBadge({ outcome }: { outcome?: string | null }) {
+  switch (outcome) {
+    case "answered":
+      return (
+        <span className="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+          Atendida
+        </span>
+      );
+    case "voicemail":
+      return (
+        <span className="inline-flex items-center gap-1 rounded bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" /></svg>
+          Caixa postal
+        </span>
+      );
+    case "no_answer":
+      return (
+        <span className="inline-flex items-center gap-1 rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          Não atendeu
+        </span>
+      );
+    case "busy":
+      return (
+        <span className="inline-flex items-center gap-1 rounded bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">
+          <svg className="h-3 w-3" fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+          Ocupado
+        </span>
+      );
+    case "rejected":
+      return (
+        <span className="inline-flex items-center gap-1 rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+          Rejeitada
+        </span>
+      );
+    case "invalid_number":
+      return (
+        <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+          Número inválido
+        </span>
+      );
+    case "missed":
+      return (
+        <span className="inline-flex items-center gap-1 rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-800">
+          <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+          Perdida
+        </span>
+      );
+    default:
+      return (
+        <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+          GoTo
+        </span>
+      );
+  }
+}
+
 type LeadContact = {
   id: string;
   name: string;
@@ -95,6 +155,7 @@ type Activity = {
   gotoRecordingUrl?: string | null;
   gotoRecordingUrl2?: string | null;
   gotoTranscriptText?: string | null;
+  gotoCallOutcome?: string | null;
   // Campos de e-mail
   emailThreadId?: string | null;
   emailSubject?: string | null;
@@ -254,9 +315,7 @@ function SortableActivityItem({
                 </span>
               )}
               {activity.gotoCallId ? (
-                <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                  GoTo
-                </span>
+                <GoToOutcomeBadge outcome={activity.gotoCallOutcome} />
               ) : (
                 <>
                   {activity.completed && (
@@ -778,6 +837,89 @@ export function LeadActivitiesList({
           </Link>
         </div>
       </div>
+
+      {/* Activity stats summary */}
+      {activities.length > 0 && (() => {
+        const callActivities = activities.filter((a) => a.gotoCallId);
+        const byOutcome = {
+          answered:       callActivities.filter((a) => a.gotoCallOutcome === "answered").length,
+          voicemail:      callActivities.filter((a) => a.gotoCallOutcome === "voicemail").length,
+          no_answer:      callActivities.filter((a) => a.gotoCallOutcome === "no_answer").length,
+          busy:           callActivities.filter((a) => a.gotoCallOutcome === "busy").length,
+          rejected:       callActivities.filter((a) => a.gotoCallOutcome === "rejected").length,
+          missed:         callActivities.filter((a) => a.gotoCallOutcome === "missed").length,
+          invalid_number: callActivities.filter((a) => a.gotoCallOutcome === "invalid_number").length,
+        };
+        const meetings  = activities.filter((a) => a.type === "meeting").length;
+        const whatsapps = activities.filter((a) => a.type === "whatsapp").length;
+        const emails    = activities.filter((a) => a.type === "email").length;
+        const tasks     = activities.filter((a) => a.type === "task").length;
+
+        const callOutcomeItems: { label: string; count: number; color: string }[] = [
+          { label: "Atendidas",       count: byOutcome.answered,       color: "text-green-700 bg-green-50 border-green-200" },
+          { label: "Não atendeu",     count: byOutcome.no_answer,      color: "text-red-700 bg-red-50 border-red-200" },
+          { label: "Perdidas",        count: byOutcome.missed,         color: "text-yellow-800 bg-yellow-50 border-yellow-200" },
+          { label: "Caixa postal",    count: byOutcome.voicemail,      color: "text-purple-700 bg-purple-50 border-purple-200" },
+          { label: "Ocupado",         count: byOutcome.busy,           color: "text-orange-700 bg-orange-50 border-orange-200" },
+          { label: "Rejeitada",       count: byOutcome.rejected,       color: "text-red-800 bg-red-50 border-red-200" },
+          { label: "Nº inválido",     count: byOutcome.invalid_number, color: "text-gray-600 bg-gray-50 border-gray-200" },
+        ].filter((i) => i.count > 0);
+
+        return (
+          <div className="mb-4 rounded-lg border border-gray-100 bg-gray-50 p-3">
+            <div className="flex flex-wrap gap-2">
+              {/* Total activities */}
+              <div className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5">
+                <span className="text-xs font-semibold text-gray-500">Total</span>
+                <span className="text-sm font-bold text-gray-900">{activities.length}</span>
+              </div>
+
+              {/* Calls */}
+              {callActivities.length > 0 && (
+                <div className="flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5">
+                  <svg className="h-3.5 w-3.5 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
+                  <span className="text-xs font-semibold text-blue-700">Ligações</span>
+                  <span className="text-sm font-bold text-blue-900">{callActivities.length}</span>
+                </div>
+              )}
+
+              {/* Call outcome breakdown */}
+              {callOutcomeItems.map((item) => (
+                <div key={item.label} className={`flex items-center gap-1 rounded-md border px-2 py-1.5 ${item.color}`}>
+                  <span className="text-xs font-medium">{item.label}</span>
+                  <span className="text-sm font-bold">{item.count}</span>
+                </div>
+              ))}
+
+              {/* Other activity types */}
+              {meetings > 0 && (
+                <div className="flex items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-2.5 py-1.5">
+                  <span className="text-xs font-semibold text-indigo-700">Reuniões</span>
+                  <span className="text-sm font-bold text-indigo-900">{meetings}</span>
+                </div>
+              )}
+              {whatsapps > 0 && (
+                <div className="flex items-center gap-1.5 rounded-md border border-green-200 bg-green-50 px-2.5 py-1.5">
+                  <span className="text-xs font-semibold text-green-700">WhatsApp</span>
+                  <span className="text-sm font-bold text-green-900">{whatsapps}</span>
+                </div>
+              )}
+              {emails > 0 && (
+                <div className="flex items-center gap-1.5 rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1.5">
+                  <span className="text-xs font-semibold text-sky-700">E-mail</span>
+                  <span className="text-sm font-bold text-sky-900">{emails}</span>
+                </div>
+              )}
+              {tasks > 0 && (
+                <div className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5">
+                  <span className="text-xs font-semibold text-gray-600">Tarefas</span>
+                  <span className="text-sm font-bold text-gray-900">{tasks}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Busca e filtros */}
       {activities.length > 0 && (

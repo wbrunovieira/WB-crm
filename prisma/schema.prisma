@@ -605,6 +605,7 @@ model Activity {
   gotoTranscriptionJobId  String?           // Transcription job ID — agent track
   gotoTranscriptionJobId2 String?           // Transcription job ID — client track
   gotoTranscriptText      String?           // JSON: TranscriptSegment[] com speaker + timestamps
+  gotoCallOutcome         String?           // answered | voicemail | no_answer | busy | rejected | invalid_number | missed | unknown
   emailMessageId   String?  @unique // Gmail Message-ID — previne Activity duplicada
   emailThreadId    String?           // Gmail Thread-ID — para agrupar e responder na mesma thread
   emailSubject     String?           // Assunto do e-mail (para busca e exibição)

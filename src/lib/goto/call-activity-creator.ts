@@ -223,6 +223,7 @@ export async function createCallActivity(
       dueDate: new Date(callCreated),
       gotoCallId: conversationSpaceId,
       gotoRecordingId: recordingId,
+      gotoCallOutcome: outcome,
       ownerId,
       contactId: matchResult?.contactId ?? null,
       leadId: matchResult?.leadId ?? null,
