@@ -353,13 +353,6 @@ function SortableActivityItem({
                 {activity.description}
               </p>
             )}
-            {activity.type === "whatsapp" && activity.description && !activity.gotoCallId && (
-              <WhatsAppMessageLog
-                description={activity.description}
-                mediaMessages={activity.whatsappMessages}
-                previewCount={3}
-              />
-            )}
             {activity.failReason && (
               <p className="mt-1.5 flex items-center gap-1.5 text-xs text-red-600">
                 <AlertTriangle className="h-3 w-3 flex-shrink-0" />
@@ -398,6 +391,15 @@ function SortableActivityItem({
               );
             })()}
           </Link>
+
+          {/* WhatsApp log — fora do Link para não navegar ao clicar em áudio/transcrição */}
+          {activity.type === "whatsapp" && activity.description && !activity.gotoCallId && (
+            <WhatsAppMessageLog
+              description={activity.description}
+              mediaMessages={activity.whatsappMessages}
+              previewCount={3}
+            />
+          )}
 
           {/* GoTo player — fora do Link para não navegar ao clicar */}
           {activity.gotoCallId && activity.gotoRecordingUrl && (
