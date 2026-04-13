@@ -74,7 +74,11 @@ function mergeWithMedia(
     if (!line) return line;
     const key = `${line.time}_${line.fromMe}`;
     const media = mediaMap.get(key);
-    return media ? { ...line, media } : line;
+    if (media) {
+      mediaMap.delete(key); // consumir: cada media só casa com a primeira linha do mesmo minuto
+      return { ...line, media };
+    }
+    return line;
   });
 }
 
