@@ -303,7 +303,7 @@ When the user types "github", perform these steps:
 2. Create a commit with a short message in English describing the changes
 3. Run `git push` to push to remote repository
 
-Note: Pushing to `main` triggers automatic deployment via GitHub Actions (Ansible-based deployment to production server at crm.wbdigitalsolutions.com).
+Note: Push does NOT auto-deploy. Deploy must be done manually via Ansible (see Deploy Commands below).
 
 ## Production Server
 
