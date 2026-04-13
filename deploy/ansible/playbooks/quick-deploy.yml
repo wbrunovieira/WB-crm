@@ -55,7 +55,18 @@
       debug:
         msg: "Latest commit: {{ git_pull.stdout_lines | last }}"
 
-    - name: Install dependencies
+    - name: Remove dev-only files from production
+      raw: |
+        rm -rf {{ app_dir }}/tests \
+               {{ app_dir }}/docs \
+               {{ app_dir }}/vitest.config.ts \
+               {{ app_dir }}/CLAUDE.md \
+               {{ app_dir }}/docker-compose.yml \
+               {{ app_dir }}/.vscode \
+               {{ app_dir }}/.eslintrc.json \
+               {{ app_dir }}/.prettierrc.json
+
+    - name: Install dependencies (including dev deps needed for build)
       raw: cd {{ app_dir }} && npm ci --production=false
       register: npm_install
 
@@ -105,6 +116,9 @@
     - name: Build Next.js
       raw: cd {{ app_dir }} && NODE_OPTIONS="--max-old-space-size=4096" NODE_ENV=production npm run build
       register: build_result
+
+    - name: Remove dev dependencies after build
+      raw: cd {{ app_dir }} && npm prune --production
 
     - name: Restart PM2
       raw: pm2 restart {{ app_name }} && sleep 3 && pm2 status {{ app_name }}
