@@ -225,35 +225,53 @@ function MediaContent({ media }: { media: WhatsAppMediaMessage }) {
 
 // ─── Message bubble ───────────────────────────────────────────────────────────
 
+function Avatar({ name, fromMe }: { name: string; fromMe: boolean }) {
+  const initials = name.split(" ").map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+  return (
+    <div
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ${
+        fromMe ? "bg-[#128C7E]" : "bg-gray-400"
+      }`}
+    >
+      {initials}
+    </div>
+  );
+}
+
 function MessageRow({ line }: { line: ParsedLine }) {
   return (
-    <div className={`flex items-start gap-2 ${line.fromMe ? "flex-row-reverse" : "flex-row"}`}>
-      {/* Timestamp */}
-      <span className="mt-0.5 shrink-0 text-[10px] text-gray-400 tabular-nums">
-        {line.time}
-      </span>
+    <div className={`flex items-end gap-1.5 ${line.fromMe ? "flex-row-reverse" : "flex-row"}`}>
+      {/* Avatar */}
+      <Avatar name={line.sender} fromMe={line.fromMe} />
 
-      {/* Bubble */}
-      <div
-        className={`max-w-[80%] rounded-lg px-3 py-1.5 text-xs leading-relaxed ${
-          line.fromMe
-            ? "rounded-tr-none bg-[#DCF8C6] text-gray-800"
-            : "rounded-tl-none bg-white ring-1 ring-gray-200 text-gray-800"
-        }`}
-      >
-        {!line.fromMe && (
-          <span className="mb-0.5 block text-[10px] font-semibold text-[#128C7E]">
-            {line.sender}
-          </span>
-        )}
-
-        {/* Texto ou label da mídia */}
-        <span className={line.media ? "text-gray-500 italic text-[10px]" : ""}>
-          {line.text}
+      {/* Bubble + meta */}
+      <div className={`flex max-w-[78%] flex-col gap-0.5 ${line.fromMe ? "items-end" : "items-start"}`}>
+        {/* Sender name */}
+        <span className={`text-[10px] font-semibold ${line.fromMe ? "text-[#128C7E]" : "text-gray-500"}`}>
+          {line.sender}
         </span>
 
-        {/* Player / preview inline quando há mídia */}
-        {line.media && <MediaContent media={line.media} />}
+        {/* Bubble */}
+        <div
+          className={`rounded-lg px-3 py-1.5 text-xs leading-relaxed ${
+            line.fromMe
+              ? "rounded-tr-none bg-[#DCF8C6] text-gray-800"
+              : "rounded-tl-none bg-white ring-1 ring-gray-200 text-gray-800"
+          }`}
+        >
+          {/* Texto ou label da mídia */}
+          <span className={line.media ? "text-gray-500 italic text-[10px]" : ""}>
+            {line.text}
+          </span>
+
+          {/* Player / preview inline quando há mídia */}
+          {line.media && <MediaContent media={line.media} />}
+        </div>
+
+        {/* Timestamp */}
+        <span className="text-[9px] text-gray-400 tabular-nums">
+          {line.time}
+        </span>
       </div>
     </div>
   );
