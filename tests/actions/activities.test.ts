@@ -363,7 +363,7 @@ describe('Activities Actions', () => {
       );
     });
 
-    it('should filter by dealId', async () => {
+    it('should filter by dealId using OR to include additionalDealIds', async () => {
       mockSession = sessionUserA;
       mockPrisma.activity.findMany.mockResolvedValue([]);
 
@@ -372,7 +372,10 @@ describe('Activities Actions', () => {
       expect(mockPrisma.activity.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: expect.objectContaining({
-            dealId: 'deal-1',
+            OR: expect.arrayContaining([
+              { dealId: 'deal-1' },
+              expect.objectContaining({ additionalDealIds: expect.objectContaining({ contains: 'deal-1' }) }),
+            ]),
           }),
         })
       );

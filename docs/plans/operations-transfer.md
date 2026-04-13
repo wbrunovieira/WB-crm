@@ -260,7 +260,7 @@ Fase 4 (additionalDealIds)  ──► independente, pode ser feita em paralelo
 | 1 | Schema migration + matchers respeitam inOperationsAt (TDD) | ✅ Concluída (2026-04-13) |
 | 2 | Server action: search, transfer, revert (TDD) | ✅ Concluída (2026-04-13) |
 | 3 | UI admin /admin/operations + badge nas páginas | ✅ Concluída (2026-04-13) |
-| 4 | additionalDealIds na Activity + UI de vínculo | 🔲 Pendente |
+| 4 | additionalDealIds na Activity + UI de vínculo | ✅ Concluída (2026-04-13) |
 
 ---
 

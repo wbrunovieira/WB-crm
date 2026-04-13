@@ -228,7 +228,7 @@ export default async function DealDetailPage({
             + Nova Atividade
           </Link>
         </div>
-        <ActivityTimeline activities={deal.activities} stageChanges={deal.stageHistory} showLinks={false} />
+        <ActivityTimeline activities={deal.activities} stageChanges={deal.stageHistory} showLinks={false} currentDealId={deal.id} />
       </div>
 
       {/* Entity Management Panel (Admin Only) */}

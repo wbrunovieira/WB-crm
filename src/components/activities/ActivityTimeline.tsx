@@ -3,11 +3,14 @@
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import dynamic from "next/dynamic";
+import { useState } from "react";
+import { Link2 } from "lucide-react";
 import { StageChangeItem } from "./StageChangeItem";
 import WhatsAppMessageLog from "@/components/whatsapp/WhatsAppMessageLog";
 import type { WhatsAppMediaMessage } from "@/components/whatsapp/WhatsAppMessageLog";
 
 const GoToCallPlayer = dynamic(() => import("./GoToCallPlayer"), { ssr: false });
+const LinkActivityToDealModal = dynamic(() => import("./LinkActivityToDealModal"), { ssr: false });
 
 type Activity = {
   id: string;
@@ -22,6 +25,7 @@ type Activity = {
   gotoRecordingUrl?: string | null;
   gotoRecordingUrl2?: string | null;
   gotoTranscriptText?: string | null;
+  additionalDealIds?: string | null;
   whatsappMessages?: WhatsAppMediaMessage[];
   deal?: {
     id: string;
@@ -49,6 +53,7 @@ type ActivityTimelineProps = {
   activities: Activity[];
   stageChanges?: StageChange[];
   showLinks?: boolean;
+  currentDealId?: string;
 };
 
 // ─── Type config ─────────────────────────────────────────────────────────────
@@ -236,6 +241,7 @@ export default function ActivityTimeline({
   activities,
   stageChanges = [],
   showLinks = true,
+  currentDealId,
 }: ActivityTimelineProps) {
   const items: TimelineItem[] = [
     ...activities.map((a) => ({
@@ -271,7 +277,7 @@ export default function ActivityTimeline({
                 />
               )}
               {item.kind === "activity" ? (
-                <ActivityItem activity={item.data} showLinks={showLinks} />
+                <ActivityItem activity={item.data} showLinks={showLinks} currentDealId={currentDealId} />
               ) : (
                 <StageChangeItem stageChange={item.data} />
               )}
@@ -284,13 +290,29 @@ export default function ActivityTimeline({
 }
 
 // ─── Activity item ────────────────────────────────────────────────────────────
-function ActivityItem({ activity, showLinks }: { activity: Activity; showLinks: boolean }) {
+function ActivityItem({
+  activity,
+  showLinks,
+  currentDealId,
+}: {
+  activity: Activity;
+  showLinks: boolean;
+  currentDealId?: string;
+}) {
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const isGoto = Boolean(activity.gotoCallId);
   const config = isGoto
     ? { ...DEFAULT_CONFIG, circleBg: "bg-blue-500", badge: "GoTo", badgeBg: "bg-blue-100", badgeText: "text-blue-700" }
     : (TYPE_CONFIG[activity.type] ?? DEFAULT_CONFIG);
 
   const completedDate = activity.completedAt ?? (activity.completed ? activity.dueDate : null);
+
+  const parsedAdditionalDealIds: string[] = (() => {
+    if (!activity.additionalDealIds) return [];
+    try { return JSON.parse(activity.additionalDealIds); } catch { return []; }
+  })();
 
   return (
     <div className="relative flex items-start space-x-3">
@@ -383,6 +405,40 @@ function ActivityItem({ activity, showLinks }: { activity: Activity; showLinks: 
               </Link>
             )}
           </div>
+        )}
+
+        {/* Deal linking — only shown on deal pages */}
+        {currentDealId && (
+          <div key={refreshKey} className="mt-2 flex flex-wrap items-center gap-2">
+            {parsedAdditionalDealIds.map((dealId) => (
+              <span
+                key={dealId}
+                className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2.5 py-0.5 text-xs font-medium text-purple-700"
+              >
+                <Link2 className="h-3 w-3" />
+                Negócio vinculado
+              </span>
+            ))}
+            <button
+              onClick={(e) => { e.preventDefault(); setLinkModalOpen(true); }}
+              className="inline-flex items-center gap-1 rounded-full border border-dashed border-gray-300 px-2.5 py-0.5 text-xs font-medium text-gray-500 hover:border-primary hover:text-primary transition-colors"
+              title="Vincular a outro negócio"
+            >
+              <Link2 className="h-3 w-3" />
+              Vincular a negócio
+            </button>
+          </div>
+        )}
+
+        {linkModalOpen && currentDealId && (
+          <LinkActivityToDealModal
+            activityId={activity.id}
+            activitySubject={activity.subject}
+            currentDealId={currentDealId}
+            additionalDealIds={parsedAdditionalDealIds}
+            onClose={() => setLinkModalOpen(false)}
+            onChanged={() => setRefreshKey((k) => k + 1)}
+          />
         )}
       </div>
     </div>

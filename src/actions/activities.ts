@@ -81,7 +81,13 @@ export async function getActivities(filters?: {
         skippedAt: null,
         failedAt: null,
       }),
-      ...(filters?.dealId && { dealId: filters.dealId }),
+      // Include activities linked via primary dealId OR additionalDealIds
+      ...(filters?.dealId && {
+        OR: [
+          { dealId: filters.dealId },
+          { additionalDealIds: { contains: filters.dealId } },
+        ],
+      }),
       ...(filters?.contactId && { contactId: filters.contactId }),
       ...(filters?.leadId && { leadId: filters.leadId }),
       ...(filters?.outcome === "failed" && { failedAt: { not: null } }),
@@ -691,4 +697,68 @@ export async function revertActivityOutcome(id: string) {
   if (activity.partnerId) revalidatePath(`/partners/${activity.partnerId}`);
 
   return updated;
+}
+
+// ---------------------------------------------------------------------------
+// linkActivityToDeal — adds a secondary deal link (additionalDealIds)
+
+export async function linkActivityToDeal(
+  activityId: string,
+  dealId: string
+): Promise<void> {
+  await getAuthenticatedSession();
+
+  const activity = await prisma.activity.findUnique({ where: { id: activityId } });
+  if (!activity || !(await canAccessRecord(activity.ownerId))) {
+    throw new Error("Atividade não encontrada");
+  }
+
+  // Prevent linking to primary dealId (already linked)
+  if (activity.dealId === dealId) return;
+
+  const existing: string[] = activity.additionalDealIds
+    ? JSON.parse(activity.additionalDealIds)
+    : [];
+
+  // Prevent duplicate
+  if (existing.includes(dealId)) return;
+
+  const updated = [...existing, dealId];
+
+  await prisma.activity.update({
+    where: { id: activityId },
+    data: { additionalDealIds: JSON.stringify(updated) },
+  });
+
+  revalidatePath(`/deals/${dealId}`);
+  if (activity.dealId) revalidatePath(`/deals/${activity.dealId}`);
+}
+
+// ---------------------------------------------------------------------------
+// unlinkActivityFromDeal — removes a secondary deal link
+
+export async function unlinkActivityFromDeal(
+  activityId: string,
+  dealId: string
+): Promise<void> {
+  await getAuthenticatedSession();
+
+  const activity = await prisma.activity.findUnique({ where: { id: activityId } });
+  if (!activity || !(await canAccessRecord(activity.ownerId))) {
+    throw new Error("Atividade não encontrada");
+  }
+
+  const existing: string[] = activity.additionalDealIds
+    ? JSON.parse(activity.additionalDealIds)
+    : [];
+
+  const updated = existing.filter((id) => id !== dealId);
+
+  await prisma.activity.update({
+    where: { id: activityId },
+    data: { additionalDealIds: updated.length > 0 ? JSON.stringify(updated) : null },
+  });
+
+  revalidatePath(`/deals/${dealId}`);
+  if (activity.dealId) revalidatePath(`/deals/${activity.dealId}`);
 }
