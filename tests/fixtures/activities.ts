@@ -13,6 +13,7 @@ export const mockActivity: Activity = {
   skippedAt: null,
   skipReason: null,
   dealId: 'deal-test-1',
+  additionalDealIds: null,
   contactId: 'contact-test-1',
   contactIds: null,
   leadContactIds: null,

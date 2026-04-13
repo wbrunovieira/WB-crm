@@ -21,6 +21,7 @@ const mockActivity = {
   skippedAt: null,
   skipReason: null,
   dealId: null,
+  additionalDealIds: null,
   contactId: null,
   contactIds: null,
   leadContactIds: null,

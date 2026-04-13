@@ -54,6 +54,18 @@ export default async function OrganizationDetailPage({
         </div>
       </div>
 
+      {organization.inOperationsAt && (
+        <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="font-semibold text-amber-800">In Operations</span>
+            <span className="text-amber-700">since {formatDate(organization.inOperationsAt)}</span>
+            <span className="text-amber-600 text-sm">
+              — automated communication activities are paused
+            </span>
+          </div>
+        </div>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Basic Information */}
         <div className="rounded-lg bg-white p-6 shadow">

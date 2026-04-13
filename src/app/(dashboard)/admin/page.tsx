@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package, Briefcase, Code, Database, Target, Zap, MessageSquare, Mail, FileText } from "lucide-react";
+import { Package, Briefcase, Code, Database, Target, Zap, MessageSquare, Mail, FileText, ArrowRightLeft } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -168,6 +168,26 @@ export default function AdminPage() {
               </h3>
               <p className="mt-1 text-sm text-gray-600">
                 Templates reutilizáveis com variáveis dinâmicas
+              </p>
+            </div>
+          </div>
+        </Link>
+
+        {/* Operations Transfer Card */}
+        <Link
+          href="/admin/operations"
+          className="group block rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-all hover:border-orange-400"
+        >
+          <div className="flex items-center gap-4">
+            <div className="rounded-lg bg-orange-100 p-3 group-hover:bg-orange-500 transition-colors">
+              <ArrowRightLeft className="h-6 w-6 text-orange-600 group-hover:text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-orange-600">
+                Operations Transfer
+              </h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Transfira clientes para o sistema de operações
               </p>
             </div>
           </div>

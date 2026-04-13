@@ -24,6 +24,7 @@ const baseActivity = {
   failedAt: null,
   failReason: null,
   dealId: null,
+  additionalDealIds: null,
   contactId: null,
   contactIds: null,
   leadContactIds: null,
