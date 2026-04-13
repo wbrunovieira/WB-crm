@@ -258,11 +258,35 @@ src/
 - [x] Badge colorido por outcome em cada card (verde=atendida, roxo=caixa postal, vermelho=não atendeu, etc.)
 - [x] Painel de resumo no topo: total de ligações por outcome + reuniões + WhatsApp + e-mail + tarefas
 
-### FASE 9 - WhatsApp: matching avançado + mídia 🔲
+### FASE 9 - WhatsApp: matching avançado + mídia ✅ CONCLUÍDA
 
-- [ ] Matching de números desconhecidos: sugestão de vínculo manual ao usuário
-- [ ] Mídia (áudio, imagem, documento) → download → Google Drive → link permanente
-- [ ] Transcrição de áudios WhatsApp via WB Transcritor
+#### 9.1 — Matching e filtragem ✅
+- [x] Ignorar mensagens de números não cadastrados no CRM (sem Lead/Contato/Parceiro correspondente)
+- [x] Matching por variações do número: com/sem código de país (55), com/sem DDD
+- [x] Sessão de conversa: janela de 2h agrupa mensagens no mesmo card de atividade
+
+#### 9.2 — Mídia no Google Drive ✅
+- [x] Download de mídia via Evolution API (`getBase64FromMediaMessage`)
+- [x] Upload automático para pasta `WB-CRM/WhatsApp/{entityName}/` no Drive
+- [x] Suporte: áudio (.oga/.ogg), vídeo (mp4), imagem (jpg/png/webp), documento (pdf, etc.)
+- [x] API route `/api/evolution/media/[messageId]` serve arquivos com auth + ownership check + cache
+
+#### 9.3 — Transcrição automática ✅
+- [x] Áudios e vídeos submetidos ao WB Transcritor após upload no Drive
+- [x] Cron `*/15 * * * *` — `/api/evolution/check-transcriptions` — polling de jobs pendentes
+- [x] Atribuição de speaker: `fromMe=true` → nome do agente, `fromMe=false` → `pushName` ou "Cliente"
+- [x] Formato salvo: `"Bruno: texto da transcrição"`
+
+#### 9.4 — UI inline no card de atividade ✅
+- [x] `WhatsAppMessageLog` com bolhas estilo WhatsApp (enviado à direita/verde, recebido à esquerda/branco)
+- [x] Avatar com iniciais + nome do remetente em cada bolha
+- [x] `AudioPlayer`: `<audio controls>` com botão collapsível de transcrição
+- [x] `VideoPlayer`: `<video controls>` com botão collapsível de transcrição
+- [x] `ImagePreview`: thumbnail clicável com lightbox + botão de download
+- [x] `DocumentDownload`: abre em nova aba (preview nativo do browser) + botão de download separado
+- [x] Fix: imagem com legenda não aparece duplicada (media consumida uma vez por minuto+fromMe)
+- [x] Fix: timezone UTC forçado no match de HH:MM (servidor UTC vs browser em outro fuso)
+- [x] Log fora do `<Link>` — clicar em player/transcrição não navega para o detalhe
 
 ### FASE 10 - Dashboard e Relatórios 🔲
 
@@ -340,6 +364,6 @@ NEXTAUTH_URL="http://localhost:3000"
 
 ## Próximos Passos
 
-**Fase atual**: FASE 9 — WhatsApp: matching avançado + mídia
+**Fase atual**: FASE 10 — Dashboard e Relatórios
 
-**Fase 8 concluída** — GoTo Connect completo (webhook, gravações dual-track S3, transcrição com speaker, player sincronizado, badges de resultado, painel de estatísticas)
+**Fase 9 concluída** — WhatsApp mídia completo (Drive, transcrição automática, player inline, lightbox de imagem, preview de documento, bolhas estilo WhatsApp com avatar)
