@@ -124,12 +124,27 @@ export async function matchPhoneToEntity(
   // 1. Busca Contact
   const contactId = await findContactByPhone(variations, ownerId);
   if (contactId) {
+    // Check if the contact's organization is in operations
+    const contactCheck = await prisma.contact.findFirst({
+      where: {
+        id: contactId,
+        OR: [{ organizationId: null }, { organization: { inOperationsAt: null } }],
+      },
+      select: { id: true },
+    });
+    if (!contactCheck) return null;
     return { entityType: "contact", entityId: contactId, contactId };
   }
 
   // 2. Busca Lead
   const leadId = await findLeadByPhone(variations, ownerId);
   if (leadId) {
+    // Check if the lead is in operations
+    const leadCheck = await prisma.lead.findFirst({
+      where: { id: leadId, inOperationsAt: null },
+      select: { id: true },
+    });
+    if (!leadCheck) return null;
     return { entityType: "lead", entityId: leadId, leadId };
   }
 

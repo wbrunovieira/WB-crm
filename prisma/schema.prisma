@@ -209,6 +209,9 @@ model Lead {
   // Google Drive
   driveFolderId String? // ID da pasta no Google Drive: WB-CRM/Propostas/[Lead]/
 
+  // Operations transfer — null = active in CRM, set = transferred to operations (automations paused)
+  inOperationsAt DateTime?
+
   // Owner e timestamps
   ownerId   String
   createdAt DateTime @default(now())
@@ -254,6 +257,7 @@ model Lead {
   @@index([convertedAt])
   @@index([referredByPartnerId])
   @@index([primaryCNAEId])
+  @@index([inOperationsAt])
   @@map("leads")
 }
 
@@ -354,6 +358,9 @@ model Organization {
   hostingReminderDays Int       @default(30) // Dias antes para lembrar
   hostingNotes        String?
 
+  // Operations transfer — null = active in CRM, set = transferred to operations (automations paused)
+  inOperationsAt DateTime?
+
   ownerId   String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -389,6 +396,7 @@ model Organization {
   @@index([primaryCNAEId])
   @@index([hasHosting])
   @@index([hostingRenewalDate])
+  @@index([inOperationsAt])
   @@map("organizations")
 }
 
@@ -572,7 +580,8 @@ model Activity {
   skippedAt   DateTime?
   skipReason  String?
 
-  dealId      String?
+  dealId             String?
+  additionalDealIds  String?   // JSON array of secondary deal IDs (same pattern as contactIds)
   contactId       String?   // Primary contact (for backwards compatibility)
   contactIds      String?   // JSON array of contact IDs for multiple contacts
   leadContactIds  String?   // JSON array of LeadContact IDs linked to this activity

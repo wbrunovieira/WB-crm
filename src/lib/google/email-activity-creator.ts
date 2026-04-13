@@ -13,37 +13,54 @@ export interface IncomingEmail {
   receivedAt: Date;
 }
 
+type MatchEntityResult = {
+  contactId?: string;
+  leadId?: string;
+  organizationId?: string;
+  inOperations?: boolean;
+};
+
 /** Busca Contact, Lead ou Organization pelo e-mail do remetente */
 async function matchEmailToEntity(
   email: string,
   ownerId: string
-): Promise<{ contactId?: string; leadId?: string; organizationId?: string }> {
+): Promise<MatchEntityResult> {
   // Prioridade: Contact > LeadContact (→ Lead pai) > Lead (e-mail geral) > Organization
 
   const contact = await prisma.contact.findFirst({
     where: { email, ownerId },
-    select: { id: true },
+    select: { id: true, organization: { select: { inOperationsAt: true } } },
   });
-  if (contact) return { contactId: contact.id };
+  if (contact) {
+    const inOperations = !!contact.organization?.inOperationsAt;
+    return { contactId: contact.id, inOperations };
+  }
 
   // E-mail de um contato específico do lead — vincula ao lead pai
   const leadContact = await prisma.leadContact.findFirst({
     where: { email, lead: { ownerId } },
-    select: { leadId: true },
+    select: { leadId: true, lead: { select: { inOperationsAt: true } } },
   });
-  if (leadContact) return { leadId: leadContact.leadId };
+  if (leadContact) {
+    const inOperations = !!leadContact.lead?.inOperationsAt;
+    return { leadId: leadContact.leadId, inOperations };
+  }
 
   const lead = await prisma.lead.findFirst({
     where: { email, ownerId },
-    select: { id: true },
+    select: { id: true, inOperationsAt: true },
   });
-  if (lead) return { leadId: lead.id };
+  if (lead) {
+    return { leadId: lead.id, inOperations: !!lead.inOperationsAt };
+  }
 
   const org = await prisma.organization.findFirst({
     where: { email, ownerId },
-    select: { id: true },
+    select: { id: true, inOperationsAt: true },
   });
-  if (org) return { organizationId: org.id };
+  if (org) {
+    return { organizationId: org.id, inOperations: !!org.inOperationsAt };
+  }
 
   return {};
 }
@@ -84,7 +101,7 @@ export async function processIncomingEmail(
   }
 
   // 2. Buscar entidade pelo e-mail do remetente
-  let match: { contactId?: string; leadId?: string; organizationId?: string } = {};
+  let match: MatchEntityResult = {};
   try {
     match = await matchEmailToEntity(email.from, ownerId);
   } catch (err) {
@@ -92,6 +109,15 @@ export async function processIncomingEmail(
       from: email.from,
       error: err instanceof Error ? err.message : String(err),
     });
+  }
+
+  // Se entidade está em operações, não criar atividade automaticamente
+  if (match.inOperations) {
+    log.info("Entidade em operações — e-mail ignorado", {
+      messageId: email.messageId,
+      from: email.from,
+    });
+    return;
   }
 
   // 3. Preview do corpo (primeiros 500 chars)

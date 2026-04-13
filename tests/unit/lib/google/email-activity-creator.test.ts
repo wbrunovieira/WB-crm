@@ -249,6 +249,45 @@ describe("processIncomingEmail — threadId (Phase 2a)", () => {
 });
 
 // ---------------------------------------------------------------------------
+describe("processIncomingEmail — inOperationsAt (operations transfer)", () => {
+  it("does not create activity when matched lead has inOperationsAt set", async () => {
+    mockContactFindFirst.mockResolvedValue(null);
+    mockLeadContactFindFirst.mockResolvedValue(null);
+    // Lead found but has inOperationsAt set — mock returns it with the flag
+    mockLeadFindFirst.mockResolvedValue({ id: "lead-1", inOperationsAt: new Date("2026-04-01") } as never);
+
+    await processIncomingEmail(BASE_EMAIL, OWNER_ID);
+
+    expect(mockActivityCreate).not.toHaveBeenCalled();
+  });
+
+  it("does not create activity when matched organization has inOperationsAt set", async () => {
+    mockContactFindFirst.mockResolvedValue(null);
+    mockLeadContactFindFirst.mockResolvedValue(null);
+    mockLeadFindFirst.mockResolvedValue(null);
+    // Organization found but has inOperationsAt set
+    mockOrgFindFirst.mockResolvedValue({ id: "org-1", inOperationsAt: new Date("2026-04-01") } as never);
+
+    await processIncomingEmail(BASE_EMAIL, OWNER_ID);
+
+    expect(mockActivityCreate).not.toHaveBeenCalled();
+  });
+
+  it("creates activity normally when matched entity has inOperationsAt null", async () => {
+    mockContactFindFirst.mockResolvedValue(null);
+    mockLeadContactFindFirst.mockResolvedValue(null);
+    // Lead found and NOT in operations
+    mockLeadFindFirst.mockResolvedValue({ id: "lead-1", inOperationsAt: null } as never);
+
+    await processIncomingEmail(BASE_EMAIL, OWNER_ID);
+
+    expect(mockActivityCreate).toHaveBeenCalledOnce();
+    const call = mockActivityCreate.mock.calls[0][0];
+    expect(call.data.leadId).toBe("lead-1");
+  });
+});
+
+// ---------------------------------------------------------------------------
 describe("processIncomingEmail — remetente (Phase 2a/2b)", () => {
   it("salva emailFromAddress com o e-mail do remetente", async () => {
     await processIncomingEmail(BASE_EMAIL, OWNER_ID);

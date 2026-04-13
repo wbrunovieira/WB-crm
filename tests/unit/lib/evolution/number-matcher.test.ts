@@ -29,6 +29,9 @@ const partnerRow = [{ id: "partner-1" }];
 
 beforeEach(() => {
   prismaMock.$queryRaw.mockResolvedValue(noResult);
+  // Default: entities are NOT in operations — secondary ORM checks pass
+  prismaMock.lead.findFirst.mockResolvedValue({ id: "lead-mock" } as never);
+  prismaMock.contact.findFirst.mockResolvedValue({ id: "contact-mock" } as never);
 });
 
 // ---------------------------------------------------------------------------
@@ -236,5 +239,55 @@ describe("matchPhoneToEntity — aceita número no formato remoteJid extraído",
     const result = await matchPhoneToEntity("5511999998888", OWNER_ID);
 
     expect(result).not.toBeNull();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// inOperationsAt — operations transfer flag
+// ---------------------------------------------------------------------------
+
+describe("matchPhoneToEntity — inOperationsAt (operations transfer)", () => {
+  it("returns null when matched lead has inOperationsAt set", async () => {
+    // Lead found by phone but is in operations (ORM check returns null)
+    prismaMock.$queryRaw
+      .mockResolvedValueOnce(noResult) // contact miss
+      .mockResolvedValueOnce(leadRow); // lead found
+    prismaMock.lead.findFirst.mockResolvedValueOnce(null); // inOperationsAt is set
+
+    const result = await matchPhoneToEntity("5511999998888", OWNER_ID);
+
+    expect(result).toBeNull();
+  });
+
+  it("returns null when matched contact's organization has inOperationsAt set", async () => {
+    // Contact found by phone but its org is in operations (ORM check returns null)
+    prismaMock.$queryRaw.mockResolvedValueOnce(contactRow);
+    prismaMock.contact.findFirst.mockResolvedValueOnce(null); // org is in operations
+
+    const result = await matchPhoneToEntity("5511999998888", OWNER_ID);
+
+    expect(result).toBeNull();
+  });
+
+  it("returns entity normally when lead's inOperationsAt is null", async () => {
+    prismaMock.$queryRaw
+      .mockResolvedValueOnce(noResult)
+      .mockResolvedValueOnce(leadRow);
+    prismaMock.lead.findFirst.mockResolvedValueOnce({ id: "lead-1" } as never); // not in operations
+
+    const result = await matchPhoneToEntity("5511999998888", OWNER_ID);
+
+    expect(result?.entityType).toBe("lead");
+    expect(result?.leadId).toBe("lead-1");
+  });
+
+  it("returns entity normally when contact's organization has inOperationsAt null", async () => {
+    prismaMock.$queryRaw.mockResolvedValueOnce(contactRow);
+    prismaMock.contact.findFirst.mockResolvedValueOnce({ id: "contact-1" } as never); // not in operations
+
+    const result = await matchPhoneToEntity("5511999998888", OWNER_ID);
+
+    expect(result?.entityType).toBe("contact");
+    expect(result?.contactId).toBe("contact-1");
   });
 });
