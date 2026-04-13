@@ -1,4 +1,6 @@
 import { getContactById } from "@/actions/contacts";
+import { getMeetings } from "@/actions/meetings";
+import MeetingsList from "@/components/meetings/MeetingsList";
 import { PhoneLink } from "@/components/ui/phone-link";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import GmailButton from "@/components/gmail/GmailButton";
@@ -17,9 +19,10 @@ export default async function ContactDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [contact, session] = await Promise.all([
+  const [contact, session, meetings] = await Promise.all([
     getContactById(params.id),
     getServerSession(authOptions),
+    getMeetings({ contactId: params.id }),
   ]);
 
   if (!contact) {
@@ -146,6 +149,19 @@ export default async function ContactDetailPage({
             />
           </div>
         </div>
+      </div>
+
+      {/* Meetings */}
+      <div className="mt-6">
+        <MeetingsList
+          meetings={meetings}
+          contactId={contact.id}
+          suggestedContacts={
+            contact.email
+              ? [{ id: contact.id, name: contact.name, email: contact.email, role: contact.role ?? undefined }]
+              : []
+          }
+        />
       </div>
 
       {/* Entity Management Panel (Admin Only) */}

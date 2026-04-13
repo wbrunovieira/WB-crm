@@ -44,6 +44,7 @@ interface Props {
   meetings: Meeting[];
   leadId?: string;
   contactId?: string;
+  organizationId?: string;
   dealId?: string;
   /** Contacts shown as clickable chips in the schedule modal */
   suggestedContacts?: SuggestedContact[];
@@ -114,6 +115,7 @@ export default function MeetingsList({
   meetings: initial,
   leadId,
   contactId,
+  organizationId,
   dealId,
   suggestedContacts = [],
 }: Props) {
@@ -237,6 +239,7 @@ export default function MeetingsList({
         <ScheduleMeetingModal
           leadId={leadId}
           contactId={contactId}
+          organizationId={organizationId}
           dealId={dealId}
           suggestedContacts={suggestedContacts}
           onClose={() => setShowModal(false)}
@@ -248,6 +251,7 @@ export default function MeetingsList({
         <ScheduleMeetingModal
           leadId={leadId}
           contactId={contactId}
+          organizationId={organizationId}
           dealId={dealId}
           suggestedContacts={suggestedContacts}
           meetingId={editingMeeting.id}

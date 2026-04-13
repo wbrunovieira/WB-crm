@@ -329,46 +329,44 @@ cd deploy/ansible && ansible-playbook -i inventory/production.yml playbooks/depl
 
 ---
 
-## Fase 4 — Matching avançado: números desconhecidos
+## Fase 4 — Matching avançado ✅ CONCLUÍDA (2026-04-13)
 
-**Objetivo**: não perder mensagens de números não cadastrados.
+**Objetivo**: matching robusto de números e ignorar números sem cadastro.
 
-### Funcionalidade
+### O que foi implementado
 
-- Activity criada com `unknownPhone` preenchido quando número não encontrado
-- Badge "Sem cadastro" na lista de atividades
-- Botão "Criar Lead" pré-preenche o formulário com o número no campo `whatsapp`
-- Botão "Vincular" permite associar a um Lead/Contact já existente
+- Matching por variações do número: com/sem código de país (55), com/sem DDD
+- Mensagens de números não cadastrados no CRM são **ignoradas** (sem Activity órfã)
+- Sessão de conversa: janela de 2h agrupa mensagens no mesmo card de atividade
 
 ### Critérios de teste (Fase 4)
-- [ ] Mensagem de número desconhecido → Activity com `unknownPhone`
-- [ ] Badge "Sem cadastro" visível
-- [ ] "Criar Lead" pré-preenche `whatsapp`
-- [ ] Após vincular, Activity aparece na timeline do Lead
-
-### Deploy
-```bash
-git add . && git commit -m "feat: unknown WhatsApp number tracking and quick lead creation" && git push
-cd deploy/ansible && ansible-playbook -i inventory/production.yml playbooks/deploy-with-migrations.yml
-```
+- [x] Mensagem de número cadastrado com variação de formato → Activity vinculada corretamente
+- [x] Mensagem de número desconhecido → ignorada (sem Activity criada)
+- [x] Sessão de 2h agrupa mensagens consecutivas no mesmo card
 
 ---
 
-## Fase 5 — Mídia: Google Drive + transcrição Whisper
+## Fase 5 — Mídia: Google Drive + transcrição Whisper ✅ CONCLUÍDA (2026-04-13)
 
-**Objetivo**: arquivos de mídia (áudio, imagem, vídeo, documento) recebidos pelo WhatsApp armazenados permanentemente e áudios transcritos automaticamente.
+**Objetivo**: arquivos de mídia (áudio, imagem, vídeo, documento) recebidos pelo WhatsApp armazenados permanentemente e áudios/vídeos transcritos automaticamente.
 
-### Funcionalidade
+### O que foi implementado
 
-- Download do arquivo de mídia antes da URL do CDN expirar
-- Upload para Google Drive (integração Google prevista)
-- Link permanente salvo em `WhatsAppMessage.mediaUrl`
-- Para áudios: envio para API Whisper (app já existente) → texto transcrito salvo em `WhatsAppMessage.text`
-- Na timeline: botão "Ver no Drive" e texto da transcrição visível
+- Download de mídia via Evolution API (`getBase64FromMediaMessage`)
+- Upload automático para pasta `WB-CRM/WhatsApp/{entityName}/` no Google Drive
+- Suporte: áudio (.oga/.ogg), vídeo (mp4), imagem (jpg/png/webp), documento (pdf, etc.)
+- API route `/api/evolution/media/[messageId]` — serve arquivos com auth + ownership + cache
+- Áudios e vídeos submetidos ao WB Transcritor (Whisper large-v3-turbo) após upload
+- Cron `*/15 * * * *` — `/api/evolution/check-transcriptions` — polling de jobs pendentes
+- Atribuição de speaker: `fromMe=true` → nome do agente, `fromMe=false` → `pushName` ou "Cliente"
+- UI inline: `AudioPlayer`, `VideoPlayer`, `ImagePreview` (lightbox), `DocumentDownload`
 
-### Pré-requisito
-- Integração Google Drive implementada
-- Endpoint da API Whisper configurado
+### Critérios de teste (Fase 5)
+- [x] Áudio recebido → upload no Drive, transcrição salva, player inline com botão de transcrição
+- [x] Imagem → thumbnail clicável com lightbox + download
+- [x] Documento → abre em nova aba (preview nativo) + botão de download
+- [x] Vídeo → player inline com transcrição expansível
+- [x] Fix: imagem com legenda não aparece duplicada
 
 ---
 
@@ -379,5 +377,5 @@ cd deploy/ansible && ansible-playbook -i inventory/production.yml playbooks/depl
 | 1 | Backend: webhook + sessões agrupadas + WhatsAppMessage | ✅ Concluída (2026-04-10) |
 | 2 | UI: modal de envio + emoji + mídia + templates + admin | ✅ Concluída (2026-04-10) |
 | 3 | UX: timeline estilo chat com bolinhas e expand | ✅ Concluída (2026-04-10) |
-| 4 | Matching: números desconhecidos | 🔲 Pendente |
-| 5 | Mídia: Google Drive + transcrição Whisper | 🔲 Pendente |
+| 4 | Matching avançado: variações de número, ignorar desconhecidos | ✅ Concluída (2026-04-13) |
+| 5 | Mídia: Google Drive + transcrição Whisper inline | ✅ Concluída (2026-04-13) |

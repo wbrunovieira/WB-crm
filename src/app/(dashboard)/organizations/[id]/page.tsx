@@ -1,4 +1,6 @@
 import { getOrganizationById } from "@/actions/organizations";
+import { getMeetings } from "@/actions/meetings";
+import MeetingsList from "@/components/meetings/MeetingsList";
 import GmailButton from "@/components/gmail/GmailButton";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { PhoneLink } from "@/components/ui/phone-link";
@@ -22,9 +24,10 @@ export default async function OrganizationDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [organization, session] = await Promise.all([
+  const [organization, session, meetings] = await Promise.all([
     getOrganizationById(params.id),
     getServerSession(authOptions),
+    getMeetings({ organizationId: params.id }),
   ]);
 
   if (!organization) {
@@ -364,6 +367,27 @@ export default async function OrganizationDetailPage({
             entityType="organization"
           />
         </div>
+      </div>
+
+      {/* Meetings */}
+      <div className="mt-6">
+        <MeetingsList
+          meetings={meetings}
+          organizationId={organization.id}
+          suggestedContacts={[
+            ...(organization.email
+              ? [{ id: `org-${organization.id}`, name: organization.name, email: organization.email, role: "Empresa" }]
+              : []),
+            ...organization.contacts
+              .filter((c) => c.email)
+              .map((c) => ({
+                id: c.id,
+                name: c.name,
+                email: c.email!,
+                role: undefined,
+              })),
+          ]}
+        />
       </div>
 
       {/* Activities */}

@@ -19,6 +19,7 @@ const scheduleMeetingSchema = z.object({
   timeZone: z.string().optional(),
   leadId: z.string().optional(),
   contactId: z.string().optional(),
+  organizationId: z.string().optional(),
   dealId: z.string().optional(),
 });
 
@@ -43,10 +44,12 @@ export type UpdateMeetingInput = z.infer<typeof updateMeetingSchema>;
 export async function getMeetings({
   leadId,
   contactId,
+  organizationId,
   dealId,
 }: {
   leadId?: string;
   contactId?: string;
+  organizationId?: string;
   dealId?: string;
 }) {
   const session = await getServerSession(authOptions);
@@ -55,6 +58,7 @@ export async function getMeetings({
   const where: Record<string, unknown> = { ownerId: session.user.id };
   if (leadId) where.leadId = leadId;
   if (contactId) where.contactId = contactId;
+  if (organizationId) where.organizationId = organizationId;
   if (dealId) where.dealId = dealId;
 
   return prisma.meeting.findMany({
@@ -115,6 +119,7 @@ export async function scheduleMeeting(input: ScheduleMeetingInput) {
       status: "scheduled",
       leadId: validated.leadId,
       contactId: validated.contactId,
+      organizationId: validated.organizationId,
       dealId: validated.dealId,
       activityId: activity.id,
       ownerId: session.user.id,
@@ -125,6 +130,7 @@ export async function scheduleMeeting(input: ScheduleMeetingInput) {
   if (validated.leadId) revalidatePath(`/leads/${validated.leadId}`);
   if (validated.dealId) revalidatePath(`/deals/${validated.dealId}`);
   if (validated.contactId) revalidatePath(`/contacts/${validated.contactId}`);
+  if (validated.organizationId) revalidatePath(`/organizations/${validated.organizationId}`);
 
   return meeting;
 }
@@ -169,6 +175,7 @@ export async function cancelMeeting(meetingId: string) {
   if (meeting.leadId) revalidatePath(`/leads/${meeting.leadId}`);
   if (meeting.dealId) revalidatePath(`/deals/${meeting.dealId}`);
   if (meeting.contactId) revalidatePath(`/contacts/${meeting.contactId}`);
+  if (meeting.organizationId) revalidatePath(`/organizations/${meeting.organizationId}`);
 }
 
 // ---------------------------------------------------------------------------

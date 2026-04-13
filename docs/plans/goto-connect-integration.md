@@ -319,7 +319,7 @@ tests/integration/api/goto-webhook-retry.test.ts
 
 ---
 
-## Fase 6 — Gravação de Áudio no Drive, Player e Transcrição ✅ PLANEJADA
+## Fase 6 — Gravação de Áudio no Drive, Player e Transcrição ✅ CONCLUÍDA (2026-04-13)
 
 **Objetivo**: Baixar automaticamente o áudio das ligações GoTo, salvar no Google Drive, disponibilizar player inline no histórico de atividades e gerar transcrição com o serviço WB Transcritor.
 
@@ -504,17 +504,18 @@ tests/integration/api/goto-recordings-proxy.test.ts
   -H 'x-cron-secret: <CRON_SECRET>' >> /var/log/goto-check-recordings.log 2>&1
 ```
 
-### Entrega da Fase 6
+### O que foi implementado (Fase 8 do projeto)
 
-- [ ] Testes escritos e passando (TDD)
-- [ ] `submitAudioForTranscription` adicionado ao `transcriptor.ts`
-- [ ] Migration aplicada em produção
-- [ ] `recording-downloader.ts` + `goto-drive-uploader.ts` implementados
-- [ ] `check-recordings` cron endpoint criado e registrado
-- [ ] Proxy `/api/goto/recordings/[activityId]` com Range headers
-- [ ] Player HTML5 + transcrição expansível no `ActivityTimeline`
-- [ ] `git commit -m "feat: goto call recording → google drive + audio player + transcription"`
-- [ ] Deploy (`deploy-with-migrations.yml`)
+- [x] Download de gravações dual-track (agente + cliente) via S3 AWS SDK
+- [x] `findRecordingKey` + `findSiblingRecordingKey` — localiza MP3 do agente e do cliente no S3
+- [x] Cron `GET /api/goto/check-recordings` (15 min): Pass 1 baixa ambos os tracks, submete para transcrição; Pass 2 polling e salva transcript
+- [x] WB Transcritor retorna `segments[]` com `start / end / text` por arquivo
+- [x] Segmentos interleaved por timestamp → `TranscriptSegment[]` com `speaker` e `speakerName`
+- [x] `GoToCallPlayer` — player dual-track sincronizado por offset de timestamp S3
+- [x] Seek mantém invariante `clientTime = agentTime - offsetSeconds`
+- [x] Transcript expansível com segmentos coloridos por speaker, highlight ativo, click-to-seek
+- [x] Player incorporado nos cards de atividade sem navegar ao clicar
+- [x] Migration: campos `gotoRecordingId`, `gotoRecordingDriveId`, `gotoRecordingUrl`, `gotoTranscriptionJobId`, `gotoTranscriptText` na tabela `activities`
 
 ---
 

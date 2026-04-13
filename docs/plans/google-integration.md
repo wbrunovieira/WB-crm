@@ -536,9 +536,9 @@ npm install googleapis google-auth-library
 
 | Item | Descrição | Prioridade |
 |---|---|---|
-| Seção Reuniões em Organizações | MeetingsList ainda não aparece nas páginas de Organization | Alta |
-| Seção Reuniões em Contatos | MeetingsList ainda não aparece nas páginas de Contact | Alta |
-| Seção Reuniões em Deals | MeetingsList ainda não aparece nas páginas de Deal | Média |
+| Seção Reuniões em Organizações | MeetingsList adicionado à página de Organization | ✅ Concluído |
+| Seção Reuniões em Contatos | MeetingsList adicionado à página de Contact | ✅ Concluído |
+| Seção Reuniões em Deals | MeetingsList já existia na página de Deal | ✅ Concluído |
 | Badge de origem da transcrição | Indicar visualmente "Transcrição Google" vs "Transcrição Whisper" | Baixa |
 | Busca dentro da transcrição | Campo de busca client-side dentro do texto da transcrição | Baixa |
 | Renovar cron tokens | O refresh token Google pode expirar; adicionar alerta no painel admin | Média |

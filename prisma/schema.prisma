@@ -381,6 +381,9 @@ model Organization {
   // ICPs
   icps                       OrganizationICP[]
 
+  // Meetings
+  meetings                   Meeting[]
+
   @@index([ownerId])
   @@index([sourceLeadId])
   @@index([primaryCNAEId])
@@ -1754,9 +1757,10 @@ model Meeting {
   meetingSummary      String?   // AI notes from Google Meet (Gemini): summary, topics, action items
 
   // Relations to CRM entities
-  leadId     String?
-  contactId  String?
-  dealId     String?
+  leadId         String?
+  contactId      String?
+  organizationId String?
+  dealId         String?
 
   // One-to-one with Activity (pending when scheduled, completed when ended)
   activityId  String?  @unique
@@ -1766,15 +1770,17 @@ model Meeting {
   updatedAt  DateTime @updatedAt
 
   // Relations
-  owner    User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  lead     Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  contact  Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  deal     Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
-  activity Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  lead         Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  deal         Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  activity     Activity?     @relation(fields: [activityId], references: [id], onDelete: SetNull)
 
   @@index([ownerId])
   @@index([leadId])
   @@index([contactId])
+  @@index([organizationId])
   @@index([dealId])
   @@index([status])
   @@index([startAt])

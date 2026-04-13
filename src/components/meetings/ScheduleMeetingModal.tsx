@@ -23,6 +23,7 @@ export interface MeetingInitialData {
 interface Props {
   leadId?: string;
   contactId?: string;
+  organizationId?: string;
   dealId?: string;
   /** Contacts from the lead/deal to show as clickable chips */
   suggestedContacts?: SuggestedContact[];
@@ -63,6 +64,7 @@ function toDateTimeInputs(date: Date): { date: string; time: string } {
 export default function ScheduleMeetingModal({
   leadId,
   contactId,
+  organizationId,
   dealId,
   suggestedContacts = [],
   meetingId,
@@ -211,6 +213,7 @@ export default function ScheduleMeetingModal({
           attendeeEmails,
           leadId,
           contactId,
+          organizationId,
           dealId,
         });
         toast.success("Reunião agendada! Convite enviado por e-mail.");
