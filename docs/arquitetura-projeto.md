@@ -196,13 +196,75 @@ src/
 - [x] `tests/unit/actions/meetings.test.ts` — 8 testes
 - [x] `tests/unit/lib/transcriptor.test.ts` — 6 testes
 
-### FASE 7 - WhatsApp: matching avançado + mídia 🔲
+### FASE 7 - Cadências de prospecção ✅ CONCLUÍDA
+
+- [x] Model `LeadCadence` com steps configuráveis (tipo, delay, template, assunto)
+- [x] `LeadCadenceActivity` — vínculo entre cadência e atividade gerada
+- [x] Geração automática de atividades ao iniciar cadência
+- [x] `registerLeadReply` — ao registrar resposta do lead, cancela cadências ativas e pula atividades pendentes
+- [x] Botão "Registrar Resposta" com seleção de canal e notas
+- [x] Badges visuais de status e thread connector nas listas de atividade
+- [x] Ordenação drag-and-drop para atividades pendentes; concluídas/falhas/puladas por data de resolução
+- [x] Busca por texto + filtros por tipo e status
+- [x] Hosting renewal reminder: Activity automática antes da data de renovação
+
+### FASE 8 - GoTo Connect: chamadas automáticas ✅ CONCLUÍDA
+
+**Integração completa com GoTo Connect via webhook + S3 + WB Transcritor.**
+
+#### 8.1 — Webhook e Activity ✅
+
+- [x] `POST /api/goto/webhook` — recebe eventos do GoTo Connect
+- [x] `createCallActivity` — cria Activity tipo `call` automaticamente para cada ligação
+- [x] Matching de número → Lead / Contact / Partner (`matchPhoneToEntity`)
+- [x] Idempotência via `gotoCallId` (`conversationSpaceId` único por ligação)
+- [x] `gotoCallOutcome` — resultado armazenado no banco: `answered | voicemail | no_answer | busy | rejected | invalid_number | missed | unknown`
+
+#### 8.2 — Detecção de resultado (ISDN Q.850) ✅
+
+| Código Q.850 | Resultado detectado |
+|---|---|
+| 16 + duração ≥ 15s | `answered` |
+| 16 + duração < 15s | `voicemail` (heurístico) |
+| 17 | `busy` |
+| 18 / 19 | `no_answer` |
+| 21 | `rejected` |
+| 1 | `invalid_number` |
+| INBOUND + duração = 0 | `missed` |
+
+#### 8.3 — Gravações dual-track em S3 ✅
+
+- [x] `findRecordingKey` — localiza MP3 do agente no S3 pela data da ligação
+- [x] `findSiblingRecordingKey` — localiza MP3 do cliente (mesmo `callId`, arquivo irmão)
+- [x] `downloadRecordingFromS3` — download via AWS SDK
+- [x] Cron `GET /api/goto/check-recordings` (15 min): Pass 1 encontra ambos os tracks e submete para transcrição; Pass 2 faz polling e salva transcript quando prontos
+
+#### 8.4 — Transcrição com atribuição de speaker ✅
+
+- [x] WB Transcritor retorna `segments[]` com `start / end / text` por arquivo
+- [x] Segmentos agent + client interleaved por timestamp → `TranscriptSegment[]` com `speaker` e `speakerName`
+- [x] Nome do agente buscado de `User`, nome do cliente de Lead/Contact/Partner
+- [x] JSON salvo em `gotoTranscriptText`
+
+#### 8.5 — Player dual-track e transcript ✅
+
+- [x] `GoToCallPlayer` — player com dois `<audio>` sincronizados por offset de timestamp do S3
+- [x] Seek mantém invariante `clientTime = agentTime - offsetSeconds`
+- [x] Transcript expansível: segmentos coloridos por speaker, highlight ativo, click-to-seek
+- [x] Player incorporado nos cards de atividade (LeadActivitiesList e ActivityTimeline) sem navegar ao clicar
+
+#### 8.6 — Badges de resultado e painel de estatísticas ✅
+
+- [x] Badge colorido por outcome em cada card (verde=atendida, roxo=caixa postal, vermelho=não atendeu, etc.)
+- [x] Painel de resumo no topo: total de ligações por outcome + reuniões + WhatsApp + e-mail + tarefas
+
+### FASE 9 - WhatsApp: matching avançado + mídia 🔲
 
 - [ ] Matching de números desconhecidos: sugestão de vínculo manual ao usuário
 - [ ] Mídia (áudio, imagem, documento) → download → Google Drive → link permanente
-- [ ] Transcrição de áudios via Whisper API (mesma pipeline futura do GoTo)
+- [ ] Transcrição de áudios WhatsApp via WB Transcritor
 
-### FASE 8 - Dashboard e Relatórios 🔲
+### FASE 10 - Dashboard e Relatórios 🔲
 
 - [ ] Métricas principais (deals ganhos/perdidos/em andamento por período)
 - [ ] Gráfico de funil de conversão por estágio
@@ -210,12 +272,10 @@ src/
 - [ ] Relatório de performance por usuário (SDR vs Closer)
 - [ ] Exportação CSV
 
-### FASE 9 - GoTo Connect: chamadas e voicemail 🔲
+### FASE 11 - GoTo Connect: funcionalidades avançadas 🔲
 
-- [ ] OAuth GoTo Connect + persistência de token
-- [ ] Webhook de chamadas → Activity do tipo `call` com duração
-- [ ] Gravações de chamada → download → Drive + transcrição Whisper
-- [ ] Clique para ligar (Click-to-Call) do perfil do Lead/Contato
+- [ ] Click-to-Call do perfil do Lead/Contato
+- [ ] OAuth GoTo Connect com persistência de token (atualmente usa webhook sem OAuth)
 
 ## Fluxo de Dados
 
@@ -280,6 +340,6 @@ NEXTAUTH_URL="http://localhost:3000"
 
 ## Próximos Passos
 
-**Fase atual**: FASE 7 — WhatsApp: matching avançado + mídia
+**Fase atual**: FASE 9 — WhatsApp: matching avançado + mídia
 
-**Fase 6 concluída** — Google Meet completo (agendamento, gravações, transcrição)
+**Fase 8 concluída** — GoTo Connect completo (webhook, gravações dual-track S3, transcrição com speaker, player sincronizado, badges de resultado, painel de estatísticas)
