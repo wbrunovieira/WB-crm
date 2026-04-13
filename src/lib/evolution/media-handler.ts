@@ -85,10 +85,13 @@ export async function downloadMediaFromEvolution(
     });
 
     const buffer = Buffer.from(result.base64, "base64");
+    const rawFileName = result.fileName || getMediaFileName(data);
+    // .oga é OGG Opus — mesmo formato, só extensão diferente. Transcritor só aceita .ogg
+    const fileName = rawFileName.replace(/\.oga$/i, ".ogg");
     return {
       buffer,
       mimeType: result.mimeType,
-      fileName: result.fileName || getMediaFileName(data),
+      fileName,
     };
   } catch (err) {
     log.warn("Falha ao baixar mídia do Evolution API", {
