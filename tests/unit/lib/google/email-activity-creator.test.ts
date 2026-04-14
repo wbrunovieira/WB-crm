@@ -23,6 +23,9 @@ vi.mock("@/lib/prisma", () => ({
     leadContact: { findFirst: vi.fn() },
     lead: { findFirst: vi.fn() },
     organization: { findFirst: vi.fn() },
+    notification: {
+      create: vi.fn().mockResolvedValue({ id: "notif-1", title: "", summary: "", createdAt: new Date() }),
+    },
   },
 }));
 
@@ -39,6 +42,7 @@ const mockContactFindFirst = vi.mocked(prisma.contact.findFirst);
 const mockLeadContactFindFirst = vi.mocked(prisma.leadContact.findFirst);
 const mockLeadFindFirst = vi.mocked(prisma.lead.findFirst);
 const mockOrgFindFirst = vi.mocked(prisma.organization.findFirst);
+const mockNotificationCreate = vi.mocked(prisma.notification.create);
 
 const OWNER_ID = "user-owner-123";
 
@@ -59,6 +63,7 @@ beforeEach(() => {
   mockLeadContactFindFirst.mockResolvedValue(null);
   mockLeadFindFirst.mockResolvedValue(null);
   mockOrgFindFirst.mockResolvedValue(null);
+  mockNotificationCreate.mockResolvedValue({ id: "notif-1", title: "", summary: "", createdAt: new Date() } as never);
 });
 
 // ---------------------------------------------------------------------------

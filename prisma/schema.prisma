@@ -49,6 +49,9 @@ model User {
   // Notifications
   notifications      Notification[]
 
+  // Funnel goals
+  weeklyGoals        WeeklyGoal[]
+
   // WhatsApp
   whatsappMessages   WhatsAppMessage[]
 
@@ -618,6 +621,9 @@ model Activity {
   gotoTranscriptionJobId2 String?           // Transcription job ID — client track
   gotoTranscriptText      String?           // JSON: TranscriptSegment[] com speaker + timestamps
   gotoCallOutcome         String?           // answered | voicemail | no_answer | busy | rejected | invalid_number | missed | unknown
+  gotoDuration            Int?              // Call duration in seconds (from GoTo webhook)
+  callContactType         String?           // "gatekeeper" | "decisor" — only for type="call"
+  meetingNoShow           Boolean @default(false) // only for type="meeting"
   emailMessageId   String?  @unique // Gmail Message-ID — previne Activity duplicada
   emailThreadId    String?           // Gmail Thread-ID — para agrupar e responder na mesma thread
   emailSubject     String?           // Assunto do e-mail (para busca e exibição)
@@ -1863,4 +1869,19 @@ model GmailTemplate {
 
   @@index([active])
   @@map("gmail_templates")
+}
+
+model WeeklyGoal {
+  id          String   @id @default(cuid())
+  weekStart   DateTime // Monday of the week (UTC midnight)
+  targetSales Int
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([weekStart, ownerId])
+  @@index([ownerId])
+  @@map("weekly_goals")
 }

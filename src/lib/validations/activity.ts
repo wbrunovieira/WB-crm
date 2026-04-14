@@ -38,6 +38,8 @@ export const activitySchema = z.object({
   leadContactIds: z.array(z.string()).optional().nullable(),
   leadId: z.string().optional().nullable(),
   partnerId: z.string().optional().nullable(),
+  callContactType: z.enum(["gatekeeper", "decisor"]).optional().nullable(),
+  meetingNoShow: z.boolean().default(false).optional(),
 });
 
 export type ActivityFormData = z.infer<typeof activitySchema>;

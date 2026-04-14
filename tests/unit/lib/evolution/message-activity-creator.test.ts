@@ -147,6 +147,7 @@ beforeEach(() => {
   prismaMock.whatsAppMessage.create.mockResolvedValue({ id: "wamsg-1" } as any);
   prismaMock.activity.create.mockResolvedValue({ id: "activity-new-1" } as any);
   prismaMock.activity.update.mockResolvedValue({ id: "activity-existing-1" } as any);
+  prismaMock.notification.create.mockResolvedValue({ id: "notif-1", title: "", summary: "", createdAt: new Date() } as any);
 });
 
 // ---------------------------------------------------------------------------

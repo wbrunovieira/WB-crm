@@ -43,6 +43,8 @@ type Activity = {
   contactIds: string | null;
   leadContactIds: string | null;
   leadId: string | null;
+  callContactType: string | null;
+  meetingNoShow: boolean;
 };
 
 type ActivityFormProps = {
@@ -99,6 +101,8 @@ export default function ActivityForm({
     completed: activity?.completed || false,
     dealId: activity?.dealId || searchParams.get("dealId") || "",
     leadId: activity?.leadId || searchParams.get("leadId") || "",
+    callContactType: activity?.callContactType || "gatekeeper",
+    meetingNoShow: activity?.meetingNoShow || false,
   });
 
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>(getInitialContactIds());
@@ -143,6 +147,10 @@ export default function ActivityForm({
         leadContactIds: selectedLeadContactIds.length > 0 ? selectedLeadContactIds : null,
         dealId: formData.dealId || null,
         leadId: formData.leadId || null,
+        callContactType: formData.type === "call"
+          ? (formData.callContactType as "gatekeeper" | "decisor")
+          : null,
+        meetingNoShow: formData.type === "meeting" ? formData.meetingNoShow : false,
       };
 
       if (activity) {
@@ -231,6 +239,40 @@ export default function ActivityForm({
           <option value="linkedin">💼 LinkedIn</option>
         </select>
       </div>
+
+      {/* Tipo de contato — apenas para ligações */}
+      {formData.type === "call" && (
+        <div>
+          <label htmlFor="callContactType" className="block text-sm font-medium text-gray-700">
+            Tipo de contato
+          </label>
+          <select
+            id="callContactType"
+            value={formData.callContactType}
+            onChange={(e) => setFormData({ ...formData, callContactType: e.target.value })}
+            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
+          >
+            <option value="gatekeeper">🚧 Porteiro (Gatekeeper)</option>
+            <option value="decisor">🎯 Decisor</option>
+          </select>
+        </div>
+      )}
+
+      {/* No-show — apenas para reuniões */}
+      {formData.type === "meeting" && (
+        <div className="flex items-center gap-3">
+          <input
+            type="checkbox"
+            id="meetingNoShow"
+            checked={formData.meetingNoShow}
+            onChange={(e) => setFormData({ ...formData, meetingNoShow: e.target.checked })}
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          <label htmlFor="meetingNoShow" className="text-sm font-medium text-gray-700">
+            No-show (reunião não realizada)
+          </label>
+        </div>
+      )}
 
       <div>
         <label

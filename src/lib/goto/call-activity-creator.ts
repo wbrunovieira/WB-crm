@@ -224,6 +224,8 @@ export async function createCallActivity(
       gotoCallId: conversationSpaceId,
       gotoRecordingId: recordingId,
       gotoCallOutcome: outcome,
+      gotoDuration: durationSeconds,
+      callContactType: "gatekeeper", // default; user can update to "decisor" in the UI
       ownerId,
       contactId: matchResult?.contactId ?? null,
       leadId: matchResult?.leadId ?? null,

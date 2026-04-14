@@ -285,6 +285,8 @@ export async function createActivity(data: ActivityFormData) {
       leadContactIds: leadContactIdsJson,
       leadId: validated.leadId,
       partnerId: validated.partnerId,
+      callContactType: validated.callContactType ?? null,
+      meetingNoShow: validated.meetingNoShow ?? false,
       ownerId: session.user.id,
     },
     include: {
@@ -360,6 +362,8 @@ export async function updateActivity(id: string, data: ActivityFormData) {
       leadContactIds: leadContactIdsJson,
       leadId: validated.leadId,
       partnerId: validated.partnerId,
+      callContactType: validated.callContactType ?? null,
+      meetingNoShow: validated.meetingNoShow ?? false,
     },
     include: {
       deal: {

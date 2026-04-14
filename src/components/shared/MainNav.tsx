@@ -19,6 +19,7 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
+  TrendingUp,
 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 
@@ -77,6 +78,11 @@ const navItems = [
     name: "Atividades",
     href: "/activities",
     icon: CheckSquare,
+  },
+  {
+    name: "Funil",
+    href: "/calls",
+    icon: TrendingUp,
   },
   {
     name: "Manager",
