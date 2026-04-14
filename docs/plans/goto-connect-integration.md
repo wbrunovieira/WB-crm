@@ -31,8 +31,8 @@ Integração do GoTo Connect ao WB-CRM para:
 - `cr.v1.read`
 
 **Credenciais produção:**
-- `Client ID`: `GOTO_CLIENT_ID_REDACTED`
-- `Account Key`: `GOTO_ACCOUNT_KEY_REDACTED`
+- `Client ID`: `<ver .env no servidor>`
+- `Account Key`: `<ver .env no servidor>`
 - OAuth Client redirect URI: `http://localhost:3000/api/goto/callback` (token obtido localmente e salvo no servidor)
 
 ---
@@ -69,10 +69,10 @@ GoTo precisa estar configurado como app padrão de chamadas no macOS. Sem essa c
 #### Variáveis de ambiente (`.env` local e `/opt/wb-crm/.env` no servidor)
 
 ```env
-GOTO_CLIENT_ID=GOTO_CLIENT_ID_REDACTED
-GOTO_CLIENT_SECRET=GOTO_CLIENT_SECRET_REDACTED
-GOTO_ACCOUNT_KEY=GOTO_ACCOUNT_KEY_REDACTED
-GOTO_WEBHOOK_SECRET=GOTO_WEBHOOK_SECRET_REDACTED
+GOTO_CLIENT_ID=<your-client-id>
+GOTO_CLIENT_SECRET=<your-client-secret>
+GOTO_ACCOUNT_KEY=<your-account-key>
+GOTO_WEBHOOK_SECRET=<your-webhook-secret>
 GOTO_ACCESS_TOKEN=<renovado automaticamente>
 GOTO_REFRESH_TOKEN=<válido por ~30 dias>
 GOTO_TOKEN_EXPIRES_AT=<unix timestamp>
@@ -557,7 +557,7 @@ tests/integration/api/goto-webhook.test.ts
 
 ```bash
 # Sync manual imediato
-SECRET=GOTO_WEBHOOK_SECRET_REDACTED
+SECRET=<valor do GOTO_WEBHOOK_SECRET>
 curl -s -X POST "https://crm.wbdigitalsolutions.com/api/goto/sync?secret=$SECRET"
 
 # Verificar logs de sync no servidor
@@ -571,7 +571,7 @@ ssh root@45.90.123.190 "docker exec crm_postgres psql -U crm_user -d crm_db -c \
 REFRESH=<valor do GOTO_REFRESH_TOKEN>
 curl -s -X POST "https://authentication.logmeininc.com/oauth/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
-  -u "GOTO_CLIENT_ID_REDACTED:GOTO_CLIENT_SECRET_REDACTED" \
+  -u "$GOTO_CLIENT_ID:$GOTO_CLIENT_SECRET" \
   -d "grant_type=refresh_token&refresh_token=$REFRESH"
 ```
 
