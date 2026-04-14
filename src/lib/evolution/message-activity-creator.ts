@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
 import { matchPhoneToEntity, extractPhoneFromJid } from "./number-matcher";
 import { isDownloadableMedia, processMessageMedia } from "./media-handler";
+import { emitNotification } from "@/lib/event-bus";
 import type { EvolutionWebhookData } from "./types";
 
 const log = logger.child({ context: "evolution-message-creator" });
@@ -174,6 +175,39 @@ export async function processWhatsAppMessage(
     });
 
     activityId = activity.id;
+
+    // Notificação apenas em nova sessão (não a cada mensagem)
+    const entityLink = match.leadId
+      ? `/leads/${match.leadId}`
+      : match.contactId
+        ? `/contacts/${match.contactId}`
+        : match.partnerId
+          ? `/partners/${match.partnerId}`
+          : undefined;
+
+    const senderName = data.pushName || phone;
+
+    const notification = await prisma.notification.create({
+      data: {
+        type: "WHATSAPP_RECEIVED",
+        status: "completed",
+        title: `WhatsApp de ${senderName}`,
+        summary: text?.slice(0, 100) ?? mediaLabel ?? "(mensagem)",
+        payload: entityLink ? JSON.stringify({ link: entityLink }) : null,
+        read: false,
+        userId: ownerId,
+      },
+    });
+
+    emitNotification({
+      id: notification.id,
+      userId: ownerId,
+      type: "WHATSAPP_RECEIVED",
+      title: notification.title,
+      summary: notification.summary,
+      link: entityLink,
+      createdAt: notification.createdAt.toISOString(),
+    });
 
     log.info("Nova sessão WhatsApp criada", {
       activityId,

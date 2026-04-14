@@ -1,5 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { logger } from "@/lib/logger";
+import { emitNotification } from "@/lib/event-bus";
 
 const log = logger.child({ context: "email-activity-creator" });
 
@@ -143,6 +144,37 @@ export async function processIncomingEmail(
       ...(match.leadId ? { leadId: match.leadId } : {}),
       ...(match.organizationId ? { organizationId: match.organizationId } : {}),
     },
+  });
+
+  // 5. Criar Notification no banco e emitir no event bus
+  const entityLink = match.leadId
+    ? `/leads/${match.leadId}`
+    : match.contactId
+      ? `/contacts/${match.contactId}`
+      : match.organizationId
+        ? `/organizations/${match.organizationId}`
+        : undefined;
+
+  const notification = await prisma.notification.create({
+    data: {
+      type: "EMAIL_RECEIVED",
+      status: "completed",
+      title: `E-mail de ${email.fromName || email.from}`,
+      summary: email.subject || "(sem assunto)",
+      payload: entityLink ? JSON.stringify({ link: entityLink }) : null,
+      read: false,
+      userId: ownerId,
+    },
+  });
+
+  emitNotification({
+    id: notification.id,
+    userId: ownerId,
+    type: "EMAIL_RECEIVED",
+    title: notification.title,
+    summary: notification.summary,
+    link: entityLink,
+    createdAt: notification.createdAt.toISOString(),
   });
 
   log.info("Activity criada para e-mail recebido", {
