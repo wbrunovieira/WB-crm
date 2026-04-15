@@ -15,30 +15,45 @@ interface ArchiveLeadButtonProps {
 export function ArchiveLeadButton({ leadId, isArchived }: ArchiveLeadButtonProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showReasonModal, setShowReasonModal] = useState(false);
+  const [reason, setReason] = useState("");
   const { confirm, dialogProps } = useConfirmDialog();
 
   const handleClick = async () => {
-    const action = isArchived ? "desarquivar" : "arquivar";
-    const confirmed = await confirm({
-      title: "Confirmar",
-      message: `Tem certeza que deseja ${action} este lead?`,
-      confirmLabel: isArchived ? "Desarquivar" : "Arquivar",
-      variant: "warning",
-    });
-    if (!confirmed) return;
+    if (isArchived) {
+      const confirmed = await confirm({
+        title: "Desarquivar lead",
+        message: "Tem certeza que deseja desarquivar este lead?",
+        confirmLabel: "Desarquivar",
+        variant: "warning",
+      });
+      if (!confirmed) return;
 
-    setLoading(true);
-    try {
-      if (isArchived) {
+      setLoading(true);
+      try {
         await unarchiveLead(leadId);
         toast.success("Lead desarquivado com sucesso");
-      } else {
-        await archiveLead(leadId);
-        toast.success("Lead arquivado com sucesso");
+        router.refresh();
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Erro ao desarquivar lead");
+      } finally {
+        setLoading(false);
       }
+    } else {
+      setReason("");
+      setShowReasonModal(true);
+    }
+  };
+
+  const handleConfirmArchive = async () => {
+    setShowReasonModal(false);
+    setLoading(true);
+    try {
+      await archiveLead(leadId, reason.trim() || undefined);
+      toast.success("Lead arquivado com sucesso");
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : `Erro ao ${action} lead`);
+      toast.error(error instanceof Error ? error.message : "Erro ao arquivar lead");
     } finally {
       setLoading(false);
     }
@@ -66,6 +81,40 @@ export function ArchiveLeadButton({ leadId, isArchived }: ArchiveLeadButtonProps
       </button>
 
       <ConfirmDialog {...dialogProps} />
+
+      {/* Archive reason modal */}
+      {showReasonModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl">
+            <h2 className="mb-1 text-lg font-semibold text-gray-900">Arquivar lead</h2>
+            <p className="mb-4 text-sm text-gray-500">
+              Opcionalmente informe o motivo pelo qual este lead está sendo arquivado.
+            </p>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Ex: Sem budget, cadência cancelada, fora do ICP..."
+              rows={3}
+              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              autoFocus
+            />
+            <div className="mt-4 flex justify-end gap-3">
+              <button
+                onClick={() => setShowReasonModal(false)}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmArchive}
+                className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white hover:bg-amber-600"
+              >
+                Arquivar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

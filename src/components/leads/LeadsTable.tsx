@@ -8,6 +8,7 @@ import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
 import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 import { BulkApplyCadenceModal } from "@/components/leads/BulkApplyCadenceModal";
+import { BulkArchiveModal } from "@/components/leads/BulkArchiveModal";
 
 type LeadContact = {
   id: string;
@@ -62,6 +63,7 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
   const router = useRouter();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
+  const [showBulkArchiveModal, setShowBulkArchiveModal] = useState(false);
 
   const allSelected = leads.length > 0 && selectedIds.size === leads.length;
 
@@ -99,6 +101,13 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
           >
             <Zap className="h-4 w-4" />
             Aplicar Cadência
+          </button>
+          <button
+            onClick={() => setShowBulkArchiveModal(true)}
+            className="inline-flex items-center gap-2 rounded-md bg-amber-500 px-3 py-1.5 text-sm font-medium text-white hover:bg-amber-600"
+          >
+            <Archive className="h-4 w-4" />
+            Arquivar
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}
@@ -315,6 +324,19 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
           onClose={() => setShowBulkModal(false)}
           onSuccess={() => {
             setShowBulkModal(false);
+            setSelectedIds(new Set());
+            router.refresh();
+          }}
+        />
+      )}
+
+      {/* Bulk Archive Modal */}
+      {showBulkArchiveModal && (
+        <BulkArchiveModal
+          leadIds={Array.from(selectedIds)}
+          onClose={() => setShowBulkArchiveModal(false)}
+          onSuccess={() => {
+            setShowBulkArchiveModal(false);
             setSelectedIds(new Set());
             router.refresh();
           }}

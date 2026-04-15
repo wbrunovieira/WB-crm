@@ -93,8 +93,14 @@ export default async function LeadDetailPage({
                 {statusLabels[lead.status]}
               </span>
               {lead.isArchived && (
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-100 px-3 py-1.5 text-sm font-semibold text-amber-800 border border-amber-200">
-                  Arquivado
+                <span className="inline-flex flex-col rounded-lg bg-amber-100 px-3 py-1.5 border border-amber-200">
+                  <span className="text-sm font-semibold text-amber-800">Arquivado</span>
+                  {lead.archivedAt && (
+                    <span className="text-xs text-amber-700">
+                      em {formatDate(lead.archivedAt)}
+                      {lead.archivedReason && ` · ${lead.archivedReason}`}
+                    </span>
+                  )}
                 </span>
               )}
               {lead.labels && lead.labels.length > 0 && (

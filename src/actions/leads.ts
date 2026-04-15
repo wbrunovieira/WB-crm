@@ -333,7 +333,7 @@ export async function deleteLead(id: string) {
 
 // ============ LEAD ARCHIVE ============
 
-export async function archiveLead(id: string) {
+export async function archiveLead(id: string, reason?: string) {
   await getAuthenticatedSession();
 
   const ownerFilter = await getOwnerOrSharedFilter("lead");
@@ -356,7 +356,11 @@ export async function archiveLead(id: string) {
 
   const updated = await prisma.lead.update({
     where: { id },
-    data: { isArchived: true },
+    data: {
+      isArchived: true,
+      archivedAt: new Date(),
+      archivedReason: reason ?? null,
+    },
   });
 
   revalidatePath("/leads");
@@ -383,12 +387,55 @@ export async function unarchiveLead(id: string) {
 
   const updated = await prisma.lead.update({
     where: { id },
-    data: { isArchived: false },
+    data: { isArchived: false, archivedAt: null, archivedReason: null },
   });
 
   revalidatePath("/leads");
   revalidatePath(`/leads/${id}`);
   return updated;
+}
+
+export async function bulkArchiveLeads(
+  ids: string[],
+  reason?: string
+): Promise<{ archived: number; skipped: number }> {
+  await getAuthenticatedSession();
+
+  if (ids.length === 0) {
+    throw new Error("Nenhum lead selecionado");
+  }
+
+  const ownerFilter = await getOwnerOrSharedFilter("lead");
+
+  // Find only eligible leads: in the requested ids, not archived, not converted
+  const eligibleLeads = await prisma.lead.findMany({
+    where: {
+      id: { in: ids },
+      ...ownerFilter,
+      isArchived: false,
+      convertedAt: null,
+    },
+    select: { id: true },
+  });
+
+  const eligibleIds = eligibleLeads.map((l) => l.id);
+  const skipped = ids.length - eligibleIds.length;
+
+  if (eligibleIds.length === 0) {
+    return { archived: 0, skipped };
+  }
+
+  await prisma.lead.updateMany({
+    where: { id: { in: eligibleIds } },
+    data: {
+      isArchived: true,
+      archivedAt: new Date(),
+      archivedReason: reason ?? null,
+    },
+  });
+
+  revalidatePath("/leads");
+  return { archived: eligibleIds.length, skipped };
 }
 
 // ============ LEAD CONTACT CRUD ============

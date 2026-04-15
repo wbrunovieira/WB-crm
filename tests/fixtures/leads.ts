@@ -47,6 +47,8 @@ export const mockLead: Lead = {
   radius: 5000,
   status: 'qualified',
   isArchived: false,
+  archivedAt: null,
+  archivedReason: null,
   convertedAt: null,
   convertedToOrganizationId: null,
   languages: null,
@@ -64,6 +66,8 @@ export const mockArchivedLead: Lead = {
   id: 'lead-archived-1',
   businessName: 'Archived Company LTDA',
   isArchived: true,
+  archivedAt: new Date('2026-03-01'),
+  archivedReason: 'Cadência cancelada Q1 2026',
   status: 'contacted',
 };
 
