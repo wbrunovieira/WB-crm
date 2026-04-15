@@ -70,6 +70,9 @@ model User {
   // Disqualification reasons (custom)
   disqualificationReasons DisqualificationReason[]
 
+  // Lead dropdown options (custom)
+  leadDropdownOptions LeadDropdownOption[]
+
   @@map("users")
 }
 
@@ -202,6 +205,14 @@ model Lead {
   fieldsFilled  Int?
   category      String?
   radius        Int?
+
+  // Presença Digital
+  socialMedia   String?   // parado_inexistente, sem_frequencia, artes_frequentes, artes_videos_frequentes, or custom
+  metaAds       String?
+  googleAds     String?
+
+  // Prioridade (1-5 estrelas — desempate em ordenação de atividades)
+  starRating    Int?
 
   // Coordenadas geográficas (Google Places)
   latitude      Float?
@@ -1828,6 +1839,21 @@ model DisqualificationReason {
   @@unique([name, ownerId])
   @@index([ownerId])
   @@map("disqualification_reasons")
+}
+
+// LeadDropdownOption - custom options for social media, meta ads, google ads fields
+model LeadDropdownOption {
+  id        String   @id @default(cuid())
+  name      String
+  category  String   // social_media | meta_ads | google_ads
+  ownerId   String
+  createdAt DateTime @default(now())
+
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([name, category, ownerId])
+  @@index([category, ownerId])
+  @@map("lead_dropdown_options")
 }
 
 // LeadCadenceActivity - links generated activities to cadence steps

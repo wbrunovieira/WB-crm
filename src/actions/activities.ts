@@ -32,9 +32,11 @@ export async function getActivities(filters?: {
     switch (filters.sortBy) {
       case "dueDate-asc":
         orderByClause.push({ dueDate: { sort: "asc", nulls: "last" } });
+        orderByClause.push({ lead: { starRating: { sort: "desc", nulls: "last" } } } as never);
         break;
       case "dueDate-desc":
         orderByClause.push({ dueDate: { sort: "desc", nulls: "last" } });
+        orderByClause.push({ lead: { starRating: { sort: "desc", nulls: "last" } } } as never);
         break;
       case "created-asc":
         orderByClause.push({ createdAt: "asc" });
@@ -50,6 +52,7 @@ export async function getActivities(filters?: {
         orderByClause.push({ skippedAt: { sort: "asc", nulls: "first" } });
         orderByClause.push({ completed: "asc" });
         orderByClause.push({ dueDate: { sort: "asc", nulls: "last" } });
+        orderByClause.push({ lead: { starRating: { sort: "desc", nulls: "last" } } } as never);
         orderByClause.push({ createdAt: "desc" });
     }
   } else {
@@ -58,6 +61,7 @@ export async function getActivities(filters?: {
     orderByClause.push({ skippedAt: { sort: "asc", nulls: "first" } });
     orderByClause.push({ completed: "asc" });
     orderByClause.push({ dueDate: { sort: "asc", nulls: "last" } });
+    orderByClause.push({ lead: { starRating: { sort: "desc", nulls: "last" } } } as never);
     orderByClause.push({ createdAt: "desc" });
   }
 
@@ -135,6 +139,7 @@ export async function getActivities(filters?: {
           id: true,
           businessName: true,
           isArchived: true,
+          starRating: true,
         },
       },
       partner: {

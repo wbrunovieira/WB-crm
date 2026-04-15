@@ -67,6 +67,14 @@ export const leadSchema = z.object({
   category: z.string().optional(),
   radius: z.number().int().optional(),
 
+  // Presença Digital
+  socialMedia: z.string().optional(),
+  metaAds: z.string().optional(),
+  googleAds: z.string().optional(),
+
+  // Classificação por estrelas (prioridade)
+  starRating: z.number().int().min(1).max(5).optional(),
+
   // Status
   status: z.enum(["new", "contacted", "qualified", "disqualified"]).optional(),
 

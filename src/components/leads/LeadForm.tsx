@@ -15,6 +15,8 @@ import { countries } from "@/lib/lists/countries";
 import { brazilianStates } from "@/lib/lists/brazilian-states";
 import { getActiveICPsForSelect } from "@/actions/icps";
 import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
+import { PresenceSelectField } from "@/components/leads/PresenceSelectField";
+import { StarRatingInput } from "@/components/leads/StarRatingInput";
 
 type Lead = {
   id?: string;
@@ -62,6 +64,10 @@ type Lead = {
   status?: string;
   languages?: string | null;
   labels?: { id: string; name: string; color: string }[];
+  socialMedia?: string | null;
+  metaAds?: string | null;
+  googleAds?: string | null;
+  starRating?: number | null;
 };
 
 type LeadFormProps = {
@@ -107,6 +113,10 @@ export function LeadForm({ lead }: LeadFormProps) {
     }
     return [];
   });
+  const [socialMedia, setSocialMedia] = useState<string>(lead?.socialMedia ?? "");
+  const [metaAds, setMetaAds] = useState<string>(lead?.metaAds ?? "");
+  const [googleAds, setGoogleAds] = useState<string>(lead?.googleAds ?? "");
+  const [starRating, setStarRating] = useState<number | null>(lead?.starRating ?? null);
 
   // Load available ICPs and current ICP (for both new and edit)
   useEffect(() => {
@@ -208,6 +218,10 @@ export function LeadForm({ lead }: LeadFormProps) {
         : undefined,
       status: (getString("status") || "new") as "new" | "contacted" | "qualified" | "disqualified",
       languages: leadLanguages.length > 0 ? leadLanguages : null,
+      socialMedia: socialMedia || undefined,
+      metaAds: metaAds || undefined,
+      googleAds: googleAds || undefined,
+      starRating: starRating ?? undefined,
     };
 
     try {
@@ -369,6 +383,43 @@ export function LeadForm({ lead }: LeadFormProps) {
             <p className="mt-1 text-xs text-gray-400">
               Vincule o lead a um ICP para melhor segmentação
             </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Presença Digital */}
+      <div className="rounded-lg bg-[#1a0022] p-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-200">
+          Presença Digital
+        </h2>
+        <div className="grid gap-6 md:grid-cols-2">
+          <PresenceSelectField
+            label="Social Media"
+            name="socialMedia"
+            category="social_media"
+            value={socialMedia}
+            onChange={setSocialMedia}
+          />
+          <PresenceSelectField
+            label="Meta Ads"
+            name="metaAds"
+            category="meta_ads"
+            value={metaAds}
+            onChange={setMetaAds}
+          />
+          <PresenceSelectField
+            label="Google Ads"
+            name="googleAds"
+            category="google_ads"
+            value={googleAds}
+            onChange={setGoogleAds}
+          />
+          <div>
+            <StarRatingInput
+              label="Classificação (prioridade)"
+              value={starRating}
+              onChange={setStarRating}
+            />
           </div>
         </div>
       </div>
