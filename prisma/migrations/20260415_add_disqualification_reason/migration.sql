@@ -18,8 +18,14 @@ CREATE UNIQUE INDEX IF NOT EXISTS "disqualification_reasons_name_ownerId_key"
 CREATE INDEX IF NOT EXISTS "disqualification_reasons_ownerId_idx"
   ON "disqualification_reasons"("ownerId");
 
--- Foreign key
-ALTER TABLE "disqualification_reasons"
-  ADD CONSTRAINT "disqualification_reasons_ownerId_fkey"
-  FOREIGN KEY ("ownerId") REFERENCES "users"("id")
-  ON DELETE CASCADE ON UPDATE CASCADE;
+-- Foreign key (idempotent)
+DO $$ BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'disqualification_reasons_ownerId_fkey'
+  ) THEN
+    ALTER TABLE "disqualification_reasons"
+      ADD CONSTRAINT "disqualification_reasons_ownerId_fkey"
+      FOREIGN KEY ("ownerId") REFERENCES "users"("id")
+      ON DELETE CASCADE ON UPDATE CASCADE;
+  END IF;
+END $$;

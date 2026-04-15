@@ -216,6 +216,9 @@ model Lead {
   isArchived     Boolean   @default(false)
   archivedAt     DateTime?
   archivedReason String?
+
+  // Prospect flag: true = imported from Google, awaiting manual qualification
+  isProspect     Boolean   @default(false)
   convertedAt    DateTime?
   convertedToOrganizationId  String?  @unique // Lead vira 1 Organization
 
@@ -283,6 +286,7 @@ model Lead {
   @@index([status])
   @@index([quality])
   @@index([isArchived])
+  @@index([isProspect])
   @@index([convertedAt])
   @@index([referredByPartnerId])
   @@index([primaryCNAEId])

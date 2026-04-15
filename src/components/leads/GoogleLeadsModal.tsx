@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { X, Search, Loader2, CheckCircle, AlertCircle, MapPin } from "lucide-react";
-import { importGoogleLeads } from "@/actions/google-leads";
+import { X, Search, Loader2, CheckCircle, AlertCircle, MapPin, ChevronDown, ChevronUp } from "lucide-react";
+import { importGoogleLeads, type ExcludeCriteria } from "@/actions/google-leads";
 import { getSectorsForSelect } from "@/actions/sectors";
 import { toast } from "sonner";
 
@@ -19,8 +19,22 @@ const COUNTRY_OPTIONS = [
   { value: "MX", label: "México" },
 ];
 
-type Sector = { id: string; name: string; slug: string };
+const EXCLUDE_OPTIONS: { key: keyof ExcludeCriteria; label: string }[] = [
+  { key: "withoutPhone",        label: "Sem telefone" },
+  { key: "withoutWebsite",      label: "Sem website" },
+  { key: "withoutAddress",      label: "Sem endereço" },
+  { key: "withoutCity",         label: "Sem cidade" },
+  { key: "withoutState",        label: "Sem estado" },
+  { key: "withoutZipCode",      label: "Sem CEP" },
+  { key: "withoutRating",       label: "Sem avaliação no Google" },
+  { key: "withoutUserRatings",  label: "Sem número de avaliações" },
+  { key: "withoutDescription",  label: "Sem descrição" },
+  { key: "withoutCoordinates",  label: "Sem coordenadas" },
+  { key: "withoutPriceLevel",   label: "Sem nível de preço" },
+  { key: "onlyOperational",     label: "Apenas negócios operacionais" },
+];
 
+type Sector = { id: string; name: string; slug: string };
 type ImportStatus = "idle" | "loading" | "success" | "exhausted" | "rate_limited" | "error";
 
 export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) {
@@ -33,6 +47,8 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
   const [status, setStatus] = useState<ImportStatus>("idle");
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
   const [retryCountdown, setRetryCountdown] = useState(0);
+  const [excludeCriteria, setExcludeCriteria] = useState<ExcludeCriteria>({});
+  const [showFilters, setShowFilters] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
@@ -59,6 +75,12 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
     }, 1000);
   }
 
+  function toggleCriteria(key: keyof ExcludeCriteria) {
+    setExcludeCriteria((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
+
+  const activeFiltersCount = Object.values(excludeCriteria).filter(Boolean).length;
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!typeKeyword.trim()) {
@@ -79,6 +101,7 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
       zipCode: zipCode.trim() || undefined,
       typeKeyword: typeKeyword.trim(),
       requestedCount,
+      excludeCriteria: activeFiltersCount > 0 ? excludeCriteria : undefined,
     });
 
     if (res.status === "rate_limited") {
@@ -106,12 +129,12 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl">
+      <div className="relative w-full max-w-lg rounded-xl bg-white p-6 shadow-2xl max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="mb-5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
-            <h2 className="text-lg font-semibold text-gray-900">Buscar Leads no Google</h2>
+            <h2 className="text-lg font-semibold text-gray-900">Buscar Prospectos no Google</h2>
           </div>
           <button
             onClick={onClose}
@@ -140,17 +163,22 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
               <div>
                 <p className="font-semibold text-gray-900">
                   {result.imported > 0
-                    ? `${result.imported} lead${result.imported > 1 ? "s" : ""} importado${result.imported > 1 ? "s" : ""}`
-                    : "Nenhum lead novo encontrado"}
+                    ? `${result.imported} prospecto${result.imported > 1 ? "s" : ""} adicionado${result.imported > 1 ? "s" : ""} para análise`
+                    : "Nenhum prospecto novo encontrado"}
                 </p>
                 {result.skipped > 0 && (
                   <p className="text-sm text-gray-600">
-                    {result.skipped} já existia{result.skipped > 1 ? "m" : ""} no sistema
+                    {result.skipped} ignorado{result.skipped > 1 ? "s" : ""} (já existem ou não atenderam os critérios)
                   </p>
                 )}
                 {status === "exhausted" && (
                   <p className="mt-1 text-sm text-amber-700">
                     Google não tem mais resultados para esta busca.
+                  </p>
+                )}
+                {result.imported > 0 && (
+                  <p className="mt-1 text-sm text-gray-500">
+                    Acesse <strong>Prospectos</strong> no menu para analisar e qualificar.
                   </p>
                 )}
               </div>
@@ -180,7 +208,7 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
           {/* Quantidade */}
           <div>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
-              Quantos leads buscar
+              Quantos prospectos buscar
             </label>
             <select
               value={requestedCount}
@@ -190,7 +218,7 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
             >
               {[5, 10, 20, 30, 50].map((n) => (
                 <option key={n} value={n}>
-                  {n} leads
+                  {n} prospectos
                 </option>
               ))}
             </select>
@@ -254,7 +282,6 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
               disabled={isLoading || isRateLimited}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
-            {/* Sugestões de setores cadastrados */}
             {sectors.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {sectors.map((s) => (
@@ -272,6 +299,55 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
                     {s.name}
                   </button>
                 ))}
+              </div>
+            )}
+          </div>
+
+          {/* Critérios de Exclusão */}
+          <div className="rounded-lg border border-gray-200">
+            <button
+              type="button"
+              onClick={() => setShowFilters((v) => !v)}
+              disabled={isLoading || isRateLimited}
+              className="flex w-full items-center justify-between px-4 py-3 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg"
+            >
+              <span className="flex items-center gap-2">
+                Critérios de exclusão
+                {activeFiltersCount > 0 && (
+                  <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                    {activeFiltersCount}
+                  </span>
+                )}
+              </span>
+              {showFilters ? (
+                <ChevronUp className="h-4 w-4 text-gray-400" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-gray-400" />
+              )}
+            </button>
+
+            {showFilters && (
+              <div className="border-t border-gray-200 px-4 pb-4 pt-3">
+                <p className="mb-3 text-xs text-gray-500">
+                  Desconsiderar prospectos que não possuam:
+                </p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-2">
+                  {EXCLUDE_OPTIONS.map(({ key, label }) => (
+                    <label
+                      key={key}
+                      className="flex cursor-pointer items-center gap-2 text-sm text-gray-700"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={!!excludeCriteria[key]}
+                        onChange={() => toggleCriteria(key)}
+                        disabled={isLoading || isRateLimited}
+                        className="h-4 w-4 rounded accent-primary"
+                      />
+                      {label}
+                    </label>
+                  ))}
+                </div>
               </div>
             )}
           </div>
@@ -299,7 +375,7 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
               ) : (
                 <>
                   <Search className="h-4 w-4" />
-                  {result ? "Buscar mais" : "Buscar leads"}
+                  {result ? "Buscar mais" : "Buscar prospectos"}
                 </>
               )}
             </button>

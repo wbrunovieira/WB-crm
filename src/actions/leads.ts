@@ -70,6 +70,7 @@ export async function getLeads(filters?: {
     where: {
       ...ownerFilter,
       ...archiveFilter,
+      isProspect: false,
       ...(searchConditions.length === 1 ? searchConditions[0] : {}),
       ...(searchConditions.length > 1 ? { AND: searchConditions } : {}),
       ...(filters?.status && { status: filters.status }),
@@ -118,6 +119,76 @@ export async function getLeads(filters?: {
   });
 
   return leads;
+}
+
+export async function getProspects(filters?: {
+  search?: string;
+  owner?: string;
+}) {
+  const ownerFilter = await getOwnerOrSharedFilter("lead", filters?.owner);
+
+  const searchConditions: Record<string, unknown>[] = [];
+  if (filters?.search) {
+    searchConditions.push({
+      OR: [
+        { businessName: { contains: filters.search, mode: "insensitive" as const } },
+        { city: { contains: filters.search, mode: "insensitive" as const } },
+        { description: { contains: filters.search, mode: "insensitive" as const } },
+        { categories: { contains: filters.search, mode: "insensitive" as const } },
+      ],
+    });
+  }
+
+  return prisma.lead.findMany({
+    where: {
+      ...ownerFilter,
+      isProspect: true,
+      isArchived: false,
+      ...(searchConditions.length > 0 ? searchConditions[0] : {}),
+    },
+    select: {
+      id: true,
+      businessName: true,
+      city: true,
+      state: true,
+      country: true,
+      phone: true,
+      website: true,
+      rating: true,
+      userRatingsTotal: true,
+      categories: true,
+      businessStatus: true,
+      description: true,
+      googleMapsUrl: true,
+      source: true,
+      searchTerm: true,
+      createdAt: true,
+      owner: { select: { id: true, name: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function qualifyProspect(id: string) {
+  const session = await getAuthenticatedSession();
+  const ownerFilter = await getOwnerOrSharedFilter("lead");
+
+  const prospect = await prisma.lead.findFirst({
+    where: { id, isProspect: true, ...ownerFilter },
+    select: { id: true, ownerId: true },
+  });
+
+  if (!prospect) throw new Error("Prospecto não encontrado");
+
+  const lead = await prisma.lead.update({
+    where: { id },
+    data: { isProspect: false, status: "new" },
+  });
+
+  void session;
+  revalidatePath("/leads");
+  revalidatePath("/leads/prospects");
+  return lead;
 }
 
 export async function getLeadById(id: string) {

@@ -6,12 +6,45 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { searchPlaces, PlacesRateLimitError } from "@/lib/google/places";
 
+export interface ExcludeCriteria {
+  withoutPhone?: boolean;
+  withoutWebsite?: boolean;
+  withoutAddress?: boolean;
+  withoutCity?: boolean;
+  withoutState?: boolean;
+  withoutZipCode?: boolean;
+  withoutRating?: boolean;
+  withoutUserRatings?: boolean;
+  withoutDescription?: boolean;
+  withoutCoordinates?: boolean;
+  withoutPriceLevel?: boolean;
+  onlyOperational?: boolean;
+}
+
 export interface ImportGoogleLeadsParams {
   country: string;
   city?: string;
   zipCode?: string;
   typeKeyword: string;
   requestedCount: number;
+  excludeCriteria?: ExcludeCriteria;
+}
+
+function passesExcludeCriteria(place: { phone?: string | null; website?: string | null; address?: string | null; city?: string | null; state?: string | null; zipCode?: string | null; rating?: number | null; userRatingCount?: number | null; description?: string | null; latitude?: number | null; priceLevel?: number | null; businessStatus?: string | null }, criteria?: ExcludeCriteria): boolean {
+  if (!criteria) return true;
+  if (criteria.withoutPhone && !place.phone) return false;
+  if (criteria.withoutWebsite && !place.website) return false;
+  if (criteria.withoutAddress && !place.address) return false;
+  if (criteria.withoutCity && !place.city) return false;
+  if (criteria.withoutState && !place.state) return false;
+  if (criteria.withoutZipCode && !place.zipCode) return false;
+  if (criteria.withoutRating && !place.rating) return false;
+  if (criteria.withoutUserRatings && !place.userRatingCount) return false;
+  if (criteria.withoutDescription && !place.description) return false;
+  if (criteria.withoutCoordinates && !place.latitude) return false;
+  if (criteria.withoutPriceLevel && place.priceLevel == null) return false;
+  if (criteria.onlyOperational && place.businessStatus !== "OPERATIONAL") return false;
+  return true;
 }
 
 export interface ImportGoogleLeadsResult {
@@ -98,7 +131,13 @@ export async function importGoogleLeads(
         newlySeenIds.push(place.placeId);
         fetchedPlaceIds.push(place.placeId);
 
-        // 2. Já existe Lead com este googleId (busca global, sem filtro de owner)?
+        // 2. Aplica critérios de exclusão
+        if (!passesExcludeCriteria(place, params.excludeCriteria)) {
+          skipped++;
+          continue;
+        }
+
+        // 3. Já existe Lead com este googleId (busca global, sem filtro de owner)?
         const existing = await prisma.lead.findFirst({
           where: { googleId: place.placeId },
           select: { id: true },
@@ -109,7 +148,7 @@ export async function importGoogleLeads(
           continue;
         }
 
-        // 3. Cria o Lead
+        // 4. Cria como Prospect (pré-cadastro para análise)
         await prisma.lead.create({
           data: {
             googleId: place.placeId,
@@ -132,6 +171,7 @@ export async function importGoogleLeads(
             googleMapsUrl: place.googleMapsUrl,
             source: "google_places",
             searchTerm: searchQuery,
+            isProspect: true,
             ownerId,
             googlePlacesSearchId: searchProfile.id,
           },
@@ -157,6 +197,7 @@ export async function importGoogleLeads(
 
     await updateProfile(searchProfile.id, fetchedPlaceIds, newlySeenIds, imported, skipped);
     revalidatePath("/leads");
+    revalidatePath("/leads/prospects");
     return { success: true, imported, skipped, status: "complete" };
   } catch (err) {
     // Salva progresso mesmo em caso de erro

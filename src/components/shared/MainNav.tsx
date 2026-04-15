@@ -20,6 +20,7 @@ import {
   ChevronLeft,
   ChevronRight,
   TrendingUp,
+  ScanSearch,
 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 
@@ -37,6 +38,11 @@ const navItems = [
     name: "Leads",
     href: "/leads",
     icon: Users,
+  },
+  {
+    name: "Prospectos",
+    href: "/leads/prospects",
+    icon: ScanSearch,
   },
   {
     name: "Contatos",
@@ -140,6 +146,10 @@ export function MainNav({ userRole: role }: MainNavProps) {
     // Admin matches any /admin path except /admin/manager
     if (href === "/admin") {
       return pathname.startsWith("/admin") && pathname !== "/admin/manager";
+    }
+    // /leads should not match /leads/prospects (which has its own nav item)
+    if (href === "/leads") {
+      return pathname.startsWith("/leads") && !pathname.startsWith("/leads/prospects");
     }
     return pathname.startsWith(href);
   };
