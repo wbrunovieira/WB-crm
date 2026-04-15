@@ -64,6 +64,9 @@ model User {
   // Meetings
   meetings           Meeting[]
 
+  // Google Places Searches
+  googlePlacesSearches GooglePlacesSearch[]
+
   @@map("users")
 }
 
@@ -197,6 +200,14 @@ model Lead {
   category      String?
   radius        Int?
 
+  // Coordenadas geográficas (Google Places)
+  latitude      Float?
+  longitude     Float?
+  googleMapsUrl String?
+
+  // Sessão de busca do Google Places
+  googlePlacesSearchId String?
+
   // Status e Conversão
   status        String   @default("new") // new, contacted, qualified, disqualified
   isArchived     Boolean   @default(false)
@@ -262,6 +273,9 @@ model Lead {
   // Meetings
   meetings            Meeting[]
 
+  // Google Places Search session
+  googlePlacesSearch  GooglePlacesSearch? @relation(fields: [googlePlacesSearchId], references: [id], onDelete: SetNull)
+
   @@index([ownerId])
   @@index([status])
   @@index([quality])
@@ -269,8 +283,33 @@ model Lead {
   @@index([convertedAt])
   @@index([referredByPartnerId])
   @@index([primaryCNAEId])
+  @@index([googlePlacesSearchId])
   @@index([inOperationsAt])
   @@map("leads")
+}
+
+model GooglePlacesSearch {
+  id              String    @id @default(cuid())
+  ownerId         String
+  country         String    @default("BR")
+  city            String?
+  zipCode         String?
+  typeKeyword     String    // Tipo de negócio (ex: "restaurante", "hospital")
+  searchQuery     String    // Query completa enviada ao Google
+  fetchedPlaceIds String    @default("[]") // JSON: place_ids já vistos nesta busca
+  totalFetched    Int       @default(0)   // Total de place_ids já vistos
+  totalImported   Int       @default(0)   // Total de Leads criados por esta busca
+  status          String    @default("active") // active | exhausted | rate_limited
+  lastFetchedAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  owner  User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  leads  Lead[]
+
+  @@unique([ownerId, country, city, zipCode, typeKeyword])
+  @@index([ownerId])
+  @@map("google_places_searches")
 }
 
 model LeadContact {

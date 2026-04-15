@@ -53,6 +53,12 @@ export const leadSchema = z.object({
   primaryCNAEId: z.string().optional(),
   internationalActivity: z.string().optional(),
 
+  // Coordenadas e Maps
+  latitude: z.number().optional(),
+  longitude: z.number().optional(),
+  googleMapsUrl: z.string().optional(),
+  googlePlacesSearchId: z.string().optional(),
+
   // Metadados da Busca
   source: z.string().optional(),
   quality: z.enum(["cold", "warm", "hot"]).optional(),

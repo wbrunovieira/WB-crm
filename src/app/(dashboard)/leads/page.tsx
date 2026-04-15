@@ -6,6 +6,7 @@ import { LeadsFilters } from "@/components/leads/LeadsFilters";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { AgentLeadGenerationButton } from "@/components/leads/AgentLeadGenerationButton";
 import { LeadResearchNotifications } from "@/components/leads/LeadResearchNotifications";
+import { GoogleLeadsButton } from "@/components/leads/GoogleLeadsButton";
 import { LeadsTable } from "@/components/leads/LeadsTable";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -52,6 +53,7 @@ export default async function LeadsPage({
           </p>
         </div>
         <div className="flex items-center gap-3">
+          <GoogleLeadsButton />
           <AgentLeadGenerationButton icps={icps} />
           <Link
             href="/leads/new"
