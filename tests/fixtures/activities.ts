@@ -38,6 +38,13 @@ export const mockActivity: Activity = {
   emailFromAddress: null,
   emailFromName: null,
   emailReplied: false,
+  emailTrackingToken: null,
+  emailOpenCount: 0,
+  emailOpenedAt: null,
+  emailLastOpenedAt: null,
+  emailLinkClickCount: 0,
+  emailLinkClickedAt: null,
+  emailLastLinkClickedAt: null,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
 };

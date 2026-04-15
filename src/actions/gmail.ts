@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { sendEmail } from "@/lib/google/gmail";
+import { generateTrackingToken, injectTracking } from "@/lib/email-tracking";
 import { logger } from "@/lib/logger";
 
 const log = logger.child({ context: "gmail-action" });
@@ -52,6 +53,10 @@ export async function sendGmailMessage(input: SendGmailInput): Promise<SendGmail
     }
     const validated = parsed.data;
 
+    const trackingToken = generateTrackingToken();
+    const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+    const trackedHtml = injectTracking(validated.html, trackingToken, baseUrl);
+
     let messageId: string;
     let threadId: string;
 
@@ -59,7 +64,7 @@ export async function sendGmailMessage(input: SendGmailInput): Promise<SendGmail
       const result = await sendEmail({
         to: validated.to,
         subject: validated.subject,
-        html: validated.html,
+        html: trackedHtml,
         threadId: validated.threadId,
         attachments: validated.attachments,
       });
@@ -99,6 +104,7 @@ export async function sendGmailMessage(input: SendGmailInput): Promise<SendGmail
         emailMessageId: messageId,
         emailThreadId: threadId,
         emailSubject: validated.subject,
+        emailTrackingToken: trackingToken,
         completed: true,
         completedAt: new Date(),
         ownerId: session.user.id,

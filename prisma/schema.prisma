@@ -643,6 +643,15 @@ model Activity {
   emailFromName    String?           // Nome do remetente
   emailReplied     Boolean  @default(false) // false = aguardando resposta; true = já respondido
 
+  // Email tracking — abertura (pixel) e clique em links
+  emailTrackingToken     String?   @unique      // Token único por e-mail enviado
+  emailOpenCount         Int       @default(0)  // Total de aberturas confirmadas (sem MPP/proxy)
+  emailOpenedAt          DateTime?              // Primeira abertura confirmada
+  emailLastOpenedAt      DateTime?              // Última abertura confirmada
+  emailLinkClickCount    Int       @default(0)  // Total de cliques em links rastreados
+  emailLinkClickedAt     DateTime?              // Primeiro clique em link
+  emailLastLinkClickedAt DateTime?              // Último clique em link
+
   whatsappMessages WhatsAppMessage[]
 
   @@index([dueDate])

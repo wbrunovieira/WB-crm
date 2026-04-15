@@ -108,7 +108,8 @@ describe("sendGmailMessage — envio", () => {
       expect.objectContaining({
         to: "cliente@example.com",
         subject: "Proposta WB Digital",
-        html: "<p>Olá! Segue a proposta.</p>",
+        // HTML agora contém pixel de tracking injetado
+        html: expect.stringContaining("<p>Olá! Segue a proposta.</p>"),
       })
     );
   });
@@ -219,5 +220,47 @@ describe("sendGmailMessage — reply com threadId (Phase 2a/2b)", () => {
     await sendGmailMessage(VALID_INPUT); // sem threadId
 
     expect(mockActivityUpdateMany).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe("sendGmailMessage — tracking de abertura e clique", () => {
+  it("Activity criada contém emailTrackingToken único", async () => {
+    await sendGmailMessage(VALID_INPUT);
+
+    const call = mockActivityCreate.mock.calls[0][0];
+    expect(call.data.emailTrackingToken).toBeDefined();
+    expect(typeof call.data.emailTrackingToken).toBe("string");
+    expect(call.data.emailTrackingToken.length).toBeGreaterThan(0);
+  });
+
+  it("HTML enviado contém pixel de tracking com o token", async () => {
+    await sendGmailMessage(VALID_INPUT);
+
+    const activityCall = mockActivityCreate.mock.calls[0][0];
+    const token = activityCall.data.emailTrackingToken as string;
+
+    const sendEmailCall = mockSendEmail.mock.calls[0][0];
+    expect(sendEmailCall.html).toContain(`/api/track/open/${token}`);
+  });
+
+  it("HTML enviado envolve links existentes com URL de tracking", async () => {
+    await sendGmailMessage({
+      ...VALID_INPUT,
+      html: '<p>Acesse <a href="https://example.com/proposta">aqui</a></p>',
+    });
+
+    const sendEmailCall = mockSendEmail.mock.calls[0][0];
+    expect(sendEmailCall.html).toContain("/api/track/click/");
+    expect(sendEmailCall.html).toContain("https%3A%2F%2Fexample.com%2Fproposta");
+  });
+
+  it("dois envios geram tokens diferentes", async () => {
+    await sendGmailMessage(VALID_INPUT);
+    await sendGmailMessage(VALID_INPUT);
+
+    const token1 = mockActivityCreate.mock.calls[0][0].data.emailTrackingToken;
+    const token2 = mockActivityCreate.mock.calls[1][0].data.emailTrackingToken;
+    expect(token1).not.toBe(token2);
   });
 });
