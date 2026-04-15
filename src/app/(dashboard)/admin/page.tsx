@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package, Briefcase, Code, Database, Target, Zap, MessageSquare, Mail, FileText, ArrowRightLeft } from "lucide-react";
+import { Package, Briefcase, Code, Database, Target, Zap, MessageSquare, Mail, FileText, ArrowRightLeft, Building2 } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -89,6 +89,26 @@ export default function AdminPage() {
               </h3>
               <p className="mt-1 text-sm text-gray-600">
                 Gerencie perfis tecnológicos (linguagens, hosting, DB, ERP, CRM)
+              </p>
+            </div>
+          </div>
+        </Link>
+
+        {/* Sectors Card */}
+        <Link
+          href="/admin/sectors"
+          className="group block rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-all hover:border-primary"
+        >
+          <div className="flex items-center gap-4">
+            <div className="rounded-lg bg-purple-100 p-3 group-hover:bg-primary group-hover:text-white transition-colors">
+              <Building2 className="h-6 w-6 text-primary group-hover:text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary">
+                Setores
+              </h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Inteligência de mercado por setor para prospecção
               </p>
             </div>
           </div>
