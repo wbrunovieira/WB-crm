@@ -10,6 +10,7 @@ import { NextRequest } from "next/server";
 
 vi.mock("@/lib/goto/s3-recording", () => ({
   findRecordingKey: vi.fn(),
+  findSiblingRecordingKey: vi.fn(),
   downloadRecordingFromS3: vi.fn(),
 }));
 vi.mock("@/lib/transcriptor", () => ({
@@ -18,7 +19,7 @@ vi.mock("@/lib/transcriptor", () => ({
   getTranscriptionResult: vi.fn(),
 }));
 
-import { findRecordingKey, downloadRecordingFromS3 } from "@/lib/goto/s3-recording";
+import { findRecordingKey, findSiblingRecordingKey, downloadRecordingFromS3 } from "@/lib/goto/s3-recording";
 import {
   submitAudioForTranscription,
   getTranscriptionStatus,
@@ -27,6 +28,7 @@ import {
 import { prismaMock } from "../../setup";
 
 const mockFindKey = vi.mocked(findRecordingKey);
+const mockFindSibling = vi.mocked(findSiblingRecordingKey);
 const mockDownload = vi.mocked(downloadRecordingFromS3);
 const mockSubmit = vi.mocked(submitAudioForTranscription);
 const mockStatus = vi.mocked(getTranscriptionStatus);
@@ -44,6 +46,7 @@ beforeEach(() => {
   process.env.AWS_S3_GOTO_BUCKET = "wb-crm-goto-recordings";
 
   mockFindKey.mockResolvedValue("2026/04/12/timestamp~callId~phone~phone~rec-abc.mp3");
+  mockFindSibling.mockResolvedValue(null); // sem track do cliente por padrão
   mockDownload.mockResolvedValue({ buffer: Buffer.from("audio"), contentType: "audio/mpeg" });
   mockSubmit.mockResolvedValue({ jobId: "job-abc", status: "pending" });
 });
@@ -127,9 +130,11 @@ describe("Pass 2 — poll transcription jobs", () => {
       text: "Olá, vamos falar sobre o contrato?",
       language: "pt",
       durationSeconds: 65,
-      segments: [],
+      segments: [{ start: 0, end: 4.5, text: "Olá, vamos falar sobre o contrato?" }],
     });
     prismaMock.activity.update.mockResolvedValue({} as never);
+    // getAgentName lookup
+    prismaMock.user.findUnique.mockResolvedValue({ name: "Bruno" } as never);
 
     const { GET } = await import("@/app/api/goto/check-recordings/route");
     const res = await GET(makeRequest());
@@ -139,7 +144,8 @@ describe("Pass 2 — poll transcription jobs", () => {
       expect.objectContaining({
         where: { id: "act-2" },
         data: expect.objectContaining({
-          gotoTranscriptText: "Olá, vamos falar sobre o contrato?",
+          // implementação salva JSON de segmentos com speaker attribution
+          gotoTranscriptText: expect.stringContaining("Olá, vamos falar sobre o contrato?"),
           gotoTranscriptionJobId: null,
         }),
       })
