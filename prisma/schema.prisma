@@ -67,6 +67,9 @@ model User {
   // Google Places Searches
   googlePlacesSearches GooglePlacesSearch[]
 
+  // Disqualification reasons (custom)
+  disqualificationReasons DisqualificationReason[]
+
   @@map("users")
 }
 
@@ -1788,6 +1791,9 @@ model LeadCadence {
   // Notes
   notes       String?
 
+  // Completion reason (when cadence ends without conversion)
+  disqualificationReason String?
+
   ownerId     String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
@@ -1804,6 +1810,20 @@ model LeadCadence {
   @@index([ownerId])
   @@index([status])
   @@map("lead_cadences")
+}
+
+// DisqualificationReason - custom reasons users can register for lead loss
+model DisqualificationReason {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([name, ownerId])
+  @@index([ownerId])
+  @@map("disqualification_reasons")
 }
 
 // LeadCadenceActivity - links generated activities to cadence steps

@@ -43,24 +43,21 @@ export async function importGoogleLeads(
   const searchQuery = buildSearchQuery(params);
 
   // Carrega perfil existente ou cria novo
-  const profileKey = {
-    ownerId_country_city_zipCode_typeKeyword: {
-      ownerId,
-      country: params.country,
-      city: params.city ?? null,
-      zipCode: params.zipCode ?? null,
-      typeKeyword: params.typeKeyword,
-    },
+  const profileWhere = {
+    ownerId,
+    country: params.country,
+    city: params.city ?? null,
+    zipCode: params.zipCode ?? null,
+    typeKeyword: params.typeKeyword,
   };
 
-  let searchProfile = await prisma.googlePlacesSearch.findUnique({
-    where: profileKey,
+  let searchProfile = await prisma.googlePlacesSearch.findFirst({
+    where: profileWhere,
   });
 
   if (!searchProfile) {
-    searchProfile = await prisma.googlePlacesSearch.upsert({
-      where: profileKey,
-      create: {
+    searchProfile = await prisma.googlePlacesSearch.create({
+      data: {
         ownerId,
         country: params.country,
         city: params.city,
@@ -69,7 +66,6 @@ export async function importGoogleLeads(
         searchQuery,
         fetchedPlaceIds: "[]",
       },
-      update: {},
     });
   }
 

@@ -569,7 +569,7 @@ export async function cancelAllActiveCadences(cadenceId: string) {
 /**
  * Mark a lead cadence as completed
  */
-export async function completeLeadCadence(id: string) {
+export async function completeLeadCadence(id: string, disqualificationReason?: string) {
   await getAuthenticatedSession();
   const ownerFilter = await getOwnerFilter();
 
@@ -589,6 +589,7 @@ export async function completeLeadCadence(id: string) {
     data: {
       status: "completed",
       completedAt: new Date(),
+      ...(disqualificationReason ? { disqualificationReason } : {}),
     },
   });
 

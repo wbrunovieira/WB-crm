@@ -23,6 +23,7 @@ import {
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ApplyCadenceModal } from "./ApplyCadenceModal";
+import { CompleteWithReasonModal } from "./CompleteWithReasonModal";
 import {
   LEAD_CADENCE_STATUS_LABELS,
   CADENCE_CHANNEL_LABELS,
@@ -45,6 +46,8 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [expandedCadence, setExpandedCadence] = useState<string | null>(null);
+  const [completeTarget, setCompleteTarget] = useState<string | null>(null);
+  const [completeLoading, setCompleteLoading] = useState(false);
   const { confirm, dialogProps } = useConfirmDialog();
 
   useEffect(() => {
@@ -124,24 +127,23 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
     }
   };
 
-  const handleComplete = async (id: string) => {
-    const confirmed = await confirm({
-      title: "Concluir Cadência",
-      message: "Marcar cadência como concluída?",
-      confirmLabel: "Concluir",
-      variant: "default",
-    });
-    if (!confirmed) return;
-    setActionLoading(id);
+  const handleComplete = (id: string) => {
+    setCompleteTarget(id);
+  };
+
+  const handleCompleteConfirm = async (reason: string | undefined) => {
+    if (!completeTarget) return;
+    setCompleteLoading(true);
     try {
-      await completeLeadCadence(id);
+      await completeLeadCadence(completeTarget, reason);
+      setCompleteTarget(null);
       const data = await getLeadCadences(leadId);
       setCadences(data);
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao completar");
     } finally {
-      setActionLoading(null);
+      setCompleteLoading(false);
     }
   };
 
@@ -400,6 +402,14 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
       )}
 
       <ConfirmDialog {...dialogProps} />
+
+      {completeTarget && (
+        <CompleteWithReasonModal
+          loading={completeLoading}
+          onConfirm={handleCompleteConfirm}
+          onClose={() => setCompleteTarget(null)}
+        />
+      )}
     </>
   );
 }
