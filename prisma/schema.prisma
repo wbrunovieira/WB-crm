@@ -52,6 +52,9 @@ model User {
   // Funnel goals
   weeklyGoals        WeeklyGoal[]
 
+  // Sectors
+  sectors            Sector[]
+
   // WhatsApp
   whatsappMessages   WhatsAppMessage[]
 
@@ -196,8 +199,10 @@ model Lead {
 
   // Status e Conversão
   status        String   @default("new") // new, contacted, qualified, disqualified
-  isArchived    Boolean  @default(false)
-  convertedAt   DateTime?
+  isArchived     Boolean   @default(false)
+  archivedAt     DateTime?
+  archivedReason String?
+  convertedAt    DateTime?
   convertedToOrganizationId  String?  @unique // Lead vira 1 Organization
 
   // Labels (many-to-many)
@@ -245,6 +250,9 @@ model Lead {
   // ICPs
   icps                LeadICP[]
 
+  // Sectors
+  sectors             LeadSector[]
+
   // Cadences
   leadCadences        LeadCadence[]
 
@@ -257,6 +265,7 @@ model Lead {
   @@index([ownerId])
   @@index([status])
   @@index([quality])
+  @@index([isArchived])
   @@index([convertedAt])
   @@index([referredByPartnerId])
   @@index([primaryCNAEId])
@@ -390,6 +399,9 @@ model Organization {
 
   // ICPs
   icps                       OrganizationICP[]
+
+  // Sectors
+  sectors                    OrganizationSector[]
 
   // Meetings
   meetings                   Meeting[]
@@ -1443,6 +1455,82 @@ model OrganizationSecondaryCNAE {
   @@index([organizationId])
   @@index([cnaeId])
   @@map("organization_secondary_cnaes")
+}
+
+// ============ SECTOR ============
+
+model Sector {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+
+  // Market intelligence
+  marketSize         String?
+  marketSizeNotes    String?
+  averageTicket      String?
+  budgetSeason       String?
+
+  // Sales cycle
+  salesCycleDays  Int?
+  salesCycleNotes String?
+
+  // Buyer profile
+  decisionMakers  String?
+  buyingProcess   String?
+  mainObjections  String?
+
+  // Market knowledge
+  mainPains             String?
+  referenceCompanies    String?
+  competitorsLandscape  String?
+  jargons               String?
+  regulatoryNotes       String?
+
+  isActive  Boolean @default(true)
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  owner         User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  leads         LeadSector[]
+  organizations OrganizationSector[]
+
+  @@index([ownerId])
+  @@index([isActive])
+  @@map("sectors")
+}
+
+model LeadSector {
+  id       String @id @default(cuid())
+  leadId   String
+  sectorId String
+
+  lead     Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sector   Sector @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([leadId, sectorId])
+  @@index([leadId])
+  @@index([sectorId])
+  @@map("lead_sectors")
+}
+
+model OrganizationSector {
+  id             String @id @default(cuid())
+  organizationId String
+  sectorId       String
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sector       Sector       @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@unique([organizationId, sectorId])
+  @@index([organizationId])
+  @@index([sectorId])
+  @@map("organization_sectors")
 }
 
 // ============ ICP (Ideal Customer Profile) ============
