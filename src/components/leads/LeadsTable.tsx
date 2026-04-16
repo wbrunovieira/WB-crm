@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Zap, Archive } from "lucide-react";
@@ -64,8 +64,17 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showBulkArchiveModal, setShowBulkArchiveModal] = useState(false);
+  const lastSelectedIndex = useRef<number | null>(null);
+  const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
   const allSelected = leads.length > 0 && selectedIds.size === leads.length;
+  const someSelected = selectedIds.size > 0 && !allSelected;
+
+  useEffect(() => {
+    if (headerCheckboxRef.current) {
+      headerCheckboxRef.current.indeterminate = someSelected;
+    }
+  }, [someSelected]);
 
   const toggleAll = () => {
     if (allSelected) {
@@ -73,18 +82,35 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
     } else {
       setSelectedIds(new Set(leads.map((l) => l.id)));
     }
+    lastSelectedIndex.current = null;
   };
 
-  const toggleOne = (id: string) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
+  const toggleOne = (id: string, index: number, shiftKey: boolean) => {
+    if (shiftKey && lastSelectedIndex.current !== null) {
+      const start = Math.min(lastSelectedIndex.current, index);
+      const end = Math.max(lastSelectedIndex.current, index);
+      const rangeIds = leads.slice(start, end + 1).map((l) => l.id);
+      const isAdding = !selectedIds.has(id);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        rangeIds.forEach((rid) => {
+          if (isAdding) next.add(rid);
+          else next.delete(rid);
+        });
+        return next;
+      });
+    } else {
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) {
+          next.delete(id);
+        } else {
+          next.add(id);
+        }
+        return next;
+      });
+    }
+    lastSelectedIndex.current = index;
   };
 
   return (
@@ -124,10 +150,12 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
             <tr>
               <th className="w-12 px-4 py-3">
                 <input
+                  ref={headerCheckboxRef}
                   type="checkbox"
                   checked={allSelected}
                   onChange={toggleAll}
-                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                  className="h-4 w-4 cursor-pointer rounded border-gray-300 text-primary focus:ring-primary"
+                  title={allSelected ? "Desselecionar todos" : "Selecionar todos"}
                 />
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
@@ -157,17 +185,23 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 bg-white">
-            {leads.map((lead) => (
+            {leads.map((lead, index) => (
               <tr
                 key={lead.id}
-                className={`hover:bg-gray-50 ${selectedIds.has(lead.id) ? "bg-purple-50/50" : ""}`}
+                onClick={(e) => {
+                  const tag = (e.target as HTMLElement).tagName;
+                  if (tag === "INPUT" || tag === "A" || tag === "BUTTON" || tag === "SVG" || tag === "PATH") return;
+                  toggleOne(lead.id, index, e.shiftKey);
+                }}
+                className={`cursor-pointer select-none hover:bg-gray-50 ${selectedIds.has(lead.id) ? "bg-purple-50/50" : ""}`}
               >
                 <td className="w-12 px-4 py-4">
                   <input
                     type="checkbox"
                     checked={selectedIds.has(lead.id)}
-                    onChange={() => toggleOne(lead.id)}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    onChange={(e) => toggleOne(lead.id, index, e.nativeEvent instanceof MouseEvent && (e.nativeEvent as MouseEvent).shiftKey)}
+                    onClick={(e) => e.stopPropagation()}
+                    className="h-4 w-4 cursor-pointer rounded border-gray-300 text-primary focus:ring-primary"
                   />
                 </td>
                 <td className="px-6 py-4">

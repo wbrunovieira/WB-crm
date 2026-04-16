@@ -80,7 +80,7 @@ export default async function ActivitiesPage({
   const [deals, contacts, leads, partners, users] = await Promise.all([
     getDeals(),
     getContacts(),
-    getLeads({}),
+    getLeads({}).then(r => r.leads),
     getPartners(),
     isAdmin ? getUsers() : Promise.resolve([]),
   ]);

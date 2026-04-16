@@ -17,6 +17,8 @@ import { languagesToJson } from "@/lib/validations/languages";
 
 // ============ LEAD CRUD ============
 
+export const LEADS_PAGE_SIZE = 50;
+
 export async function getLeads(filters?: {
   search?: string;
   contactSearch?: string;
@@ -26,6 +28,7 @@ export async function getLeads(filters?: {
   icpId?: string;
   hasCadence?: string;
   archived?: string;
+  page?: string;
 }) {
   const ownerFilter = await getOwnerOrSharedFilter("lead", filters?.owner);
 
@@ -66,59 +69,56 @@ export async function getLeads(filters?: {
     });
   }
 
-  const leads = await prisma.lead.findMany({
-    where: {
-      ...ownerFilter,
-      ...archiveFilter,
-      isProspect: false,
-      ...(searchConditions.length === 1 ? searchConditions[0] : {}),
-      ...(searchConditions.length > 1 ? { AND: searchConditions } : {}),
-      ...(filters?.status && { status: filters.status }),
-      ...(filters?.quality && { quality: filters.quality }),
-      ...(filters?.icpId && {
-        icps: {
-          some: { icpId: filters.icpId },
-        },
-      }),
-      ...(filters?.hasCadence === "no" && {
-        leadCadences: { none: {} },
-      }),
-      ...(filters?.hasCadence === "yes" && {
-        leadCadences: { some: {} },
-      }),
-    },
-    include: {
-      leadContacts: true,
-      owner: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      icps: {
-        include: {
-          icp: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-        take: 1,
-      },
-      _count: {
-        select: {
-          leadContacts: true,
-          leadCadences: true,
-        },
-      },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
+  const page = Math.max(1, parseInt(filters?.page ?? "1") || 1);
+  const skip = (page - 1) * LEADS_PAGE_SIZE;
 
-  return leads;
+  const whereClause = {
+    ...ownerFilter,
+    ...archiveFilter,
+    isProspect: false,
+    ...(searchConditions.length === 1 ? searchConditions[0] : {}),
+    ...(searchConditions.length > 1 ? { AND: searchConditions } : {}),
+    ...(filters?.status && { status: filters.status }),
+    ...(filters?.quality && { quality: filters.quality }),
+    ...(filters?.icpId && {
+      icps: {
+        some: { icpId: filters.icpId },
+      },
+    }),
+    ...(filters?.hasCadence === "no" && {
+      leadCadences: { none: {} },
+    }),
+    ...(filters?.hasCadence === "yes" && {
+      leadCadences: { some: {} },
+    }),
+  };
+
+  const [leads, total] = await Promise.all([
+    prisma.lead.findMany({
+      where: whereClause,
+      include: {
+        leadContacts: true,
+        owner: {
+          select: { id: true, name: true },
+        },
+        icps: {
+          include: {
+            icp: { select: { id: true, name: true } },
+          },
+          take: 1,
+        },
+        _count: {
+          select: { leadContacts: true, leadCadences: true },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: LEADS_PAGE_SIZE,
+      skip,
+    }),
+    prisma.lead.count({ where: whereClause }),
+  ]);
+
+  return { leads, total, page, pageSize: LEADS_PAGE_SIZE };
 }
 
 export async function getProspects(filters?: {

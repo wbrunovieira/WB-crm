@@ -7,6 +7,7 @@ import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { AgentLeadGenerationButton } from "@/components/leads/AgentLeadGenerationButton";
 import { LeadResearchNotifications } from "@/components/leads/LeadResearchNotifications";
 import { LeadsTable } from "@/components/leads/LeadsTable";
+import { Pagination } from "@/components/shared/Pagination";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
@@ -23,17 +24,20 @@ export default async function LeadsPage({
     icpId?: string;
     hasCadence?: string;
     archived?: string;
+    page?: string;
   };
 }) {
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
   const currentUserId = session?.user?.id || "";
 
-  const [leads, users, icps] = await Promise.all([
+  const [leadsResult, users, icps] = await Promise.all([
     getLeads(searchParams),
     isAdmin ? getUsers() : Promise.resolve([]),
     getICPs({ status: "active" }),
   ]);
+
+  const { leads, total, page, pageSize } = leadsResult;
 
   // Get shared users for all leads (batch query)
   const leadIds = leads.map((lead) => lead.id);
@@ -73,7 +77,7 @@ export default async function LeadsPage({
       {/* Lead Counter */}
       <div className="mb-4 flex items-center gap-2">
         <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
-          {leads.length} {leads.length === 1 ? "lead" : "leads"}
+          {total} {total === 1 ? "lead" : "leads"}
         </span>
         {(searchParams.search || searchParams.contactSearch || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner || searchParams.hasCadence || searchParams.archived) && (
           <span className="text-sm text-gray-500">com os filtros aplicados</span>
@@ -96,12 +100,15 @@ export default async function LeadsPage({
           </Link>
         </div>
       ) : (
-        <LeadsTable
-          leads={leads}
-          sharedUsersMap={sharedUsersMap}
-          currentUserId={currentUserId}
-          contactSearch={searchParams.contactSearch}
-        />
+        <>
+          <LeadsTable
+            leads={leads}
+            sharedUsersMap={sharedUsersMap}
+            currentUserId={currentUserId}
+            contactSearch={searchParams.contactSearch}
+          />
+          <Pagination total={total} page={page} pageSize={pageSize} />
+        </>
       )}
     </div>
   );
