@@ -253,8 +253,8 @@ export default async function LeadDetailPage({
                     entityType="lead"
                     entityId={lead.id}
                     canSave={!lead.whatsapp}
-                    verified={lead.whatsappVerified && lead.whatsappVerifiedAt && lead.whatsappVerifiedNumber === lead.phone
-                      ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber }
+                    verified={lead.whatsappVerifiedAt && lead.whatsappVerifiedNumber === lead.phone
+                      ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified }
                       : undefined}
                   />
                 </dd>
@@ -269,8 +269,8 @@ export default async function LeadDetailPage({
                     phone={lead.whatsapp}
                     entityType="lead"
                     entityId={lead.id}
-                    verified={lead.whatsappVerified && lead.whatsappVerifiedAt && lead.whatsappVerifiedNumber === lead.whatsapp
-                      ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber }
+                    verified={lead.whatsappVerifiedAt && lead.whatsappVerifiedNumber === lead.whatsapp
+                      ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified }
                       : undefined}
                   />
                   <WhatsAppButton to={lead.whatsapp} name={lead.businessName} variant="icon" />

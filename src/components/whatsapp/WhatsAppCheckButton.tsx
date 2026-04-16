@@ -14,6 +14,7 @@ interface WhatsAppCheckButtonProps {
   verified?: {
     at: Date | string;
     number: string;
+    exists: boolean;
   };
 }
 
@@ -42,24 +43,41 @@ export function WhatsAppCheckButton({
   const [errorMsg, setErrorMsg] = useState<string>("");
   const router = useRouter();
 
-  // Já verificado anteriormente — mostra badge estático com opção de reverificar
+  // Já consultado anteriormente — mostra badge estático com opção de re-verificar
   if (status === "idle" && verified) {
-    return (
-      <span className="inline-flex items-center gap-1.5 flex-wrap">
-        <span className="inline-flex items-center gap-1 rounded-full bg-[#25D366]/15 px-2 py-0.5 text-xs font-medium text-[#128C7E]">
-          <CheckIcon className="h-3 w-3" />
-          Verificado em {formatDate(verified.at)}
+    if (verified.exists) {
+      return (
+        <span className="inline-flex items-center gap-1.5 flex-wrap">
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#25D366]/15 px-2 py-0.5 text-xs font-medium text-[#128C7E]">
+            <CheckIcon className="h-3 w-3" />
+            Verificado em {formatDate(verified.at)}
+          </span>
+          <button
+            onClick={handleCheck}
+            className="text-xs text-gray-400 hover:text-[#128C7E]"
+            title="Re-verificar"
+          >
+            ↺
+          </button>
         </span>
-        <button
-          onClick={() => setStatus("checking")}
-          className="text-xs text-gray-400 hover:text-[#128C7E]"
-          title="Re-verificar"
-          onClickCapture={(e) => { e.stopPropagation(); handleCheck(); }}
-        >
-          ↺
-        </button>
-      </span>
-    );
+      );
+    } else {
+      return (
+        <span className="inline-flex items-center gap-1.5 flex-wrap">
+          <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-500">
+            <XIcon className="h-3 w-3" />
+            Sem WhatsApp · {formatDate(verified.at)}
+          </span>
+          <button
+            onClick={handleCheck}
+            className="text-xs text-gray-400 hover:text-red-500"
+            title="Re-verificar"
+          >
+            ↺
+          </button>
+        </span>
+      );
+    }
   }
 
   async function handleCheck() {
@@ -74,16 +92,16 @@ export function WhatsAppCheckButton({
       return;
     }
 
+    const verifiedNumber = result.number
+      ? (result.number.startsWith("+") ? result.number : `+${result.number}`)
+      : phone;
+
+    // Salva a consulta automaticamente (positiva ou negativa)
+    saveWhatsAppVerification(entityType, entityId, verifiedNumber, result.exists ?? false).then(() => {
+      router.refresh();
+    });
+
     if (result.exists) {
-      const verifiedNumber = result.number
-        ? (result.number.startsWith("+") ? result.number : `+${result.number}`)
-        : phone;
-
-      // Salva a verificação automaticamente
-      saveWhatsAppVerification(entityType, entityId, verifiedNumber).then(() => {
-        router.refresh();
-      });
-
       setStatus("found");
       setCheckResult({
         exists: true,

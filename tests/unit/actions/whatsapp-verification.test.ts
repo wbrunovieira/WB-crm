@@ -155,3 +155,59 @@ describe("saveWhatsAppVerification — Contact", () => {
     expect(result.success).toBe(true);
   });
 });
+
+// ---------------------------------------------------------------------------
+describe("saveWhatsAppVerification — resultado negativo (sem WhatsApp)", () => {
+  beforeEach(() => {
+    prismaMock.lead.findFirst.mockResolvedValue({ id: "lead-1" } as never);
+    prismaMock.lead.update.mockResolvedValue({} as never);
+    prismaMock.contact.findFirst.mockResolvedValue({ id: "contact-1" } as never);
+    prismaMock.contact.update.mockResolvedValue({} as never);
+  });
+
+  it("salva whatsappVerified=false quando exists=false no Lead", async () => {
+    await saveWhatsAppVerification("lead", "lead-1", "+5511999998888", false);
+
+    const call = prismaMock.lead.update.mock.calls[0][0];
+    expect(call.data.whatsappVerified).toBe(false);
+  });
+
+  it("salva whatsappVerifiedAt mesmo quando exists=false no Lead", async () => {
+    const before = new Date();
+    await saveWhatsAppVerification("lead", "lead-1", "+5511999998888", false);
+    const after = new Date();
+
+    const call = prismaMock.lead.update.mock.calls[0][0];
+    expect(call.data.whatsappVerifiedAt).toBeInstanceOf(Date);
+    expect((call.data.whatsappVerifiedAt as Date).getTime()).toBeGreaterThanOrEqual(before.getTime());
+    expect((call.data.whatsappVerifiedAt as Date).getTime()).toBeLessThanOrEqual(after.getTime());
+  });
+
+  it("salva whatsappVerifiedNumber mesmo quando exists=false no Lead", async () => {
+    await saveWhatsAppVerification("lead", "lead-1", "+5511999998888", false);
+
+    const call = prismaMock.lead.update.mock.calls[0][0];
+    expect(call.data.whatsappVerifiedNumber).toBe("+5511999998888");
+  });
+
+  it("salva whatsappVerified=false quando exists=false no Contact", async () => {
+    await saveWhatsAppVerification("contact", "contact-1", "+351910155711", false);
+
+    const call = prismaMock.contact.update.mock.calls[0][0];
+    expect(call.data.whatsappVerified).toBe(false);
+  });
+
+  it("salva whatsappVerifiedAt mesmo quando exists=false no Contact", async () => {
+    await saveWhatsAppVerification("contact", "contact-1", "+351910155711", false);
+
+    const call = prismaMock.contact.update.mock.calls[0][0];
+    expect(call.data.whatsappVerifiedAt).toBeInstanceOf(Date);
+  });
+
+  it("exists=true é o padrão quando não informado", async () => {
+    await saveWhatsAppVerification("lead", "lead-1", "+5511999998888");
+
+    const call = prismaMock.lead.update.mock.calls[0][0];
+    expect(call.data.whatsappVerified).toBe(true);
+  });
+});

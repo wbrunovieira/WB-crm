@@ -225,13 +225,14 @@ export interface SaveWhatsAppResult {
 export async function saveWhatsAppVerification(
   entityType: "lead" | "contact",
   entityId: string,
-  verifiedNumber: string
+  verifiedNumber: string,
+  exists = true
 ): Promise<SaveWhatsAppResult> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) return { success: false, error: "Não autorizado" };
 
   const data = {
-    whatsappVerified: true,
+    whatsappVerified: exists,
     whatsappVerifiedAt: new Date(),
     whatsappVerifiedNumber: verifiedNumber,
   };

@@ -78,8 +78,8 @@ export default async function ContactDetailPage({
                     entityType="contact"
                     entityId={contact.id}
                     canSave={!contact.whatsapp}
-                    verified={contact.whatsappVerified && contact.whatsappVerifiedAt && contact.whatsappVerifiedNumber === contact.phone
-                      ? { at: contact.whatsappVerifiedAt, number: contact.whatsappVerifiedNumber }
+                    verified={contact.whatsappVerifiedAt && contact.whatsappVerifiedNumber === contact.phone
+                      ? { at: contact.whatsappVerifiedAt, number: contact.whatsappVerifiedNumber, exists: contact.whatsappVerified }
                       : undefined}
                   />
                 )}
