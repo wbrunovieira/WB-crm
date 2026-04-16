@@ -219,6 +219,49 @@ export interface SaveWhatsAppResult {
 }
 
 /**
+ * Persiste a verificação WhatsApp no Lead ou Contact.
+ * Salva whatsappVerified=true, whatsappVerifiedAt=now, whatsappVerifiedNumber=number.
+ */
+export async function saveWhatsAppVerification(
+  entityType: "lead" | "contact",
+  entityId: string,
+  verifiedNumber: string
+): Promise<SaveWhatsAppResult> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { success: false, error: "Não autorizado" };
+
+  const data = {
+    whatsappVerified: true,
+    whatsappVerifiedAt: new Date(),
+    whatsappVerifiedNumber: verifiedNumber,
+  };
+
+  try {
+    if (entityType === "lead") {
+      const lead = await prisma.lead.findFirst({
+        where: { id: entityId, ownerId: session.user.id },
+        select: { id: true },
+      });
+      if (!lead) return { success: false, error: "Lead não encontrado" };
+      await prisma.lead.update({ where: { id: entityId }, data });
+    } else {
+      const contact = await prisma.contact.findFirst({
+        where: { id: entityId, ownerId: session.user.id },
+        select: { id: true },
+      });
+      if (!contact) return { success: false, error: "Contato não encontrado" };
+      await prisma.contact.update({ where: { id: entityId }, data });
+    }
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Erro ao salvar verificação",
+    };
+  }
+}
+
+/**
  * Salva o número verificado no campo whatsapp do Lead ou Contact.
  * Chamado opcionalmente após checkWhatsApp encontrar WhatsApp no campo telefone.
  */

@@ -156,10 +156,13 @@ model Lead {
   vicinity  String?
 
   // Contato da Empresa (geral)
-  phone     String?
-  whatsapp  String?
-  website   String?
-  email     String?
+  phone                  String?
+  whatsapp               String?
+  whatsappVerified       Boolean   @default(false)
+  whatsappVerifiedAt     DateTime?
+  whatsappVerifiedNumber String?   // Número exato que foi verificado (pode ser phone ou whatsapp)
+  website                String?
+  email                  String?
 
   // Redes Sociais
   instagram String?
@@ -492,12 +495,15 @@ model Label {
 }
 
 model Contact {
-  id             String        @id @default(cuid())
-  name           String
-  email          String?
-  phone          String?
-  whatsapp       String?
-  role           String?       // Cargo da pessoa
+  id                     String    @id @default(cuid())
+  name                   String
+  email                  String?
+  phone                  String?
+  whatsapp               String?
+  whatsappVerified       Boolean   @default(false)
+  whatsappVerifiedAt     DateTime?
+  whatsappVerifiedNumber String?   // Número exato que foi verificado (pode ser phone ou whatsapp)
+  role                   String?   // Cargo da pessoa
   department     String?       // Departamento: Vendas, TI, Financeiro, etc
 
   // Company linking - can be linked to Lead, Organization, or Partner

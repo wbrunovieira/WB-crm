@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { checkWhatsApp, saveWhatsAppNumber } from "@/actions/whatsapp";
+import { checkWhatsApp, saveWhatsAppNumber, saveWhatsAppVerification } from "@/actions/whatsapp";
 import { useRouter } from "next/navigation";
 
 interface WhatsAppCheckButtonProps {
@@ -10,6 +10,11 @@ interface WhatsAppCheckButtonProps {
   entityId: string;
   /** Se true, ao encontrar WhatsApp no campo telefone, oferece salvar no campo whatsapp */
   canSave?: boolean;
+  /** Dados de verificação já existentes (vindos do banco) */
+  verified?: {
+    at: Date | string;
+    number: string;
+  };
 }
 
 interface CheckResult {
@@ -20,16 +25,42 @@ interface CheckResult {
 
 type Status = "idle" | "checking" | "found" | "not_found" | "error" | "saving" | "saved";
 
+function formatDate(d: Date | string) {
+  const date = typeof d === "string" ? new Date(d) : d;
+  return date.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+
 export function WhatsAppCheckButton({
   phone,
   entityType,
   entityId,
   canSave = false,
+  verified,
 }: WhatsAppCheckButtonProps) {
   const [status, setStatus] = useState<Status>("idle");
   const [checkResult, setCheckResult] = useState<CheckResult | undefined>();
   const [errorMsg, setErrorMsg] = useState<string>("");
   const router = useRouter();
+
+  // Já verificado anteriormente — mostra badge estático com opção de reverificar
+  if (status === "idle" && verified) {
+    return (
+      <span className="inline-flex items-center gap-1.5 flex-wrap">
+        <span className="inline-flex items-center gap-1 rounded-full bg-[#25D366]/15 px-2 py-0.5 text-xs font-medium text-[#128C7E]">
+          <CheckIcon className="h-3 w-3" />
+          Verificado em {formatDate(verified.at)}
+        </span>
+        <button
+          onClick={() => setStatus("checking")}
+          className="text-xs text-gray-400 hover:text-[#128C7E]"
+          title="Re-verificar"
+          onClickCapture={(e) => { e.stopPropagation(); handleCheck(); }}
+        >
+          ↺
+        </button>
+      </span>
+    );
+  }
 
   async function handleCheck() {
     setStatus("checking");
@@ -44,10 +75,19 @@ export function WhatsAppCheckButton({
     }
 
     if (result.exists) {
+      const verifiedNumber = result.number
+        ? (result.number.startsWith("+") ? result.number : `+${result.number}`)
+        : phone;
+
+      // Salva a verificação automaticamente
+      saveWhatsAppVerification(entityType, entityId, verifiedNumber).then(() => {
+        router.refresh();
+      });
+
       setStatus("found");
       setCheckResult({
         exists: true,
-        number: result.number ?? phone.replace(/\D/g, ""),
+        number: verifiedNumber,
         name: result.name || undefined,
       });
     } else {
@@ -59,11 +99,7 @@ export function WhatsAppCheckButton({
     if (!checkResult?.number) return;
     setStatus("saving");
 
-    const formatted = checkResult.number.startsWith("+")
-      ? checkResult.number
-      : `+${checkResult.number}`;
-
-    const result = await saveWhatsAppNumber(entityType, entityId, formatted);
+    const result = await saveWhatsAppNumber(entityType, entityId, checkResult.number);
 
     if (result.success) {
       setStatus("saved");

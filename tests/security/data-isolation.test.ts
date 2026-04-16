@@ -470,7 +470,7 @@ describe('Data Isolation - Leads', () => {
           }),
         })
       );
-      expect(result).toHaveLength(1);
+      expect(result.leads).toHaveLength(1);
     });
 
     it('should return only leads owned by User B when User B is authenticated', async () => {
@@ -492,7 +492,7 @@ describe('Data Isolation - Leads', () => {
           }),
         })
       );
-      expect(result).toHaveLength(1);
+      expect(result.leads).toHaveLength(1);
     });
   });
 

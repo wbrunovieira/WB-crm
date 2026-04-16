@@ -187,7 +187,7 @@ describe('Leads - getLeads', () => {
       const leadA = createMockLead(userA.id, { id: 'lead-a' });
       prismaMock.lead.findMany.mockResolvedValue([leadA]);
 
-      const leads = await getLeads();
+      const result = await getLeads();
 
       expect(prismaMock.lead.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -196,7 +196,7 @@ describe('Leads - getLeads', () => {
           }),
         })
       );
-      expect(leads).toHaveLength(1);
+      expect(result.leads).toHaveLength(1);
     });
 
     it('should return only own leads even when trying to filter by other user', async () => {
@@ -225,7 +225,7 @@ describe('Leads - getLeads', () => {
 
       prismaMock.lead.findMany.mockResolvedValue([leadA, leadB]);
 
-      const leads = await getLeads();
+      const result = await getLeads();
 
       // Admin should not have ownerId filter
       expect(prismaMock.lead.findMany).toHaveBeenCalledWith(
@@ -235,7 +235,7 @@ describe('Leads - getLeads', () => {
           }),
         })
       );
-      expect(leads).toHaveLength(2);
+      expect(result.leads).toHaveLength(2);
     });
 
     it('should allow admin to filter by specific owner', async () => {
@@ -832,9 +832,9 @@ describe('Leads - Edge Cases', () => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
       prismaMock.lead.findMany.mockResolvedValue([]);
 
-      const leads = await getLeads();
+      const result = await getLeads();
 
-      expect(leads).toEqual([]);
+      expect(result.leads).toEqual([]);
     });
   });
 
