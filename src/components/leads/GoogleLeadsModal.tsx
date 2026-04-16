@@ -210,18 +210,32 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
               Quantos prospectos buscar
             </label>
-            <select
+            <input
+              type="number"
+              min={1}
+              max={200}
               value={requestedCount}
-              onChange={(e) => setRequestedCount(Number(e.target.value))}
+              onChange={(e) => setRequestedCount(Math.max(1, Number(e.target.value) || 1))}
               disabled={isLoading || isRateLimited}
               className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              {[5, 10, 20, 30, 50].map((n) => (
-                <option key={n} value={n}>
-                  {n} prospectos
-                </option>
+            />
+            <div className="mt-1.5 flex gap-1.5">
+              {[5, 10, 20, 50, 100].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setRequestedCount(n)}
+                  disabled={isLoading || isRateLimited}
+                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                    requestedCount === n
+                      ? "bg-primary text-white"
+                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  }`}
+                >
+                  {n}
+                </button>
               ))}
-            </select>
+            </div>
           </div>
 
           {/* País */}
