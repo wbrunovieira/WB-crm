@@ -94,8 +94,8 @@ export default async function ContactDetailPage({
                     phone={contact.whatsapp}
                     entityType="contact"
                     entityId={contact.id}
-                    verified={contact.whatsappVerified && contact.whatsappVerifiedAt && contact.whatsappVerifiedNumber === contact.whatsapp
-                      ? { at: contact.whatsappVerifiedAt, number: contact.whatsappVerifiedNumber }
+                    verified={contact.whatsappVerifiedAt && contact.whatsappVerifiedNumber === contact.whatsapp
+                      ? { at: contact.whatsappVerifiedAt, number: contact.whatsappVerifiedNumber, exists: contact.whatsappVerified }
                       : undefined}
                   />
                   <WhatsAppButton to={contact.whatsapp} name={contact.name} variant="icon" />

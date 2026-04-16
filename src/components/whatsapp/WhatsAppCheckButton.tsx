@@ -92,12 +92,14 @@ export function WhatsAppCheckButton({
       return;
     }
 
-    const verifiedNumber = result.number
+    // Número normalizado retornado pela API (usado para salvar no campo whatsapp)
+    const apiNumber = result.number
       ? (result.number.startsWith("+") ? result.number : `+${result.number}`)
       : phone;
 
-    // Salva a consulta automaticamente (positiva ou negativa)
-    saveWhatsAppVerification(entityType, entityId, verifiedNumber, result.exists ?? false).then(() => {
+    // Salva usando o valor original do campo como chave, para que a comparação
+    // na página (whatsappVerifiedNumber === phone) funcione ao recarregar.
+    saveWhatsAppVerification(entityType, entityId, phone, result.exists ?? false).then(() => {
       router.refresh();
     });
 
@@ -105,7 +107,7 @@ export function WhatsAppCheckButton({
       setStatus("found");
       setCheckResult({
         exists: true,
-        number: verifiedNumber,
+        number: apiNumber,  // número normalizado para o campo WhatsApp
         name: result.name || undefined,
       });
     } else {

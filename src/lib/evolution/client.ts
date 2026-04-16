@@ -1,6 +1,25 @@
+import { parsePhoneNumber, isValidPhoneNumber } from "libphonenumber-js";
+
 const EVOLUTION_API_URL = process.env.EVOLUTION_API_URL ?? "http://localhost:8080";
 const EVOLUTION_API_KEY = process.env.EVOLUTION_API_KEY ?? "";
 const EVOLUTION_INSTANCE = process.env.EVOLUTION_INSTANCE ?? "wbdigital";
+
+/** Converte qualquer formato de telefone para E.164 (+5511...).
+ *  Default country: BR. Números com DDI explícito (+1, +351, etc.) são respeitados.
+ *  Lança se o número for inválido mesmo com fallback.
+ */
+export function toE164(phone: string, defaultCountry = "BR"): string {
+  try {
+    const parsed = parsePhoneNumber(phone, defaultCountry as never);
+    if (parsed?.isValid()) return parsed.number;
+  } catch {
+    // segue para o fallback
+  }
+  // Fallback: dígitos puros com DDI explícito (ex: "5511999998888")
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length >= 10) return `+${digits}`;
+  throw new Error(`Número de telefone inválido: ${phone}`);
+}
 
 interface SendResponse {
   key: { id: string; fromMe: boolean; remoteJid: string };
@@ -44,8 +63,10 @@ export interface CheckWhatsAppResult {
  * Resposta: [{ jid, exists, number, name }]
  */
 export async function checkWhatsAppNumber(phone: string): Promise<CheckWhatsAppResult> {
-  // Normaliza: mantém apenas dígitos
-  const digits = phone.replace(/\D/g, "");
+  // Normaliza para E.164 (ex: "(11) 3851-4000" → "+551138514000")
+  const e164 = toE164(phone);
+  // A Evolution API aceita o número sem o "+" inicial
+  const digits = e164.replace(/^\+/, "");
 
   const data = await evolutionPost<Array<{ exists: boolean; jid?: string; number?: string; name?: string }>>(
     `/chat/whatsappNumbers/${EVOLUTION_INSTANCE}`,
