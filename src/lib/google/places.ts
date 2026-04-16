@@ -73,7 +73,7 @@ function extractAddressComponent(
   type: string,
   useShort = false
 ): string | undefined {
-  const comp = components?.find((c) => c.types.includes(type));
+  const comp = components?.find((c) => c.types?.includes(type));
   return useShort ? comp?.shortText : comp?.longText;
 }
 
