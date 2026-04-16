@@ -74,14 +74,19 @@ export default async function LeadsPage({
         )}
       </div>
 
-      {/* Lead Counter */}
-      <div className="mb-4 flex items-center gap-2">
-        <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
-          {total} {total === 1 ? "lead" : "leads"}
-        </span>
-        {(searchParams.search || searchParams.contactSearch || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner || searchParams.hasCadence || searchParams.archived) && (
-          <span className="text-sm text-gray-500">com os filtros aplicados</span>
-        )}
+      {/* Lead Counter + Selection Tip */}
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
+            {total} {total === 1 ? "lead" : "leads"}
+          </span>
+          {(searchParams.search || searchParams.contactSearch || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner || searchParams.hasCadence || searchParams.archived) && (
+            <span className="text-sm text-gray-500">com os filtros aplicados</span>
+          )}
+        </div>
+        <p className="text-xs text-gray-400">
+          Clique na linha para selecionar · <kbd className="rounded bg-gray-100 px-1 py-0.5 font-mono text-[11px] text-gray-500">Shift</kbd> + clique para selecionar um intervalo
+        </p>
       </div>
 
       {leads.length === 0 ? (
