@@ -113,7 +113,9 @@ export function MainNav({ userRole: role }: MainNavProps) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const [submenuLeft, setSubmenuLeft] = useState(0);
   const submenuContainerRef = useRef<HTMLDivElement>(null);
+  const chevronBtnRef = useRef<HTMLButtonElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -263,7 +265,12 @@ export function MainNav({ userRole: role }: MainNavProps) {
                       )}
                     </Link>
                     <button
-                      onClick={() => setOpenSubmenu(isOpen ? null : item.href)}
+                      ref={chevronBtnRef}
+                      onClick={() => {
+                        const rect = chevronBtnRef.current?.getBoundingClientRect();
+                        if (rect) setSubmenuLeft(rect.left - rect.width * 2);
+                        setOpenSubmenu(isOpen ? null : item.href);
+                      }}
                       className={cn(
                         "flex h-full items-center rounded-r-lg px-1 py-1.5 transition-all duration-200",
                         active || childActive
@@ -278,11 +285,12 @@ export function MainNav({ userRole: role }: MainNavProps) {
                     </button>
                   </div>
 
-                  {/* Submenu dropdown */}
+                  {/* Submenu dropdown — fixed to escape overflow-x-auto clipping */}
                   <div
+                    style={{ left: submenuLeft }}
                     className={cn(
-                      "absolute left-0 top-full z-20 mt-1.5 min-w-[160px] overflow-hidden rounded-lg border border-[#792990]/40 bg-[#1a0022] shadow-xl transition-all duration-200",
-                      isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0 pointer-events-none"
+                      "fixed top-[60px] z-50 min-w-[160px] rounded-lg border border-[#792990]/40 bg-[#1a0022] shadow-xl transition-all duration-200",
+                      isOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-1 pointer-events-none"
                     )}
                   >
                     {item.children!.map((child) => {
