@@ -252,7 +252,7 @@ export default function ActivityForm({
             onChange={(e) => setFormData({ ...formData, callContactType: e.target.value })}
             className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
           >
-            <option value="gatekeeper">🚧 Porteiro (Gatekeeper)</option>
+            <option value="gatekeeper">🚧 Gatekeeper</option>
             <option value="decisor">🎯 Decisor</option>
           </select>
         </div>
