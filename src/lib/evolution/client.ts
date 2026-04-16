@@ -34,18 +34,21 @@ export interface CheckWhatsAppResult {
   exists: boolean;
   jid?: string;
   number?: string;
+  name?: string;
 }
 
 /**
  * Verifica se um número de telefone tem WhatsApp ativo.
  * Aceita formato com ou sem DDI (ex: "11999998888" ou "+5511999998888").
+ * Endpoint: POST /chat/whatsappNumbers/{instance}
+ * Resposta: [{ jid, exists, number, name }]
  */
 export async function checkWhatsAppNumber(phone: string): Promise<CheckWhatsAppResult> {
   // Normaliza: mantém apenas dígitos
   const digits = phone.replace(/\D/g, "");
 
-  const data = await evolutionPost<Array<{ exists: boolean; jid?: string; number?: string }>>(
-    `/chat/checkIsWhatsapp/${EVOLUTION_INSTANCE}`,
+  const data = await evolutionPost<Array<{ exists: boolean; jid?: string; number?: string; name?: string }>>(
+    `/chat/whatsappNumbers/${EVOLUTION_INSTANCE}`,
     { numbers: [digits] }
   );
 
@@ -55,6 +58,7 @@ export async function checkWhatsAppNumber(phone: string): Promise<CheckWhatsAppR
     exists: result?.exists ?? false,
     jid: result?.jid,
     number: result?.number ?? digits,
+    name: result?.name || undefined,
   };
 }
 

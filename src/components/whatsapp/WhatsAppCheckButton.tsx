@@ -12,6 +12,12 @@ interface WhatsAppCheckButtonProps {
   canSave?: boolean;
 }
 
+interface CheckResult {
+  exists: boolean;
+  number?: string;
+  name?: string;
+}
+
 type Status = "idle" | "checking" | "found" | "not_found" | "error" | "saving" | "saved";
 
 export function WhatsAppCheckButton({
@@ -21,7 +27,7 @@ export function WhatsAppCheckButton({
   canSave = false,
 }: WhatsAppCheckButtonProps) {
   const [status, setStatus] = useState<Status>("idle");
-  const [verifiedNumber, setVerifiedNumber] = useState<string | undefined>();
+  const [checkResult, setCheckResult] = useState<CheckResult | undefined>();
   const [errorMsg, setErrorMsg] = useState<string>("");
   const router = useRouter();
 
@@ -39,19 +45,23 @@ export function WhatsAppCheckButton({
 
     if (result.exists) {
       setStatus("found");
-      setVerifiedNumber(result.number ?? phone.replace(/\D/g, ""));
+      setCheckResult({
+        exists: true,
+        number: result.number ?? phone.replace(/\D/g, ""),
+        name: result.name || undefined,
+      });
     } else {
       setStatus("not_found");
     }
   }
 
   async function handleSave() {
-    if (!verifiedNumber) return;
+    if (!checkResult?.number) return;
     setStatus("saving");
 
-    const formatted = verifiedNumber.startsWith("+")
-      ? verifiedNumber
-      : `+${verifiedNumber}`;
+    const formatted = checkResult.number.startsWith("+")
+      ? checkResult.number
+      : `+${checkResult.number}`;
 
     const result = await saveWhatsAppNumber(entityType, entityId, formatted);
 
@@ -91,6 +101,9 @@ export function WhatsAppCheckButton({
         <span className="inline-flex items-center gap-1 rounded-full bg-[#25D366]/15 px-2 py-0.5 text-xs font-medium text-[#128C7E]">
           <CheckIcon className="h-3 w-3" />
           Tem WhatsApp
+          {checkResult?.name && (
+            <span className="ml-1 font-normal text-[#128C7E]/80">· {checkResult.name}</span>
+          )}
         </span>
         {canSave && (
           <button
@@ -100,7 +113,11 @@ export function WhatsAppCheckButton({
             Salvar no campo WhatsApp
           </button>
         )}
-        <button onClick={() => setStatus("idle")} className="text-xs text-gray-400 hover:text-gray-600" title="Limpar">
+        <button
+          onClick={() => { setStatus("idle"); setCheckResult(undefined); }}
+          className="text-xs text-gray-400 hover:text-gray-600"
+          title="Limpar"
+        >
           ✕
         </button>
       </span>
@@ -132,7 +149,11 @@ export function WhatsAppCheckButton({
           <XIcon className="h-3 w-3" />
           Sem WhatsApp
         </span>
-        <button onClick={() => setStatus("idle")} className="text-xs text-gray-400 hover:text-gray-600" title="Limpar">
+        <button
+          onClick={() => setStatus("idle")}
+          className="text-xs text-gray-400 hover:text-gray-600"
+          title="Limpar"
+        >
           ✕
         </button>
       </span>
@@ -142,11 +163,18 @@ export function WhatsAppCheckButton({
   // error
   return (
     <span className="inline-flex items-center gap-1.5">
-      <span className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-700" title={errorMsg}>
+      <span
+        className="inline-flex items-center gap-1 rounded-full bg-yellow-50 px-2 py-0.5 text-xs font-medium text-yellow-700"
+        title={errorMsg}
+      >
         <XIcon className="h-3 w-3" />
-        Erro
+        {errorMsg || "Erro"}
       </span>
-      <button onClick={() => setStatus("idle")} className="text-xs text-gray-400 hover:text-gray-600" title="Tentar novamente">
+      <button
+        onClick={() => { setStatus("idle"); setErrorMsg(""); }}
+        className="text-xs text-gray-400 hover:text-gray-600"
+        title="Tentar novamente"
+      >
         ↺
       </button>
     </span>

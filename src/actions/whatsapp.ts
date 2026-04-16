@@ -192,6 +192,7 @@ export interface CheckWhatsAppActionResult {
   exists?: boolean;
   jid?: string;
   number?: string;
+  name?: string;
   error?: string;
 }
 
