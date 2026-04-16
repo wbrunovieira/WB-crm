@@ -43,10 +43,39 @@
           App: {{ app_name }}
           Branch: {{ github_branch }}
 
-    - name: Pull latest code from GitHub
+    - name: Get current deployed commit
+      raw: cd {{ app_dir }} && git rev-parse HEAD
+      register: current_commit
+
+    - name: Fetch latest from GitHub
+      raw: cd {{ app_dir }} && git fetch origin {{ github_branch }}
+
+    - name: Get latest remote commit
+      raw: cd {{ app_dir }} && git rev-parse origin/{{ github_branch }}
+      register: remote_commit
+
+    - name: Detect no changes
+      set_fact:
+        no_changes: "{{ current_commit.stdout | trim == remote_commit.stdout | trim }}"
+
+    - name: Notify — nothing to deploy
+      debug:
+        msg: |
+          ℹ️  NENHUMA MUDANÇA DETECTADA
+          ==============================
+          Servidor já está na versão mais recente.
+          Commit: {{ current_commit.stdout | trim }}
+
+          Faça git push antes de rodar o deploy.
+      when: no_changes
+
+    - name: Abort if no changes
+      meta: end_play
+      when: no_changes
+
+    - name: Apply latest code
       raw: |
         cd {{ app_dir }} && \
-        git fetch origin && \
         git reset --hard origin/{{ github_branch }} && \
         git log -1 --oneline
       register: git_pull
