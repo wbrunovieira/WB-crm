@@ -145,7 +145,7 @@ model Lead {
   businessName            String
   registeredName          String?
   foundationDate          DateTime?
-  companyRegistrationID   String?
+  companyRegistrationID   String?  @unique
 
   // Localização
   address   String?

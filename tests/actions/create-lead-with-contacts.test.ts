@@ -4,6 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 vi.mock("@/lib/prisma", () => {
   const mockTransaction = vi.fn();
   const mockLeadCreate = vi.fn();
+  const mockLeadFindMany = vi.fn();
   const mockLeadContactCreate = vi.fn();
   const mockLeadContactUpdateMany = vi.fn();
 
@@ -12,6 +13,8 @@ vi.mock("@/lib/prisma", () => {
       $transaction: mockTransaction,
       lead: {
         create: mockLeadCreate,
+        // findMany é chamado por checkLeadDuplicates — retorna [] por padrão (sem duplicatas)
+        findMany: mockLeadFindMany,
       },
       leadContact: {
         create: mockLeadContactCreate,
@@ -34,8 +37,14 @@ vi.mock("next/cache", () => ({
 }));
 
 // Import after mocks
-import { createLeadWithContacts } from "@/actions/leads";
+import { createLeadWithContacts, type CreateLeadResult } from "@/actions/leads";
 import { prisma } from "@/lib/prisma";
+
+/** Narrowing helper: garante que o resultado é 'created' antes de acessar lead/contacts */
+function assertCreated(result: CreateLeadResult) {
+  expect(result.status).toBe("created");
+  return result as Extract<CreateLeadResult, { status: "created" }>;
+}
 
 describe("createLeadWithContacts", () => {
   beforeEach(() => {
@@ -45,6 +54,9 @@ describe("createLeadWithContacts", () => {
     mockGetAuthenticatedSession.mockResolvedValue({
       user: { id: "user-123", email: "test@test.com", name: "Test User" },
     });
+
+    // findMany: sem duplicatas por padrão (checkLeadDuplicates retorna listas vazias)
+    vi.mocked(prisma.lead.findMany).mockResolvedValue([]);
 
     // Setup transaction mock to execute the callback with prisma as tx
     vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
@@ -71,6 +83,7 @@ describe("createLeadWithContacts", () => {
       vi.mocked(prisma.lead.create).mockResolvedValue(mockLead as never);
 
       const result = await createLeadWithContacts(leadData, []);
+      const created = assertCreated(result);
 
       expect(prisma.lead.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
@@ -80,8 +93,8 @@ describe("createLeadWithContacts", () => {
           ownerId: "user-123",
         }),
       });
-      expect(result.lead).toEqual(mockLead);
-      expect(result.contacts).toEqual([]);
+      expect(created.lead).toEqual(mockLead);
+      expect(created.contacts).toEqual([]);
     });
 
     it("should validate lead data with Zod schema", async () => {
@@ -115,6 +128,7 @@ describe("createLeadWithContacts", () => {
       vi.mocked(prisma.lead.create).mockResolvedValue(mockLead as never);
 
       const result = await createLeadWithContacts(leadData, []);
+      const created = assertCreated(result);
 
       expect(prisma.lead.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
@@ -126,7 +140,7 @@ describe("createLeadWithContacts", () => {
           ownerId: "user-123",
         }),
       });
-      expect(result.lead.id).toBe("lead-456");
+      expect(created.lead.id).toBe("lead-456");
     });
   });
 
@@ -162,6 +176,7 @@ describe("createLeadWithContacts", () => {
       vi.mocked(prisma.leadContact.create).mockResolvedValue(mockContact as never);
 
       const result = await createLeadWithContacts(leadData, contacts);
+      const created = assertCreated(result);
 
       expect(prisma.lead.create).toHaveBeenCalled();
       expect(prisma.leadContact.create).toHaveBeenCalledWith({
@@ -174,9 +189,9 @@ describe("createLeadWithContacts", () => {
           leadId: "lead-789",
         }),
       });
-      expect(result.lead.id).toBe("lead-789");
-      expect(result.contacts).toHaveLength(1);
-      expect(result.contacts[0].name).toBe("João Silva");
+      expect(created.lead.id).toBe("lead-789");
+      expect(created.contacts).toHaveLength(1);
+      expect(created.contacts[0].name).toBe("João Silva");
     });
 
     it("should create a lead with multiple contacts", async () => {
@@ -217,9 +232,10 @@ describe("createLeadWithContacts", () => {
         .mockResolvedValueOnce({ id: "contact-3", ...contacts[2], leadId: "lead-multi", isPrimary: false } as never);
 
       const result = await createLeadWithContacts(leadData, contacts);
+      const created = assertCreated(result);
 
       expect(prisma.leadContact.create).toHaveBeenCalledTimes(3);
-      expect(result.contacts).toHaveLength(3);
+      expect(created.contacts).toHaveLength(3);
     });
 
     it("should validate contact data with Zod schema", async () => {
@@ -277,6 +293,7 @@ describe("createLeadWithContacts", () => {
       } as never);
 
       const result = await createLeadWithContacts(leadData, contacts);
+      const created = assertCreated(result);
 
       expect(prisma.leadContact.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
@@ -284,7 +301,7 @@ describe("createLeadWithContacts", () => {
           isPrimary: true,
         }),
       });
-      expect(result.contacts[0].isPrimary).toBe(true);
+      expect(created.contacts[0].isPrimary).toBe(true);
     });
 
     it("should ensure only one primary contact when multiple have isPrimary true", async () => {
@@ -310,10 +327,11 @@ describe("createLeadWithContacts", () => {
         .mockResolvedValueOnce({ id: "c2", name: "Contato 2", isPrimary: false, leadId: "lead-dup-primary" } as never);
 
       const result = await createLeadWithContacts(leadData, contacts);
+      const created = assertCreated(result);
 
       // First contact should be primary, second should not
-      expect(result.contacts[0].isPrimary).toBe(true);
-      expect(result.contacts[1].isPrimary).toBe(false);
+      expect(created.contacts[0].isPrimary).toBe(true);
+      expect(created.contacts[1].isPrimary).toBe(false);
     });
   });
 
@@ -377,11 +395,12 @@ describe("createLeadWithContacts", () => {
         .mockResolvedValueOnce({ id: "c2", name: "Contato 2", email: "c2@test.com", leadId: "lead-ret", isPrimary: false } as never);
 
       const result = await createLeadWithContacts(leadData, contacts);
+      const created = assertCreated(result);
 
-      expect(result).toHaveProperty("lead");
-      expect(result).toHaveProperty("contacts");
-      expect(result.lead.id).toBe("lead-ret");
-      expect(result.contacts).toHaveLength(2);
+      expect(created).toHaveProperty("lead");
+      expect(created).toHaveProperty("contacts");
+      expect(created.lead.id).toBe("lead-ret");
+      expect(created.contacts).toHaveLength(2);
     });
   });
 
@@ -392,9 +411,10 @@ describe("createLeadWithContacts", () => {
       vi.mocked(prisma.lead.create).mockResolvedValue({ id: "lead-empty", ownerId: "user-123" } as never);
 
       const result = await createLeadWithContacts(leadData, []);
+      const created = assertCreated(result);
 
-      expect(result.lead.id).toBe("lead-empty");
-      expect(result.contacts).toEqual([]);
+      expect(created.lead.id).toBe("lead-empty");
+      expect(created.contacts).toEqual([]);
       expect(prisma.leadContact.create).not.toHaveBeenCalled();
     });
 
@@ -411,8 +431,9 @@ describe("createLeadWithContacts", () => {
       } as never);
 
       const result = await createLeadWithContacts(leadData, contacts);
+      const created = assertCreated(result);
 
-      expect(result.contacts[0].name).toBe("Apenas Nome");
+      expect(created.contacts[0].name).toBe("Apenas Nome");
     });
 
     it("should handle contact with empty string email", async () => {
@@ -429,8 +450,9 @@ describe("createLeadWithContacts", () => {
       } as never);
 
       const result = await createLeadWithContacts(leadData, contacts);
+      const created = assertCreated(result);
 
-      expect(result.contacts[0].email).toBe("");
+      expect(created.contacts[0].email).toBe("");
     });
   });
 });

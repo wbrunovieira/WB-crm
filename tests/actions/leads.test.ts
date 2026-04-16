@@ -32,7 +32,14 @@ import {
   updateLead,
   deleteLead,
   convertLeadToOrganization,
+  type CreateLeadResult,
 } from '@/actions/leads';
+
+/** Narrowing: garante status='created' e retorna o tipo completo */
+function assertCreated(result: CreateLeadResult) {
+  expect(result.status).toBe('created');
+  return result as Extract<CreateLeadResult, { status: 'created' }>;
+}
 
 const mockedGetServerSession = vi.mocked(getServerSession);
 
@@ -42,6 +49,8 @@ describe('Leads - createLead', () => {
   describe('successful creation', () => {
     beforeEach(() => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
+      // checkLeadDuplicates usa findMany — retorna [] para não bloquear a criação
+      prismaMock.lead.findMany.mockResolvedValue([]);
     });
 
     it('should create lead with valid data', async () => {
@@ -64,6 +73,7 @@ describe('Leads - createLead', () => {
       prismaMock.lead.create.mockResolvedValue(createdLead);
 
       const result = await createLead(leadData);
+      const created = assertCreated(result);
 
       expect(prismaMock.lead.create).toHaveBeenCalledWith({
         data: expect.objectContaining({
@@ -71,7 +81,7 @@ describe('Leads - createLead', () => {
           ownerId: userA.id,
         }),
       });
-      expect(result.businessName).toBe('Tech Company');
+      expect(created.lead.businessName).toBe('Tech Company');
     });
 
     it('should set ownerId to current user id', async () => {
@@ -110,15 +120,17 @@ describe('Leads - createLead', () => {
       prismaMock.lead.create.mockResolvedValue(createdLead);
 
       const result = await createLead(leadData);
+      const created = assertCreated(result);
 
-      expect(result.email).toBe('contact@fullcompany.com');
-      expect(result.quality).toBe('hot');
+      expect(created.lead.email).toBe('contact@fullcompany.com');
+      expect(created.lead.quality).toBe('hot');
     });
   });
 
   describe('validation', () => {
     beforeEach(() => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
+      prismaMock.lead.findMany.mockResolvedValue([]);
     });
 
     it('should reject lead with businessName too short', async () => {
@@ -841,6 +853,7 @@ describe('Leads - Edge Cases', () => {
   describe('valid edge values', () => {
     beforeEach(() => {
       mockedGetServerSession.mockResolvedValue(sessionUserA);
+      prismaMock.lead.findMany.mockResolvedValue([]);
     });
 
     it('should accept businessName with exactly 2 characters (minimum)', async () => {
@@ -850,8 +863,9 @@ describe('Leads - Edge Cases', () => {
       );
 
       const result = await createLead(leadData);
+      const created = assertCreated(result);
 
-      expect(result.businessName).toBe('AB');
+      expect(created.lead.businessName).toBe('AB');
     });
 
     it('should accept empty string for optional email', async () => {

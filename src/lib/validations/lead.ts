@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { normalizeCNPJ, validateCNPJ } from "./cnpj";
 
 export const leadSchema = z.object({
   googleId: z.string().optional(),
@@ -7,7 +8,11 @@ export const leadSchema = z.object({
   businessName: z.string().min(2, "Nome comercial deve ter no mínimo 2 caracteres"),
   registeredName: z.string().optional(),
   foundationDate: z.date().optional(),
-  companyRegistrationID: z.string().optional(),
+  companyRegistrationID: z
+    .string()
+    .transform((v) => (v ? normalizeCNPJ(v) : v))   // normaliza para 14 dígitos
+    .refine((v) => !v || validateCNPJ(v), { message: "CNPJ inválido" })
+    .optional(),
 
   // Localização
   address: z.string().optional(),

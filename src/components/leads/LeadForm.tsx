@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { updateLead, createLeadWithContacts } from "@/actions/leads";
+import { updateLead, createLeadWithContacts, checkLeadDuplicates, type LeadDuplicates, type LeadSummary } from "@/actions/leads";
 import { Trash2, Plus } from "lucide-react";
 import { linkLeadToICP, unlinkLeadFromICP, getLeadICPs } from "@/actions/icp-links";
 import { setLeadLabels } from "@/actions/lead-labels";
@@ -117,6 +117,11 @@ export function LeadForm({ lead }: LeadFormProps) {
   const [metaAds, setMetaAds] = useState<string>(lead?.metaAds ?? "");
   const [googleAds, setGoogleAds] = useState<string>(lead?.googleAds ?? "");
   const [starRating, setStarRating] = useState<number | null>(lead?.starRating ?? null);
+  const [duplicates, setDuplicates] = useState<LeadDuplicates | null>(null);
+  const [pendingSubmitData, setPendingSubmitData] = useState<{
+    data: Parameters<typeof createLeadWithContacts>[0];
+    contacts: Parameters<typeof createLeadWithContacts>[1];
+  } | null>(null);
 
   // Load available ICPs and current ICP (for both new and edit)
   useEffect(() => {
@@ -261,7 +266,7 @@ export function LeadForm({ lead }: LeadFormProps) {
         toast.success("Lead atualizado com sucesso!");
         router.push(`/leads/${lead.id}`);
       } else {
-        // Filter out empty contacts and prepare valid contacts
+        // Prepara contatos válidos
         const validContacts = contacts
           .filter((c) => c.name.trim().length >= 2)
           .map((c, index) => ({
@@ -275,11 +280,18 @@ export function LeadForm({ lead }: LeadFormProps) {
             isPrimary: index === 0 ? true : c.isPrimary,
           }));
 
-        // Use createLeadWithContacts for atomic creation
         const result = await createLeadWithContacts(data, validContacts);
+
+        // Possíveis duplicatas encontradas — pausa e aguarda confirmação do usuário
+        if (result.status === "duplicate_found") {
+          setDuplicates(result.duplicates);
+          setPendingSubmitData({ data, contacts: validContacts });
+          setIsSubmitting(false);
+          return;
+        }
+
         const newLead = result.lead;
 
-        // Set labels if any selected
         if (labelIds.length > 0) {
           try {
             await setLeadLabels(newLead.id, labelIds);
@@ -289,13 +301,9 @@ export function LeadForm({ lead }: LeadFormProps) {
           }
         }
 
-        // Link to ICP if selected
         if (selectedIcpId) {
           try {
-            await linkLeadToICP({
-              leadId: newLead.id,
-              icpId: selectedIcpId,
-            });
+            await linkLeadToICP({ leadId: newLead.id, icpId: selectedIcpId });
           } catch (icpError) {
             console.error("Error linking ICP:", icpError);
             toast.warning("Lead criado, mas houve erro ao vincular ICP");
@@ -303,11 +311,7 @@ export function LeadForm({ lead }: LeadFormProps) {
         }
 
         const contactsCount = result.contacts.length;
-        if (contactsCount > 0) {
-          toast.success(`Lead criado com ${contactsCount} contato(s)!`);
-        } else {
-          toast.success("Lead criado com sucesso!");
-        }
+        toast.success(contactsCount > 0 ? `Lead criado com ${contactsCount} contato(s)!` : "Lead criado com sucesso!");
         router.push(`/leads/${newLead.id}`);
       }
       router.refresh();
@@ -333,6 +337,49 @@ export function LeadForm({ lead }: LeadFormProps) {
       }
     } finally {
       setIsSubmitting(false);
+    }
+  }
+
+  /** Chamada quando o usuário confirma salvar mesmo com duplicatas detectadas */
+  async function handleConfirmCreate() {
+    if (!pendingSubmitData) return;
+    setIsSubmitting(true);
+    setDuplicates(null);
+
+    try {
+      const result = await createLeadWithContacts(
+        pendingSubmitData.data,
+        pendingSubmitData.contacts,
+        { skipDuplicateCheck: true }
+      );
+
+      if (result.status !== "created") {
+        toast.error("Erro inesperado ao criar lead.");
+        return;
+      }
+
+      const newLead = result.lead;
+
+      if (labelIds.length > 0) {
+        try {
+          await setLeadLabels(newLead.id, labelIds);
+        } catch { /* não impede a criação */ }
+      }
+
+      if (selectedIcpId) {
+        try {
+          await linkLeadToICP({ leadId: newLead.id, icpId: selectedIcpId });
+        } catch { /* não impede a criação */ }
+      }
+
+      const contactsCount = result.contacts.length;
+      toast.success(contactsCount > 0 ? `Lead criado com ${contactsCount} contato(s)!` : "Lead criado com sucesso!");
+      router.push(`/leads/${newLead.id}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Erro ao criar lead");
+    } finally {
+      setIsSubmitting(false);
+      setPendingSubmitData(null);
     }
   }
 
@@ -1222,6 +1269,110 @@ export function LeadForm({ lead }: LeadFormProps) {
               : "Criar Lead"}
         </button>
       </div>
+
+      {/* Painel de possíveis duplicatas — aparece acima dos botões ao detectar conflito */}
+      {duplicates && (
+        <DuplicateWarningPanel
+          duplicates={duplicates}
+          onConfirm={handleConfirmCreate}
+          onCancel={() => { setDuplicates(null); setPendingSubmitData(null); }}
+          isSubmitting={isSubmitting}
+        />
+      )}
     </form>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Painel de revisão de duplicatas
+// ---------------------------------------------------------------------------
+
+const DUPLICATE_LABELS: Record<keyof LeadDuplicates, string> = {
+  cnpj:    "Mesmo CNPJ",
+  name:    "Nome similar",
+  phone:   "Mesmo telefone / WhatsApp",
+  email:   "Mesmo e-mail",
+  address: "Mesmo logradouro e cidade",
+};
+
+function DuplicateWarningPanel({
+  duplicates,
+  onConfirm,
+  onCancel,
+  isSubmitting,
+}: {
+  duplicates: LeadDuplicates;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isSubmitting: boolean;
+}) {
+  const categories = (Object.keys(duplicates) as (keyof LeadDuplicates)[]).filter(
+    (k) => duplicates[k].length > 0
+  );
+
+  return (
+    <div className="rounded-lg border border-yellow-500/40 bg-yellow-500/10 p-5 space-y-4">
+      <div className="flex items-start gap-3">
+        <span className="text-yellow-400 text-xl leading-none mt-0.5">⚠</span>
+        <div>
+          <p className="font-semibold text-yellow-300">Possíveis leads duplicados encontrados</p>
+          <p className="text-sm text-yellow-200/70 mt-0.5">
+            Revise os leads abaixo antes de salvar. Você pode abrir cada um para conferir ou
+            ignorar e criar mesmo assim.
+          </p>
+        </div>
+      </div>
+
+      <div className="space-y-3">
+        {categories.map((category) => (
+          <div key={category}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-yellow-400/80 mb-1.5">
+              {DUPLICATE_LABELS[category]}
+            </p>
+            <ul className="space-y-1">
+              {duplicates[category].map((lead: LeadSummary) => (
+                <li key={lead.id} className="flex items-center gap-2 text-sm">
+                  <span className={`inline-block h-2 w-2 rounded-full flex-shrink-0 ${lead.isArchived ? "bg-gray-400" : "bg-green-400"}`} />
+                  <Link
+                    href={`/leads/${lead.id}`}
+                    target="_blank"
+                    className="text-yellow-200 hover:underline font-medium"
+                  >
+                    {lead.businessName}
+                  </Link>
+                  {lead.companyRegistrationID && (
+                    <span className="text-yellow-200/50 font-mono text-xs">{lead.companyRegistrationID}</span>
+                  )}
+                  {lead.city && (
+                    <span className="text-yellow-200/50 text-xs">{lead.city}{lead.state ? ` / ${lead.state}` : ""}</span>
+                  )}
+                  {lead.isArchived && (
+                    <span className="text-xs text-gray-400 italic">(arquivado)</span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+
+      <div className="flex gap-3 pt-1">
+        <button
+          type="button"
+          onClick={onConfirm}
+          disabled={isSubmitting}
+          className="rounded-md bg-yellow-500 px-4 py-2 text-sm font-medium text-black hover:bg-yellow-400 disabled:opacity-50"
+        >
+          {isSubmitting ? "Salvando..." : "Criar mesmo assim"}
+        </button>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-md border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-[#2d1b3d]"
+        >
+          Voltar e revisar
+        </button>
+      </div>
+    </div>
   );
 }

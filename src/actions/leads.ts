@@ -14,6 +14,182 @@ import {
   canAccessEntity,
 } from "@/lib/permissions";
 import { languagesToJson } from "@/lib/validations/languages";
+import { normalizeCNPJ } from "@/lib/validations/cnpj";
+
+// ============ LEAD DUPLICATE DETECTION ============
+
+export interface LeadSummary {
+  id: string;
+  businessName: string;
+  companyRegistrationID: string | null;
+  phone: string | null;
+  email: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  isArchived: boolean;
+  status: string;
+}
+
+export interface LeadDuplicates {
+  cnpj: LeadSummary[];
+  name: LeadSummary[];
+  phone: LeadSummary[];
+  email: LeadSummary[];
+  address: LeadSummary[];
+}
+
+const LEAD_SUMMARY_SELECT = {
+  id: true,
+  businessName: true,
+  companyRegistrationID: true,
+  phone: true,
+  email: true,
+  address: true,
+  city: true,
+  state: true,
+  isArchived: true,
+  status: true,
+} as const;
+
+/**
+ * Verifica possíveis leads duplicados com base nos campos fornecidos.
+ * Inclui leads ativos e arquivados. Não filtra por owner (duplicidade é global).
+ * excludeId: ignora o próprio lead (útil na edição).
+ */
+export async function checkLeadDuplicates(input: {
+  companyRegistrationID?: string | null;
+  businessName?: string | null;
+  phone?: string | null;
+  whatsapp?: string | null;
+  email?: string | null;
+  address?: string | null;
+  city?: string | null;
+  excludeId?: string;
+}): Promise<LeadDuplicates> {
+  await getAuthenticatedSession();
+
+  const exclude = input.excludeId ? { id: { not: input.excludeId } } : {};
+
+  // 1. CNPJ exato (normalizado)
+  const cnpjNorm = input.companyRegistrationID
+    ? normalizeCNPJ(input.companyRegistrationID)
+    : null;
+
+  const [cnpj, name, phone, email, address] = await Promise.all([
+    // --- CNPJ exato ---
+    cnpjNorm
+      ? prisma.lead.findMany({
+          where: { ...exclude, companyRegistrationID: cnpjNorm },
+          select: LEAD_SUMMARY_SELECT,
+        })
+      : Promise.resolve([]),
+
+    // --- Nome similar (contains, case-insensitive) ---
+    input.businessName && input.businessName.trim().length >= 3
+      ? prisma.lead.findMany({
+          where: {
+            ...exclude,
+            businessName: { contains: input.businessName.trim(), mode: "insensitive" },
+          },
+          select: LEAD_SUMMARY_SELECT,
+          take: 10,
+        })
+      : Promise.resolve([]),
+
+    // --- Telefone/WhatsApp (dígitos normalizados) ---
+    (() => {
+      const rawPhone = input.phone || input.whatsapp;
+      const digits = rawPhone ? rawPhone.replace(/\D/g, "") : null;
+      if (!digits || digits.length < 8) return Promise.resolve([]);
+      return prisma.lead.findMany({
+        where: {
+          ...exclude,
+          OR: [
+            { phone: { contains: digits, mode: "insensitive" } },
+            { whatsapp: { contains: digits, mode: "insensitive" } },
+          ],
+        },
+        select: LEAD_SUMMARY_SELECT,
+        take: 10,
+      });
+    })(),
+
+    // --- Email exato (case-insensitive) ---
+    input.email && input.email.trim().length > 3
+      ? prisma.lead.findMany({
+          where: {
+            ...exclude,
+            email: { equals: input.email.trim(), mode: "insensitive" },
+          },
+          select: LEAD_SUMMARY_SELECT,
+          take: 10,
+        })
+      : Promise.resolve([]),
+
+    // --- Logradouro (parte do endereço antes da vírgula) + cidade ---
+    (() => {
+      if (!input.address || input.address.trim().length < 5) return Promise.resolve([]);
+      const street = input.address.split(",")[0].trim();
+      if (street.length < 5) return Promise.resolve([]);
+      return prisma.lead.findMany({
+        where: {
+          ...exclude,
+          address: { contains: street, mode: "insensitive" },
+          ...(input.city ? { city: { equals: input.city.trim(), mode: "insensitive" } } : {}),
+        },
+        select: LEAD_SUMMARY_SELECT,
+        take: 10,
+      });
+    })(),
+  ]);
+
+  return { cnpj, name, phone, email, address };
+}
+
+// ============ LEAD CREATE — RESULTADO DISCRIMINADO ============
+//
+// Todas as rotas de criação de leads (manual, IA, Google, APIs externas) devem
+// usar createLead() ou createLeadWithContacts() e tratar o resultado conforme
+// o `status` retornado.
+//
+// ┌─────────────────────────────────────────────────────────────────────────┐
+// │ status: 'created'                                                       │
+// │   → Lead criado com sucesso. Usar `lead` e `contacts` normalmente.      │
+// ├─────────────────────────────────────────────────────────────────────────┤
+// │ status: 'duplicate_found'                                               │
+// │   → Possíveis duplicatas encontradas. O campo `duplicates` contém:      │
+// │     - cnpj:    leads com MESMO CNPJ (match exato — alta confiança)      │
+// │     - name:    leads com nome similar (contains, case-insensitive)      │
+// │     - phone:   leads com mesmo telefone ou WhatsApp (dígitos iguais)    │
+// │     - email:   leads com mesmo e-mail (case-insensitive)                │
+// │     - address: leads na mesma rua + cidade                              │
+// │                                                                         │
+// │   O CALLER decide como tratar. Exemplos por integração:                 │
+// │     Form manual      → mostra painel de revisão, usuário descarta e     │
+// │                         re-envia com skipDuplicateCheck: true            │
+// │     Agente IA        → pergunta ao usuário no chat antes de prosseguir  │
+// │     Importação Google→ lista conflitos para revisão antes do bulk       │
+// │     API REST futura  → retorna HTTP 409 com body { duplicates }         │
+// │     Script de import → loga e pula, ou força com skipDuplicateCheck     │
+// │                                                                         │
+// │   Para forçar criação após confirmação:                                 │
+// │     createLead(data, { skipDuplicateCheck: true })                      │
+// ├─────────────────────────────────────────────────────────────────────────┤
+// │ CNPJ inválido/duplicado                                                 │
+// │   → Zod lança erro de validação (formato).                              │
+// │   → DB lança erro de constraint única (CNPJ já existe, mesmo com skip). │
+// └─────────────────────────────────────────────────────────────────────────┘
+
+export type CreateLeadResult =
+  | { status: "created"; lead: Awaited<ReturnType<typeof prisma.lead.create>>; contacts: Awaited<ReturnType<typeof prisma.leadContact.create>>[] }
+  | { status: "duplicate_found"; duplicates: LeadDuplicates };
+
+/** Retorna true se ao menos uma categoria tem duplicatas */
+function hasDuplicates(d: LeadDuplicates): boolean {
+  return d.cnpj.length > 0 || d.name.length > 0 || d.phone.length > 0 ||
+    d.email.length > 0 || d.address.length > 0;
+}
 
 // ============ LEAD CRUD ============
 
@@ -253,9 +429,28 @@ export async function getLeadById(id: string) {
   return lead;
 }
 
-export async function createLead(data: LeadFormData) {
+export async function createLead(
+  data: LeadFormData,
+  options?: { skipDuplicateCheck?: boolean }
+): Promise<CreateLeadResult> {
   const session = await getAuthenticatedSession();
   const validated = leadSchema.parse(data);
+
+  // Verificação de duplicidade — ver bloco de documentação acima
+  if (!options?.skipDuplicateCheck) {
+    const duplicates = await checkLeadDuplicates({
+      companyRegistrationID: validated.companyRegistrationID,
+      businessName: validated.businessName,
+      phone: validated.phone,
+      whatsapp: validated.whatsapp,
+      email: validated.email,
+      address: validated.address,
+      city: validated.city,
+    });
+    if (hasDuplicates(duplicates)) {
+      return { status: "duplicate_found", duplicates };
+    }
+  }
 
   const { languages, labelIds, ...rest } = validated;
   const lead = await prisma.lead.create({
@@ -270,26 +465,43 @@ export async function createLead(data: LeadFormData) {
   });
 
   revalidatePath("/leads");
-  return lead;
+  return { status: "created", lead, contacts: [] };
 }
 
 export async function createLeadWithContacts(
   leadData: LeadFormData,
-  contacts: LeadContactFormData[]
-) {
+  contacts: LeadContactFormData[],
+  options?: { skipDuplicateCheck?: boolean }
+): Promise<CreateLeadResult> {
   const session = await getAuthenticatedSession();
 
-  // Validate lead data
+  // Valida os dados do lead (inclui validação de CNPJ via Zod)
   const validatedLead = leadSchema.parse(leadData);
 
-  // Validate all contacts
+  // Valida todos os contatos
   const validatedContacts = contacts.map((contact) =>
     leadContactSchema.parse(contact)
   );
 
-  // Use transaction to ensure all-or-nothing
+  // Verificação de duplicidade — ver bloco de documentação acima.
+  // Executada antes da transação para evitar rollback desnecessário.
+  if (!options?.skipDuplicateCheck) {
+    const duplicates = await checkLeadDuplicates({
+      companyRegistrationID: validatedLead.companyRegistrationID,
+      businessName: validatedLead.businessName,
+      phone: validatedLead.phone,
+      whatsapp: validatedLead.whatsapp,
+      email: validatedLead.email,
+      address: validatedLead.address,
+      city: validatedLead.city,
+    });
+    if (hasDuplicates(duplicates)) {
+      return { status: "duplicate_found", duplicates };
+    }
+  }
+
+  // Criação atômica: lead + contatos numa transação
   const result = await prisma.$transaction(async (tx) => {
-    // 1. Create the lead
     const { languages: leadLanguages, labelIds, ...leadRest } = validatedLead;
     const lead = await tx.lead.create({
       data: {
@@ -302,20 +514,16 @@ export async function createLeadWithContacts(
       },
     });
 
-    // 2. Create contacts if any
-    const createdContacts = [];
+    const createdContacts: Awaited<ReturnType<typeof tx.leadContact.create>>[] = [];
 
     if (validatedContacts.length > 0) {
-      // Determine primary contact logic:
-      // - If any contact has isPrimary: true, use the first one as primary
-      // - If no contact has isPrimary, set the first contact as primary
+      // Se nenhum contato tem isPrimary, o primeiro assume
       const hasPrimaryContact = validatedContacts.some((c) => c.isPrimary);
       let primaryAssigned = false;
 
       for (let i = 0; i < validatedContacts.length; i++) {
         const contactData = validatedContacts[i];
 
-        // Determine if this contact should be primary
         let isPrimary = false;
         if (!primaryAssigned) {
           if (hasPrimaryContact && contactData.isPrimary) {
@@ -341,16 +549,13 @@ export async function createLeadWithContacts(
       }
     }
 
-    return {
-      lead,
-      contacts: createdContacts,
-    };
+    return { lead, contacts: createdContacts };
   });
 
   revalidatePath("/leads");
   revalidatePath(`/leads/${result.lead.id}`);
 
-  return result;
+  return { status: "created", lead: result.lead, contacts: result.contacts };
 }
 
 export async function updateLead(id: string, data: LeadFormData) {
