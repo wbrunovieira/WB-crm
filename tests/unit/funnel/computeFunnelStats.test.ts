@@ -40,6 +40,7 @@ describe("computeFunnelStats", () => {
   it("returns all zeros for empty arrays", () => {
     const stats = computeFunnelStats([], [], WEEK_START, WEEK_END);
     expect(stats).toEqual({
+      uniqueLeads: 0,
       calls: 0,
       connections: 0,
       decisorConnections: 0,

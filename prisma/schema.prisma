@@ -218,6 +218,7 @@ model Lead {
   latitude      Float?
   longitude     Float?
   googleMapsUrl String?
+  openingHours  String?  // JSON: string[] with weekday descriptions from Google Places
 
   // Sessão de busca do Google Places
   googlePlacesSearchId String?

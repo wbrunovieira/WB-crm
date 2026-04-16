@@ -79,8 +79,9 @@ beforeEach(() => {
   mockGetSession.mockResolvedValue(SESSION as never);
 
   // Default: search profile not found yet (will be created)
-  prismaMock.googlePlacesSearch.findUnique.mockResolvedValue(null as never);
-  prismaMock.googlePlacesSearch.upsert.mockResolvedValue(mockSearchProfile as never);
+  prismaMock.googlePlacesSearch.findFirst.mockResolvedValue(null as never);
+  prismaMock.googlePlacesSearch.create.mockResolvedValue(mockSearchProfile as never);
+  prismaMock.googlePlacesSearch.findUnique.mockResolvedValue(mockSearchProfile as never);
   prismaMock.googlePlacesSearch.update.mockResolvedValue(mockSearchProfile as never);
 
   // Default: no existing leads with these googleIds
@@ -175,7 +176,7 @@ describe("importGoogleLeads — busca e importação básica", () => {
 // ---------------------------------------------------------------------------
 describe("importGoogleLeads — deduplicação", () => {
   it("pula place que já está no fetchedPlaceIds do search profile", async () => {
-    prismaMock.googlePlacesSearch.findUnique.mockResolvedValue({
+    prismaMock.googlePlacesSearch.findFirst.mockResolvedValue({
       ...mockSearchProfile,
       fetchedPlaceIds: JSON.stringify(["place-already-seen"]),
     } as never);
@@ -236,7 +237,7 @@ describe("importGoogleLeads — deduplicação", () => {
 // ---------------------------------------------------------------------------
 describe("importGoogleLeads — auto-avanço de páginas", () => {
   it("busca página 2 quando página 1 está toda duplicada", async () => {
-    prismaMock.googlePlacesSearch.findUnique.mockResolvedValue({
+    prismaMock.googlePlacesSearch.findFirst.mockResolvedValue({
       ...mockSearchProfile,
       fetchedPlaceIds: JSON.stringify(["place-1", "place-2"]),
     } as never);
@@ -263,7 +264,7 @@ describe("importGoogleLeads — auto-avanço de páginas", () => {
   });
 
   it("para de buscar quando Google não tem mais resultados", async () => {
-    prismaMock.googlePlacesSearch.findUnique.mockResolvedValue({
+    prismaMock.googlePlacesSearch.findFirst.mockResolvedValue({
       ...mockSearchProfile,
       fetchedPlaceIds: JSON.stringify(["place-1", "place-2"]),
     } as never);
@@ -303,7 +304,7 @@ describe("importGoogleLeads — auto-avanço de páginas", () => {
 
 // ---------------------------------------------------------------------------
 describe("importGoogleLeads — search profile", () => {
-  it("faz upsert do GooglePlacesSearch com a combinação de busca", async () => {
+  it("cria GooglePlacesSearch com a combinação de busca quando não existe", async () => {
     mockSearchPlaces.mockResolvedValue({
       places: [makePlaceResult("p1", "A")],
       nextPageToken: undefined,
@@ -311,22 +312,20 @@ describe("importGoogleLeads — search profile", () => {
 
     await importGoogleLeads(PARAMS);
 
-    expect(prismaMock.googlePlacesSearch.upsert).toHaveBeenCalledWith(
+    expect(prismaMock.googlePlacesSearch.create).toHaveBeenCalledWith(
       expect.objectContaining({
-        where: expect.objectContaining({
-          ownerId_country_city_zipCode_typeKeyword: expect.objectContaining({
-            ownerId: "user-123",
-            country: "BR",
-            city: "São Paulo",
-            typeKeyword: "clínica médica",
-          }),
+        data: expect.objectContaining({
+          ownerId: "user-123",
+          country: "BR",
+          city: "São Paulo",
+          typeKeyword: "clínica médica",
         }),
       })
     );
   });
 
   it("atualiza fetchedPlaceIds com todos os place_ids vistos (incluindo duplicados)", async () => {
-    prismaMock.googlePlacesSearch.findUnique.mockResolvedValue({
+    prismaMock.googlePlacesSearch.findFirst.mockResolvedValue({
       ...mockSearchProfile,
       fetchedPlaceIds: JSON.stringify(["old-place"]),
     } as never);
@@ -348,11 +347,9 @@ describe("importGoogleLeads — search profile", () => {
   });
 
   it("incrementa totalFetched e totalImported após busca", async () => {
-    prismaMock.googlePlacesSearch.findUnique.mockResolvedValue({
-      ...mockSearchProfile,
-      totalFetched: 10,
-      totalImported: 8,
-    } as never);
+    const profileWithTotals = { ...mockSearchProfile, totalFetched: 10, totalImported: 8 };
+    prismaMock.googlePlacesSearch.findFirst.mockResolvedValue(profileWithTotals as never);
+    prismaMock.googlePlacesSearch.findUnique.mockResolvedValue(profileWithTotals as never);
 
     mockSearchPlaces.mockResolvedValue({
       places: [
@@ -397,5 +394,126 @@ describe("importGoogleLeads — rate limit", () => {
 
     expect(result.imported).toBe(1);
     expect(result.status).toBe("rate_limited");
+  });
+});
+
+// ---------------------------------------------------------------------------
+describe("importGoogleLeads — novos campos (primaryType, neighborhood, internationalPhone, openingHours)", () => {
+  function makePlaceWithNewFields(placeId: string) {
+    return {
+      placeId,
+      businessName: "Clínica Fares",
+      address: "R. das Flores, 100 - Osasco, SP",
+      city: "Osasco",
+      state: "SP",
+      country: "Brazil",
+      zipCode: "06000-000",
+      phone: "(11) 3851-4000",
+      website: "www.clinicafares.com.br",
+      rating: 4.8,
+      userRatingCount: 9746,
+      priceLevel: null,
+      businessStatus: "OPERATIONAL",
+      types: ["health", "doctor"],
+      latitude: -23.5,
+      longitude: -46.7,
+      googleMapsUrl: "https://maps.google.com/?cid=fares",
+      // novos campos
+      primaryType: "doctor",
+      neighborhood: "Jardim América",
+      internationalPhone: "+55 11 3851-4000",
+      openingHours: JSON.stringify([
+        "Monday: 8:00 AM – 6:00 PM",
+        "Tuesday: 8:00 AM – 6:00 PM",
+        "Saturday: 8:00 AM – 12:00 PM",
+        "Sunday: Closed",
+      ]),
+    };
+  }
+
+  it("salva primaryType em categories", async () => {
+    mockSearchPlaces.mockResolvedValue({
+      places: [makePlaceWithNewFields("place-fares")],
+      nextPageToken: undefined,
+    });
+
+    await importGoogleLeads({ ...PARAMS, requestedCount: 1 });
+
+    const call = prismaMock.lead.create.mock.calls[0][0];
+    expect(call.data.categories).toBe("doctor");
+  });
+
+  it("salva neighborhood em vicinity", async () => {
+    mockSearchPlaces.mockResolvedValue({
+      places: [makePlaceWithNewFields("place-fares")],
+      nextPageToken: undefined,
+    });
+
+    await importGoogleLeads({ ...PARAMS, requestedCount: 1 });
+
+    const call = prismaMock.lead.create.mock.calls[0][0];
+    expect(call.data.vicinity).toBe("Jardim América");
+  });
+
+  it("salva internationalPhone em whatsapp", async () => {
+    mockSearchPlaces.mockResolvedValue({
+      places: [makePlaceWithNewFields("place-fares")],
+      nextPageToken: undefined,
+    });
+
+    await importGoogleLeads({ ...PARAMS, requestedCount: 1 });
+
+    const call = prismaMock.lead.create.mock.calls[0][0];
+    expect(call.data.whatsapp).toBe("+55 11 3851-4000");
+  });
+
+  it("salva openingHours no Lead", async () => {
+    mockSearchPlaces.mockResolvedValue({
+      places: [makePlaceWithNewFields("place-fares")],
+      nextPageToken: undefined,
+    });
+
+    await importGoogleLeads({ ...PARAMS, requestedCount: 1 });
+
+    const call = prismaMock.lead.create.mock.calls[0][0];
+    expect(call.data.openingHours).toBe(makePlaceWithNewFields("x").openingHours);
+  });
+
+  it("não quebra quando novos campos estão ausentes (undefined)", async () => {
+    mockSearchPlaces.mockResolvedValue({
+      places: [{
+        placeId: "place-minimal",
+        businessName: "Clínica Mínima",
+        address: "R. X, 1",
+        city: "SP",
+        state: "SP",
+        country: "BR",
+        zipCode: null,
+        phone: null,
+        website: null,
+        rating: null,
+        userRatingCount: null,
+        priceLevel: null,
+        businessStatus: "OPERATIONAL",
+        types: [],
+        latitude: null,
+        longitude: null,
+        googleMapsUrl: null,
+        primaryType: undefined,
+        neighborhood: undefined,
+        internationalPhone: undefined,
+        openingHours: undefined,
+      }],
+      nextPageToken: undefined,
+    });
+
+    const result = await importGoogleLeads({ ...PARAMS, requestedCount: 1 });
+
+    expect(result.imported).toBe(1);
+    const call = prismaMock.lead.create.mock.calls[0][0];
+    expect(call.data.categories).toBeNull();
+    expect(call.data.vicinity).toBeNull();
+    expect(call.data.whatsapp).toBeNull();
+    expect(call.data.openingHours).toBeNull();
   });
 });

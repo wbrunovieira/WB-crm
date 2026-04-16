@@ -7,6 +7,7 @@ const FIELD_MASK = [
   "places.addressComponents",
   "places.location",
   "places.nationalPhoneNumber",
+  "places.internationalPhoneNumber",
   "places.websiteUri",
   "places.rating",
   "places.userRatingCount",
@@ -16,6 +17,7 @@ const FIELD_MASK = [
   "places.primaryType",
   "places.editorialSummary",
   "places.googleMapsUri",
+  "places.regularOpeningHours",
   "nextPageToken",
 ].join(",");
 
@@ -44,17 +46,21 @@ export interface PlaceResult {
   state?: string;
   zipCode?: string;
   country?: string;
+  neighborhood?: string;
   phone?: string;
+  internationalPhone?: string;
   website?: string;
   rating?: number;
   userRatingCount?: number;
   priceLevel?: number;
   businessStatus?: string;
   types?: string[];
+  primaryType?: string;
   description?: string;
   latitude?: number;
   longitude?: number;
   googleMapsUrl?: string;
+  openingHours?: string;
 }
 
 export interface SearchPlacesResult {
@@ -82,6 +88,8 @@ function mapPlace(raw: Record<string, unknown>): PlaceResult {
   const addressComponents: Array<{ longText?: string; shortText?: string; types: string[] }> =
     Array.isArray(rawComponents) ? rawComponents : [];
 
+  const openingHoursRaw = raw.regularOpeningHours as { weekdayDescriptions?: string[] } | undefined;
+
   return {
     placeId: raw.id as string,
     businessName: (raw.displayName as { text: string })?.text ?? "",
@@ -90,7 +98,11 @@ function mapPlace(raw: Record<string, unknown>): PlaceResult {
     state: extractAddressComponent(addressComponents, "administrative_area_level_1"),
     zipCode: extractAddressComponent(addressComponents, "postal_code"),
     country: extractAddressComponent(addressComponents, "country"),
+    neighborhood:
+      extractAddressComponent(addressComponents, "sublocality_level_1") ??
+      extractAddressComponent(addressComponents, "sublocality"),
     phone: raw.nationalPhoneNumber as string | undefined,
+    internationalPhone: raw.internationalPhoneNumber as string | undefined,
     website: raw.websiteUri as string | undefined,
     rating: raw.rating as number | undefined,
     userRatingCount: raw.userRatingCount as number | undefined,
@@ -100,10 +112,14 @@ function mapPlace(raw: Record<string, unknown>): PlaceResult {
         : undefined,
     businessStatus: raw.businessStatus as string | undefined,
     types: raw.types as string[] | undefined,
+    primaryType: raw.primaryType as string | undefined,
     description: (raw.editorialSummary as { text: string } | undefined)?.text,
     latitude: (raw.location as { latitude: number } | undefined)?.latitude,
     longitude: (raw.location as { longitude: number } | undefined)?.longitude,
     googleMapsUrl: raw.googleMapsUri as string | undefined,
+    openingHours: openingHoursRaw?.weekdayDescriptions
+      ? JSON.stringify(openingHoursRaw.weekdayDescriptions)
+      : undefined,
   };
 }
 

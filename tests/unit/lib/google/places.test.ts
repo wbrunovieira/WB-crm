@@ -201,6 +201,103 @@ describe("searchPlaces — resultado", () => {
 });
 
 // ---------------------------------------------------------------------------
+describe("searchPlaces — novos campos (primaryType, neighborhood, internationalPhone, openingHours)", () => {
+  it("mapeia primaryType", async () => {
+    mockSuccess([makePlaceResult({ primaryType: "doctor" })]);
+
+    const result = await searchPlaces({ textQuery: "clínicas" });
+
+    expect(result.places[0].primaryType).toBe("doctor");
+  });
+
+  it("retorna primaryType undefined quando ausente", async () => {
+    mockSuccess([makePlaceResult({ primaryType: undefined })]);
+
+    const result = await searchPlaces({ textQuery: "clínicas" });
+
+    expect(result.places[0].primaryType).toBeUndefined();
+  });
+
+  it("mapeia bairro (sublocality_level_1) dos addressComponents", async () => {
+    mockSuccess([makePlaceResult({
+      addressComponents: [
+        { longText: "São Paulo", types: ["locality"] },
+        { longText: "Jardim América", types: ["sublocality_level_1", "sublocality"] },
+        { longText: "SP", types: ["administrative_area_level_1"] },
+        { longText: "01310-100", types: ["postal_code"] },
+        { longText: "Brazil", types: ["country"] },
+      ],
+    })]);
+
+    const result = await searchPlaces({ textQuery: "clínicas" });
+
+    expect(result.places[0].neighborhood).toBe("Jardim América");
+  });
+
+  it("retorna neighborhood undefined quando bairro não está nos addressComponents", async () => {
+    mockSuccess([makePlaceResult()]);
+
+    const result = await searchPlaces({ textQuery: "clínicas" });
+
+    expect(result.places[0].neighborhood).toBeUndefined();
+  });
+
+  it("mapeia internationalPhoneNumber", async () => {
+    mockSuccess([makePlaceResult({ internationalPhoneNumber: "+55 11 9999-8888" })]);
+
+    const result = await searchPlaces({ textQuery: "clínicas" });
+
+    expect(result.places[0].internationalPhone).toBe("+55 11 9999-8888");
+  });
+
+  it("retorna internationalPhone undefined quando ausente", async () => {
+    mockSuccess([makePlaceResult()]);
+
+    const result = await searchPlaces({ textQuery: "clínicas" });
+
+    expect(result.places[0].internationalPhone).toBeUndefined();
+  });
+
+  it("mapeia regularOpeningHours.weekdayDescriptions como JSON string", async () => {
+    const weekdays = [
+      "Monday: 8:00 AM – 6:00 PM",
+      "Tuesday: 8:00 AM – 6:00 PM",
+      "Wednesday: 8:00 AM – 6:00 PM",
+      "Thursday: 8:00 AM – 6:00 PM",
+      "Friday: 8:00 AM – 6:00 PM",
+      "Saturday: 8:00 AM – 12:00 PM",
+      "Sunday: Closed",
+    ];
+    mockSuccess([makePlaceResult({
+      regularOpeningHours: { openNow: true, weekdayDescriptions: weekdays },
+    })]);
+
+    const result = await searchPlaces({ textQuery: "clínicas" });
+
+    expect(result.places[0].openingHours).toBe(JSON.stringify(weekdays));
+  });
+
+  it("retorna openingHours undefined quando regularOpeningHours ausente", async () => {
+    mockSuccess([makePlaceResult()]);
+
+    const result = await searchPlaces({ textQuery: "clínicas" });
+
+    expect(result.places[0].openingHours).toBeUndefined();
+  });
+
+  it("Field Mask inclui os novos campos", async () => {
+    mockSuccess([makePlaceResult()]);
+
+    await searchPlaces({ textQuery: "clínicas" });
+
+    const [, options] = mockFetch.mock.calls[0];
+    expect(options.headers["X-Goog-FieldMask"]).toContain("places.primaryType");
+    expect(options.headers["X-Goog-FieldMask"]).toContain("places.internationalPhoneNumber");
+    expect(options.headers["X-Goog-FieldMask"]).toContain("places.regularOpeningHours");
+  });
+});
+
+// ---------------------------------------------------------------------------
 describe("searchPlaces — rate limit", () => {
   it("lança PlacesRateLimitError quando API retorna 429", async () => {
     mockRateLimit();
