@@ -3,7 +3,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { sendTextMessage, sendMediaMessage, type MediaType } from "@/lib/evolution/client";
+import { sendTextMessage, sendMediaMessage, checkWhatsAppNumber, type MediaType } from "@/lib/evolution/client";
 import { processWhatsAppMessage } from "@/lib/evolution/message-activity-creator";
 import { logger } from "@/lib/logger";
 
@@ -179,6 +179,77 @@ export async function sendWhatsAppMedia(
     return {
       success: false,
       error: err instanceof Error ? err.message : "Erro ao enviar arquivo",
+    };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Verificar se número tem WhatsApp
+// ---------------------------------------------------------------------------
+
+export interface CheckWhatsAppActionResult {
+  success: boolean;
+  exists?: boolean;
+  jid?: string;
+  number?: string;
+  error?: string;
+}
+
+export async function checkWhatsApp(phone: string): Promise<CheckWhatsAppActionResult> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) return { success: false, error: "Não autorizado" };
+
+  if (!phone?.trim()) return { success: false, error: "Número obrigatório" };
+
+  try {
+    const result = await checkWhatsAppNumber(phone);
+    return { success: true, ...result };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Erro ao verificar número",
+    };
+  }
+}
+
+export interface SaveWhatsAppResult {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Salva o número verificado no campo whatsapp do Lead ou Contact.
+ * Chamado opcionalmente após checkWhatsApp encontrar WhatsApp no campo telefone.
+ */
+export async function saveWhatsAppNumber(
+  entityType: "lead" | "contact",
+  entityId: string,
+  whatsapp: string
+): Promise<SaveWhatsAppResult> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) return { success: false, error: "Não autorizado" };
+
+  try {
+    if (entityType === "lead") {
+      const lead = await prisma.lead.findFirst({
+        where: { id: entityId, ownerId: session.user.id },
+        select: { id: true },
+      });
+      if (!lead) return { success: false, error: "Lead não encontrado" };
+      await prisma.lead.update({ where: { id: entityId }, data: { whatsapp } });
+    } else {
+      const contact = await prisma.contact.findFirst({
+        where: { id: entityId, ownerId: session.user.id },
+        select: { id: true },
+      });
+      if (!contact) return { success: false, error: "Contato não encontrado" };
+      await prisma.contact.update({ where: { id: entityId }, data: { whatsapp } });
+    }
+    return { success: true };
+  } catch (err) {
+    return {
+      success: false,
+      error: err instanceof Error ? err.message : "Erro ao salvar",
     };
   }
 }

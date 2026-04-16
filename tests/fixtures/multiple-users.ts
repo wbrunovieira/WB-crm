@@ -225,6 +225,7 @@ export function createMockLead(ownerId: string, overrides: Partial<{
     latitude: null,
     longitude: null,
     googleMapsUrl: null,
+    openingHours: null,
     googlePlacesSearchId: null,
     ownerId,
     createdAt: new Date(),

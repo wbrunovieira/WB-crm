@@ -64,6 +64,7 @@ export const mockLead: Lead = {
   latitude: null,
   longitude: null,
   googleMapsUrl: null,
+  openingHours: null,
   googlePlacesSearchId: null,
   ownerId: 'user-test-123',
   createdAt: new Date('2024-01-01'),

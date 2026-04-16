@@ -9,7 +9,7 @@ interface SendResponse {
   status: string;
 }
 
-async function evolutionPost(path: string, body: unknown): Promise<SendResponse> {
+async function evolutionPost<T = SendResponse>(path: string, body: unknown): Promise<T> {
   const res = await fetch(
     `${EVOLUTION_API_URL}${path}`,
     {
@@ -27,7 +27,35 @@ async function evolutionPost(path: string, body: unknown): Promise<SendResponse>
     throw new Error(`Evolution API error ${res.status}: ${text}`);
   }
 
-  return res.json();
+  return res.json() as Promise<T>;
+}
+
+export interface CheckWhatsAppResult {
+  exists: boolean;
+  jid?: string;
+  number?: string;
+}
+
+/**
+ * Verifica se um número de telefone tem WhatsApp ativo.
+ * Aceita formato com ou sem DDI (ex: "11999998888" ou "+5511999998888").
+ */
+export async function checkWhatsAppNumber(phone: string): Promise<CheckWhatsAppResult> {
+  // Normaliza: mantém apenas dígitos
+  const digits = phone.replace(/\D/g, "");
+
+  const data = await evolutionPost<Array<{ exists: boolean; jid?: string; number?: string }>>(
+    `/chat/checkIsWhatsapp/${EVOLUTION_INSTANCE}`,
+    { numbers: [digits] }
+  );
+
+  // A API retorna um array, pegamos o primeiro resultado
+  const result = Array.isArray(data) ? data[0] : (data as CheckWhatsAppResult);
+  return {
+    exists: result?.exists ?? false,
+    jid: result?.jid,
+    number: result?.number ?? digits,
+  };
 }
 
 export async function sendTextMessage(

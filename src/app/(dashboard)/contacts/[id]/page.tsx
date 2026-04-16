@@ -3,6 +3,7 @@ import { getMeetings } from "@/actions/meetings";
 import MeetingsList from "@/components/meetings/MeetingsList";
 import { PhoneLink } from "@/components/ui/phone-link";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
+import { WhatsAppCheckButton } from "@/components/whatsapp/WhatsAppCheckButton";
 import GmailButton from "@/components/gmail/GmailButton";
 import { DeleteContactButton } from "@/components/contacts/DeleteContactButton";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
@@ -68,9 +69,17 @@ export default async function ContactDetailPage({
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-500">Telefone</dt>
-              <dd className="mt-1 text-sm text-gray-900">
+              <dd className="mt-1 flex items-center gap-2 text-sm text-gray-900 flex-wrap">
                 <PhoneLink phone={contact.phone} className="text-gray-900 hover:text-primary" />
                 {!contact.phone && "-"}
+                {contact.phone && (
+                  <WhatsAppCheckButton
+                    phone={contact.phone}
+                    entityType="contact"
+                    entityId={contact.id}
+                    canSave={!contact.whatsapp}
+                  />
+                )}
               </dd>
             </div>
             {contact.whatsapp && (
@@ -78,6 +87,11 @@ export default async function ContactDetailPage({
                 <dt className="text-sm font-medium text-gray-500">WhatsApp</dt>
                 <dd className="mt-1 flex items-center gap-2 text-sm text-gray-900 flex-wrap">
                   <span className="font-mono">{contact.whatsapp}</span>
+                  <WhatsAppCheckButton
+                    phone={contact.whatsapp}
+                    entityType="contact"
+                    entityId={contact.id}
+                  />
                   <WhatsAppButton to={contact.whatsapp} name={contact.name} variant="icon" />
                 </dd>
               </div>

@@ -5,6 +5,7 @@ import ProposalsList from "@/components/proposals/ProposalsList";
 import MeetingsList from "@/components/meetings/MeetingsList";
 import { PhoneLink } from "@/components/ui/phone-link";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
+import { WhatsAppCheckButton } from "@/components/whatsapp/WhatsAppCheckButton";
 import GmailButton from "@/components/gmail/GmailButton";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
@@ -245,8 +246,14 @@ export default async function LeadDetailPage({
             {lead.phone && (
               <div>
                 <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Telefone</dt>
-                <dd className="text-base font-mono text-gray-900">
+                <dd className="text-base font-mono text-gray-900 flex items-center gap-2 flex-wrap">
                   <PhoneLink phone={lead.phone} className="text-gray-900 hover:text-primary" />
+                  <WhatsAppCheckButton
+                    phone={lead.phone}
+                    entityType="lead"
+                    entityId={lead.id}
+                    canSave={!lead.whatsapp}
+                  />
                 </dd>
               </div>
             )}
@@ -255,6 +262,11 @@ export default async function LeadDetailPage({
                 <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">WhatsApp</dt>
                 <dd className="text-base font-mono text-gray-900 flex items-center gap-2 flex-wrap">
                   <span>{lead.whatsapp}</span>
+                  <WhatsAppCheckButton
+                    phone={lead.whatsapp}
+                    entityType="lead"
+                    entityId={lead.id}
+                  />
                   <WhatsAppButton to={lead.whatsapp} name={lead.businessName} variant="icon" />
                 </dd>
               </div>
