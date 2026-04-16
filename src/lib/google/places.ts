@@ -73,16 +73,14 @@ function extractAddressComponent(
   type: string,
   useShort = false
 ): string | undefined {
-  const comp = components?.find((c) => c.types?.includes(type));
+  const comp = components?.find((c) => c?.types?.includes(type));
   return useShort ? comp?.shortText : comp?.longText;
 }
 
 function mapPlace(raw: Record<string, unknown>): PlaceResult {
-  const addressComponents = (raw.addressComponents as Array<{
-    longText?: string;
-    shortText?: string;
-    types: string[];
-  }>) ?? [];
+  const rawComponents = raw.addressComponents;
+  const addressComponents: Array<{ longText?: string; shortText?: string; types: string[] }> =
+    Array.isArray(rawComponents) ? rawComponents : [];
 
   return {
     placeId: raw.id as string,

@@ -102,7 +102,13 @@ export async function importGoogleLeads(
     });
   }
 
-  let fetchedPlaceIds: string[] = JSON.parse(searchProfile.fetchedPlaceIds || "[]");
+  let fetchedPlaceIds: string[] = [];
+  try {
+    const parsed: unknown = JSON.parse(searchProfile.fetchedPlaceIds || "[]");
+    fetchedPlaceIds = Array.isArray(parsed) ? (parsed as string[]) : [];
+  } catch {
+    fetchedPlaceIds = [];
+  }
   let imported = 0;
   let skipped = 0;
   let pageToken: string | undefined;
@@ -121,6 +127,9 @@ export async function importGoogleLeads(
       }
 
       for (const place of result.places) {
+        // Skip malformed places from the API
+        if (!place.placeId) { skipped++; continue; }
+
         // 1. Já vimos este place nesta busca?
         if (fetchedPlaceIds.includes(place.placeId)) {
           skipped++;
