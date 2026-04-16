@@ -5,6 +5,8 @@ export type FunnelActivity = {
   completed: boolean;
   meetingNoShow: boolean;
   dueDate: Date | null;
+  leadId: string | null;
+  contactId: string | null;
 };
 
 export type FunnelDeal = {
@@ -13,6 +15,7 @@ export type FunnelDeal = {
 };
 
 export type FunnelStats = {
+  uniqueLeads: number;
   calls: number;
   connections: number;
   decisorConnections: number;
@@ -38,7 +41,15 @@ export function computeFunnelStats(
     (a) => a.type === "meeting" && inWeek(a.dueDate)
   );
 
+  // Count unique leads/contacts that received at least one call attempt this week
+  const calledEntities = new Set<string>();
+  for (const a of calls) {
+    if (a.leadId) calledEntities.add(`lead:${a.leadId}`);
+    else if (a.contactId) calledEntities.add(`contact:${a.contactId}`);
+  }
+
   return {
+    uniqueLeads: calledEntities.size,
     calls: calls.length,
     connections: calls.filter((a) => a.gotoDuration !== null && a.gotoDuration > 60).length,
     decisorConnections: calls.filter((a) => a.callContactType === "decisor").length,

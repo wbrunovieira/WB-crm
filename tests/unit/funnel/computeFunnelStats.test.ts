@@ -12,6 +12,8 @@ function call(overrides: Partial<FunnelActivity> = {}): FunnelActivity {
     completed: true,
     meetingNoShow: false,
     dueDate: new Date("2026-04-14T10:00:00.000Z"),
+    leadId: null,
+    contactId: null,
     ...overrides,
   };
 }
@@ -24,6 +26,8 @@ function meeting(overrides: Partial<FunnelActivity> = {}): FunnelActivity {
     completed: true,
     meetingNoShow: false,
     dueDate: new Date("2026-04-15T10:00:00.000Z"),
+    leadId: null,
+    contactId: null,
     ...overrides,
   };
 }
@@ -59,7 +63,7 @@ describe("computeFunnelStats", () => {
   it("does not count non-call activities as calls", () => {
     const activities: FunnelActivity[] = [
       meeting(),
-      { type: "email", gotoDuration: null, callContactType: null, completed: true, meetingNoShow: false, dueDate: new Date("2026-04-14T10:00:00.000Z") },
+      { type: "email", gotoDuration: null, callContactType: null, completed: true, meetingNoShow: false, dueDate: new Date("2026-04-14T10:00:00.000Z"), leadId: null, contactId: null },
     ];
     const stats = computeFunnelStats(activities, [], WEEK_START, WEEK_END);
     expect(stats.calls).toBe(0);

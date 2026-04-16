@@ -26,6 +26,14 @@ export function FunnelVisualization({
 }) {
   const stages: Stage[] = [
     {
+      label: "Leads Únicos",
+      count: stats.uniqueLeads,
+      goal: breakdown.requiredUniqueLeads,
+      rate: null,
+      rateLabel: "",
+      color: "#9b3aab",
+    },
+    {
       label: "Ligações",
       count: stats.calls,
       goal: breakdown.requiredCalls,
@@ -126,10 +134,18 @@ export function FunnelVisualization({
             {/* Conversion rate badge */}
             <div className="w-16 text-right flex-shrink-0">
               {i < stages.length - 1 && stage.count > 0 && (
-                <span className="text-xs text-purple-300">
-                  {pct(stages[i + 1].count, stage.count)}
-                  <span className="block text-[10px] text-gray-500">conv.</span>
-                </span>
+                i === 0 ? (
+                  // Leads → Ligações: show avg attempts per lead
+                  <span className="text-xs text-purple-300">
+                    {(stages[1].count / stage.count).toFixed(1)}x
+                    <span className="block text-[10px] text-gray-500">tent./lead</span>
+                  </span>
+                ) : (
+                  <span className="text-xs text-purple-300">
+                    {pct(stages[i + 1].count, stage.count)}
+                    <span className="block text-[10px] text-gray-500">conv.</span>
+                  </span>
+                )
               )}
             </div>
           </div>

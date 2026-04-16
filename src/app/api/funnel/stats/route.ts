@@ -58,6 +58,8 @@ export async function GET(request: Request) {
           completed: true,
           meetingNoShow: true,
           dueDate: true,
+          leadId: true,
+          contactId: true,
         },
       }),
       prisma.deal.findMany({

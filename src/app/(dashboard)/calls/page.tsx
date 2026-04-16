@@ -31,6 +31,8 @@ export default async function CallsPage() {
         completed: true,
         meetingNoShow: true,
         dueDate: true,
+        leadId: true,
+        contactId: true,
       },
     }),
     prisma.deal.findMany({
