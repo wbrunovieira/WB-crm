@@ -11,13 +11,15 @@ interface GoogleLeadsModalProps {
   onSuccess: (imported: number) => void;
 }
 
-const COUNTRY_OPTIONS = [
-  { value: "BR", label: "Brasil" },
-  { value: "US", label: "Estados Unidos" },
-  { value: "PT", label: "Portugal" },
-  { value: "AR", label: "Argentina" },
-  { value: "MX", label: "México" },
-];
+import { getCountryDataList } from "countries-list";
+
+const QUICK_COUNTRIES = ["BR", "PT", "IT", "US"];
+
+// Build full list sorted by PT-BR name using Intl.DisplayNames
+const ptNames = new Intl.DisplayNames(["pt-BR"], { type: "region" });
+const ALL_COUNTRIES = getCountryDataList()
+  .map((c) => ({ value: c.iso2, label: ptNames.of(c.iso2) ?? c.name }))
+  .sort((a, b) => a.label.localeCompare(b.label, "pt-BR"));
 
 const EXCLUDE_OPTIONS: { key: keyof ExcludeCriteria; label: string }[] = [
   { key: "withoutPhone",        label: "Sem telefone" },
@@ -38,6 +40,9 @@ type ImportStatus = "idle" | "loading" | "success" | "exhausted" | "rate_limited
 
 export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) {
   const [country, setCountry] = useState("BR");
+  const [countrySearch, setCountrySearch] = useState("");
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const countryRef = useRef<HTMLDivElement>(null);
   const [city, setCity] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [typeKeyword, setTypeKeyword] = useState("");
@@ -52,16 +57,21 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
   const [showFilters, setShowFilters] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Close dropdown on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
       if (typeRef.current && !typeRef.current.contains(e.target as Node)) {
         setShowTypeDropdown(false);
       }
+      if (countryRef.current && !countryRef.current.contains(e.target as Node)) {
+        setShowCountryDropdown(false);
+      }
     }
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
+
+  const selectedCountryLabel = ALL_COUNTRIES.find((c) => c.value === country)?.label ?? country;
 
   useEffect(() => {
     return () => {
@@ -96,7 +106,7 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
       return;
     }
     if (!city.trim() && !zipCode.trim()) {
-      toast.error("Informe cidade ou CEP");
+      toast.error("Informe cidade ou CEP para localizar a busca");
       return;
     }
 
@@ -247,38 +257,72 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
           </div>
 
           {/* País */}
-          <div>
+          <div ref={countryRef}>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">País</label>
-            <select
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
-              disabled={isLoading || isRateLimited}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            >
-              {COUNTRY_OPTIONS.map((c) => (
-                <option key={c.value} value={c.value}>
-                  {c.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Cidade / CEP */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="mb-1.5 block text-sm font-medium text-gray-700">Cidade</label>
+            {/* Quick picks */}
+            <div className="mb-1.5 flex gap-1.5">
+              {QUICK_COUNTRIES.map((code) => {
+                const label = ALL_COUNTRIES.find((c) => c.value === code)?.label ?? code;
+                return (
+                  <button
+                    key={code}
+                    type="button"
+                    onClick={() => { setCountry(code); setCountrySearch(""); }}
+                    disabled={isLoading || isRateLimited}
+                    className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                      country === code
+                        ? "bg-primary text-white"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="relative">
               <input
                 type="text"
-                value={city}
-                onChange={(e) => setCity(e.target.value)}
-                placeholder="Ex: São Paulo"
+                value={countrySearch || (showCountryDropdown ? "" : selectedCountryLabel)}
+                onChange={(e) => { setCountrySearch(e.target.value); setShowCountryDropdown(true); }}
+                onFocus={() => { setCountrySearch(""); setShowCountryDropdown(true); }}
+                placeholder="Buscar país..."
                 disabled={isLoading || isRateLimited}
-                className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-8 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
               />
+              <ChevronDown className="pointer-events-none absolute right-2.5 top-2.5 h-4 w-4 text-gray-400" />
+              {showCountryDropdown && (() => {
+                const term = countrySearch.toLowerCase();
+                const filtered = ALL_COUNTRIES.filter(
+                  (c) => c.label.toLowerCase().includes(term) || c.value.toLowerCase().includes(term)
+                );
+                return filtered.length > 0 ? (
+                  <div className="absolute z-10 mt-1 max-h-52 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {filtered.map((c) => (
+                      <button
+                        key={c.value}
+                        type="button"
+                        onClick={() => { setCountry(c.value); setCountrySearch(""); setShowCountryDropdown(false); }}
+                        className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-purple-50 ${
+                          country === c.value ? "bg-purple-50 font-medium text-primary" : "text-gray-700"
+                        }`}
+                      >
+                        <span>{c.label}</span>
+                        <span className="font-mono text-xs text-gray-400">{c.value}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : null;
+              })()}
             </div>
+          </div>
+
+          {/* CEP / Cidade */}
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="mb-1.5 block text-sm font-medium text-gray-700">
-                CEP <span className="font-normal text-gray-400">(opcional)</span>
+                CEP
+                {!zipCode && <span className="ml-1 font-normal text-gray-400">(ou cidade)</span>}
               </label>
               <input
                 type="text"
@@ -287,6 +331,22 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
                 placeholder="Ex: 01310-100"
                 disabled={isLoading || isRateLimited}
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-gray-700">
+                Cidade
+                {zipCode && <span className="ml-1 font-normal text-gray-400">(opcional com CEP)</span>}
+              </label>
+              <input
+                type="text"
+                value={city}
+                onChange={(e) => setCity(e.target.value)}
+                placeholder="Ex: São Paulo"
+                disabled={isLoading || isRateLimited || !!zipCode}
+                className={`w-full rounded-lg border px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary ${
+                  zipCode ? "border-gray-200 bg-gray-50 text-gray-400" : "border-gray-300"
+                }`}
               />
             </div>
           </div>

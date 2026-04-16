@@ -19,6 +19,7 @@ import {
   BarChart3,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   TrendingUp,
   ScanSearch,
 } from "lucide-react";
@@ -38,11 +39,9 @@ const navItems = [
     name: "Leads",
     href: "/leads",
     icon: Users,
-  },
-  {
-    name: "Prospectos",
-    href: "/leads/prospects",
-    icon: ScanSearch,
+    children: [
+      { name: "Prospectos", href: "/leads/prospects", icon: ScanSearch },
+    ],
   },
   {
     name: "Contatos",
@@ -113,6 +112,7 @@ const adminOnlyRoutes = ["/admin/manager"];
 export function MainNav({ userRole: role }: MainNavProps) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -170,6 +170,13 @@ export function MainNav({ userRole: role }: MainNavProps) {
     return () => window.removeEventListener("resize", checkScroll);
   }, [filteredNavItems]);
 
+  // Close submenu on outside click
+  useEffect(() => {
+    function handleClick() { setOpenSubmenu(null); }
+    document.addEventListener("click", handleClick);
+    return () => document.removeEventListener("click", handleClick);
+  }, []);
+
   const scroll = (direction: "left" | "right") => {
     const container = scrollContainerRef.current;
     if (!container) return;
@@ -213,9 +220,13 @@ export function MainNav({ userRole: role }: MainNavProps) {
           {filteredNavItems.map((item) => {
             const Icon = item.icon;
             const active = !item.external && isActive(item.href);
-            const className = cn(
+            const hasChildren = item.children && item.children.length > 0;
+            const isOpen = openSubmenu === item.href;
+            const childActive = hasChildren && item.children!.some((c) => pathname.startsWith(c.href));
+
+            const baseClass = cn(
               "group relative flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium transition-all duration-200 whitespace-nowrap",
-              active
+              active || childActive
                 ? "bg-primary text-white shadow-lg"
                 : "text-gray-300 hover:bg-purple-900/50 hover:text-white"
             );
@@ -227,7 +238,7 @@ export function MainNav({ userRole: role }: MainNavProps) {
                   href={item.href}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className={className}
+                  className={baseClass}
                 >
                   <Icon className="h-4 w-4 flex-shrink-0" />
                   <span className="hidden lg:inline">{item.name}</span>
@@ -235,11 +246,70 @@ export function MainNav({ userRole: role }: MainNavProps) {
               );
             }
 
+            if (hasChildren) {
+              return (
+                <div key={item.href} className="relative">
+                  <div className="flex items-center">
+                    <Link href={item.href} className={cn(baseClass, "rounded-r-none pr-1.5")}>
+                      <Icon className="h-4 w-4 flex-shrink-0" />
+                      <span className="hidden lg:inline">{item.name}</span>
+                      {(active || childActive) && (
+                        <div className="absolute -bottom-[13px] left-1/2 h-0.5 w-8 -translate-x-1/2 bg-primary rounded-full" />
+                      )}
+                    </Link>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setOpenSubmenu(isOpen ? null : item.href); }}
+                      className={cn(
+                        "flex h-full items-center rounded-r-lg px-1 py-1.5 transition-all duration-200",
+                        active || childActive
+                          ? "bg-primary text-white hover:bg-primary/80"
+                          : "text-gray-300 hover:bg-purple-900/50 hover:text-white"
+                      )}
+                      aria-label="Expandir submenu"
+                    >
+                      <ChevronDown
+                        className={`h-3 w-3 transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Submenu dropdown */}
+                  <div
+                    className={cn(
+                      "absolute left-0 top-full z-20 mt-1.5 min-w-[160px] overflow-hidden rounded-lg border border-[#792990]/40 bg-[#1a0022] shadow-xl transition-all duration-200",
+                      isOpen ? "max-h-40 opacity-100" : "max-h-0 opacity-0 pointer-events-none"
+                    )}
+                  >
+                    {item.children!.map((child) => {
+                      const ChildIcon = child.icon;
+                      const childIsActive = pathname.startsWith(child.href);
+                      return (
+                        <Link
+                          key={child.href}
+                          href={child.href}
+                          onClick={() => setOpenSubmenu(null)}
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-2.5 text-sm font-medium transition-colors",
+                            childIsActive
+                              ? "bg-primary/20 text-white"
+                              : "text-gray-300 hover:bg-purple-900/50 hover:text-white"
+                          )}
+                        >
+                          <ChildIcon className="h-4 w-4 flex-shrink-0" />
+                          {child.name}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            }
+
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={className}
+                className={baseClass}
               >
                 <Icon className="h-4 w-4 flex-shrink-0" />
                 <span className="hidden lg:inline">{item.name}</span>
@@ -285,6 +355,7 @@ export function MainNav({ userRole: role }: MainNavProps) {
               {filteredNavItems.map((item) => {
                 const Icon = item.icon;
                 const active = !item.external && isActive(item.href);
+                const hasChildren = item.children && item.children.length > 0;
                 const className = cn(
                   "flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all duration-200",
                   active
@@ -309,18 +380,43 @@ export function MainNav({ userRole: role }: MainNavProps) {
                 }
 
                 return (
-                  <Link
-                    key={item.href}
-                    href={item.href}
-                    onClick={() => setMobileMenuOpen(false)}
-                    className={className}
-                  >
-                    <Icon className="h-5 w-5 flex-shrink-0" />
-                    <span>{item.name}</span>
-                    {active && (
-                      <div className="ml-auto h-2 w-2 rounded-full bg-white" />
+                  <div key={item.href}>
+                    <Link
+                      href={item.href}
+                      onClick={() => setMobileMenuOpen(false)}
+                      className={className}
+                    >
+                      <Icon className="h-5 w-5 flex-shrink-0" />
+                      <span>{item.name}</span>
+                      {active && (
+                        <div className="ml-auto h-2 w-2 rounded-full bg-white" />
+                      )}
+                    </Link>
+                    {hasChildren && (
+                      <div className="ml-4 mt-1 space-y-1 border-l border-[#792990]/30 pl-3">
+                        {item.children!.map((child) => {
+                          const ChildIcon = child.icon;
+                          const childActive = pathname.startsWith(child.href);
+                          return (
+                            <Link
+                              key={child.href}
+                              href={child.href}
+                              onClick={() => setMobileMenuOpen(false)}
+                              className={cn(
+                                "flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                                childActive
+                                  ? "bg-primary text-white shadow-md"
+                                  : "text-gray-400 hover:bg-purple-900/50 hover:text-white"
+                              )}
+                            >
+                              <ChildIcon className="h-4 w-4 flex-shrink-0" />
+                              <span>{child.name}</span>
+                            </Link>
+                          );
+                        })}
+                      </div>
                     )}
-                  </Link>
+                  </div>
                 );
               })}
             </div>
