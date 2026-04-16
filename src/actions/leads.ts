@@ -17,7 +17,7 @@ import { languagesToJson } from "@/lib/validations/languages";
 
 // ============ LEAD CRUD ============
 
-export const LEADS_PAGE_SIZE = 50;
+const LEADS_PAGE_SIZE = 50;
 
 export async function getLeads(filters?: {
   search?: string;
