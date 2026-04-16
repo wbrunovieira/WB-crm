@@ -228,8 +228,8 @@ describe("importGoogleLeads — deduplicação", () => {
       })
     );
 
-    const call = prismaMock.lead.findFirst.mock.calls[0][0];
-    expect(call.where.ownerId).toBeUndefined();
+    const call = prismaMock.lead.findFirst.mock.calls[0]![0]!;
+    expect(call.where!.ownerId).toBeUndefined();
   });
 });
 
@@ -342,7 +342,7 @@ describe("importGoogleLeads — search profile", () => {
     await importGoogleLeads({ ...PARAMS, requestedCount: 5 });
 
     const updateCall = prismaMock.googlePlacesSearch.update.mock.calls[0][0];
-    const updatedIds = JSON.parse(updateCall.data.fetchedPlaceIds);
+    const updatedIds = JSON.parse(updateCall.data.fetchedPlaceIds as string);
     expect(updatedIds).toContain("old-place");
     expect(updatedIds).toContain("new-place");
   });

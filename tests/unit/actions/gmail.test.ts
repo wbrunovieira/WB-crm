@@ -231,7 +231,7 @@ describe("sendGmailMessage — tracking de abertura e clique", () => {
     const call = mockActivityCreate.mock.calls[0][0];
     expect(call.data.emailTrackingToken).toBeDefined();
     expect(typeof call.data.emailTrackingToken).toBe("string");
-    expect(call.data.emailTrackingToken.length).toBeGreaterThan(0);
+    expect(call.data.emailTrackingToken!.length).toBeGreaterThan(0);
   });
 
   it("HTML enviado contém pixel de tracking com o token", async () => {
