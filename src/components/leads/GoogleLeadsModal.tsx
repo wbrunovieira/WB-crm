@@ -244,10 +244,10 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
                   type="button"
                   onClick={() => setRequestedCount(n)}
                   disabled={isLoading || isRateLimited}
-                  className={`rounded px-2 py-0.5 text-xs font-medium transition-colors ${
+                  className={`rounded border px-2 py-0.5 text-xs font-medium transition-colors ${
                     requestedCount === n
-                      ? "bg-primary text-white"
-                      : "bg-gray-200 text-gray-900 hover:bg-gray-300"
+                      ? "border-primary bg-primary text-white"
+                      : "border-[#792990]/50 bg-[#2d1b3d] text-gray-300 hover:border-[#792990] hover:text-white"
                   }`}
                 >
                   {n}
@@ -269,10 +269,10 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
                     type="button"
                     onClick={() => { setCountry(code); setCountrySearch(""); }}
                     disabled={isLoading || isRateLimited}
-                    className={`rounded px-2.5 py-1 text-xs font-medium transition-colors ${
+                    className={`rounded border px-2.5 py-1 text-xs font-medium transition-colors ${
                       country === code
-                        ? "bg-primary text-white"
-                        : "bg-gray-200 text-gray-900 hover:bg-gray-300"
+                        ? "border-primary bg-primary text-white"
+                        : "border-[#792990]/50 bg-[#2d1b3d] text-gray-300 hover:border-[#792990] hover:text-white"
                     }`}
                   >
                     {label}
