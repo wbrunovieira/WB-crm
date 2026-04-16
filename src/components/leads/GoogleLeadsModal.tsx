@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { X, Search, Loader2, CheckCircle, AlertCircle, MapPin, ChevronDown, ChevronUp } from "lucide-react";
 import { importGoogleLeads, type ExcludeCriteria } from "@/actions/google-leads";
-import { getSectorsForSelect } from "@/actions/sectors";
 import { toast } from "sonner";
+import { GOOGLE_PLACE_TYPES } from "@/lib/lists/google-place-types";
 
 interface GoogleLeadsModalProps {
   onClose: () => void;
@@ -34,15 +34,16 @@ const EXCLUDE_OPTIONS: { key: keyof ExcludeCriteria; label: string }[] = [
   { key: "onlyOperational",     label: "Apenas negócios operacionais" },
 ];
 
-type Sector = { id: string; name: string; slug: string };
 type ImportStatus = "idle" | "loading" | "success" | "exhausted" | "rate_limited" | "error";
 
 export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) {
-  const [sectors, setSectors] = useState<Sector[]>([]);
   const [country, setCountry] = useState("BR");
   const [city, setCity] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [typeKeyword, setTypeKeyword] = useState("");
+  const [typeSearch, setTypeSearch] = useState("");
+  const [showTypeDropdown, setShowTypeDropdown] = useState(false);
+  const typeRef = useRef<HTMLDivElement>(null);
   const [requestedCount, setRequestedCount] = useState(20);
   const [status, setStatus] = useState<ImportStatus>("idle");
   const [result, setResult] = useState<{ imported: number; skipped: number } | null>(null);
@@ -51,8 +52,15 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
   const [showFilters, setShowFilters] = useState(false);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // Close dropdown on outside click
   useEffect(() => {
-    getSectorsForSelect().then(setSectors);
+    function handleClick(e: MouseEvent) {
+      if (typeRef.current && !typeRef.current.contains(e.target as Node)) {
+        setShowTypeDropdown(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   useEffect(() => {
@@ -284,36 +292,82 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
           </div>
 
           {/* Tipo de negócio */}
-          <div>
+          <div ref={typeRef}>
             <label className="mb-1.5 block text-sm font-medium text-gray-700">
               Tipo de negócio
             </label>
-            <input
-              type="text"
-              value={typeKeyword}
-              onChange={(e) => setTypeKeyword(e.target.value)}
-              placeholder="Ex: clínica médica, restaurante, advocacia..."
-              disabled={isLoading || isRateLimited}
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-            />
-            {sectors.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {sectors.map((s) => (
-                  <button
-                    key={s.id}
-                    type="button"
-                    onClick={() => setTypeKeyword(s.name)}
-                    disabled={isLoading || isRateLimited}
-                    className={`rounded-full border px-2.5 py-0.5 text-xs font-medium transition-colors ${
-                      typeKeyword === s.name
-                        ? "border-primary bg-primary text-white"
-                        : "border-gray-200 bg-gray-50 text-gray-600 hover:border-primary hover:text-primary"
-                    }`}
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
+            <div className="relative">
+              <input
+                type="text"
+                value={typeSearch}
+                onChange={(e) => { setTypeSearch(e.target.value); setShowTypeDropdown(true); }}
+                onFocus={() => setShowTypeDropdown(true)}
+                placeholder="Buscar tipo... ex: clínica, restaurante, advogado"
+                disabled={isLoading || isRateLimited}
+                className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-8 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              />
+              <Search className="pointer-events-none absolute right-2.5 top-2.5 h-4 w-4 text-gray-400" />
+
+              {showTypeDropdown && (() => {
+                const term = typeSearch.toLowerCase();
+                const filtered = GOOGLE_PLACE_TYPES.filter(
+                  (t) =>
+                    t.label.toLowerCase().includes(term) ||
+                    t.value.toLowerCase().includes(term) ||
+                    t.category.toLowerCase().includes(term)
+                );
+                if (filtered.length === 0) return null;
+
+                // Group by category
+                const groups: Record<string, typeof filtered> = {};
+                filtered.forEach((t) => {
+                  if (!groups[t.category]) groups[t.category] = [];
+                  groups[t.category].push(t);
+                });
+
+                return (
+                  <div className="absolute z-10 mt-1 max-h-64 w-full overflow-y-auto rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {Object.entries(groups).map(([cat, items]) => (
+                      <div key={cat}>
+                        <div className="sticky top-0 bg-gray-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                          {cat}
+                        </div>
+                        {items.map((t) => (
+                          <button
+                            key={t.value}
+                            type="button"
+                            onClick={() => {
+                              setTypeKeyword(t.value);
+                              setTypeSearch(t.label);
+                              setShowTypeDropdown(false);
+                            }}
+                            className={`flex w-full items-center justify-between px-3 py-2 text-left text-sm transition-colors hover:bg-purple-50 ${
+                              typeKeyword === t.value ? "bg-purple-50 font-medium text-primary" : "text-gray-700"
+                            }`}
+                          >
+                            <span>{t.label}</span>
+                            <span className="ml-2 shrink-0 font-mono text-[11px] text-gray-400">{t.value}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()}
+            </div>
+            {typeKeyword && (
+              <p className="mt-1 text-xs text-gray-400">
+                Enviando ao Google:{" "}
+                <span className="font-mono text-gray-600">{typeKeyword}</span>
+                {" · "}
+                <button
+                  type="button"
+                  onClick={() => { setTypeKeyword(""); setTypeSearch(""); }}
+                  className="text-red-400 hover:text-red-600"
+                >
+                  limpar
+                </button>
+              </p>
             )}
           </div>
 
