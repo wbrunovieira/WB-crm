@@ -16,12 +16,8 @@ vi.mock("@/lib/auth", () => ({ authOptions: {} }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 
 import { getServerSession } from "next-auth";
-import {
-  mapRowToLeadData,
-  importLeads,
-  type ColumnMapping,
-  type ImportResult,
-} from "@/actions/import-leads";
+import { importLeads, type ImportResult } from "@/actions/import-leads";
+import { mapRowToLeadData, type ColumnMapping } from "@/lib/import/lead-mapping";
 import type { ParsedRow } from "@/lib/import/parse-file";
 
 const mockGetSession = vi.mocked(getServerSession);

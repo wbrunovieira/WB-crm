@@ -3,13 +3,8 @@
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  importLeads,
-  IMPORTABLE_FIELDS,
-  type ColumnMapping,
-  type ImportResult,
-  type DuplicateDetail,
-} from "@/actions/import-leads";
+import { importLeads, type ImportResult, type DuplicateDetail } from "@/actions/import-leads";
+import { IMPORTABLE_FIELDS, type ColumnMapping } from "@/lib/import/lead-mapping";
 import { parseCSV, parseXLSX, type ParsedImportFile, type ParsedRow } from "@/lib/import/parse-file";
 
 // ---------------------------------------------------------------------------
