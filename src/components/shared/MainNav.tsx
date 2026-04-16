@@ -113,6 +113,7 @@ export function MainNav({ userRole: role }: MainNavProps) {
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openSubmenu, setOpenSubmenu] = useState<string | null>(null);
+  const submenuContainerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showLeftArrow, setShowLeftArrow] = useState(false);
   const [showRightArrow, setShowRightArrow] = useState(false);
@@ -170,11 +171,15 @@ export function MainNav({ userRole: role }: MainNavProps) {
     return () => window.removeEventListener("resize", checkScroll);
   }, [filteredNavItems]);
 
-  // Close submenu on outside click
+  // Close submenu when clicking outside the submenu container
   useEffect(() => {
-    function handleClick() { setOpenSubmenu(null); }
-    document.addEventListener("click", handleClick);
-    return () => document.removeEventListener("click", handleClick);
+    function handleClick(e: MouseEvent) {
+      if (submenuContainerRef.current && !submenuContainerRef.current.contains(e.target as Node)) {
+        setOpenSubmenu(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
   const scroll = (direction: "left" | "right") => {
@@ -248,7 +253,7 @@ export function MainNav({ userRole: role }: MainNavProps) {
 
             if (hasChildren) {
               return (
-                <div key={item.href} className="relative">
+                <div key={item.href} ref={submenuContainerRef} className="relative">
                   <div className="flex items-center">
                     <Link href={item.href} className={cn(baseClass, "rounded-r-none pr-1.5")}>
                       <Icon className="h-4 w-4 flex-shrink-0" />
@@ -258,7 +263,7 @@ export function MainNav({ userRole: role }: MainNavProps) {
                       )}
                     </Link>
                     <button
-                      onClick={(e) => { e.stopPropagation(); setOpenSubmenu(isOpen ? null : item.href); }}
+                      onClick={() => setOpenSubmenu(isOpen ? null : item.href)}
                       className={cn(
                         "flex h-full items-center rounded-r-lg px-1 py-1.5 transition-all duration-200",
                         active || childActive
