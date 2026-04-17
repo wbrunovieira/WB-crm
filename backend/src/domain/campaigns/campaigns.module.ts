@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
+import { AuthModule } from "@/infra/auth/auth.module";
 import { CampaignsRepository } from "./application/repositories/campaigns.repository";
 import { CampaignSendsRepository } from "./application/repositories/campaign-sends.repository";
 import { AntiBlockService } from "./application/services/anti-block.service";
@@ -22,7 +23,7 @@ import { CampaignWorkerService } from "@/infra/scheduled/campaign-worker.service
 import { CampaignsController } from "@/infra/controllers/campaigns.controller";
 
 @Module({
-  imports: [ScheduleModule.forRoot()],
+  imports: [ScheduleModule.forRoot(), AuthModule],
   controllers: [CampaignsController],
   providers: [
     // Repositories
