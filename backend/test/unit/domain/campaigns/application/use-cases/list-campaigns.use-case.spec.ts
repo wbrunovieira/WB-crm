@@ -13,18 +13,15 @@ describe("ListCampaignsUseCase", () => {
   });
 
   it("retorna lista vazia quando não há campanhas", async () => {
-    const result = await sut.execute({ ownerId: "owner-1" });
-    expect(result.isRight()).toBe(true);
-    expect((result as any).value.campaigns).toHaveLength(0);
+    const { campaigns: list } = (await sut.execute({ ownerId: "owner-1" })).unwrap();
+    expect(list).toHaveLength(0);
   });
 
   it("retorna apenas campanhas do owner", async () => {
     await campaigns.save(Campaign.create({ ownerId: "owner-1", name: "C1", instanceName: "i1" }));
     await campaigns.save(Campaign.create({ ownerId: "owner-2", name: "C2", instanceName: "i2" }));
 
-    const result = await sut.execute({ ownerId: "owner-1" });
-    expect(result.isRight()).toBe(true);
-    const list = (result as any).value.campaigns;
+    const { campaigns: list } = (await sut.execute({ ownerId: "owner-1" })).unwrap();
     expect(list).toHaveLength(1);
     expect(list[0].name).toBe("C1");
   });

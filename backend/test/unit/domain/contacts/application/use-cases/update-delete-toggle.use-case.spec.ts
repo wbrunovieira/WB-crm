@@ -21,16 +21,15 @@ describe("UpdateContactUseCase", () => {
     const c = makeContact();
     await repo.save(c);
 
-    const result = await sut.execute({
+    const { contact } = (await sut.execute({
       id: c.id.toString(),
       requesterId: "user-1",
       requesterRole: "sdr",
       name: "Novo Nome",
       email: "novo@email.com",
-    });
+    })).unwrap();
 
-    expect(result.isRight()).toBe(true);
-    expect((result as any).value.contact.name).toBe("Novo Nome");
+    expect(contact.name).toBe("Novo Nome");
   });
 
   it("não permite atualizar contato de outro owner", async () => {
@@ -97,16 +96,15 @@ describe("ToggleContactStatusUseCase", () => {
     const c = makeContact();
     await repo.save(c);
 
-    const result = await sut.execute({ id: c.id.toString(), requesterId: "user-1", requesterRole: "sdr" });
-    expect(result.isRight()).toBe(true);
-    expect((result as any).value.contact.status).toBe("inactive");
+    const { contact } = (await sut.execute({ id: c.id.toString(), requesterId: "user-1", requesterRole: "sdr" })).unwrap();
+    expect(contact.status).toBe("inactive");
   });
 
   it("alterna status de inactive para active", async () => {
     const c = Contact.create({ ownerId: "user-1", name: "João", status: "inactive" });
     await repo.save(c);
 
-    const result = await sut.execute({ id: c.id.toString(), requesterId: "user-1", requesterRole: "sdr" });
-    expect((result as any).value.contact.status).toBe("active");
+    const { contact } = (await sut.execute({ id: c.id.toString(), requesterId: "user-1", requesterRole: "sdr" })).unwrap();
+    expect(contact.status).toBe("active");
   });
 });

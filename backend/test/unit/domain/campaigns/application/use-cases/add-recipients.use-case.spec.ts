@@ -27,7 +27,7 @@ describe("AddRecipientsUseCase", () => {
     const campaign = makeCampaign();
     await campaigns.save(campaign);
 
-    const result = await sut.execute({
+    const { added, invalid } = (await sut.execute({
       campaignId: campaign.id.toString(),
       ownerId: makeOwner(),
       recipients: [
@@ -35,10 +35,8 @@ describe("AddRecipientsUseCase", () => {
         { phone: "123" },               // inválido
         { phone: "5511888888888" },     // válido
       ],
-    });
+    })).unwrap();
 
-    expect(result.isRight()).toBe(true);
-    const { added, invalid } = (result as any).value;
     expect(added).toBe(2);
     expect(invalid).toContain("123");
     expect(sends.items).toHaveLength(2);
@@ -55,6 +53,6 @@ describe("AddRecipientsUseCase", () => {
       recipients: [{ phone: "11999999999" }],
     });
     expect(result.isLeft()).toBe(true);
-    expect((result as any).value.message).toContain("finalizada");
+    if (result.isLeft()) expect(result.value.message).toContain("finalizada");
   });
 });

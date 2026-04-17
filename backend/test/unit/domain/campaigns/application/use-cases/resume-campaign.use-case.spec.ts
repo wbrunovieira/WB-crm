@@ -17,7 +17,7 @@ describe("ResumeCampaignUseCase", () => {
     await campaigns.save(campaign);
     const result = await sut.execute({ campaignId: campaign.id.toString(), ownerId: "o1" });
     expect(result.isLeft()).toBe(true);
-    expect((result as any).value.message).toContain("pausadas");
+    if (result.isLeft()) expect(result.value.message).toContain("pausadas");
   });
 
   it("retoma campanha PAUSED → ACTIVE", async () => {

@@ -1,11 +1,22 @@
 import { ContactsRepository, type ContactFilters, type ContactsQueryParams } from "@/domain/contacts/application/repositories/contacts.repository";
 import type { Contact } from "@/domain/contacts/enterprise/entities/contact";
+import type { ContactSummary, ContactDetail, ContactActivity } from "@/domain/contacts/enterprise/read-models/contact-read-models";
 
 export class InMemoryContactsRepository extends ContactsRepository {
   public items: Contact[] = [];
 
-  async findMany({ filters, requesterId, requesterRole }: ContactsQueryParams): Promise<Contact[]> {
-    let results = this.items;
+  // Lookup maps for relations
+  public organizationsMap: Map<string, { id: string; name: string }> = new Map();
+  public leadsMap: Map<string, { id: string; businessName: string }> = new Map();
+  public partnersMap: Map<string, { id: string; name: string }> = new Map();
+  public ownersMap: Map<string, { id: string; name: string; email: string }> = new Map();
+  // keyed by contactId
+  public dealsMap: Map<string, Array<{ id: string; title: string; contactId: string; stage: { name: string } }>> = new Map();
+  // keyed by contactId
+  public activitiesMap: Map<string, ContactActivity[]> = new Map();
+
+  private applyFilters(items: Contact[], { filters, requesterId, requesterRole }: ContactsQueryParams): Contact[] {
+    let results = items;
 
     // Owner scoping
     if (requesterRole !== "admin") {
@@ -44,6 +55,43 @@ export class InMemoryContactsRepository extends ContactsRepository {
     });
   }
 
+  private toSummary(c: Contact): ContactSummary {
+    const organization = c.organizationId ? (this.organizationsMap.get(c.organizationId) ?? null) : null;
+    const lead = c.leadId ? (this.leadsMap.get(c.leadId) ?? null) : null;
+    const partner = c.partnerId ? (this.partnersMap.get(c.partnerId) ?? null) : null;
+    const ownerFull = this.ownersMap.get(c.ownerId);
+    const owner = ownerFull ? { id: ownerFull.id, name: ownerFull.name } : null;
+
+    return {
+      id: c.id.toString(),
+      ownerId: c.ownerId,
+      name: c.name,
+      email: c.email ?? null,
+      phone: c.phone ?? null,
+      whatsapp: c.whatsapp ?? null,
+      role: c.role ?? null,
+      department: c.department ?? null,
+      isPrimary: c.isPrimary,
+      status: c.status,
+      organization,
+      lead,
+      partner,
+      owner,
+      createdAt: c.createdAt,
+      updatedAt: c.updatedAt,
+    };
+  }
+
+  async findMany({ filters, requesterId, requesterRole }: ContactsQueryParams): Promise<Contact[]> {
+    const results = this.applyFilters(this.items, { filters, requesterId, requesterRole });
+    return results;
+  }
+
+  async findManyWithRelations(params: ContactsQueryParams): Promise<ContactSummary[]> {
+    const results = this.applyFilters(this.items, params);
+    return results.map((c) => this.toSummary(c));
+  }
+
   async findById(id: string): Promise<Contact | null> {
     return this.items.find((c) => c.id.toString() === id) ?? null;
   }
@@ -54,6 +102,43 @@ export class InMemoryContactsRepository extends ContactsRepository {
     if (requesterRole === "admin") return contact;
     if (contact.ownerId === requesterId) return contact;
     return null;
+  }
+
+  async findByIdWithRelations(id: string, requesterId: string, requesterRole: string): Promise<ContactDetail | null> {
+    const contact = await this.findById(id);
+    if (!contact) return null;
+    if (requesterRole !== "admin" && contact.ownerId !== requesterId) return null;
+
+    const summary = this.toSummary(contact);
+    const ownerFull = this.ownersMap.get(contact.ownerId);
+    const owner = ownerFull ? { id: ownerFull.id, name: ownerFull.name, email: ownerFull.email } : null;
+
+    const deals = (this.dealsMap.get(id) ?? []).map((d) => ({
+      id: d.id,
+      title: d.title,
+      stage: d.stage,
+    }));
+    const activities = this.activitiesMap.get(id) ?? [];
+
+    return {
+      ...summary,
+      owner,
+      whatsappVerified: contact.whatsappVerified,
+      whatsappVerifiedAt: null,
+      whatsappVerifiedNumber: null,
+      linkedin: contact.linkedin ?? null,
+      instagram: contact.instagram ?? null,
+      birthDate: contact.birthDate ?? null,
+      notes: contact.notes ?? null,
+      preferredLanguage: contact.preferredLanguage ?? null,
+      languages: contact.languages ?? null,
+      source: contact.source ?? null,
+      leadId: contact.leadId ?? null,
+      organizationId: contact.organizationId ?? null,
+      partnerId: contact.partnerId ?? null,
+      deals,
+      activities,
+    };
   }
 
   async save(contact: Contact): Promise<void> {

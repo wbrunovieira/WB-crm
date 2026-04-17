@@ -12,14 +12,12 @@ describe("CreateContactUseCase", () => {
   });
 
   it("cria contato com dados válidos", async () => {
-    const result = await sut.execute({
+    const { contact } = (await sut.execute({
       ownerId: "user-1",
       name: "João Silva",
       email: "joao@email.com",
-    });
+    })).unwrap();
 
-    expect(result.isRight()).toBe(true);
-    const { contact } = (result as any).value;
     expect(contact.name).toBe("João Silva");
     expect(contact.email).toBe("joao@email.com");
     expect(contact.status).toBe("active");
@@ -29,27 +27,27 @@ describe("CreateContactUseCase", () => {
   it("retorna erro para nome vazio", async () => {
     const result = await sut.execute({ ownerId: "user-1", name: "  " });
     expect(result.isLeft()).toBe(true);
-    expect((result as any).value.message).toContain("obrigatório");
+    if (result.isLeft()) expect(result.value.message).toContain("obrigatório");
   });
 
   it("associa corretamente ao leadId quando companyType=lead", async () => {
-    const result = await sut.execute({
+    const { contact } = (await sut.execute({
       ownerId: "user-1",
       name: "Contato Lead",
       companyType: "lead",
       companyId: "lead-123",
-    });
-    expect((result as any).value.contact.leadId).toBe("lead-123");
-    expect((result as any).value.contact.organizationId).toBeUndefined();
+    })).unwrap();
+    expect(contact.leadId).toBe("lead-123");
+    expect(contact.organizationId).toBeUndefined();
   });
 
   it("associa ao organizationId quando companyType=organization", async () => {
-    const result = await sut.execute({
+    const { contact } = (await sut.execute({
       ownerId: "user-1",
       name: "Contato Org",
       companyType: "organization",
       companyId: "org-456",
-    });
-    expect((result as any).value.contact.organizationId).toBe("org-456");
+    })).unwrap();
+    expect(contact.organizationId).toBe("org-456");
   });
 });

@@ -16,14 +16,13 @@ describe("AddCampaignStepUseCase", () => {
     const campaign = Campaign.create({ ownerId: "o1", name: "C", instanceName: "i" });
     await campaigns.save(campaign);
 
-    const result = await sut.execute({
+    const { step } = (await sut.execute({
       campaignId: campaign.id.toString(),
       ownerId: "o1",
       type: "TEXT",
       text: "Olá",
-    });
-    expect(result.isRight()).toBe(true);
-    const { step } = (result as any).value;
+    })).unwrap();
+
     expect(step.type).toBe("TEXT");
     expect(step.order).toBe(0);
 
@@ -43,7 +42,7 @@ describe("AddCampaignStepUseCase", () => {
       text: "Olá",
     });
     expect(result.isLeft()).toBe(true);
-    expect((result as any).value.message).toContain("Pause");
+    if (result.isLeft()) expect(result.value.message).toContain("Pause");
   });
 
   it("incrementa order corretamente", async () => {
@@ -51,8 +50,13 @@ describe("AddCampaignStepUseCase", () => {
     await campaigns.save(campaign);
 
     await sut.execute({ campaignId: campaign.id.toString(), ownerId: "o1", type: "TEXT", text: "1" });
-    const result = await sut.execute({ campaignId: campaign.id.toString(), ownerId: "o1", type: "DELAY", delaySeconds: 5 });
+    const { step } = (await sut.execute({
+      campaignId: campaign.id.toString(),
+      ownerId: "o1",
+      type: "DELAY",
+      delaySeconds: 5,
+    })).unwrap();
 
-    expect((result as any).value.step.order).toBe(1);
+    expect(step.order).toBe(1);
   });
 });

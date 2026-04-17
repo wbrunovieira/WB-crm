@@ -1,202 +1,138 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { prisma } from "@/lib/prisma";
 import { contactSchema, ContactFormData } from "@/lib/validations/contact";
-import {
-  getAuthenticatedSession,
-  getOwnerOrSharedFilter,
-  canAccessEntity,
-} from "@/lib/permissions";
-import { languagesToJson } from "@/lib/validations/languages";
+import { backendFetch } from "@/lib/backend/client";
+
+// ─── Read models matching the backend response ────────────────────────────────
+
+export interface ContactSummary {
+  id: string;
+  ownerId: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  role: string | null;
+  department: string | null;
+  isPrimary: boolean;
+  status: string;
+  organization: { id: string; name: string } | null;
+  lead: { id: string; businessName: string } | null;
+  partner: { id: string; name: string } | null;
+  owner: { id: string; name: string } | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ContactDetail extends ContactSummary {
+  whatsappVerified: boolean;
+  whatsappVerifiedAt: string | null;
+  whatsappVerifiedNumber: string | null;
+  linkedin: string | null;
+  instagram: string | null;
+  birthDate: string | null;
+  notes: string | null;
+  preferredLanguage: string | null;
+  /** Serialized as JSON string from the backend (stored as JSON in DB) */
+  languages: string | null;
+  source: string | null;
+  leadId: string | null;
+  organizationId: string | null;
+  partnerId: string | null;
+  sourceLeadContactId: string | null;
+  deals: Array<{ id: string; title: string; stage: { name: string } }>;
+  activities: Array<{
+    id: string;
+    type: string;
+    /** Backend field: title maps to subject in ActivityTimeline */
+    title: string | null;
+    subject: string;
+    description: string | null;
+    dueDate: string | null;
+    completedAt: string | null;
+    completed: boolean;
+    createdAt: string;
+    outcome: string | null;
+    contactId: string | null;
+    leadId: string | null;
+    dealId: string | null;
+    partnerId: string | null;
+    whatsappMessages: Array<{
+      id: string;
+      fromMe: boolean;
+      pushName: string | null;
+      timestamp: string;
+      messageType: string;
+      mediaDriveId: string | null;
+      mediaMimeType: string | null;
+      mediaLabel: string | null;
+      mediaTranscriptText: string | null;
+    }>;
+  }>;
+  owner: { id: string; name: string; email: string } | null;
+}
+
+// ─── Reads (via NestJS backend) ───────────────────────────────────────────────
 
 export async function getContacts(filters?: {
   search?: string;
   status?: string;
   company?: string;
   owner?: string;
-}) {
-  const ownerFilter = await getOwnerOrSharedFilter("contact", filters?.owner);
+}): Promise<ContactSummary[]> {
+  const params = new URLSearchParams();
+  if (filters?.search) params.set("search", filters.search);
+  if (filters?.status) params.set("status", filters.status);
+  if (filters?.company) params.set("company", filters.company);
+  if (filters?.owner) params.set("owner", filters.owner);
 
-  // Build additional filters
-  const additionalFilters: Record<string, unknown> = {};
+  const query = params.toString();
+  return backendFetch<ContactSummary[]>(`/contacts${query ? `?${query}` : ""}`);
+}
 
-  // Search filter
-  if (filters?.search) {
-    additionalFilters.OR = [
-      { name: { contains: filters.search, mode: "insensitive" } },
-      { email: { contains: filters.search, mode: "insensitive" } },
-      { phone: { contains: filters.search } },
-    ];
-  }
-
-  // Status filter
-  if (filters?.status) {
-    additionalFilters.status = filters.status;
-  }
-
-  // Company filter
-  if (filters?.company) {
-    if (filters.company === "organization") {
-      additionalFilters.organizationId = { not: null };
-    } else if (filters.company === "lead") {
-      additionalFilters.leadId = { not: null };
-    } else if (filters.company === "partner") {
-      additionalFilters.partnerId = { not: null };
-    } else if (filters.company === "none") {
-      additionalFilters.organizationId = null;
-      additionalFilters.leadId = null;
-      additionalFilters.partnerId = null;
+export async function getContactById(id: string): Promise<ContactDetail | null> {
+  try {
+    return await backendFetch<ContactDetail>(`/contacts/${id}`);
+  } catch (err: any) {
+    if (err?.message?.includes("404") || err?.message?.includes("não encontrado")) {
+      return null;
     }
+    throw err;
   }
-
-  // Combine owner filter with additional filters
-  // Use AND only when ownerFilter has OR (shared entities case)
-  // Otherwise spread both objects together (simpler structure)
-  const hasSharedEntities = 'OR' in ownerFilter;
-  const hasAdditionalFilters = Object.keys(additionalFilters).length > 0;
-
-  let whereClause: Record<string, unknown>;
-  if (hasSharedEntities && hasAdditionalFilters) {
-    // Need AND to combine OR-based owner filter with other filters
-    whereClause = { AND: [ownerFilter, additionalFilters] };
-  } else if (hasAdditionalFilters) {
-    // Simple case: spread owner filter (ownerId) with other filters
-    whereClause = { ...ownerFilter, ...additionalFilters };
-  } else {
-    // No additional filters, just use owner filter
-    whereClause = ownerFilter;
-  }
-
-  const contacts = await prisma.contact.findMany({
-    where: whereClause,
-    include: {
-      lead: {
-        select: {
-          id: true,
-          businessName: true,
-        },
-      },
-      organization: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      partner: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      owner: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-    orderBy: [
-      { isPrimary: "desc" },
-      { name: "asc" },
-    ],
-  });
-
-  return contacts;
 }
 
-export async function getContactById(id: string) {
-  const ownerFilter = await getOwnerOrSharedFilter("contact");
-
-  const contact = await prisma.contact.findFirst({
-    where: {
-      id,
-      ...ownerFilter,
-    },
-    include: {
-      lead: {
-        select: {
-          id: true,
-          businessName: true,
-          status: true,
-        },
-      },
-      organization: true,
-      deals: {
-        include: {
-          stage: {
-            select: {
-              name: true,
-            },
-          },
-        },
-      },
-      activities: {
-        orderBy: {
-          dueDate: "desc",
-        },
-        include: {
-          whatsappMessages: {
-            where: { mediaDriveId: { not: null } },
-            select: {
-              id: true,
-              fromMe: true,
-              pushName: true,
-              timestamp: true,
-              messageType: true,
-              mediaDriveId: true,
-              mediaMimeType: true,
-              mediaLabel: true,
-              mediaTranscriptText: true,
-            },
-            orderBy: { timestamp: "asc" },
-          },
-        },
-      },
-      owner: {
-        select: {
-          id: true,
-          name: true,
-          email: true,
-        },
-      },
-    },
-  });
-
-  return contact;
-}
+// ─── Mutations (via NestJS backend) ──────────────────────────────────────────
 
 export async function createContact(data: ContactFormData) {
-  const session = await getAuthenticatedSession();
   const validated = contactSchema.parse(data);
 
-  // Determine leadId, organizationId, or partnerId based on companyType
-  const leadId = validated.companyType === "lead" ? validated.companyId : null;
-  const organizationId = validated.companyType === "organization" ? validated.companyId : null;
-  const partnerId = validated.companyType === "partner" ? validated.companyId : null;
+  // Map companyType to the appropriate relation field
+  const leadId = validated.companyType === "lead" ? validated.companyId : undefined;
+  const organizationId = validated.companyType === "organization" ? validated.companyId : undefined;
+  const partnerId = validated.companyType === "partner" ? validated.companyId : undefined;
 
-  const contact = await prisma.contact.create({
-    data: {
+  const contact = await backendFetch<{ id: string }>("/contacts", {
+    method: "POST",
+    body: JSON.stringify({
       name: validated.name,
-      email: validated.email || null,
-      phone: validated.phone || null,
-      whatsapp: validated.whatsapp || null,
-      role: validated.role || null,
-      department: validated.department || null,
-      leadId: leadId || null,
-      organizationId: organizationId || null,
-      partnerId: partnerId || null,
-      linkedin: validated.linkedin || null,
+      email: validated.email || undefined,
+      phone: validated.phone || undefined,
+      whatsapp: validated.whatsapp || undefined,
+      role: validated.role || undefined,
+      department: validated.department || undefined,
+      leadId: leadId || undefined,
+      organizationId: organizationId || undefined,
+      partnerId: partnerId || undefined,
+      linkedin: validated.linkedin || undefined,
       status: validated.status || "active",
       isPrimary: validated.isPrimary || false,
-      birthDate: validated.birthDate ? new Date(validated.birthDate) : null,
-      notes: validated.notes || null,
+      birthDate: validated.birthDate || undefined,
+      notes: validated.notes || undefined,
       preferredLanguage: validated.preferredLanguage || "pt-BR",
-      languages: languagesToJson(validated.languages),
-      source: validated.source || null,
-      sourceLeadContactId: validated.sourceLeadContactId || null,
-      ownerId: session.user.id,
-    },
+      languages: validated.languages ?? [],
+      source: validated.source || undefined,
+    }),
   });
 
   revalidatePath("/contacts");
@@ -204,42 +140,33 @@ export async function createContact(data: ContactFormData) {
 }
 
 export async function updateContact(id: string, data: ContactFormData) {
-  await getAuthenticatedSession();
   const validated = contactSchema.parse(data);
 
-  // Check ownership or shared access
-  const existing = await prisma.contact.findUnique({ where: { id } });
-  if (!existing || !(await canAccessEntity("contact", id, existing.ownerId))) {
-    throw new Error("Contato não encontrado");
-  }
+  const leadId = validated.companyType === "lead" ? validated.companyId : undefined;
+  const organizationId = validated.companyType === "organization" ? validated.companyId : undefined;
+  const partnerId = validated.companyType === "partner" ? validated.companyId : undefined;
 
-  // Determine leadId, organizationId, or partnerId based on companyType
-  const leadId = validated.companyType === "lead" ? validated.companyId : null;
-  const organizationId = validated.companyType === "organization" ? validated.companyId : null;
-  const partnerId = validated.companyType === "partner" ? validated.companyId : null;
-
-  const contact = await prisma.contact.update({
-    where: { id },
-    data: {
+  const contact = await backendFetch<{ id: string }>(`/contacts/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
       name: validated.name,
-      email: validated.email || null,
-      phone: validated.phone || null,
-      whatsapp: validated.whatsapp || null,
-      role: validated.role || null,
-      department: validated.department || null,
-      leadId: leadId || null,
-      organizationId: organizationId || null,
-      partnerId: partnerId || null,
-      linkedin: validated.linkedin || null,
+      email: validated.email || undefined,
+      phone: validated.phone || undefined,
+      whatsapp: validated.whatsapp || undefined,
+      role: validated.role || undefined,
+      department: validated.department || undefined,
+      leadId: leadId || undefined,
+      organizationId: organizationId || undefined,
+      partnerId: partnerId || undefined,
+      linkedin: validated.linkedin || undefined,
       status: validated.status,
       isPrimary: validated.isPrimary,
-      birthDate: validated.birthDate ? new Date(validated.birthDate) : null,
-      notes: validated.notes || null,
+      birthDate: validated.birthDate || undefined,
+      notes: validated.notes || undefined,
       preferredLanguage: validated.preferredLanguage,
-      languages: languagesToJson(validated.languages),
-      source: validated.source || null,
-      sourceLeadContactId: validated.sourceLeadContactId || null,
-    },
+      languages: validated.languages ?? [],
+      source: validated.source || undefined,
+    }),
   });
 
   revalidatePath("/contacts");
@@ -248,38 +175,19 @@ export async function updateContact(id: string, data: ContactFormData) {
 }
 
 export async function deleteContact(id: string) {
-  await getAuthenticatedSession();
-
-  // Check ownership or shared access
-  const existing = await prisma.contact.findUnique({ where: { id } });
-  if (!existing || !(await canAccessEntity("contact", id, existing.ownerId))) {
-    throw new Error("Contato não encontrado");
-  }
-
-  await prisma.contact.delete({ where: { id } });
-
+  await backendFetch<void>(`/contacts/${id}`, { method: "DELETE" });
   revalidatePath("/contacts");
 }
 
 export async function toggleContactStatus(id: string) {
-  await getAuthenticatedSession();
-
-  const contact = await prisma.contact.findUnique({ where: { id } });
-
-  if (!contact || !(await canAccessEntity("contact", id, contact.ownerId))) {
-    throw new Error("Contato não encontrado");
-  }
-
-  const newStatus = contact.status === "active" ? "inactive" : "active";
-
-  const updated = await prisma.contact.update({
-    where: { id },
-    data: { status: newStatus },
-  });
+  const updated = await backendFetch<{ id: string; status: string; organizationId?: string; leadId?: string; partnerId?: string }>(
+    `/contacts/${id}/status`,
+    { method: "PATCH" },
+  );
 
   revalidatePath("/contacts");
-  if (contact.organizationId) revalidatePath(`/organizations/${contact.organizationId}`);
-  if (contact.leadId) revalidatePath(`/leads/${contact.leadId}`);
-  if (contact.partnerId) revalidatePath(`/partners/${contact.partnerId}`);
+  if (updated.organizationId) revalidatePath(`/organizations/${updated.organizationId}`);
+  if (updated.leadId) revalidatePath(`/leads/${updated.leadId}`);
+  if (updated.partnerId) revalidatePath(`/partners/${updated.partnerId}`);
   return updated;
 }

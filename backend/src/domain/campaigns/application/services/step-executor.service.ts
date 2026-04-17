@@ -60,8 +60,12 @@ export class StepExecutorService {
         await this.antiBlock.wait((step.delaySeconds ?? 1) * 1_000);
         break;
 
-      default:
-        this.logger.warn(`Tipo de step desconhecido: ${(step as any).type}`);
+      default: {
+        // Exhaustive check — future StepType values added to DB but not yet handled
+        const unknownType: never = step.type;
+        this.logger.warn(`Tipo de step desconhecido: ${String(unknownType)}`);
+        break;
+      }
     }
   }
 

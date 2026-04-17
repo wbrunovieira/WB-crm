@@ -6,7 +6,7 @@ import type { SendStatus } from "../../enterprise/entities/campaign-send";
 
 interface Input { campaignId: string; ownerId: string }
 
-interface Stats {
+export interface Stats {
   total: number;
   byStatus: Record<SendStatus, number>;
 }

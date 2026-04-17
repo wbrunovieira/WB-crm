@@ -19,7 +19,7 @@ export class ContactMapper {
         organizationId: raw.organizationId ?? undefined,
         partnerId: raw.partnerId ?? undefined,
         linkedin: raw.linkedin ?? undefined,
-        instagram: (raw as any).instagram ?? undefined,
+        instagram: raw.instagram ?? undefined,
         status: (raw.status ?? "active") as ContactStatus,
         isPrimary: raw.isPrimary,
         birthDate: raw.birthDate ?? undefined,

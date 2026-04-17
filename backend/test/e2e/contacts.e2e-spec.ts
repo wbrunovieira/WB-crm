@@ -62,6 +62,31 @@ describe("Contacts API (e2e)", () => {
         .expect(200);
       expect(res.body).toBeInstanceOf(Array);
     });
+
+    it("retorna contatos com campos de relação (mesmo que null)", async () => {
+      await request(app.getHttpServer())
+        .post("/contacts")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Relações E2E" })
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get("/contacts")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body).toBeInstanceOf(Array);
+      expect(res.body.length).toBeGreaterThan(0);
+      const item = res.body[0];
+      expect(item).toHaveProperty("organization");
+      expect(item).toHaveProperty("lead");
+      expect(item).toHaveProperty("partner");
+      expect(item).toHaveProperty("owner");
+      // No org/lead/partner created in test setup, so these should be null
+      expect(item.organization).toBeNull();
+      expect(item.lead).toBeNull();
+      expect(item.partner).toBeNull();
+    });
   });
 
   describe("POST /contacts", () => {
@@ -108,6 +133,30 @@ describe("Contacts API (e2e)", () => {
         .get("/contacts/id-que-nao-existe")
         .set("Authorization", `Bearer ${token}`)
         .expect(404);
+    });
+
+    it("retorna contato com campos de relação completos incluindo deals e activities", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/contacts")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Detalhe E2E" })
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get(`/contacts/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.name).toBe("Detalhe E2E");
+      expect(res.body).toHaveProperty("organization");
+      expect(res.body).toHaveProperty("lead");
+      expect(res.body).toHaveProperty("partner");
+      expect(res.body).toHaveProperty("owner");
+      expect(res.body).toHaveProperty("deals");
+      expect(res.body).toHaveProperty("activities");
+      expect(res.body.organization).toBeNull();
+      expect(res.body.deals).toBeInstanceOf(Array);
+      expect(res.body.activities).toBeInstanceOf(Array);
     });
   });
 

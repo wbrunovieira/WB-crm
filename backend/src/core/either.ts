@@ -12,6 +12,13 @@ export class Left<L, R> {
   isRight(): this is Right<L, R> {
     return false;
   }
+
+  /** Throws the Left value — useful in tests to assert Right. */
+  unwrap(): R {
+    throw this.value instanceof Error
+      ? this.value
+      : new Error(String(this.value));
+  }
 }
 
 export class Right<L, R> {
@@ -27,6 +34,11 @@ export class Right<L, R> {
 
   isRight(): this is Right<L, R> {
     return true;
+  }
+
+  /** Returns the Right value. */
+  unwrap(): R {
+    return this.value;
   }
 }
 
