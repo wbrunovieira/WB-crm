@@ -1,0 +1,15 @@
+# Next.js (raiz)
+.next
+node_modules
+npm-debug.log*
+
+# Backend (o Dockerfile copia backend/ explicitamente)
+backend/node_modules
+backend/dist
+backend/.env
+
+# Misc
+.git
+.env*.local
+coverage
+*.log

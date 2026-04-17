@@ -1,18 +1,21 @@
+# Build context: raiz do monorepo (docker-compose context: .)
+# Isso permite acessar tanto ./backend quanto ./prisma (schema compartilhado)
+
 # ─── Stage 1: Build ───────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
 # Instala dependências primeiro (cache layer separada do código)
-COPY package*.json ./
+COPY backend/package*.json ./
 RUN npm ci
 
-# Copia o schema Prisma e gera o client
+# Copia o schema Prisma da raiz do monorepo e gera o client
 COPY prisma ./prisma
 RUN npx prisma generate
 
-# Copia o código e compila TypeScript
-COPY . .
+# Copia o código do backend e compila TypeScript
+COPY backend/ .
 RUN npm run build
 
 # Remove devDependencies para o próximo stage
@@ -38,6 +41,6 @@ EXPOSE 3001
 
 # Healthcheck interno
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:3001/health', r => r.statusCode === 200 ? process.exit(0) : process.exit(1))"
+  CMD node -e "require('http').get('http://localhost:3001/health', r => r.statusCode === 200 ? process.exit(0) : process.exit(1))" 2>/dev/null
 
-CMD ["node", "dist/main.js"]
+CMD ["node", "dist/src/main.js"]
