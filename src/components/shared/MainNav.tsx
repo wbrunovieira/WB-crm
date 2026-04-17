@@ -22,6 +22,7 @@ import {
   ChevronDown,
   TrendingUp,
   ScanSearch,
+  MessageCircle,
 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 
@@ -83,6 +84,11 @@ const navItems = [
     name: "Atividades",
     href: "/activities",
     icon: CheckSquare,
+  },
+  {
+    name: "Campanhas",
+    href: "/campaigns",
+    icon: MessageCircle,
   },
   {
     name: "Funil",
