@@ -17,10 +17,10 @@ type Activity = {
   type: string;
   subject: string;
   description: string | null;
-  dueDate: Date | null;
+  dueDate: Date | string | null;
   completed: boolean;
-  completedAt?: Date | null;
-  createdAt: Date;
+  completedAt?: Date | string | null;
+  createdAt: Date | string;
   gotoCallId?: string | null;
   gotoRecordingUrl?: string | null;
   gotoRecordingUrl2?: string | null;

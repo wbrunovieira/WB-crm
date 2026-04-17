@@ -7,11 +7,14 @@ declare module "next-auth" {
     user: {
       id: string;
       role: UserRole;
+      /** JWT emitido pelo NestJS — usado para chamadas diretas ao backend */
+      accessToken: string;
     } & DefaultSession["user"];
   }
 
   interface User {
     role: UserRole;
+    accessToken: string;
   }
 }
 
@@ -19,5 +22,6 @@ declare module "next-auth/jwt" {
   interface JWT {
     id: string;
     role: UserRole;
+    accessToken: string;
   }
 }

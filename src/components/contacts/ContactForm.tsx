@@ -25,7 +25,7 @@ interface ContactFormProps {
     instagram?: string | null;
     status: string;
     isPrimary: boolean;
-    birthDate: Date | null;
+    birthDate: Date | string | null;
     notes: string | null;
     preferredLanguage: string | null;
     languages: string | null;

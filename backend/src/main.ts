@@ -24,6 +24,7 @@ async function bootstrap() {
       { type: "http", scheme: "bearer", bearerFormat: "JWT", in: "header" },
       "JWT",
     )
+    .addTag("Auth", "Autenticação — obter JWT")
     .addTag("Health", "Status da aplicação e banco de dados")
     .addTag("Contacts", "Gestão de contatos do CRM")
     .addTag("Campaigns", "Campanhas de envio em massa via WhatsApp")

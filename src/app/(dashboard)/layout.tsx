@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import { LogoutButton } from "@/components/shared/LogoutButton";
 import { MainNav } from "@/components/shared/MainNav";
 import { NotificationBell } from "@/components/shared/NotificationBell";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 export default async function DashboardLayout({
   children,
@@ -19,6 +20,7 @@ export default async function DashboardLayout({
   }
 
   return (
+    <QueryProvider>
     <div className="min-h-screen" style={{ backgroundColor: '#350045' }}>
       <Toaster position="top-right" richColors closeButton />
       <nav className="sticky top-0 z-50 border-b shadow-lg" style={{ backgroundColor: '#1a0022', borderColor: '#792990' }}>
@@ -42,5 +44,6 @@ export default async function DashboardLayout({
       </nav>
       <main>{children}</main>
     </div>
+    </QueryProvider>
   );
 }
