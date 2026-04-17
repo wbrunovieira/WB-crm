@@ -50,6 +50,12 @@ cron_secret: "{{ vault_cron_secret }}"
 # Certbot email
 certbot_email: bruno@wbdigitalsolutions.com
 
+# Backend NestJS (roda em Docker, porta 3001)
+backend_dir: /opt/wb-crm
+backend_port: 3001
+backend_domain: api.crm.wbdigitalsolutions.com
+backend_jwt_secret: "{{ vault_nextauth_secret }}"   # mesmo segredo do NextAuth
+
 # Backup settings
 backup_notify_email: bruno@wbdigitalsolutions.com
 backup_retention_days: 7

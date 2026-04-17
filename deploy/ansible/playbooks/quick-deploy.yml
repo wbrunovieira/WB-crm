@@ -90,10 +90,10 @@
                {{ app_dir }}/docs \
                {{ app_dir }}/vitest.config.ts \
                {{ app_dir }}/CLAUDE.md \
-               {{ app_dir }}/docker-compose.yml \
                {{ app_dir }}/.vscode \
                {{ app_dir }}/.eslintrc.json \
                {{ app_dir }}/.prettierrc.json
+        # Nota: docker-compose.yml e backend/ são mantidos — necessários para o container NestJS
 
     - name: Install dependencies (including dev deps needed for build)
       raw: cd {{ app_dir }} && npm ci --production=false
