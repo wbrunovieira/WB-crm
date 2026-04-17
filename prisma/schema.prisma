@@ -73,6 +73,9 @@ model User {
   // Lead dropdown options (custom)
   leadDropdownOptions LeadDropdownOption[]
 
+  // WhatsApp Campaigns
+  campaigns          Campaign[]
+
   @@map("users")
 }
 
@@ -296,6 +299,9 @@ model Lead {
 
   // Google Places Search session
   googlePlacesSearch  GooglePlacesSearch? @relation(fields: [googlePlacesSearchId], references: [id], onDelete: SetNull)
+
+  // Campaign sends
+  campaignSends       CampaignSend[]
 
   @@index([ownerId])
   @@index([status])
@@ -2077,4 +2083,99 @@ model WeeklyGoal {
   @@unique([weekStart, ownerId])
   @@index([ownerId])
   @@map("weekly_goals")
+}
+
+// ─── WhatsApp Campaign Automation ────────────────────────────────────────────
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  FINISHED
+}
+
+enum StepType {
+  TEXT     // mensagem de texto simples
+  MEDIA    // imagem, vídeo, documento com legenda opcional
+  AUDIO    // áudio PTT (push-to-talk)
+  DELAY    // espera N segundos antes do próximo step
+  TYPING   // simula "digitando..." por N segundos
+}
+
+enum SendStatus {
+  PENDING   // aguardando execução
+  RUNNING   // em progresso (executando steps)
+  DONE      // concluído com sucesso
+  FAILED    // erro irrecuperável
+  OPTED_OUT // destinatário pediu para sair
+}
+
+/// Campanha de envio em massa de WhatsApp.
+/// Contém uma sequência de steps e uma lista de destinatários (CampaignSend).
+model Campaign {
+  id           String         @id @default(cuid())
+  ownerId      String
+  name         String
+  description  String?
+  status       CampaignStatus @default(DRAFT)
+  instanceName String         // nome da instância Evolution API (número dedicado)
+  /// Config anti-bloqueio (JSON): { minDelayMs, maxDelayMs, maxPerHour, maxPerDay }
+  antiBlockConfig String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  owner  User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  steps  CampaignStep[]
+  sends  CampaignSend[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@map("campaigns")
+}
+
+/// Um step dentro de uma campanha (mensagem, delay ou simulação de digitação).
+/// A ordem de execução é definida pelo campo `order`.
+model CampaignStep {
+  id           String   @id @default(cuid())
+  campaignId   String
+  order        Int      // posição na sequência (0-based)
+  type         StepType
+
+  // Campos de conteúdo — preenchidos conforme o tipo:
+  text         String?  // TEXT: corpo da mensagem
+  mediaUrl     String?  // MEDIA/AUDIO: URL do arquivo
+  mediaCaption String?  // MEDIA: legenda opcional
+  mediaType    String?  // MEDIA: "image" | "video" | "document"
+
+  // Timing:
+  delaySeconds  Int?    // DELAY: quantos segundos esperar
+  typingSeconds Int?    // TYPING: quanto tempo mostrar "digitando..."
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, order])
+  @@map("campaign_steps")
+}
+
+/// Representa um destinatário dentro de uma campanha.
+/// Cada CampaignSend rastreia em qual step está e qual o status de envio.
+model CampaignSend {
+  id          String     @id @default(cuid())
+  campaignId  String
+  leadId      String?    // lead do CRM (opcional — pode ser número avulso)
+  phone       String     // número E.164 (ex: "5511999998888")
+  status      SendStatus @default(PENDING)
+  currentStep Int        @default(0)  // índice do próximo step a executar
+  scheduledAt DateTime?  // quando executar o próximo step (null = imediato)
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  errorMessage String?
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead     Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([status, scheduledAt]) // índice usado pelo worker de polling
+  @@index([leadId])
+  @@map("campaign_sends")
 }
