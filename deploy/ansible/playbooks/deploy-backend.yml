@@ -1,23 +1,14 @@
 ---
-# Deploy Backend NestJS — docker compose --profile backend
+# Deploy Backend NestJS
 #
 # O que faz:
-#   1. Git pull (mesmo repo do CRM)
-#   2. Cria/atualiza backend/.env no servidor
-#   3. docker compose build + up --profile backend
-#   4. Configura Nginx: api.crm.wbdigitalsolutions.com → localhost:3001
-#   5. SSL via Certbot (só na primeira vez)
-#   6. Health check em /health
+#   1. Git pull no servidor
+#   2. docker compose build + up --profile backend
+#   3. Health check em /health
 #
 # CRM Next.js NÃO é afetado — roda em PM2 independente.
 #
 # Uso:
-#   ansible-playbook -i inventory/production.yml playbooks/deploy-backend.yml
-#
-# Primeira vez (inclui Nginx + SSL):
-#   ansible-playbook -i inventory/production.yml playbooks/deploy-backend.yml -e "setup_nginx=true"
-#
-# Deploy rápido (só rebuild + restart Docker):
 #   ansible-playbook -i inventory/production.yml playbooks/deploy-backend.yml
 
 - name: Deploy NestJS Backend
@@ -25,10 +16,10 @@
   gather_facts: no
 
   vars:
-    app_dir: "{{ backend_dir }}"
-    backend_env_file: "{{ backend_dir }}/backend/.env"
+    app_dir: /opt/wb-crm
+    backend_port: 3010
+    backend_domain: api.crm.wbdigitalsolutions.com
     github_branch: main
-    setup_nginx: false   # passe -e "setup_nginx=true" apenas na primeira vez
 
   tasks:
     # ── 1. Código ──────────────────────────────────────────────────────────────
@@ -45,157 +36,59 @@
       debug:
         msg: "{{ git_result.stdout_lines | last }}"
 
-    # ── 2. Variáveis de ambiente ────────────────────────────────────────────────
+    # ── 2. Docker build + up ───────────────────────────────────────────────────
 
-    - name: Criar backend/.env
-      raw: |
-        cat > {{ backend_env_file }} << 'ENVEOF'
-        DATABASE_URL=postgresql://{{ db_user }}:{{ db_password }}@postgres:5432/{{ db_name }}
-        PORT={{ backend_port }}
-        JWT_SECRET={{ backend_jwt_secret }}
-        CRM_URL=https://{{ app_domain }}
-        NODE_ENV=production
-        ENVEOF
-      no_log: true   # não loga segredos
-
-    # ── 3. Docker ──────────────────────────────────────────────────────────────
-
-    - name: Verificar se Docker está instalado
+    - name: Verificar Docker
       raw: docker --version
       register: docker_check
       failed_when: docker_check.rc != 0
 
     - name: Build da imagem do backend
-      raw: |
-        cd {{ app_dir }} && \
-        docker compose --profile backend build backend
+      raw: cd {{ app_dir }} && docker compose --profile backend build backend
       register: docker_build
-      timeout: 600   # 10 min para build
+      timeout: 600
+
+    - name: Mostrar output do build
+      debug:
+        msg: "{{ docker_build.stdout_lines | last }}"
+
+    - name: Remover containers parados com nome conflitante
+      raw: |
+        docker ps -a --filter "name=wb-crm-backend" --filter "status=exited" -q | xargs -r docker rm -f
+        docker ps -a --filter "name=wb-crm-backend" --filter "status=created" -q | xargs -r docker rm -f
+      ignore_errors: yes
 
     - name: Subir container do backend
-      raw: |
-        cd {{ app_dir }} && \
-        docker compose --profile backend up -d backend
+      raw: cd {{ app_dir }} && docker compose --profile backend up -d --force-recreate backend
       register: docker_up
 
-    - name: Aguardar backend inicializar
-      raw: |
-        sleep 5 && \
-        curl -sf http://localhost:{{ backend_port }}/health | grep '"ok":true' && \
-        echo "HEALTHY" || echo "NOT_READY"
-      register: health_local
-      retries: 5
-      delay: 5
-      until: "'HEALTHY' in health_local.stdout"
+    # ── 3. Health check ────────────────────────────────────────────────────────
 
-    - name: Status Docker
-      raw: docker compose --profile backend ps
-      args:
-        chdir: "{{ app_dir }}"
+    - name: Aguardar backend inicializar (até 30s)
+      raw: |
+        for i in $(seq 1 6); do
+          result=$(curl -sf http://localhost:{{ backend_port }}/health 2>/dev/null)
+          if echo "$result" | grep -q '"ok":true'; then
+            echo "HEALTHY: $result"
+            exit 0
+          fi
+          sleep 5
+        done
+        echo "NOT_READY"
+        exit 1
+      register: health_check
+
+    - name: Status dos containers
+      raw: cd {{ app_dir }} && docker compose --profile backend ps
       register: docker_status
 
-    - name: Mostrar containers
-      debug:
-        msg: "{{ docker_status.stdout_lines }}"
-
-    # ── 4. Nginx ───────────────────────────────────────────────────────────────
-    # Executado apenas na primeira vez com -e "setup_nginx=true"
-
-    - name: Criar config Nginx para o backend (HTTP, para Certbot)
-      raw: |
-        cat > /etc/nginx/sites-available/wb-crm-backend.conf << 'NGINXCONF'
-        server {
-            listen 80;
-            server_name {{ backend_domain }};
-
-            location /.well-known/acme-challenge/ {
-                root /var/www/html;
-            }
-
-            location / {
-                proxy_pass http://127.0.0.1:{{ backend_port }};
-                proxy_http_version 1.1;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-            }
-        }
-        NGINXCONF
-
-        ln -sf /etc/nginx/sites-available/wb-crm-backend.conf \
-                /etc/nginx/sites-enabled/wb-crm-backend.conf
-        nginx -t && systemctl reload nginx
-      when: setup_nginx | bool
-
-    - name: Obter certificado SSL para o backend
-      raw: |
-        certbot certonly \
-          --webroot -w /var/www/html \
-          -d {{ backend_domain }} \
-          --non-interactive --agree-tos \
-          --email {{ certbot_email }}
-      when: setup_nginx | bool
-      register: certbot_result
-
-    - name: Atualizar Nginx com SSL
-      raw: |
-        cat > /etc/nginx/sites-available/wb-crm-backend.conf << 'NGINXSSL'
-        server {
-            listen 80;
-            server_name {{ backend_domain }};
-            return 301 https://$server_name$request_uri;
-        }
-
-        server {
-            listen 443 ssl http2;
-            server_name {{ backend_domain }};
-
-            ssl_certificate /etc/letsencrypt/live/{{ backend_domain }}/fullchain.pem;
-            ssl_certificate_key /etc/letsencrypt/live/{{ backend_domain }}/privkey.pem;
-            ssl_protocols TLSv1.2 TLSv1.3;
-            ssl_prefer_server_ciphers off;
-
-            # Sem logs de acesso para /health (evita ruído)
-            location /health {
-                access_log off;
-                proxy_pass http://127.0.0.1:{{ backend_port }};
-                proxy_http_version 1.1;
-                proxy_set_header Host $host;
-                proxy_set_header X-Forwarded-Proto $scheme;
-            }
-
-            location / {
-                proxy_pass http://127.0.0.1:{{ backend_port }};
-                proxy_http_version 1.1;
-                proxy_set_header Host $host;
-                proxy_set_header X-Real-IP $remote_addr;
-                proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-                proxy_set_header X-Forwarded-Proto $scheme;
-                # Cabeçalhos de segurança
-                proxy_hide_header X-Powered-By;
-                add_header X-Frame-Options DENY;
-                add_header X-Content-Type-Options nosniff;
-            }
-        }
-        NGINXSSL
-
-        nginx -t && systemctl reload nginx
-      when: setup_nginx | bool and (certbot_result is changed or certbot_result is succeeded)
-
-    # ── 5. Resultado ───────────────────────────────────────────────────────────
-
-    - name: Deploy concluído
+    - name: Resultado do deploy
       debug:
         msg: |
-          ✅ BACKEND DEPLOY COMPLETO
+          ✅ BACKEND DEPLOY CONCLUÍDO
           ===========================
-          Commit  : {{ git_result.stdout_lines | last }}
-          Container: {{ 'running' if 'Up' in docker_status.stdout else 'CHECK LOGS' }}
-          Health  : http://localhost:{{ backend_port }}/health → {{ health_local.stdout | trim }}
-          {% if setup_nginx | bool %}
-          URL     : https://{{ backend_domain }}/health
-          {% else %}
-          URL local: http://45.90.123.190:{{ backend_port }}/health
-          Nginx   : não configurado neste deploy (use -e "setup_nginx=true" para configurar)
-          {% endif %}
+          Commit   : {{ git_result.stdout_lines | last }}
+          Health   : {{ health_check.stdout | trim }}
+          URL      : https://{{ backend_domain }}/health
+          Containers:
+          {{ docker_status.stdout }}
