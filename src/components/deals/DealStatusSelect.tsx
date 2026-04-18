@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updateDeal } from "@/actions/deals";
+import { useUpdateDeal } from "@/hooks/deals/use-deals";
 import { useRouter } from "next/navigation";
 import confetti from "canvas-confetti";
 import { toast } from "sonner";
@@ -55,33 +55,34 @@ export function DealStatusSelect({
   dealData,
 }: DealStatusSelectProps) {
   const router = useRouter();
-  const [isUpdating, setIsUpdating] = useState(false);
+  const updateMutation = useUpdateDeal();
   const [selectedStatus, setSelectedStatus] = useState(currentStatus);
 
   const handleStatusChange = async (newStatus: "open" | "won" | "lost") => {
     if (newStatus === selectedStatus) return;
 
-    setIsUpdating(true);
     setSelectedStatus(newStatus);
 
     try {
-      await updateDeal(dealId, {
+      await updateMutation.mutateAsync({
+        id: dealId,
         ...dealData,
         status: newStatus,
+        contactId: dealData.contactId ?? undefined,
+        organizationId: dealData.organizationId ?? undefined,
+        expectedCloseDate: dealData.expectedCloseDate
+          ? new Date(dealData.expectedCloseDate).toISOString().split("T")[0]
+          : undefined,
       });
       router.refresh();
 
-      // Fire confetti when deal is won
       if (newStatus === "won") {
         fireConfetti();
       }
     } catch (error) {
       console.error("Erro ao atualizar status:", error);
-      // Revert on error
       setSelectedStatus(currentStatus);
       toast.error("Erro ao atualizar status");
-    } finally {
-      setIsUpdating(false);
     }
   };
 
@@ -100,7 +101,7 @@ export function DealStatusSelect({
     <select
       value={selectedStatus}
       onChange={(e) => handleStatusChange(e.target.value as "open" | "won" | "lost")}
-      disabled={isUpdating}
+      disabled={updateMutation.isPending}
       className={`inline-flex rounded-full px-2 py-1 text-xs font-semibold border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed ${getStatusStyles(selectedStatus)} hover:opacity-80`}
     >
       <option value="open">Aberto</option>

@@ -40,6 +40,7 @@ export const mockOrganization: Organization = {
   hostingNotes: null,
   languages: null,
   inOperationsAt: null,
+  referredByPartnerId: null,
   ownerId: 'user-test-123',
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),

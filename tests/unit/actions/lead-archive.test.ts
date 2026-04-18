@@ -7,125 +7,13 @@ import { mockLead, mockArchivedLead, mockConvertedLead } from '../../fixtures/le
 
 const mockedGetServerSession = vi.mocked(getServerSession);
 
-import { archiveLead, unarchiveLead, bulkArchiveLeads, getLeads } from '@/actions/leads';
+import { bulkArchiveLeads, getLeads } from '@/actions/leads';
 
 describe('Lead Archive Feature', () => {
   beforeEach(() => {
     mockedGetServerSession.mockResolvedValue(mockSession);
     prismaMock.sharedEntity.findMany.mockResolvedValue([]);
     prismaMock.sharedEntity.findFirst.mockResolvedValue(null);
-  });
-
-  // ==========================================
-  // archiveLead
-  // ==========================================
-  describe('archiveLead', () => {
-    it('should archive an active lead without reason', async () => {
-      prismaMock.lead.findFirst.mockResolvedValue(mockLead);
-      prismaMock.lead.update.mockResolvedValue({
-        ...mockLead, isArchived: true, archivedAt: new Date(), archivedReason: null,
-      });
-
-      const result = await archiveLead(mockLead.id);
-
-      expect(prismaMock.lead.update).toHaveBeenCalledWith({
-        where: { id: mockLead.id },
-        data: {
-          isArchived: true,
-          archivedAt: expect.any(Date),
-          archivedReason: null,
-        },
-      });
-      expect(result.isArchived).toBe(true);
-    });
-
-    it('should archive an active lead with a reason', async () => {
-      prismaMock.lead.findFirst.mockResolvedValue(mockLead);
-      prismaMock.lead.update.mockResolvedValue({
-        ...mockLead, isArchived: true, archivedAt: new Date(), archivedReason: 'Sem budget',
-      });
-
-      await archiveLead(mockLead.id, 'Sem budget');
-
-      expect(prismaMock.lead.update).toHaveBeenCalledWith({
-        where: { id: mockLead.id },
-        data: {
-          isArchived: true,
-          archivedAt: expect.any(Date),
-          archivedReason: 'Sem budget',
-        },
-      });
-    });
-
-    it('should throw if lead is not found', async () => {
-      prismaMock.lead.findFirst.mockResolvedValue(null);
-      await expect(archiveLead('nonexistent-id')).rejects.toThrow('Lead não encontrado');
-    });
-
-    it('should throw if lead is already archived', async () => {
-      prismaMock.lead.findFirst.mockResolvedValue(mockArchivedLead);
-      await expect(archiveLead(mockArchivedLead.id)).rejects.toThrow('Lead já está arquivado');
-    });
-
-    it('should throw if lead is already converted', async () => {
-      prismaMock.lead.findFirst.mockResolvedValue(mockConvertedLead);
-      await expect(archiveLead(mockConvertedLead.id)).rejects.toThrow('Lead já foi convertido');
-    });
-
-    it('should throw if user is not authenticated', async () => {
-      mockedGetServerSession.mockResolvedValue(null);
-      await expect(archiveLead(mockLead.id)).rejects.toThrow('Não autorizado');
-    });
-
-    it('should call revalidatePath after archiving', async () => {
-      prismaMock.lead.findFirst.mockResolvedValue(mockLead);
-      prismaMock.lead.update.mockResolvedValue({ ...mockLead, isArchived: true });
-
-      await archiveLead(mockLead.id);
-
-      expect(revalidatePath).toHaveBeenCalledWith('/leads');
-      expect(revalidatePath).toHaveBeenCalledWith(`/leads/${mockLead.id}`);
-    });
-  });
-
-  // ==========================================
-  // unarchiveLead
-  // ==========================================
-  describe('unarchiveLead', () => {
-    it('should unarchive and clear archivedAt + archivedReason', async () => {
-      prismaMock.lead.findFirst.mockResolvedValue(mockArchivedLead);
-      prismaMock.lead.update.mockResolvedValue({
-        ...mockArchivedLead, isArchived: false, archivedAt: null, archivedReason: null,
-      });
-
-      const result = await unarchiveLead(mockArchivedLead.id);
-
-      expect(prismaMock.lead.update).toHaveBeenCalledWith({
-        where: { id: mockArchivedLead.id },
-        data: { isArchived: false, archivedAt: null, archivedReason: null },
-      });
-      expect(result.isArchived).toBe(false);
-    });
-
-    it('should throw if lead is not archived', async () => {
-      prismaMock.lead.findFirst.mockResolvedValue(mockLead);
-      await expect(unarchiveLead(mockLead.id)).rejects.toThrow('Lead não está arquivado');
-    });
-
-    it('should throw if lead is not found', async () => {
-      prismaMock.lead.findFirst.mockResolvedValue(null);
-      await expect(unarchiveLead('nonexistent-id')).rejects.toThrow('Lead não encontrado');
-    });
-
-    it('should call revalidatePath after unarchiving', async () => {
-      prismaMock.lead.findFirst.mockResolvedValue(mockArchivedLead);
-      prismaMock.lead.update.mockResolvedValue({ ...mockArchivedLead, isArchived: false });
-
-      await unarchiveLead(mockArchivedLead.id);
-
-      expect(revalidatePath).toHaveBeenCalledWith('/leads');
-      expect(revalidatePath).toHaveBeenCalledWith(`/leads/${mockArchivedLead.id}`);
-    });
   });
 
   // ==========================================

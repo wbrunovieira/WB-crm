@@ -10,7 +10,7 @@ import {
   useSensor,
   useSensors,
 } from "@dnd-kit/core";
-import { updateDealStage } from "@/actions/deals";
+import { useUpdateDealStage } from "@/hooks/deals/use-deals";
 import { useRouter } from "next/navigation";
 import StageColumn from "./StageColumn";
 import DealCard from "./DealCard";
@@ -58,6 +58,7 @@ type ViewMode = "kanban" | "list";
 
 export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
   const router = useRouter();
+  const updateStageMutation = useUpdateDealStage();
   const [activeDeal, setActiveDeal] = useState<Deal | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [displayCurrency, setDisplayCurrency] = useState("BRL");
@@ -101,7 +102,7 @@ export default function PipelineBoard({ pipeline }: PipelineBoardProps) {
     if (!currentStage || currentStage.id === newStageId) return;
 
     try {
-      await updateDealStage(dealId, newStageId);
+      await updateStageMutation.mutateAsync({ id: dealId, stageId: newStageId });
       router.refresh();
     } catch (error) {
       console.error("Error updating deal stage:", error);

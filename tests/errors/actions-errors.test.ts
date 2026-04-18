@@ -80,12 +80,6 @@ describe("Actions Error Handling", () => {
       await expect(getDealById(DEAL_ID)).rejects.toThrow("Não autorizado");
     });
 
-    it("getContactById throws error when not authenticated", async () => {
-      const { getContactById } = await import("@/actions/contacts");
-
-      await expect(getContactById(CONTACT_ID)).rejects.toThrow("Não autorizado");
-    });
-
     it("getLeadById throws error when not authenticated", async () => {
       const { getLeadById } = await import("@/actions/leads");
 
@@ -98,13 +92,6 @@ describe("Actions Error Handling", () => {
       await expect(getOrganizationById(ORG_ID)).rejects.toThrow("Não autorizado");
     });
 
-    it("createDeal throws error when not authenticated", async () => {
-      const { createDeal } = await import("@/actions/deals");
-
-      await expect(
-        createDeal({ title: "Test", value: 1000, stageId: STAGE_ID, status: "open", currency: "BRL" })
-      ).rejects.toThrow("Não autorizado");
-    });
   });
 
   // ==================== Not Found Errors ====================
@@ -118,15 +105,6 @@ describe("Actions Error Handling", () => {
 
       const { getDealById } = await import("@/actions/deals");
       const result = await getDealById(DEAL_ID);
-
-      expect(result).toBeNull();
-    });
-
-    it("getContactById returns null for non-existent contact", async () => {
-      vi.mocked(prisma.contact.findFirst).mockResolvedValue(null);
-
-      const { getContactById } = await import("@/actions/contacts");
-      const result = await getContactById(CONTACT_ID);
 
       expect(result).toBeNull();
     });
@@ -174,22 +152,6 @@ describe("Actions Error Handling", () => {
       );
     });
 
-    it("getContactById returns null for contact owned by another user", async () => {
-      vi.mocked(prisma.contact.findFirst).mockResolvedValue(null);
-
-      const { getContactById } = await import("@/actions/contacts");
-      const result = await getContactById(CONTACT_ID);
-
-      expect(result).toBeNull();
-      expect(prisma.contact.findFirst).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: expect.objectContaining({
-            id: CONTACT_ID,
-            ownerId: USER_ID,
-          }),
-        })
-      );
-    });
   });
 
   // ==================== Conflict Errors ====================

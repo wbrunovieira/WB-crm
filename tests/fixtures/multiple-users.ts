@@ -61,6 +61,7 @@ export const sessionUserA: Session = {
     email: userA.email,
     name: userA.name,
     role: userA.role as UserRole,
+    accessToken: 'mock-token-user-a',
   },
   expires: '2025-12-31T23:59:59.999Z',
 };
@@ -71,6 +72,7 @@ export const sessionUserB: Session = {
     email: userB.email,
     name: userB.name,
     role: userB.role as UserRole,
+    accessToken: 'mock-token-user-b',
   },
   expires: '2025-12-31T23:59:59.999Z',
 };
@@ -81,6 +83,7 @@ export const sessionUserC: Session = {
     email: userC.email,
     name: userC.name,
     role: userC.role as UserRole,
+    accessToken: 'mock-token-user-c',
   },
   expires: '2025-12-31T23:59:59.999Z',
 };
@@ -91,6 +94,7 @@ export const sessionAdmin: Session = {
     email: adminUser.email,
     name: adminUser.name,
     role: adminUser.role as UserRole,
+    accessToken: 'mock-token-admin',
   },
   expires: '2025-12-31T23:59:59.999Z',
 };
@@ -289,6 +293,7 @@ export function createMockOrganization(ownerId: string, overrides: Partial<{
     hostingNotes: overrides.hostingNotes ?? null,
     languages: null,
     inOperationsAt: null,
+    referredByPartnerId: null,
     ownerId,
     createdAt: new Date(),
     updatedAt: new Date(),

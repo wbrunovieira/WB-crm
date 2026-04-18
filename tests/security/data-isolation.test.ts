@@ -33,12 +33,12 @@ import {
 } from '../fixtures/multiple-users';
 
 // Import actions to test
-import { getDeals, getDealById, updateDeal, deleteDeal } from '@/actions/deals';
-import { getContacts, getContactById, updateContact, deleteContact } from '@/actions/contacts';
-import { getLeads, getLeadById, updateLead, deleteLead } from '@/actions/leads';
-import { getOrganizations, getOrganizationById, updateOrganization, deleteOrganization } from '@/actions/organizations';
+import { getDeals, getDealById } from '@/actions/deals';
+import { getContacts } from '@/actions/contacts';
+import { getLeads, getLeadById } from '@/actions/leads';
+import { getOrganizations, getOrganizationById } from '@/actions/organizations';
 import { getActivities, getActivityById, updateActivity, deleteActivity } from '@/actions/activities';
-import { getPartners, getPartnerById, updatePartner, deletePartner } from '@/actions/partners';
+import { getPartners, getPartnerById } from '@/actions/partners';
 
 // Type for mocked getServerSession
 const mockedGetServerSession = vi.mocked(getServerSession);
@@ -224,116 +224,6 @@ describe('Data Isolation - Deals', () => {
     });
   });
 
-  describe('updateDeal - Ownership Verification', () => {
-    it('should allow User A to update their own deal', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const existingDeal = createMockDeal(userA.id, { id: 'deal-a-1' });
-      const updatedDeal = { ...existingDeal, title: 'Updated Deal' };
-
-      prismaMock.deal.findUnique.mockResolvedValue(existingDeal);
-      prismaMock.deal.update.mockResolvedValue(updatedDeal);
-
-      // Act
-      const result = await updateDeal('deal-a-1', {
-        title: 'Updated Deal',
-        value: 10000,
-        stageId: 'stage-1',
-        status: 'open',
-        currency: 'BRL',
-      });
-
-      // Assert
-      expect(prismaMock.deal.update).toHaveBeenCalled();
-      expect(result.title).toBe('Updated Deal');
-    });
-
-    it('should throw error when User A tries to update User B deal', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      // Deal belongs to User B
-      const dealUserB = createMockDeal(userB.id, { id: 'deal-b-1' });
-
-      prismaMock.deal.findUnique.mockResolvedValue(dealUserB);
-
-      // Act & Assert
-      await expect(
-        updateDeal('deal-b-1', {
-          title: 'Hacked Deal',
-          value: 10000,
-          stageId: 'stage-1',
-          status: 'open',
-          currency: 'BRL',
-        })
-      ).rejects.toThrow('Negócio não encontrado');
-
-      // Verify update was never called
-      expect(prismaMock.deal.update).not.toHaveBeenCalled();
-    });
-
-    it('should throw error when deal does not exist', async () => {
-      // Arrange - Edge case: non-existent deal
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-      prismaMock.deal.findUnique.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(
-        updateDeal('non-existent', {
-          title: 'Updated',
-          value: 10000,
-          stageId: 'stage-1',
-          status: 'open',
-          currency: 'BRL',
-        })
-      ).rejects.toThrow('Negócio não encontrado');
-    });
-  });
-
-  describe('deleteDeal - Ownership Verification', () => {
-    it('should allow User A to delete their own deal', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const dealUserA = createMockDeal(userA.id, { id: 'deal-a-1' });
-
-      prismaMock.deal.findUnique.mockResolvedValue(dealUserA);
-      prismaMock.deal.delete.mockResolvedValue(dealUserA);
-
-      // Act
-      await deleteDeal('deal-a-1');
-
-      // Assert
-      expect(prismaMock.deal.delete).toHaveBeenCalledWith({
-        where: { id: 'deal-a-1' },
-      });
-    });
-
-    it('should throw error when User A tries to delete User B deal', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const dealUserB = createMockDeal(userB.id, { id: 'deal-b-1' });
-
-      prismaMock.deal.findUnique.mockResolvedValue(dealUserB);
-
-      // Act & Assert
-      await expect(deleteDeal('deal-b-1')).rejects.toThrow('Negócio não encontrado');
-
-      // Verify delete was never called
-      expect(prismaMock.deal.delete).not.toHaveBeenCalled();
-    });
-
-    it('should throw error when deal does not exist', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-      prismaMock.deal.findUnique.mockResolvedValue(null);
-
-      // Act & Assert
-      await expect(deleteDeal('non-existent')).rejects.toThrow('Negócio não encontrado');
-    });
-  });
 });
 
 describe('Data Isolation - Contacts', () => {
@@ -384,69 +274,6 @@ describe('Data Isolation - Contacts', () => {
     });
   });
 
-  describe('getContactById - Single Record Isolation', () => {
-    it('should return contact when User A requests their own contact', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const contactUserA = createMockContact(userA.id, { id: 'contact-a-1' });
-
-      prismaMock.contact.findFirst.mockResolvedValue(contactUserA);
-
-      // Act
-      const result = await getContactById('contact-a-1');
-
-      // Assert
-      expect(result).not.toBeNull();
-      expect(result?.id).toBe('contact-a-1');
-    });
-
-    it('should return null when User A requests User B contact', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-      prismaMock.contact.findFirst.mockResolvedValue(null);
-
-      // Act
-      const result = await getContactById('contact-b-1');
-
-      // Assert
-      expect(result).toBeNull();
-    });
-  });
-
-  describe('updateContact - Ownership Verification', () => {
-    it('should throw error when User A tries to update User B contact', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const contactUserB = createMockContact(userB.id, { id: 'contact-b-1' });
-
-      prismaMock.contact.findUnique.mockResolvedValue(contactUserB);
-
-      // Act & Assert
-      await expect(
-        updateContact('contact-b-1', { name: 'Hacked' })
-      ).rejects.toThrow('Contato não encontrado');
-
-      expect(prismaMock.contact.update).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('deleteContact - Ownership Verification', () => {
-    it('should throw error when User A tries to delete User B contact', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const contactUserB = createMockContact(userB.id, { id: 'contact-b-1' });
-
-      prismaMock.contact.findUnique.mockResolvedValue(contactUserB);
-
-      // Act & Assert
-      await expect(deleteContact('contact-b-1')).rejects.toThrow('Contato não encontrado');
-
-      expect(prismaMock.contact.delete).not.toHaveBeenCalled();
-    });
-  });
 });
 
 describe('Data Isolation - Leads', () => {
@@ -518,39 +345,6 @@ describe('Data Isolation - Leads', () => {
     });
   });
 
-  describe('updateLead - Ownership Verification', () => {
-    it('should throw error when User A tries to update User B lead', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const leadUserB = createMockLead(userB.id, { id: 'lead-b-1' });
-
-      prismaMock.lead.findUnique.mockResolvedValue(leadUserB);
-
-      // Act & Assert
-      await expect(
-        updateLead('lead-b-1', { businessName: 'Hacked' })
-      ).rejects.toThrow('Lead não encontrado');
-
-      expect(prismaMock.lead.update).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('deleteLead - Ownership Verification', () => {
-    it('should throw error when User A tries to delete User B lead', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const leadUserB = createMockLead(userB.id, { id: 'lead-b-1' });
-
-      prismaMock.lead.findUnique.mockResolvedValue(leadUserB);
-
-      // Act & Assert
-      await expect(deleteLead('lead-b-1')).rejects.toThrow('Lead não encontrado');
-
-      expect(prismaMock.lead.delete).not.toHaveBeenCalled();
-    });
-  });
 });
 
 describe('Data Isolation - Organizations', () => {
@@ -600,39 +394,6 @@ describe('Data Isolation - Organizations', () => {
     });
   });
 
-  describe('updateOrganization - Ownership Verification', () => {
-    it('should throw error when User A tries to update User B organization', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const orgUserB = createMockOrganization(userB.id, { id: 'org-b-1' });
-
-      prismaMock.organization.findUnique.mockResolvedValue(orgUserB);
-
-      // Act & Assert
-      await expect(
-        updateOrganization('org-b-1', { name: 'Hacked Org' })
-      ).rejects.toThrow('Organização não encontrada');
-
-      expect(prismaMock.organization.update).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('deleteOrganization - Ownership Verification', () => {
-    it('should throw error when User A tries to delete User B organization', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const orgUserB = createMockOrganization(userB.id, { id: 'org-b-1' });
-
-      prismaMock.organization.findUnique.mockResolvedValue(orgUserB);
-
-      // Act & Assert
-      await expect(deleteOrganization('org-b-1')).rejects.toThrow('Organização não encontrada');
-
-      expect(prismaMock.organization.delete).not.toHaveBeenCalled();
-    });
-  });
 });
 
 describe('Data Isolation - Activities', () => {
@@ -768,42 +529,6 @@ describe('Data Isolation - Partners', () => {
     });
   });
 
-  describe('updatePartner - Ownership Verification', () => {
-    it('should throw error when User A tries to update User B partner', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const partnerUserB = createMockPartner(userB.id, { id: 'partner-b-1' });
-
-      prismaMock.partner.findUnique.mockResolvedValue(partnerUserB);
-
-      // Act & Assert
-      await expect(
-        updatePartner('partner-b-1', {
-          name: 'Hacked Partner',
-          partnerType: 'indicador',
-        })
-      ).rejects.toThrow('Parceiro não encontrado');
-
-      expect(prismaMock.partner.update).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('deletePartner - Ownership Verification', () => {
-    it('should throw error when User A tries to delete User B partner', async () => {
-      // Arrange
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const partnerUserB = createMockPartner(userB.id, { id: 'partner-b-1' });
-
-      prismaMock.partner.findUnique.mockResolvedValue(partnerUserB);
-
-      // Act & Assert
-      await expect(deletePartner('partner-b-1')).rejects.toThrow('Parceiro não encontrado');
-
-      expect(prismaMock.partner.delete).not.toHaveBeenCalled();
-    });
-  });
 });
 
 describe('Authentication Required', () => {

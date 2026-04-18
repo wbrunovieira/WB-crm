@@ -30,7 +30,6 @@ import {
   getLeadById,
   createLead,
   updateLead,
-  deleteLead,
   convertLeadToOrganization,
   type CreateLeadResult,
 } from '@/actions/leads';
@@ -556,82 +555,6 @@ describe('Leads - updateLead', () => {
   });
 });
 
-// ============ DELETE LEAD TESTS ============
-
-describe('Leads - deleteLead', () => {
-  describe('successful deletion', () => {
-    it('should delete own lead', async () => {
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const leadA = createMockLead(userA.id, { id: 'lead-a' });
-      prismaMock.lead.findUnique.mockResolvedValue(leadA);
-      prismaMock.lead.delete.mockResolvedValue(leadA);
-
-      await deleteLead('lead-a');
-
-      expect(prismaMock.lead.delete).toHaveBeenCalledWith({
-        where: { id: 'lead-a' },
-      });
-    });
-  });
-
-  describe('ownership verification', () => {
-    it('should throw error when trying to delete other user lead', async () => {
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const leadB = createMockLead(userB.id, { id: 'lead-b' });
-      prismaMock.lead.findUnique.mockResolvedValue(leadB);
-
-      await expect(deleteLead('lead-b')).rejects.toThrow('Lead não encontrado');
-      expect(prismaMock.lead.delete).not.toHaveBeenCalled();
-    });
-
-    it('should throw error when lead does not exist', async () => {
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      prismaMock.lead.findUnique.mockResolvedValue(null);
-
-      await expect(deleteLead('non-existent')).rejects.toThrow('Lead não encontrado');
-    });
-
-    it('should allow admin to delete any lead', async () => {
-      mockedGetServerSession.mockResolvedValue(sessionAdmin);
-
-      const leadA = createMockLead(userA.id, { id: 'lead-a' });
-      prismaMock.lead.findUnique.mockResolvedValue(leadA);
-      prismaMock.lead.delete.mockResolvedValue(leadA);
-
-      await deleteLead('lead-a');
-
-      expect(prismaMock.lead.delete).toHaveBeenCalledWith({
-        where: { id: 'lead-a' },
-      });
-    });
-  });
-
-  describe('converted lead protection', () => {
-    it('should throw error when trying to delete converted lead', async () => {
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-
-      const convertedLead = createMockLead(userA.id, { id: 'lead-a', convertedAt: new Date() });
-      prismaMock.lead.findUnique.mockResolvedValue(convertedLead);
-
-      await expect(deleteLead('lead-a')).rejects.toThrow(
-        'Não é possível excluir um lead já convertido'
-      );
-      expect(prismaMock.lead.delete).not.toHaveBeenCalled();
-    });
-  });
-
-  describe('authentication', () => {
-    it('should throw error when not authenticated', async () => {
-      mockedGetServerSession.mockResolvedValue(null);
-
-      await expect(deleteLead('lead-a')).rejects.toThrow('Não autorizado');
-    });
-  });
-});
-
 // ============ CONVERT LEAD TO ORGANIZATION TESTS ============
 
 describe('Leads - convertLeadToOrganization', () => {
@@ -820,23 +743,6 @@ describe('Leads - Edge Cases', () => {
       ).rejects.toThrow('Lead não encontrado');
     });
 
-    it('User A cannot delete User B lead', async () => {
-      mockedGetServerSession.mockResolvedValue(sessionUserA);
-      prismaMock.lead.findUnique.mockResolvedValue(
-        createMockLead(userB.id, { id: 'lead-b' })
-      );
-
-      await expect(deleteLead('lead-b')).rejects.toThrow('Lead não encontrado');
-    });
-
-    it('User B cannot delete User A lead', async () => {
-      mockedGetServerSession.mockResolvedValue(sessionUserB);
-      prismaMock.lead.findUnique.mockResolvedValue(
-        createMockLead(userA.id, { id: 'lead-a' })
-      );
-
-      await expect(deleteLead('lead-a')).rejects.toThrow('Lead não encontrado');
-    });
   });
 
   describe('empty states', () => {

@@ -19,8 +19,4 @@ export abstract class AggregateRoot<Props> extends Entity<Props> {
     this._domainEvents = [];
   }
 
-  // Needed by DomainEvents
-  get id(): UniqueEntityID {
-    return super.id;
-  }
 }

@@ -1,14 +1,13 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteDeal } from "@/actions/deals";
+import { useDeleteDeal } from "@/hooks/deals/use-deals";
 import { toast } from "sonner";
 import { ConfirmDialog, useConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 export default function DeleteDealButton({ dealId }: { dealId: string }) {
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteMutation = useDeleteDeal();
   const { confirm, dialogProps } = useConfirmDialog();
 
   const handleDelete = async () => {
@@ -20,16 +19,13 @@ export default function DeleteDealButton({ dealId }: { dealId: string }) {
     });
     if (!confirmed) return;
 
-    setIsDeleting(true);
     try {
-      await deleteDeal(dealId);
+      await deleteMutation.mutateAsync(dealId);
+      toast.success("Negócio excluído com sucesso!");
       router.push("/deals");
       router.refresh();
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Erro ao excluir negócio"
-      );
-      setIsDeleting(false);
+      toast.error(error instanceof Error ? error.message : "Erro ao excluir negócio");
     }
   };
 
@@ -37,10 +33,10 @@ export default function DeleteDealButton({ dealId }: { dealId: string }) {
     <>
       <button
         onClick={handleDelete}
-        disabled={isDeleting}
+        disabled={deleteMutation.isPending}
         className="rounded-md border border-red-300 bg-white px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
       >
-        {isDeleting ? "Excluindo..." : "Excluir"}
+        {deleteMutation.isPending ? "Excluindo..." : "Excluir"}
       </button>
       <ConfirmDialog {...dialogProps} />
     </>

@@ -32,6 +32,7 @@ export const mockSession: Session = {
     email: mockUser.email,
     name: mockUser.name,
     role: mockUser.role as UserRole,
+    accessToken: 'mock-token-test',
   },
   expires: '2025-12-31T23:59:59.999Z',
 };
@@ -42,6 +43,7 @@ export const mockAdminSession: Session = {
     email: mockAdminUser.email,
     name: mockAdminUser.name,
     role: mockAdminUser.role as UserRole,
+    accessToken: 'mock-token-admin',
   },
   expires: '2025-12-31T23:59:59.999Z',
 };

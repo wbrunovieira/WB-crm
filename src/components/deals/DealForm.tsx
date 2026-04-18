@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createDeal, updateDeal } from "@/actions/deals";
+import { useCreateDeal, useUpdateDeal } from "@/hooks/deals/use-deals";
+import { toast } from "sonner";
 
 type Contact = {
   id: string;
@@ -53,7 +54,9 @@ export default function DealForm({
   preselectedOrganizationId,
 }: DealFormProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const createMutation = useCreateDeal();
+  const updateMutation = useUpdateDeal();
+  const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const [error, setError] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
@@ -72,38 +75,31 @@ export default function DealForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setError(null);
 
+    const payload = {
+      title: formData.title,
+      description: formData.description || undefined,
+      value: Number(formData.value),
+      currency: formData.currency,
+      status: formData.status as "open" | "won" | "lost",
+      contactId: formData.contactId || undefined,
+      organizationId: formData.organizationId || undefined,
+      stageId: formData.stageId,
+      expectedCloseDate: formData.expectedCloseDate || undefined,
+    };
+
     try {
-      const data = {
-        title: formData.title,
-        description: formData.description || null,
-        value: Number(formData.value),
-        currency: formData.currency,
-        status: formData.status as "open" | "won" | "lost",
-        contactId: formData.contactId || null,
-        organizationId: formData.organizationId || null,
-        stageId: formData.stageId,
-        expectedCloseDate: formData.expectedCloseDate
-          ? new Date(formData.expectedCloseDate + "T12:00:00")
-          : null,
-      };
-
       if (deal) {
-        await updateDeal(deal.id, data);
+        await updateMutation.mutateAsync({ id: deal.id, ...payload });
       } else {
-        await createDeal(data);
+        await createMutation.mutateAsync(payload);
       }
-
+      toast.success(deal ? "Negócio atualizado!" : "Negócio criado!");
       router.push("/deals");
       router.refresh();
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao salvar negócio"
-      );
-    } finally {
-      setIsSubmitting(false);
+      setError(err instanceof Error ? err.message : "Erro ao salvar negócio");
     }
   };
 
