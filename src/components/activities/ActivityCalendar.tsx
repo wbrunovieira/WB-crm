@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useState } from "react";
-import { updateActivityDueDate } from "@/actions/activities";
+import { useUpdateActivity } from "@/hooks/activities/use-activities";
 import ActivityTypeIcon from "./ActivityTypeIcon";
 
 type Activity = {
@@ -54,6 +54,7 @@ export default function ActivityCalendar({
   selectedDate,
 }: ActivityCalendarProps) {
   const router = useRouter();
+  const updateActivity = useUpdateActivity();
   const [draggedActivity, setDraggedActivity] = useState<string | null>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -189,21 +190,18 @@ export default function ActivityCalendar({
     e.dataTransfer.dropEffect = "move";
   };
 
-  const handleDrop = async (e: React.DragEvent, targetDate: Date) => {
+  const handleDrop = (e: React.DragEvent, targetDate: Date) => {
     e.preventDefault();
 
     if (!draggedActivity) return;
 
-    try {
-      // Set time to noon to avoid timezone issues
-      const newDate = new Date(targetDate);
-      newDate.setHours(12, 0, 0, 0);
+    const newDate = new Date(targetDate);
+    newDate.setHours(12, 0, 0, 0);
 
-      await updateActivityDueDate(draggedActivity, newDate);
-      router.refresh();
-    } catch (error) {
-      console.error("Error updating activity date:", error);
-    }
+    updateActivity.mutate(
+      { id: draggedActivity, dueDate: newDate.toISOString() },
+      { onSuccess: () => router.refresh() },
+    );
 
     setDraggedActivity(null);
     setIsDragging(false);

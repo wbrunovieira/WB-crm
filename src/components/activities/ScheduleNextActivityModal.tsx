@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createActivity } from "@/actions/activities";
+import { useCreateActivity } from "@/hooks/activities/use-activities";
 import { toast } from "sonner";
 import { X, Calendar, Clock } from "lucide-react";
 
@@ -38,7 +38,8 @@ export function ScheduleNextActivityModal({
   availableData,
 }: ScheduleNextActivityModalProps) {
   const router = useRouter();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const createActivity = useCreateActivity();
+  const isSubmitting = createActivity.isPending;
 
   // Parse contactIds if it's a JSON string
   const getInitialContactIds = () => {
@@ -111,18 +112,16 @@ export function ScheduleNextActivityModal({
 
   if (!isOpen) return null;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
 
-    try {
-      // Combine date and time
-      const dueDateTime = formData.dueDate && formData.dueTime
-        ? new Date(`${formData.dueDate}T${formData.dueTime}`)
-        : null;
+    const dueDateTime = formData.dueDate && formData.dueTime
+      ? new Date(`${formData.dueDate}T${formData.dueTime}`).toISOString()
+      : null;
 
-      await createActivity({
-        type: formData.type as "call" | "meeting" | "email" | "task" | "whatsapp" | "visit" | "instagram" | "linkedin",
+    createActivity.mutate(
+      {
+        type: formData.type,
         subject: formData.subject,
         description: formData.description || undefined,
         dueDate: dueDateTime,
@@ -131,17 +130,12 @@ export function ScheduleNextActivityModal({
         contactIds: formData.linkType === "contact" ? formData.contactIds : [],
         leadId: formData.linkType === "lead" ? formData.leadId || null : null,
         partnerId: formData.linkType === "partner" ? formData.partnerId || null : null,
-      });
-
-      toast.success("Próxima atividade agendada com sucesso!");
-      router.refresh();
-      onClose();
-    } catch (error) {
-      console.error("Error creating activity:", error);
-      toast.error(error instanceof Error ? error.message : "Erro ao agendar atividade");
-    } finally {
-      setIsSubmitting(false);
-    }
+      },
+      {
+        onSuccess: () => { toast.success("Próxima atividade agendada com sucesso!"); router.refresh(); onClose(); },
+        onError: (error) => toast.error(error instanceof Error ? error.message : "Erro ao agendar atividade"),
+      },
+    );
   };
 
   const handleContactToggle = (contactId: string) => {

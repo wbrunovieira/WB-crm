@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { XCircle, SkipForward, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { markActivityFailed, markActivitySkipped } from "@/actions/activities";
+import { useMarkActivityFailed, useMarkActivitySkipped } from "@/hooks/activities/use-activities";
 
 interface ActivityOutcomeButtonsProps {
   activityId: string;
@@ -20,35 +20,33 @@ export function ActivityOutcomeButtons({
   skippedAt,
 }: ActivityOutcomeButtonsProps) {
   const router = useRouter();
+  const markFailed = useMarkActivityFailed();
+  const markSkipped = useMarkActivitySkipped();
   const [modal, setModal] = useState<"failed" | "skipped" | null>(null);
   const [reason, setReason] = useState("");
-  const [loading, setLoading] = useState(false);
+  const loading = markFailed.isPending || markSkipped.isPending;
 
   // Only show for pending activities
   if (completed || failedAt || skippedAt) return null;
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (!reason.trim()) {
       toast.error("Informe o motivo");
       return;
     }
-    setLoading(true);
-    try {
-      if (modal === "failed") {
-        await markActivityFailed(activityId, reason);
-        toast.success("Atividade marcada como falha");
-      } else {
-        await markActivitySkipped(activityId, reason);
-        toast.success("Atividade pulada");
-      }
+
+    const mutate = modal === "failed"
+      ? () => markFailed.mutateAsync({ id: activityId, reason })
+      : () => markSkipped.mutateAsync({ id: activityId, reason });
+
+    mutate().then(() => {
+      toast.success(modal === "failed" ? "Atividade marcada como falha" : "Atividade pulada");
       setModal(null);
       setReason("");
       router.refresh();
-    } catch (err) {
+    }).catch((err) => {
       toast.error(err instanceof Error ? err.message : "Erro");
-    } finally {
-      setLoading(false);
-    }
+    });
   };
 
   return (

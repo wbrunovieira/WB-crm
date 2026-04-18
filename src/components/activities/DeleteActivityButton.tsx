@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteActivity } from "@/actions/activities";
+import { useDeleteActivity } from "@/hooks/activities/use-activities";
 import { toast } from "sonner";
 
 export default function DeleteActivityButton({
@@ -11,23 +10,17 @@ export default function DeleteActivityButton({
   activityId: string;
 }) {
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteActivity = useDeleteActivity();
+  const isDeleting = deleteActivity.isPending;
 
   async function handleDelete() {
     toast.promise(
-      async () => {
-        setIsDeleting(true);
-        await deleteActivity(activityId);
-        router.refresh();
-      },
+      () => deleteActivity.mutateAsync(activityId),
       {
         loading: "Excluindo atividade...",
-        success: "Atividade excluída com sucesso!",
-        error: (error) => {
-          setIsDeleting(false);
-          return error instanceof Error ? error.message : "Erro ao excluir atividade";
-        },
-      }
+        success: () => { router.refresh(); return "Atividade excluída com sucesso!"; },
+        error: (error) => error instanceof Error ? error.message : "Erro ao excluir atividade",
+      },
     );
   }
 

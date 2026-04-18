@@ -1,6 +1,6 @@
 "use client";
 
-import { toggleActivityCompleted } from "@/actions/activities";
+import { useToggleActivityCompleted } from "@/hooks/activities/use-activities";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { toast } from "sonner";
@@ -42,29 +42,22 @@ export default function ToggleCompletedButton({
   availableData,
 }: ToggleCompletedButtonProps) {
   const router = useRouter();
-  const [isUpdating, setIsUpdating] = useState(false);
+  const toggleCompleted = useToggleActivityCompleted();
+  const isUpdating = toggleCompleted.isPending;
   const [showScheduleModal, setShowScheduleModal] = useState(false);
 
-  const handleToggle = async () => {
-    setIsUpdating(true);
-    try {
-      await toggleActivityCompleted(activityId);
-
-      // Se estava incompleto e agora foi marcado como completo, abre o modal
-      if (!completed && availableData && previousActivity) {
-        setShowScheduleModal(true);
-      }
-
-      router.refresh();
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : "Erro ao atualizar atividade"
-      );
-    } finally {
-      setIsUpdating(false);
-    }
+  const handleToggle = () => {
+    toggleCompleted.mutate(activityId, {
+      onSuccess: () => {
+        if (!completed && availableData && previousActivity) {
+          setShowScheduleModal(true);
+        }
+        router.refresh();
+      },
+      onError: (error) => {
+        toast.error(error instanceof Error ? error.message : "Erro ao atualizar atividade");
+      },
+    });
   };
 
   return (

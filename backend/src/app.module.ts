@@ -8,9 +8,10 @@ import { LeadsModule } from "./domain/leads/leads.module";
 import { OrganizationsModule } from "./domain/organizations/organizations.module";
 import { PartnersModule } from "./domain/partners/partners.module";
 import { DealsModule } from "./domain/deals/deals.module";
+import { ActivitiesModule } from "./domain/activities/activities.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule],
+  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule],
   controllers: [HealthController],
   providers: [],
 })

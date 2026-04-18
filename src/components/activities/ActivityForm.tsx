@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { createActivity, updateActivity } from "@/actions/activities";
+import { useCreateActivity, useUpdateActivity } from "@/hooks/activities/use-activities";
 
 type Contact = {
   id: string;
@@ -62,7 +62,9 @@ export default function ActivityForm({
 }: ActivityFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const createActivity = useCreateActivity();
+  const updateActivity = useUpdateActivity();
+  const isSubmitting = createActivity.isPending || updateActivity.isPending;
   const [error, setError] = useState<string | null>(null);
 
   const getInitialContactIds = (): string[] => {
@@ -131,42 +133,37 @@ export default function ActivityForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setError(null);
 
-    try {
-      const data = {
-        type: formData.type as "call" | "meeting" | "email" | "task" | "whatsapp" | "visit" | "instagram" | "linkedin",
-        subject: formData.subject,
-        description: formData.description || undefined,
-        dueDate: formData.dueDate
-          ? new Date(formData.dueDate + "T12:00:00")
-          : null,
-        completed: formData.completed,
-        contactIds: selectedContactIds.length > 0 ? selectedContactIds : null,
-        leadContactIds: selectedLeadContactIds.length > 0 ? selectedLeadContactIds : null,
-        dealId: formData.dealId || null,
-        leadId: formData.leadId || null,
-        callContactType: formData.type === "call"
-          ? (formData.callContactType as "gatekeeper" | "decisor")
-          : null,
-        meetingNoShow: formData.type === "meeting" ? formData.meetingNoShow : false,
-      };
+    const data = {
+      type: formData.type,
+      subject: formData.subject,
+      description: formData.description || undefined,
+      dueDate: formData.dueDate
+        ? new Date(formData.dueDate + "T12:00:00").toISOString()
+        : null,
+      completed: formData.completed,
+      contactIds: selectedContactIds.length > 0 ? selectedContactIds : null,
+      leadContactIds: selectedLeadContactIds.length > 0 ? selectedLeadContactIds : null,
+      dealId: formData.dealId || null,
+      leadId: formData.leadId || null,
+      callContactType: formData.type === "call" ? formData.callContactType : null,
+      meetingNoShow: formData.type === "meeting" ? formData.meetingNoShow : false,
+    };
 
-      if (activity) {
-        await updateActivity(activity.id, data);
-      } else {
-        await createActivity(data);
-      }
-
-      router.push("/activities");
-      router.refresh();
-    } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "Erro ao salvar atividade"
+    if (activity) {
+      updateActivity.mutate(
+        { id: activity.id, ...data },
+        {
+          onSuccess: () => { router.push("/activities"); router.refresh(); },
+          onError: (err) => setError(err instanceof Error ? err.message : "Erro ao atualizar atividade"),
+        },
       );
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      createActivity.mutate(data, {
+        onSuccess: () => { router.push("/activities"); router.refresh(); },
+        onError: (err) => setError(err instanceof Error ? err.message : "Erro ao criar atividade"),
+      });
     }
   };
 

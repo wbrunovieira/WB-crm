@@ -10,7 +10,7 @@ const GoToCallPlayer = dynamic(() => import("@/components/activities/GoToCallPla
 import WhatsAppMessageLog from "@/components/whatsapp/WhatsAppMessageLog";
 import type { WhatsAppMediaMessage } from "@/components/whatsapp/WhatsAppMessageLog";
 import { formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
-import { toggleActivityCompleted, assignLeadContactsToActivity, removeLeadContactsFromActivity, markActivityFailed, markActivitySkipped, revertActivityOutcome } from "@/actions/activities";
+import { useToggleActivityCompleted, useMarkActivityFailed, useMarkActivitySkipped, useRevertActivityOutcome, useUpdateActivity } from "@/hooks/activities/use-activities";
 import { updateLeadActivityOrder, resetLeadActivityOrder } from "@/actions/leads";
 import { registerLeadReply } from "@/actions/lead-cadences";
 import { toast } from "sonner";
@@ -508,6 +508,11 @@ export function LeadActivitiesList({
   leadContacts?: LeadContact[];
 }) {
   const router = useRouter();
+  const toggleCompleted = useToggleActivityCompleted();
+  const markFailed = useMarkActivityFailed();
+  const markSkipped = useMarkActivitySkipped();
+  const revertOutcome = useRevertActivityOutcome();
+  const updateActivity = useUpdateActivity();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [assigningActivity, setAssigningActivity] = useState<Activity | null>(null);
   const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set());
@@ -604,23 +609,18 @@ export function LeadActivitiesList({
     setAssigningActivity(activity);
   };
 
-  const handleSaveContacts = async () => {
+  const handleSaveContacts = () => {
     if (!assigningActivity) return;
     setSavingContacts(true);
-    try {
-      if (selectedContactIds.size === 0) {
-        await removeLeadContactsFromActivity(assigningActivity.id);
-      } else {
-        await assignLeadContactsToActivity(assigningActivity.id, Array.from(selectedContactIds));
-      }
-      toast.success("Contatos atualizados");
-      setAssigningActivity(null);
-      router.refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao salvar contatos");
-    } finally {
-      setSavingContacts(false);
-    }
+    const leadContactIds = selectedContactIds.size === 0 ? null : Array.from(selectedContactIds);
+    updateActivity.mutate(
+      { id: assigningActivity.id, leadContactIds },
+      {
+        onSuccess: () => { toast.success("Contatos atualizados"); setAssigningActivity(null); router.refresh(); },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao salvar contatos"),
+        onSettled: () => setSavingContacts(false),
+      },
+    );
   };
 
   const toggleContact = (contactId: string) => {
@@ -660,18 +660,14 @@ export function LeadActivitiesList({
     physical_visit: { label: "Visita",       bg: "bg-teal-100",   text: "text-teal-800",   border: "border-l-teal-500",    dot: "bg-teal-500" },
   };
 
-  const handleToggle = async (e: React.MouseEvent, activityId: string) => {
+  const handleToggle = (e: React.MouseEvent, activityId: string) => {
     e.preventDefault();
     e.stopPropagation();
     setLoadingId(activityId);
-    try {
-      await toggleActivityCompleted(activityId);
-      router.refresh();
-    } catch {
-      // silently fail
-    } finally {
-      setLoadingId(null);
-    }
+    toggleCompleted.mutate(activityId, {
+      onSuccess: () => router.refresh(),
+      onSettled: () => setLoadingId(null),
+    });
   };
 
   const openOutcomeModal = (e: React.MouseEvent, activity: Activity, type: "failed" | "skipped") => {
@@ -681,39 +677,32 @@ export function LeadActivitiesList({
     setOutcomeModal({ activity, type });
   };
 
-  const handleSubmitOutcome = async () => {
+  const handleSubmitOutcome = () => {
     if (!outcomeModal || !outcomeReason.trim()) return;
     setOutcomeLoading(true);
-    try {
-      if (outcomeModal.type === "failed") {
-        await markActivityFailed(outcomeModal.activity.id, outcomeReason);
-        toast.success("Atividade marcada como falha");
-      } else {
-        await markActivitySkipped(outcomeModal.activity.id, outcomeReason);
-        toast.success("Atividade pulada");
-      }
+    const { activity: act, type } = outcomeModal;
+    const mutate = type === "failed"
+      ? markFailed.mutateAsync({ id: act.id, reason: outcomeReason })
+      : markSkipped.mutateAsync({ id: act.id, reason: outcomeReason });
+
+    mutate.then(() => {
+      toast.success(type === "failed" ? "Atividade marcada como falha" : "Atividade pulada");
       setOutcomeModal(null);
       router.refresh();
-    } catch (err) {
+    }).catch((err) => {
       toast.error(err instanceof Error ? err.message : "Erro ao atualizar atividade");
-    } finally {
-      setOutcomeLoading(false);
-    }
+    }).finally(() => setOutcomeLoading(false));
   };
 
-  const handleRevert = async (e: React.MouseEvent, activityId: string) => {
+  const handleRevert = (e: React.MouseEvent, activityId: string) => {
     e.preventDefault();
     e.stopPropagation();
     setLoadingId(activityId);
-    try {
-      await revertActivityOutcome(activityId);
-      toast.success("Atividade voltou para pendente");
-      router.refresh();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao reverter");
-    } finally {
-      setLoadingId(null);
-    }
+    revertOutcome.mutate(activityId, {
+      onSuccess: () => { toast.success("Atividade voltou para pendente"); router.refresh(); },
+      onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao reverter"),
+      onSettled: () => setLoadingId(null),
+    });
   };
 
   const handleRegisterReply = async () => {

@@ -3,8 +3,9 @@
 import { useState, useEffect, useMemo } from "react";
 import { X, Search, Link2, Loader2, Unlink } from "lucide-react";
 import { toast } from "sonner";
-import { linkActivityToDeal, unlinkActivityFromDeal } from "@/actions/activities";
-import { getDeals } from "@/actions/deals";
+import { useLinkActivityToDeal, useUnlinkActivityFromDeal } from "@/hooks/activities/use-activities";
+import { BACKEND_URL } from "@/lib/api-client";
+import { useSession } from "next-auth/react";
 
 type Deal = {
   id: string;
@@ -28,17 +29,24 @@ export default function LinkActivityToDealModal({
   onClose,
   onChanged,
 }: Props) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  const linkToDeal = useLinkActivityToDeal();
+  const unlinkFromDeal = useUnlinkActivityFromDeal();
   const [query, setQuery] = useState("");
   const [allDeals, setAllDeals] = useState<Deal[]>([]);
   const [fetching, setFetching] = useState(true);
   const [loadingId, setLoadingId] = useState<string | null>(null);
 
   useEffect(() => {
-    getDeals()
-      .then((deals) => setAllDeals(deals.map((d) => ({ id: d.id, title: d.title }))))
+    fetch(`${BACKEND_URL}/deals`, {
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    })
+      .then((r) => r.json())
+      .then((deals: Array<{ id: string; title: string }>) => setAllDeals(deals.map((d) => ({ id: d.id, title: d.title }))))
       .catch(() => {})
       .finally(() => setFetching(false));
-  }, []);
+  }, [token]);
 
   const dealMap = useMemo(
     () => new Map(allDeals.map((d) => [d.id, d.title])),
@@ -55,32 +63,28 @@ export default function LinkActivityToDealModal({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [allDeals, query, currentDealId, additionalDealIds.join(",")]);
 
-  async function handleLink(dealId: string) {
+  function handleLink(dealId: string) {
     setLoadingId(dealId);
-    try {
-      await linkActivityToDeal(activityId, dealId);
-      toast.success("Atividade vinculada ao negócio");
-      onChanged();
-      onClose();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao vincular");
-    } finally {
-      setLoadingId(null);
-    }
+    linkToDeal.mutate(
+      { activityId, dealId },
+      {
+        onSuccess: () => { toast.success("Atividade vinculada ao negócio"); onChanged(); onClose(); },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao vincular"),
+        onSettled: () => setLoadingId(null),
+      },
+    );
   }
 
-  async function handleUnlink(dealId: string) {
+  function handleUnlink(dealId: string) {
     setLoadingId(dealId);
-    try {
-      await unlinkActivityFromDeal(activityId, dealId);
-      toast.success("Vínculo removido");
-      onChanged();
-      onClose();
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Erro ao desvincular");
-    } finally {
-      setLoadingId(null);
-    }
+    unlinkFromDeal.mutate(
+      { activityId, dealId },
+      {
+        onSuccess: () => { toast.success("Vínculo removido"); onChanged(); onClose(); },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao desvincular"),
+        onSettled: () => setLoadingId(null),
+      },
+    );
   }
 
   return (
