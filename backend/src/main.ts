@@ -6,6 +6,16 @@ import { AppModule } from "./app.module";
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // ── Request logger ───────────────────────────────────────────────────────
+  app.use((req: { method: string; url: string }, _res: unknown, next: () => void) => {
+    const method = req.method;
+    if (["POST", "PATCH", "PUT", "DELETE"].includes(method)) {
+      console.log(`[${new Date().toISOString()}] ${method} ${req.url}`);
+    }
+    next();
+  });
+  // ─────────────────────────────────────────────────────────────────────────
+
   app.enableCors({
     origin: process.env.CRM_URL ?? "http://localhost:3000",
     credentials: true,

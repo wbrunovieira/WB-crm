@@ -12,7 +12,8 @@ import {
   Loader2,
   Trash2,
 } from "lucide-react";
-import { qualifyProspect, deleteLead } from "@/actions/leads";
+import { qualifyProspect } from "@/actions/leads";
+import { useDeleteLead } from "@/hooks/leads/use-leads";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
@@ -51,6 +52,7 @@ export function ProspectsTable({ prospects, currentUserId }: ProspectsTableProps
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
+  const deleteMutation = useDeleteLead();
 
   async function handleQualify(id: string, name: string) {
     const confirmed = await confirm({
@@ -84,7 +86,7 @@ export function ProspectsTable({ prospects, currentUserId }: ProspectsTableProps
 
     setLoadingId(id);
     try {
-      await deleteLead(id);
+      await deleteMutation.mutateAsync(id);
       toast.success("Prospecto removido");
       router.refresh();
     } catch (err) {
