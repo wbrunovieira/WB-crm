@@ -229,19 +229,39 @@ _Lição_: Todo e2e de criação/atualização deve ter um teste com **todos os 
 
 ---
 
-### 🔲 M3 — Organizations
-**Status**: Pendente
+### ✅ M3 — Organizations
+**Status**: Concluído em 2026-04-18
 
-Migrar após Leads para garantir que a conversão e os campos compatíveis estejam alinhados.
+#### Backend — concluído ✅
 
-**Campos críticos:**
-- `externalProjectIds` — JSON array, precisa de `JSON.stringify` no mapper
-- `referredByPartnerId` — já no schema (migration `20260418`), implementar no NestJS + UI (seletor de partner opcional); transferir na conversão Lead → Organization
-- `referredByPartnerId`: decisão tomada em 2026-04-18 — campo existia só no Lead (sem UI/actions), adicionado na Organization para preservar histórico de indicação na conversão. Implementação na UI adiada para M2/M3.
-- Hosting fields (`hasHosting`, `hostingRenewalDate`, etc.)
-- Tech profile: 7 junction tables idênticas ao Lead
+- `Organization` entity com 39 campos escalares incluindo `referredByPartnerId`
+- `OrganizationsRepository` abstract com `OrganizationFilters`
+- Use cases: `GetOrganizations`, `GetOrganizationById`, `CreateOrganization`, `UpdateOrganization`, `DeleteOrganization`
+- `PrismaOrganizationsRepository` com filtros (search, hasHosting, owner) e includes completos (contacts, deals, primaryCNAE, labels, 7 tech profile tables, secondaryCNAEs, sectors, icps)
+- `OrganizationMapper` com `toJsonString()` para `languages` e `externalProjectIds`, guards de Date/string para `foundationDate`, `hostingRenewalDate`, `inOperationsAt`
+- `OrganizationsController` com 5 rotas, JwtAuthGuard, Swagger
+- 20 testes unitários + 20 testes e2e — todos passando
+- Deploy confirmado em produção ✅
 
-**Ao fim:** GitHub push + deploy backend + deploy frontend + validar logs Nginx.
+#### Frontend — mutações migradas ✅
+
+- `src/hooks/organizations/use-organizations.ts` — hooks: `useCreateOrganization`, `useUpdateOrganization`, `useDeleteOrganization`
+- `OrganizationForm` → usa `useCreateOrganization` / `useUpdateOrganization` (labels ainda via `setOrganizationLabels` server action)
+- `DeleteOrganizationButton` → usa `useDeleteOrganization`
+- `createOrganization`, `updateOrganization`, `deleteOrganization` removidos de `src/actions/organizations.ts`
+
+#### Pendente (SSR → client components) 🔲
+
+- Lista `/organizations` e detalhe `/organizations/[id]` ainda SSR — precisam de `getOrganizations`/`getOrganizationById` migrados para React Query
+- Labels: `setOrganizationLabels` ainda via server action — a implementar endpoint NestJS labels em M3.5 ou M4
+
+#### Campos críticos tratados:
+- `externalProjectIds` — `JSON.stringify` no mapper ✅
+- `referredByPartnerId` — incluído na entidade, mapper e controller ✅
+- Hosting fields (`hasHosting`, `hostingRenewalDate`, etc.) — todos mapeados ✅
+- `languages` — serializado para JSON string no hook antes de enviar ao backend ✅
+
+**Ao fim:** GitHub push + deploy backend + deploy frontend + validar logs Nginx. ✅
 
 ---
 
