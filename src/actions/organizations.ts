@@ -1,17 +1,11 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import {
-  organizationSchema,
-  OrganizationFormData,
-} from "@/lib/validations/organization";
-import { languagesToJson } from "@/lib/validations/languages";
-import {
-  getAuthenticatedSession,
   getOwnerOrSharedFilter,
-  canAccessEntity,
 } from "@/lib/permissions";
+
+// ============ READ (SSR) — individual migrations migrado para NestJS ============
 
 export async function getOrganizations(filters?: { search?: string; owner?: string; hasHosting?: boolean }) {
   const ownerFilter = await getOwnerOrSharedFilter("organization", filters?.owner);
@@ -130,124 +124,4 @@ export async function getOrganizationById(id: string) {
     ...organization,
     activities,
   };
-}
-
-export async function createOrganization(data: OrganizationFormData) {
-  const session = await getAuthenticatedSession();
-  const validated = organizationSchema.parse(data);
-
-  const organization = await prisma.organization.create({
-    data: {
-      name: validated.name,
-      legalName: validated.legalName || null,
-      foundationDate: validated.foundationDate ? new Date(validated.foundationDate) : null,
-      website: validated.website || null,
-      phone: validated.phone || null,
-      whatsapp: validated.whatsapp || null,
-      email: validated.email || null,
-      country: validated.country || null,
-      state: validated.state || null,
-      city: validated.city || null,
-      zipCode: validated.zipCode || null,
-      streetAddress: validated.streetAddress || null,
-      industry: validated.industry || null,
-      employeeCount: validated.employeeCount || null,
-      annualRevenue: validated.annualRevenue || null,
-      taxId: validated.taxId || null,
-      description: validated.description || null,
-      companyOwner: validated.companyOwner || null,
-      companySize: validated.companySize || null,
-      primaryCNAEId: validated.primaryCNAEId || null,
-      internationalActivity: validated.internationalActivity || null,
-      instagram: validated.instagram || null,
-      linkedin: validated.linkedin || null,
-      facebook: validated.facebook || null,
-      twitter: validated.twitter || null,
-      tiktok: validated.tiktok || null,
-      languages: languagesToJson(validated.languages),
-      // Hosting
-      hasHosting: validated.hasHosting || false,
-      hostingRenewalDate: validated.hostingRenewalDate ? new Date(validated.hostingRenewalDate) : null,
-      hostingPlan: validated.hostingPlan || null,
-      hostingValue: validated.hostingValue || null,
-      hostingReminderDays: validated.hostingReminderDays || 30,
-      hostingNotes: validated.hostingNotes || null,
-      ownerId: session.user.id,
-    },
-  });
-
-  revalidatePath("/organizations");
-  return organization;
-}
-
-export async function updateOrganization(
-  id: string,
-  data: OrganizationFormData
-) {
-  await getAuthenticatedSession();
-  const validated = organizationSchema.parse(data);
-
-  // Check ownership or shared access
-  const existing = await prisma.organization.findUnique({ where: { id } });
-  if (!existing || !(await canAccessEntity("organization", id, existing.ownerId))) {
-    throw new Error("Organização não encontrada");
-  }
-
-  const organization = await prisma.organization.update({
-    where: { id },
-    data: {
-      name: validated.name,
-      legalName: validated.legalName || null,
-      foundationDate: validated.foundationDate ? new Date(validated.foundationDate) : null,
-      website: validated.website || null,
-      phone: validated.phone || null,
-      whatsapp: validated.whatsapp || null,
-      email: validated.email || null,
-      country: validated.country || null,
-      state: validated.state || null,
-      city: validated.city || null,
-      zipCode: validated.zipCode || null,
-      streetAddress: validated.streetAddress || null,
-      industry: validated.industry || null,
-      employeeCount: validated.employeeCount || null,
-      annualRevenue: validated.annualRevenue || null,
-      taxId: validated.taxId || null,
-      description: validated.description || null,
-      companyOwner: validated.companyOwner || null,
-      companySize: validated.companySize || null,
-      primaryCNAEId: validated.primaryCNAEId || null,
-      internationalActivity: validated.internationalActivity || null,
-      instagram: validated.instagram || null,
-      linkedin: validated.linkedin || null,
-      facebook: validated.facebook || null,
-      twitter: validated.twitter || null,
-      tiktok: validated.tiktok || null,
-      languages: languagesToJson(validated.languages),
-      // Hosting
-      hasHosting: validated.hasHosting || false,
-      hostingRenewalDate: validated.hostingRenewalDate ? new Date(validated.hostingRenewalDate) : null,
-      hostingPlan: validated.hostingPlan || null,
-      hostingValue: validated.hostingValue || null,
-      hostingReminderDays: validated.hostingReminderDays || 30,
-      hostingNotes: validated.hostingNotes || null,
-    },
-  });
-
-  revalidatePath("/organizations");
-  revalidatePath(`/organizations/${id}`);
-  return organization;
-}
-
-export async function deleteOrganization(id: string) {
-  await getAuthenticatedSession();
-
-  // Check ownership or shared access
-  const existing = await prisma.organization.findUnique({ where: { id } });
-  if (!existing || !(await canAccessEntity("organization", id, existing.ownerId))) {
-    throw new Error("Organização não encontrada");
-  }
-
-  await prisma.organization.delete({ where: { id } });
-
-  revalidatePath("/organizations");
 }

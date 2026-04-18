@@ -3,10 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { OrganizationFormData } from "@/lib/validations/organization";
-import {
-  createOrganization,
-  updateOrganization,
-} from "@/actions/organizations";
+import { useCreateOrganization, useUpdateOrganization } from "@/hooks/organizations/use-organizations";
 import { MultiLabelSelect } from "@/components/shared/MultiLabelSelect";
 import { setOrganizationLabels } from "@/actions/organization-labels";
 import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
@@ -63,6 +60,8 @@ interface OrganizationFormProps {
 
 export function OrganizationForm({ organization }: OrganizationFormProps) {
   const router = useRouter();
+  const createMutation = useCreateOrganization();
+  const updateMutation = useUpdateOrganization();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [labelIds, setLabelIds] = useState<string[]>(organization?.labels?.map(l => l.id) || []);
@@ -133,9 +132,9 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
       let orgId = organization?.id;
 
       if (organization) {
-        await updateOrganization(organization.id, data);
+        await updateMutation.mutateAsync({ id: organization.id, ...data });
       } else {
-        const newOrg = await createOrganization(data);
+        const newOrg = await createMutation.mutateAsync(data);
         orgId = newOrg.id;
       }
 

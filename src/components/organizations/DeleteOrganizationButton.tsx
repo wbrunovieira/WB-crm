@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteOrganization } from "@/actions/organizations";
+import { useDeleteOrganization } from "@/hooks/organizations/use-organizations";
 import { toast } from "sonner";
 
 export function DeleteOrganizationButton({
@@ -11,22 +10,20 @@ export function DeleteOrganizationButton({
   organizationId: string;
 }) {
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteMutation = useDeleteOrganization();
 
   async function handleDelete() {
     toast.warning("Tem certeza que deseja excluir esta organização?", {
       action: {
         label: "Confirmar",
         onClick: async () => {
-          setIsDeleting(true);
           try {
-            await deleteOrganization(organizationId);
+            await deleteMutation.mutateAsync(organizationId);
             toast.success("Organização excluída com sucesso!");
             router.push("/organizations");
             router.refresh();
           } catch {
             toast.error("Erro ao excluir organização");
-            setIsDeleting(false);
           }
         },
       },
@@ -40,7 +37,7 @@ export function DeleteOrganizationButton({
   return (
     <button
       onClick={handleDelete}
-      disabled={isDeleting}
+      disabled={deleteMutation.isPending}
       className="text-gray-600 hover:text-red-600 disabled:opacity-50"
       title="Excluir"
     >
