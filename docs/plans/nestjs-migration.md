@@ -183,22 +183,42 @@ _Lição_: Todo e2e de criação/atualização deve ter um teste com **todos os 
 
 ---
 
-### 🔲 M2 — Leads
-**Status**: Pendente
+### 🔄 M2 — Leads
+**Status**: Backend concluído em 2026-04-18 | Frontend parcial (mutações simples migradas)
 
-Entidade mais complexa do sistema. Migrar antes de Organizations para garantir compatibilidade na conversão Lead → Organization.
+#### Backend — concluído ✅
 
-**Campos críticos:**
+- `Lead` entity com ~60 campos escalares + `archive(reason?)`, `unarchive()`, `update(data)`
+- `LeadsRepository` abstract com `LeadFilters` interface
+- Use cases: `CreateLead`, `UpdateLead`, `DeleteLead`, `GetLeads`, `GetLeadById`, `ArchiveLead`, `UnarchiveLead`
+- `PrismaLeadsRepository` com includes completos para detail (contacts, labels, tech profile, CNAE, sharedUsers)
+- `LeadMapper` com `JSON.stringify` para campos array e `new Date()` para datas
+- `LeadsController` com 7 rotas: `GET/POST /leads`, `GET/PATCH/DELETE /leads/:id`, `PATCH /leads/:id/archive`, `PATCH /leads/:id/unarchive`
+- 20 testes unitários + 22 testes e2e — todos passando
+- Deploy confirmado em produção ✅
+
+#### Frontend — mutações simples migradas ✅
+
+- `src/hooks/leads/use-leads.ts` — hooks: `useDeleteLead`, `useArchiveLead`, `useUnarchiveLead`
+- `ArchiveLeadButton` → usa `useArchiveLead` / `useUnarchiveLead` (mantém `router.refresh()` pois lista é SSR)
+- `DeleteLeadButton` → usa `useDeleteLead`
+- `DeleteLeadIconButton` → usa `useDeleteLead`
+
+#### Frontend — pendente (lista/detalhe/form) 🔲
+
+- **Lista** (`/leads`): mantida como SSR — usa `LeadsTable` que precisa de `icps`, `_count.leadCadences`, `sharedUsersMap` não disponíveis ainda no endpoint NestJS. Migrar quando endpoint enriquecer esses dados.
+- **Detalhe** (`/leads/[id]`): mantido como SSR — mesmos dados complexos
+- **LeadForm**: 1378 linhas com `createLeadWithContacts` (transação atômica que cria Lead + contatos + junction tables). Migrar em M2.5 após criar `POST /leads` completo com contatos inline e junction tables.
+- **`referredByPartnerId` UI**: seletor de partner a adicionar no LeadForm (campo já no schema e validação Zod)
+
+#### Campos críticos para M2.5 (form/list completo):
 - Tech profile: 7 junction tables (`LeadLanguage`, `LeadFramework`, `LeadHosting`, `LeadDatabase`, `LeadERP`, `LeadCRM`, `LeadEcommerce`)
 - CNAE: `primaryCNAEId` + `LeadSecondaryCNAE[]`
-- JSON fields: `languages`, `categories`, `types`, `openingHours`, `activityOrder` — todos precisam de `JSON.stringify` no mapper
-- `referredByPartnerId` → já no schema, implementar no NestJS + UI (seletor de partner opcional)
-- `LeadContact[]` — sub-entidade, criar use cases próprios ou inline no Lead use case
+- JSON fields: `languages`, `categories`, `types`, `openingHours`, `activityOrder` — mapper já faz `JSON.stringify`
+- `LeadContact[]` — sub-entidade, inline no `CreateLeadUseCase` via transação
 - Conversão Lead → Organization: `ConvertLeadUseCase` com transação atômica
 
-**Atenção:** Não atualizar `src/actions/leads.ts` — será substituído inteiramente pelo NestJS + hooks.
-
-**Ao fim:** GitHub push + deploy backend + deploy frontend + validar logs Nginx.
+**Ao fim de cada sub-fase:** GitHub push + deploy backend + deploy frontend + validar logs Nginx.
 
 ---
 
