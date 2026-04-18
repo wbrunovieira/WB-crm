@@ -40,6 +40,7 @@ async function bootstrap() {
     .addTag("Organizations", "Gestão de organizações/clientes do CRM")
     .addTag("Campaigns", "Campanhas de envio em massa via WhatsApp")
     .addTag("Partners", "Gestão de parceiros do CRM")
+    .addTag("Deals", "Gestão de deals/oportunidades do CRM")
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
