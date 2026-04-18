@@ -265,15 +265,22 @@ _Lição_: Todo e2e de criação/atualização deve ter um teste com **todos os 
 
 ---
 
-### 🔲 M4 — Partners
-**Status**: Pendente
+### ✅ M4 — Partners
+**Status**: Concluído em 2026-04-18
 
-- Entidade `Partner` com tipo enum (`agencia_digital`, `consultoria`, etc.)
-- Contatos vinculados via `Contact.partnerId`
-- `referredLeads Lead[]` e `referredOrganizations Organization[]` — relações inversas já no schema
-- **Atenção**: `OrganizationContactsList` e outros componentes que fazem toggle de status de contatos já usam hooks — não precisarão de mudança
+#### Backend — concluído ✅
+- Entity, abstract repository, 6 use cases (get, getById, create, update, delete, updateLastContact)
+- PrismaPartnersRepository com search (nome/tipo/expertise), owner scoping, includes completos
+- 6 rotas: `GET/POST /partners`, `GET/PATCH/DELETE /partners/:id`, `PATCH /partners/:id/last-contact`
+- 24 unit tests + 20 e2e tests — todos passando
+- Deploy confirmado em produção ✅
 
-**Ao fim:** GitHub push + deploy backend + deploy frontend + validar logs Nginx.
+#### Frontend — concluído ✅
+- `src/hooks/partners/use-partners.ts` — hooks: `useCreatePartner`, `useUpdatePartner`, `useDeletePartner`, `useUpdatePartnerLastContact`
+- `PartnerForm` usa `useCreatePartner` / `useUpdatePartner`
+- `createPartner`, `updatePartner`, `deletePartner`, `updatePartnerLastContact` removidos de `src/actions/partners.ts`
+
+**Ao fim:** GitHub push + deploy backend + deploy frontend ✅
 
 ---
 
