@@ -1,32 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { createPipeline } from "@/actions/pipelines";
+import { useCreatePipeline } from "@/hooks/pipelines/use-pipelines";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export function PipelineCreateButton() {
   const router = useRouter();
+  const createMutation = useCreatePipeline();
   const [isOpen, setIsOpen] = useState(false);
   const [name, setName] = useState("");
   const [isDefault, setIsDefault] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
 
   async function handleCreate() {
     if (!name.trim()) return;
 
-    setIsSaving(true);
     try {
-      const pipeline = await createPipeline({ name: name.trim(), isDefault });
+      const pipeline = await createMutation.mutateAsync({ name: name.trim(), isDefault });
       setIsOpen(false);
       setName("");
       setIsDefault(false);
       router.push(`/pipelines/${pipeline.id}`);
-      router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao criar pipeline");
-    } finally {
-      setIsSaving(false);
     }
   }
 
@@ -90,10 +86,10 @@ export function PipelineCreateButton() {
               </button>
               <button
                 onClick={handleCreate}
-                disabled={isSaving || !name.trim()}
+                disabled={createMutation.isPending || !name.trim()}
                 className="flex-1 rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700 disabled:opacity-50"
               >
-                {isSaving ? "Criando..." : "Criar Pipeline"}
+                {createMutation.isPending ? "Criando..." : "Criar Pipeline"}
               </button>
             </div>
           </div>

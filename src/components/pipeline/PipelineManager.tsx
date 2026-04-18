@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { updatePipeline, deletePipeline, setDefaultPipeline } from "@/actions/pipelines";
+import { useUpdatePipeline, useDeletePipeline, useSetDefaultPipeline } from "@/hooks/pipelines/use-pipelines";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -16,29 +16,28 @@ interface PipelineManagerProps {
 
 export function PipelineManager({ pipeline }: PipelineManagerProps) {
   const router = useRouter();
+  const updateMutation = useUpdatePipeline();
+  const deleteMutation = useDeletePipeline();
+  const setDefaultMutation = useSetDefaultPipeline();
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(pipeline.name);
-  const [isSaving, setIsSaving] = useState(false);
   const { confirm, dialogProps } = useConfirmDialog();
 
   async function handleSave() {
     if (!name.trim()) return;
 
-    setIsSaving(true);
     try {
-      await updatePipeline(pipeline.id, { name: name.trim(), isDefault: pipeline.isDefault });
+      await updateMutation.mutateAsync({ id: pipeline.id, name: name.trim() });
       setIsEditing(false);
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar pipeline");
-    } finally {
-      setIsSaving(false);
     }
   }
 
   async function handleSetDefault() {
     try {
-      await setDefaultPipeline(pipeline.id);
+      await setDefaultMutation.mutateAsync(pipeline.id);
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao definir como padrão");
@@ -55,9 +54,8 @@ export function PipelineManager({ pipeline }: PipelineManagerProps) {
     if (!confirmed) return;
 
     try {
-      await deletePipeline(pipeline.id);
+      await deleteMutation.mutateAsync(pipeline.id);
       router.push("/pipelines");
-      router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao excluir pipeline");
     }
@@ -76,7 +74,7 @@ export function PipelineManager({ pipeline }: PipelineManagerProps) {
           />
           <button
             onClick={handleSave}
-            disabled={isSaving || !name.trim()}
+            disabled={updateMutation.isPending || !name.trim()}
             className="rounded-md bg-primary px-4 py-2 text-sm text-white hover:bg-purple-700 disabled:opacity-50"
           >
             Salvar

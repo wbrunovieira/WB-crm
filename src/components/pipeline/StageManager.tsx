@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { createStage, updateStage, deleteStage, reorderStages } from "@/actions/stages";
+import { useCreateStage, useUpdateStage, useDeleteStage, useReorderStages } from "@/hooks/pipelines/use-pipelines";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -23,6 +23,10 @@ interface StageManagerProps {
 
 export function StageManager({ pipelineId, stages: initialStages }: StageManagerProps) {
   const router = useRouter();
+  const createStageMutation = useCreateStage();
+  const updateStageMutation = useUpdateStage();
+  const deleteStageMutation = useDeleteStage();
+  const reorderStagesMutation = useReorderStages();
   const [stages, setStages] = useState(initialStages);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -38,14 +42,20 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
     if (!formData.name.trim()) return;
 
     try {
-      const newStage = await createStage({
+      const newStage = await createStageMutation.mutateAsync({
         name: formData.name.trim(),
         probability: formData.probability,
         order: stages.length + 1,
         pipelineId,
       });
 
-      setStages([...stages, { ...newStage, _count: { deals: 0 } }]);
+      setStages([...stages, {
+        id: newStage.id,
+        name: formData.name.trim(),
+        order: stages.length + 1,
+        probability: formData.probability,
+        _count: { deals: 0 },
+      }]);
       setFormData({ name: "", probability: 50 });
       setIsCreating(false);
       router.refresh();
@@ -58,11 +68,11 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
     if (!formData.name.trim()) return;
 
     try {
-      await updateStage(stageId, {
+      await updateStageMutation.mutateAsync({
+        id: stageId,
+        pipelineId,
         name: formData.name.trim(),
         probability: formData.probability,
-        order: stages.find((s) => s.id === stageId)?.order || 0,
-        pipelineId,
       });
 
       setStages(
@@ -90,7 +100,7 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
     if (!confirmed) return;
 
     try {
-      await deleteStage(stageId);
+      await deleteStageMutation.mutateAsync({ id: stageId, pipelineId });
       setStages(stages.filter((s) => s.id !== stageId));
       router.refresh();
     } catch (error) {
@@ -138,7 +148,7 @@ export function StageManager({ pipelineId, stages: initialStages }: StageManager
 
     try {
       const stageIds = stages.map((s) => s.id);
-      await reorderStages(pipelineId, stageIds);
+      await reorderStagesMutation.mutateAsync({ pipelineId, stageIds });
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao reordenar estágios");
