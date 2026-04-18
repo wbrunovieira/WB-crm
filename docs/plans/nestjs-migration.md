@@ -171,6 +171,18 @@ _Lição_: Todo e2e de criação/atualização deve ter um teste com **todos os 
 
 ---
 
+### ✅ M1.5 — Schema: referredByPartnerId em Organization
+**Status**: Concluído em 2026-04-18
+
+- Adicionado `referredByPartnerId` ao modelo `Organization` no Prisma schema
+- Adicionado `referredOrganizations Organization[]` ao modelo `Partner`
+- Migration `20260418_add_referred_by_partner_to_organization` aplicada em produção
+- Adicionado `referredByPartnerId` nos schemas Zod de Lead e Organization
+- UI e implementação NestJS adiadas para M2 (Lead) e M3 (Organization)
+- Deploy com backup automático → Google Drive ✅
+
+---
+
 ### 🔲 M2 — Leads
 **Status**: Pendente
 
