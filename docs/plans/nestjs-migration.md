@@ -284,23 +284,69 @@ _Lição_: Todo e2e de criação/atualização deve ter um teste com **todos os 
 
 ---
 
-### 🔲 M5 — Deals (ex-M5)
-**Status**: Pendente
+### ✅ M5 — Deals
+**Status**: Concluído em 2026-04-18
 
-- `DealProduct` junction, `DealTechStack`, `DealLanguage`, `DealFramework`
-- Kanban pipeline view (leitura por stage)
-- Campo `value` com multi-currency
+#### Backend — concluído ✅
+- `Deal` entity com todos os campos escalares (title, value, currency, probability, closedAt, lostReason, stage, pipeline, etc.)
+- `DealsRepository` abstract com filtros (search, stageId, pipelineId, owner)
+- Use cases: `GetDeals`, `GetDealById`, `CreateDeal`, `UpdateDeal`, `DeleteDeal`
+- `PrismaDealsRepository` com includes completos (contact, organization, products, techStack, languages, frameworks)
+- `DealsController` com 5 rotas: `GET/POST /deals`, `GET/PATCH/DELETE /deals/:id`
+- Testes unitários + e2e — todos passando
+- Deploy confirmado em produção ✅
+
+#### Frontend — concluído ✅
+- `src/hooks/deals/use-deals.ts` — hooks: `useCreateDeal`, `useUpdateDeal`, `useDeleteDeal`
+- `DealForm` usa `useCreateDeal` / `useUpdateDeal`
+- `DeleteDealButton` usa `useDeleteDeal`
+- Mutações removidas de `src/actions/deals.ts`
+- Confirmado nos logs: POST 201, PATCH 200, DELETE 204 passando pelo NestJS ✅
+
+#### Desafio resolvido
+- URL de produção `api.crm.wbdigitalsolutions.com/deals` retornava 404 — Nginx não tinha o domínio configurado. Corrigido apontando para `localhost:3010` (porta NestJS).
 
 ---
 
-### 🔲 M6 — Activities
-**Status**: Pendente
+### ✅ M6 — Activities
+**Status**: Concluído em 2026-04-18
 
-- Entidade com muitos tipos (`call`, `meeting`, `email`, `whatsapp`, `visit`, `instagram_dm`)
-- `contactIds` como JSON array
-- WhatsApp messages linkadas
-- Cadence activities (relação com `LeadCadence`)
-- **Atenção**: após migrar, remover `getContacts` de `src/actions/contacts.ts` (única dependência SSR restante)
+#### Backend — concluído ✅
+- `Activity` entity com todos os campos escalares incluindo GoTo, email tracking, `organizationId`
+- `ActivitiesRepository` abstract
+- 11 use cases: `GetActivities`, `GetActivityById`, `CreateActivity`, `UpdateActivity`, `DeleteActivity`, `ToggleActivityCompleted`, `MarkActivityFailed`, `MarkActivitySkipped`, `RevertActivityOutcome`, `LinkActivityToDeal`, `UnlinkActivityFromDeal`
+- `PrismaActivitiesRepository` com filtros (type, completed, dealId, contactId, leadId, outcome, dateRange, includeArchivedLeads)
+- `ActivitiesController` com 11 rotas:
+  - `GET /activities`, `GET /activities/:id`
+  - `POST /activities`, `PATCH /activities/:id`, `DELETE /activities/:id`
+  - `PATCH /activities/:id/toggle-completed`
+  - `PATCH /activities/:id/fail`, `PATCH /activities/:id/skip`, `PATCH /activities/:id/revert`
+  - `POST /activities/:id/deals/:dealId`, `DELETE /activities/:id/deals/:dealId`
+- 22 testes unitários + 23 testes e2e — todos passando
+- `organizationId` adicionado ao modelo Activity (migration `20260418_add_organization_to_activity`) ✅
+- Deploy confirmado em produção ✅
+
+#### Frontend — concluído ✅
+- `src/hooks/activities/use-activities.ts` — hooks: `useCreateActivity`, `useUpdateActivity`, `useDeleteActivity`, `useToggleActivityCompleted`, `useMarkActivityFailed`, `useMarkActivitySkipped`, `useRevertActivityOutcome`, `useLinkActivityToDeal`, `useUnlinkActivityFromDeal`
+- `UpdateActivityPayload = Partial<ActivityPayload>` para suportar updates parciais (`leadContactIds` sem `type`/`subject`)
+- `ActivityForm` reescrito com `SearchableSelect` para leads (sem arquivados) e organizações
+- Todos os componentes migrados: `DeleteActivityButton`, `ToggleCompletedButton`, `ActivityOutcomeButtons`, `LinkActivityToDealModal`, `ScheduleNextActivityModal`, `ActivityCalendar`, `LeadActivitiesList`
+- `getOrganizationsList()` adicionado a `src/lib/lists/` e passado para páginas new/edit
+- `leads-list.ts` filtrado para excluir leads arquivados
+
+#### Desafios resolvidos
+
+**1. Token inválido em navegação RSC**
+
+_Problema_: `backendFetch` lia o cookie raw do NextAuth (JWT do NextAuth, não o `accessToken` do NestJS). Durante navegação client-side (soft navigation), o cookie era inacessível, causando `Error: Token não fornecido` → erro 500 no digest `4226760246`.
+
+_Solução_: `backendFetch` usa `getServerSession(authOptions)` para obter `session.user.accessToken` — funciona tanto em SSR completo quanto em navegação RSC.
+
+**2. Coluna `organizationId` não criada em produção**
+
+_Problema_: `prisma migrate dev` falhou localmente (shadow database com migration quebrada), então nenhum arquivo SQL foi gerado. Deploy aplicou apenas migrations existentes, sem a nova coluna → `P2022: column activities.organizationId does not exist`.
+
+_Solução_: Criado arquivo SQL de migration manualmente em `prisma/migrations/20260418_add_organization_to_activity/migration.sql` e re-deploy com migrations.
 
 ---
 
