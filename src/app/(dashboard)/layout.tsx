@@ -7,6 +7,7 @@ import { LogoutButton } from "@/components/shared/LogoutButton";
 import { MainNav } from "@/components/shared/MainNav";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { QueryProvider } from "@/components/providers/query-provider";
+import { SessionProvider } from "@/components/providers/session-provider";
 
 export default async function DashboardLayout({
   children,
@@ -20,6 +21,7 @@ export default async function DashboardLayout({
   }
 
   return (
+    <SessionProvider session={session}>
     <QueryProvider>
     <div className="min-h-screen" style={{ backgroundColor: '#350045' }}>
       <Toaster position="top-right" richColors closeButton />
@@ -45,5 +47,6 @@ export default async function DashboardLayout({
       <main>{children}</main>
     </div>
     </QueryProvider>
+    </SessionProvider>
   );
 }
