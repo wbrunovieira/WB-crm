@@ -350,6 +350,29 @@ _Solução_: Criado arquivo SQL de migration manualmente em `prisma/migrations/2
 
 ---
 
+## Tech Debt — Arquitetura DDD (Value Objects)
+
+**Identificado em**: 2026-04-18 durante M3.5
+
+**Problema**: Validação de regras de negócio está no use case em vez de Value Objects:
+- `CreateLeadUseCase`: `if (!input.businessName?.trim())` → deve ser `LeadBusinessName` VO
+- `CreateOrganizationUseCase`: já corrigido — usa `OrganizationName` VO ✅
+- Outros use cases (contacts, deals, activities, partners) com padrão similar ainda a verificar
+
+**Padrão correto** (aplicado em Organizations):
+```
+Controller  → HTTP layer (parse body, auth, conversão string→Date, retornar status)
+Use case    → orquestra (cria VO, chama repo, coordena)
+VO          → valida e encapsula regra de negócio (ex: OrganizationName)
+```
+
+**O que falta fazer** (fase dedicada de refactor, não bloqueia migração):
+- [ ] Criar `LeadBusinessName` VO → refatorar `CreateLeadUseCase` e `UpdateLeadUseCase`
+- [ ] Revisar use cases de Contacts, Deals, Activities, Partners para validações manuais
+- [ ] Considerar VOs para campos com regras específicas (email, phone, taxId)
+
+---
+
 ### 🔲 M7 — Pipeline & Stages
 **Status**: Pendente
 

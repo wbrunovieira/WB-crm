@@ -22,8 +22,7 @@ function buildPayload(data: OrganizationFormData) {
     languages: data.languages && data.languages.length > 0
       ? JSON.stringify(data.languages)
       : undefined,
-    // Strip labelIds — labels are handled separately via setOrganizationLabels
-    labelIds: undefined,
+    // labelIds sent directly to the backend (saveWithLabels in use case handles atomically)
   };
 }
 

@@ -263,13 +263,30 @@ export class PrismaOrganizationsRepository extends OrganizationsRepository {
 
   async save(organization: Organization): Promise<void> {
     const data = OrganizationMapper.toPrisma(organization);
-
     const { ...prismaData } = data as Record<string, unknown>;
 
     await this.prisma.organization.upsert({
       where: { id: prismaData["id"] as string },
       create: prismaData as Prisma.OrganizationUncheckedCreateInput,
       update: prismaData as Prisma.OrganizationUncheckedUpdateInput,
+    });
+  }
+
+  async saveWithLabels(organization: Organization, labelIds: string[]): Promise<void> {
+    const data = OrganizationMapper.toPrisma(organization);
+    const { ...prismaData } = data as Record<string, unknown>;
+    const orgId = prismaData["id"] as string;
+
+    await this.prisma.$transaction(async (tx) => {
+      await tx.organization.upsert({
+        where: { id: orgId },
+        create: prismaData as Prisma.OrganizationUncheckedCreateInput,
+        update: prismaData as Prisma.OrganizationUncheckedUpdateInput,
+      });
+      await tx.organization.update({
+        where: { id: orgId },
+        data: { labels: { set: labelIds.map((id) => ({ id })) } },
+      });
     });
   }
 

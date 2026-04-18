@@ -150,6 +150,9 @@ class CreateOrganizationDto {
 
   @ApiPropertyOptional()
   inOperationsAt?: string;
+
+  @ApiPropertyOptional({ type: [String], description: "IDs das labels" })
+  labelIds?: string[];
 }
 
 class UpdateOrganizationDto {
@@ -266,6 +269,9 @@ class UpdateOrganizationDto {
 
   @ApiPropertyOptional()
   inOperationsAt?: string;
+
+  @ApiPropertyOptional({ type: [String], description: "IDs das labels" })
+  labelIds?: string[];
 }
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -386,12 +392,14 @@ export class OrganizationsController {
   @ApiResponse({ status: 201, description: "Organização criada com sucesso" })
   @ApiResponse({ status: 401, description: "Token inválido ou ausente" })
   async create(@Body() body: Omit<CreateOrganizationInput, "ownerId">, @CurrentUser() user: AuthenticatedUser) {
+    const { labelIds, ...rest } = body as any;
     const result = await this.createOrganization.execute({
-      ...body,
+      ...rest,
       ownerId: user.id,
-      foundationDate: (body as any).foundationDate ? new Date((body as any).foundationDate) : undefined,
-      hostingRenewalDate: (body as any).hostingRenewalDate ? new Date((body as any).hostingRenewalDate) : undefined,
-      inOperationsAt: (body as any).inOperationsAt ? new Date((body as any).inOperationsAt) : undefined,
+      foundationDate: rest.foundationDate ? new Date(rest.foundationDate) : undefined,
+      hostingRenewalDate: rest.hostingRenewalDate ? new Date(rest.hostingRenewalDate) : undefined,
+      inOperationsAt: rest.inOperationsAt ? new Date(rest.inOperationsAt) : undefined,
+      labelIds,
     });
     if (result.isLeft()) handleError(result);
     return serialize(result.value.organization);
@@ -410,14 +418,16 @@ export class OrganizationsController {
     @Body() body: Omit<UpdateOrganizationInput, "id" | "requesterId" | "requesterRole">,
     @CurrentUser() user: AuthenticatedUser,
   ) {
+    const { labelIds, ...rest } = body as any;
     const result = await this.updateOrganization.execute({
-      ...body,
+      ...rest,
       id,
       requesterId: user.id,
       requesterRole: user.role ?? "sdr",
-      foundationDate: (body as any).foundationDate ? new Date((body as any).foundationDate) : undefined,
-      hostingRenewalDate: (body as any).hostingRenewalDate ? new Date((body as any).hostingRenewalDate) : undefined,
-      inOperationsAt: (body as any).inOperationsAt ? new Date((body as any).inOperationsAt) : undefined,
+      foundationDate: rest.foundationDate ? new Date(rest.foundationDate) : undefined,
+      hostingRenewalDate: rest.hostingRenewalDate ? new Date(rest.hostingRenewalDate) : undefined,
+      inOperationsAt: rest.inOperationsAt ? new Date(rest.inOperationsAt) : undefined,
+      labelIds,
     });
     if (result.isLeft()) handleError(result);
     return serialize(result.value.organization);

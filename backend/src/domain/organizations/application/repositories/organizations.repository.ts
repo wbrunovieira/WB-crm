@@ -13,5 +13,6 @@ export abstract class OrganizationsRepository {
   abstract findById(id: string, requesterId: string, requesterRole: string): Promise<OrganizationDetail | null>;
   abstract findByIdRaw(id: string): Promise<Organization | null>;
   abstract save(organization: Organization): Promise<void>;
+  abstract saveWithLabels(organization: Organization, labelIds: string[]): Promise<void>;
   abstract delete(id: string): Promise<void>;
 }

@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { OrganizationsRepository } from "../repositories/organizations.repository";
 import { Organization } from "../../enterprise/entities/organization";
+import { OrganizationName } from "../../enterprise/value-objects/organization-name.vo";
 
 export interface CreateOrganizationInput {
   ownerId: string;
@@ -42,6 +43,7 @@ export interface CreateOrganizationInput {
   hostingReminderDays?: number;
   hostingNotes?: string;
   inOperationsAt?: Date;
+  labelIds?: string[];
 }
 
 type Output = Either<Error, { organization: Organization }>;
@@ -51,13 +53,12 @@ export class CreateOrganizationUseCase {
   constructor(private readonly organizations: OrganizationsRepository) {}
 
   async execute(input: CreateOrganizationInput): Promise<Output> {
-    if (!input.name?.trim()) {
-      return left(new Error("Nome da organização é obrigatório"));
-    }
+    const nameResult = OrganizationName.create(input.name);
+    if (nameResult.isLeft()) return left(nameResult.value);
 
     const organization = Organization.create({
       ownerId: input.ownerId,
-      name: input.name.trim(),
+      name: nameResult.value.value,
       legalName: input.legalName,
       foundationDate: input.foundationDate,
       website: input.website,
@@ -96,7 +97,11 @@ export class CreateOrganizationUseCase {
       inOperationsAt: input.inOperationsAt,
     });
 
-    await this.organizations.save(organization);
+    if (input.labelIds !== undefined) {
+      await this.organizations.saveWithLabels(organization, input.labelIds);
+    } else {
+      await this.organizations.save(organization);
+    }
     return right({ organization });
   }
 }

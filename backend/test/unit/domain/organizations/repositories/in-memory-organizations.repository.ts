@@ -4,6 +4,7 @@ import type { OrganizationSummary, OrganizationDetail } from "@/domain/organizat
 
 export class InMemoryOrganizationsRepository extends OrganizationsRepository {
   public items: Organization[] = [];
+  public savedLabels: Map<string, string[]> = new Map();
 
   async findMany(requesterId: string, requesterRole: string, filters: { search?: string; hasHosting?: boolean; owner?: string } = {}): Promise<OrganizationSummary[]> {
     let results = this.items;
@@ -128,6 +129,11 @@ export class InMemoryOrganizationsRepository extends OrganizationsRepository {
     const idx = this.items.findIndex((o) => o.id.equals(organization.id));
     if (idx >= 0) this.items[idx] = organization;
     else this.items.push(organization);
+  }
+
+  async saveWithLabels(organization: Organization, labelIds: string[]): Promise<void> {
+    await this.save(organization);
+    this.savedLabels.set(organization.id.toString(), labelIds);
   }
 
   async delete(id: string): Promise<void> {

@@ -124,6 +124,48 @@ describe("Organizations Use Cases", () => {
         expect(result.value.organization.name).toBe("Empresa com Espaços");
       }
     });
+
+    it("chama saveWithLabels quando labelIds é fornecido", async () => {
+      const labelIds = ["label-1", "label-2"];
+      const result = await createUseCase.execute({
+        ownerId: "user-1",
+        name: "Org Com Labels",
+        labelIds,
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        const orgId = result.value.organization.id.toString();
+        expect(repo.savedLabels.get(orgId)).toEqual(labelIds);
+      }
+    });
+
+    it("não chama saveWithLabels quando labelIds não é fornecido", async () => {
+      const result = await createUseCase.execute({
+        ownerId: "user-1",
+        name: "Org Sem Labels",
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        const orgId = result.value.organization.id.toString();
+        expect(repo.savedLabels.has(orgId)).toBe(false);
+      }
+    });
+
+    it("chama saveWithLabels com array vazio quando labelIds é []", async () => {
+      const result = await createUseCase.execute({
+        ownerId: "user-1",
+        name: "Org Labels Vazias",
+        labelIds: [],
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        const orgId = result.value.organization.id.toString();
+        expect(repo.savedLabels.get(orgId)).toEqual([]);
+      }
+    });
   });
 
   // ─── GetOrganizationsUseCase ────────────────────────────────────────────────
@@ -307,6 +349,54 @@ describe("Organizations Use Cases", () => {
       if (result.isRight()) {
         expect(result.value.organization.name).toBe("Atualizado pelo Admin");
       }
+    });
+
+    it("chama saveWithLabels quando labelIds é fornecido no update", async () => {
+      const created = await createUseCase.execute({ ownerId: "user-1", name: "Org Para Labels" });
+      const id = created.isRight() ? created.value.organization.id.toString() : "";
+
+      const labelIds = ["label-a", "label-b", "label-c"];
+      const result = await updateUseCase.execute({
+        id,
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        name: "Org Com Labels Atualizadas",
+        labelIds,
+      });
+
+      expect(result.isRight()).toBe(true);
+      expect(repo.savedLabels.get(id)).toEqual(labelIds);
+    });
+
+    it("não chama saveWithLabels quando labelIds não é fornecido no update", async () => {
+      const created = await createUseCase.execute({ ownerId: "user-1", name: "Org Sem Labels Update" });
+      const id = created.isRight() ? created.value.organization.id.toString() : "";
+      repo.savedLabels.clear();
+
+      const result = await updateUseCase.execute({
+        id,
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        name: "Nome Atualizado Sem Labels",
+      });
+
+      expect(result.isRight()).toBe(true);
+      expect(repo.savedLabels.has(id)).toBe(false);
+    });
+
+    it("chama saveWithLabels com [] para limpar labels no update", async () => {
+      const created = await createUseCase.execute({ ownerId: "user-1", name: "Org Para Limpar Labels" });
+      const id = created.isRight() ? created.value.organization.id.toString() : "";
+
+      const result = await updateUseCase.execute({
+        id,
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        labelIds: [],
+      });
+
+      expect(result.isRight()).toBe(true);
+      expect(repo.savedLabels.get(id)).toEqual([]);
     });
   });
 

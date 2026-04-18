@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { OrganizationFormData } from "@/lib/validations/organization";
 import { useCreateOrganization, useUpdateOrganization } from "@/hooks/organizations/use-organizations";
 import { MultiLabelSelect } from "@/components/shared/MultiLabelSelect";
-import { setOrganizationLabels } from "@/actions/organization-labels";
 import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
 import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 import { companySizes } from "@/lib/lists/company-sizes";
@@ -129,18 +128,10 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         hostingNotes: formData.get("hostingNotes") as string,
       };
 
-      let orgId = organization?.id;
-
       if (organization) {
-        await updateMutation.mutateAsync({ id: organization.id, ...data });
+        await updateMutation.mutateAsync({ id: organization.id, ...data, labelIds });
       } else {
-        const newOrg = await createMutation.mutateAsync(data);
-        orgId = newOrg.id;
-      }
-
-      // Set labels after create/update
-      if (orgId) {
-        await setOrganizationLabels(orgId, labelIds);
+        await createMutation.mutateAsync({ ...data, labelIds });
       }
 
       router.push("/organizations");

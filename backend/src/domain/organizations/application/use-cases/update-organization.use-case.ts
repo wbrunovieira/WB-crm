@@ -45,6 +45,7 @@ export interface UpdateOrganizationInput {
   hostingReminderDays?: number;
   hostingNotes?: string;
   inOperationsAt?: Date;
+  labelIds?: string[];
 }
 
 type Output = Either<Error, { organization: Organization }>;
@@ -61,11 +62,15 @@ export class UpdateOrganizationUseCase {
       return left(new Error("Não autorizado"));
     }
 
-    const { id, requesterId, requesterRole, ...fields } = input;
+    const { id, requesterId, requesterRole, labelIds, ...fields } = input;
 
     organization.update(fields as Partial<Omit<OrganizationProps, "ownerId" | "createdAt" | "updatedAt">>);
 
-    await this.organizations.save(organization);
+    if (labelIds !== undefined) {
+      await this.organizations.saveWithLabels(organization, labelIds);
+    } else {
+      await this.organizations.save(organization);
+    }
     return right({ organization });
   }
 }

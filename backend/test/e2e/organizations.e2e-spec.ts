@@ -11,6 +11,7 @@ let prisma: PrismaService;
 let jwt: JwtService;
 let token: string;
 let ownerId: string;
+let labelId: string;
 
 const ALL_FIELDS_PAYLOAD = {
   name: "Tech Corp Ltda",
@@ -74,6 +75,13 @@ beforeAll(async () => {
   ownerId = user.id;
 
   token = jwt.sign({ sub: user.id, name: user.name, email: user.email, role: user.role });
+
+  const label = await prisma.label.upsert({
+    where: { name_ownerId: { name: "E2E Label Org", ownerId: user.id } },
+    update: {},
+    create: { name: "E2E Label Org", color: "#FF0000", ownerId: user.id },
+  });
+  labelId = label.id;
 });
 
 afterEach(async () => {
@@ -81,6 +89,7 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
+  await prisma.label.deleteMany({ where: { ownerId } });
   await prisma.user.deleteMany({ where: { email: "e2e-organizations@test.com" } });
   await app.close();
 });
@@ -231,6 +240,34 @@ describe("Organizations API (e2e)", () => {
         .send({ city: "São Paulo" })
         .expect(500);
     });
+
+    it("cria organização com labelIds e GET retorna labels", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Org Com Label E2E", labelIds: [labelId] })
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.labels).toBeInstanceOf(Array);
+      expect(res.body.labels.length).toBe(1);
+      expect(res.body.labels[0].id).toBe(labelId);
+      expect(res.body.labels[0].name).toBe("E2E Label Org");
+    });
+
+    it("cria organização com labelIds vazios sem erro", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Org Sem Labels E2E", labelIds: [] })
+        .expect(201);
+
+      expect(res.body).toHaveProperty("id");
+    });
   });
 
   // ─── GET /organizations/:id ────────────────────────────────────────────────
@@ -332,6 +369,51 @@ describe("Organizations API (e2e)", () => {
 
       expect(res.body.foundationDate).toBeTruthy();
       expect(res.body.inOperationsAt).toBeTruthy();
+    });
+
+    it("atualiza labelIds e GET retorna labels atualizadas", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Org Para Update Labels E2E" })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ labelIds: [labelId] })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.labels).toBeInstanceOf(Array);
+      expect(res.body.labels.length).toBe(1);
+      expect(res.body.labels[0].id).toBe(labelId);
+    });
+
+    it("limpa labels enviando labelIds vazio no update", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Org Para Limpar Labels E2E", labelIds: [labelId] })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ labelIds: [] })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.labels).toBeInstanceOf(Array);
+      expect(res.body.labels.length).toBe(0);
     });
 
     it("atualiza campos JSON (languages, externalProjectIds)", async () => {
