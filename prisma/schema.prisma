@@ -1551,31 +1551,31 @@ model Sector {
   description String?
 
   // Market intelligence
-  marketSize         String?
-  marketSizeNotes    String?
-  averageTicket      String?
-  budgetSeason       String?
+  marketSize         String? @map("market_size")
+  marketSizeNotes    String? @map("market_size_notes")
+  averageTicket      String? @map("average_ticket")
+  budgetSeason       String? @map("budget_season")
 
   // Sales cycle
-  salesCycleDays  Int?
-  salesCycleNotes String?
+  salesCycleDays  Int?    @map("sales_cycle_days")
+  salesCycleNotes String? @map("sales_cycle_notes")
 
   // Buyer profile
-  decisionMakers  String?
-  buyingProcess   String?
-  mainObjections  String?
+  decisionMakers  String? @map("decision_makers")
+  buyingProcess   String? @map("buying_process")
+  mainObjections  String? @map("main_objections")
 
   // Market knowledge
-  mainPains             String?
-  referenceCompanies    String?
-  competitorsLandscape  String?
+  mainPains             String? @map("main_pains")
+  referenceCompanies    String? @map("reference_companies")
+  competitorsLandscape  String? @map("competitors_landscape")
   jargons               String?
-  regulatoryNotes       String?
+  regulatoryNotes       String? @map("regulatory_notes")
 
-  isActive  Boolean @default(true)
-  ownerId   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  isActive  Boolean  @default(true) @map("is_active")
+  ownerId   String   @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   owner         User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   leads         LeadSector[]
@@ -1588,13 +1588,13 @@ model Sector {
 
 model LeadSector {
   id       String @id @default(cuid())
-  leadId   String
-  sectorId String
+  leadId   String @map("lead_id")
+  sectorId String @map("sector_id")
 
   lead     Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
   sector   Sector @relation(fields: [sectorId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([leadId, sectorId])
   @@index([leadId])
@@ -1604,13 +1604,13 @@ model LeadSector {
 
 model OrganizationSector {
   id             String @id @default(cuid())
-  organizationId String
-  sectorId       String
+  organizationId String @map("organization_id")
+  sectorId       String @map("sector_id")
 
   organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   sector       Sector       @relation(fields: [sectorId], references: [id], onDelete: Cascade)
 
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("created_at")
 
   @@unique([organizationId, sectorId])
   @@index([organizationId])

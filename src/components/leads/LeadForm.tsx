@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
 import { updateLead, createLeadWithContacts, checkLeadDuplicates, type LeadDuplicates, type LeadSummary } from "@/actions/leads";
+import { normalizeCNPJ, validateCNPJ } from "@/lib/validations/cnpj";
 import { Trash2, Plus } from "lucide-react";
 import { linkLeadToICP, unlinkLeadFromICP, getLeadICPs } from "@/actions/icp-links";
 import { setLeadLabels } from "@/actions/lead-labels";
@@ -228,6 +229,18 @@ export function LeadForm({ lead }: LeadFormProps) {
       googleAds: googleAds || undefined,
       starRating: starRating ?? undefined,
     };
+
+    // Validação client-side do CNPJ antes de chamar o servidor
+    if (data.companyRegistrationID) {
+      const cnpjNorm = normalizeCNPJ(data.companyRegistrationID);
+      if (!validateCNPJ(cnpjNorm)) {
+        toast.error("CNPJ inválido", {
+          description: "Verifique os dígitos verificadores ou deixe o campo em branco.",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     try {
       if (lead?.id) {
