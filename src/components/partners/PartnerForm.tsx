@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { createPartner, updatePartner } from "@/actions/partners";
+import { useCreatePartner, useUpdatePartner } from "@/hooks/partners/use-partners";
 import { partnerTypes } from "@/lib/lists/partner-types";
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
@@ -39,6 +39,8 @@ interface PartnerFormProps {
 
 export function PartnerForm({ partner }: PartnerFormProps) {
   const router = useRouter();
+  const createMutation = useCreatePartner();
+  const updateMutation = useUpdatePartner();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string>(partner?.country || "");
@@ -79,9 +81,9 @@ export function PartnerForm({ partner }: PartnerFormProps) {
 
     try {
       if (partner) {
-        await updatePartner(partner.id, data);
+        await updateMutation.mutateAsync({ id: partner.id, ...data });
       } else {
-        await createPartner(data);
+        await createMutation.mutateAsync(data);
       }
       router.push("/partners");
       router.refresh();

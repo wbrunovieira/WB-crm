@@ -1,13 +1,9 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { partnerSchema, PartnerFormData } from "@/lib/validations/partner";
-import {
-  getAuthenticatedSession,
-  getOwnerOrSharedFilter,
-  canAccessEntity,
-} from "@/lib/permissions";
+import { getOwnerOrSharedFilter } from "@/lib/permissions";
+
+// ============ READ (SSR) — mutações migradas para NestJS ============
 
 export async function getPartners(filters?: { search?: string; owner?: string }) {
   const ownerFilter = await getOwnerOrSharedFilter("partner", filters?.owner);
@@ -95,117 +91,5 @@ export async function getPartnerById(id: string) {
     },
   });
 
-  return partner;
-}
-
-export async function createPartner(data: PartnerFormData) {
-  const session = await getAuthenticatedSession();
-  const validated = partnerSchema.parse(data);
-
-  const partner = await prisma.partner.create({
-    data: {
-      name: validated.name,
-      legalName: validated.legalName || null,
-      foundationDate: validated.foundationDate ? new Date(validated.foundationDate) : null,
-      partnerType: validated.partnerType,
-      website: validated.website || null,
-      email: validated.email || null,
-      phone: validated.phone || null,
-      whatsapp: validated.whatsapp || null,
-      country: validated.country || null,
-      state: validated.state || null,
-      city: validated.city || null,
-      zipCode: validated.zipCode || null,
-      streetAddress: validated.streetAddress || null,
-      linkedin: validated.linkedin || null,
-      instagram: validated.instagram || null,
-      facebook: validated.facebook || null,
-      twitter: validated.twitter || null,
-      industry: validated.industry || null,
-      employeeCount: validated.employeeCount || null,
-      description: validated.description || null,
-      expertise: validated.expertise || null,
-      notes: validated.notes || null,
-      lastContactDate: new Date(),
-      ownerId: session.user.id,
-    },
-  });
-
-  revalidatePath("/partners");
-  return partner;
-}
-
-export async function updatePartner(id: string, data: PartnerFormData) {
-  await getAuthenticatedSession();
-  const validated = partnerSchema.parse(data);
-
-  // Check ownership or shared access
-  const existing = await prisma.partner.findUnique({ where: { id } });
-  if (!existing || !(await canAccessEntity("partner", id, existing.ownerId))) {
-    throw new Error("Parceiro não encontrado");
-  }
-
-  const partner = await prisma.partner.update({
-    where: { id },
-    data: {
-      name: validated.name,
-      legalName: validated.legalName || null,
-      foundationDate: validated.foundationDate ? new Date(validated.foundationDate) : null,
-      partnerType: validated.partnerType,
-      website: validated.website || null,
-      email: validated.email || null,
-      phone: validated.phone || null,
-      whatsapp: validated.whatsapp || null,
-      country: validated.country || null,
-      state: validated.state || null,
-      city: validated.city || null,
-      zipCode: validated.zipCode || null,
-      streetAddress: validated.streetAddress || null,
-      linkedin: validated.linkedin || null,
-      instagram: validated.instagram || null,
-      facebook: validated.facebook || null,
-      twitter: validated.twitter || null,
-      industry: validated.industry || null,
-      employeeCount: validated.employeeCount || null,
-      description: validated.description || null,
-      expertise: validated.expertise || null,
-      notes: validated.notes || null,
-    },
-  });
-
-  revalidatePath("/partners");
-  revalidatePath(`/partners/${id}`);
-  return partner;
-}
-
-export async function deletePartner(id: string) {
-  await getAuthenticatedSession();
-
-  // Check ownership or shared access
-  const existing = await prisma.partner.findUnique({ where: { id } });
-  if (!existing || !(await canAccessEntity("partner", id, existing.ownerId))) {
-    throw new Error("Parceiro não encontrado");
-  }
-
-  await prisma.partner.delete({ where: { id } });
-
-  revalidatePath("/partners");
-}
-
-export async function updatePartnerLastContact(id: string) {
-  await getAuthenticatedSession();
-
-  // Check ownership or shared access
-  const existing = await prisma.partner.findUnique({ where: { id } });
-  if (!existing || !(await canAccessEntity("partner", id, existing.ownerId))) {
-    throw new Error("Parceiro não encontrado");
-  }
-
-  const partner = await prisma.partner.update({
-    where: { id },
-    data: { lastContactDate: new Date() },
-  });
-
-  revalidatePath(`/partners/${id}`);
   return partner;
 }
