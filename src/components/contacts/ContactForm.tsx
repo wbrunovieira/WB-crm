@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ContactFormData } from "@/lib/validations/contact";
-import { createContact, updateContact } from "@/actions/contacts";
+import { useCreateContact, useUpdateContact } from "@/hooks/contacts/use-contacts";
 import { getCompaniesList, CompanyOption } from "@/actions/companies-list";
 import { getLeadContactsList } from "@/actions/leads-list";
 import { departments, contactSources, contactStatuses } from "@/lib/lists/departments-list";
@@ -39,8 +39,10 @@ interface ContactFormProps {
 
 export function ContactForm({ contact, leadId, preselectedOrganizationId, partnerId }: ContactFormProps) {
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
+  const createMutation = useCreateContact();
+  const updateMutation = useUpdateContact(contact?.id ?? "");
+  const isLoading = createMutation.isPending || updateMutation.isPending;
   const [companies, setCompanies] = useState<CompanyOption[]>([]);
   const [leadContacts, setLeadContacts] = useState<
     Array<{ id: string; name: string; role: string | null }>
@@ -90,7 +92,6 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId, partne
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setError("");
-    setIsLoading(true);
 
     try {
       const formData = new FormData(e.currentTarget);
@@ -121,17 +122,14 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId, partne
       };
 
       if (contact) {
-        await updateContact(contact.id, data);
+        await updateMutation.mutateAsync(data as unknown as Record<string, unknown>);
       } else {
-        await createContact(data);
+        await createMutation.mutateAsync(data as unknown as Record<string, unknown>);
       }
 
       router.push("/contacts");
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar contato");
-    } finally {
-      setIsLoading(false);
     }
   }
 

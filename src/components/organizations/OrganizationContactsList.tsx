@@ -2,9 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { toggleContactStatus } from "@/actions/contacts";
+import { useToggleContactStatus } from "@/hooks/contacts/use-contacts";
 import { UserX, UserCheck, Loader2 } from "lucide-react";
 import { LanguageBadges } from "@/components/shared/LanguageSelector";
 
@@ -23,15 +22,14 @@ export function OrganizationContactsList({
   organizationId: string;
   contacts: Contact[];
 }) {
-  const router = useRouter();
+  const toggleMutation = useToggleContactStatus();
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
   async function handleToggle(contactId: string, currentStatus: string) {
     setTogglingId(contactId);
     try {
-      await toggleContactStatus(contactId);
+      await toggleMutation.mutateAsync(contactId);
       toast.success(currentStatus === "active" ? "Contato desativado" : "Contato reativado");
-      router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao alterar status");
     } finally {

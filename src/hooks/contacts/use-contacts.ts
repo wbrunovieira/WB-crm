@@ -90,15 +90,15 @@ export function useDeleteContact() {
   });
 }
 
-export function useToggleContactStatus(id: string) {
+export function useToggleContactStatus() {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: () =>
+    mutationFn: (id: string) =>
       apiFetch<void>(`/contacts/${id}/toggle-status`, token, { method: "PATCH" }),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       qc.invalidateQueries({ queryKey: contactKeys.detail(id) });
       qc.invalidateQueries({ queryKey: contactKeys.all });
     },

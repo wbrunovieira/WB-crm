@@ -1,29 +1,21 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteContact } from "@/actions/contacts";
+import { useDeleteContact } from "@/hooks/contacts/use-contacts";
 import { toast } from "sonner";
 import { Trash2 } from "lucide-react";
 
 export function DeleteContactButton({ contactId }: { contactId: string }) {
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteMutation = useDeleteContact();
 
   async function handleDelete() {
     toast.promise(
-      async () => {
-        setIsDeleting(true);
-        await deleteContact(contactId);
-        router.refresh();
-      },
+      deleteMutation.mutateAsync(contactId).then(() => router.push("/contacts")),
       {
         loading: "Excluindo contato...",
         success: "Contato excluído com sucesso!",
-        error: (error) => {
-          setIsDeleting(false);
-          return error instanceof Error ? error.message : "Erro ao excluir contato";
-        },
+        error: (error) => error instanceof Error ? error.message : "Erro ao excluir contato",
       }
     );
   }
@@ -45,7 +37,7 @@ export function DeleteContactButton({ contactId }: { contactId: string }) {
   return (
     <button
       onClick={confirmDelete}
-      disabled={isDeleting}
+      disabled={deleteMutation.isPending}
       className="rounded-md p-2 text-gray-600 hover:bg-red-50 hover:text-red-600 disabled:opacity-50 transition-colors"
       title="Excluir"
     >
