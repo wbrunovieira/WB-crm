@@ -44,6 +44,9 @@ export const organizationSchema = z.object({
   // Labels (multiple)
   labelIds: z.array(z.string()).optional(),
 
+  // Referral — parceiro que indicou esta organização
+  referredByPartnerId: z.string().optional().nullable(),
+
   // Hosting
   hasHosting: z.boolean().nullish(),
   hostingRenewalDate: z.string().nullish(),

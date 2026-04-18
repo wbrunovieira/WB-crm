@@ -23,7 +23,8 @@ Next.js → apenas frontend (React + client components)
 - **Sem big bang**: migrar uma entidade por vez, a aplicação sempre funciona
 - **Frontend vira client component**: cada página migrada passa de SSR para CSR com React Query
 - **Testes antes de deploy**: unit tests + e2e tests cobrindo todos os campos antes de subir
-- **Logs confirmam**: verificar nos logs do Nginx/NestJS que as rotas passam pelo backend correto
+- **GitHub + deploy obrigatório ao fim de cada fase**: push → deploy backend → deploy frontend → validar nos logs do Nginx que as rotas corretas retornam 200/201/204
+- **Logs confirmam**: verificar nos logs do Nginx que as rotas passam pelo NestJS (não pelo Next.js)
 
 ---
 
@@ -170,38 +171,54 @@ _Lição_: Todo e2e de criação/atualização deve ter um teste com **todos os 
 
 ---
 
-### 🔲 M2 — Organizations
+### 🔲 M2 — Leads
 **Status**: Pendente
 
-Seguir o mesmo padrão de M1:
-1. Criar entidade, repository abstract, use cases, mapper, PrismaRepository
-2. Criar controller com `GET /organizations`, `GET /organizations/:id`, `POST`, `PATCH`, `DELETE`
-3. Converter páginas frontend para client components com hooks React Query
-4. Testes unitários dos use cases + e2e com todos os campos
-5. **Atenção**: `externalProjectIds` é JSON array — mesmo padrão do `languages`, precisará de `JSON.stringify` no mapper
-6. Deploy e validar nos logs do Nginx
+Entidade mais complexa do sistema. Migrar antes de Organizations para garantir compatibilidade na conversão Lead → Organization.
+
+**Campos críticos:**
+- Tech profile: 7 junction tables (`LeadLanguage`, `LeadFramework`, `LeadHosting`, `LeadDatabase`, `LeadERP`, `LeadCRM`, `LeadEcommerce`)
+- CNAE: `primaryCNAEId` + `LeadSecondaryCNAE[]`
+- JSON fields: `languages`, `categories`, `types`, `openingHours`, `activityOrder` — todos precisam de `JSON.stringify` no mapper
+- `referredByPartnerId` → já no schema, implementar no NestJS + UI (seletor de partner opcional)
+- `LeadContact[]` — sub-entidade, criar use cases próprios ou inline no Lead use case
+- Conversão Lead → Organization: `ConvertLeadUseCase` com transação atômica
+
+**Atenção:** Não atualizar `src/actions/leads.ts` — será substituído inteiramente pelo NestJS + hooks.
+
+**Ao fim:** GitHub push + deploy backend + deploy frontend + validar logs Nginx.
 
 ---
 
-### 🔲 M3 — Partners
+### 🔲 M3 — Organizations
+**Status**: Pendente
+
+Migrar após Leads para garantir que a conversão e os campos compatíveis estejam alinhados.
+
+**Campos críticos:**
+- `externalProjectIds` — JSON array, precisa de `JSON.stringify` no mapper
+- `referredByPartnerId` — já no schema (migration `20260418`), implementar no NestJS + UI (seletor de partner opcional); transferir na conversão Lead → Organization
+- `referredByPartnerId`: decisão tomada em 2026-04-18 — campo existia só no Lead (sem UI/actions), adicionado na Organization para preservar histórico de indicação na conversão. Implementação na UI adiada para M2/M3.
+- Hosting fields (`hasHosting`, `hostingRenewalDate`, etc.)
+- Tech profile: 7 junction tables idênticas ao Lead
+
+**Ao fim:** GitHub push + deploy backend + deploy frontend + validar logs Nginx.
+
+---
+
+### 🔲 M4 — Partners
 **Status**: Pendente
 
 - Entidade `Partner` com tipo enum (`agencia_digital`, `consultoria`, etc.)
 - Contatos vinculados via `Contact.partnerId`
+- `referredLeads Lead[]` e `referredOrganizations Organization[]` — relações inversas já no schema
 - **Atenção**: `OrganizationContactsList` e outros componentes que fazem toggle de status de contatos já usam hooks — não precisarão de mudança
 
----
-
-### 🔲 M4 — Leads
-**Status**: Pendente
-
-- Entidade mais complexa: `LeadContact`, `LeadProduct`, `LeadSecondaryCNAE`, tech profile junctions
-- Conversão Lead → Organization (fluxo crítico)
-- **Atenção**: campos JSON: `contactIds`, `externalProjectIds`, tech profile arrays — todos precisam de `JSON.stringify` no mapper
+**Ao fim:** GitHub push + deploy backend + deploy frontend + validar logs Nginx.
 
 ---
 
-### 🔲 M5 — Deals
+### 🔲 M5 — Deals (ex-M5)
 **Status**: Pendente
 
 - `DealProduct` junction, `DealTechStack`, `DealLanguage`, `DealFramework`
@@ -271,8 +288,11 @@ Para cada fase M2–M9, seguir esta ordem:
 - [ ] Testes e2e com **todos os campos** (incluindo opcionais, JSON, datas)
 - [ ] Converter páginas Next.js para client components com hooks React Query
 - [ ] Remover mutations de `src/actions/{entity}.ts`
-- [ ] `git push` + deploy backend + deploy frontend
-- [ ] Validar nos logs do Nginx: POST 201, PATCH 200, DELETE 204
+- [ ] `git push`
+- [ ] Deploy backend: `ansible-playbook deploy-backend.yml`
+- [ ] Deploy frontend: `ansible-playbook quick-deploy.yml`
+- [ ] Validar nos logs do Nginx: POST 201, PATCH 200, DELETE 204 — confirmar que passa pelo NestJS
+- [ ] Testar manualmente no browser: criar, atualizar, deletar
 
 ---
 

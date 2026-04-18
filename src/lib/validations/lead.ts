@@ -83,6 +83,9 @@ export const leadSchema = z.object({
   // Status
   status: z.enum(["new", "contacted", "qualified", "disqualified"]).optional(),
 
+  // Referral — parceiro que indicou este lead
+  referredByPartnerId: z.string().optional().nullable(),
+
   // Labels (multiple)
   labelIds: z.array(z.string()).optional(),
 

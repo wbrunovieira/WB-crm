@@ -420,6 +420,9 @@ model Organization {
   // Lead tracking
   sourceLeadId String?
 
+  // Referral tracking — parceiro que indicou esta organização
+  referredByPartnerId String?
+
   // Labels (many-to-many)
   labels Label[]
 
@@ -449,6 +452,7 @@ model Organization {
   contacts             Contact[]
   deals                Deal[]
   sourceLead           Lead?                  @relation("LeadConversion") // Organization veio de qual Lead
+  referredByPartner    Partner?               @relation("OrganizationReferrals", fields: [referredByPartnerId], references: [id], onDelete: SetNull)
   organizationProducts OrganizationProduct[]  // Produtos da Organization
 
   // Tech Profile (current tech stack)
@@ -479,6 +483,7 @@ model Organization {
   @@index([hasHosting])
   @@index([hostingRenewalDate])
   @@index([inOperationsAt])
+  @@index([referredByPartnerId])
   @@map("organizations")
 }
 
@@ -777,7 +782,8 @@ model Partner {
   owner           User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   contacts        Contact[]        // Contatos da empresa parceira
   activities      Activity[]
-  referredLeads   Lead[]           @relation("PartnerReferrals")
+  referredLeads         Lead[]         @relation("PartnerReferrals")
+  referredOrganizations Organization[] @relation("OrganizationReferrals")
   partnerProducts PartnerProduct[] // Produtos/serviços do parceiro
 
   @@index([ownerId])
