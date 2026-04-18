@@ -5,9 +5,10 @@ import { HealthController } from "./infra/controllers/health.controller";
 import { CampaignsModule } from "./domain/campaigns/campaigns.module";
 import { ContactsModule } from "./domain/contacts/contacts.module";
 import { LeadsModule } from "./domain/leads/leads.module";
+import { OrganizationsModule } from "./domain/organizations/organizations.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule],
+  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule],
   controllers: [HealthController],
   providers: [],
 })
