@@ -197,28 +197,35 @@ _Lição_: Todo e2e de criação/atualização deve ter um teste com **todos os 
 - 20 testes unitários + 22 testes e2e — todos passando
 - Deploy confirmado em produção ✅
 
-#### Frontend — mutações simples migradas ✅
+#### Frontend — mutações simples migradas + validadas em produção ✅
 
 - `src/hooks/leads/use-leads.ts` — hooks: `useDeleteLead`, `useArchiveLead`, `useUnarchiveLead`
-- `ArchiveLeadButton` → usa `useArchiveLead` / `useUnarchiveLead` (mantém `router.refresh()` pois lista é SSR)
-- `DeleteLeadButton` → usa `useDeleteLead`
-- `DeleteLeadIconButton` → usa `useDeleteLead`
+- `ArchiveLeadButton` → usa `useArchiveLead` / `useUnarchiveLead`
+- `DeleteLeadButton`, `DeleteLeadIconButton`, `ProspectsTable` → usa `useDeleteLead`
+- `archiveLead`, `unarchiveLead`, `deleteLead` removidos de `src/actions/leads.ts`
+- Confirmado nos logs do NestJS: `PATCH /leads/:id/archive` e `DELETE /leads/:id` ✅
 
-#### Frontend — pendente (lista/detalhe/form) 🔲
+#### Frontend — pendente (create, update, lista, detalhe) 🔲
 
-- **Lista** (`/leads`): mantida como SSR — usa `LeadsTable` que precisa de `icps`, `_count.leadCadences`, `sharedUsersMap` não disponíveis ainda no endpoint NestJS. Migrar quando endpoint enriquecer esses dados.
-- **Detalhe** (`/leads/[id]`): mantido como SSR — mesmos dados complexos
-- **LeadForm**: 1378 linhas com `createLeadWithContacts` (transação atômica que cria Lead + contatos + junction tables). Migrar em M2.5 após criar `POST /leads` completo com contatos inline e junction tables.
-- **`referredByPartnerId` UI**: seletor de partner a adicionar no LeadForm (campo já no schema e validação Zod)
+- **`updateLead`** (`src/actions/leads.ts`): ainda via Next.js server action. Migração simples — apenas `PATCH /leads/:id` sem transação. Incluído no M2.5 junto com o create para não fragmentar o deploy.
+- **`createLeadWithContacts`** (`src/actions/leads.ts`): ainda via Next.js server action. Migração complexa — transação atômica (Lead + LeadContacts + junction tables + CNAE + tech profile + labels + ICP). Requer enriquecimento do `POST /leads` no NestJS.
+- **Lista** (`/leads`): mantida SSR — precisa de `icps`, `_count.leadCadences`, `sharedUsersMap` no endpoint NestJS.
+- **Detalhe** (`/leads/[id]`): mantido SSR — mesmos dados complexos.
+- **`referredByPartnerId` UI**: seletor de partner a adicionar no LeadForm.
 
-#### Campos críticos para M2.5 (form/list completo):
-- Tech profile: 7 junction tables (`LeadLanguage`, `LeadFramework`, `LeadHosting`, `LeadDatabase`, `LeadERP`, `LeadCRM`, `LeadEcommerce`)
-- CNAE: `primaryCNAEId` + `LeadSecondaryCNAE[]`
-- JSON fields: `languages`, `categories`, `types`, `openingHours`, `activityOrder` — mapper já faz `JSON.stringify`
-- `LeadContact[]` — sub-entidade, inline no `CreateLeadUseCase` via transação
-- Conversão Lead → Organization: `ConvertLeadUseCase` com transação atômica
+#### Checklist M2.5 (create + update + lista + detalhe):
+- [ ] Enriquecer `POST /leads` com contatos inline + junction tables (tech profile, CNAE, labels)
+- [ ] `updateLead` → `PATCH /leads/:id` + hooks (`useUpdateLead`)
+- [ ] `createLeadWithContacts` → `POST /leads` + hooks (`useCreateLead`)
+- [ ] Adicionar `useLeads` e `useLead` queries ao `use-leads.ts`
+- [ ] Migrar lista e detalhe para client components com React Query
+- [ ] Adicionar seletor de partner (`referredByPartnerId`) no LeadForm
+- [ ] Remover `createLeadWithContacts`, `updateLead` de `src/actions/leads.ts`
+- [ ] GitHub push + deploy backend + deploy frontend + validar logs NestJS
 
-**Ao fim de cada sub-fase:** GitHub push + deploy backend + deploy frontend + validar logs Nginx.
+**Lição aprendida:** `TypeError: o is not a function` em `pages.runtime.prod.js` é erro em cascata — Next.js tenta renderizar página de erro quando uma SSR falha, e o renderer de erro também falha. Sempre investigar a causa raiz (P2022, etc.) em vez do erro secundário.
+
+**Ao fim de cada sub-fase:** GitHub push + deploy backend + deploy frontend + validar logs NestJS.
 
 ---
 
