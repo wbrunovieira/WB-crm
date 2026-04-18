@@ -381,11 +381,26 @@ VO          → valida e encapsula regra de negócio (ex: OrganizationName)
 
 ---
 
-### 🔲 M8 — Admin (BusinessLines, Products, Tech)
-**Status**: Pendente
+### ✅ M8 — Admin (BusinessLines, Products, Tech)
+**Status**: Completo
 
-- Entidades sem `ownerId`
-- CRUD simples
+**Abordagem:** AdminModule único com entidades `BusinessLine`, `Product`, e `AdminTechOption` (genérica para 10 tipos via discriminador `TechOptionType`).
+
+**Implementado:**
+- Entities: `BusinessLine`, `Product`, `AdminTechOption` (cobre TechCategory, TechLanguage, TechFramework + 7 TechProfile types)
+- `AdminRepository` abstrato com métodos para as 3 entidades
+- Use cases agrupados: `business-line.use-cases.ts`, `product.use-cases.ts`, `tech-option.use-cases.ts`
+- `PrismaAdminRepository` — usa mapa de modelo (`TECH_PRISMA_MODEL`) para despachar para tabela correta
+- `AdminController` — 25 rotas via `/admin/business-lines`, `/admin/products`, `/admin/tech-options/:type`
+- `AdminModule` registrado no `AppModule`
+- 42 testes unitários (in-memory repository) — todos passando
+- E2E tests em `backend/test/e2e/admin.e2e-spec.ts`
+- Frontend hooks em `src/hooks/admin/use-admin.ts`
+
+**Rotas:**
+- `GET/POST /admin/business-lines`, `PATCH/DELETE /admin/business-lines/:id`, `PATCH /admin/business-lines/:id/toggle`
+- `GET/POST /admin/products`, `PATCH/DELETE /admin/products/:id`, `PATCH /admin/products/:id/toggle`
+- `GET/POST /admin/tech-options/:type`, `PATCH/DELETE /admin/tech-options/:type/:id`, `PATCH /admin/tech-options/:type/:id/toggle`
 
 ---
 

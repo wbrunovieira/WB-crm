@@ -10,9 +10,10 @@ import { PartnersModule } from "./domain/partners/partners.module";
 import { DealsModule } from "./domain/deals/deals.module";
 import { ActivitiesModule } from "./domain/activities/activities.module";
 import { PipelinesModule } from "./domain/pipelines/pipelines.module";
+import { AdminModule } from "./domain/admin/admin.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule],
+  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule],
   controllers: [HealthController],
   providers: [],
 })
