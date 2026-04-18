@@ -373,11 +373,23 @@ VO          → valida e encapsula regra de negócio (ex: OrganizationName)
 
 ---
 
-### 🔲 M7 — Pipeline & Stages
-**Status**: Pendente
+### ✅ M7 — Pipeline & Stages
+**Status**: Completo
 
-- Entidades sem `ownerId` (admin-managed)
-- Drag & drop de stages (reorder)
+**Implementado:**
+- `Pipeline` entity (name, isDefault) + `Stage` entity (name, order, pipelineId, probability)
+- `PipelinesRepository` abstrato — co-locado: pipelines + stages num mesmo repositório (stages pertencem ao pipeline)
+- 10 use cases: `GetPipelines`, `GetPipelineById`, `CreatePipeline`, `UpdatePipeline`, `DeletePipeline`, `SetDefaultPipeline`, `CreateStage`, `UpdateStage`, `DeleteStage`, `ReorderStages`
+- `PrismaPipelinesRepository` — `createDefaultStages` (4 estágios padrão), `reorderStages` via `$transaction`, `clearDefault` atômico
+- `PipelinesController` — 11 rotas: `GET/POST /pipelines`, `GET/PATCH/DELETE /pipelines/:id`, `PATCH /pipelines/:id/set-default`, `POST /pipelines/stages`, `PATCH/DELETE /pipelines/stages/:id`, `PATCH /pipelines/:id/stages/reorder`
+- 26 testes unitários + e2e cobrindo todos os endpoints
+- Frontend hooks em `src/hooks/pipelines/use-pipelines.ts` (10 hooks)
+- Componentes `PipelineCreateButton`, `PipelineManager`, `StageManager` migrados para React Query
+
+**Decisões arquiteturais:**
+- `clearDefault()` antes de `setDefault(true)` — atômico, sem race condition
+- Auto-create 4 default stages na criação do pipeline (Qualificação 10%, Proposta 30%, Negociação 60%, Fechamento 90%)
+- `DeletePipeline` retorna 422 se `isDefault === true`; `DeleteStage` retorna 422 se stage tem deals
 
 ---
 
@@ -407,9 +419,93 @@ VO          → valida e encapsula regra de negócio (ex: OrganizationName)
 ### 🔲 M9 — Shared Entities & Permissions
 **Status**: Pendente
 
-- `SharedEntity` model
-- `canAccessEntity`, `getOwnerOrSharedFilter`
-- Garantir que NestJS implementa a mesma lógica de isolamento que o Next.js tinha
+#### Contexto
+
+No Next.js, `src/lib/permissions.ts` implementa toda a lógica de isolamento via `getServerSession`. No NestJS isso precisa ser um `PermissionsService` injectable que usa o `@CurrentUser()` (JWT payload) em vez do NextAuth.
+
+#### Modelo SharedEntity (Prisma)
+
+```prisma
+model SharedEntity {
+  id               String   @id @default(cuid())
+  entityType       String   // lead | contact | organization | partner | deal
+  entityId         String
+  sharedWithUserId String
+  sharedByUserId   String
+  createdAt        DateTime @default(now())
+  @@unique([entityType, entityId, sharedWithUserId])
+  @@index([entityType, entityId])
+  @@index([sharedWithUserId])
+}
+```
+
+#### Lógica de permissões atual (Next.js)
+
+| Função | Admin | SDR/Closer |
+|--------|-------|-----------|
+| `getOwnerFilter` | `{}` (vê tudo) ou filtra por userId específico | `{ ownerId: self.id }` sempre |
+| `getOwnerOrSharedFilter` | igual ao anterior | `OR [{ ownerId: self.id }, { id: { in: sharedIds } }]` |
+| `canAccessEntity` | sempre `true` | `true` se owner OU se existe `SharedEntity` |
+| `getSharedEntityIds` | N/A | lista de entityIds compartilhados com o user |
+
+Tipos compartilháveis: `lead`, `contact`, `organization`, `partner`, `deal`.
+Apenas **admins** podem criar/remover compartilhamentos e transferir ownership.
+
+#### Plano de implementação NestJS
+
+**1. PermissionsService (novo serviço compartilhado)**
+
+```typescript
+// backend/src/infra/auth/permissions.service.ts
+@Injectable()
+export class PermissionsService {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async getOwnerFilter(user: AuthenticatedUser, ownerIdFilter?: string): Promise<OwnerFilter>
+  async getOwnerOrSharedFilter(user: AuthenticatedUser, entityType: EntityType, ownerIdFilter?: string): Promise<OwnerOrSharedFilter>
+  async canAccessEntity(user: AuthenticatedUser, entityType: EntityType, entityId: string, entityOwnerId: string): Promise<boolean>
+  async getSharedEntityIds(user: AuthenticatedUser, entityType: EntityType): Promise<string[]>
+}
+```
+
+Diferença chave: recebe `user: AuthenticatedUser` (JWT payload do `@CurrentUser()`) em vez de chamar `getServerSession`. Sem I/O de sessão — só lê do token já validado + Prisma para SharedEntity.
+
+**2. SharedEntityModule (novo módulo)**
+
+Entidade, repositório, use cases e controller:
+- `ShareEntityUseCase` — admin cria `SharedEntity` (POST `/shared-entities`)
+- `UnshareEntityUseCase` — admin remove (DELETE `/shared-entities/:id`)
+- `TransferEntityUseCase` — admin muda ownerId do registro (PATCH `/shared-entities/transfer`)
+- `GetSharedUsersUseCase` — lista usuários com acesso a uma entidade (GET `/shared-entities?entityType=&entityId=`)
+
+**3. Integração nos módulos existentes**
+
+Injetar `PermissionsService` nos use cases de list/getById que precisam de filtro. Cada use case que hoje faz `{ ownerId: user.id }` direto passa a chamar:
+
+```typescript
+const filter = await this.permissions.getOwnerOrSharedFilter(user, "lead");
+// Passes filter to repository.findMany(filter, otherFilters)
+```
+
+Módulos afetados: Leads, Contacts, Organizations, Partners, Deals.
+
+**4. Testes**
+
+- Unit: `PermissionsService` com 3 roles e cenários com/sem shares
+- E2E: share → SDR acessa entidade compartilhada → unshare → SDR perde acesso
+
+#### Ordem de execução
+
+1. `PermissionsService` + `PrismaService` (sem deps de domínio)
+2. `SharedEntityModule` (controller CRUD de shares)
+3. Refatorar `LeadsModule` → injetar `PermissionsService` nos use cases de lista
+4. Repetir para Contacts, Organizations, Partners, Deals
+5. Testes unit + e2e
+6. Deploy + validação
+
+#### Observação
+
+Os módulos de Deals, Leads, Contacts, Organizations, Partners já têm o campo `ownerId` no Prisma e nas queries. A refatoração é cirúrgica: apenas os use cases de `List` e `GetById` precisam trocar o filtro hardcoded pelo `PermissionsService`. Use cases de `Create`/`Update`/`Delete` ficam como estão (já verificam ownership).
 
 ---
 
