@@ -6,9 +6,10 @@ import { CampaignsModule } from "./domain/campaigns/campaigns.module";
 import { ContactsModule } from "./domain/contacts/contacts.module";
 import { LeadsModule } from "./domain/leads/leads.module";
 import { OrganizationsModule } from "./domain/organizations/organizations.module";
+import { PartnersModule } from "./domain/partners/partners.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule],
+  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule],
   controllers: [HealthController],
   providers: [],
 })
