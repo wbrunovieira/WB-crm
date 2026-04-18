@@ -10,6 +10,7 @@ export interface DealSummary {
   stageId: string;
   contactId: string | null;
   organizationId: string | null;
+  leadId: string | null;
   expectedCloseDate: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -19,6 +20,7 @@ export interface DealSummary {
   stage: { id: string; name: string; probability: number } | null;
   contact: { id: string; name: string; email: string | null } | null;
   organization: { id: string; name: string } | null;
+  lead: { id: string; businessName: string } | null;
   _count: { activities: number; dealProducts: number };
 }
 

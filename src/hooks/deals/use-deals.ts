@@ -23,6 +23,7 @@ export interface DealPayload {
   stageId: string;
   contactId?: string | null;
   organizationId?: string | null;
+  leadId?: string | null;
   expectedCloseDate?: string | null;
 }
 

@@ -42,32 +42,38 @@ export class PrismaDealsRepository extends DealsRepository {
         stage: { select: { id: true, name: true, probability: true } },
         contact: { select: { id: true, name: true, email: true } },
         organization: { select: { id: true, name: true } },
+        lead: { select: { id: true, businessName: true } },
         _count: { select: { activities: true, dealProducts: true } },
       },
       orderBy: [{ updatedAt: "desc" }],
     });
 
-    return rows.map((row) => ({
-      id: row.id,
-      ownerId: row.ownerId,
-      title: row.title,
-      description: row.description,
-      value: row.value,
-      currency: row.currency,
-      status: row.status,
-      closedAt: row.closedAt,
-      stageId: row.stageId,
-      contactId: row.contactId,
-      organizationId: row.organizationId,
-      expectedCloseDate: row.expectedCloseDate,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
-      owner: row.owner,
-      stage: row.stage,
-      contact: row.contact,
-      organization: row.organization,
-      _count: row._count,
-    }));
+    return rows.map((row) => {
+      const r = row as any;
+      return {
+        id: r.id,
+        ownerId: r.ownerId,
+        title: r.title,
+        description: r.description,
+        value: r.value,
+        currency: r.currency,
+        status: r.status,
+        closedAt: r.closedAt,
+        stageId: r.stageId,
+        contactId: r.contactId,
+        organizationId: r.organizationId,
+        leadId: r.leadId,
+        expectedCloseDate: r.expectedCloseDate,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+        owner: r.owner,
+        stage: r.stage,
+        contact: r.contact,
+        organization: r.organization,
+        lead: r.lead,
+        _count: r._count,
+      };
+    });
   }
 
   async findById(id: string, requesterId: string, requesterRole: string): Promise<DealDetail | null> {
@@ -80,6 +86,7 @@ export class PrismaDealsRepository extends DealsRepository {
         stage: { select: { id: true, name: true, probability: true } },
         contact: { select: { id: true, name: true, email: true } },
         organization: { select: { id: true, name: true } },
+        lead: { select: { id: true, businessName: true } },
         _count: { select: { activities: true, dealProducts: true } },
         activities: {
           select: { id: true, type: true, subject: true, completed: true, dueDate: true, createdAt: true },
@@ -127,6 +134,7 @@ export class PrismaDealsRepository extends DealsRepository {
       stageId: r.stageId,
       contactId: r.contactId,
       organizationId: r.organizationId,
+      leadId: r.leadId,
       expectedCloseDate: r.expectedCloseDate,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
@@ -134,6 +142,7 @@ export class PrismaDealsRepository extends DealsRepository {
       stage: r.stage,
       contact: r.contact,
       organization: r.organization,
+      lead: r.lead,
       _count: r._count,
       activities: r.activities,
       dealProducts: r.dealProducts,

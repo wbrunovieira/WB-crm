@@ -3,6 +3,7 @@ import DealForm from "@/components/deals/DealForm";
 import { getContactsList } from "@/lib/lists/contacts-list";
 import { getOrganizationsList } from "@/actions/organizations-list";
 import { getStagesList } from "@/lib/lists/stages-list";
+import { getLeadsList } from "@/actions/leads-list";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -11,12 +12,15 @@ export default async function EditDealPage({
 }: {
   params: { id: string };
 }) {
-  const [deal, contacts, organizations, stages] = await Promise.all([
+  const [deal, contacts, organizations, stages, leadsData] = await Promise.all([
     getDealById(params.id),
     getContactsList(),
     getOrganizationsList(),
     getStagesList(),
+    getLeadsList(),
   ]);
+
+  const leads = leadsData.map((l) => ({ id: l.id, businessName: l.businessName }));
 
   if (!deal) {
     notFound();
@@ -41,6 +45,7 @@ export default async function EditDealPage({
           deal={deal}
           contacts={contacts}
           organizations={organizations}
+          leads={leads}
           stages={stages}
         />
       </div>

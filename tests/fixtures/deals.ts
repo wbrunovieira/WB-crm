@@ -59,6 +59,7 @@ export const mockDeal: Deal = {
   stageId: 'stage-test-1',
   contactId: 'contact-test-1',
   organizationId: 'org-test-1',
+  leadId: null,
   ownerId: 'user-test-123',
   expectedCloseDate: new Date('2024-12-31'),
   createdAt: new Date('2024-01-01'),

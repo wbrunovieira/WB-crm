@@ -2,6 +2,7 @@ import DealForm from "@/components/deals/DealForm";
 import { getContactsList } from "@/lib/lists/contacts-list";
 import { getOrganizationsList } from "@/actions/organizations-list";
 import { getStagesList } from "@/lib/lists/stages-list";
+import { getLeadsList } from "@/actions/leads-list";
 import Link from "next/link";
 
 export default async function NewDealPage({
@@ -9,11 +10,14 @@ export default async function NewDealPage({
 }: {
   searchParams: { organizationId?: string };
 }) {
-  const [contacts, organizations, stages] = await Promise.all([
+  const [contacts, organizations, stages, leadsData] = await Promise.all([
     getContactsList(),
     getOrganizationsList(),
     getStagesList(),
+    getLeadsList(),
   ]);
+
+  const leads = leadsData.map((l) => ({ id: l.id, businessName: l.businessName }));
 
   return (
     <div className="p-8">
@@ -30,6 +34,7 @@ export default async function NewDealPage({
         <DealForm
           contacts={contacts}
           organizations={organizations}
+          leads={leads}
           stages={stages}
           preselectedOrganizationId={searchParams.organizationId}
         />

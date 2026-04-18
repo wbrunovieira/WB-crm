@@ -15,6 +15,7 @@ export interface UpdateDealInput {
   closedAt?: Date;
   contactId?: string;
   organizationId?: string;
+  leadId?: string;
   expectedCloseDate?: Date;
 }
 
@@ -39,6 +40,7 @@ export class UpdateDealUseCase {
     if (input.currency !== undefined)          updates.currency = input.currency;
     if (input.contactId !== undefined)         updates.contactId = input.contactId;
     if (input.organizationId !== undefined)    updates.organizationId = input.organizationId;
+    if (input.leadId !== undefined)            updates.leadId = input.leadId;
     if (input.expectedCloseDate !== undefined) updates.expectedCloseDate = input.expectedCloseDate;
 
     if (input.status !== undefined) {

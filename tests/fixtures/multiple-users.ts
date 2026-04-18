@@ -117,6 +117,7 @@ export function createMockDeal(ownerId: string, overrides: Partial<{
     stageId: 'stage-1',
     contactId: null,
     organizationId: null,
+    leadId: null,
     expectedCloseDate: null,
     ownerId,
     createdAt: new Date(),

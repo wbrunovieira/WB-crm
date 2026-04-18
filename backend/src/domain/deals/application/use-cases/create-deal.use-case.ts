@@ -12,6 +12,7 @@ export interface CreateDealInput {
   stageId: string;
   contactId?: string;
   organizationId?: string;
+  leadId?: string;
   expectedCloseDate?: Date;
 }
 
@@ -38,6 +39,7 @@ export class CreateDealUseCase {
       stageId: input.stageId,
       contactId: input.contactId,
       organizationId: input.organizationId,
+      leadId: input.leadId,
       expectedCloseDate: input.expectedCloseDate,
     });
 

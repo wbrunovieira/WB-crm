@@ -59,6 +59,9 @@ class CreateDealDto {
   @ApiPropertyOptional()
   organizationId?: string;
 
+  @ApiPropertyOptional()
+  leadId?: string;
+
   @ApiPropertyOptional({ example: "2025-12-31", description: "Data prevista de fechamento (YYYY-MM-DD)" })
   expectedCloseDate?: string;
 }
@@ -71,6 +74,7 @@ class UpdateDealDto {
   @ApiPropertyOptional({ enum: ["open", "won", "lost"] }) status?: "open" | "won" | "lost";
   @ApiPropertyOptional() contactId?: string;
   @ApiPropertyOptional() organizationId?: string;
+  @ApiPropertyOptional() leadId?: string;
   @ApiPropertyOptional() expectedCloseDate?: string;
 }
 
@@ -101,6 +105,7 @@ function serialize(deal: Deal) {
     stageId: deal.stageId,
     contactId: deal.contactId,
     organizationId: deal.organizationId,
+    leadId: deal.leadId,
     expectedCloseDate: deal.expectedCloseDate,
     createdAt: deal.createdAt,
     updatedAt: deal.updatedAt,

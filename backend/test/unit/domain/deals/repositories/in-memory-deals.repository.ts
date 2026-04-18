@@ -45,6 +45,7 @@ export class InMemoryDealsRepository extends DealsRepository {
       stageId: d.stageId,
       contactId: d.contactId ?? null,
       organizationId: d.organizationId ?? null,
+      leadId: d.leadId ?? null,
       expectedCloseDate: d.expectedCloseDate ?? null,
       createdAt: d.createdAt,
       updatedAt: d.updatedAt,
@@ -52,6 +53,7 @@ export class InMemoryDealsRepository extends DealsRepository {
       stage: this.stages.find((s) => s.id === d.stageId) ?? null,
       contact: null,
       organization: null,
+      lead: null,
       _count: { activities: 0, dealProducts: 0 },
     }));
   }
@@ -73,6 +75,7 @@ export class InMemoryDealsRepository extends DealsRepository {
       stageId: deal.stageId,
       contactId: deal.contactId ?? null,
       organizationId: deal.organizationId ?? null,
+      leadId: deal.leadId ?? null,
       expectedCloseDate: deal.expectedCloseDate ?? null,
       createdAt: deal.createdAt,
       updatedAt: deal.updatedAt,
@@ -80,6 +83,7 @@ export class InMemoryDealsRepository extends DealsRepository {
       stage: this.stages.find((s) => s.id === deal.stageId) ?? null,
       contact: null,
       organization: null,
+      lead: null,
       _count: { activities: 0, dealProducts: 0 },
       activities: [],
       dealProducts: [],

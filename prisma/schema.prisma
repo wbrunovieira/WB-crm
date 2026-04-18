@@ -300,6 +300,9 @@ model Lead {
   // Google Places Search session
   googlePlacesSearch  GooglePlacesSearch? @relation(fields: [googlePlacesSearchId], references: [id], onDelete: SetNull)
 
+  // Deals vinculados ao lead
+  deals               Deal[]
+
   // Campaign sends
   campaignSends       CampaignSend[]
 
@@ -607,6 +610,7 @@ model Deal {
   stageId           String
   contactId         String?
   organizationId    String?
+  leadId            String?
 
   ownerId           String
   expectedCloseDate DateTime?
@@ -618,6 +622,7 @@ model Deal {
   stage        Stage         @relation(fields: [stageId], references: [id], onDelete: Restrict)
   contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  lead         Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
   activities     Activity[]
   dealProducts   DealProduct[] // Produtos do Deal
   dealTechStacks DealTechStack[] // Categorias técnicas (Frontend, Backend, etc)
@@ -631,6 +636,7 @@ model Deal {
   @@index([stageId])
   @@index([contactId])
   @@index([organizationId])
+  @@index([leadId])
   @@map("deals")
 }
 

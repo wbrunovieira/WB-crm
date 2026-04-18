@@ -12,6 +12,7 @@ export interface DealProps {
   stageId: string;
   contactId?: string;
   organizationId?: string;
+  leadId?: string;
   expectedCloseDate?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -28,6 +29,7 @@ export class Deal extends AggregateRoot<DealProps> {
   get stageId()           { return this.props.stageId; }
   get contactId()         { return this.props.contactId; }
   get organizationId()    { return this.props.organizationId; }
+  get leadId()            { return this.props.leadId; }
   get expectedCloseDate() { return this.props.expectedCloseDate; }
   get createdAt()         { return this.props.createdAt; }
   get updatedAt()         { return this.props.updatedAt; }
