@@ -416,106 +416,220 @@ VO          → valida e encapsula regra de negócio (ex: OrganizationName)
 
 ---
 
-### 🔲 M9 — Shared Entities & Permissions
+### ✅ M9 — Shared Entities & Permissions
+**Status**: Completo em 2026-04-18
+
+#### O que foi implementado
+
+**Domínio (`SharedEntity`)**
+- `SharedEntity` entity (AggregateRoot) — campos: `entityType`, `entityId`, `sharedWithUserId`, `sharedByUserId`, `createdAt`
+- `SharedEntityType` = `"lead" | "contact" | "organization" | "partner" | "deal"`
+- `SharedEntitiesRepository` abstrato com 7 métodos: `findById`, `findByEntity`, `findSharedUserInfo`, `save`, `delete`, `existsForUser`, `transferOwnership`
+
+**Use cases (4)**
+- `ShareEntityUseCase` — valida role admin, tipo válido, não-self-share, não-duplicado → cria `SharedEntity`
+- `UnshareEntityUseCase` — valida admin, busca por id → deleta
+- `GetEntitySharesUseCase` — valida admin → retorna `SharedUserInfo[]` (userId, userName, userEmail, sharedAt)
+- `TransferEntityUseCase` — valida admin + tipo → `transferOwnership()` (atualiza ownerId + remove todos os shares)
+
+**Infraestrutura**
+- `PrismaSharedEntitiesRepository` — `transferOwnership` usa `prisma[entityTable].update({ ownerId })` + `deleteMany` de shares
+- `SharedEntitiesController` — 4 rotas com `JwtAuthGuard`:
+  - `GET /shared-entities?entityType=&entityId=` → lista shares
+  - `POST /shared-entities` → cria share (201)
+  - `DELETE /shared-entities/:id` → remove share (204)
+  - `PATCH /shared-entities/transfer` → transfere ownership (200)
+- `SharedEntitiesModule` registrado no `AppModule`
+
+**OR-filter nos 4 módulos restantes**
+Leads, Organizations, Partners e Deals atualizados com padrão:
+```typescript
+// findMany: pré-busca sharedIds para non-admin
+const sharedIds = requesterRole !== "admin" ? await this.getSharedIds(requesterId) : [];
+// WHERE ownerId = self OR id IN (sharedIds)
+
+// findById: post-fetch access check
+if (requesterRole !== "admin" && row.ownerId !== requesterId) {
+  const shared = await this.prisma.sharedEntity.findFirst({ where: { entityType, entityId: id, sharedWithUserId: requesterId } });
+  if (!shared) return null;
+}
+```
+(Contacts já tinham suporte — padrão aplicado para os 4 restantes)
+
+**Testes**
+- 19 testes unitários (in-memory repository) — todos passando ✅
+- 21 testes E2E cobrindo auth guard, CRUD completo, integração SDR acessa/perde acesso após share/unshare — todos passando ✅
+- Deploy confirmado em produção ✅
+
+---
+
+### 🔲 M10 — Integrações & Automações
 **Status**: Pendente
 
 #### Contexto
 
-No Next.js, `src/lib/permissions.ts` implementa toda a lógica de isolamento via `getServerSession`. No NestJS isso precisa ser um `PermissionsService` injectable que usa o `@CurrentUser()` (JWT payload) em vez do NextAuth.
+Todas as automações do CRM estão hoje implementadas no Next.js (server actions + API routes). Precisam ser migradas para o NestJS seguindo DDD, com domain events reais, ports/adapters para serviços externos e controllers públicos (sem JWT) para webhooks.
 
-#### Modelo SharedEntity (Prisma)
+#### Automações mapeadas no Next.js
 
-```prisma
-model SharedEntity {
-  id               String   @id @default(cuid())
-  entityType       String   // lead | contact | organization | partner | deal
-  entityId         String
-  sharedWithUserId String
-  sharedByUserId   String
-  createdAt        DateTime @default(now())
-  @@unique([entityType, entityId, sharedWithUserId])
-  @@index([entityType, entityId])
-  @@index([sharedWithUserId])
-}
+| Integração | Arquivo atual (Next.js) | Tipo |
+|---|---|---|
+| GoTo webhook receiver | `api/goto/webhook/route.ts` | Webhook público |
+| GoTo recordings + S3 + Transcriber | `api/goto/check-recordings/route.ts` | Cron 15min |
+| GoTo OAuth callback | `api/goto/callback/route.ts` | OAuth flow |
+| GoTo token manager (auto-refresh) | `lib/goto/token-manager.ts` | Serviço |
+| GoTo call activity creator | `lib/goto/call-activity-creator.ts` | Use case |
+| GoTo phone number matcher | `lib/goto/number-matcher.ts` | Serviço |
+| GoTo S3 recording finder | `lib/goto/s3-recording.ts` | Adapter |
+| GoTo call report syncer | `lib/goto/call-report-syncer.ts` | Use case |
+| WhatsApp webhook receiver | `api/evolution/webhook/route.ts` | Webhook público |
+| WhatsApp transcription cron | `api/evolution/check-transcriptions/route.ts` | Cron 5min |
+| WhatsApp media (Drive + Transcriber) | `lib/evolution/media-handler.ts` | Handler |
+| WhatsApp message activity creator | `lib/evolution/message-activity-creator.ts` | Use case |
+| WhatsApp phone matcher | `lib/evolution/number-matcher.ts` | Serviço |
+| WhatsApp send (server action) | `actions/whatsapp.ts` | Mutação |
+| Evolution API client | `lib/evolution/client.ts` | Adapter |
+| Gmail poll cron | `api/google/gmail-poll/route.ts` | Cron 5min |
+| Gmail email activity creator | `lib/google/email-activity-creator.ts` | Use case |
+| Gmail poller (History API) | `lib/google/gmail-poller.ts` | Adapter |
+| Gmail send + tracking inject | `actions/gmail.ts` | Mutação |
+| Email tracking open pixel | `api/track/open/[token]/route.ts` | Endpoint público |
+| Email tracking click redirect | `api/track/click/[token]/route.ts` | Endpoint público |
+| Email tracking logic | `lib/email-tracking.ts` | Serviço |
+| Google Meet recordings (3 passes) | `api/google/check-recordings/route.ts` | Cron 15min |
+| Meet transcription cron | `api/google/check-transcriptions/route.ts` | Cron 5min |
+| Meet recording detector | `lib/google/recording-detector.ts` | Adapter |
+| WB-Transcriber client | `lib/transcriptor.ts` | Adapter (compartilhado) |
+| Google Drive client | `lib/google/drive.ts` | Adapter (compartilhado) |
+| Gmail client | `lib/google/gmail.ts` | Adapter |
+| Google OAuth callback | `api/google/callback/route.ts` | OAuth flow |
+| Lead research webhook | `api/webhooks/lead-research/route.ts` | Webhook público |
+
+#### Arquitetura NestJS proposta
+
+Quatro novos módulos de domínio dentro de `domain/integrations/`:
+
+```
+backend/src/domain/integrations/
+├── goto/            ← chamadas GoTo (webhook, cron, S3, Transcriber)
+├── whatsapp/        ← Evolution API (receber, enviar, mídia, transcrição)
+├── email/           ← Gmail (poll, enviar, tracking)
+└── meet/            ← Google Meet (gravações, transcrição)
 ```
 
-#### Lógica de permissões atual (Next.js)
+Serviços compartilhados (novos):
+```
+backend/src/infra/shared/
+├── transcriber/
+│   └── transcriber.service.ts      ← WB-Transcriber client unificado
+├── drive/
+│   └── google-drive.service.ts     ← Google Drive upload/folder
+└── phone-matcher/
+    └── phone-matcher.service.ts    ← number-matcher unificado (GoTo + WhatsApp usam o mesmo)
+```
 
-| Função | Admin | SDR/Closer |
-|--------|-------|-----------|
-| `getOwnerFilter` | `{}` (vê tudo) ou filtra por userId específico | `{ ownerId: self.id }` sempre |
-| `getOwnerOrSharedFilter` | igual ao anterior | `OR [{ ownerId: self.id }, { id: { in: sharedIds } }]` |
-| `canAccessEntity` | sempre `true` | `true` se owner OU se existe `SharedEntity` |
-| `getSharedEntityIds` | N/A | lista de entityIds compartilhados com o user |
+#### Estrutura de cada módulo (exemplo: GoTo)
 
-Tipos compartilháveis: `lead`, `contact`, `organization`, `partner`, `deal`.
-Apenas **admins** podem criar/remover compartilhamentos e transferir ownership.
+```
+domain/integrations/goto/
+├── enterprise/
+│   └── events/
+│       ├── goto-call-received.event.ts
+│       └── goto-recording-ready.event.ts
+├── application/
+│   ├── ports/
+│   │   ├── goto-api.port.ts         ← interface para GoTo Connect API
+│   │   └── s3-storage.port.ts       ← interface para AWS S3
+│   ├── use-cases/
+│   │   ├── handle-goto-webhook.use-case.ts
+│   │   ├── create-call-activity.use-case.ts
+│   │   ├── process-call-recording.use-case.ts
+│   │   └── sync-call-reports.use-case.ts
+│   └── handlers/
+│       └── goto-recording-ready.handler.ts  ← dispara ao domain event
+└── infra/
+    ├── controllers/
+    │   ├── goto-webhook.controller.ts   ← público (sem JWT), valida secret
+    │   └── goto-oauth.controller.ts     ← OAuth callback
+    ├── scheduled/
+    │   └── goto-recording-cron.service.ts  ← @Cron("*/15 * * * *")
+    ├── goto-api.client.ts               ← implementa GoToApiPort
+    └── s3-recording.client.ts           ← implementa S3StoragePort
+```
 
-#### Plano de implementação NestJS
+#### Domain Events — finalmente usados
 
-**1. PermissionsService (novo serviço compartilhado)**
+```
+GoTo webhook recebido (POST /webhooks/goto/call-ended)
+  → HandleGotoWebhookUseCase
+    → CreateCallActivityUseCase
+      → Activity.create() + activity.addEvent(GotoCallReceivedEvent)
+    → activityRepo.save()
+      → DomainEvents.dispatchEventsForAggregate(activity.id)
+        → GotoCallReceivedHandler → ProcessCallRecordingUseCase (S3 → Transcriber)
+```
 
+#### GoTo token manager — migração do `.env`
+
+Hoje persiste `access_token` + `refresh_token` no `.env` via `sed` (frágil). No NestJS:
+- Nova tabela Prisma `IntegrationToken { provider, accessToken, refreshToken, expiresAt }`
+- `GoToTokenService` injectable — auto-refresh, lê/salva no banco
+
+#### Controllers públicos (sem JWT)
+
+Webhooks externos não podem ter `JwtAuthGuard`. Validação por secret:
 ```typescript
-// backend/src/infra/auth/permissions.service.ts
-@Injectable()
-export class PermissionsService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  async getOwnerFilter(user: AuthenticatedUser, ownerIdFilter?: string): Promise<OwnerFilter>
-  async getOwnerOrSharedFilter(user: AuthenticatedUser, entityType: EntityType, ownerIdFilter?: string): Promise<OwnerOrSharedFilter>
-  async canAccessEntity(user: AuthenticatedUser, entityType: EntityType, entityId: string, entityOwnerId: string): Promise<boolean>
-  async getSharedEntityIds(user: AuthenticatedUser, entityType: EntityType): Promise<string[]>
-}
+// GoTo: ?secret=GOTO_WEBHOOK_SECRET (query param)
+// Evolution: X-Webhook-Secret header
+// Tracking pixels/clicks: sem auth (públicos por natureza)
+// Lead research: X-Internal-Api-Key header
 ```
 
-Diferença chave: recebe `user: AuthenticatedUser` (JWT payload do `@CurrentUser()`) em vez de chamar `getServerSession`. Sem I/O de sessão — só lê do token já validado + Prisma para SharedEntity.
+#### Ordem de migração sugerida
 
-**2. SharedEntityModule (novo módulo)**
+1. **Shared infrastructure** — `PhoneMatcherService`, `TranscriberService`, `GoogleDriveService`, `GoToTokenService` (com Prisma)
+2. **GoTo module** — webhook controller (sem JWT) + cron recordings (maior prioridade — flow de chamadas)
+3. **WhatsApp module** — webhook + send + media + cron transcrições
+4. **Email module** — Gmail poll + send + tracking endpoints públicos
+5. **Google Meet module** — cron gravações (3 passes) + cron transcrições
+6. **Lead research webhook** — endpoint público para callback de pesquisa
 
-Entidade, repositório, use cases e controller:
-- `ShareEntityUseCase` — admin cria `SharedEntity` (POST `/shared-entities`)
-- `UnshareEntityUseCase` — admin remove (DELETE `/shared-entities/:id`)
-- `TransferEntityUseCase` — admin muda ownerId do registro (PATCH `/shared-entities/transfer`)
-- `GetSharedUsersUseCase` — lista usuários com acesso a uma entidade (GET `/shared-entities?entityType=&entityId=`)
+#### Variáveis de ambiente necessárias no NestJS
 
-**3. Integração nos módulos existentes**
+```env
+# GoTo
+GOTO_CLIENT_ID, GOTO_CLIENT_SECRET, GOTO_WEBHOOK_SECRET
+GOTO_ACCOUNT_KEY, GOTO_DEFAULT_OWNER_ID
+# GoTo tokens → migrar para banco (IntegrationToken)
 
-Injetar `PermissionsService` nos use cases de list/getById que precisam de filtro. Cada use case que hoje faz `{ ownerId: user.id }` direto passa a chamar:
+# Evolution (WhatsApp)
+EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE
+EVOLUTION_WEBHOOK_SECRET, EVOLUTION_OWNER_ID
 
-```typescript
-const filter = await this.permissions.getOwnerOrSharedFilter(user, "lead");
-// Passes filter to repository.findMany(filter, otherFilters)
+# Google
+GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
+
+# WB-Transcriber
+TRANSCRIPTOR_BASE_URL, TRANSCRIPTOR_API_KEY
+
+# AWS S3 (GoTo recordings)
+AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_GOTO_BUCKET
+
+# Cron security
+CRON_SECRET
 ```
-
-Módulos afetados: Leads, Contacts, Organizations, Partners, Deals.
-
-**4. Testes**
-
-- Unit: `PermissionsService` com 3 roles e cenários com/sem shares
-- E2E: share → SDR acessa entidade compartilhada → unshare → SDR perde acesso
-
-#### Ordem de execução
-
-1. `PermissionsService` + `PrismaService` (sem deps de domínio)
-2. `SharedEntityModule` (controller CRUD de shares)
-3. Refatorar `LeadsModule` → injetar `PermissionsService` nos use cases de lista
-4. Repetir para Contacts, Organizations, Partners, Deals
-5. Testes unit + e2e
-6. Deploy + validação
-
-#### Observação
-
-Os módulos de Deals, Leads, Contacts, Organizations, Partners já têm o campo `ownerId` no Prisma e nas queries. A refatoração é cirúrgica: apenas os use cases de `List` e `GetById` precisam trocar o filtro hardcoded pelo `PermissionsService`. Use cases de `Create`/`Update`/`Delete` ficam como estão (já verificam ownership).
 
 ---
 
-### 🔲 M10 — Remover Server Actions do Next.js
+### 🔲 M11 — Remover Server Actions do Next.js
 **Status**: Pendente
 
-Após todas as entidades migradas:
-- Remover `src/actions/` completamente
+Após M10 concluído (todas as integrações migradas):
+- Remover `src/actions/` completamente (exceto actions de autenticação que pertencem ao NextAuth)
+- Remover `src/lib/goto/`, `src/lib/evolution/`, `src/lib/google/`, `src/lib/transcriptor.ts`, `src/lib/email-tracking.ts`
+- Remover `src/app/api/goto/`, `src/app/api/evolution/`, `src/app/api/google/`, `src/app/api/track/`, `src/app/api/webhooks/`
 - Remover `src/lib/backend/client.ts` (server-side fetch helper)
-- Next.js vira frontend puro: sem `"use server"`, sem Prisma, sem NextAuth callbacks de dados
+- Next.js vira frontend puro: sem `"use server"`, sem Prisma, sem integrações externas
 
 ---
 
