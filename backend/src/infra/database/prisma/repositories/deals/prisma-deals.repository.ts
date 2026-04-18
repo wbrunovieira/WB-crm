@@ -17,11 +17,21 @@ export class PrismaDealsRepository extends DealsRepository {
   }
 
   async findMany(requesterId: string, requesterRole: string, filters: DealFilters = {}): Promise<DealSummary[]> {
-    const ownerFilter = requesterRole === "admin" && filters.owner === "all"
-      ? {}
-      : requesterRole === "admin" && filters.owner && filters.owner !== "mine"
-        ? { ownerId: filters.owner }
+    let ownerFilter: Record<string, unknown>;
+    if (requesterRole === "admin") {
+      ownerFilter = !filters.owner || filters.owner === "all"
+        ? {}
+        : filters.owner === "mine" ? { ownerId: requesterId } : { ownerId: filters.owner };
+    } else {
+      const shared = await this.prisma.sharedEntity.findMany({
+        where: { entityType: "deal", sharedWithUserId: requesterId },
+        select: { entityId: true },
+      });
+      const sharedIds = shared.map((s) => s.entityId);
+      ownerFilter = sharedIds.length > 0
+        ? { OR: [{ ownerId: requesterId }, { id: { in: sharedIds } }] }
         : { ownerId: requesterId };
+    }
 
     const rows = await this.prisma.deal.findMany({
       where: {
@@ -77,10 +87,8 @@ export class PrismaDealsRepository extends DealsRepository {
   }
 
   async findById(id: string, requesterId: string, requesterRole: string): Promise<DealDetail | null> {
-    const ownerFilter = requesterRole === "admin" ? {} : { ownerId: requesterId };
-
-    const row = await this.prisma.deal.findFirst({
-      where: { id, ...ownerFilter },
+    const row = await this.prisma.deal.findUnique({
+      where: { id },
       include: {
         owner: { select: { id: true, name: true, email: true } },
         stage: { select: { id: true, name: true, probability: true } },
@@ -120,6 +128,14 @@ export class PrismaDealsRepository extends DealsRepository {
     });
 
     if (!row) return null;
+
+    // Access check for non-admin
+    if (requesterRole !== "admin" && row.ownerId !== requesterId) {
+      const shared = await this.prisma.sharedEntity.findFirst({
+        where: { entityType: "deal", entityId: id, sharedWithUserId: requesterId },
+      });
+      if (!shared) return null;
+    }
 
     const r = row as any;
     return {

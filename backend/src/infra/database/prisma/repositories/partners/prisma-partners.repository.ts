@@ -12,11 +12,21 @@ export class PrismaPartnersRepository extends PartnersRepository {
   }
 
   async findMany(requesterId: string, requesterRole: string, filters: PartnerFilters = {}): Promise<PartnerSummary[]> {
-    const ownerFilter = requesterRole === "admin" && filters.owner === "all"
-      ? {}
-      : requesterRole === "admin" && filters.owner && filters.owner !== "mine"
-        ? { ownerId: filters.owner }
+    let ownerFilter: Record<string, unknown>;
+    if (requesterRole === "admin") {
+      ownerFilter = !filters.owner || filters.owner === "all"
+        ? {}
+        : filters.owner === "mine" ? { ownerId: requesterId } : { ownerId: filters.owner };
+    } else {
+      const shared = await this.prisma.sharedEntity.findMany({
+        where: { entityType: "partner", sharedWithUserId: requesterId },
+        select: { entityId: true },
+      });
+      const sharedIds = shared.map((s) => s.entityId);
+      ownerFilter = sharedIds.length > 0
+        ? { OR: [{ ownerId: requesterId }, { id: { in: sharedIds } }] }
         : { ownerId: requesterId };
+    }
 
     const rows = await this.prisma.partner.findMany({
       where: {
@@ -60,10 +70,8 @@ export class PrismaPartnersRepository extends PartnersRepository {
   }
 
   async findById(id: string, requesterId: string, requesterRole: string): Promise<PartnerDetail | null> {
-    const ownerFilter = requesterRole === "admin" ? {} : { ownerId: requesterId };
-
-    const row = await this.prisma.partner.findFirst({
-      where: { id, ...ownerFilter },
+    const row = await this.prisma.partner.findUnique({
+      where: { id },
       include: {
         owner: { select: { id: true, name: true, email: true } },
         _count: { select: { contacts: true, activities: true, referredLeads: true } },
@@ -84,6 +92,14 @@ export class PrismaPartnersRepository extends PartnersRepository {
     });
 
     if (!row) return null;
+
+    // Access check for non-admin
+    if (requesterRole !== "admin" && row.ownerId !== requesterId) {
+      const shared = await this.prisma.sharedEntity.findFirst({
+        where: { entityType: "partner", entityId: id, sharedWithUserId: requesterId },
+      });
+      if (!shared) return null;
+    }
 
     const r = row as any;
     return {

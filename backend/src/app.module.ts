@@ -11,9 +11,10 @@ import { DealsModule } from "./domain/deals/deals.module";
 import { ActivitiesModule } from "./domain/activities/activities.module";
 import { PipelinesModule } from "./domain/pipelines/pipelines.module";
 import { AdminModule } from "./domain/admin/admin.module";
+import { SharedEntitiesModule } from "./domain/shared-entities/shared-entities.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule],
+  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule],
   controllers: [HealthController],
   providers: [],
 })

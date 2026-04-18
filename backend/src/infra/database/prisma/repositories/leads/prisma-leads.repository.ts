@@ -12,16 +12,29 @@ export class PrismaLeadsRepository extends LeadsRepository {
     super();
   }
 
+  private async getSharedIds(requesterId: string): Promise<string[]> {
+    const rows = await this.prisma.sharedEntity.findMany({
+      where: { entityType: "lead", sharedWithUserId: requesterId },
+      select: { entityId: true },
+    });
+    return rows.map((r) => r.entityId);
+  }
+
   private buildWhereClause(
     requesterId: string,
     requesterRole: string,
     filters: LeadFilters = {},
+    sharedIds: string[] = [],
   ): Prisma.LeadWhereInput {
     const where: Prisma.LeadWhereInput = {};
 
     // Owner scoping
     if (requesterRole !== "admin") {
-      where.ownerId = requesterId;
+      if (sharedIds.length > 0) {
+        where.OR = [{ ownerId: requesterId }, { id: { in: sharedIds } }];
+      } else {
+        where.ownerId = requesterId;
+      }
     } else if (filters.ownerIdFilter && filters.ownerIdFilter !== "all") {
       where.ownerId = filters.ownerIdFilter === "mine" ? requesterId : filters.ownerIdFilter;
     }
@@ -60,7 +73,8 @@ export class PrismaLeadsRepository extends LeadsRepository {
   }
 
   async findMany(requesterId: string, requesterRole: string, filters: LeadFilters = {}): Promise<LeadSummary[]> {
-    const where = this.buildWhereClause(requesterId, requesterRole, filters);
+    const sharedIds = requesterRole !== "admin" ? await this.getSharedIds(requesterId) : [];
+    const where = this.buildWhereClause(requesterId, requesterRole, filters, sharedIds);
 
     const rows = await this.prisma.lead.findMany({
       where,
@@ -157,7 +171,10 @@ export class PrismaLeadsRepository extends LeadsRepository {
 
     // Access check for non-admin
     if (requesterRole !== "admin" && row.ownerId !== requesterId) {
-      return null;
+      const shared = await this.prisma.sharedEntity.findFirst({
+        where: { entityType: "lead", entityId: id, sharedWithUserId: requesterId },
+      });
+      if (!shared) return null;
     }
 
     return {
