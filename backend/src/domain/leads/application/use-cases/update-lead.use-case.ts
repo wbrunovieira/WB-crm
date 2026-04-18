@@ -71,6 +71,9 @@ export interface UpdateLeadInput {
   activityOrder?: string;
   driveFolderId?: string;
   inOperationsAt?: Date;
+  // Relations
+  labelIds?: string[];
+  icpId?: string | null; // null = remove ICP
 }
 
 type Output = Either<Error, { lead: Lead }>;
@@ -87,11 +90,18 @@ export class UpdateLeadUseCase {
       return left(new Error("Não autorizado"));
     }
 
-    const { id, requesterId, requesterRole, ...fields } = input;
+    const { id, requesterId, requesterRole, labelIds, icpId, ...fields } = input;
 
     lead.update(fields as Partial<Omit<LeadProps, "ownerId" | "createdAt" | "updatedAt">>);
 
-    await this.leads.save(lead);
+    const hasRelations = labelIds !== undefined || icpId !== undefined;
+
+    if (hasRelations) {
+      await this.leads.saveWithRelations(lead, { labelIds, icpId });
+    } else {
+      await this.leads.save(lead);
+    }
+
     return right({ lead });
   }
 }

@@ -26,6 +26,7 @@ const mockActivity = {
   contactIds: null,
   leadContactIds: null,
   leadId: 'lead-test-1',
+  organizationId: null,
   partnerId: null,
   gotoCallId: null,
   gotoRecordingId: null,

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
-import { LeadsRepository } from "../repositories/leads.repository";
+import { LeadsRepository, type LeadContactInput } from "../repositories/leads.repository";
 import { Lead } from "../../enterprise/entities/lead";
 
 export interface CreateLeadInput {
@@ -68,6 +68,10 @@ export interface CreateLeadInput {
   activityOrder?: string;
   driveFolderId?: string;
   inOperationsAt?: Date;
+  // Relations
+  labelIds?: string[];
+  icpId?: string;
+  contacts?: LeadContactInput[];
 }
 
 type Output = Either<Error, { lead: Lead }>;
@@ -148,7 +152,18 @@ export class CreateLeadUseCase {
       inOperationsAt: input.inOperationsAt,
     });
 
-    await this.leads.save(lead);
+    const hasRelations = input.labelIds !== undefined || input.icpId !== undefined || (input.contacts && input.contacts.length > 0);
+
+    if (hasRelations) {
+      await this.leads.saveWithRelations(lead, {
+        labelIds: input.labelIds,
+        icpId: input.icpId ?? null,
+        contacts: input.contacts,
+      });
+    } else {
+      await this.leads.save(lead);
+    }
+
     return right({ lead });
   }
 }

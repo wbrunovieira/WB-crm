@@ -25,6 +25,7 @@ const baseActivity = {
   contactIds: null,
   leadContactIds: null,
   leadId: 'lead-1',
+  organizationId: null,
   partnerId: null,
   gotoCallId: null,
   gotoRecordingId: null,

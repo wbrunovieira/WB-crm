@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/infra/database/prisma.service";
-import { LeadsRepository, type LeadFilters } from "@/domain/leads/application/repositories/leads.repository";
+import { LeadsRepository, type LeadFilters, type LeadRelations } from "@/domain/leads/application/repositories/leads.repository";
 import type { Lead } from "@/domain/leads/enterprise/entities/lead";
 import type { LeadSummary, LeadDetail } from "@/domain/leads/enterprise/read-models/lead-read-models";
 import { LeadMapper } from "../../mappers/leads/lead.mapper";
@@ -286,14 +286,66 @@ export class PrismaLeadsRepository extends LeadsRepository {
 
   async save(lead: Lead): Promise<void> {
     const data = LeadMapper.toPrisma(lead);
-
-    // Strip relation fields that Prisma doesn't accept in data
     const { ...prismaData } = data as Record<string, unknown>;
 
     await this.prisma.lead.upsert({
       where: { id: prismaData["id"] as string },
       create: prismaData as Prisma.LeadUncheckedCreateInput,
       update: prismaData as Prisma.LeadUncheckedUpdateInput,
+    });
+  }
+
+  async saveWithRelations(lead: Lead, relations: LeadRelations): Promise<void> {
+    const data = LeadMapper.toPrisma(lead);
+    const { ...prismaData } = data as Record<string, unknown>;
+    const leadId = prismaData["id"] as string;
+
+    await this.prisma.$transaction(async (tx) => {
+      // 1. Upsert lead scalar fields
+      await tx.lead.upsert({
+        where: { id: leadId },
+        create: prismaData as Prisma.LeadUncheckedCreateInput,
+        update: prismaData as Prisma.LeadUncheckedUpdateInput,
+      });
+
+      // 2. Sync labels (replace all)
+      if (relations.labelIds !== undefined) {
+        await tx.lead.update({
+          where: { id: leadId },
+          data: { labels: { set: relations.labelIds.map((id) => ({ id })) } },
+        });
+      }
+
+      // 3. Sync ICP (null = remove, string = replace)
+      if (relations.icpId !== undefined) {
+        await tx.leadICP.deleteMany({ where: { leadId } });
+        if (relations.icpId !== null) {
+          await tx.leadICP.create({ data: { leadId, icpId: relations.icpId } });
+        }
+      }
+
+      // 4. Create contacts inline (only on new leads — skip if they already exist)
+      if (relations.contacts && relations.contacts.length > 0) {
+        const existing = await tx.leadContact.count({ where: { leadId } });
+        if (existing === 0) {
+          for (const c of relations.contacts) {
+            await tx.leadContact.create({
+              data: {
+                leadId,
+                name: c.name,
+                email: c.email,
+                phone: c.phone,
+                whatsapp: c.whatsapp,
+                linkedin: c.linkedin,
+                instagram: c.instagram,
+                role: c.role,
+                isPrimary: c.isPrimary ?? false,
+                languages: c.languages,
+              },
+            });
+          }
+        }
+      }
     });
   }
 

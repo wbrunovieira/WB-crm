@@ -209,6 +209,26 @@ class CreateLeadDto {
 
   @ApiPropertyOptional()
   inOperationsAt?: string;
+
+  // Relations
+  @ApiPropertyOptional({ type: [String], description: "IDs dos labels a conectar" })
+  labelIds?: string[];
+
+  @ApiPropertyOptional({ description: "ID do ICP a vincular" })
+  icpId?: string;
+
+  @ApiPropertyOptional({ description: "Contatos inline a criar junto com o lead" })
+  contacts?: Array<{
+    name: string;
+    email?: string;
+    phone?: string;
+    whatsapp?: string;
+    linkedin?: string;
+    instagram?: string;
+    role?: string;
+    isPrimary?: boolean;
+    languages?: string;
+  }>;
 }
 
 class UpdateLeadDto {
@@ -337,6 +357,13 @@ class UpdateLeadDto {
 
   @ApiPropertyOptional()
   activityOrder?: string;
+
+  // Relations
+  @ApiPropertyOptional({ type: [String], description: "IDs dos labels (substitui todos)" })
+  labelIds?: string[];
+
+  @ApiPropertyOptional({ nullable: true, description: "ID do ICP (null = remover)" })
+  icpId?: string | null;
 }
 
 class ArchiveLeadDto {
@@ -500,12 +527,12 @@ export class LeadsController {
   @ApiBody({ type: CreateLeadDto })
   @ApiResponse({ status: 201, description: "Lead criado com sucesso" })
   @ApiResponse({ status: 401, description: "Token inválido ou ausente" })
-  async create(@Body() body: Omit<CreateLeadInput, "ownerId">, @CurrentUser() user: AuthenticatedUser) {
+  async create(@Body() body: CreateLeadDto, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.createLead.execute({
       ...body,
       ownerId: user.id,
-      foundationDate: (body as any).foundationDate ? new Date((body as any).foundationDate) : undefined,
-      inOperationsAt: (body as any).inOperationsAt ? new Date((body as any).inOperationsAt) : undefined,
+      foundationDate: body.foundationDate ? new Date(body.foundationDate) : undefined,
+      inOperationsAt: body.inOperationsAt ? new Date(body.inOperationsAt) : undefined,
     });
     if (result.isLeft()) handleError(result);
     return serialize(result.value.lead);
@@ -521,7 +548,7 @@ export class LeadsController {
   @ApiResponse({ status: 404, description: "Lead não encontrado" })
   async update(
     @Param("id") id: string,
-    @Body() body: Omit<UpdateLeadInput, "id" | "requesterId" | "requesterRole">,
+    @Body() body: UpdateLeadDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const result = await this.updateLead.execute({
@@ -529,8 +556,8 @@ export class LeadsController {
       id,
       requesterId: user.id,
       requesterRole: user.role ?? "sdr",
-      foundationDate: (body as any).foundationDate ? new Date((body as any).foundationDate) : undefined,
-      inOperationsAt: (body as any).inOperationsAt ? new Date((body as any).inOperationsAt) : undefined,
+      foundationDate: body.foundationDate ? new Date(body.foundationDate) : undefined,
+      inOperationsAt: body.inOperationsAt ? new Date(body.inOperationsAt) : undefined,
     });
     if (result.isLeft()) handleError(result);
     return serialize(result.value.lead);

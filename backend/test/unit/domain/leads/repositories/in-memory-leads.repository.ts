@@ -1,4 +1,4 @@
-import { LeadsRepository, type LeadFilters } from "@/domain/leads/application/repositories/leads.repository";
+import { LeadsRepository, type LeadFilters, type LeadRelations } from "@/domain/leads/application/repositories/leads.repository";
 import type { Lead } from "@/domain/leads/enterprise/entities/lead";
 import type { LeadSummary, LeadDetail } from "@/domain/leads/enterprise/read-models/lead-read-models";
 
@@ -110,6 +110,11 @@ export class InMemoryLeadsRepository extends LeadsRepository {
     const idx = this.items.findIndex((l) => l.id.equals(lead.id));
     if (idx >= 0) this.items[idx] = lead;
     else this.items.push(lead);
+  }
+
+  // In-memory: just saves the lead (relations ignored for unit tests)
+  async saveWithRelations(lead: Lead, _relations: LeadRelations): Promise<void> {
+    return this.save(lead);
   }
 
   async delete(id: string): Promise<void> {

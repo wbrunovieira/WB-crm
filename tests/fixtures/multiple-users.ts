@@ -324,6 +324,7 @@ export function createMockActivity(ownerId: string, overrides: Partial<{
     contactIds: null,
     leadContactIds: null,
     leadId: null,
+    organizationId: null,
     partnerId: null,
     gotoCallId: null,
     gotoRecordingId: null,

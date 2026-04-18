@@ -3,11 +3,11 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { updateLead, createLeadWithContacts, checkLeadDuplicates, type LeadDuplicates, type LeadSummary } from "@/actions/leads";
+import { checkLeadDuplicates, type LeadDuplicates, type LeadSummary } from "@/actions/leads";
+import { useCreateLead, useUpdateLead, type CreateLeadPayload } from "@/hooks/leads/use-leads";
 import { normalizeCNPJ, validateCNPJ } from "@/lib/validations/cnpj";
 import { Trash2, Plus } from "lucide-react";
-import { linkLeadToICP, unlinkLeadFromICP, getLeadICPs } from "@/actions/icp-links";
-import { setLeadLabels } from "@/actions/lead-labels";
+import { getLeadICPs } from "@/actions/icp-links";
 import { useState, useEffect } from "react";
 import { MultiLabelSelect } from "@/components/shared/MultiLabelSelect";
 import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
@@ -99,6 +99,8 @@ const emptyContact: ContactFormData = {
 
 export function LeadForm({ lead }: LeadFormProps) {
   const router = useRouter();
+  const createLead = useCreateLead();
+  const updateLead = useUpdateLead();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [labelIds, setLabelIds] = useState<string[]>(lead?.labels?.map(l => l.id) || []);
   const [selectedCountry, setSelectedCountry] = useState<string>(lead?.country || "");
@@ -120,8 +122,7 @@ export function LeadForm({ lead }: LeadFormProps) {
   const [starRating, setStarRating] = useState<number | null>(lead?.starRating ?? null);
   const [duplicates, setDuplicates] = useState<LeadDuplicates | null>(null);
   const [pendingSubmitData, setPendingSubmitData] = useState<{
-    data: Parameters<typeof createLeadWithContacts>[0];
-    contacts: Parameters<typeof createLeadWithContacts>[1];
+    payload: CreateLeadPayload;
   } | null>(null);
 
   // Load available ICPs and current ICP (for both new and edit)
@@ -166,9 +167,7 @@ export function LeadForm({ lead }: LeadFormProps) {
       googleId: getString("googleId"),
       businessName: formData.get("businessName") as string,
       registeredName: getString("registeredName"),
-      foundationDate: formData.get("foundationDate")
-        ? new Date(formData.get("foundationDate") as string)
-        : undefined,
+      foundationDate: getString("foundationDate"),
       companyRegistrationID: getString("companyRegistrationID"),
       address: getString("address"),
       city: getString("city"),
@@ -223,7 +222,7 @@ export function LeadForm({ lead }: LeadFormProps) {
         ? parseInt(formData.get("radius") as string)
         : undefined,
       status: (getString("status") || "new") as "new" | "contacted" | "qualified" | "disqualified",
-      languages: leadLanguages.length > 0 ? leadLanguages : null,
+      languages: leadLanguages.length > 0 ? JSON.stringify(leadLanguages) : undefined,
       socialMedia: socialMedia || undefined,
       metaAds: metaAds || undefined,
       googleAds: googleAds || undefined,
@@ -242,112 +241,77 @@ export function LeadForm({ lead }: LeadFormProps) {
       }
     }
 
+    // Prepara contatos válidos (só relevante para criação)
+    const validContacts = contacts
+      .filter((c) => c.name.trim().length >= 2)
+      .map((c, index) => ({
+        name: c.name.trim(),
+        email: c.email.trim() || undefined,
+        phone: c.phone.trim() || undefined,
+        whatsapp: c.whatsapp.trim() || undefined,
+        linkedin: c.linkedin.trim() || undefined,
+        instagram: c.instagram.trim() || undefined,
+        role: c.role.trim() || undefined,
+        isPrimary: index === 0 ? true : c.isPrimary,
+      }));
+
     try {
       if (lead?.id) {
-        await updateLead(lead.id, data);
+        // UPDATE — labels e icpId enviados inline para o NestJS
+        const icpPayload: string | null | undefined =
+          selectedIcpId !== originalIcpId
+            ? (selectedIcpId || null)
+            : undefined;
 
-        // Set labels
-        if (labelIds.length > 0) {
-          try {
-            await setLeadLabels(lead.id, labelIds);
-          } catch (labelError) {
-            console.error("Error setting labels:", labelError);
-            toast.warning("Lead atualizado, mas houve erro ao atualizar labels");
-          }
-        }
-
-        // Handle ICP changes
-        if (selectedIcpId !== originalIcpId) {
-          try {
-            // Unlink old ICP if exists
-            if (originalIcpId) {
-              await unlinkLeadFromICP(lead.id, originalIcpId);
-            }
-            // Link new ICP if selected
-            if (selectedIcpId) {
-              await linkLeadToICP({
-                leadId: lead.id,
-                icpId: selectedIcpId,
-              });
-            }
-          } catch (icpError) {
-            console.error("Error updating ICP:", icpError);
-            toast.warning("Lead atualizado, mas houve erro ao atualizar ICP");
-          }
-        }
+        await updateLead.mutateAsync({
+          id: lead.id,
+          ...data,
+          labelIds,
+          icpId: icpPayload,
+        });
 
         toast.success("Lead atualizado com sucesso!");
         router.push(`/leads/${lead.id}`);
       } else {
-        // Prepara contatos válidos
-        const validContacts = contacts
-          .filter((c) => c.name.trim().length >= 2)
-          .map((c, index) => ({
-            name: c.name.trim(),
-            email: c.email.trim() || undefined,
-            phone: c.phone.trim() || undefined,
-            whatsapp: c.whatsapp.trim() || undefined,
-            linkedin: c.linkedin.trim() || undefined,
-            instagram: c.instagram.trim() || undefined,
-            role: c.role.trim() || undefined,
-            isPrimary: index === 0 ? true : c.isPrimary,
-          }));
+        // CREATE — verificar duplicatas antes
+        const dupResult = await checkLeadDuplicates({
+          businessName: data.businessName as string,
+          companyRegistrationID: data.companyRegistrationID,
+          phone: data.phone,
+          whatsapp: data.whatsapp,
+          email: data.email,
+        });
 
-        const result = await createLeadWithContacts(data, validContacts);
+        const foundDuplicates = dupResult.cnpj.length > 0 || dupResult.name.length > 0 || dupResult.phone.length > 0 || dupResult.email.length > 0 || dupResult.address.length > 0;
 
-        // Possíveis duplicatas encontradas — pausa e aguarda confirmação do usuário
-        if (result.status === "duplicate_found") {
-          setDuplicates(result.duplicates);
-          setPendingSubmitData({ data, contacts: validContacts });
+        if (foundDuplicates) {
+          const payload: CreateLeadPayload = {
+            ...data,
+            labelIds,
+            icpId: selectedIcpId || undefined,
+            contacts: validContacts,
+          };
+          setDuplicates(dupResult);
+          setPendingSubmitData({ payload });
           setIsSubmitting(false);
           return;
         }
 
-        const newLead = result.lead;
+        const newLead = await createLead.mutateAsync({
+          ...data,
+          labelIds,
+          icpId: selectedIcpId || undefined,
+          contacts: validContacts,
+        });
 
-        if (labelIds.length > 0) {
-          try {
-            await setLeadLabels(newLead.id, labelIds);
-          } catch (labelError) {
-            console.error("Error setting labels:", labelError);
-            toast.warning("Lead criado, mas houve erro ao vincular labels");
-          }
-        }
-
-        if (selectedIcpId) {
-          try {
-            await linkLeadToICP({ leadId: newLead.id, icpId: selectedIcpId });
-          } catch (icpError) {
-            console.error("Error linking ICP:", icpError);
-            toast.warning("Lead criado, mas houve erro ao vincular ICP");
-          }
-        }
-
-        const contactsCount = result.contacts.length;
+        const contactsCount = validContacts.length;
         toast.success(contactsCount > 0 ? `Lead criado com ${contactsCount} contato(s)!` : "Lead criado com sucesso!");
         router.push(`/leads/${newLead.id}`);
       }
       router.refresh();
     } catch (error) {
       console.error("Error saving lead:", error);
-      if (error instanceof Error) {
-        // Check if it's a Zod validation error
-        try {
-          const zodError = JSON.parse(error.message);
-          if (Array.isArray(zodError)) {
-            const firstError = zodError[0];
-            toast.error(`Erro de validação: ${firstError.message}`, {
-              description: `Campo: ${firstError.path.join(".")}`,
-            });
-            return;
-          }
-        } catch {
-          // Not a JSON error, show the original message
-        }
-        toast.error(error.message);
-      } else {
-        toast.error("Erro ao salvar lead");
-      }
+      toast.error(error instanceof Error ? error.message : "Erro ao salvar lead");
     } finally {
       setIsSubmitting(false);
     }
@@ -360,34 +324,11 @@ export function LeadForm({ lead }: LeadFormProps) {
     setDuplicates(null);
 
     try {
-      const result = await createLeadWithContacts(
-        pendingSubmitData.data,
-        pendingSubmitData.contacts,
-        { skipDuplicateCheck: true }
-      );
-
-      if (result.status !== "created") {
-        toast.error("Erro inesperado ao criar lead.");
-        return;
-      }
-
-      const newLead = result.lead;
-
-      if (labelIds.length > 0) {
-        try {
-          await setLeadLabels(newLead.id, labelIds);
-        } catch { /* não impede a criação */ }
-      }
-
-      if (selectedIcpId) {
-        try {
-          await linkLeadToICP({ leadId: newLead.id, icpId: selectedIcpId });
-        } catch { /* não impede a criação */ }
-      }
-
-      const contactsCount = result.contacts.length;
+      const newLead = await createLead.mutateAsync(pendingSubmitData.payload);
+      const contactsCount = pendingSubmitData.payload.contacts?.length ?? 0;
       toast.success(contactsCount > 0 ? `Lead criado com ${contactsCount} contato(s)!` : "Lead criado com sucesso!");
       router.push(`/leads/${newLead.id}`);
+      router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao criar lead");
     } finally {
