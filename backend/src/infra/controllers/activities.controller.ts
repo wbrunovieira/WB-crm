@@ -34,6 +34,7 @@ class CreateActivityDto {
   @ApiPropertyOptional({ type: [String] }) contactIds?: string[];
   @ApiPropertyOptional({ type: [String] }) leadContactIds?: string[];
   @ApiPropertyOptional() leadId?: string;
+  @ApiPropertyOptional() organizationId?: string;
   @ApiPropertyOptional() partnerId?: string;
   @ApiPropertyOptional({ enum: ["gatekeeper", "decisor"] }) callContactType?: string;
   @ApiPropertyOptional() meetingNoShow?: boolean;
@@ -48,6 +49,7 @@ class UpdateActivityDto {
   @ApiPropertyOptional({ type: [String] }) contactIds?: string[];
   @ApiPropertyOptional({ type: [String] }) leadContactIds?: string[];
   @ApiPropertyOptional() leadId?: string;
+  @ApiPropertyOptional() organizationId?: string;
   @ApiPropertyOptional() partnerId?: string;
   @ApiPropertyOptional() callContactType?: string;
   @ApiPropertyOptional() meetingNoShow?: boolean;
@@ -86,6 +88,7 @@ function serializeActivity(a: Activity) {
     contactIds: a.contactIds ?? null,
     leadContactIds: a.leadContactIds ?? null,
     leadId: a.leadId ?? null,
+    organizationId: a.organizationId ?? null,
     partnerId: a.partnerId ?? null,
     callContactType: a.callContactType ?? null,
     meetingNoShow: a.meetingNoShow,

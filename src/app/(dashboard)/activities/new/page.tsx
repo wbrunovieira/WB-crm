@@ -2,13 +2,15 @@ import ActivityForm from "@/components/activities/ActivityForm";
 import { getContactsList } from "@/lib/lists/contacts-list";
 import { getDealsList } from "@/lib/lists/deals-list";
 import { getLeadsList } from "@/lib/lists/leads-list";
+import { getOrganizationsList } from "@/lib/lists/organizations-list";
 import Link from "next/link";
 
 export default async function NewActivityPage() {
-  const [contacts, deals, leads] = await Promise.all([
+  const [contacts, deals, leads, organizations] = await Promise.all([
     getContactsList(),
     getDealsList(),
     getLeadsList(),
+    getOrganizationsList(),
   ]);
 
   return (
@@ -26,7 +28,7 @@ export default async function NewActivityPage() {
       </div>
 
       <div className="mx-auto max-w-2xl rounded-lg bg-white p-6 shadow">
-        <ActivityForm contacts={contacts} deals={deals} leads={leads} />
+        <ActivityForm contacts={contacts} deals={deals} leads={leads} organizations={organizations} />
       </div>
     </div>
   );

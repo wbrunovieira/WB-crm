@@ -15,6 +15,7 @@ export interface UpdateActivityInput {
   contactIds?: string[];
   leadContactIds?: string[];
   leadId?: string | null;
+  organizationId?: string | null;
   partnerId?: string | null;
   callContactType?: string | null;
   meetingNoShow?: boolean;
@@ -41,8 +42,9 @@ export class UpdateActivityUseCase {
     if (input.description !== undefined) updates.description = input.description;
     if (input.dueDate !== undefined)     updates.dueDate = input.dueDate ?? undefined;
     if (input.dealId !== undefined)      updates.dealId = input.dealId ?? undefined;
-    if (input.leadId !== undefined)      updates.leadId = input.leadId ?? undefined;
-    if (input.partnerId !== undefined)   updates.partnerId = input.partnerId ?? undefined;
+    if (input.leadId !== undefined)         updates.leadId = input.leadId ?? undefined;
+    if (input.organizationId !== undefined) updates.organizationId = input.organizationId ?? undefined;
+    if (input.partnerId !== undefined)      updates.partnerId = input.partnerId ?? undefined;
     if (input.callContactType !== undefined) updates.callContactType = input.callContactType ?? undefined;
     if (input.meetingNoShow !== undefined)   updates.meetingNoShow = input.meetingNoShow;
 

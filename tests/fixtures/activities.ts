@@ -18,6 +18,7 @@ export const mockActivity: Activity = {
   contactIds: null,
   leadContactIds: null,
   leadId: null,
+  organizationId: null,
   partnerId: null,
   ownerId: 'user-test-123',
   gotoCallId: null,

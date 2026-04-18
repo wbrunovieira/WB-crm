@@ -480,6 +480,9 @@ model Organization {
   // Meetings
   meetings                   Meeting[]
 
+  // Activities
+  activities                 Activity[]
+
   @@index([ownerId])
   @@index([sourceLeadId])
   @@index([primaryCNAEId])
@@ -682,17 +685,19 @@ model Activity {
   contactIds      String?   // JSON array of contact IDs for multiple contacts
   leadContactIds  String?   // JSON array of LeadContact IDs linked to this activity
   leadId          String?   // Activities can be linked to Leads
+  organizationId  String?   // Activities can be linked to Organizations
   partnerId   String?   // Activities can be linked to Partners
   ownerId     String
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   // Relations
-  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: Cascade)
-  contact Contact? @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  lead    Lead?    @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  partner Partner? @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  deal         Deal?         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  lead         Lead?         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  partner      Partner?      @relation(fields: [partnerId], references: [id], onDelete: Cascade)
 
   // Meeting relation (one-to-one via activityId)
   meeting         Meeting?
@@ -704,6 +709,7 @@ model Activity {
   @@index([dealId])
   @@index([contactId])
   @@index([leadId])
+  @@index([organizationId])
   @@index([partnerId])
   gotoCallId             String?  @unique // GoTo conversationSpaceId — previne Activity duplicada
   gotoRecordingId         String?           // GoTo recording ID (agent track)

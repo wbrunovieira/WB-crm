@@ -13,6 +13,7 @@ export interface CreateActivityInput {
   contactIds?: string[]; // array — converted to JSON + primary
   leadContactIds?: string[]; // array — converted to JSON
   leadId?: string;
+  organizationId?: string;
   partnerId?: string;
   callContactType?: string;
   meetingNoShow?: boolean;
@@ -50,6 +51,7 @@ export class CreateActivityUseCase {
         ? JSON.stringify(input.leadContactIds)
         : undefined,
       leadId: input.leadId,
+      organizationId: input.organizationId,
       partnerId: input.partnerId,
       callContactType: input.callContactType,
     });

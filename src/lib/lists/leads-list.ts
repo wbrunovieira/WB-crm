@@ -12,7 +12,8 @@ export async function getLeadsList() {
   const leads = await prisma.lead.findMany({
     where: {
       ownerId: session.user.id,
-      convertedAt: null, // Only non-converted leads
+      convertedAt: null,
+      isArchived: false,
     },
     select: {
       id: true,

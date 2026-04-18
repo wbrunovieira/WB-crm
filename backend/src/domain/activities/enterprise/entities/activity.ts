@@ -23,6 +23,7 @@ export interface ActivityProps {
   contactIds?: string; // JSON string
   leadContactIds?: string; // JSON string
   leadId?: string;
+  organizationId?: string;
   partnerId?: string;
 
   // GoTo Call
@@ -76,6 +77,7 @@ export class Activity extends AggregateRoot<ActivityProps> {
   get contactIds()           { return this.props.contactIds; }
   get leadContactIds()       { return this.props.leadContactIds; }
   get leadId()               { return this.props.leadId; }
+  get organizationId()       { return this.props.organizationId; }
   get partnerId()            { return this.props.partnerId; }
   get gotoCallId()           { return this.props.gotoCallId; }
   get gotoRecordingId()      { return this.props.gotoRecordingId; }
