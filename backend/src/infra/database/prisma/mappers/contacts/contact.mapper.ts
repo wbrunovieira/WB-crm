@@ -55,10 +55,18 @@ export class ContactMapper {
       instagram: contact.instagram ?? null,
       status: contact.status,
       isPrimary: contact.isPrimary,
-      birthDate: contact.birthDate ?? null,
+      birthDate: contact.birthDate instanceof Date
+        ? contact.birthDate
+        : contact.birthDate
+          ? new Date(contact.birthDate as string)
+          : null,
       notes: contact.notes ?? null,
       preferredLanguage: contact.preferredLanguage,
-      languages: contact.languages ?? null,
+      languages: contact.languages
+        ? typeof contact.languages === "string"
+          ? contact.languages
+          : JSON.stringify(contact.languages)
+        : null,
       source: contact.source ?? null,
       sourceLeadContactId: contact.sourceLeadContactId ?? null,
       createdAt: contact.createdAt,

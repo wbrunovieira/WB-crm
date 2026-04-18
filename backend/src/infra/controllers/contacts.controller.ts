@@ -297,7 +297,11 @@ export class ContactsController {
   @ApiResponse({ status: 201, description: "Contato criado com sucesso", type: ContactResponseDto })
   @ApiResponse({ status: 401, description: "Token inválido ou ausente" })
   async create(@Body() body: Omit<CreateContactInput, "ownerId">, @CurrentUser() user: AuthenticatedUser) {
-    const result = await this.createContact.execute({ ...body, ownerId: user.id });
+    const result = await this.createContact.execute({
+      ...body,
+      ownerId: user.id,
+      birthDate: body.birthDate ? new Date(body.birthDate) : undefined,
+    });
     if (result.isLeft()) handleError(result);
     return serialize(result.value.contact);
   }
@@ -319,6 +323,7 @@ export class ContactsController {
       id,
       requesterId: user.id,
       requesterRole: user.role ?? "sdr",
+      birthDate: body.birthDate ? new Date(body.birthDate) : undefined,
     });
     if (result.isLeft()) handleError(result);
     return serialize(result.value.contact);
