@@ -1,13 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { deleteLead } from "@/actions/leads";
+import { useDeleteLead } from "@/hooks/leads/use-leads";
 import { toast } from "sonner";
 
 export function DeleteLeadButton({ leadId }: { leadId: string }) {
   const router = useRouter();
-  const [isDeleting, setIsDeleting] = useState(false);
+  const deleteMutation = useDeleteLead();
 
   async function handleDelete() {
     toast.warning("Tem certeza que deseja excluir este lead?", {
@@ -15,17 +14,14 @@ export function DeleteLeadButton({ leadId }: { leadId: string }) {
       action: {
         label: "Confirmar",
         onClick: async () => {
-          setIsDeleting(true);
           try {
-            await deleteLead(leadId);
+            await deleteMutation.mutateAsync(leadId);
             toast.success("Lead excluído com sucesso!");
             router.push("/leads");
-            router.refresh();
           } catch (error) {
             toast.error(
               error instanceof Error ? error.message : "Erro ao excluir lead"
             );
-            setIsDeleting(false);
           }
         },
       },
@@ -39,7 +35,7 @@ export function DeleteLeadButton({ leadId }: { leadId: string }) {
   return (
     <button
       onClick={handleDelete}
-      disabled={isDeleting}
+      disabled={deleteMutation.isPending}
       className="rounded-md border border-gray-300 px-4 py-2 text-gray-200 hover:bg-[#2d1b3d] disabled:opacity-50"
       title="Excluir lead"
     >

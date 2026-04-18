@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { archiveLead, unarchiveLead } from "@/actions/leads";
+import { useArchiveLead, useUnarchiveLead } from "@/hooks/leads/use-leads";
 import { Archive, ArchiveRestore, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -14,10 +14,12 @@ interface ArchiveLeadButtonProps {
 
 export function ArchiveLeadButton({ leadId, isArchived }: ArchiveLeadButtonProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [reason, setReason] = useState("");
   const { confirm, dialogProps } = useConfirmDialog();
+  const archiveMutation = useArchiveLead();
+  const unarchiveMutation = useUnarchiveLead();
+  const loading = archiveMutation.isPending || unarchiveMutation.isPending;
 
   const handleClick = async () => {
     if (isArchived) {
@@ -29,15 +31,12 @@ export function ArchiveLeadButton({ leadId, isArchived }: ArchiveLeadButtonProps
       });
       if (!confirmed) return;
 
-      setLoading(true);
       try {
-        await unarchiveLead(leadId);
+        await unarchiveMutation.mutateAsync(leadId);
         toast.success("Lead desarquivado com sucesso");
         router.refresh();
       } catch (error) {
         toast.error(error instanceof Error ? error.message : "Erro ao desarquivar lead");
-      } finally {
-        setLoading(false);
       }
     } else {
       setReason("");
@@ -47,15 +46,12 @@ export function ArchiveLeadButton({ leadId, isArchived }: ArchiveLeadButtonProps
 
   const handleConfirmArchive = async () => {
     setShowReasonModal(false);
-    setLoading(true);
     try {
-      await archiveLead(leadId, reason.trim() || undefined);
+      await archiveMutation.mutateAsync({ id: leadId, reason: reason.trim() || undefined });
       toast.success("Lead arquivado com sucesso");
       router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao arquivar lead");
-    } finally {
-      setLoading(false);
     }
   };
 
