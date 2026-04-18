@@ -59,6 +59,21 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.accessToken = user.accessToken;
       }
+      // Sessões antigas (antes da migração para NestJS auth) não têm accessToken.
+      // Geramos um token compatível com o NestJS usando o mesmo secret.
+      if (!token.accessToken && token.sub) {
+        const { SignJWT } = await import("jose");
+        const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
+        token.accessToken = await new SignJWT({
+          sub: token.sub,
+          name: token.name,
+          email: token.email,
+          role: token.role ?? token.id,
+        })
+          .setProtectedHeader({ alg: "HS256" })
+          .setExpirationTime("7d")
+          .sign(secret);
+      }
       return token;
     },
     async session({ session, token }) {
