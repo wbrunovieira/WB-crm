@@ -34,9 +34,10 @@ Next.js → apenas frontend (React + client components)
 ```
 infra/controllers/          ← HTTP (entrada/saída)
 domain/{entity}/
-  application/use-cases/   ← lógica de negócio
+  enterprise/entities/      ← entidades de domínio + Value Objects
+  enterprise/value-objects/ ← VOs com validação encapsulada
+  application/use-cases/    ← orquestração (sem validação de formato)
   application/repositories/ ← interfaces abstratas
-  enterprise/entities/      ← entidades de domínio
 infra/database/prisma/
   repositories/             ← implementações Prisma
   mappers/                  ← conversão domínio ↔ Prisma
@@ -58,6 +59,166 @@ Controller chama `handleError(result)` se `isLeft()`.
 ### Variáveis de ambiente
 - `NEXT_PUBLIC_BACKEND_URL` — URL pública do backend (browser)
 - `BACKEND_URL` — URL interna (Next.js server → NestJS, para `getContacts` server-side)
+
+---
+
+## Padrão DDD Obrigatório (M10 em diante)
+
+> Este padrão se aplica a todos os novos domínios. A correção do que foi feito antes (M1–M9) é tratada na fase de Tech Debt.
+
+### Responsabilidades por camada
+
+#### Controller — somente HTTP
+O controller não toma decisões de negócio. Ele apenas:
+- Extrai dados do request (body, params, query, `@CurrentUser()`)
+- Converte tipos primitivos (`string → Date`, `string → number`)
+- Chama o use case
+- Mapeia o resultado para a resposta HTTP (`201`, `204`, `404`, `422`)
+
+```typescript
+// ✅ correto
+async create(@Body() body: CreateLabelDto, @CurrentUser() user: AuthenticatedUser) {
+  const result = await this.createLabel.execute({
+    name: body.name,
+    color: body.color,
+    ownerId: user.id,
+  });
+  if (result.isLeft()) handleError(result);
+  return { id: result.value.label.id.toString() };
+}
+
+// ❌ errado — validação de negócio no controller
+async create(@Body() body: CreateLabelDto) {
+  if (!body.name?.trim()) throw new BadRequestException("Nome obrigatório");
+  if (body.color && !body.color.startsWith("#")) throw new UnprocessableEntityException("Cor inválida");
+  ...
+}
+```
+
+#### Value Objects — validação encapsulada
+Toda regra de formato e invariante de negócio vive no VO. O VO retorna `Either<Error, VO>` e nunca lança exceção.
+
+```typescript
+// enterprise/value-objects/label-name.vo.ts
+export class LabelName {
+  private constructor(private readonly value: string) {}
+
+  static create(raw: string): Either<InvalidLabelNameError, LabelName> {
+    if (!raw?.trim()) return left(new InvalidLabelNameError("Nome não pode ser vazio"));
+    if (raw.trim().length > 50) return left(new InvalidLabelNameError("Nome deve ter no máximo 50 caracteres"));
+    return right(new LabelName(raw.trim()));
+  }
+
+  toString() { return this.value; }
+}
+```
+
+#### Use Case — orquestrador
+O use case cria VOs, verifica invariantes de domínio (duplicatas, regras de negócio), chama o repositório e retorna `Either`.
+
+```typescript
+// application/use-cases/create-label.use-case.ts
+async execute(input: CreateLabelInput): Promise<Either<Error, { label: Label }>> {
+  // 1. Criar VOs (validação de formato)
+  const nameOrError = LabelName.create(input.name);
+  if (nameOrError.isLeft()) return left(nameOrError.value);
+
+  const colorOrError = HexColor.create(input.color);
+  if (colorOrError.isLeft()) return left(colorOrError.value);
+
+  // 2. Invariantes de domínio (regras de negócio)
+  const exists = await this.repo.existsByNameAndOwner(nameOrError.value.toString(), input.ownerId);
+  if (exists) return left(new DuplicateLabelError("Já existe uma label com esse nome"));
+
+  // 3. Criar entidade
+  const label = Label.create({
+    name: nameOrError.value,
+    color: colorOrError.value,
+    ownerId: input.ownerId,
+  });
+
+  // 4. Persistir
+  await this.repo.save(label);
+  return right({ label });
+}
+```
+
+#### Entidade — comportamento e invariantes
+A entidade não é um DTO. Ela encapsula estado e expõe métodos de negócio.
+
+```typescript
+export class Label extends AggregateRoot<LabelProps> {
+  get name() { return this.props.name.toString(); }
+  get color() { return this.props.color.toString(); }
+
+  update(data: { name?: string; color?: string }): Either<Error, void> {
+    if (data.name) {
+      const nameOrError = LabelName.create(data.name);
+      if (nameOrError.isLeft()) return left(nameOrError.value);
+      this.props.name = nameOrError.value;
+    }
+    return right(undefined);
+  }
+}
+```
+
+### TDD obrigatório
+
+**Ordem de implementação para cada domínio:**
+
+1. **Value Objects** — escrever testes antes do código
+   - `describe("LabelName") → it("rejeita nome vazio") → implementar → verde`
+2. **Entidade** — testes de comportamento (update, toggle, etc.)
+3. **Use Cases** — testes com in-memory repository
+   - Testar: caminho feliz, cada VO inválido, cada invariante de domínio
+4. **E2E** — testes contra banco real
+   - Testar: auth guard (401), happy path, validações (422), not found (404)
+   - **Sempre incluir teste com todos os campos** (incluindo opcionais)
+
+```
+test/unit/domain/{entity}/
+  enterprise/value-objects/label-name.spec.ts
+  enterprise/entities/label.spec.ts
+  application/use-cases/create-label.use-case.spec.ts
+test/e2e/labels.e2e-spec.ts
+```
+
+### Estrutura de arquivos por domínio (template)
+
+```
+backend/src/domain/{entity}/
+├── enterprise/
+│   ├── entities/
+│   │   └── {entity}.ts
+│   └── value-objects/
+│       ├── {entity}-name.vo.ts
+│       └── {field}.vo.ts
+├── application/
+│   ├── repositories/
+│   │   └── {entity}.repository.ts
+│   └── use-cases/
+│       └── {entity}.use-cases.ts   (ou um arquivo por use case)
+└── {entity}.module.ts
+
+backend/src/infra/
+├── controllers/
+│   └── {entity}.controller.ts
+└── database/prisma/
+    ├── repositories/{entity}/
+    │   └── prisma-{entity}.repository.ts
+    └── mappers/{entity}/
+        └── {entity}.mapper.ts
+
+backend/test/
+├── unit/domain/{entity}/
+│   ├── enterprise/value-objects/
+│   ├── enterprise/entities/
+│   ├── application/use-cases/
+│   └── repositories/
+│       └── in-memory-{entity}.repository.ts
+└── e2e/
+    └── {entity}.e2e-spec.ts
+```
 
 ---
 
@@ -621,38 +782,291 @@ CRON_SECRET
 
 ---
 
-### 🔲 M11 — Remover Server Actions do Next.js
+### 🔲 M11 — Labels, CNAE, Setores, ICP, Tech Profile, Product Links
 **Status**: Pendente
 
-Após M10 concluído (todas as integrações migradas):
-- Remover `src/actions/` completamente (exceto actions de autenticação que pertencem ao NextAuth)
-- Remover `src/lib/goto/`, `src/lib/evolution/`, `src/lib/google/`, `src/lib/transcriptor.ts`, `src/lib/email-tracking.ts`
-- Remover `src/app/api/goto/`, `src/app/api/evolution/`, `src/app/api/google/`, `src/app/api/track/`, `src/app/api/webhooks/`
-- Remover `src/lib/backend/client.ts` (server-side fetch helper)
-- Next.js vira frontend puro: sem `"use server"`, sem Prisma, sem integrações externas
+#### Contexto
+
+Funcionalidades de enriquecimento de entidades (tags, classificações, tech stack, produtos) que hoje vivem inteiramente em server actions do Next.js. São usadas em conjunto com Leads, Organizations e Deals — precisam de endpoints REST no NestJS para que o frontend possa migrar para React Query.
+
+#### Subdomínios
+
+**Labels**
+- `Label` entity + `LabelName` VO (máx 50 chars, não vazio) + `HexColor` VO
+- Use cases: `CreateLabel`, `UpdateLabel`, `DeleteLabel`, `GetLabels`
+- Vínculos M2M: `AddLabelToLead`, `RemoveLabelFromLead`, `SetLeadLabels`, `AddLabelToOrganization`, `RemoveLabelFromOrganization`, `SetOrganizationLabels`
+- Rotas: `GET/POST /labels`, `PATCH/DELETE /labels/:id`, `POST/DELETE /leads/:id/labels`, `PUT /leads/:id/labels`, `POST/DELETE /organizations/:id/labels`, `PUT /organizations/:id/labels`
+
+**CNAE (Classificação Nacional de Atividades Econômicas)**
+- Sem entity de domínio (tabela de referência imutável) — apenas repositório de leitura
+- Use cases: `SearchCNAEs`, `GetCNAEById`
+- Vínculos: `AddSecondaryCNAEToLead`, `RemoveSecondaryCNAEFromLead`, `AddSecondaryCNAEToOrganization`, `RemoveSecondaryCNAEFromOrganization`
+- Rotas: `GET /cnaes?q=`, `GET /cnaes/:id`, `POST/DELETE /leads/:id/cnaes`, `POST/DELETE /organizations/:id/cnaes`
+
+**Setores**
+- `Sector` entity + VOs para campos obrigatórios (name, slug)
+- Use cases: `CreateSector`, `UpdateSector`, `DeleteSector`, `GetSectors`, `GetSectorById`
+- Vínculos: `LinkLeadToSector`, `UnlinkLeadFromSector`, `LinkOrganizationToSector`, `UnlinkOrganizationFromSector`
+- Rotas: `GET/POST /sectors`, `PATCH/DELETE /sectors/:id`, `POST/DELETE /leads/:id/sectors`, `POST/DELETE /organizations/:id/sectors`
+
+**ICP (Ideal Customer Profile)**
+- `ICP` entity (name, description, criteria) + `ICPLink` entity com 12 campos de categorização
+- VOs: `ICPFitStatus`, `PerceivedUrgency`, `BusinessMoment`
+- Use cases: `GetICPs`, `GetICPById`, `LinkLeadToICP`, `UpdateLeadICP`, `UnlinkLeadFromICP`, `LinkOrganizationToICP`, `UpdateOrganizationICP`, `UnlinkOrganizationFromICP`, `CopyLeadICPsToOrganization`
+- Rotas: `GET /icps`, `GET /icps/:id`, `POST/PATCH/DELETE /leads/:id/icps/:icpId`, `POST/PATCH/DELETE /organizations/:id/icps/:icpId`
+
+**Tech Profile (Lead + Organization)**
+- Sem entity nova — vínculos com tabelas existentes (TechProfileLanguage, TechProfileFramework, etc.)
+- Use cases por tipo: `AddTechProfileItem`, `RemoveTechProfileItem`, `GetTechProfile`
+- Cobre: languages, frameworks, hosting, databases, ERPs, CRMs, ecommerce
+- Rotas: `GET /leads/:id/tech-profile`, `POST/DELETE /leads/:id/tech-profile/{type}`, idem para `/organizations/:id/`
+
+**Deal Tech Stack**
+- Vínculos de Deal com TechCategory, TechLanguage (com `isPrimary`), TechFramework
+- Use cases: `AddDealTechItem`, `RemoveDealTechItem`, `GetDealTechStack`
+- Rotas: `GET /deals/:id/tech-stack`, `POST/DELETE /deals/:id/tech-stack/{type}`
+
+**Product Links**
+- Vínculos Lead/Org/Deal/Partner com Product + campos extras (interestLevel, estimatedValue, notes)
+- Deal products: soft-delete com `status` + `removedAt`
+- Use cases: `AddProductLink`, `UpdateProductLink`, `RemoveProductLink`, `GetProductLinks`
+- Rotas: `POST/PATCH/DELETE /leads/:id/products/:productId`, idem para orgs, deals, partners
+
+#### Padrão TDD
+Para cada subdomínio:
+1. VOs primeiro (nome, slug, status enums) com testes unitários
+2. Use cases com in-memory repo
+3. E2E cobrindo autenticação, happy path, validações, not found
+
+---
+
+### 🔲 M12 — Conversão de Lead, Cadências, Importação, Propostas, Operações
+**Status**: Pendente
+
+#### Contexto
+
+Fluxos de negócio mais complexos que envolvem transações, orquestração multi-entidade e lógica de automação.
+
+#### Subdomínios
+
+**Conversão de Lead → Organization**
+- Fluxo crítico: transação atômica que cria Org, migra LeadContacts → Contacts, copia tech profile, CNAEs, atualiza status do Lead
+- Use case: `ConvertLeadToOrganizationUseCase`
+  - Recebe `leadId`, `requesterId`, `requesterRole`
+  - Cria `Organization` a partir dos dados do `Lead`
+  - Para cada `LeadContact`: cria `Contact` com `sourceLeadContactId`
+  - Copia tech profile (7 tabelas) e CNAEs secundários
+  - Atualiza `Lead.status = "qualified"`, `Lead.convertedToOrganizationId`
+  - Tudo em `prisma.$transaction()`
+- Rota: `POST /leads/:id/convert`
+
+**Verificação de duplicatas de Lead**
+- Use case: `CheckLeadDuplicatesUseCase` (CNPJ, nome, telefone, email, endereço)
+- Rota: `POST /leads/check-duplicates`
+
+**Transferência para Operações**
+- Use case: `TransferToOperationsUseCase`, `RevertFromOperationsUseCase`
+- Aplica/remove `inOperationsAt` em Lead, Organization, Contact, Partner
+- Rota: `PATCH /operations/transfer`, `PATCH /operations/revert`
+
+**Disqualification Reasons**
+- `DisqualificationReason` entity (label + isDefault)
+- Use cases: `GetDisqualificationReasons` (merge defaults + custom do user), `CreateDisqualificationReason`
+- Rota: `GET /disqualification-reasons`, `POST /disqualification-reasons`
+
+**Cadências**
+- `Cadence` entity (name, slug, description, isPublished) + `CadenceStep` entity (type, order, subject, body, delayDays)
+- VOs: `CadenceSlug` (único por owner), `StepType` (call, email, whatsapp, task)
+- Use cases: `CreateCadence`, `UpdateCadence`, `DeleteCadence`, `PublishCadence`, `UnpublishCadence`, `GetCadences`, `GetCadenceById`
+- Use cases de steps: `CreateCadenceStep`, `UpdateCadenceStep`, `DeleteCadenceStep`, `ReorderCadenceSteps`
+- Aplicação: `ApplyCadenceToLeadUseCase` — gera automaticamente todas as Activities baseadas nos steps (com datas calculadas por `delayDays`)
+- `BulkApplyCadenceUseCase` — aplica para múltiplos leads
+- Controle: `PauseLeadCadenceUseCase`, `ResumeLeadCadenceUseCase`, `CancelLeadCadenceUseCase`
+- Rotas: `GET/POST /cadences`, `GET/PATCH/DELETE /cadences/:id`, `PATCH /cadences/:id/publish`, `PATCH /cadences/:id/unpublish`, `POST/PATCH/DELETE /cadences/:id/steps`, `PATCH /cadences/:id/steps/reorder`, `POST /leads/:id/cadences`, `POST /leads/cadences/bulk`, `PATCH /leads/:id/cadences/:cadenceId/pause`, `PATCH /leads/:id/cadences/:cadenceId/resume`, `DELETE /leads/:id/cadences/:cadenceId`
+
+**Importação de Leads**
+- Use case: `ImportLeadsUseCase` — batch create com mapeamento de colunas, deduplicação, retorna `ImportResult { created, duplicates, errors }`
+- Domain event: `LeadImportedEvent` (para eventual enriquecimento)
+- Rota: `POST /leads/import` (multipart/form-data ou JSON com rows + column mapping)
+
+**Propostas**
+- `Proposal` entity (title, status, value, driveFileId, driveWebViewLink, linkedTo: lead|deal)
+- VOs: `ProposalStatus` (draft, sent, accepted, rejected)
+- Use cases: `CreateProposal` (upload Drive se arquivo), `UpdateProposal`, `DeleteProposal`, `GetProposals`, `GetProposalStats`
+- Rota: `GET/POST /proposals`, `PATCH/DELETE /proposals/:id`, `GET /proposals/:id/file` (stream do Drive)
+
+**Renovações de Hosting**
+- Use case: `GetUpcomingRenewalsUseCase` (30 dias à frente), `CreateRenewalActivityUseCase`
+- Rota: `GET /hosting-renewals`, `POST /hosting-renewals/:organizationId/activity`
+
+#### Padrão TDD
+- `ConvertLeadToOrganizationUseCase`: in-memory repo com `$transaction` simulado — verificar que Lead e Org são criados, LeadContacts viram Contacts, tech profile é copiado
+- `ApplyCadenceToLeadUseCase`: verificar quantidade de activities geradas, datas corretas por delayDays, tipos corretos por step
+- `ImportLeadsUseCase`: testar batch com mix de válidos/duplicados/inválidos — verificar ImportResult
+
+---
+
+### 🔲 M13 — Notificações, Dashboard, Usuários, Reuniões, Funil
+**Status**: Pendente
+
+#### Contexto
+
+Funcionalidades transversais: sistema de notificações em tempo real, métricas do dashboard administrativo, gerenciamento de usuários e agendamento de reuniões.
+
+#### Subdomínios
+
+**Notificações**
+- `Notification` entity (type, title, summary, read, userId, jobId?)
+- Use cases: `GetNotificationsUseCase`, `MarkNotificationsReadUseCase` (por IDs ou todas)
+- `CreateNotificationUseCase` — usado internamente pelos domain event handlers
+- **SSE (Server-Sent Events)**: `NotificationsGateway` com `@Sse("/notifications/stream")`
+  - No NestJS o SSE é um endpoint que retorna `Observable<MessageEvent>`
+  - Substituir o EventBus in-memory do Next.js por `EventEmitter2` do `@nestjs/event-emitter`
+  - Cada user abre uma conexão SSE autenticada via JWT; o gateway mantém stream ativo com keepalive de 25s
+- Rotas: `GET /notifications`, `PATCH /notifications/read`, `GET /notifications/stream` (SSE)
+
+**Usuários**
+- `User` entity (já existe via AuthModule — expor endpoint de listagem)
+- Use cases: `GetUsersUseCase` (admin: todos; outro: apenas self), `RegisterUserUseCase` (já existe via `/auth/register`)
+- Rota: `GET /users`
+
+**Reuniões (Google Meet / Google Calendar)**
+- `Meeting` entity (title, scheduledAt, duration, googleEventId, googleMeetLink, status, linkedTo)
+- VOs: `MeetingStatus` (scheduled, ended, cancelled), `MeetingDuration`
+- Use cases: `ScheduleMeetingUseCase` (cria evento no Calendar + persiste), `UpdateMeetingUseCase`, `CancelMeetingUseCase` (cancela no Calendar), `GetMeetingsUseCase`
+- Port: `GoogleCalendarPort` (createEvent, updateEvent, cancelEvent, getEvent)
+- Rota: `GET/POST /meetings`, `PATCH/DELETE /meetings/:id`
+- Nota: domain events de Meeting são consumidos pelo módulo Google Meet (M10) para detecção de gravações
+
+**Dashboard Administrativo**
+- Sem entidade de domínio — read model puro (queries direto no Prisma)
+- Use cases: `GetManagerStatsUseCase` (métricas por usuário: leads criados/convertidos, deals por status/valor, atividades por tipo, mudanças de stage), `GetTimelineDataUseCase` (leads/deals por dia), `GetActivityCalendarUseCase` (heatmap de atividades do mês)
+- Rota: `GET /dashboard/stats`, `GET /dashboard/timeline`, `GET /dashboard/activity-calendar`
+
+**Funil de Vendas**
+- Sem entidade — read model com cálculos
+- Use cases: `GetFunnelStatsUseCase` (leads únicos, chamadas, conexões, decisores, reuniões, vendas), `GetWeeklyGoalsUseCase`, `UpsertWeeklyGoalUseCase`
+- `WeeklyGoal` entity (targetSales, week, ownerId)
+- Rota: `GET /funnel/stats`, `GET/POST /funnel/goals`
+
+#### Padrão TDD
+- `NotificationsGateway` SSE: testar com TestingModule que o stream emite após `EventEmitter2.emit()`
+- `GetManagerStatsUseCase`: in-memory com dados pré-populados, verificar totais e agrupamentos
+- `ScheduleMeetingUseCase`: mock do `GoogleCalendarPort`, verificar que evento é criado e Meeting é persistido
+
+---
+
+### 🔲 M14 — Remover Next.js Backend (Frontend Puro)
+**Status**: Pendente
+
+Pré-requisito: M10, M11, M12, M13 concluídos e validados em produção.
+
+#### O que remover
+
+```
+src/actions/           → tudo (exceto server actions de auth do NextAuth)
+src/app/api/goto/      → GoTo webhooks e OAuth
+src/app/api/evolution/ → WhatsApp webhook
+src/app/api/google/    → Gmail, Drive, Meet, Calendar
+src/app/api/track/     → Email tracking
+src/app/api/webhooks/  → Lead research
+src/app/api/icps/      → ICPs
+src/app/api/funnel/    → Funil
+src/app/api/proposals/ → Propostas
+src/app/api/notifications/ → Notificações + SSE
+src/app/api/register/  → Registro (já no NestJS)
+src/lib/goto/          → GoTo client e utils
+src/lib/evolution/     → Evolution client e utils
+src/lib/google/        → Gmail, Drive, Calendar, Meet
+src/lib/transcriptor.ts
+src/lib/email-tracking.ts
+src/lib/event-bus.ts
+src/lib/funnel/
+src/lib/internal-auth.ts
+src/lib/backend/client.ts
+```
+
+#### O que fica no Next.js
+```
+src/app/(auth)/        → Login UI
+src/app/(dashboard)/   → Páginas (client components + React Query)
+src/components/        → Componentes React
+src/hooks/             → React Query hooks chamando NestJS
+src/lib/utils.ts, lists/, validations/  → Utilitários de UI
+```
+
+#### Critério de conclusão
+- Zero imports de `prisma` no Next.js
+- Zero `"use server"` fora de `src/app/api/auth/`
+- Zero chamadas a serviços externos (GoTo, Evolution, Gmail, Drive, S3) no Next.js
+- Todos os dados chegam via `apiFetch()` → NestJS
 
 ---
 
 ## Checklist por Fase
 
-Para cada fase M2–M9, seguir esta ordem:
+### M1–M9 (padrão legado — mantido como está)
+- [ ] Entidade → Repository abstract → Use cases → PrismaRepository → Mapper → Controller → Module
+- [ ] Testes unitários dos use cases
+- [ ] Testes e2e com todos os campos
+- [ ] Hooks React Query + remoção de server actions
+- [ ] Deploy + validação nos logs
 
-- [ ] Criar entidade de domínio (`/backend/src/domain/{entity}/enterprise/entities/`)
-- [ ] Criar repository abstract (`application/repositories/`)
-- [ ] Criar use cases (`application/use-cases/`) — um arquivo por use case
-- [ ] Criar PrismaRepository (`infra/database/prisma/repositories/`)
-- [ ] Criar mapper (`infra/database/prisma/mappers/`) — atenção a campos JSON e DateTime
-- [ ] Criar controller (`infra/controllers/`) com Swagger decorators
-- [ ] Registrar no module correspondente
-- [ ] Testes unitários dos use cases (mocks do repository)
-- [ ] Testes e2e com **todos os campos** (incluindo opcionais, JSON, datas)
-- [ ] Converter páginas Next.js para client components com hooks React Query
-- [ ] Remover mutations de `src/actions/{entity}.ts`
+### M10 em diante (padrão DDD obrigatório)
+
+#### 1. Value Objects (TDD primeiro)
+- [ ] Identificar campos com regras de formato/negócio no subdomínio
+- [ ] Escrever testes do VO antes de implementar (`label-name.spec.ts`)
+- [ ] Implementar VO retornando `Either<Error, VO>` — nunca lança exceção
+- [ ] Verde no teste antes de avançar
+
+#### 2. Entidade
+- [ ] Escrever testes de comportamento (métodos `update()`, `toggle()`, etc.)
+- [ ] Implementar entidade usando VOs internamente
+- [ ] Entidade estende `AggregateRoot` — adicionar domain events quando relevante
+
+#### 3. Repository Abstract
+- [ ] Definir interface com métodos mínimos necessários
+- [ ] Criar `InMemoryRepository` em `test/unit/` implementando a interface
+
+#### 4. Use Cases (TDD com in-memory)
+- [ ] Para cada use case: escrever todos os testes antes de implementar
+  - Testar caminho feliz
+  - Testar cada VO inválido (retorna `left`)
+  - Testar cada invariante de domínio (duplicata, not found, permissão)
+- [ ] Implementar use case (controller não valida nada — tudo aqui ou no VO)
+- [ ] Todos os testes unitários verdes
+
+#### 5. Prisma Repository + Mapper
+- [ ] Implementar `PrismaRepository` seguindo a interface
+- [ ] Mapper com atenção a: campos JSON (`JSON.stringify`), DateTime (`new Date()`), campos opcionais
+
+#### 6. Controller (somente HTTP)
+- [ ] Extrair dados do request
+- [ ] Converter tipos primitivos (`string → Date`, parse numéricos)
+- [ ] Chamar use case, mapear resultado
+- [ ] **Zero lógica de negócio** — se sentiu vontade de escrever um `if` de regra, mova para VO ou use case
+- [ ] Adicionar decorators Swagger
+
+#### 7. Module + Registro
+- [ ] Registrar use cases, repository e controller no module
+- [ ] Importar no `AppModule`
+
+#### 8. Testes E2E
+- [ ] Testar `401` sem token
+- [ ] Testar happy path com **todos os campos** (incluindo opcionais)
+- [ ] Testar validações → `422`
+- [ ] Testar not found → `404`
+- [ ] Testar regras de permissão (admin vs não-admin quando aplicável)
+
+#### 9. Frontend + Deploy
+- [ ] Criar hooks React Query em `src/hooks/{entity}/`
+- [ ] Migrar componentes para usar hooks (remover server action)
 - [ ] `git push`
-- [ ] Deploy backend: `ansible-playbook deploy-backend.yml`
-- [ ] Deploy frontend: `ansible-playbook quick-deploy.yml`
-- [ ] Validar nos logs do Nginx: POST 201, PATCH 200, DELETE 204 — confirmar que passa pelo NestJS
-- [ ] Testar manualmente no browser: criar, atualizar, deletar
+- [ ] `ansible-playbook deploy-backend.yml` (se houver migration)
+- [ ] `ansible-playbook quick-deploy.yml`
+- [ ] Validar nos logs do Nginx que as rotas passam pelo NestJS
+- [ ] Testar manualmente no browser
 
 ---
 
