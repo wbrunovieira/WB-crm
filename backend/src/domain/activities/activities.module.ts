@@ -32,5 +32,6 @@ import { ActivitiesController } from "@/infra/controllers/activities.controller"
     LinkActivityToDealUseCase,
     UnlinkActivityFromDealUseCase,
   ],
+  exports: [ActivitiesRepository],
 })
 export class ActivitiesModule {}

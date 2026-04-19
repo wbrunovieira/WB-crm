@@ -127,6 +127,13 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
     return this.items.find((a) => a.id.toString() === id) ?? null;
   }
 
+  async findFirst(where: { gotoCallId?: string }): Promise<Activity | null> {
+    if (where.gotoCallId) {
+      return this.items.find((a) => a.gotoCallId === where.gotoCallId) ?? null;
+    }
+    return null;
+  }
+
   async save(activity: Activity): Promise<void> {
     const idx = this.items.findIndex((a) => a.id.equals(activity.id));
     if (idx >= 0) this.items[idx] = activity;

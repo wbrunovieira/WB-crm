@@ -261,6 +261,12 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     return ActivityMapper.toDomain(row);
   }
 
+  async findFirst(where: { gotoCallId?: string }): Promise<Activity | null> {
+    const row = await this.prisma.activity.findFirst({ where });
+    if (!row) return null;
+    return ActivityMapper.toDomain(row);
+  }
+
   async save(activity: Activity): Promise<void> {
     const data = ActivityMapper.toPrisma(activity);
     await this.prisma.activity.upsert({
