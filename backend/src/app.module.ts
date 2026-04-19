@@ -13,9 +13,10 @@ import { PipelinesModule } from "./domain/pipelines/pipelines.module";
 import { AdminModule } from "./domain/admin/admin.module";
 import { SharedEntitiesModule } from "./domain/shared-entities/shared-entities.module";
 import { GoToModule } from "./domain/integrations/goto/goto.module";
+import { WhatsAppModule } from "./domain/integrations/whatsapp/whatsapp.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule],
+  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule],
   controllers: [HealthController],
   providers: [],
 })
