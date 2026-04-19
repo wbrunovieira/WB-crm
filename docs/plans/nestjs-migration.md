@@ -624,160 +624,165 @@ if (requesterRole !== "admin" && row.ownerId !== requesterId) {
 
 ---
 
-### 🔲 M10 — Integrações & Automações
-**Status**: Pendente
-
-#### Contexto
-
-Todas as automações do CRM estão hoje implementadas no Next.js (server actions + API routes). Precisam ser migradas para o NestJS seguindo DDD, com domain events reais, ports/adapters para serviços externos e controllers públicos (sem JWT) para webhooks.
+### 🔄 M10 — Integrações & Automações
+**Status**: Em andamento — GoTo ✅ | WhatsApp 🔲 | Email 🔲 | Meet 🔲
 
 #### Automações mapeadas no Next.js
 
-| Integração | Arquivo atual (Next.js) | Tipo |
-|---|---|---|
-| GoTo webhook receiver | `api/goto/webhook/route.ts` | Webhook público |
-| GoTo recordings + S3 + Transcriber | `api/goto/check-recordings/route.ts` | Cron 15min |
-| GoTo OAuth callback | `api/goto/callback/route.ts` | OAuth flow |
-| GoTo token manager (auto-refresh) | `lib/goto/token-manager.ts` | Serviço |
-| GoTo call activity creator | `lib/goto/call-activity-creator.ts` | Use case |
-| GoTo phone number matcher | `lib/goto/number-matcher.ts` | Serviço |
-| GoTo S3 recording finder | `lib/goto/s3-recording.ts` | Adapter |
-| GoTo call report syncer | `lib/goto/call-report-syncer.ts` | Use case |
-| WhatsApp webhook receiver | `api/evolution/webhook/route.ts` | Webhook público |
-| WhatsApp transcription cron | `api/evolution/check-transcriptions/route.ts` | Cron 5min |
-| WhatsApp media (Drive + Transcriber) | `lib/evolution/media-handler.ts` | Handler |
-| WhatsApp message activity creator | `lib/evolution/message-activity-creator.ts` | Use case |
-| WhatsApp phone matcher | `lib/evolution/number-matcher.ts` | Serviço |
-| WhatsApp send (server action) | `actions/whatsapp.ts` | Mutação |
-| Evolution API client | `lib/evolution/client.ts` | Adapter |
-| Gmail poll cron | `api/google/gmail-poll/route.ts` | Cron 5min |
-| Gmail email activity creator | `lib/google/email-activity-creator.ts` | Use case |
-| Gmail poller (History API) | `lib/google/gmail-poller.ts` | Adapter |
-| Gmail send + tracking inject | `actions/gmail.ts` | Mutação |
-| Email tracking open pixel | `api/track/open/[token]/route.ts` | Endpoint público |
-| Email tracking click redirect | `api/track/click/[token]/route.ts` | Endpoint público |
-| Email tracking logic | `lib/email-tracking.ts` | Serviço |
-| Google Meet recordings (3 passes) | `api/google/check-recordings/route.ts` | Cron 15min |
-| Meet transcription cron | `api/google/check-transcriptions/route.ts` | Cron 5min |
-| Meet recording detector | `lib/google/recording-detector.ts` | Adapter |
-| WB-Transcriber client | `lib/transcriptor.ts` | Adapter (compartilhado) |
-| Google Drive client | `lib/google/drive.ts` | Adapter (compartilhado) |
-| Gmail client | `lib/google/gmail.ts` | Adapter |
-| Google OAuth callback | `api/google/callback/route.ts` | OAuth flow |
-| Lead research webhook | `api/webhooks/lead-research/route.ts` | Webhook público |
+| Integração | Arquivo atual (Next.js) | NestJS | Tipo |
+|---|---|---|---|
+| GoTo webhook receiver | `api/goto/webhook/route.ts` | ✅ `GoToWebhookController` | Webhook público |
+| GoTo recordings + S3 + Transcriber | `api/goto/check-recordings/route.ts` | ✅ `GoToRecordingCronService` | Cron 15min |
+| GoTo token manager (auto-refresh) | `lib/goto/token-manager.ts` | ✅ `GoToTokenService` (Prisma) | Serviço |
+| GoTo call activity creator | `lib/goto/call-activity-creator.ts` | ✅ `CreateCallActivityUseCase` | Use case |
+| GoTo phone number matcher | `lib/goto/number-matcher.ts` | ✅ `PhoneMatcherService` (shared) | Serviço |
+| GoTo S3 recording finder | `lib/goto/s3-recording.ts` | ✅ `S3RecordingClient` | Adapter |
+| GoTo call report syncer | `lib/goto/call-report-syncer.ts` | ✅ `GoToApiClient` + cron | Use case |
+| WB-Transcriber client | `lib/transcriptor.ts` | ✅ `TranscriberService` (shared) | Adapter |
+| WhatsApp webhook receiver | `api/evolution/webhook/route.ts` | 🔲 | Webhook público |
+| WhatsApp transcription cron | `api/evolution/check-transcriptions/route.ts` | 🔲 | Cron 5min |
+| WhatsApp media (Drive + Transcriber) | `lib/evolution/media-handler.ts` | 🔲 | Handler |
+| WhatsApp message activity creator | `lib/evolution/message-activity-creator.ts` | 🔲 | Use case |
+| WhatsApp send (server action) | `actions/whatsapp.ts` | 🔲 | Mutação |
+| Evolution API client | `lib/evolution/client.ts` | 🔲 | Adapter |
+| Gmail poll cron | `api/google/gmail-poll/route.ts` | 🔲 | Cron 5min |
+| Gmail email activity creator | `lib/google/email-activity-creator.ts` | 🔲 | Use case |
+| Gmail poller (History API) | `lib/google/gmail-poller.ts` | 🔲 | Adapter |
+| Gmail send + tracking inject | `actions/gmail.ts` | 🔲 | Mutação |
+| Email tracking open pixel | `api/track/open/[token]/route.ts` | 🔲 | Endpoint público |
+| Email tracking click redirect | `api/track/click/[token]/route.ts` | 🔲 | Endpoint público |
+| Email tracking logic | `lib/email-tracking.ts` | 🔲 | Serviço |
+| Google Meet recordings (3 passes) | `api/google/check-recordings/route.ts` | 🔲 | Cron 15min |
+| Meet transcription cron | `api/google/check-transcriptions/route.ts` | 🔲 | Cron 5min |
+| Meet recording detector | `lib/google/recording-detector.ts` | 🔲 | Adapter |
+| Google Drive client | `lib/google/drive.ts` | 🔲 `GoogleDriveService` (shared) | Adapter |
+| Gmail client | `lib/google/gmail.ts` | 🔲 | Adapter |
+| Google OAuth callback | `api/google/callback/route.ts` | 🔲 | OAuth flow |
+| GoTo OAuth callback | `api/goto/callback/route.ts` | 🔲 | OAuth flow |
+| Lead research webhook | `api/webhooks/lead-research/route.ts` | 🔲 | Webhook público |
 
-#### Arquitetura NestJS proposta
+#### M10.1 — GoTo Connect ✅ Completo em 2026-04-19
 
-Quatro novos módulos de domínio dentro de `domain/integrations/`:
-
-```
-backend/src/domain/integrations/
-├── goto/            ← chamadas GoTo (webhook, cron, S3, Transcriber)
-├── whatsapp/        ← Evolution API (receber, enviar, mídia, transcrição)
-├── email/           ← Gmail (poll, enviar, tracking)
-└── meet/            ← Google Meet (gravações, transcrição)
-```
-
-Serviços compartilhados (novos):
-```
-backend/src/infra/shared/
-├── transcriber/
-│   └── transcriber.service.ts      ← WB-Transcriber client unificado
-├── drive/
-│   └── google-drive.service.ts     ← Google Drive upload/folder
-└── phone-matcher/
-    └── phone-matcher.service.ts    ← number-matcher unificado (GoTo + WhatsApp usam o mesmo)
-```
-
-#### Estrutura de cada módulo (exemplo: GoTo)
+**Arquitetura implementada:**
 
 ```
-domain/integrations/goto/
-├── enterprise/
-│   └── events/
-│       ├── goto-call-received.event.ts
-│       └── goto-recording-ready.event.ts
+backend/src/domain/integrations/goto/
+├── enterprise/value-objects/
+│   ├── call-outcome.vo.ts     ← ISDN Q.850 + voicemail heurístic (< 15s)
+│   └── call-duration.vo.ts    ← não-negativo + format()
 ├── application/
 │   ├── ports/
-│   │   ├── goto-api.port.ts         ← interface para GoTo Connect API
-│   │   └── s3-storage.port.ts       ← interface para AWS S3
-│   ├── use-cases/
-│   │   ├── handle-goto-webhook.use-case.ts
-│   │   ├── create-call-activity.use-case.ts
-│   │   ├── process-call-recording.use-case.ts
-│   │   └── sync-call-reports.use-case.ts
-│   └── handlers/
-│       └── goto-recording-ready.handler.ts  ← dispara ao domain event
+│   │   ├── goto-api.port.ts   ← fetchCallReport, fetchReportsSince, refreshToken
+│   │   ├── goto-token.port.ts ← getValidAccessToken
+│   │   └── s3-storage.port.ts ← findRecordingKey, findSiblingKey, download
+│   └── use-cases/
+│       ├── handle-goto-webhook.use-case.ts    ← ignora não-REPORT_SUMMARY; nunca 500
+│       ├── create-call-activity.use-case.ts   ← idempotência, phone match, recording só se atendida
+│       ├── process-call-recording.use-case.ts ← S3 dual-track → Transcriber
+│       └── poll-call-transcriptions.use-case.ts ← interleave por timestamp + speaker
 └── infra/
-    ├── controllers/
-    │   ├── goto-webhook.controller.ts   ← público (sem JWT), valida secret
-    │   └── goto-oauth.controller.ts     ← OAuth callback
-    ├── scheduled/
-    │   └── goto-recording-cron.service.ts  ← @Cron("*/15 * * * *")
-    ├── goto-api.client.ts               ← implementa GoToApiPort
-    └── s3-recording.client.ts           ← implementa S3StoragePort
+    ├── controllers/goto-webhook.controller.ts ← POST /webhooks/goto/calls (sem JWT)
+    ├── scheduled/goto-recording-cron.service.ts ← @Cron("*/15 * * * *")
+    ├── goto-api.client.ts     ← GoToApiPort impl (paginação, Bearer token)
+    ├── goto-token.service.ts  ← GoToTokenPort impl (IntegrationToken no Prisma)
+    └── s3-recording.client.ts ← S3StoragePort impl (ListObjectsV2, sibling detection)
+
+backend/src/infra/shared/              ← @Global() — disponível em todos os módulos
+├── transcriber/
+│   ├── transcriber.port.ts    ← submitAudio, submitVideo, getStatus, getResult
+│   └── transcriber.service.ts ← HTTP client para WB-Transcriber
+├── phone-matcher/
+│   └── phone-matcher.service.ts ← regexp_replace PostgreSQL, variações de DDD/DDI
+└── shared-infra.module.ts
 ```
 
-#### Domain Events — finalmente usados
+**Decisões arquiteturais:**
+- `GoToTokenService` usa tabela `IntegrationToken` no Prisma — elimina o hack `sed` no `.env` do Next.js
+- `PhoneMatcherService` unificado no `SharedInfraModule` — antes havia cópia em GoTo e cópia em Evolution
+- `GoToWebhookController` sem `JwtAuthGuard` — valida `?secret=GOTO_WEBHOOK_SECRET`, trata ping por user-agent
+- Webhook nunca retorna 500 — captura qualquer erro interno, loga e retorna 200 (evita retry loops do GoTo)
+- `PollCallTranscriptionsUseCase` interleave de segmentos por timestamp, adiciona `speaker: "agent" | "client"` e `speakerName` do banco
 
-```
-GoTo webhook recebido (POST /webhooks/goto/call-ended)
-  → HandleGotoWebhookUseCase
-    → CreateCallActivityUseCase
-      → Activity.create() + activity.addEvent(GotoCallReceivedEvent)
-    → activityRepo.save()
-      → DomainEvents.dispatchEventsForAggregate(activity.id)
-        → GotoCallReceivedHandler → ProcessCallRecordingUseCase (S3 → Transcriber)
-```
+**Testes:** 52 unit tests + 5 e2e tests — 386 total passando ✅
 
-#### GoTo token manager — migração do `.env`
-
-Hoje persiste `access_token` + `refresh_token` no `.env` via `sed` (frágil). No NestJS:
-- Nova tabela Prisma `IntegrationToken { provider, accessToken, refreshToken, expiresAt }`
-- `GoToTokenService` injectable — auto-refresh, lê/salva no banco
-
-#### Controllers públicos (sem JWT)
-
-Webhooks externos não podem ter `JwtAuthGuard`. Validação por secret:
-```typescript
-// GoTo: ?secret=GOTO_WEBHOOK_SECRET (query param)
-// Evolution: X-Webhook-Secret header
-// Tracking pixels/clicks: sem auth (públicos por natureza)
-// Lead research: X-Internal-Api-Key header
+**Variáveis de ambiente necessárias:**
+```env
+GOTO_CLIENT_ID, GOTO_CLIENT_SECRET
+GOTO_WEBHOOK_SECRET
+GOTO_ACCOUNT_KEY, GOTO_DEFAULT_OWNER_ID
+AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_GOTO_BUCKET
+TRANSCRIPTOR_BASE_URL, TRANSCRIPTOR_API_KEY
 ```
 
-#### Ordem de migração sugerida
+#### M10.2 — WhatsApp (Evolution API) 🔲 Pendente
 
-1. **Shared infrastructure** — `PhoneMatcherService`, `TranscriberService`, `GoogleDriveService`, `GoToTokenService` (com Prisma)
-2. **GoTo module** — webhook controller (sem JWT) + cron recordings (maior prioridade — flow de chamadas)
-3. **WhatsApp module** — webhook + send + media + cron transcrições
-4. **Email module** — Gmail poll + send + tracking endpoints públicos
-5. **Google Meet module** — cron gravações (3 passes) + cron transcrições
-6. **Lead research webhook** — endpoint público para callback de pesquisa
+**O que migrar do Next.js:**
+- `api/evolution/webhook/route.ts` → `WhatsAppWebhookController` (sem JWT, valida `X-Webhook-Secret`)
+- `lib/evolution/message-activity-creator.ts` → `ProcessWhatsAppMessageUseCase`
+  - Sessões de 2h (agrupa mensagens na mesma Activity)
+  - Idempotência por messageId
+  - Cria Notification em nova sessão
+- `lib/evolution/media-handler.ts` → `ProcessWhatsAppMediaUseCase`
+  - Download de mídia da Evolution API → Drive → Transcriber
+- `api/evolution/check-transcriptions/route.ts` → `@Cron("*/5 * * * *")`
+- `actions/whatsapp.ts` → `POST /whatsapp/send` + `SendWhatsAppMessageUseCase`
 
-#### Variáveis de ambiente necessárias no NestJS
+**VOs a criar:** `WhatsAppSessionWindow` (2h), `MessageType` (text, audio, video, image, document)
+
+**Port a criar:** `EvolutionApiPort` (sendText, sendMedia, downloadMedia, checkNumber)
+
+#### M10.3 — Email (Gmail) 🔲 Pendente
+
+**O que migrar do Next.js:**
+- `api/google/gmail-poll/route.ts` → `@Cron("*/5 * * * *")` com Gmail History API
+- `lib/google/email-activity-creator.ts` → `ProcessIncomingEmailUseCase`
+  - Idempotência por emailMessageId
+  - Match por endereço de email (Contact → LeadContact → Lead → Organization)
+- `actions/gmail.ts` → `POST /email/send` + `SendEmailUseCase`
+  - Injeção de tracking pixel + links
+- `api/track/open/[token]/route.ts` → `GET /track/open/:token` (público, sem JWT)
+- `api/track/click/[token]/route.ts` → `GET /track/click/:token` (público, sem JWT, redirect)
+- `lib/email-tracking.ts` → `EmailTrackingService` (filtra Apple MPP, Gmail proxy)
+
+**VOs a criar:** `EmailTrackingToken`, `TrackingType` (open, click)
+
+**Port a criar:** `GmailPort` (send, pollHistory, getProfile), `GoogleOAuthPort` (token refresh)
+
+#### M10.4 — Google Meet 🔲 Pendente
+
+**O que migrar do Next.js:**
+- `api/google/check-recordings/route.ts` → `@Cron("*/15 * * * *")` com 3 passes
+  - Pass 0: Drive-first (lista "Meet Recordings" folder, last 6h)
+  - Pass 1: time-based fallback (reuniões cujo horário passou + 30min)
+  - Pass 2: retry pendentes (Google pode demorar >15min para processar)
+- `lib/google/recording-detector.ts` → `MeetRecordingDetectorService`
+- `api/google/check-transcriptions/route.ts` → `@Cron("*/5 * * * *")`
+
+**Port a criar:** `GoogleDrivePort` (listFiles, downloadFile, moveFile, exportDoc), `GoogleCalendarPort` (getEvent, createEvent, updateEvent)
+
+#### M10.5 — Lead Research Webhook 🔲 Pendente
+
+- `api/webhooks/lead-research/route.ts` → `POST /webhooks/lead-research` (sem JWT, valida `X-Internal-Api-Key`)
+- `CreateLeadResearchNotificationUseCase` — cria Notification de conclusão/erro da pesquisa
+
+#### Variáveis de ambiente completas (M10)
 
 ```env
-# GoTo
+# GoTo (✅ já configurado)
 GOTO_CLIENT_ID, GOTO_CLIENT_SECRET, GOTO_WEBHOOK_SECRET
 GOTO_ACCOUNT_KEY, GOTO_DEFAULT_OWNER_ID
-# GoTo tokens → migrar para banco (IntegrationToken)
+AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_GOTO_BUCKET
+TRANSCRIPTOR_BASE_URL, TRANSCRIPTOR_API_KEY
 
 # Evolution (WhatsApp)
 EVOLUTION_API_URL, EVOLUTION_API_KEY, EVOLUTION_INSTANCE
 EVOLUTION_WEBHOOK_SECRET, EVOLUTION_OWNER_ID
 
-# Google
+# Google (OAuth + Gmail + Drive + Meet)
 GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REDIRECT_URI
 
-# WB-Transcriber
-TRANSCRIPTOR_BASE_URL, TRANSCRIPTOR_API_KEY
-
-# AWS S3 (GoTo recordings)
-AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_GOTO_BUCKET
-
-# Cron security
-CRON_SECRET
+# Segurança
+CRON_SECRET, INTERNAL_API_KEY
 ```
 
 ---
