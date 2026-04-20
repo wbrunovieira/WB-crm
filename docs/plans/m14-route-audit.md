@@ -389,7 +389,7 @@ Usuário clica "Conectar Google"
 | ✅ | Deals | `PATCH /deals/stage-history/:historyId` | Atualizar data de stage history |
 | ✅ | Leads | Paginação em `GET /leads` | Retornar `{ leads, total, page, pageSize }` |
 | ✅ | Leads | `POST /leads` com `contacts[]` | Criar lead + contatos em um request |
-| Média | Cadences | `POST /cadences/bulk-apply` | Aplicar cadência a múltiplos leads |
+| ✅ | Cadences | `POST /cadences/bulk-apply` | Aplicar cadência a múltiplos leads |
 | ✅ | Cadences | `GET /cadences/:id/lead-count` | Contar active lead cadences |
 | ✅ | Cadences | `GET /cadences?icpId=` | Filtrar cadências por ICP |
 | ✅ | Admin | `GET /admin/business-lines/:id` | Buscar business line por ID |
@@ -411,15 +411,15 @@ Usuário clica "Conectar Google"
 | `GET /dashboard/stats` | Shape diferente do `getManagerStats` | Alinhar com o que o frontend espera |
 | ✅ `DELETE /meetings/:id` | Action usa PATCH para cancelar; backend usa DELETE | `PATCH /meetings/:id/cancel` adicionado como alias |
 
-### ❌ OAuth de integrações — migrar para NestJS (bloqueiam M14)
+### ✅ OAuth de integrações — migrado para NestJS
 
-| Prioridade | Domínio | Rota NestJS alvo | Descrição |
+| Status | Domínio | Rota NestJS | Descrição |
 |---|---|---|---|
-| Alta | Google OAuth | `GET /auth/google` | Iniciar OAuth Google (`passport-google-oauth20`) |
-| Alta | Google OAuth | `GET /auth/google/callback` | Callback — salvar tokens, redirecionar frontend |
-| Alta | Google OAuth | `POST /auth/google/disconnect` | Remover tokens do User no banco |
-| Alta | GoTo OAuth | `GET /auth/goto` | Iniciar OAuth GoTo (`passport-oauth2`) |
-| Alta | GoTo OAuth | `GET /auth/goto/callback` | Callback — salvar tokens, redirecionar frontend |
+| ✅ | Google OAuth | `GET /auth/google` | Inicia OAuth Google — redireciona para consentimento |
+| ✅ | Google OAuth | `GET /auth/google/callback` | Callback — salva tokens via `StoreGoogleTokensUseCase` |
+| ✅ | Google OAuth | `POST /auth/google/disconnect` | Remove tokens via `DisconnectGoogleUseCase` |
+| ✅ | GoTo OAuth | `GET /auth/goto` | Inicia OAuth GoTo — redireciona para consentimento |
+| ✅ | GoTo OAuth | `GET /auth/goto/callback` | Callback — persiste tokens via `StoreGoToTokensUseCase` |
 
 ### 🚫 Permanece no Next.js (não migrar)
 
