@@ -346,17 +346,36 @@
 
 ## INTEGRATIONS (Google OAuth, GoTo, Lead Research)
 
-| Ação / API Route | Status | Observação |
-|---|---|---|
-| `GET/POST /api/google/auth` | 🚫 | OAuth flow — permanecer no Next.js |
-| `GET /api/google/callback` | 🚫 | OAuth callback — permanecer no Next.js |
-| `POST /api/google/disconnect` | 🚫 | Desconectar Google — permanecer no Next.js |
-| `GET /api/goto/callback` | 🚫 | GoTo OAuth callback — permanecer no Next.js |
-| `POST /api/goto/webhook` | ✅ | `POST /webhooks/goto/calls` no backend |
-| `POST /api/webhooks/lead-research` | ✅ | `POST /webhooks/lead-research` no backend |
-| `GET /api/auth/[...nextauth]` | 🚫 | NextAuth — não migrar |
-| `POST /api/register` | ✅ | `POST /auth/register` no backend |
-| External projects | 🚫 | Sistema externo — permanecer no Next.js |
+| Ação / API Route | Status | Rota NestJS alvo | Observação |
+|---|---|---|---|
+| `GET/POST /api/google/auth` | ❌ Migrar | `GET /auth/google` | Inicia OAuth — NestJS redireciona para Google via `@nestjs/passport` + `passport-google-oauth20` |
+| `GET /api/google/callback` | ❌ Migrar | `GET /auth/google/callback` | Recebe code, troca por tokens, salva no banco, redireciona para frontend |
+| `POST /api/google/disconnect` | ❌ Migrar | `POST /auth/google/disconnect` | Remove tokens do banco |
+| `GET /api/goto/callback` | ❌ Migrar | `GET /auth/goto/callback` | Recebe code do GoTo, troca por tokens, salva no banco, redireciona para frontend |
+| `GET /api/goto/auth` (se existir) | ❌ Migrar | `GET /auth/goto` | Inicia OAuth GoTo via `passport-oauth2` |
+| `POST /api/goto/webhook` | ✅ | `POST /webhooks/goto/calls` | Já migrado |
+| `POST /api/webhooks/lead-research` | ✅ | `POST /webhooks/lead-research` | Já migrado |
+| `GET /api/auth/[...nextauth]` | 🚫 Fica | — | Gerencia sessão JWT do usuário no CRM — coexiste com NestJS (são contextos distintos) |
+| `POST /api/register` | ✅ | `POST /auth/register` | Já migrado |
+| External projects | 🚫 Fica | — | Sistema externo separado — não há backend próprio para migrar |
+
+**Por que Google OAuth e GoTo OAuth devem migrar:**
+
+Os tokens OAuth (accessToken, refreshToken) dessas integrações são lidos diretamente pelo NestJS para operar Gmail, Google Drive, Google Meet e GoTo recordings. Se o M14 remove o backend Next.js e esses tokens ainda são obtidos por rotas Next.js, o fluxo de autenticação das integrações fica quebrado no primeiro re-login. Além disso, manter rotas em `/api/google/` impede a remoção completa do `src/app/api/` exigida pelo M14.
+
+**Fluxo após migração (exemplo Google):**
+```
+Usuário clica "Conectar Google"
+→ Frontend redireciona para  GET  https://api.wbdigitalsolutions.com/auth/google
+→ NestJS (Passport) redireciona para accounts.google.com
+→ Google redireciona para   GET  https://api.wbdigitalsolutions.com/auth/google/callback
+→ NestJS salva tokens no User do banco
+→ NestJS redireciona para   https://crm.wbdigitalsolutions.com/settings?connected=google
+```
+
+**Distinção importante — NextAuth vs OAuth de integrações:**
+- **NextAuth** (`/api/auth/[...]`) — autentica o *usuário* no CRM com email/senha. Usa JWT de sessão. Fica no Next.js.
+- **Google/GoTo OAuth** — autentica as *integrações* (acesso à caixa Gmail, ao Drive, ao GoTo). Tokens são de serviço, não de sessão do usuário. Devem ir para o NestJS.
 
 ---
 
@@ -411,10 +430,18 @@
 | `GET /dashboard/stats` | Shape diferente do `getManagerStats` | Alinhar com o que o frontend espera |
 | `DELETE /meetings/:id` | Action usa PATCH para cancelar; backend usa DELETE | Normalizar para `PATCH /meetings/:id/cancel` OU aceitar ambos |
 
+### ❌ OAuth de integrações — migrar para NestJS (bloqueiam M14)
+
+| Prioridade | Domínio | Rota NestJS alvo | Descrição |
+|---|---|---|---|
+| Alta | Google OAuth | `GET /auth/google` | Iniciar OAuth Google (`passport-google-oauth20`) |
+| Alta | Google OAuth | `GET /auth/google/callback` | Callback — salvar tokens, redirecionar frontend |
+| Alta | Google OAuth | `POST /auth/google/disconnect` | Remover tokens do User no banco |
+| Alta | GoTo OAuth | `GET /auth/goto` | Iniciar OAuth GoTo (`passport-oauth2`) |
+| Alta | GoTo OAuth | `GET /auth/goto/callback` | Callback — salvar tokens, redirecionar frontend |
+
 ### 🚫 Permanece no Next.js (não migrar)
 
-- Google OAuth (`/api/google/auth`, `/api/google/callback`, `/api/google/disconnect`)
-- GoTo OAuth callback (`/api/goto/callback`)
-- NextAuth (`/api/auth/[...nextauth]`)
-- External projects (sistema separado)
+- **NextAuth** (`/api/auth/[...nextauth]`) — sessão JWT do usuário no CRM
+- **External projects** — sistema externo separado, sem backend próprio a migrar
 - `POST /api/notifications` (criação interna — não é rota pública)
