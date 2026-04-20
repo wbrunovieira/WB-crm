@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 import { ICP } from "../../enterprise/entities/icp";
-import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord } from "../repositories/icp.repository";
+import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord, ICPVersionRecord } from "../repositories/icp.repository";
 
 export class ICPNotFoundError extends Error { name = "ICPNotFoundError"; }
 export class DuplicateICPError extends Error { name = "DuplicateICPError"; }
@@ -13,8 +13,9 @@ export class ICPForbiddenError extends Error { name = "ICPForbiddenError"; }
 export class GetICPsUseCase {
   constructor(private readonly repo: ICPRepository) {}
 
-  async execute(ownerId: string): Promise<Either<never, { icps: ICP[] }>> {
-    const icps = await this.repo.findByOwner(ownerId);
+  async execute(ownerId: string, status?: string): Promise<Either<never, { icps: ICP[] }>> {
+    const all = await this.repo.findByOwner(ownerId);
+    const icps = status ? all.filter((icp) => icp.statusValue === status) : all;
     return right({ icps });
   }
 }
@@ -205,5 +206,53 @@ export class UnlinkOrganizationFromICPUseCase {
     if (icp.ownerId !== requesterId) return left(new ICPForbiddenError("Acesso negado ao ICP"));
     await this.repo.unlinkFromOrganization(icpId, organizationId);
     return right(undefined);
+  }
+}
+
+// ── ICP Versions ──────────────────────────────────────────────────────────────
+
+export class ICPVersionNotFoundError extends Error { name = "ICPVersionNotFoundError"; }
+
+@Injectable()
+export class GetICPVersionsUseCase {
+  constructor(private readonly repo: ICPRepository) {}
+
+  async execute(icpId: string, requesterId: string): Promise<Either<ICPNotFoundError | ICPForbiddenError, { versions: ICPVersionRecord[] }>> {
+    const icp = await this.repo.findById(icpId);
+    if (!icp) return left(new ICPNotFoundError("ICP não encontrado"));
+    if (icp.ownerId !== requesterId) return left(new ICPForbiddenError("Acesso negado ao ICP"));
+    const versions = await this.repo.getVersions(icpId);
+    return right({ versions });
+  }
+}
+
+@Injectable()
+export class RestoreICPVersionUseCase {
+  constructor(private readonly repo: ICPRepository) {}
+
+  async execute(input: { icpId: string; versionId: string; requesterId: string }): Promise<Either<Error, { icp: ICP }>> {
+    const icp = await this.repo.findById(input.icpId);
+    if (!icp) return left(new ICPNotFoundError("ICP não encontrado"));
+    if (icp.ownerId !== input.requesterId) return left(new ICPForbiddenError("Acesso negado ao ICP"));
+
+    const version = await this.repo.getVersionById(input.versionId);
+    if (!version || version.icpId !== input.icpId) return left(new ICPVersionNotFoundError("Versão não encontrada"));
+
+    // Save current state as a new version before restoring
+    const currentVersions = await this.repo.getVersions(input.icpId);
+    const nextVersionNumber = (currentVersions[0]?.versionNumber ?? 0) + 1;
+    await this.repo.createVersion({
+      icpId: input.icpId,
+      versionNumber: nextVersionNumber,
+      name: icp.name,
+      content: icp.content,
+      status: icp.statusValue,
+      changedBy: input.requesterId,
+      changeReason: `Antes da restauração para versão ${version.versionNumber}`,
+    });
+
+    icp.update({ name: version.name, content: version.content, status: version.status });
+    await this.repo.save(icp);
+    return right({ icp });
   }
 }

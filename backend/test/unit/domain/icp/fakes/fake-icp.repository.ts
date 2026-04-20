@@ -1,10 +1,11 @@
-import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord } from "@/domain/icp/application/repositories/icp.repository";
+import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord, ICPVersionRecord } from "@/domain/icp/application/repositories/icp.repository";
 import { ICP } from "@/domain/icp/enterprise/entities/icp";
 
 export class FakeICPRepository extends ICPRepository {
   items: ICP[] = [];
   leadLinks: Map<string, Map<string, ICPLinkData>> = new Map();
   orgLinks: Map<string, Map<string, ICPLinkData>> = new Map();
+  versions: ICPVersionRecord[] = [];
 
   async findById(id: string): Promise<ICP | null> {
     return this.items.find((i) => i.id.toString() === id) ?? null;
@@ -72,5 +73,19 @@ export class FakeICPRepository extends ICPRepository {
 
   async unlinkFromOrganization(icpId: string, organizationId: string): Promise<void> {
     this.orgLinks.get(organizationId)?.delete(icpId);
+  }
+
+  async getVersions(icpId: string): Promise<ICPVersionRecord[]> {
+    return this.versions.filter(v => v.icpId === icpId).sort((a, b) => b.versionNumber - a.versionNumber);
+  }
+
+  async createVersion(input: Omit<ICPVersionRecord, "id" | "createdAt">): Promise<ICPVersionRecord> {
+    const record: ICPVersionRecord = { ...input, id: `v-${Date.now()}`, createdAt: new Date() };
+    this.versions.push(record);
+    return record;
+  }
+
+  async getVersionById(versionId: string): Promise<ICPVersionRecord | null> {
+    return this.versions.find(v => v.id === versionId) ?? null;
   }
 }

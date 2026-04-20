@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Patch, Delete, Body, Param,
+  Controller, Get, Post, Patch, Delete, Body, Param, Query,
   UseGuards, NotFoundException, ForbiddenException,
   UnprocessableEntityException, ConflictException,
 } from "@nestjs/common";
@@ -18,6 +18,7 @@ import {
   ReorderCadenceStepsUseCase, GetCadenceStepsUseCase,
   ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase,
   PauseLeadCadenceUseCase, ResumeLeadCadenceUseCase, CancelLeadCadenceUseCase,
+  GetCadenceLeadCountUseCase,
 } from "../../application/use-cases/cadences.use-cases";
 
 function serializeCadence(c: Cadence) {
@@ -82,6 +83,7 @@ export class CadencesController {
     private readonly pauseLeadCadence: PauseLeadCadenceUseCase,
     private readonly resumeLeadCadence: ResumeLeadCadenceUseCase,
     private readonly cancelLeadCadence: CancelLeadCadenceUseCase,
+    private readonly getCadenceLeadCount: GetCadenceLeadCountUseCase,
   ) {}
 
   // ── Static routes FIRST to avoid `:id` collision ────────────────────────────
@@ -129,8 +131,8 @@ export class CadencesController {
   // ── Cadence CRUD ─────────────────────────────────────────────────────────────
 
   @Get()
-  async list(@CurrentUser() user: AuthenticatedUser) {
-    const r = await this.getCadences.execute({ requesterId: user.id });
+  async list(@CurrentUser() user: AuthenticatedUser, @Query("icpId") icpId?: string) {
+    const r = await this.getCadences.execute({ requesterId: user.id, icpId });
     if (r.isLeft()) handleError(r);
     return r.unwrap().map(serializeCadence);
   }
@@ -143,6 +145,13 @@ export class CadencesController {
     const r = await this.createCadence.execute({ ...body, ownerId: user.id });
     if (r.isLeft()) handleError(r);
     return serializeCadence(r.unwrap());
+  }
+
+  @Get(":id/lead-count")
+  async leadCount(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.getCadenceLeadCount.execute({ cadenceId: id, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+    return r.unwrap();
   }
 
   @Get(":id")

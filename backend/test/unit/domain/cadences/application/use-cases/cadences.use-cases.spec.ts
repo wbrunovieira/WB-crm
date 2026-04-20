@@ -9,6 +9,7 @@ import {
   ReorderCadenceStepsUseCase, GetCadenceStepsUseCase,
   ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase,
   PauseLeadCadenceUseCase, ResumeLeadCadenceUseCase, CancelLeadCadenceUseCase,
+  GetCadenceLeadCountUseCase,
 } from "@/domain/cadences/application/use-cases/cadences.use-cases";
 
 let repo: InMemoryCadencesRepository;
@@ -35,6 +36,7 @@ function makeUseCases() {
     pause: new PauseLeadCadenceUseCase(repo),
     resume: new ResumeLeadCadenceUseCase(repo),
     cancel: new CancelLeadCadenceUseCase(repo),
+    leadCount: new GetCadenceLeadCountUseCase(repo),
   };
 }
 
@@ -228,6 +230,68 @@ describe("Lead cadence lifecycle", () => {
   it("forbids other user from pausing", async () => {
     const { uc, leadCadenceId } = await setup();
     const r = await uc.pause.execute({ leadCadenceId, ...other });
+    expect(r.isLeft()).toBe(true);
+    expect((r.value as Error).name).toBe("CadenceForbiddenError");
+  });
+});
+
+describe("GetCadencesUseCase - icpId filter", () => {
+  it("returns all cadences when no icpId filter", async () => {
+    const uc = makeUseCases();
+    await uc.create.execute({ name: "Cadência A", ownerId: "u1" });
+    await uc.create.execute({ name: "Cadência B", ownerId: "u1" });
+    const r = await uc.list.execute({ requesterId: "u1" });
+    expect(r.unwrap()).toHaveLength(2);
+  });
+
+  it("filters cadences by icpId", async () => {
+    const create = new CreateCadenceUseCase(repo);
+    await create.execute({ name: "With ICP", ownerId: "u1", icpId: "icp-001" });
+    await create.execute({ name: "No ICP", ownerId: "u1" });
+    const r = await new GetCadencesUseCase(repo).execute({ requesterId: "u1", icpId: "icp-001" });
+    const list = r.unwrap();
+    expect(list).toHaveLength(1);
+    expect(list[0].name).toBe("With ICP");
+  });
+});
+
+describe("GetCadenceLeadCountUseCase", () => {
+  async function makeCadenceWithLeads(activeCount: number, cancelledCount: number) {
+    const uc = makeUseCases();
+    const { value: cadence } = await uc.create.execute({ name: "Test", ownerId: "u1" }) as { value: Cadence };
+    const cadenceId = cadence.id.toString();
+    for (let i = 0; i < activeCount; i++) {
+      await repo.applyToLead({ leadId: `lead-active-${i}`, cadenceId, startDate: new Date(), ownerId: "u1" }, []);
+    }
+    for (let i = 0; i < cancelledCount; i++) {
+      const { leadCadenceId } = await repo.applyToLead({ leadId: `lead-cancel-${i}`, cadenceId, startDate: new Date(), ownerId: "u1" }, []);
+      await repo.cancelLeadCadence(leadCadenceId);
+    }
+    return { uc, cadenceId };
+  }
+
+  it("returns count of active leads", async () => {
+    const { uc, cadenceId } = await makeCadenceWithLeads(3, 2);
+    const r = await uc.leadCount.execute({ cadenceId, ...user });
+    expect(r.unwrap().count).toBe(3);
+  });
+
+  it("returns 0 when no active leads", async () => {
+    const { uc, cadenceId } = await makeCadenceWithLeads(0, 2);
+    const r = await uc.leadCount.execute({ cadenceId, ...user });
+    expect(r.unwrap().count).toBe(0);
+  });
+
+  it("returns not found for unknown cadence", async () => {
+    const uc = makeUseCases();
+    const r = await uc.leadCount.execute({ cadenceId: "nope", ...user });
+    expect(r.isLeft()).toBe(true);
+    expect((r.value as Error).name).toBe("CadenceNotFoundError");
+  });
+
+  it("returns forbidden for wrong owner", async () => {
+    const { uc, cadenceId } = await makeCadenceWithLeads(1, 0);
+    const r = await uc.leadCount.execute({ cadenceId, ...other });
     expect(r.isLeft()).toBe(true);
     expect((r.value as Error).name).toBe("CadenceForbiddenError");
   });

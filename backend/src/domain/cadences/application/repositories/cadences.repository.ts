@@ -52,4 +52,5 @@ export abstract class CadencesRepository {
   abstract pauseLeadCadence(id: string): Promise<void>;
   abstract resumeLeadCadence(id: string): Promise<void>;
   abstract cancelLeadCadence(id: string): Promise<void>;
+  abstract countActiveLeads(cadenceId: string): Promise<number>;
 }

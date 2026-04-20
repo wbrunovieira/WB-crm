@@ -224,4 +224,8 @@ export class PrismaCadencesRepository extends CadencesRepository {
   async cancelLeadCadence(id: string): Promise<void> {
     await this.prisma.leadCadence.update({ where: { id }, data: { status: "cancelled", cancelledAt: new Date() } });
   }
+
+  async countActiveLeads(cadenceId: string): Promise<number> {
+    return this.prisma.leadCadence.count({ where: { cadenceId, status: "active" } });
+  }
 }

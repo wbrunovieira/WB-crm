@@ -105,4 +105,8 @@ export class InMemoryCadencesRepository extends CadencesRepository {
     const lc = this.leadCadences.find(l => l.id === id);
     if (lc) { lc.status = "cancelled"; lc.cancelledAt = new Date(); }
   }
+
+  async countActiveLeads(cadenceId: string): Promise<number> {
+    return this.leadCadences.filter(lc => lc.cadenceId === cadenceId && lc.status === "active").length;
+  }
 }

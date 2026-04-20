@@ -4,6 +4,7 @@ import {
   LinkLeadToICPUseCase, UpdateLeadICPUseCase, UnlinkLeadFromICPUseCase,
   GetLeadICPsUseCase, GetOrganizationICPsUseCase,
   LinkOrganizationToICPUseCase, UpdateOrganizationICPUseCase, UnlinkOrganizationFromICPUseCase,
+  GetICPVersionsUseCase, RestoreICPVersionUseCase,
 } from "@/domain/icp/application/use-cases/icp.use-cases";
 import { FakeICPRepository } from "../../fakes/fake-icp.repository";
 import { ICP } from "@/domain/icp/enterprise/entities/icp";
@@ -26,6 +27,15 @@ describe("GetICPsUseCase", () => {
     seed("i3", "Other", "other", "user-002");
     const { icps } = (await new GetICPsUseCase(repo).execute("user-001")).unwrap();
     expect(icps).toHaveLength(2);
+  });
+
+  it("filters by status when provided", async () => {
+    const icp = seed("i1", "Startup Tech", "startup-tech", "user-001");
+    icp.update({ status: "active" });
+    seed("i2", "Draft ICP", "draft-icp", "user-001");
+    const { icps } = (await new GetICPsUseCase(repo).execute("user-001", "active")).unwrap();
+    expect(icps).toHaveLength(1);
+    expect(icps[0].name).toBe("Startup Tech");
   });
 });
 
@@ -179,5 +189,61 @@ describe("Organization link use cases", () => {
     const { links } = (await new GetOrganizationICPsUseCase(repo).execute("org-001")).unwrap();
     expect(links).toHaveLength(1);
     expect(links[0].matchScore).toBe(60);
+  });
+});
+
+describe("GetICPVersionsUseCase", () => {
+  it("returns versions for ICP owner", async () => {
+    seed("i1", "Startup Tech", "startup-tech", "user-001");
+    await repo.createVersion({ icpId: "i1", versionNumber: 1, name: "Old Name", content: "Old", status: "draft", changedBy: "user-001", changeReason: null });
+    const result = await new GetICPVersionsUseCase(repo).execute("i1", "user-001");
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().versions).toHaveLength(1);
+  });
+
+  it("returns not found for unknown ICP", async () => {
+    const result = await new GetICPVersionsUseCase(repo).execute("nope", "user-001");
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).name).toBe("ICPNotFoundError");
+  });
+
+  it("returns forbidden for wrong owner", async () => {
+    seed("i1", "Startup Tech", "startup-tech", "user-001");
+    const result = await new GetICPVersionsUseCase(repo).execute("i1", "user-999");
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).name).toBe("ICPForbiddenError");
+  });
+});
+
+describe("RestoreICPVersionUseCase", () => {
+  it("restores ICP to a previous version", async () => {
+    const icp = seed("i1", "Current Name", "current-name", "user-001");
+    const v = await repo.createVersion({ icpId: "i1", versionNumber: 1, name: "Old Name", content: "Old content", status: "draft", changedBy: "user-001", changeReason: null });
+    const result = await new RestoreICPVersionUseCase(repo).execute({ icpId: "i1", versionId: v.id, requesterId: "user-001" });
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().icp.name).toBe("Old Name");
+  });
+
+  it("saves current state as new version before restoring", async () => {
+    seed("i1", "Current Name", "current-name", "user-001");
+    const v = await repo.createVersion({ icpId: "i1", versionNumber: 1, name: "Old Name", content: "Old content", status: "draft", changedBy: "user-001", changeReason: null });
+    await new RestoreICPVersionUseCase(repo).execute({ icpId: "i1", versionId: v.id, requesterId: "user-001" });
+    const versions = await repo.getVersions("i1");
+    expect(versions).toHaveLength(2);
+  });
+
+  it("returns not found for unknown version", async () => {
+    seed("i1", "Current Name", "current-name", "user-001");
+    const result = await new RestoreICPVersionUseCase(repo).execute({ icpId: "i1", versionId: "nope", requesterId: "user-001" });
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).name).toBe("ICPVersionNotFoundError");
+  });
+
+  it("returns forbidden for wrong owner", async () => {
+    seed("i1", "Current Name", "current-name", "user-001");
+    const v = await repo.createVersion({ icpId: "i1", versionNumber: 1, name: "Old Name", content: "Old content", status: "draft", changedBy: "user-001", changeReason: null });
+    const result = await new RestoreICPVersionUseCase(repo).execute({ icpId: "i1", versionId: v.id, requesterId: "user-999" });
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).name).toBe("ICPForbiddenError");
   });
 });

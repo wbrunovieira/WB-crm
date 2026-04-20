@@ -39,12 +39,28 @@ export interface OrganizationICPRecord extends ICPLinkData {
   updatedAt: Date;
 }
 
+export interface ICPVersionRecord {
+  id: string;
+  icpId: string;
+  versionNumber: number;
+  name: string;
+  content: string;
+  status: string;
+  changedBy: string;
+  changeReason: string | null;
+  createdAt: Date;
+}
+
 export abstract class ICPRepository {
   abstract findById(id: string): Promise<ICP | null>;
   abstract findByOwner(ownerId: string): Promise<ICP[]>;
   abstract existsBySlugAndOwner(slug: string, ownerId: string): Promise<boolean>;
   abstract save(icp: ICP): Promise<void>;
   abstract delete(id: string): Promise<void>;
+
+  abstract getVersions(icpId: string): Promise<ICPVersionRecord[]>;
+  abstract createVersion(input: Omit<ICPVersionRecord, "id" | "createdAt">): Promise<ICPVersionRecord>;
+  abstract getVersionById(versionId: string): Promise<ICPVersionRecord | null>;
 
   abstract getLeadICPs(leadId: string): Promise<LeadICPRecord[]>;
   abstract linkToLead(icpId: string, leadId: string, data?: ICPLinkData): Promise<void>;

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/infra/database/prisma.service";
-import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord } from "../../application/repositories/icp.repository";
+import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord, ICPVersionRecord } from "../../application/repositories/icp.repository";
 import { ICP, CreateICPProps } from "../../enterprise/entities/icp";
 import { ICPStatus } from "../../enterprise/value-objects/icp-status.vo";
 import { UniqueEntityID } from "@/core/unique-entity-id";
@@ -153,5 +153,35 @@ export class PrismaICPRepository extends ICPRepository {
 
   async unlinkFromOrganization(icpId: string, organizationId: string): Promise<void> {
     await this.prisma.organizationICP.deleteMany({ where: { organizationId, icpId } });
+  }
+
+  async getVersions(icpId: string): Promise<ICPVersionRecord[]> {
+    const rows = await this.prisma.iCPVersion.findMany({
+      where: { icpId },
+      orderBy: { versionNumber: "desc" },
+    });
+    return rows.map((r) => ({
+      id: r.id, icpId: r.icpId, versionNumber: r.versionNumber,
+      name: r.name, content: r.content, status: r.status,
+      changedBy: r.changedBy, changeReason: r.changeReason,
+      createdAt: r.createdAt,
+    }));
+  }
+
+  async createVersion(input: Omit<ICPVersionRecord, "id" | "createdAt">): Promise<ICPVersionRecord> {
+    const row = await this.prisma.iCPVersion.create({
+      data: {
+        icpId: input.icpId, versionNumber: input.versionNumber,
+        name: input.name, content: input.content, status: input.status,
+        changedBy: input.changedBy, changeReason: input.changeReason,
+      },
+    });
+    return { id: row.id, icpId: row.icpId, versionNumber: row.versionNumber, name: row.name, content: row.content, status: row.status, changedBy: row.changedBy, changeReason: row.changeReason, createdAt: row.createdAt };
+  }
+
+  async getVersionById(versionId: string): Promise<ICPVersionRecord | null> {
+    const row = await this.prisma.iCPVersion.findUnique({ where: { id: versionId } });
+    if (!row) return null;
+    return { id: row.id, icpId: row.icpId, versionNumber: row.versionNumber, name: row.name, content: row.content, status: row.status, changedBy: row.changedBy, changeReason: row.changeReason, createdAt: row.createdAt };
   }
 }

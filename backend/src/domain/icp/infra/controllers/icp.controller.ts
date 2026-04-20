@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Patch, Delete,
-  Body, Param, HttpCode, UseGuards,
+  Body, Param, Query, HttpCode, UseGuards,
   NotFoundException, UnprocessableEntityException, ForbiddenException,
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth } from "@nestjs/swagger";
@@ -12,6 +12,7 @@ import {
   GetICPsUseCase, GetICPByIdUseCase, CreateICPUseCase, UpdateICPUseCase, DeleteICPUseCase,
   GetLeadICPsUseCase, LinkLeadToICPUseCase, UpdateLeadICPUseCase, UnlinkLeadFromICPUseCase,
   GetOrganizationICPsUseCase, LinkOrganizationToICPUseCase, UpdateOrganizationICPUseCase, UnlinkOrganizationFromICPUseCase,
+  GetICPVersionsUseCase, RestoreICPVersionUseCase,
 } from "../../application/use-cases/icp.use-cases";
 import type { ICPLinkData } from "../../application/repositories/icp.repository";
 
@@ -41,11 +42,13 @@ export class ICPController {
     private readonly linkOrgToICP: LinkOrganizationToICPUseCase,
     private readonly updateOrgICP: UpdateOrganizationICPUseCase,
     private readonly unlinkOrgFromICP: UnlinkOrganizationFromICPUseCase,
+    private readonly getICPVersions: GetICPVersionsUseCase,
+    private readonly restoreICPVersion: RestoreICPVersionUseCase,
   ) {}
 
   @Get()
-  async list(@CurrentUser() user: AuthenticatedUser) {
-    const { icps } = (await this.getICPs.execute(user.id)).unwrap();
+  async list(@CurrentUser() user: AuthenticatedUser, @Query("status") status?: string) {
+    const { icps } = (await this.getICPs.execute(user.id, status)).unwrap();
     return icps.map((i) => ({ id: i.id.toString(), name: i.name, slug: i.slug, status: i.statusValue }));
   }
 
@@ -135,5 +138,27 @@ export class ICPController {
   async removeFromOrg(@Param("orgId") orgId: string, @Param("icpId") icpId: string, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.unlinkOrgFromICP.execute(icpId, orgId, user.id);
     if (result.isLeft()) handleError(result);
+  }
+
+  // ─── Versions ────────────────────────────────────────────────────────────
+
+  @Get(":id/versions")
+  async listVersions(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.getICPVersions.execute(id, user.id);
+    if (result.isLeft()) handleError(result);
+    return result.value!.versions;
+  }
+
+  @Post(":id/versions/restore")
+  @HttpCode(200)
+  async restoreVersion(
+    @Param("id") id: string,
+    @Body() body: { versionId: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.restoreICPVersion.execute({ icpId: id, versionId: body.versionId, requesterId: user.id });
+    if (result.isLeft()) handleError(result);
+    const icp = result.value!.icp;
+    return { id: icp.id.toString(), name: icp.name, slug: icp.slug, content: icp.content, status: icp.status, createdAt: icp.createdAt, updatedAt: icp.updatedAt };
   }
 }

@@ -9,6 +9,7 @@ import {
   ReorderCadenceStepsUseCase, GetCadenceStepsUseCase,
   ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase,
   PauseLeadCadenceUseCase, ResumeLeadCadenceUseCase, CancelLeadCadenceUseCase,
+  GetCadenceLeadCountUseCase,
 } from "./application/use-cases/cadences.use-cases";
 import { PrismaCadencesRepository } from "./infra/repositories/prisma-cadences.repository";
 import { CadencesController } from "./infra/controllers/cadences.controller";
@@ -24,6 +25,7 @@ import { CadencesController } from "./infra/controllers/cadences.controller";
     ReorderCadenceStepsUseCase, GetCadenceStepsUseCase,
     ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase,
     PauseLeadCadenceUseCase, ResumeLeadCadenceUseCase, CancelLeadCadenceUseCase,
+    GetCadenceLeadCountUseCase,
     { provide: CadencesRepository, useClass: PrismaCadencesRepository },
   ],
 })

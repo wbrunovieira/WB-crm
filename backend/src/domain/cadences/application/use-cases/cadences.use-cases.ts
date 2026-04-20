@@ -92,9 +92,10 @@ export class DeleteCadenceUseCase {
 export class GetCadencesUseCase {
   constructor(private readonly repo: CadencesRepository) {}
 
-  async execute(input: { requesterId: string }): Promise<Either<Error, Cadence[]>> {
+  async execute(input: { requesterId: string; icpId?: string }): Promise<Either<Error, Cadence[]>> {
     const cadences = await this.repo.findByOwner(input.requesterId);
-    return right(cadences);
+    const filtered = input.icpId ? cadences.filter((c) => c.icpId === input.icpId) : cadences;
+    return right(filtered);
   }
 }
 
@@ -359,5 +360,20 @@ export class CancelLeadCadenceUseCase {
     }
     await this.repo.cancelLeadCadence(input.leadCadenceId);
     return right(undefined);
+  }
+}
+
+@Injectable()
+export class GetCadenceLeadCountUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { cadenceId: string; requesterId: string; requesterRole: string }): Promise<Either<Error, { count: number }>> {
+    const cadence = await this.repo.findById(input.cadenceId);
+    if (!cadence) return left(new CadenceNotFoundError("Cadência não encontrada"));
+    if (input.requesterRole !== "admin" && cadence.ownerId !== input.requesterId) {
+      return left(new CadenceForbiddenError("Acesso negado"));
+    }
+    const count = await this.repo.countActiveLeads(input.cadenceId);
+    return right({ count });
   }
 }

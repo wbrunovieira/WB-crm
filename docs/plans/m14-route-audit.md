@@ -18,7 +18,7 @@
 | `getLeadById` | GET | `GET /leads/:id` | ✅ | |
 | `getProspects` | GET | `GET /leads?status=prospect` | ⚠️ | Precisa verificar se filtro existe no backend |
 | `createLead` | POST | `POST /leads` | ⚠️ | Action pode retornar `{ status: "created" \| "duplicate_found", lead, duplicates }` — backend retorna Lead diretamente sem detecção de duplicata no create |
-| `createLeadWithContacts` | POST | `POST /leads` | ❌ | Backend não cria contatos junto com o lead em um único request |
+| `createLeadWithContacts` | POST | `POST /leads` | ✅ | Body aceita campo `contacts[]` opcional |
 | `updateLead` | PATCH | `PATCH /leads/:id` | ✅ | |
 | `bulkArchiveLeads` | PATCH | `PATCH /leads/bulk-archive` | ✅ | |
 | `getLeadContacts` | GET | `GET /leads/:id/contacts` | ✅ | |
@@ -168,8 +168,8 @@
 | Server Action | Método | Rota NestJS | Status | Observação |
 |---|---|---|---|---|
 | `getLabels` | GET | `GET /labels` | ✅ | |
-| `createLabel` | POST | `POST /labels` | ⚠️ | Action retorna `Label` completo; backend retorna `{ id: string }` |
-| `updateLabel` | PATCH | `PATCH /labels/:id` | ⚠️ | Action retorna `Label`; backend retorna `{ id: string }` |
+| `createLabel` | POST | `POST /labels` | ✅ | Retorna objeto Label completo |
+| `updateLabel` | PATCH | `PATCH /labels/:id` | ✅ | Retorna objeto Label completo |
 | `deleteLabel` | DELETE | `DELETE /labels/:id` | ✅ | |
 
 **⚠️ Ajuste necessário:** `POST /labels` e `PATCH /labels/:id` devem retornar o objeto `Label` completo (id, name, color, createdAt).
@@ -218,8 +218,8 @@
 | `getICPs` | GET | `GET /icps` | ✅ | |
 | `getActiveICPsForSelect` | GET | `GET /icps?status=active` | ⚠️ | Backend não tem filtro `?status=` |
 | `getICPById` | GET | `GET /icps/:id` | ✅ | |
-| `createICP` | POST | `POST /icps` | ⚠️ | Action retorna `ICP`; backend retorna `{ id: string }` |
-| `updateICP` | PATCH | `PATCH /icps/:id` | ⚠️ | Action retorna `ICP`; backend retorna `{ id: string }` |
+| `createICP` | POST | `POST /icps` | ✅ | Retorna objeto ICP completo |
+| `updateICP` | PATCH | `PATCH /icps/:id` | ✅ | Retorna objeto ICP completo |
 | `deleteICP` | DELETE | `DELETE /icps/:id` | ✅ | |
 | `checkICPSlugExists` | GET | ❌ | ❌ | Helper interno — pode ser eliminado |
 | `generateUniqueICPSlug` | GET | ❌ | ❌ | Helper interno — pode ser eliminado |
