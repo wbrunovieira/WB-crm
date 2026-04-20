@@ -16,7 +16,7 @@ RUN npx prisma generate
 
 # Copia o código do backend e compila TypeScript
 COPY backend/ .
-RUN npm run build
+RUN NODE_OPTIONS="--max-old-space-size=2048" npm run build
 
 # Remove devDependencies para o próximo stage
 RUN npm prune --production
