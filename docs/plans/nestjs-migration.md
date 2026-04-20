@@ -865,7 +865,7 @@ Para cada subdomínio:
 ---
 
 ### 🔄 M12 — Conversão de Lead, Cadências, Importação, Propostas, Operações
-**Status**: Em andamento — M12.1–M12.6 ✅ | M12.7–M12.8 🔲
+**Status**: Em andamento — M12.1–M12.8 ✅
 
 #### Contexto
 
@@ -946,19 +946,24 @@ Fluxos de negócio mais complexos que envolvem transações, orquestração mult
 
 ---
 
-#### 🔲 M12.7 — Propostas
+#### ✅ M12.7 — Propostas (2026-04-20)
 
-- `Proposal` entity (title, status, value, driveFileId, driveWebViewLink, linkedTo: lead|deal)
-- VOs: `ProposalStatus` (draft, sent, accepted, rejected), `ProposalValue` (≥ 0)
-- Use cases: `CreateProposal`, `UpdateProposal`, `DeleteProposal`, `GetProposals`, `GetProposalById`
-- Rota: `GET/POST /proposals`, `GET/PATCH/DELETE /proposals/:id`
-- Integração Google Drive: `GoogleDrivePort` — criar pasta, fazer upload, retornar `driveWebViewLink`
+- `ProposalTitle` VO (trim, máx 200 chars), `ProposalStatus` VO (draft/sent/accepted/rejected, factory `draft()` e `sent()`)
+- `Proposal` entity — `sentAt` auto-set em `create()` e `update()` ao status="sent"
+- 5 use cases: `GetProposals`, `GetProposalById`, `CreateProposal`, `UpdateProposal`, `DeleteProposal`
+- Filtros: `?leadId=&dealId=&status=`
+- Rotas: `GET/POST /proposals`, `GET/PATCH/DELETE /proposals/:id`
+- 7 unit tests + 8 E2E tests — todos passando ✅
 
-#### 🔲 M12.8 — Renovações de Hosting
+---
 
-- Use cases: `GetUpcomingRenewalsUseCase` (30 dias à frente), `CreateRenewalActivityUseCase`
-- Query: `Organization` onde `hostingRenewalDate` entre hoje e hoje+30
-- Rota: `GET /hosting-renewals`, `POST /hosting-renewals/:organizationId/activity`
+#### ✅ M12.8 — Renovações de Hosting (2026-04-20)
+
+- `GetUpcomingRenewalsUseCase` — filtra `Organization` por `hasHosting=true` + `hostingRenewalDate` entre hoje e hoje+N dias (padrão 30); ordena por `daysUntilRenewal` ascendente
+- `CreateRenewalActivityUseCase` — cria Activity `type="task"` vinculada à organização; assunto padrão "Renovação de hospedagem"
+- Sem VOs de domínio próprios — usa `UpcomingRenewal` como interface de retorno direto do repo
+- Rotas: `GET /hosting-renewals?daysAhead=`, `POST /hosting-renewals/:organizationId/activity`
+- 7 unit tests + 6 E2E tests — todos passando ✅
 
 ---
 
