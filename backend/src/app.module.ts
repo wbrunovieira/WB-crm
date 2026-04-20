@@ -22,9 +22,10 @@ import { CnaeModule } from "./domain/cnae/cnae.module";
 import { SectorsModule } from "./domain/sectors/sectors.module";
 import { ICPModule } from "./domain/icp/icp.module";
 import { TechProfileModule } from "./domain/tech-profile/tech-profile.module";
+import { ProductLinksModule } from "./domain/product-links/product-links.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, MeetModule, LeadResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule],
+  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, MeetModule, LeadResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule],
   controllers: [HealthController],
   providers: [],
 })
