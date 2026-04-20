@@ -3,6 +3,7 @@ import {
   type DealFilters,
   type StageData,
   type CreateStageHistoryInput,
+  type DealTechStackRecord,
 } from "@/domain/deals/application/repositories/deals.repository";
 import type { Deal } from "@/domain/deals/enterprise/entities/deal";
 import type { DealSummary, DealDetail } from "@/domain/deals/enterprise/read-models/deal-read-models";
@@ -116,4 +117,15 @@ export class InMemoryDealsRepository extends DealsRepository {
   async updateStageHistoryDate(_historyId: string, _changedAt: Date): Promise<{ dealId: string } | null> {
     return null;
   }
+
+  async getTechStack(_dealId: string): Promise<DealTechStackRecord> {
+    return { categories: [], languages: [], frameworks: [] };
+  }
+  async addCategory(_dealId: string, _categoryId: string): Promise<void> {}
+  async removeCategory(_dealId: string, _categoryId: string): Promise<void> {}
+  async addLanguage(_dealId: string, _languageId: string, _isPrimary?: boolean): Promise<void> {}
+  async removeLanguage(_dealId: string, _languageId: string): Promise<void> {}
+  async setPrimaryLanguage(_dealId: string, _languageId: string): Promise<void> {}
+  async addFramework(_dealId: string, _frameworkId: string): Promise<void> {}
+  async removeFramework(_dealId: string, _frameworkId: string): Promise<void> {}
 }

@@ -274,6 +274,25 @@ export class ActivitiesController {
     return serializeActivity(result.value.activity);
   }
 
+  @Patch(":id/lead-contacts")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Atribuir ou remover LeadContacts de uma atividade" })
+  @ApiParam({ name: "id" })
+  async assignLeadContacts(
+    @Param("id") id: string,
+    @Body() body: { leadContactIds?: string[] },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.updateActivity.execute({
+      id,
+      leadContactIds: body.leadContactIds ?? [],
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) handleError(result);
+    return serializeActivity(result.value.activity);
+  }
+
   @Post(":id/deals/:dealId")
   @HttpCode(200)
   @ApiOperation({ summary: "Vincular atividade a um deal secundário" })

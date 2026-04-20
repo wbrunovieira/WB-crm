@@ -223,16 +223,11 @@
 | `deleteICP` | DELETE | `DELETE /icps/:id` | ✅ | |
 | `checkICPSlugExists` | GET | ❌ | ❌ | Helper interno — pode ser eliminado |
 | `generateUniqueICPSlug` | GET | ❌ | ❌ | Helper interno — pode ser eliminado |
-| `getICPVersions` | GET | ❌ | ❌ | Sem rota `GET /icps/:id/versions` |
-| `restoreICPVersion` | POST | ❌ | ❌ | Sem rota `POST /icps/:id/versions/restore` |
+| `getICPVersions` | GET | `GET /icps/:id/versions` | ✅ | Implementado |
+| `restoreICPVersion` | POST | `POST /icps/:id/versions/restore` | ✅ | Implementado |
 | Lead/Org ICP links | GET/POST/PATCH/DELETE | `/icps/leads/*`, `/icps/organizations/*` | ✅ | |
 
-**⚠️ Ajuste necessário:** `POST /icps` e `PATCH /icps/:id` devem retornar objeto `ICP` completo.
-
-**❌ Rotas a criar para ICPs:**
-1. `GET /icps/:id/versions`
-2. `POST /icps/:id/versions/restore`
-3. Filtro `?status=` em `GET /icps`
+**✅ Filtro `?status=` em `GET /icps` implementado.**
 
 ---
 
@@ -251,16 +246,14 @@
 | `applyCadenceToLead` | POST | `POST /cadences/:id/apply` | ✅ | |
 | `applyBulkCadencesToLeads` | POST | ❌ | ❌ | Sem rota de bulk apply |
 | `getLeadCadences` | GET | `GET /cadences/lead/:leadId` | ✅ | |
-| `getActiveLeadCadencesCount` | GET | ❌ | ❌ | Sem rota `GET /cadences/:id/lead-count` |
+| `getActiveLeadCadencesCount` | GET | `GET /cadences/:id/lead-count` | ✅ | Implementado |
 | pause/resume/cancel lead cadence | PATCH | `/cadences/lead-cadences/:id/pause|resume|cancel` | ✅ | |
 | `checkCadenceSlugExists` | GET | ❌ | ❌ | Helper interno |
 | `generateUniqueCadenceSlug` | GET | ❌ | ❌ | Helper interno |
-| `getCadencesForICP` | GET | `GET /cadences?icpId=` | ⚠️ | Backend não tem filtro `?icpId=` |
+| `getCadencesForICP` | GET | `GET /cadences?icpId=` | ✅ | Filtro implementado |
 
 **❌ Rotas a criar para Cadences:**
 1. `POST /cadences/bulk-apply` — body: `{ cadenceId, leadIds[], startDate }`
-2. `GET /cadences/:id/lead-count` — conta active lead cadences
-3. Filtro `?icpId=` em `GET /cadences`
 
 ---
 
@@ -397,25 +390,25 @@ Usuário clica "Conectar Google"
 
 | Prioridade | Domínio | Rota | Descrição |
 |---|---|---|---|
-| Alta | Leads | `GET /leads/:id/contacts` | Listar LeadContacts |
-| Alta | Leads | `POST /leads/:id/contacts` | Criar LeadContact |
-| Alta | Leads | `PATCH /leads/:id/contacts/:contactId` | Atualizar LeadContact |
-| Alta | Leads | `DELETE /leads/:id/contacts/:contactId` | Deletar LeadContact |
-| Alta | Leads | `PATCH /leads/:id/contacts/:contactId/toggle` | Toggle active LeadContact |
-| Alta | Leads | `PATCH /leads/:id/qualify` | Qualificar prospect |
-| Alta | Leads | `PATCH /leads/bulk-archive` | Arquivar múltiplos leads |
+| ✅ | Leads | `GET /leads/:id/contacts` | Listar LeadContacts |
+| ✅ | Leads | `POST /leads/:id/contacts` | Criar LeadContact |
+| ✅ | Leads | `PATCH /leads/:id/contacts/:contactId` | Atualizar LeadContact |
+| ✅ | Leads | `DELETE /leads/:id/contacts/:contactId` | Deletar LeadContact |
+| ✅ | Leads | `PATCH /leads/:id/contacts/:contactId/toggle` | Toggle active LeadContact |
+| ✅ | Leads | `PATCH /leads/:id/qualify` | Qualificar prospect |
+| ✅ | Leads | `PATCH /leads/bulk-archive` | Arquivar múltiplos leads |
 | Alta | Activities | `PATCH /activities/:id/lead-contacts` | Atribuir LeadContacts a atividade |
-| Alta | Deals | `PATCH /deals/stage-history/:historyId` | Atualizar data de stage history |
+| ✅ | Deals | `PATCH /deals/stage-history/:historyId` | Atualizar data de stage history |
 | Média | Leads | Paginação em `GET /leads` | Retornar `{ leads, total, page, pageSize }` |
-| Média | Leads | `POST /leads` com `contacts[]` | Criar lead + contatos em um request |
+| ✅ | Leads | `POST /leads` com `contacts[]` | Criar lead + contatos em um request |
 | Média | Cadences | `POST /cadences/bulk-apply` | Aplicar cadência a múltiplos leads |
-| Média | Cadences | `GET /cadences/:id/lead-count` | Contar active lead cadences |
-| Média | Cadences | `GET /cadences?icpId=` | Filtrar cadências por ICP |
-| Média | Admin | `GET /admin/business-lines/:id` | Buscar business line por ID |
-| Média | Admin | `GET /admin/products/:id` | Buscar product por ID |
-| Média | Admin | `?active=true` em BL e Products | Filtros de ativos |
-| Média | ICPs | `GET /icps/:id/versions` | Listar versões do ICP |
-| Média | ICPs | `POST /icps/:id/versions/restore` | Restaurar versão do ICP |
+| ✅ | Cadences | `GET /cadences/:id/lead-count` | Contar active lead cadences |
+| ✅ | Cadences | `GET /cadences?icpId=` | Filtrar cadências por ICP |
+| ✅ | Admin | `GET /admin/business-lines/:id` | Buscar business line por ID |
+| ✅ | Admin | `GET /admin/products/:id` | Buscar product por ID |
+| ✅ | Admin | `?active=true` em BL e Products | Filtros de ativos |
+| ✅ | ICPs | `GET /icps/:id/versions` | Listar versões do ICP |
+| ✅ | ICPs | `POST /icps/:id/versions/restore` | Restaurar versão do ICP |
 | Média | Deals | Deal tech stack routes | `GET/POST/DELETE /deals/:id/tech-stack` |
 | Baixa | Shared | `PATCH /shared-entities/bulk-transfer` | Transferência em massa |
 | Baixa | Leads | Lead activity order routes | Reordenar atividades de lead |
@@ -424,8 +417,8 @@ Usuário clica "Conectar Google"
 
 | Rota | Problema | Correção |
 |---|---|---|
-| `POST /labels` e `PATCH /labels/:id` | Retorna `{ id }` — action espera `Label` completo | Retornar `{ id, name, color, createdAt }` |
-| `POST /icps` e `PATCH /icps/:id` | Retorna `{ id }` — action espera `ICP` completo | Retornar objeto ICP completo |
+| ✅ `POST /labels` e `PATCH /labels/:id` | Retorna `{ id }` — action espera `Label` completo | Retornar `{ id, name, color, createdAt }` |
+| ✅ `POST /icps` e `PATCH /icps/:id` | Retorna `{ id }` — action espera `ICP` completo | Retornar objeto ICP completo |
 | `GET /leads` | Sem paginação | Adicionar `{ leads, total, page, pageSize }` |
 | `GET /dashboard/stats` | Shape diferente do `getManagerStats` | Alinhar com o que o frontend espera |
 | `DELETE /meetings/:id` | Action usa PATCH para cancelar; backend usa DELETE | Normalizar para `PATCH /meetings/:id/cancel` OU aceitar ambos |

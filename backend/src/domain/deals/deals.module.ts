@@ -9,6 +9,11 @@ import { UpdateDealUseCase } from "./application/use-cases/update-deal.use-case"
 import { DeleteDealUseCase } from "./application/use-cases/delete-deal.use-case";
 import { UpdateDealStageUseCase } from "./application/use-cases/update-deal-stage.use-case";
 import { UpdateStageHistoryDateUseCase } from "./application/use-cases/update-stage-history-date.use-case";
+import {
+  GetDealTechStackUseCase, AddCategoryToDealUseCase, RemoveCategoryFromDealUseCase,
+  AddLanguageToDealUseCase, RemoveLanguageFromDealUseCase, SetPrimaryLanguageUseCase,
+  AddFrameworkToDealUseCase, RemoveFrameworkFromDealUseCase,
+} from "./application/use-cases/deal-tech-stack.use-cases";
 import { DealsController } from "@/infra/controllers/deals.controller";
 
 @Module({
@@ -23,6 +28,9 @@ import { DealsController } from "@/infra/controllers/deals.controller";
     DeleteDealUseCase,
     UpdateDealStageUseCase,
     UpdateStageHistoryDateUseCase,
+    GetDealTechStackUseCase, AddCategoryToDealUseCase, RemoveCategoryFromDealUseCase,
+    AddLanguageToDealUseCase, RemoveLanguageFromDealUseCase, SetPrimaryLanguageUseCase,
+    AddFrameworkToDealUseCase, RemoveFrameworkFromDealUseCase,
   ],
   exports: [DealsRepository],
 })

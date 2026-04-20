@@ -34,6 +34,11 @@ import { UpdateDealUseCase, type UpdateDealInput } from "@/domain/deals/applicat
 import { DeleteDealUseCase } from "@/domain/deals/application/use-cases/delete-deal.use-case";
 import { UpdateDealStageUseCase } from "@/domain/deals/application/use-cases/update-deal-stage.use-case";
 import { UpdateStageHistoryDateUseCase } from "@/domain/deals/application/use-cases/update-stage-history-date.use-case";
+import {
+  GetDealTechStackUseCase, AddCategoryToDealUseCase, RemoveCategoryFromDealUseCase,
+  AddLanguageToDealUseCase, RemoveLanguageFromDealUseCase, SetPrimaryLanguageUseCase,
+  AddFrameworkToDealUseCase, RemoveFrameworkFromDealUseCase,
+} from "@/domain/deals/application/use-cases/deal-tech-stack.use-cases";
 import type { Deal } from "@/domain/deals/enterprise/entities/deal";
 
 /* ─── DTOs ──────────────────────────────────────────────────────────────── */
@@ -128,6 +133,14 @@ export class DealsController {
     private readonly deleteDeal: DeleteDealUseCase,
     private readonly updateStage: UpdateDealStageUseCase,
     private readonly updateStageHistoryDate: UpdateStageHistoryDateUseCase,
+    private readonly getDealTechStack: GetDealTechStackUseCase,
+    private readonly addCategory: AddCategoryToDealUseCase,
+    private readonly removeCategory: RemoveCategoryFromDealUseCase,
+    private readonly addLanguage: AddLanguageToDealUseCase,
+    private readonly removeLanguage: RemoveLanguageFromDealUseCase,
+    private readonly setPrimaryLanguage: SetPrimaryLanguageUseCase,
+    private readonly addFramework: AddFrameworkToDealUseCase,
+    private readonly removeFramework: RemoveFrameworkFromDealUseCase,
   ) {}
 
   @Get()
@@ -262,5 +275,64 @@ export class DealsController {
     });
     if (result.isLeft()) handleError(result);
     return result.value;
+  }
+
+  // ── Tech Stack ────────────────────────────────────────────────────────────────
+
+  @Get(":id/tech-stack")
+  @ApiOperation({ summary: "Buscar tech stack do deal" })
+  async getTechStack(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.getDealTechStack.execute({ dealId: id, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+    return r.value;
+  }
+
+  @Post(":id/tech-stack/categories/:categoryId")
+  @HttpCode(204)
+  async addCategoryRoute(@Param("id") id: string, @Param("categoryId") categoryId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.addCategory.execute({ dealId: id, categoryId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+  }
+
+  @Delete(":id/tech-stack/categories/:categoryId")
+  @HttpCode(204)
+  async removeCategoryRoute(@Param("id") id: string, @Param("categoryId") categoryId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.removeCategory.execute({ dealId: id, categoryId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+  }
+
+  @Post(":id/tech-stack/languages/:languageId")
+  @HttpCode(204)
+  async addLanguageRoute(@Param("id") id: string, @Param("languageId") languageId: string, @Body() body: { isPrimary?: boolean }, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.addLanguage.execute({ dealId: id, languageId, isPrimary: body.isPrimary, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+  }
+
+  @Patch(":id/tech-stack/languages/:languageId/primary")
+  @HttpCode(204)
+  async setPrimaryLanguageRoute(@Param("id") id: string, @Param("languageId") languageId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.setPrimaryLanguage.execute({ dealId: id, languageId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+  }
+
+  @Delete(":id/tech-stack/languages/:languageId")
+  @HttpCode(204)
+  async removeLanguageRoute(@Param("id") id: string, @Param("languageId") languageId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.removeLanguage.execute({ dealId: id, languageId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+  }
+
+  @Post(":id/tech-stack/frameworks/:frameworkId")
+  @HttpCode(204)
+  async addFrameworkRoute(@Param("id") id: string, @Param("frameworkId") frameworkId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.addFramework.execute({ dealId: id, frameworkId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+  }
+
+  @Delete(":id/tech-stack/frameworks/:frameworkId")
+  @HttpCode(204)
+  async removeFrameworkRoute(@Param("id") id: string, @Param("frameworkId") frameworkId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.removeFramework.execute({ dealId: id, frameworkId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
   }
 }

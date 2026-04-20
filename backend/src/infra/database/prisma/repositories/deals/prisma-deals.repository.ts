@@ -5,6 +5,7 @@ import {
   type DealFilters,
   type StageData,
   type CreateStageHistoryInput,
+  type DealTechStackRecord,
 } from "@/domain/deals/application/repositories/deals.repository";
 import type { Deal } from "@/domain/deals/enterprise/entities/deal";
 import type { DealSummary, DealDetail } from "@/domain/deals/enterprise/read-models/deal-read-models";
@@ -209,5 +210,62 @@ export class PrismaDealsRepository extends DealsRepository {
     if (!existing) return null;
     await this.prisma.dealStageHistory.update({ where: { id: historyId }, data: { changedAt } });
     return { dealId: existing.dealId };
+  }
+
+  async getTechStack(dealId: string): Promise<DealTechStackRecord> {
+    const [cats, langs, fws] = await Promise.all([
+      this.prisma.dealTechStack.findMany({ where: { dealId }, include: { techCategory: true } }),
+      this.prisma.dealLanguage.findMany({ where: { dealId }, include: { language: true }, orderBy: [{ isPrimary: "desc" }, { language: { name: "asc" } }] }),
+      this.prisma.dealFramework.findMany({ where: { dealId }, include: { framework: true } }),
+    ]);
+    return {
+      categories: cats.map(r => ({ id: r.id, categoryId: r.techCategoryId, categoryName: (r as { techCategory: { name: string } }).techCategory.name })),
+      languages: langs.map(r => ({ id: r.id, languageId: r.languageId, languageName: (r as { language: { name: string } }).language.name, isPrimary: r.isPrimary })),
+      frameworks: fws.map(r => ({ id: r.id, frameworkId: r.frameworkId, frameworkName: (r as { framework: { name: string } }).framework.name })),
+    };
+  }
+
+  async addCategory(dealId: string, categoryId: string): Promise<void> {
+    await this.prisma.dealTechStack.upsert({
+      where: { dealId_techCategoryId: { dealId, techCategoryId: categoryId } },
+      create: { dealId, techCategoryId: categoryId },
+      update: {},
+    });
+  }
+
+  async removeCategory(dealId: string, categoryId: string): Promise<void> {
+    await this.prisma.dealTechStack.deleteMany({ where: { dealId, techCategoryId: categoryId } });
+  }
+
+  async addLanguage(dealId: string, languageId: string, isPrimary = false): Promise<void> {
+    if (isPrimary) {
+      await this.prisma.dealLanguage.updateMany({ where: { dealId }, data: { isPrimary: false } });
+    }
+    await this.prisma.dealLanguage.upsert({
+      where: { dealId_languageId: { dealId, languageId } },
+      create: { dealId, languageId, isPrimary },
+      update: { isPrimary },
+    });
+  }
+
+  async removeLanguage(dealId: string, languageId: string): Promise<void> {
+    await this.prisma.dealLanguage.deleteMany({ where: { dealId, languageId } });
+  }
+
+  async setPrimaryLanguage(dealId: string, languageId: string): Promise<void> {
+    await this.prisma.dealLanguage.updateMany({ where: { dealId }, data: { isPrimary: false } });
+    await this.prisma.dealLanguage.update({ where: { dealId_languageId: { dealId, languageId } }, data: { isPrimary: true } });
+  }
+
+  async addFramework(dealId: string, frameworkId: string): Promise<void> {
+    await this.prisma.dealFramework.upsert({
+      where: { dealId_frameworkId: { dealId, frameworkId } },
+      create: { dealId, frameworkId },
+      update: {},
+    });
+  }
+
+  async removeFramework(dealId: string, frameworkId: string): Promise<void> {
+    await this.prisma.dealFramework.deleteMany({ where: { dealId, frameworkId } });
   }
 }
