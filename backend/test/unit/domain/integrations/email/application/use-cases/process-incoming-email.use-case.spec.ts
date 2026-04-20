@@ -52,8 +52,8 @@ describe("ProcessIncomingEmailUseCase", () => {
     const result = await useCase.execute(message, OWNER_ID);
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.skipped).toBe(false);
-    expect(result.value.activityId).toBeDefined();
+    expect(result.unwrap().skipped).toBe(false);
+    expect(result.unwrap().activityId).toBeDefined();
 
     expect(activitiesRepo.items).toHaveLength(1);
     const activity = activitiesRepo.items[0];
@@ -77,7 +77,7 @@ describe("ProcessIncomingEmailUseCase", () => {
     const result = await useCase.execute(message, OWNER_ID);
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.skipped).toBe(true);
+    expect(result.unwrap().skipped).toBe(true);
 
     // No new records
     expect(emailMessagesRepo.items).toHaveLength(1);
@@ -162,7 +162,7 @@ describe("ProcessIncomingEmailUseCase", () => {
     const result = await useCase.execute(message, OWNER_ID);
 
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain("DB connection failed");
+    expect((result.value as Error).message).toContain("DB connection failed");
   });
 
   it("handles message with empty subject gracefully", async () => {

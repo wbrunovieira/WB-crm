@@ -68,7 +68,7 @@ describe("PollGmailUseCase", () => {
     const result = await useCase.execute({ userId: USER_ID, ownerId: OWNER_ID });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.processed).toBe(0);
+    expect(result.unwrap().processed).toBe(0);
 
     // Should have stored the initial historyId
     expect(fakePrisma.googleToken.updateMany).toHaveBeenCalledOnce();
@@ -86,7 +86,7 @@ describe("PollGmailUseCase", () => {
     const result = await useCase.execute({ userId: USER_ID, ownerId: OWNER_ID });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.processed).toBe(2);
+    expect(result.unwrap().processed).toBe(2);
     expect(activitiesRepo.items).toHaveLength(2);
   });
 
@@ -102,7 +102,7 @@ describe("PollGmailUseCase", () => {
 
     expect(result.isRight()).toBe(true);
     // Second is a duplicate — skipped
-    expect(result.value.processed).toBe(1);
+    expect(result.unwrap().processed).toBe(1);
     expect(activitiesRepo.items).toHaveLength(1);
   });
 
@@ -115,7 +115,7 @@ describe("PollGmailUseCase", () => {
     const result = await useCase.execute({ userId: USER_ID, ownerId: OWNER_ID });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.processed).toBe(0);
+    expect(result.unwrap().processed).toBe(0);
     // No messages — no historyId update needed
     expect(fakePrisma.googleToken.updateMany).not.toHaveBeenCalled();
   });
@@ -143,6 +143,6 @@ describe("PollGmailUseCase", () => {
     const result = await useCase.execute({ userId: USER_ID, ownerId: OWNER_ID });
 
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain("DB error");
+    expect((result.value as Error).message).toContain("DB error");
   });
 });

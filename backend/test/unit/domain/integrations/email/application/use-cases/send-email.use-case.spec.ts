@@ -44,15 +44,15 @@ describe("SendEmailUseCase", () => {
     const result = await useCase.execute(makeInput());
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.messageId).toBeDefined();
-    expect(result.value.threadId).toBeDefined();
+    expect(result.unwrap().messageId).toBeDefined();
+    expect(result.unwrap().threadId).toBeDefined();
   });
 
   it("validates email address — returns left for invalid email", async () => {
     const result = await useCase.execute(makeInput({ to: "not-an-email" }));
 
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain("EmailAddress");
+    expect((result.value as Error).message).toContain("EmailAddress");
   });
 
   it("returns left for empty email", async () => {
@@ -65,7 +65,7 @@ describe("SendEmailUseCase", () => {
     const result = await useCase.execute(makeInput());
 
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain("OAuth token retrieval failed");
+    expect((result.value as Error).message).toContain("OAuth token retrieval failed");
   });
 
   it("returns left when Gmail send fails", async () => {
@@ -73,7 +73,7 @@ describe("SendEmailUseCase", () => {
     const result = await useCase.execute(makeInput());
 
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain("Gmail send failed");
+    expect((result.value as Error).message).toContain("Gmail send failed");
   });
 
   it("saves EmailMessage record after successful send", async () => {

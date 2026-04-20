@@ -35,7 +35,7 @@ describe("TrackEmailOpenUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.tracked).toBe(true);
+    expect(result.unwrap().tracked).toBe(true);
     expect(trackingRepo.getOpenEvents()).toHaveLength(1);
     expect(trackingRepo.getOpenEvents()[0].token).toBe(VALID_TOKEN);
   });
@@ -56,7 +56,7 @@ describe("TrackEmailOpenUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.tracked).toBe(false);
+    expect(result.unwrap().tracked).toBe(false);
     expect(trackingRepo.getOpenEvents()).toHaveLength(0);
   });
 
@@ -69,7 +69,7 @@ describe("TrackEmailOpenUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.tracked).toBe(false);
+    expect(result.unwrap().tracked).toBe(false);
     expect(trackingRepo.getOpenEvents()).toHaveLength(0);
   });
 
@@ -82,7 +82,7 @@ describe("TrackEmailOpenUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.tracked).toBe(false);
+    expect(result.unwrap().tracked).toBe(false);
   });
 
   it("filters proxy — Apple iCloud Privacy Relay (apple in UA)", async () => {
@@ -94,7 +94,7 @@ describe("TrackEmailOpenUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.tracked).toBe(false);
+    expect(result.unwrap().tracked).toBe(false);
   });
 
   it("filters proxy — AdsBot", async () => {
@@ -106,7 +106,7 @@ describe("TrackEmailOpenUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.tracked).toBe(false);
+    expect(result.unwrap().tracked).toBe(false);
   });
 
   it("filters spider user agent", async () => {
@@ -118,7 +118,7 @@ describe("TrackEmailOpenUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.tracked).toBe(false);
+    expect(result.unwrap().tracked).toBe(false);
   });
 
   it("does not filter legitimate human browser UA", async () => {
@@ -131,7 +131,7 @@ describe("TrackEmailOpenUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.tracked).toBe(true);
+    expect(result.unwrap().tracked).toBe(true);
   });
 
   it("handles missing userAgent gracefully", async () => {
@@ -141,7 +141,7 @@ describe("TrackEmailOpenUseCase", () => {
 
     expect(result.isRight()).toBe(true);
     // Empty UA is not bot — should track
-    expect(result.value.tracked).toBe(true);
+    expect(result.unwrap().tracked).toBe(true);
   });
 
   it("passes userAgent and ip to recordOpen", async () => {

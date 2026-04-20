@@ -45,7 +45,7 @@ describe("AddLabelToLeadUseCase", () => {
       labelId: "unknown", entityId: "lead-001", requesterId: "user-001",
     });
     expect(result.isLeft()).toBe(true);
-    expect(result.value.name).toBe("LabelNotFoundError");
+    expect((result.value as Error).name).toBe("LabelNotFoundError");
   });
 
   it("returns LabelForbiddenError when requester is not owner", async () => {
@@ -54,7 +54,7 @@ describe("AddLabelToLeadUseCase", () => {
       labelId: "label-001", entityId: "lead-001", requesterId: "user-999",
     });
     expect(result.isLeft()).toBe(true);
-    expect(result.value.name).toBe("LabelForbiddenError");
+    expect((result.value as Error).name).toBe("LabelForbiddenError");
   });
 });
 

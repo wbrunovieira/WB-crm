@@ -71,7 +71,7 @@ describe("CreateLabelUseCase", () => {
     await new CreateLabelUseCase(repo).execute({ name: "VIP", color: "#FF0000", ownerId: "user-001" });
     const result = await new CreateLabelUseCase(repo).execute({ name: "VIP", color: "#00FF00", ownerId: "user-001" });
     expect(result.isLeft()).toBe(true);
-    expect(result.value.name).toBe("DuplicateLabelError");
+    expect((result.value as Error).name).toBe("DuplicateLabelError");
   });
 
   it("allows same name for different owners", async () => {
@@ -89,9 +89,9 @@ describe("UpdateLabelUseCase", () => {
     const result = await new UpdateLabelUseCase(repo).execute({
       id: "label-001", name: "Urgente", color: "#00FF00", requesterId: "user-001",
     });
-    expect(result.isRight()).toBe(true);
-    expect(result.value.label.name).toBe("Urgente");
-    expect(result.value.label.color).toBe("#00FF00");
+    const { label } = result.unwrap();
+    expect(label.name).toBe("Urgente");
+    expect(label.color).toBe("#00FF00");
   });
 
   it("returns LabelNotFoundError for unknown id", async () => {
@@ -99,7 +99,7 @@ describe("UpdateLabelUseCase", () => {
       id: "unknown", name: "X", requesterId: "user-001",
     });
     expect(result.isLeft()).toBe(true);
-    expect(result.value.name).toBe("LabelNotFoundError");
+    expect((result.value as Error).name).toBe("LabelNotFoundError");
   });
 
   it("returns LabelNotFoundError when requester is not owner", async () => {
@@ -117,7 +117,7 @@ describe("UpdateLabelUseCase", () => {
       id: "label-001", name: "Urgente", requesterId: "user-001",
     });
     expect(result.isLeft()).toBe(true);
-    expect(result.value.name).toBe("DuplicateLabelError");
+    expect((result.value as Error).name).toBe("DuplicateLabelError");
   });
 
   it("allows updating to same name (no-op)", async () => {

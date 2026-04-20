@@ -36,7 +36,7 @@ describe("TrackEmailClickUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.redirectUrl).toBe(TARGET_URL);
+    expect(result.unwrap().redirectUrl).toBe(TARGET_URL);
 
     expect(trackingRepo.getClickEvents()).toHaveLength(1);
     expect(trackingRepo.getClickEvents()[0].token).toBe(VALID_TOKEN);
@@ -56,7 +56,7 @@ describe("TrackEmailClickUseCase", () => {
     const result = await useCase.execute({ token: VALID_TOKEN, url: "" });
 
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toContain("URL is required");
+    expect((result.value as Error).message).toContain("URL is required");
   });
 
   it("returns left for whitespace-only url", async () => {
@@ -76,7 +76,7 @@ describe("TrackEmailClickUseCase", () => {
 
     // Still returns the redirect URL
     expect(result.isRight()).toBe(true);
-    expect(result.value.redirectUrl).toBe(TARGET_URL);
+    expect(result.unwrap().redirectUrl).toBe(TARGET_URL);
   });
 
   it("trims whitespace from url", async () => {
@@ -88,7 +88,7 @@ describe("TrackEmailClickUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.redirectUrl).toBe("https://example.com");
+    expect(result.unwrap().redirectUrl).toBe("https://example.com");
   });
 
   it("passes userAgent and ip to recordClick", async () => {
@@ -116,6 +116,6 @@ describe("TrackEmailClickUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.redirectUrl).toBe(urlWithQuery);
+    expect(result.unwrap().redirectUrl).toBe(urlWithQuery);
   });
 });
