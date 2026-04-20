@@ -206,6 +206,12 @@ export class Lead extends AggregateRoot<LeadProps> {
     this.touch();
   }
 
+  markAsConverted(organizationId: string) {
+    this.props.status = "qualified";
+    this.props.convertedToOrganizationId = organizationId;
+    this.touch();
+  }
+
   static create(
     props: Omit<LeadProps, "whatsappVerified" | "permanentlyClosed" | "status" | "isArchived" | "isProspect" | "createdAt" | "updatedAt">
       & Partial<Pick<LeadProps, "whatsappVerified" | "permanentlyClosed" | "status" | "isArchived" | "isProspect" | "createdAt" | "updatedAt">>,
