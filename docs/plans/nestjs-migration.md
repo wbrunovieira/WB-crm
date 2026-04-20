@@ -511,26 +511,41 @@ _Solução_: Criado arquivo SQL de migration manualmente em `prisma/migrations/2
 
 ---
 
-## Tech Debt — Arquitetura DDD (Value Objects)
+## Tech Debt — Arquitetura DDD
 
-**Identificado em**: 2026-04-18 durante M3.5
+**Identificado em**: 2026-04-18 (M3.5) | **Regra vigente a partir de**: M10
 
-**Problema**: Validação de regras de negócio está no use case em vez de Value Objects:
-- `CreateLeadUseCase`: `if (!input.businessName?.trim())` → deve ser `LeadBusinessName` VO
-- `CreateOrganizationUseCase`: já corrigido — usa `OrganizationName` VO ✅
-- Outros use cases (contacts, deals, activities, partners) com padrão similar ainda a verificar
+### Regra obrigatória (M10 em diante)
 
-**Padrão correto** (aplicado em Organizations):
 ```
-Controller  → HTTP layer (parse body, auth, conversão string→Date, retornar status)
-Use case    → orquestra (cria VO, chama repo, coordena)
-VO          → valida e encapsula regra de negócio (ex: OrganizationName)
+Controller   → somente HTTP: extrai body/params, converte tipos primitivos, chama use case, retorna status
+Use case     → orquestrador puro: cria VOs, chama repositório abstrato, retorna Either<Error, Result>
+VO           → encapsula validação de formato e invariantes (nunca lança exceção, retorna Either)
+Repository   → interface abstrata no domain; implementação Prisma fica em infra
 ```
 
-**O que falta fazer** (fase dedicada de refactor, não bloqueia migração):
+**Nunca**: Prisma dentro de use case. **Nunca**: lógica de negócio no controller.
+
+### Dívida nos domínios M1–M9 (padrão legado)
+
+| Domínio | Problema | Prioridade |
+|---------|---------|-----------|
+| Leads | `if (!input.businessName?.trim())` no use case — deve ser `LeadBusinessName` VO | Alta |
+| Contacts | Validações manuais de email/telefone no use case | Média |
+| Deals, Activities, Partners | Validações inline sem VOs | Média |
+| GoTo, WhatsApp, Email, Meet | Seguem padrão M10 — OK ✅ | — |
+
+**O que fazer** (fase dedicada de refactor, não bloqueia migração):
 - [ ] Criar `LeadBusinessName` VO → refatorar `CreateLeadUseCase` e `UpdateLeadUseCase`
-- [ ] Revisar use cases de Contacts, Deals, Activities, Partners para validações manuais
-- [ ] Considerar VOs para campos com regras específicas (email, phone, taxId)
+- [ ] VOs para `Email`, `PhoneNumber`, `TaxId` nos domínios Contacts e Leads
+- [ ] Revisar Deals, Activities, Partners para validações inline
+
+### Dívida: Meet — tabela `Meeting` no Prisma
+
+M10.4 implementa detecção de gravações e polling de transcrições (cron jobs), mas ainda não tem:
+- [ ] Modelo `Meeting` no `prisma/schema.prisma` (para persistir reuniões agendadas)
+- [ ] `POST /meetings`, `GET /meetings` — endpoints de agendamento (planejados para M13)
+- Por ora, o cron detecta reuniões via Google Drive + Calendar sem persistência própria
 
 ---
 
@@ -625,7 +640,7 @@ if (requesterRole !== "admin" && row.ownerId !== requesterId) {
 ---
 
 ### 🔄 M10 — Integrações & Automações
-**Status**: Em andamento — GoTo ✅ | WhatsApp ✅ | Email ✅ | Meet 🔲
+**Status**: Em andamento — GoTo ✅ | WhatsApp ✅ | Email ✅ | Meet ✅ | Lead Research ✅
 
 #### Automações mapeadas no Next.js
 
@@ -759,10 +774,13 @@ TRANSCRIPTOR_BASE_URL, TRANSCRIPTOR_API_KEY
 
 **Port a criar:** `GoogleDrivePort` (listFiles, downloadFile, moveFile, exportDoc), `GoogleCalendarPort` (getEvent, createEvent, updateEvent)
 
-#### M10.5 — Lead Research Webhook 🔲 Pendente
+#### M10.5 — Lead Research Webhook ✅ Completo em 2026-04-20
 
-- `api/webhooks/lead-research/route.ts` → `POST /webhooks/lead-research` (sem JWT, valida `X-Internal-Api-Key`)
-- `CreateLeadResearchNotificationUseCase` — cria Notification de conclusão/erro da pesquisa
+- `POST /webhooks/lead-research` — sem JWT; valida `X-Internal-Api-Key`, `X-Webhook-Secret` ou IP local
+- `NotificationsRepository` abstrato + `PrismaNotificationsRepository` (infra)
+- `CreateLeadResearchNotificationUseCase` — orquestra: resolve userId (payload ou fallback admin), cria Notification
+- Controller nunca retorna 500 (evita retry loops do Agent)
+- 5 testes unitários com `FakeNotificationsRepository` — todos passando ✅
 
 #### Variáveis de ambiente completas (M10)
 
