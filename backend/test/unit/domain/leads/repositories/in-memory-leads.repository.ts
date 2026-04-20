@@ -1,11 +1,11 @@
-import { LeadsRepository, type LeadFilters, type LeadRelations } from "@/domain/leads/application/repositories/leads.repository";
+import { LeadsRepository, type LeadFilters, type LeadRelations, type PaginatedLeads } from "@/domain/leads/application/repositories/leads.repository";
 import type { Lead } from "@/domain/leads/enterprise/entities/lead";
 import type { LeadSummary, LeadDetail } from "@/domain/leads/enterprise/read-models/lead-read-models";
 
 export class InMemoryLeadsRepository extends LeadsRepository {
   public items: Lead[] = [];
 
-  async findMany(requesterId: string, requesterRole: string, filters: LeadFilters = {}): Promise<LeadSummary[]> {
+  async findMany(requesterId: string, requesterRole: string, filters: LeadFilters = {}): Promise<PaginatedLeads> {
     let results = this.items;
 
     if (requesterRole !== "admin") {
@@ -29,7 +29,12 @@ export class InMemoryLeadsRepository extends LeadsRepository {
       results = results.filter((l) => l.isArchived === filters.isArchived);
     }
 
-    return results.map((l) => ({
+    const total = results.length;
+    const page = filters.page && filters.page > 0 ? filters.page : 1;
+    const pageSize = filters.pageSize && filters.pageSize > 0 ? filters.pageSize : 50;
+    results = results.slice((page - 1) * pageSize, page * pageSize);
+
+    const leads: LeadSummary[] = results.map((l) => ({
       id: l.id.toString(),
       ownerId: l.ownerId,
       businessName: l.businessName,
@@ -57,6 +62,8 @@ export class InMemoryLeadsRepository extends LeadsRepository {
       createdAt: l.createdAt,
       updatedAt: l.updatedAt,
     }));
+
+    return { leads, total, page, pageSize };
   }
 
   async findById(id: string, requesterId: string, requesterRole: string): Promise<LeadDetail | null> {

@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/infra/database/prisma.service";
-import { LeadsRepository, type LeadFilters, type LeadRelations } from "@/domain/leads/application/repositories/leads.repository";
+import { LeadsRepository, type LeadFilters, type LeadRelations, type PaginatedLeads } from "@/domain/leads/application/repositories/leads.repository";
 import type { Lead } from "@/domain/leads/enterprise/entities/lead";
 import type { LeadSummary, LeadDetail } from "@/domain/leads/enterprise/read-models/lead-read-models";
 import { LeadMapper } from "../../mappers/leads/lead.mapper";
@@ -72,22 +72,31 @@ export class PrismaLeadsRepository extends LeadsRepository {
     return where;
   }
 
-  async findMany(requesterId: string, requesterRole: string, filters: LeadFilters = {}): Promise<LeadSummary[]> {
+  async findMany(requesterId: string, requesterRole: string, filters: LeadFilters = {}): Promise<PaginatedLeads> {
     const sharedIds = requesterRole !== "admin" ? await this.getSharedIds(requesterId) : [];
     const where = this.buildWhereClause(requesterId, requesterRole, filters, sharedIds);
 
-    const rows = await this.prisma.lead.findMany({
-      where,
-      orderBy: { createdAt: "desc" },
-      include: {
-        owner: { select: { id: true, name: true, email: true } },
-        referredByPartner: { select: { id: true, name: true } },
-        labels: { select: { id: true, name: true, color: true } },
-        primaryCNAE: { select: { id: true, code: true, description: true } },
-      },
-    });
+    const page = filters.page && filters.page > 0 ? filters.page : 1;
+    const pageSize = filters.pageSize && filters.pageSize > 0 ? Math.min(filters.pageSize, 200) : 50;
+    const skip = (page - 1) * pageSize;
 
-    return rows.map((row) => ({
+    const [total, rows] = await Promise.all([
+      this.prisma.lead.count({ where }),
+      this.prisma.lead.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip,
+        take: pageSize,
+        include: {
+          owner: { select: { id: true, name: true, email: true } },
+          referredByPartner: { select: { id: true, name: true } },
+          labels: { select: { id: true, name: true, color: true } },
+          primaryCNAE: { select: { id: true, code: true, description: true } },
+        },
+      }),
+    ]);
+
+    const leads: LeadSummary[] = rows.map((row) => ({
       id: row.id,
       ownerId: row.ownerId,
       businessName: row.businessName,
@@ -115,6 +124,8 @@ export class PrismaLeadsRepository extends LeadsRepository {
       labels: row.labels.map((l) => ({ id: l.id, name: l.name, color: l.color })),
       primaryCNAE: row.primaryCNAE ? { id: row.primaryCNAE.id, code: row.primaryCNAE.code, description: row.primaryCNAE.description } : null,
     }));
+
+    return { leads, total, page, pageSize };
   }
 
   async findById(id: string, requesterId: string, requesterRole: string): Promise<LeadDetail | null> {

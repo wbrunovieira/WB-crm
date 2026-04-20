@@ -566,7 +566,9 @@ export class LeadsController {
   @ApiQuery({ name: "isArchived", required: false, description: "Filtrar arquivados (true/false)" })
   @ApiQuery({ name: "isProspect", required: false, description: "Filtrar prospects (true/false)" })
   @ApiQuery({ name: "owner", required: false, description: "Filtrar por dono (admin only: 'all', 'mine', ou userId)" })
-  @ApiResponse({ status: 200, description: "Lista de leads com relações" })
+  @ApiQuery({ name: "page", required: false, type: Number, description: "Página (default: 1)" })
+  @ApiQuery({ name: "pageSize", required: false, type: Number, description: "Itens por página (default: 50, max: 200)" })
+  @ApiResponse({ status: 200, description: "Lista de leads com relações e paginação" })
   @ApiResponse({ status: 401, description: "Token inválido ou ausente" })
   async list(
     @Query("search") search?: string,
@@ -575,19 +577,23 @@ export class LeadsController {
     @Query("isArchived") isArchivedStr?: string,
     @Query("isProspect") isProspectStr?: string,
     @Query("owner") owner?: string,
+    @Query("page") pageStr?: string,
+    @Query("pageSize") pageSizeStr?: string,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
     const isArchived =
       isArchivedStr === "true" ? true : isArchivedStr === "false" ? false : undefined;
     const isProspect =
       isProspectStr === "true" ? true : isProspectStr === "false" ? false : undefined;
+    const page = pageStr ? parseInt(pageStr, 10) : undefined;
+    const pageSize = pageSizeStr ? parseInt(pageSizeStr, 10) : undefined;
 
     const result = await this.getLeads.execute({
       requesterId: user!.id,
       requesterRole: user!.role ?? "sdr",
-      filters: { search, status, quality, isArchived, isProspect, ownerIdFilter: owner },
+      filters: { search, status, quality, isArchived, isProspect, ownerIdFilter: owner, page, pageSize },
     });
-    return result.unwrap().leads;
+    return result.unwrap();
   }
 
   @Get(":id")

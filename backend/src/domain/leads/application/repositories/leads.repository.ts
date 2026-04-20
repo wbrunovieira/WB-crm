@@ -8,6 +8,15 @@ export interface LeadFilters {
   isArchived?: boolean;
   isProspect?: boolean;
   ownerIdFilter?: string; // "all", "mine", or userId
+  page?: number;
+  pageSize?: number;
+}
+
+export interface PaginatedLeads {
+  leads: LeadSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface LeadContactInput {
@@ -29,7 +38,7 @@ export interface LeadRelations {
 }
 
 export abstract class LeadsRepository {
-  abstract findMany(requesterId: string, requesterRole: string, filters?: LeadFilters): Promise<LeadSummary[]>;
+  abstract findMany(requesterId: string, requesterRole: string, filters?: LeadFilters): Promise<PaginatedLeads>;
   abstract findById(id: string, requesterId: string, requesterRole: string): Promise<LeadDetail | null>;
   abstract findByIdRaw(id: string): Promise<Lead | null>;
   abstract save(lead: Lead): Promise<void>;

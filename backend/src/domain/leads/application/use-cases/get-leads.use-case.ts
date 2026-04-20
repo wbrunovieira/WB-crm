@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { right, type Either } from "@/core/either";
-import { LeadsRepository, type LeadFilters } from "../repositories/leads.repository";
-import type { LeadSummary } from "../../enterprise/read-models/lead-read-models";
+import { LeadsRepository, type LeadFilters, type PaginatedLeads } from "../repositories/leads.repository";
 
 interface Input {
   requesterId: string;
@@ -9,14 +8,14 @@ interface Input {
   filters?: LeadFilters;
 }
 
-type Output = Either<never, { leads: LeadSummary[] }>;
+type Output = Either<never, PaginatedLeads>;
 
 @Injectable()
 export class GetLeadsUseCase {
   constructor(private readonly leads: LeadsRepository) {}
 
   async execute({ requesterId, requesterRole, filters = {} }: Input): Promise<Output> {
-    const leads = await this.leads.findMany(requesterId, requesterRole, filters);
-    return right({ leads });
+    const result = await this.leads.findMany(requesterId, requesterRole, filters);
+    return right(result);
   }
 }
