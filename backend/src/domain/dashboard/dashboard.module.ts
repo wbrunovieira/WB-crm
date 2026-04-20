@@ -6,11 +6,18 @@ import {
   GetTimelineDataUseCase,
   GetActivityCalendarUseCase,
 } from "./application/use-cases/dashboard.use-cases";
+import { DashboardRepository } from "./application/repositories/dashboard.repository";
+import { PrismaDashboardRepository } from "@/infra/database/prisma/repositories/dashboard/prisma-dashboard.repository";
 import { DashboardController } from "./infra/controllers/dashboard.controller";
 
 @Module({
   imports: [AuthModule, DatabaseModule],
   controllers: [DashboardController],
-  providers: [GetManagerStatsUseCase, GetTimelineDataUseCase, GetActivityCalendarUseCase],
+  providers: [
+    GetManagerStatsUseCase,
+    GetTimelineDataUseCase,
+    GetActivityCalendarUseCase,
+    { provide: DashboardRepository, useClass: PrismaDashboardRepository },
+  ],
 })
 export class DashboardModule {}

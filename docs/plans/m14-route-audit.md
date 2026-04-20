@@ -285,7 +285,7 @@ Pendentes (baixa prioridade):
 
 | Server Action | Método | Rota NestJS | Status | Observação |
 |---|---|---|---|---|
-| `getManagerStats` | GET | `GET /dashboard/stats` | ⚠️ | Shapes diferentes — action retorna estrutura mais detalhada com stage changes; backend retorna array de UserStats simplificado |
+| `getManagerStats` | GET | `GET /dashboard/stats` | ✅ | Retorna `{ period, byUser: UserMetrics[], totals: TotalMetrics, comparison }` com `?period=today\|week\|month\|custom` |
 | Funnel stats | GET | `GET /funnel/stats` | ✅ | |
 | Weekly goals | GET/POST | `GET/POST /funnel/goals` | ✅ | |
 
@@ -408,7 +408,7 @@ Usuário clica "Conectar Google"
 | ✅ `POST /labels` e `PATCH /labels/:id` | Retorna `{ id }` — action espera `Label` completo | Retornar `{ id, name, color, createdAt }` |
 | ✅ `POST /icps` e `PATCH /icps/:id` | Retorna `{ id }` — action espera `ICP` completo | Retornar objeto ICP completo |
 | ✅ `GET /leads` | Sem paginação | Retorna `{ leads, total, page, pageSize }` |
-| `GET /dashboard/stats` | Shape diferente do `getManagerStats` | Alinhar com o que o frontend espera |
+| ✅ `GET /dashboard/stats` | Shape diferente do `getManagerStats` | Retorna `{ period, byUser, totals, comparison }` com `?period=today\|week\|month\|custom&startDate=&endDate=` |
 | ✅ `DELETE /meetings/:id` | Action usa PATCH para cancelar; backend usa DELETE | `PATCH /meetings/:id/cancel` adicionado como alias |
 
 ### ✅ OAuth de integrações — migrado para NestJS

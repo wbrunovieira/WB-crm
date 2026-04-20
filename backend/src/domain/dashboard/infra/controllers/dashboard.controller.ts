@@ -16,22 +16,38 @@ export class DashboardController {
   ) {}
 
   @Get("stats")
-  async stats(@Request() req: any, @Query("ownerId") ownerId?: string) {
+  async stats(
+    @Request() req: any,
+    @Query("ownerId") ownerId?: string,
+    @Query("period") period?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
     const result = await this.getStats.execute({
       requesterId: req.user.id,
       requesterRole: req.user.role,
       ownerId,
+      period: (period as any) ?? "month",
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
     });
     if (result.isLeft()) throw result.value;
     return result.unwrap();
   }
 
   @Get("timeline")
-  async timeline(@Request() req: any, @Query("days") days?: string) {
+  async timeline(
+    @Request() req: any,
+    @Query("period") period?: string,
+    @Query("startDate") startDate?: string,
+    @Query("endDate") endDate?: string,
+  ) {
     const result = await this.getTimeline.execute({
       requesterId: req.user.id,
       requesterRole: req.user.role,
-      days: days ? Number(days) : undefined,
+      period: (period as any) ?? "month",
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
     });
     if (result.isLeft()) throw result.value;
     return result.unwrap();
