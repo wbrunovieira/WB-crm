@@ -864,69 +864,101 @@ Para cada subdomínio:
 
 ---
 
-### 🔲 M12 — Conversão de Lead, Cadências, Importação, Propostas, Operações
-**Status**: Pendente
+### 🔄 M12 — Conversão de Lead, Cadências, Importação, Propostas, Operações
+**Status**: Em andamento — M12.1–M12.6 ✅ | M12.7–M12.8 🔲
 
 #### Contexto
 
 Fluxos de negócio mais complexos que envolvem transações, orquestração multi-entidade e lógica de automação.
 
-#### Subdomínios
+---
 
-**Conversão de Lead → Organization**
-- Fluxo crítico: transação atômica que cria Org, migra LeadContacts → Contacts, copia tech profile, CNAEs, atualiza status do Lead
-- Use case: `ConvertLeadToOrganizationUseCase`
-  - Recebe `leadId`, `requesterId`, `requesterRole`
-  - Cria `Organization` a partir dos dados do `Lead`
-  - Para cada `LeadContact`: cria `Contact` com `sourceLeadContactId`
-  - Copia tech profile (7 tabelas) e CNAEs secundários
-  - Atualiza `Lead.status = "qualified"`, `Lead.convertedToOrganizationId`
-  - Tudo em `prisma.$transaction()`
+#### ✅ M12.1 — Conversão de Lead → Organization (2026-04-20)
+
+- `ConvertLeadToOrganizationUseCase` — transação atômica: cria Org, copia 7 tech profile tables + CNAEs secundários, cria Contacts a partir de LeadContacts, atualiza Lead (`status="qualified"`, `convertedToOrganizationId`)
+- `LeadConversionRepository` abstract + `PrismaLeadConversionRepository` (single `$transaction`)
+- `Lead.markAsConverted(organizationId)` adicionado à entidade
 - Rota: `POST /leads/:id/convert`
+- 9 unit tests + 6 E2E tests — todos passando ✅
 
-**Verificação de duplicatas de Lead**
-- Use case: `CheckLeadDuplicatesUseCase` (CNPJ, nome, telefone, email, endereço)
+---
+
+#### ✅ M12.2 — Verificação de Duplicatas de Lead (2026-04-20)
+
+- `CheckLeadDuplicatesUseCase` — scoring por campo: CNPJ (25pts), email (25pts), telefone (25pts), nome (25pts)
+- `NoCriteriaError` se nenhum campo fornecido; retorna `DuplicateMatch[]` ordenado por score
 - Rota: `POST /leads/check-duplicates`
+- 8 unit tests + 5 E2E tests — todos passando ✅
 
-**Transferência para Operações**
-- Use case: `TransferToOperationsUseCase`, `RevertFromOperationsUseCase`
-- Aplica/remove `inOperationsAt` em Lead, Organization, Contact, Partner
-- Rota: `PATCH /operations/transfer`, `PATCH /operations/revert`
+---
 
-**Disqualification Reasons**
-- `DisqualificationReason` entity (label + isDefault)
-- Use cases: `GetDisqualificationReasons` (merge defaults + custom do user), `CreateDisqualificationReason`
-- Rota: `GET /disqualification-reasons`, `POST /disqualification-reasons`
+#### ✅ M12.3 — Transferência para Operações (2026-04-20)
 
-**Cadências**
-- `Cadence` entity (name, slug, description, isPublished) + `CadenceStep` entity (type, order, subject, body, delayDays)
-- VOs: `CadenceSlug` (único por owner), `StepType` (call, email, whatsapp, task)
-- Use cases: `CreateCadence`, `UpdateCadence`, `DeleteCadence`, `PublishCadence`, `UnpublishCadence`, `GetCadences`, `GetCadenceById`
-- Use cases de steps: `CreateCadenceStep`, `UpdateCadenceStep`, `DeleteCadenceStep`, `ReorderCadenceSteps`
-- Aplicação: `ApplyCadenceToLeadUseCase` — gera automaticamente todas as Activities baseadas nos steps (com datas calculadas por `delayDays`)
-- `BulkApplyCadenceUseCase` — aplica para múltiplos leads
-- Controle: `PauseLeadCadenceUseCase`, `ResumeLeadCadenceUseCase`, `CancelLeadCadenceUseCase`
-- Rotas: `GET/POST /cadences`, `GET/PATCH/DELETE /cadences/:id`, `PATCH /cadences/:id/publish`, `PATCH /cadences/:id/unpublish`, `POST/PATCH/DELETE /cadences/:id/steps`, `PATCH /cadences/:id/steps/reorder`, `POST /leads/:id/cadences`, `POST /leads/cadences/bulk`, `PATCH /leads/:id/cadences/:cadenceId/pause`, `PATCH /leads/:id/cadences/:cadenceId/resume`, `DELETE /leads/:id/cadences/:cadenceId`
+- `TransferToOperationsUseCase`, `RevertFromOperationsUseCase`
+- `OperationsEntityType = "lead" | "organization"` (únicos com `inOperationsAt` no schema)
+- Rotas: `PATCH /operations/transfer`, `PATCH /operations/revert`
+- 8 unit tests + 4 E2E tests — todos passando ✅
 
-**Importação de Leads**
-- Use case: `ImportLeadsUseCase` — batch create com mapeamento de colunas, deduplicação, retorna `ImportResult { created, duplicates, errors }`
-- Domain event: `LeadImportedEvent` (para eventual enriquecimento)
-- Rota: `POST /leads/import` (multipart/form-data ou JSON com rows + column mapping)
+---
 
-**Propostas**
+#### ✅ M12.4 — Cadências (2026-04-20)
+
+**VOs:** `CadenceName` (máx 100 chars), `CadenceSlug` (NFD + hífens, único por owner), `CadenceStatus` (draft/active/archived), `StepChannel` (email/linkedin/whatsapp/call/meeting/instagram/task), `StepDayNumber` (1–365, inteiro), `LeadCadenceStatus` (active/paused/completed/cancelled)
+
+**Entidades:** `Cadence` (AggregateRoot) com `publish()` / `unpublish()` — rejeita publicar se arquivada; `CadenceStep` com `activityType` getter via `StepChannel.toActivityType()`
+
+**17 use cases:**
+- CRUD: `CreateCadence`, `UpdateCadence`, `DeleteCadence`, `GetCadences`, `GetCadenceById`, `PublishCadence`, `UnpublishCadence`
+- Steps: `CreateCadenceStep`, `UpdateCadenceStep`, `DeleteCadenceStep`, `ReorderCadenceSteps`, `GetCadenceSteps`
+- Lead: `ApplyCadenceToLeadUseCase` (gera Activities + LeadCadenceActivity em `$transaction`), `GetLeadCadences`, `PauseLeadCadence`, `ResumeLeadCadence`, `CancelLeadCadence`
+
+**Rotas:**
+- `GET/POST /cadences`, `GET/PATCH/DELETE /cadences/:id`, `PATCH /cadences/:id/publish|unpublish`
+- `GET/POST /cadences/:cadenceId/steps`, `PATCH/DELETE /cadences/steps/:stepId`, `PATCH /cadences/:cadenceId/steps/reorder`
+- `POST /cadences/:cadenceId/apply`, `GET /cadences/lead/:leadId`
+- `PATCH /cadences/lead-cadences/:id/pause|resume|cancel`
+
+**Decisão arquitetural:** rotas estáticas (`steps/`, `lead/`, `lead-cadences/`) declaradas antes de `:id` no controller para evitar colisão de rotas no NestJS.
+
+**Testes:** 56 unit tests + 9 E2E tests — todos passando ✅
+
+---
+
+#### ✅ M12.5 — Disqualification Reasons (2026-04-20)
+
+- `ReasonName` VO (trim, máx 100 chars)
+- `DisqualificationReason` entity
+- 3 use cases: `GetDisqualificationReasons`, `CreateDisqualificationReasonUseCase` (dedup por name+owner), `DeleteDisqualificationReasonUseCase`
+- Rotas: `GET/POST /disqualification-reasons`, `DELETE /disqualification-reasons/:id`
+- 15 unit tests + 7 E2E tests — todos passando ✅
+
+---
+
+#### ✅ M12.6 — Lead Import (2026-04-20)
+
+- `ImportLeadsUseCase` — batch com deduplicação em 2 níveis:
+  1. Por CNPJ (se fornecido) — busca bulk no banco
+  2. Por `businessName` case-insensitive — busca bulk no banco + dedup intra-batch
+- Retorna `ImportResult { total, imported, skipped, errors[] }` — nunca falha, apenas reporta
+- `PrismaLeadImportRepository` com `findMany mode:"insensitive"` + `createMany skipDuplicates:true`
+- Rota: `POST /lead-import`
+- 10 unit tests + 6 E2E tests — todos passando ✅
+
+---
+
+#### 🔲 M12.7 — Propostas
+
 - `Proposal` entity (title, status, value, driveFileId, driveWebViewLink, linkedTo: lead|deal)
-- VOs: `ProposalStatus` (draft, sent, accepted, rejected)
-- Use cases: `CreateProposal` (upload Drive se arquivo), `UpdateProposal`, `DeleteProposal`, `GetProposals`, `GetProposalStats`
-- Rota: `GET/POST /proposals`, `PATCH/DELETE /proposals/:id`, `GET /proposals/:id/file` (stream do Drive)
+- VOs: `ProposalStatus` (draft, sent, accepted, rejected), `ProposalValue` (≥ 0)
+- Use cases: `CreateProposal`, `UpdateProposal`, `DeleteProposal`, `GetProposals`, `GetProposalById`
+- Rota: `GET/POST /proposals`, `GET/PATCH/DELETE /proposals/:id`
+- Integração Google Drive: `GoogleDrivePort` — criar pasta, fazer upload, retornar `driveWebViewLink`
 
-**Renovações de Hosting**
-- Use case: `GetUpcomingRenewalsUseCase` (30 dias à frente), `CreateRenewalActivityUseCase`
+#### 🔲 M12.8 — Renovações de Hosting
+
+- Use cases: `GetUpcomingRenewalsUseCase` (30 dias à frente), `CreateRenewalActivityUseCase`
+- Query: `Organization` onde `hostingRenewalDate` entre hoje e hoje+30
 - Rota: `GET /hosting-renewals`, `POST /hosting-renewals/:organizationId/activity`
-
-#### Padrão TDD
-- `ConvertLeadToOrganizationUseCase`: in-memory repo com `$transaction` simulado — verificar que Lead e Org são criados, LeadContacts viram Contacts, tech profile é copiado
-- `ApplyCadenceToLeadUseCase`: verificar quantidade de activities geradas, datas corretas por delayDays, tipos corretos por step
-- `ImportLeadsUseCase`: testar batch com mix de válidos/duplicados/inválidos — verificar ImportResult
 
 ---
 
