@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getLabels, createLabel, updateLabel, deleteLabel, type Label } from "@/actions/labels";
+import { useLabels, useCreateLabel, useUpdateLabel, useDeleteLabel, type Label } from "@/hooks/labels/use-labels";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 interface LabelSelectProps {
@@ -22,7 +22,6 @@ const DEFAULT_COLORS = [
 ];
 
 export function LabelSelect({ value, onChange, placeholder = "Selecione uma label..." }: LabelSelectProps) {
-  const [labels, setLabels] = useState<Label[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -32,9 +31,10 @@ export function LabelSelect({ value, onChange, placeholder = "Selecione uma labe
   const wrapperRef = useRef<HTMLDivElement>(null);
   const { confirm, dialogProps } = useConfirmDialog();
 
-  useEffect(() => {
-    loadLabels();
-  }, []);
+  const { data: labels = [] } = useLabels();
+  const createLabel = useCreateLabel();
+  const updateLabel = useUpdateLabel();
+  const deleteLabel = useDeleteLabel();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -49,11 +49,6 @@ export function LabelSelect({ value, onChange, placeholder = "Selecione uma labe
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  async function loadLabels() {
-    const data = await getLabels();
-    setLabels(data);
-  }
-
   const selectedLabel = labels.find((l) => l.id === value);
 
   const filteredLabels = labels.filter((label) =>
@@ -63,8 +58,7 @@ export function LabelSelect({ value, onChange, placeholder = "Selecione uma labe
   async function handleCreateLabel() {
     if (!newLabelName.trim()) return;
 
-    const newLabel = await createLabel(newLabelName.trim(), newLabelColor);
-    setLabels([...labels, newLabel]);
+    const newLabel = await createLabel.mutateAsync({ name: newLabelName.trim(), color: newLabelColor });
     onChange(newLabel.id);
     setNewLabelName("");
     setNewLabelColor(DEFAULT_COLORS[0]);
@@ -75,8 +69,7 @@ export function LabelSelect({ value, onChange, placeholder = "Selecione uma labe
   async function handleUpdateLabel() {
     if (!editingLabel || !newLabelName.trim()) return;
 
-    const updatedLabel = await updateLabel(editingLabel.id, newLabelName.trim(), newLabelColor);
-    setLabels(labels.map((l) => (l.id === updatedLabel.id ? updatedLabel : l)));
+    await updateLabel.mutateAsync({ id: editingLabel.id, name: newLabelName.trim(), color: newLabelColor });
     setNewLabelName("");
     setNewLabelColor(DEFAULT_COLORS[0]);
     setEditingLabel(null);
@@ -91,8 +84,7 @@ export function LabelSelect({ value, onChange, placeholder = "Selecione uma labe
     });
     if (!confirmed) return;
 
-    await deleteLabel(labelId);
-    setLabels(labels.filter((l) => l.id !== labelId));
+    await deleteLabel.mutateAsync(labelId);
     if (value === labelId) {
       onChange(null);
     }

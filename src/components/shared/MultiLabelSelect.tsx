@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { getLabels, createLabel, type Label } from "@/actions/labels";
+import { useLabels, useCreateLabel, type Label } from "@/hooks/labels/use-labels";
 
 interface MultiLabelSelectProps {
   value: string[];
@@ -25,7 +25,6 @@ export function MultiLabelSelect({
   onChange,
   placeholder = "Selecione labels...",
 }: MultiLabelSelectProps) {
-  const [labels, setLabels] = useState<Label[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [isCreating, setIsCreating] = useState(false);
@@ -33,9 +32,8 @@ export function MultiLabelSelect({
   const [newLabelColor, setNewLabelColor] = useState(DEFAULT_COLORS[0]);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    loadLabels();
-  }, []);
+  const { data: labels = [] } = useLabels();
+  const createLabel = useCreateLabel();
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -48,11 +46,6 @@ export function MultiLabelSelect({
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  async function loadLabels() {
-    const data = await getLabels();
-    setLabels(data);
-  }
 
   const selectedLabels = labels.filter((l) => value.includes(l.id));
 
@@ -76,8 +69,7 @@ export function MultiLabelSelect({
   async function handleCreateLabel() {
     if (!newLabelName.trim()) return;
 
-    const newLabel = await createLabel(newLabelName.trim(), newLabelColor);
-    setLabels([...labels, newLabel]);
+    const newLabel = await createLabel.mutateAsync({ name: newLabelName.trim(), color: newLabelColor });
     onChange([...value, newLabel.id]);
     setNewLabelName("");
     setNewLabelColor(DEFAULT_COLORS[0]);
