@@ -377,3 +377,41 @@ export class GetCadenceLeadCountUseCase {
     return right({ count });
   }
 }
+
+@Injectable()
+export class BulkApplyCadenceUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: {
+    cadenceId: string;
+    leadIds: string[];
+    startDate?: Date;
+    notes?: string;
+    requesterId: string;
+    requesterRole: string;
+  }): Promise<Either<Error, { applied: string[]; failed: Array<{ leadId: string; reason: string }> }>> {
+    const cadence = await this.repo.findById(input.cadenceId);
+    if (!cadence) return left(new CadenceNotFoundError("Cadência não encontrada"));
+    if (input.requesterRole !== "admin" && cadence.ownerId !== input.requesterId) {
+      return left(new CadenceForbiddenError("Acesso negado"));
+    }
+
+    const steps = await this.repo.findStepsByCadence(input.cadenceId);
+    const applied: string[] = [];
+    const failed: Array<{ leadId: string; reason: string }> = [];
+
+    for (const leadId of input.leadIds) {
+      try {
+        await this.repo.applyToLead(
+          { leadId, cadenceId: input.cadenceId, startDate: input.startDate ?? new Date(), ownerId: input.requesterId, notes: input.notes },
+          steps,
+        );
+        applied.push(leadId);
+      } catch (err) {
+        failed.push({ leadId, reason: err instanceof Error ? err.message : "Erro desconhecido" });
+      }
+    }
+
+    return right({ applied, failed });
+  }
+}

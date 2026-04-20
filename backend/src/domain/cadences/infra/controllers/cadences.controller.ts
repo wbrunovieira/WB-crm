@@ -18,7 +18,7 @@ import {
   ReorderCadenceStepsUseCase, GetCadenceStepsUseCase,
   ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase,
   PauseLeadCadenceUseCase, ResumeLeadCadenceUseCase, CancelLeadCadenceUseCase,
-  GetCadenceLeadCountUseCase,
+  GetCadenceLeadCountUseCase, BulkApplyCadenceUseCase,
 } from "../../application/use-cases/cadences.use-cases";
 
 function serializeCadence(c: Cadence) {
@@ -84,6 +84,7 @@ export class CadencesController {
     private readonly resumeLeadCadence: ResumeLeadCadenceUseCase,
     private readonly cancelLeadCadence: CancelLeadCadenceUseCase,
     private readonly getCadenceLeadCount: GetCadenceLeadCountUseCase,
+    private readonly bulkApply: BulkApplyCadenceUseCase,
   ) {}
 
   // ── Static routes FIRST to avoid `:id` collision ────────────────────────────
@@ -211,6 +212,22 @@ export class CadencesController {
   async reorderStepsRoute(@Param("cadenceId") cadenceId: string, @Body() body: { orderedStepIds: string[] }, @CurrentUser() user: AuthenticatedUser) {
     const r = await this.reorderSteps.execute({ cadenceId, orderedStepIds: body.orderedStepIds, requesterId: user.id, requesterRole: user.role ?? "sdr" });
     if (r.isLeft()) handleError(r);
+  }
+
+  @Post("bulk-apply")
+  async bulkApplyRoute(@Body() body: {
+    cadenceId: string; leadIds: string[]; startDate?: string; notes?: string;
+  }, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.bulkApply.execute({
+      cadenceId: body.cadenceId,
+      leadIds: body.leadIds,
+      startDate: body.startDate ? new Date(body.startDate) : undefined,
+      notes: body.notes,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (r.isLeft()) handleError(r);
+    return r.unwrap();
   }
 
   @Post(":cadenceId/apply")
