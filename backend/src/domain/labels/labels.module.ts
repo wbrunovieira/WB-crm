@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { AuthModule } from "@/infra/auth/auth.module";
 import { LabelsRepository } from "./application/repositories/labels.repository";
 import {
   GetLabelsUseCase,
@@ -10,6 +11,7 @@ import { PrismaLabelsRepository } from "@/infra/database/prisma/repositories/lab
 import { LabelsController } from "@/infra/controllers/labels.controller";
 
 @Module({
+  imports: [AuthModule],
   controllers: [LabelsController],
   providers: [
     GetLabelsUseCase,
