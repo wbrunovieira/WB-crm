@@ -27,9 +27,10 @@ import { LeadConversionModule } from "./domain/lead-conversion/lead-conversion.m
 import { LeadDuplicatesModule } from "./domain/lead-duplicates/lead-duplicates.module";
 import { OperationsModule } from "./domain/operations/operations.module";
 import { CadencesModule } from "./domain/cadences/cadences.module";
+import { DisqualificationReasonsModule } from "./domain/disqualification-reasons/disqualification-reasons.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, MeetModule, LeadResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule],
+  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, MeetModule, LeadResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule],
   controllers: [HealthController],
   providers: [],
 })
