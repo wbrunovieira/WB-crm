@@ -20,9 +20,10 @@ import { LeadResearchModule } from "./domain/integrations/lead-research/lead-res
 import { LabelsModule } from "./domain/labels/labels.module";
 import { CnaeModule } from "./domain/cnae/cnae.module";
 import { SectorsModule } from "./domain/sectors/sectors.module";
+import { ICPModule } from "./domain/icp/icp.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, MeetModule, LeadResearchModule, LabelsModule, CnaeModule, SectorsModule],
+  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, MeetModule, LeadResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule],
   controllers: [HealthController],
   providers: [],
 })
