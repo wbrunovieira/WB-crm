@@ -206,6 +206,11 @@ export class Lead extends AggregateRoot<LeadProps> {
     this.touch();
   }
 
+  qualify() {
+    this.props.status = "qualified";
+    this.touch();
+  }
+
   markAsConverted(organizationId: string) {
     this.props.status = "qualified";
     this.props.convertedToOrganizationId = organizationId;

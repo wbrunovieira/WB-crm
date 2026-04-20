@@ -63,7 +63,10 @@ export class LabelsController {
       ownerId: user.id,
     });
     if (result.isLeft()) handleError(result);
-    if (result.isRight()) return { id: result.value.label.id.toString() };
+    if (result.isRight()) {
+      const l = result.value.label;
+      return { id: l.id.toString(), name: l.name, color: l.color, createdAt: l.createdAt };
+    }
   }
 
   @Patch(":id")
@@ -79,7 +82,10 @@ export class LabelsController {
       requesterId: user.id,
     });
     if (result.isLeft()) handleError(result);
-    if (result.isRight()) return { id: result.value.label.id.toString() };
+    if (result.isRight()) {
+      const l = result.value.label;
+      return { id: l.id.toString(), name: l.name, color: l.color, createdAt: l.createdAt };
+    }
   }
 
   @Delete(":id")

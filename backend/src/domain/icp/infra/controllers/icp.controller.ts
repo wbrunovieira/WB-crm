@@ -62,14 +62,16 @@ export class ICPController {
   async create(@Body() body: Record<string, unknown>, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.createICP.execute({ name: body.name as string, slug: body.slug as string | undefined, content: body.content as string, status: body.status as string | undefined, ownerId: user.id });
     if (result.isLeft()) handleError(result);
-    return { id: result.unwrap().icp.id.toString() };
+    const i = result.unwrap().icp;
+    return { id: i.id.toString(), name: i.name, slug: i.slug, content: i.content, status: i.statusValue, createdAt: i.createdAt };
   }
 
   @Patch(":id")
   async update(@Param("id") id: string, @Body() body: Record<string, unknown>, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.updateICP.execute({ ...body, id, requesterId: user.id });
     if (result.isLeft()) handleError(result);
-    return { id: result.unwrap().icp.id.toString() };
+    const i = result.unwrap().icp;
+    return { id: i.id.toString(), name: i.name, slug: i.slug, content: i.content, status: i.statusValue, createdAt: i.createdAt };
   }
 
   @Delete(":id")

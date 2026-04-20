@@ -491,3 +491,158 @@ describe("Leads API (e2e)", () => {
     });
   });
 });
+
+// ─── Lead Contacts E2E ────────────────────────────────────────────────────────
+
+describe("Lead Contacts E2E", () => {
+  let leadId: string;
+
+  beforeEach(async () => {
+    const res = await request(app.getHttpServer())
+      .post("/leads")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ businessName: "Lead para Contatos E2E" })
+      .expect(201);
+    leadId = res.body.id;
+  });
+
+  it("POST /leads/:id/contacts — cria contato", async () => {
+    const res = await request(app.getHttpServer())
+      .post(`/leads/${leadId}/contacts`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "João Contato", role: "CTO", email: "joao@empresa.com", isPrimary: true })
+      .expect(201);
+
+    expect(res.body.name).toBe("João Contato");
+    expect(res.body.role).toBe("CTO");
+    expect(res.body.isPrimary).toBe(true);
+    expect(res.body.isActive).toBe(true);
+  });
+
+  it("GET /leads/:id/contacts — lista contatos", async () => {
+    await request(app.getHttpServer())
+      .post(`/leads/${leadId}/contacts`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Contato Listagem" })
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .get(`/leads/${leadId}/contacts`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("PATCH /leads/:id/contacts/:contactId — atualiza contato", async () => {
+    const created = await request(app.getHttpServer())
+      .post(`/leads/${leadId}/contacts`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Para Atualizar" })
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .patch(`/leads/${leadId}/contacts/${created.body.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Atualizado", role: "CEO" })
+      .expect(200);
+
+    expect(res.body.name).toBe("Atualizado");
+    expect(res.body.role).toBe("CEO");
+  });
+
+  it("PATCH /leads/:id/contacts/:contactId/toggle — toggle isActive", async () => {
+    const created = await request(app.getHttpServer())
+      .post(`/leads/${leadId}/contacts`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Toggle Test" })
+      .expect(201);
+
+    expect(created.body.isActive).toBe(true);
+
+    const res = await request(app.getHttpServer())
+      .patch(`/leads/${leadId}/contacts/${created.body.id}/toggle`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(res.body.isActive).toBe(false);
+  });
+
+  it("DELETE /leads/:id/contacts/:contactId — deleta contato", async () => {
+    const created = await request(app.getHttpServer())
+      .post(`/leads/${leadId}/contacts`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "Para Deletar" })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .delete(`/leads/${leadId}/contacts/${created.body.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(204);
+
+    const list = await request(app.getHttpServer())
+      .get(`/leads/${leadId}/contacts`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(list.body.find((c: { id: string }) => c.id === created.body.id)).toBeUndefined();
+  });
+});
+
+// ─── Qualify & Bulk Archive E2E ───────────────────────────────────────────────
+
+describe("Qualify & Bulk Archive E2E", () => {
+  afterEach(async () => {
+    await prisma.lead.deleteMany({ where: { ownerId } });
+  });
+
+  it("PATCH /leads/:id/qualify — qualifica lead", async () => {
+    const created = await request(app.getHttpServer())
+      .post("/leads")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ businessName: "Lead para Qualificar" })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .patch(`/leads/${created.body.id}/qualify`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const found = await prisma.lead.findUnique({ where: { id: created.body.id } });
+    expect(found?.status).toBe("qualified");
+  });
+
+  it("PATCH /leads/bulk-archive — arquiva múltiplos leads", async () => {
+    const l1 = await request(app.getHttpServer())
+      .post("/leads").set("Authorization", `Bearer ${token}`)
+      .send({ businessName: "Bulk Lead 1" }).expect(201);
+    const l2 = await request(app.getHttpServer())
+      .post("/leads").set("Authorization", `Bearer ${token}`)
+      .send({ businessName: "Bulk Lead 2" }).expect(201);
+
+    const res = await request(app.getHttpServer())
+      .patch("/leads/bulk-archive")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ ids: [l1.body.id, l2.body.id], reason: "Sem interesse" })
+      .expect(200);
+
+    expect(res.body.archived).toBe(2);
+    expect(res.body.skipped).toBe(0);
+
+    const db1 = await prisma.lead.findUnique({ where: { id: l1.body.id } });
+    expect(db1?.isArchived).toBe(true);
+    expect(db1?.archivedReason).toBe("Sem interesse");
+  });
+
+  it("PATCH /leads/bulk-archive — pula ids não encontrados", async () => {
+    const res = await request(app.getHttpServer())
+      .patch("/leads/bulk-archive")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ ids: ["id-que-nao-existe"] })
+      .expect(200);
+
+    expect(res.body.archived).toBe(0);
+    expect(res.body.skipped).toBe(1);
+  });
+});

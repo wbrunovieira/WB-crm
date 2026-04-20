@@ -91,6 +91,13 @@ export class MeetingsCrudController {
     return serialize(r.unwrap());
   }
 
+  @Patch(":id/cancel")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async cancelPatch(@Request() req: any, @Param("id") id: string) {
+    const r = await this.cancel.execute({ id, requesterId: req.user.id });
+    if (r.isLeft()) throwIfError(r.value);
+  }
+
   @Delete(":id")
   @HttpCode(HttpStatus.NO_CONTENT)
   async cancelOne(@Request() req: any, @Param("id") id: string) {

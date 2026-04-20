@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   HttpCode,
   NotFoundException,
@@ -34,6 +35,15 @@ import { UpdateLeadUseCase, type UpdateLeadInput } from "@/domain/leads/applicat
 import { DeleteLeadUseCase } from "@/domain/leads/application/use-cases/delete-lead.use-case";
 import { ArchiveLeadUseCase } from "@/domain/leads/application/use-cases/archive-lead.use-case";
 import { UnarchiveLeadUseCase } from "@/domain/leads/application/use-cases/unarchive-lead.use-case";
+import { QualifyLeadUseCase } from "@/domain/leads/application/use-cases/qualify-lead.use-case";
+import { BulkArchiveLeadsUseCase } from "@/domain/leads/application/use-cases/bulk-archive-leads.use-case";
+import {
+  GetLeadContactsUseCase,
+  CreateLeadContactUseCase,
+  UpdateLeadContactUseCase,
+  DeleteLeadContactUseCase,
+  ToggleLeadContactActiveUseCase,
+} from "@/domain/leads/application/use-cases/lead-contacts.use-cases";
 import type { Lead } from "@/domain/leads/enterprise/entities/lead";
 
 /* ─── DTOs ──────────────────────────────────────────────────────────────── */
@@ -371,11 +381,79 @@ class ArchiveLeadDto {
   reason?: string;
 }
 
+class BulkArchiveLeadsDto {
+  @ApiProperty({ type: [String], description: "IDs dos leads a arquivar" })
+  ids!: string[];
+
+  @ApiPropertyOptional({ example: "Sem potencial no momento" })
+  reason?: string;
+}
+
+class CreateLeadContactDto {
+  @ApiProperty({ example: "Ana Silva" })
+  name!: string;
+
+  @ApiPropertyOptional({ example: "CEO" })
+  role?: string;
+
+  @ApiPropertyOptional({ example: "ana@empresa.com" })
+  email?: string;
+
+  @ApiPropertyOptional({ example: "+5511999990000" })
+  phone?: string;
+
+  @ApiPropertyOptional()
+  whatsapp?: string;
+
+  @ApiPropertyOptional()
+  linkedin?: string;
+
+  @ApiPropertyOptional()
+  instagram?: string;
+
+  @ApiPropertyOptional({ example: false })
+  isPrimary?: boolean;
+
+  @ApiPropertyOptional()
+  languages?: string;
+}
+
+class UpdateLeadContactDto {
+  @ApiPropertyOptional()
+  name?: string;
+
+  @ApiPropertyOptional()
+  role?: string;
+
+  @ApiPropertyOptional()
+  email?: string;
+
+  @ApiPropertyOptional()
+  phone?: string;
+
+  @ApiPropertyOptional()
+  whatsapp?: string;
+
+  @ApiPropertyOptional()
+  linkedin?: string;
+
+  @ApiPropertyOptional()
+  instagram?: string;
+
+  @ApiPropertyOptional()
+  isPrimary?: boolean;
+
+  @ApiPropertyOptional()
+  languages?: string;
+}
+
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
 
 function handleError(err: Left<Error, unknown>): never {
   const msg = err.value.message;
-  if (msg.includes("não encontrado")) throw new NotFoundException(msg);
+  const name = (err.value as { name?: string }).name ?? "";
+  if (msg.includes("não encontrado") || name.includes("NotFound")) throw new NotFoundException(msg);
+  if (msg.includes("Acesso negado") || name.includes("Forbidden")) throw new ForbiddenException(msg);
   if (msg.includes("Não autorizado")) throw new UnauthorizedException(msg);
   throw new Error(msg);
 }
@@ -471,6 +549,13 @@ export class LeadsController {
     private readonly deleteLead: DeleteLeadUseCase,
     private readonly archiveLead: ArchiveLeadUseCase,
     private readonly unarchiveLead: UnarchiveLeadUseCase,
+    private readonly qualifyLead: QualifyLeadUseCase,
+    private readonly bulkArchiveLeads: BulkArchiveLeadsUseCase,
+    private readonly getLeadContacts: GetLeadContactsUseCase,
+    private readonly createLeadContact: CreateLeadContactUseCase,
+    private readonly updateLeadContact: UpdateLeadContactUseCase,
+    private readonly deleteLeadContact: DeleteLeadContactUseCase,
+    private readonly toggleLeadContact: ToggleLeadContactActiveUseCase,
   ) {}
 
   @Get()
@@ -536,6 +621,21 @@ export class LeadsController {
     });
     if (result.isLeft()) handleError(result);
     return serialize(result.value.lead);
+  }
+
+  @Patch("bulk-archive")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Arquivar múltiplos leads" })
+  @ApiBody({ type: BulkArchiveLeadsDto })
+  @ApiResponse({ status: 200, description: "Resultado do arquivamento em lote" })
+  async bulkArchive(@Body() body: BulkArchiveLeadsDto, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.bulkArchiveLeads.execute({
+      ids: body.ids,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+      reason: body.reason,
+    });
+    return result.value;
   }
 
   @Patch(":id")
@@ -617,5 +717,78 @@ export class LeadsController {
     });
     if (result.isLeft()) handleError(result);
     return serialize(result.value.lead);
+  }
+
+  @Patch(":id/qualify")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Qualificar lead" })
+  @ApiParam({ name: "id", description: "ID do lead" })
+  @ApiResponse({ status: 200, description: "Lead qualificado" })
+  @ApiResponse({ status: 403, description: "Sem permissão" })
+  @ApiResponse({ status: 404, description: "Lead não encontrado" })
+  async qualify(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.qualifyLead.execute({
+      id,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) handleError(result);
+  }
+
+  /* ─── Lead Contacts ──────────────────────────────────────────────────────── */
+
+  @Get(":id/contacts")
+  @ApiOperation({ summary: "Listar contatos do lead" })
+  @ApiParam({ name: "id", description: "ID do lead" })
+  async listContacts(@Param("id") id: string) {
+    const result = await this.getLeadContacts.execute({ leadId: id });
+    return result.value;
+  }
+
+  @Post(":id/contacts")
+  @HttpCode(201)
+  @ApiOperation({ summary: "Criar contato no lead" })
+  @ApiParam({ name: "id", description: "ID do lead" })
+  @ApiBody({ type: CreateLeadContactDto })
+  async addContact(@Param("id") id: string, @Body() body: CreateLeadContactDto) {
+    const result = await this.createLeadContact.execute({ leadId: id, ...body });
+    if (result.isLeft()) throw new Error(result.value.message);
+    return result.value;
+  }
+
+  @Patch(":id/contacts/:contactId")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Atualizar contato do lead" })
+  @ApiParam({ name: "id", description: "ID do lead" })
+  @ApiParam({ name: "contactId", description: "ID do contato" })
+  @ApiBody({ type: UpdateLeadContactDto })
+  async updateContact(
+    @Param("contactId") contactId: string,
+    @Body() body: UpdateLeadContactDto,
+  ) {
+    const result = await this.updateLeadContact.execute({ id: contactId, ...body });
+    if (result.isLeft()) handleError(result);
+    return result.value;
+  }
+
+  @Delete(":id/contacts/:contactId")
+  @HttpCode(204)
+  @ApiOperation({ summary: "Deletar contato do lead" })
+  @ApiParam({ name: "id", description: "ID do lead" })
+  @ApiParam({ name: "contactId", description: "ID do contato" })
+  async removeContact(@Param("contactId") contactId: string) {
+    const result = await this.deleteLeadContact.execute({ id: contactId });
+    if (result.isLeft()) handleError(result);
+  }
+
+  @Patch(":id/contacts/:contactId/toggle")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Ativar/desativar contato do lead" })
+  @ApiParam({ name: "id", description: "ID do lead" })
+  @ApiParam({ name: "contactId", description: "ID do contato" })
+  async toggleContact(@Param("contactId") contactId: string) {
+    const result = await this.toggleLeadContact.execute({ id: contactId });
+    if (result.isLeft()) handleError(result);
+    return result.value;
   }
 }
