@@ -2209,3 +2209,54 @@ model IntegrationToken {
 
   @@map("integration_tokens")
 }
+
+model EmailMessage {
+  id             String    @id @default(cuid())
+  gmailMessageId String    @unique
+  threadId       String
+  from           String
+  to             String
+  subject        String
+  bodyText       String?
+  activityId     String?
+  ownerId        String
+  sentAt         DateTime
+  trackingToken  String?   @unique
+  openedAt       DateTime?
+  openCount      Int       @default(0)
+  lastClickedAt  DateTime?
+  clickCount     Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tracking EmailTracking[]
+
+  @@index([ownerId])
+  @@index([trackingToken])
+  @@map("email_messages")
+}
+
+model EmailTracking {
+  id             String    @id @default(cuid())
+  token          String    @unique
+  type           String    // "open" | "click"
+  emailMessageId String
+  targetUrl      String?
+  ownerId        String
+  openCount      Int       @default(0)
+  clickCount     Int       @default(0)
+  firstOpenAt    DateTime?
+  lastOpenAt     DateTime?
+  firstClickAt   DateTime?
+  lastClickAt    DateTime?
+  userAgent      String?
+  ip             String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  message EmailMessage @relation(fields: [emailMessageId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([emailMessageId])
+  @@map("email_tracking")
+}
