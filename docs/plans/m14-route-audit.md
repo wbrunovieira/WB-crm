@@ -14,7 +14,7 @@
 
 | Server Action | Método | Rota NestJS | Status | Observação |
 |---|---|---|---|---|
-| `getLeads` | GET | `GET /leads` | ⚠️ | Action retorna `{ leads, total, page, pageSize }` (paginado); backend retorna array flat sem paginação |
+| `getLeads` | GET | `GET /leads` | ✅ | Retorna `{ leads, total, page, pageSize }` com `?page=&pageSize=` |
 | `getLeadById` | GET | `GET /leads/:id` | ✅ | |
 | `getProspects` | GET | `GET /leads?status=prospect` | ⚠️ | Precisa verificar se filtro existe no backend |
 | `createLead` | POST | `POST /leads` | ⚠️ | Action pode retornar `{ status: "created" \| "duplicate_found", lead, duplicates }` — backend retorna Lead diretamente sem detecção de duplicata no create |
@@ -40,13 +40,8 @@
 | Sectors: add/remove | POST/DELETE | `/sectors/leads/:leadId/:sectorId` | ✅ | |
 | `POST /lead-import` | POST | `POST /lead-import` | ✅ | |
 
-**❌ Rotas a criar para Leads:**
-1. `GET /leads` — adicionar paginação (`?page=&pageSize=`) e retornar `{ leads, total, page, pageSize }`
-2. `POST /leads` — suporte a array `contacts[]` opcional para criar com contatos
-3. `PATCH /leads/bulk-archive` — body: `{ ids: string[], reason?: string }`
-4. `GET /leads/:id/contacts` — listar LeadContacts
-5. `POST /leads/:id/contacts` — criar LeadContact
-6. `PATCH /leads/:id/contacts/:contactId` — atualizar LeadContact
+**✅ Todos os gaps de Leads foram resolvidos.**
+Pendentes (baixa prioridade):
 7. `DELETE /leads/:id/contacts/:contactId` — deletar LeadContact
 8. `PATCH /leads/:id/contacts/:contactId/toggle` — toggle active
 9. `PATCH /leads/:id/qualify` — mudar status para "qualified"
@@ -65,11 +60,7 @@
 | `moveStage` | PATCH | `PATCH /deals/:id/stage` | ✅ | |
 | `updateStageHistoryDate` | PATCH | `PATCH /deals/stage-history/:historyId` | ✅ | |
 | Products: list/add/update/remove | GET/POST/PATCH/DELETE | `/deals/:dealId/products/*` | ✅ | |
-| Tech stack (categories) | — | ❌ | ❌ | `DealTechStack`, `DealLanguage`, `DealFramework` não têm rotas no backend |
-
-**❌ Rotas a criar para Deals:**
-1. `PATCH /deals/stage-history/:historyId` — atualizar data de um stage history
-2. `GET /deals/:id/tech-stack` + `POST/DELETE` — categorias, linguagens e frameworks do deal
+| Tech stack | GET/POST/DELETE | `GET/POST/DELETE /deals/:id/tech-stack/*` | ✅ | categories, languages (+ primary), frameworks |
 
 ---
 
@@ -122,11 +113,8 @@
 | `linkActivityToDeal` | POST | `POST /activities/:id/deals/:dealId` | ✅ | |
 | `unlinkActivityFromDeal` | DELETE | `DELETE /activities/:id/deals/:dealId` | ✅ | |
 | `updateActivityDueDate` | PATCH | `PATCH /activities/:id` | ✅ | Campo `dueDate` no body do update geral |
-| `assignLeadContactsToActivity` | PATCH | ❌ | ❌ | Nenhuma rota para atribuir `leadContactIds` a uma atividade |
-| `removeLeadContactsFromActivity` | PATCH | ❌ | ❌ | Nenhuma rota para remover `leadContactIds` |
-
-**❌ Rotas a criar para Activities:**
-1. `PATCH /activities/:id/lead-contacts` — body: `{ leadContactIds: string[] }` (passa array vazio para remover)
+| `assignLeadContactsToActivity` | PATCH | `PATCH /activities/:id/lead-contacts` | ✅ | body: `{ leadContactIds: string[] }` |
+| `removeLeadContactsFromActivity` | PATCH | `PATCH /activities/:id/lead-contacts` | ✅ | passa `leadContactIds: []` para remover |
 
 ---
 
@@ -397,9 +385,9 @@ Usuário clica "Conectar Google"
 | ✅ | Leads | `PATCH /leads/:id/contacts/:contactId/toggle` | Toggle active LeadContact |
 | ✅ | Leads | `PATCH /leads/:id/qualify` | Qualificar prospect |
 | ✅ | Leads | `PATCH /leads/bulk-archive` | Arquivar múltiplos leads |
-| Alta | Activities | `PATCH /activities/:id/lead-contacts` | Atribuir LeadContacts a atividade |
+| ✅ | Activities | `PATCH /activities/:id/lead-contacts` | Atribuir LeadContacts a atividade |
 | ✅ | Deals | `PATCH /deals/stage-history/:historyId` | Atualizar data de stage history |
-| Média | Leads | Paginação em `GET /leads` | Retornar `{ leads, total, page, pageSize }` |
+| ✅ | Leads | Paginação em `GET /leads` | Retornar `{ leads, total, page, pageSize }` |
 | ✅ | Leads | `POST /leads` com `contacts[]` | Criar lead + contatos em um request |
 | Média | Cadences | `POST /cadences/bulk-apply` | Aplicar cadência a múltiplos leads |
 | ✅ | Cadences | `GET /cadences/:id/lead-count` | Contar active lead cadences |
@@ -409,7 +397,7 @@ Usuário clica "Conectar Google"
 | ✅ | Admin | `?active=true` em BL e Products | Filtros de ativos |
 | ✅ | ICPs | `GET /icps/:id/versions` | Listar versões do ICP |
 | ✅ | ICPs | `POST /icps/:id/versions/restore` | Restaurar versão do ICP |
-| Média | Deals | Deal tech stack routes | `GET/POST/DELETE /deals/:id/tech-stack` |
+| ✅ | Deals | Deal tech stack routes | `GET/POST/DELETE /deals/:id/tech-stack/*` |
 | Baixa | Shared | `PATCH /shared-entities/bulk-transfer` | Transferência em massa |
 | Baixa | Leads | Lead activity order routes | Reordenar atividades de lead |
 
@@ -419,9 +407,9 @@ Usuário clica "Conectar Google"
 |---|---|---|
 | ✅ `POST /labels` e `PATCH /labels/:id` | Retorna `{ id }` — action espera `Label` completo | Retornar `{ id, name, color, createdAt }` |
 | ✅ `POST /icps` e `PATCH /icps/:id` | Retorna `{ id }` — action espera `ICP` completo | Retornar objeto ICP completo |
-| `GET /leads` | Sem paginação | Adicionar `{ leads, total, page, pageSize }` |
+| ✅ `GET /leads` | Sem paginação | Retorna `{ leads, total, page, pageSize }` |
 | `GET /dashboard/stats` | Shape diferente do `getManagerStats` | Alinhar com o que o frontend espera |
-| `DELETE /meetings/:id` | Action usa PATCH para cancelar; backend usa DELETE | Normalizar para `PATCH /meetings/:id/cancel` OU aceitar ambos |
+| ✅ `DELETE /meetings/:id` | Action usa PATCH para cancelar; backend usa DELETE | `PATCH /meetings/:id/cancel` adicionado como alias |
 
 ### ❌ OAuth de integrações — migrar para NestJS (bloqueiam M14)
 
