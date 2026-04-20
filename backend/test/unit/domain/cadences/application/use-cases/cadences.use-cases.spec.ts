@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { InMemoryCadencesRepository } from "../../fakes/in-memory-cadences.repository";
+import { Cadence } from "@/domain/cadences/enterprise/entities/cadence";
 import {
   CreateCadenceUseCase, UpdateCadenceUseCase, DeleteCadenceUseCase,
   GetCadencesUseCase, GetCadenceByIdUseCase,
@@ -98,14 +99,16 @@ describe("PublishCadenceUseCase / UnpublishCadenceUseCase", () => {
 
   it("cannot publish archived cadence", async () => {
     const uc = makeUseCases();
-    const cadence = (await uc.create.execute({ name: "Test", ownerId: "u1", status: "archived" })).unwrap();
+    const cadence = Cadence.create({ name: "Test", ownerId: "u1", status: "archived" }).unwrap();
+    await repo.save(cadence);
     const r = await uc.publish.execute({ id: cadence.id.toString(), ...user });
     expect(r.isLeft()).toBe(true);
   });
 
   it("unpublishes an active cadence", async () => {
     const uc = makeUseCases();
-    const cadence = (await uc.create.execute({ name: "Test", ownerId: "u1", status: "active" })).unwrap();
+    const cadence = (await uc.create.execute({ name: "Test", ownerId: "u1" })).unwrap();
+    await uc.publish.execute({ id: cadence.id.toString(), ...user });
     await uc.unpublish.execute({ id: cadence.id.toString(), ...user });
     expect((await repo.findById(cadence.id.toString()))!.status).toBe("draft");
   });
