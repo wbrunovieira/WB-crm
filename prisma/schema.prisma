@@ -2197,3 +2197,15 @@ model CampaignSend {
   @@index([leadId])
   @@map("campaign_sends")
 }
+
+
+model IntegrationToken {
+  id           String   @id @default(cuid())
+  provider     String   @unique // "goto"
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime
+  updatedAt    DateTime @updatedAt
+
+  @@map("integration_tokens")
+}

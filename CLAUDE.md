@@ -296,6 +296,114 @@ See `/docs/arquitetura-projeto.md` for complete architecture and 7-phase impleme
   - Tech profile junctions: `LeadLanguage`, `OrganizationLanguage`, etc. - Track current tech stack
   - Deal tech junctions: `DealTechStack`, `DealLanguage`, `DealFramework` - Track required technologies
 
+---
+
+## NestJS Backend (Strangler Fig Migration)
+
+The project is migrating backend logic from Next.js Server Actions to a standalone NestJS service. Both coexist during the transition — Next.js remains the frontend; NestJS handles new business logic and integrations.
+
+**Backend lives in `/backend/`** — runs on port **3010**, Swagger docs at `/docs`.
+
+### Backend Commands
+
+```bash
+cd backend
+
+# Development
+npm run start:dev          # Watch mode (port 3010)
+
+# Testing
+npm run test               # Unit tests (Vitest)
+npm run test:watch         # Watch mode
+npm run test:cov           # Coverage report
+npm run test:e2e           # E2E tests (requires test DB)
+
+# Database
+npm run db:generate        # Generate Prisma client
+npm run db:migrate         # Apply pending migrations
+
+# Build / Lint
+npm run build              # Compile TypeScript
+npm run lint               # ESLint + fix
+npm run format             # Prettier
+```
+
+### DDD Architecture
+
+All domain code follows strict DDD with Ports & Adapters:
+
+```
+backend/src/
+├── core/                   # Entity, AggregateRoot, UniqueEntityId, Either monad
+├── domain/{entity}/
+│   ├── enterprise/         # Entities and Value Objects (pure domain, no deps)
+│   ├── application/
+│   │   ├── use-cases/      # One class per use case, returns Either<Error, Result>
+│   │   ├── repositories/   # Abstract interfaces (ports)
+│   │   └── ports/          # External service contracts (e.g. GmailPort)
+│   └── {entity}.module.ts
+└── infra/
+    ├── auth/               # JWT guards and decorators
+    ├── controllers/        # HTTP entry points (thin, delegate to use cases)
+    ├── database/prisma/
+    │   ├── repositories/   # Concrete Prisma implementations
+    │   └── mappers/        # Domain ↔ Prisma conversions
+    └── shared/             # Global services (PhoneMatcherService, TranscriberService)
+```
+
+**Key patterns:**
+- **Either monad** — all use cases return `Either<ErrorType, ResultType>`; never throw
+- **Value Objects** — validate invariants at construction (e.g. `EmailAddress`, `PhoneNumber`)
+- **Prisma Mappers** — explicit domain↔DB conversion; handles JSON fields and Date casting
+- **In-memory fakes** — `test/unit/domain/{entity}/fakes/in-memory-*.repository.ts` used in unit tests instead of mocks
+- **JWT compatibility** — same `NEXTAUTH_SECRET` used by NextAuth and NestJS for transparent token sharing
+
+### Implemented Modules
+
+| Module | Milestone | Status |
+|--------|-----------|--------|
+| Auth, Contacts, Leads, Organizations, Partners, Deals, Activities, Pipelines | M1–M7 | ✅ |
+| Admin (BusinessLine, Product, 8 TechOption types) | M8 | ✅ |
+| SharedEntities (entity sharing + permissions) | M9 | ✅ |
+| GoTo Connect (calls, recordings, transcription) | M10.1 | ✅ |
+| WhatsApp via Evolution API | M10.2 | ✅ |
+| Email / Gmail (send, poll, tracking) | M10.3 | 🔄 In progress |
+| Google Meet recordings | M10.4 | ⏳ |
+| Labels, CNAE, ICP, cadences, bulk import | M11–M12 | ⏳ |
+| Remove Next.js backend layer entirely | M14 | ⏳ |
+
+### Backend Test Structure
+
+```
+backend/test/
+├── unit/domain/{entity}/
+│   ├── enterprise/value-objects/{name}.spec.ts
+│   ├── enterprise/entities/{name}.spec.ts
+│   ├── application/use-cases/{name}.spec.ts
+│   └── fakes/in-memory-{entity}.repository.ts
+└── e2e/
+    └── {entity}.e2e-spec.ts          # Uses real Prisma + TestingModule
+```
+
+TDD order: Value Objects → Entities → Use Cases (with fakes) → E2E (with test DB).
+
+### Integration Cron Jobs
+
+- GoTo recordings: `*/15 * * * *`
+- WhatsApp transcriptions: `*/5 * * * *`
+- Gmail polling: `*/5 * * * *`
+
+### Backend Deploy (Ansible)
+
+```bash
+cd deploy/ansible
+ansible-playbook -i inventory/production.yml playbooks/deploy-backend.yml
+```
+
+Backend runs as PM2 process `wb-crm-backend` on port 3010.
+
+---
+
 ## Git Workflow
 
 When the user types "github", perform these steps:

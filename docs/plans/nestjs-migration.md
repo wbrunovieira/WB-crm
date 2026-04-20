@@ -625,7 +625,7 @@ if (requesterRole !== "admin" && row.ownerId !== requesterId) {
 ---
 
 ### 🔄 M10 — Integrações & Automações
-**Status**: Em andamento — GoTo ✅ | WhatsApp 🔲 | Email 🔲 | Meet 🔲
+**Status**: Em andamento — GoTo ✅ | WhatsApp ✅ | Email ✅ | Meet 🔲
 
 #### Automações mapeadas no Next.js
 
@@ -639,19 +639,19 @@ if (requesterRole !== "admin" && row.ownerId !== requesterId) {
 | GoTo S3 recording finder | `lib/goto/s3-recording.ts` | ✅ `S3RecordingClient` | Adapter |
 | GoTo call report syncer | `lib/goto/call-report-syncer.ts` | ✅ `GoToApiClient` + cron | Use case |
 | WB-Transcriber client | `lib/transcriptor.ts` | ✅ `TranscriberService` (shared) | Adapter |
-| WhatsApp webhook receiver | `api/evolution/webhook/route.ts` | 🔲 | Webhook público |
-| WhatsApp transcription cron | `api/evolution/check-transcriptions/route.ts` | 🔲 | Cron 5min |
-| WhatsApp media (Drive + Transcriber) | `lib/evolution/media-handler.ts` | 🔲 | Handler |
-| WhatsApp message activity creator | `lib/evolution/message-activity-creator.ts` | 🔲 | Use case |
-| WhatsApp send (server action) | `actions/whatsapp.ts` | 🔲 | Mutação |
-| Evolution API client | `lib/evolution/client.ts` | 🔲 | Adapter |
-| Gmail poll cron | `api/google/gmail-poll/route.ts` | 🔲 | Cron 5min |
-| Gmail email activity creator | `lib/google/email-activity-creator.ts` | 🔲 | Use case |
-| Gmail poller (History API) | `lib/google/gmail-poller.ts` | 🔲 | Adapter |
-| Gmail send + tracking inject | `actions/gmail.ts` | 🔲 | Mutação |
-| Email tracking open pixel | `api/track/open/[token]/route.ts` | 🔲 | Endpoint público |
-| Email tracking click redirect | `api/track/click/[token]/route.ts` | 🔲 | Endpoint público |
-| Email tracking logic | `lib/email-tracking.ts` | 🔲 | Serviço |
+| WhatsApp webhook receiver | `api/evolution/webhook/route.ts` | ✅ `WhatsAppWebhookController` | Webhook público |
+| WhatsApp transcription cron | `api/evolution/check-transcriptions/route.ts` | ✅ `WhatsAppTranscriptionCronService` | Cron 5min |
+| WhatsApp media (Drive + Transcriber) | `lib/evolution/media-handler.ts` | ✅ `ProcessWhatsAppMediaUseCase` | Use case |
+| WhatsApp message activity creator | `lib/evolution/message-activity-creator.ts` | ✅ `ProcessWhatsAppMessageUseCase` | Use case |
+| WhatsApp send (server action) | `actions/whatsapp.ts` | ✅ `POST /whatsapp/send` + `SendWhatsAppMessageUseCase` | Mutação |
+| Evolution API client | `lib/evolution/client.ts` | ✅ `EvolutionApiClient` | Adapter |
+| Gmail poll cron | `api/google/gmail-poll/route.ts` | ✅ `GmailPollCronService` | Cron 5min |
+| Gmail email activity creator | `lib/google/email-activity-creator.ts` | ✅ `ProcessIncomingEmailUseCase` | Use case |
+| Gmail poller (History API) | `lib/google/gmail-poller.ts` | ✅ `GmailClient` | Adapter |
+| Gmail send + tracking inject | `actions/gmail.ts` | ✅ `POST /email/send` + `SendEmailUseCase` | Mutação |
+| Email tracking open pixel | `api/track/open/[token]/route.ts` | ✅ `GET /track/open/:token` | Endpoint público |
+| Email tracking click redirect | `api/track/click/[token]/route.ts` | ✅ `GET /track/click/:token` | Endpoint público |
+| Email tracking logic | `lib/email-tracking.ts` | ✅ `TrackEmailOpenUseCase` + `TrackEmailClickUseCase` | Use cases |
 | Google Meet recordings (3 passes) | `api/google/check-recordings/route.ts` | 🔲 | Cron 15min |
 | Meet transcription cron | `api/google/check-transcriptions/route.ts` | 🔲 | Cron 5min |
 | Meet recording detector | `lib/google/recording-detector.ts` | 🔲 | Adapter |
@@ -714,39 +714,38 @@ AWS_REGION, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_S3_GOTO_BUCKET
 TRANSCRIPTOR_BASE_URL, TRANSCRIPTOR_API_KEY
 ```
 
-#### M10.2 — WhatsApp (Evolution API) 🔲 Pendente
+#### M10.2 — WhatsApp (Evolution API) ✅ Completo em 2026-04-18
 
-**O que migrar do Next.js:**
-- `api/evolution/webhook/route.ts` → `WhatsAppWebhookController` (sem JWT, valida `X-Webhook-Secret`)
-- `lib/evolution/message-activity-creator.ts` → `ProcessWhatsAppMessageUseCase`
-  - Sessões de 2h (agrupa mensagens na mesma Activity)
-  - Idempotência por messageId
-  - Cria Notification em nova sessão
-- `lib/evolution/media-handler.ts` → `ProcessWhatsAppMediaUseCase`
-  - Download de mídia da Evolution API → Drive → Transcriber
-- `api/evolution/check-transcriptions/route.ts` → `@Cron("*/5 * * * *")`
-- `actions/whatsapp.ts` → `POST /whatsapp/send` + `SendWhatsAppMessageUseCase`
+**Implementado:**
+- `WhatsAppWebhookController` — POST /webhooks/whatsapp (sem JWT, valida `X-Webhook-Secret`, forward p/ n8n)
+- `ProcessWhatsAppMessageUseCase` — sessões 2h, idempotência por messageId, Notification em nova sessão
+- `ProcessWhatsAppMediaUseCase` — download da Evolution API → Google Drive → WB-Transcriber
+- `WhatsAppTranscriptionCronService` — `@Cron("*/5 * * * *")`, polling + atualização de transcrições
+- `SendWhatsAppMessageUseCase` + `POST /whatsapp/send` (JWT)
+- `EvolutionApiClient` — implementação do `EvolutionApiPort`
+- `PrismaWhatsAppMessagesRepository` — persistência e sessão de 2h via `findLastInSession()`
+- VOs: `WhatsAppJid` (isGroup, extractPhone), `WhatsAppMessageType` (8 tipos, isDownloadable, isTranscribable)
+- 68 novos testes (VOs + use cases + E2E) | 454 total passando
 
-**VOs a criar:** `WhatsAppSessionWindow` (2h), `MessageType` (text, audio, video, image, document)
+#### M10.3 — Email (Gmail) ✅ Completo em 2026-04-20
 
-**Port a criar:** `EvolutionApiPort` (sendText, sendMedia, downloadMedia, checkNumber)
+**Implementado:**
+- VOs: `EmailAddress`, `EmailTrackingToken`, `TrackingType`
+- Ports: `GmailPort` (send, pollHistory, getProfile, getMessage), `GoogleOAuthPort` (getValidToken, storeTokens)
+- Use cases: `SendEmailUseCase`, `PollGmailUseCase`, `ProcessIncomingEmailUseCase`, `TrackEmailOpenUseCase`, `TrackEmailClickUseCase`
+- Repositories: `EmailMessagesRepository`, `EmailTrackingRepository` (stubs em memória — schema Prisma pendente para M10.3.5)
+- `EmailController` — POST /email/send (JWT), GET /email/messages (JWT)
+- `EmailWebhookController` — GET /track/open/:token (público, retorna 1x1 GIF), GET /track/click/:token (público, redirect 302)
+- `GmailPollCronService` — `@Cron("*/5 * * * *")`
+- `GmailClient` e `GoogleOAuthService` — implementações dos ports
+- 8 testes unitários (VOs) + 5 use case specs + 13 e2e tests — todos passando ✅
+- `BOT_PATTERNS` afinado: `"apple"` removido (batia em AppleWebKit), substituído por `"applebot"` e `"apple-icloud"`
+- `vitest.config.ts` — alias `@test` adicionado para imports cross-domain entre specs
 
-#### M10.3 — Email (Gmail) 🔲 Pendente
-
-**O que migrar do Next.js:**
-- `api/google/gmail-poll/route.ts` → `@Cron("*/5 * * * *")` com Gmail History API
-- `lib/google/email-activity-creator.ts` → `ProcessIncomingEmailUseCase`
-  - Idempotência por emailMessageId
-  - Match por endereço de email (Contact → LeadContact → Lead → Organization)
-- `actions/gmail.ts` → `POST /email/send` + `SendEmailUseCase`
-  - Injeção de tracking pixel + links
-- `api/track/open/[token]/route.ts` → `GET /track/open/:token` (público, sem JWT)
-- `api/track/click/[token]/route.ts` → `GET /track/click/:token` (público, sem JWT, redirect)
-- `lib/email-tracking.ts` → `EmailTrackingService` (filtra Apple MPP, Gmail proxy)
-
-**VOs a criar:** `EmailTrackingToken`, `TrackingType` (open, click)
-
-**Port a criar:** `GmailPort` (send, pollHistory, getProfile), `GoogleOAuthPort` (token refresh)
+**Pendente (M10.3.5 — schema + Prisma real):**
+- Adicionar modelos `EmailMessage` e `EmailTracking` ao `prisma/schema.prisma`
+- Substituir stubs em memória por `PrismaEmailMessagesRepository` e `PrismaEmailTrackingRepository` reais
+- Migration em produção + deploy
 
 #### M10.4 — Google Meet 🔲 Pendente
 
