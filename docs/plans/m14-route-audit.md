@@ -29,8 +29,8 @@
 | `qualifyProspect` | PATCH | `PATCH /leads/:id/qualify` | ✅ | |
 | `checkLeadDuplicates` | POST | `POST /leads/check-duplicates` | ✅ | |
 | `convertLeadToOrganization` | POST | `POST /leads/:id/convert` | ✅ | |
-| `updateLeadActivityOrder` | PATCH | ❌ | ❌ | Nenhuma rota para reordenar atividades de um lead |
-| `resetLeadActivityOrder` | PATCH | ❌ | ❌ | Nenhuma rota para resetar ordem de atividades |
+| `updateLeadActivityOrder` | PATCH | `PATCH /leads/:id/activity-order` | ✅ | body: `{ activityIds: string[] }` |
+| `resetLeadActivityOrder` | PATCH/DELETE | `DELETE /leads/:id/activity-order` | ✅ | |
 | Labels: add/remove | POST/DELETE | `POST/DELETE /leads/:id/labels/:labelId` | ✅ | |
 | Labels: set bulk | PUT | `PUT /leads/:leadId/labels` | ✅ | |
 | CNAEs: add/remove | POST/DELETE | `POST/DELETE /cnaes/leads/:leadId/:cnaeId` | ✅ | |
@@ -41,10 +41,6 @@
 | `POST /lead-import` | POST | `POST /lead-import` | ✅ | |
 
 **✅ Todos os gaps de Leads foram resolvidos.**
-Pendentes (baixa prioridade):
-7. `DELETE /leads/:id/contacts/:contactId` — deletar LeadContact
-8. `PATCH /leads/:id/contacts/:contactId/toggle` — toggle active
-9. `PATCH /leads/:id/qualify` — mudar status para "qualified"
 
 ---
 
@@ -240,8 +236,7 @@ Pendentes (baixa prioridade):
 | `generateUniqueCadenceSlug` | GET | ❌ | ❌ | Helper interno |
 | `getCadencesForICP` | GET | `GET /cadences?icpId=` | ✅ | Filtro implementado |
 
-**❌ Rotas a criar para Cadences:**
-1. `POST /cadences/bulk-apply` — body: `{ cadenceId, leadIds[], startDate }`
+**✅ Todos os gaps de Cadences foram resolvidos.**
 
 ---
 
@@ -398,8 +393,9 @@ Usuário clica "Conectar Google"
 | ✅ | ICPs | `GET /icps/:id/versions` | Listar versões do ICP |
 | ✅ | ICPs | `POST /icps/:id/versions/restore` | Restaurar versão do ICP |
 | ✅ | Deals | Deal tech stack routes | `GET/POST/DELETE /deals/:id/tech-stack/*` |
-| Baixa | Shared | `PATCH /shared-entities/bulk-transfer` | Transferência em massa |
-| Baixa | Leads | Lead activity order routes | Reordenar atividades de lead |
+| ✅ | Leads | `PATCH /leads/:id/activity-order` | Definir ordem de atividades — body: `{ activityIds: string[] }` |
+| ✅ | Leads | `DELETE /leads/:id/activity-order` | Resetar ordem de atividades |
+| Baixa | Shared | `PATCH /shared-entities/bulk-transfer` | Transferência em massa — ação não existe no Next.js, gap irrelevante para M14 |
 
 ### ⚠️ Inconsistências de retorno (a corrigir)
 

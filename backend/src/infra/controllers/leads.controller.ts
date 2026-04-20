@@ -44,6 +44,10 @@ import {
   DeleteLeadContactUseCase,
   ToggleLeadContactActiveUseCase,
 } from "@/domain/leads/application/use-cases/lead-contacts.use-cases";
+import {
+  UpdateLeadActivityOrderUseCase,
+  ResetLeadActivityOrderUseCase,
+} from "@/domain/leads/application/use-cases/update-lead-activity-order.use-case";
 import type { Lead } from "@/domain/leads/enterprise/entities/lead";
 
 /* ─── DTOs ──────────────────────────────────────────────────────────────── */
@@ -556,6 +560,8 @@ export class LeadsController {
     private readonly updateLeadContact: UpdateLeadContactUseCase,
     private readonly deleteLeadContact: DeleteLeadContactUseCase,
     private readonly toggleLeadContact: ToggleLeadContactActiveUseCase,
+    private readonly updateActivityOrder: UpdateLeadActivityOrderUseCase,
+    private readonly resetActivityOrder: ResetLeadActivityOrderUseCase,
   ) {}
 
   @Get()
@@ -735,6 +741,43 @@ export class LeadsController {
   async qualify(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.qualifyLead.execute({
       id,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) handleError(result);
+  }
+
+  /* ─── Activity Order ─────────────────────────────────────────────────────── */
+
+  @Patch(":id/activity-order")
+  @HttpCode(204)
+  @ApiOperation({ summary: "Definir ordem das atividades do lead" })
+  @ApiParam({ name: "id", description: "ID do lead" })
+  @ApiBody({ schema: { properties: { activityIds: { type: "array", items: { type: "string" } } } } })
+  async setActivityOrder(
+    @Param("id") id: string,
+    @Body("activityIds") activityIds: string[],
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.updateActivityOrder.execute({
+      leadId: id,
+      activityIds,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) handleError(result);
+  }
+
+  @Delete(":id/activity-order")
+  @HttpCode(204)
+  @ApiOperation({ summary: "Resetar ordem das atividades do lead" })
+  @ApiParam({ name: "id", description: "ID do lead" })
+  async resetActivityOrderRoute(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.resetActivityOrder.execute({
+      leadId: id,
       requesterId: user.id,
       requesterRole: user.role ?? "sdr",
     });
