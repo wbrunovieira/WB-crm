@@ -1,5 +1,6 @@
 import { getPartners } from "@/actions/partners";
-import { getUsers } from "@/actions/users";
+import { backendFetch } from "@/lib/backend/client";
+import type { UserListItem } from "@/hooks/users/use-users";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { SearchInput } from "@/components/shared/SearchInput";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
@@ -21,7 +22,7 @@ export default async function PartnersPage({
 
   const [partners, users] = await Promise.all([
     getPartners({ search: searchParams.search, owner: searchParams.owner }),
-    isAdmin ? getUsers() : Promise.resolve([]),
+    backendFetch<UserListItem[]>('/users'),
   ]);
 
   // Get shared users for all partners (batch query)

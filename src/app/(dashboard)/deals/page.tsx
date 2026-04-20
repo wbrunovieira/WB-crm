@@ -1,5 +1,6 @@
 import { getDeals } from "@/actions/deals";
-import { getUsers } from "@/actions/users";
+import { backendFetch } from "@/lib/backend/client";
+import type { UserListItem } from "@/hooks/users/use-users";
 import { getPipelineView } from "@/actions/pipeline-view";
 import { getPipelines } from "@/actions/pipelines";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
@@ -30,7 +31,7 @@ export default async function DealsPage({
   const view = searchParams.view || "list";
   const groupBy = searchParams.groupBy || "none";
 
-  const users = isAdmin ? await getUsers() : [];
+  const users = await backendFetch<UserListItem[]>('/users');
 
   if (view === "kanban") {
     const [pipelineData, allPipelines] = await Promise.all([

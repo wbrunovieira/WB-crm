@@ -7,7 +7,7 @@ import { DealsListView } from "./DealsListView";
 import { DealsKanbanView } from "./DealsKanbanView";
 import { DealsFilters } from "./DealsFilters";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
-import { UserListItem } from "@/actions/users";
+import type { UserListItem } from "@/hooks/users/use-users";
 
 interface Deal {
   id: string;

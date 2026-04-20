@@ -3,7 +3,8 @@ import { getDeals } from "@/actions/deals";
 import { getContacts } from "@/actions/contacts";
 import { getLeads } from "@/actions/leads";
 import { getPartners } from "@/actions/partners";
-import { getUsers } from "@/actions/users";
+import { backendFetch } from "@/lib/backend/client";
+import type { UserListItem } from "@/hooks/users/use-users";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
@@ -82,7 +83,7 @@ export default async function ActivitiesPage({
     getContacts(),
     getLeads({}).then(r => r.leads),
     getPartners(),
-    isAdmin ? getUsers() : Promise.resolve([]),
+    backendFetch<UserListItem[]>('/users'),
   ]);
 
   const availableData = {

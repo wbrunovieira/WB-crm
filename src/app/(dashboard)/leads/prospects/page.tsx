@@ -1,5 +1,6 @@
 import { getProspects } from "@/actions/leads";
-import { getUsers } from "@/actions/users";
+import { backendFetch } from "@/lib/backend/client";
+import type { UserListItem } from "@/hooks/users/use-users";
 import { ProspectsTable } from "@/components/leads/ProspectsTable";
 import { ProspectsSearchInput } from "@/components/leads/ProspectsSearchInput";
 import { GoogleLeadsButton } from "@/components/leads/GoogleLeadsButton";
@@ -21,7 +22,7 @@ export default async function ProspectsPage({
 
   const [prospects, users] = await Promise.all([
     getProspects(searchParams),
-    isAdmin ? getUsers() : Promise.resolve([]),
+    backendFetch<UserListItem[]>('/users'),
   ]);
 
   return (

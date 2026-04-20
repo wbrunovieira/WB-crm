@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import { UserListItem } from "@/actions/users";
+import type { UserListItem } from "@/hooks/users/use-users";
 
 interface OwnerFilterProps {
   users: UserListItem[];

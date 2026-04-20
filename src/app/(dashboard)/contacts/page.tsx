@@ -1,6 +1,7 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { getUsers } from "@/actions/users";
+import { backendFetch } from "@/lib/backend/client";
+import type { UserListItem } from "@/hooks/users/use-users";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { ContactsListClient } from "@/components/contacts/ContactsListClient";
 
@@ -10,7 +11,7 @@ export default async function ContactsPage() {
   const currentUserId = session?.user?.id ?? "";
 
   // Dados que ainda vivem no Next.js (não migrados ao NestJS)
-  const users = isAdmin ? await getUsers() : [];
+  const users = await backendFetch<UserListItem[]>('/users');
 
   return (
     <ContactsListClient

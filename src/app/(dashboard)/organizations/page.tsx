@@ -1,6 +1,7 @@
 import { getOrganizations } from "@/actions/organizations";
 import { PhoneLink } from "@/components/ui/phone-link";
-import { getUsers } from "@/actions/users";
+import { backendFetch } from "@/lib/backend/client";
+import type { UserListItem } from "@/hooks/users/use-users";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { SearchInput } from "@/components/shared/SearchInput";
@@ -24,7 +25,7 @@ export default async function OrganizationsPage({
 
   const [organizations, users] = await Promise.all([
     getOrganizations({ search: searchParams.search, owner: searchParams.owner, hasHosting: hasHostingFilter }),
-    isAdmin ? getUsers() : Promise.resolve([]),
+    backendFetch<UserListItem[]>('/users'),
   ]);
 
   // Get shared users for all organizations (batch query)

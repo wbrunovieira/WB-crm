@@ -1,5 +1,6 @@
 import { getLeads } from "@/actions/leads";
-import { getUsers } from "@/actions/users";
+import { backendFetch } from "@/lib/backend/client";
+import type { UserListItem } from "@/hooks/users/use-users";
 import { getICPs } from "@/actions/icps";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { LeadsFilters } from "@/components/leads/LeadsFilters";
@@ -33,7 +34,7 @@ export default async function LeadsPage({
 
   const [leadsResult, users, icps] = await Promise.all([
     getLeads(searchParams),
-    isAdmin ? getUsers() : Promise.resolve([]),
+    backendFetch<UserListItem[]>('/users'),
     getICPs({ status: "active" }),
   ]);
 

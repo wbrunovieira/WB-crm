@@ -7,7 +7,7 @@ import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import Link from "next/link";
 import { Users, Plus } from "lucide-react";
 import { useSearchParams } from "next/navigation";
-import type { UserListItem } from "@/actions/users";
+import type { UserListItem } from "@/hooks/users/use-users";
 
 interface Props {
   isAdmin: boolean;
