@@ -40,4 +40,46 @@ export class PrismaLabelsRepository extends LabelsRepository {
   async delete(id: string): Promise<void> {
     await this.prisma.label.delete({ where: { id } });
   }
+
+  async addToLead(labelId: string, leadId: string): Promise<void> {
+    await this.prisma.lead.update({
+      where: { id: leadId },
+      data: { labels: { connect: { id: labelId } } },
+    });
+  }
+
+  async removeFromLead(labelId: string, leadId: string): Promise<void> {
+    await this.prisma.lead.update({
+      where: { id: leadId },
+      data: { labels: { disconnect: { id: labelId } } },
+    });
+  }
+
+  async setLeadLabels(leadId: string, labelIds: string[]): Promise<void> {
+    await this.prisma.lead.update({
+      where: { id: leadId },
+      data: { labels: { set: labelIds.map((id) => ({ id })) } },
+    });
+  }
+
+  async addToOrganization(labelId: string, organizationId: string): Promise<void> {
+    await this.prisma.organization.update({
+      where: { id: organizationId },
+      data: { labels: { connect: { id: labelId } } },
+    });
+  }
+
+  async removeFromOrganization(labelId: string, organizationId: string): Promise<void> {
+    await this.prisma.organization.update({
+      where: { id: organizationId },
+      data: { labels: { disconnect: { id: labelId } } },
+    });
+  }
+
+  async setOrganizationLabels(organizationId: string, labelIds: string[]): Promise<void> {
+    await this.prisma.organization.update({
+      where: { id: organizationId },
+      data: { labels: { set: labelIds.map((id) => ({ id })) } },
+    });
+  }
 }
