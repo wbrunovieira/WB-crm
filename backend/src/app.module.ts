@@ -31,9 +31,12 @@ import { DisqualificationReasonsModule } from "./domain/disqualification-reasons
 import { LeadImportModule } from "./domain/lead-import/lead-import.module";
 import { ProposalsModule } from "./domain/proposals/proposals.module";
 import { HostingRenewalsModule } from "./domain/hosting-renewals/hosting-renewals.module";
+import { NotificationsModule } from "./domain/notifications/notifications.module";
+import { DashboardModule } from "./domain/dashboard/dashboard.module";
+import { FunnelModule } from "./domain/funnel/funnel.module";
 
 @Module({
-  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, MeetModule, LeadResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule],
+  imports: [DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, MeetModule, LeadResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule, NotificationsModule, DashboardModule, FunnelModule],
   controllers: [HealthController],
   providers: [],
 })

@@ -4,6 +4,8 @@ import {
   MeetingTranscriptionRecord,
   EndMeetingData,
   SaveRecordingData,
+  CreateMeetingData,
+  UpdateMeetingData,
 } from "@/domain/integrations/meet/application/repositories/meetings.repository";
 
 export class FakeMeetingsRepository extends MeetingsRepository {
@@ -78,16 +80,50 @@ export class FakeMeetingsRepository extends MeetingsRepository {
     this.completedActivities.push({ activityId, at });
   }
 
+  async findById(id: string): Promise<MeetingRecord | null> {
+    return this.items.find(m => m.id === id) as MeetingRecord ?? null;
+  }
+
+  async findByOwner(ownerId: string): Promise<MeetingRecord[]> {
+    return this.items.filter(m => m.ownerId === ownerId) as MeetingRecord[];
+  }
+
+  async create(data: CreateMeetingData): Promise<MeetingRecord> {
+    const record: MeetingRecord = {
+      id: Math.random().toString(36).slice(2),
+      title: data.title, googleEventId: data.googleEventId ?? null,
+      meetLink: data.meetLink ?? null, startAt: data.startAt, endAt: data.endAt ?? null,
+      actualStartAt: null, actualEndAt: null, attendeeEmails: JSON.stringify(data.attendeeEmails),
+      status: "scheduled", activityId: null, nativeTranscriptUrl: null,
+      recordingDriveId: null, leadId: data.leadId ?? null, contactId: data.contactId ?? null,
+      organizationId: data.organizationId ?? null, dealId: data.dealId ?? null,
+      ownerId: data.ownerId, createdAt: new Date(), updatedAt: new Date(),
+    };
+    this.items.push(record as any);
+    return record;
+  }
+
+  async update(id: string, data: UpdateMeetingData): Promise<MeetingRecord> {
+    const item = this.items.find(m => m.id === id)!;
+    if (data.title !== undefined) item.title = data.title;
+    if (data.startAt !== undefined) item.startAt = data.startAt;
+    if (data.endAt !== undefined) item.endAt = data.endAt;
+    if (data.status !== undefined) item.status = data.status;
+    if (data.attendeeEmails !== undefined) item.attendeeEmails = JSON.stringify(data.attendeeEmails);
+    return item as MeetingRecord;
+  }
+
+  async delete(id: string): Promise<void> {
+    this.items = this.items.filter(m => m.id !== id);
+  }
+
   addMeeting(meeting: Partial<MeetingRecord> & { id: string; title: string; startAt: Date; status: string }): void {
     this.items.push({
-      googleEventId: null,
-      endAt: null,
-      actualStartAt: null,
-      actualEndAt: null,
-      activityId: null,
-      nativeTranscriptUrl: null,
-      recordingDriveId: null,
+      googleEventId: null, meetLink: null, endAt: null, actualStartAt: null,
+      actualEndAt: null, attendeeEmails: "[]", activityId: null, nativeTranscriptUrl: null,
+      recordingDriveId: null, leadId: null, contactId: null, organizationId: null,
+      dealId: null, ownerId: "system", createdAt: new Date(), updatedAt: new Date(),
       ...meeting,
-    });
+    } as any);
   }
 }

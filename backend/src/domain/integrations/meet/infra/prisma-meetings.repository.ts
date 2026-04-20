@@ -6,7 +6,10 @@ import {
   MeetingTranscriptionRecord,
   EndMeetingData,
   SaveRecordingData,
+  CreateMeetingData,
+  UpdateMeetingData,
 } from "../application/repositories/meetings.repository";
+import { UniqueEntityID } from "@/core/unique-entity-id";
 
 @Injectable()
 export class PrismaMeetingsRepository extends MeetingsRepository {
@@ -100,16 +103,67 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
     });
   }
 
-  private toDomain(row: {
-    id: string; title: string; googleEventId: string | null; startAt: Date; endAt: Date | null;
-    actualStartAt: Date | null; actualEndAt: Date | null; status: string; activityId: string | null;
-    nativeTranscriptUrl: string | null; recordingDriveId: string | null;
-  }): MeetingRecord {
+  async findById(id: string): Promise<MeetingRecord | null> {
+    const row = await this.prisma.meeting.findUnique({ where: { id } });
+    return row ? this.toDomain(row as any) : null;
+  }
+
+  async findByOwner(ownerId: string): Promise<MeetingRecord[]> {
+    const rows = await this.prisma.meeting.findMany({
+      where: { ownerId },
+      orderBy: { startAt: "desc" },
+    });
+    return rows.map(r => this.toDomain(r as any));
+  }
+
+  async create(data: CreateMeetingData): Promise<MeetingRecord> {
+    const row = await this.prisma.meeting.create({
+      data: {
+        id: new UniqueEntityID().toString(),
+        title: data.title,
+        startAt: data.startAt,
+        endAt: data.endAt,
+        attendeeEmails: JSON.stringify(data.attendeeEmails),
+        googleEventId: data.googleEventId,
+        meetLink: data.meetLink,
+        leadId: data.leadId,
+        contactId: data.contactId,
+        organizationId: data.organizationId,
+        dealId: data.dealId,
+        ownerId: data.ownerId,
+      },
+    });
+    return this.toDomain(row as any);
+  }
+
+  async update(id: string, data: UpdateMeetingData): Promise<MeetingRecord> {
+    const row = await this.prisma.meeting.update({
+      where: { id },
+      data: {
+        ...(data.title !== undefined ? { title: data.title } : {}),
+        ...(data.startAt !== undefined ? { startAt: data.startAt } : {}),
+        ...(data.endAt !== undefined ? { endAt: data.endAt } : {}),
+        ...(data.status !== undefined ? { status: data.status } : {}),
+        ...(data.attendeeEmails !== undefined ? { attendeeEmails: JSON.stringify(data.attendeeEmails) } : {}),
+      },
+    });
+    return this.toDomain(row as any);
+  }
+
+  async delete(id: string): Promise<void> {
+    await this.prisma.meeting.delete({ where: { id } });
+  }
+
+  private toDomain(row: any): MeetingRecord {
     return {
-      id: row.id, title: row.title, googleEventId: row.googleEventId, startAt: row.startAt,
-      endAt: row.endAt, actualStartAt: row.actualStartAt, actualEndAt: row.actualEndAt,
-      status: row.status, activityId: row.activityId, nativeTranscriptUrl: row.nativeTranscriptUrl,
-      recordingDriveId: row.recordingDriveId,
+      id: row.id, title: row.title, googleEventId: row.googleEventId ?? null,
+      meetLink: row.meetLink ?? null, startAt: row.startAt, endAt: row.endAt ?? null,
+      actualStartAt: row.actualStartAt ?? null, actualEndAt: row.actualEndAt ?? null,
+      attendeeEmails: row.attendeeEmails ?? "[]", status: row.status,
+      activityId: row.activityId ?? null, nativeTranscriptUrl: row.nativeTranscriptUrl ?? null,
+      recordingDriveId: row.recordingDriveId ?? null, leadId: row.leadId ?? null,
+      contactId: row.contactId ?? null, organizationId: row.organizationId ?? null,
+      dealId: row.dealId ?? null, ownerId: row.ownerId, createdAt: row.createdAt, updatedAt: row.updatedAt,
     };
   }
 }

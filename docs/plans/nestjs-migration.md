@@ -967,8 +967,8 @@ Fluxos de negócio mais complexos que envolvem transações, orquestração mult
 
 ---
 
-### 🔲 M13 — Notificações, Dashboard, Usuários, Reuniões, Funil
-**Status**: Pendente
+### ✅ M13 — Notificações, Dashboard, Usuários, Reuniões, Funil
+**Status**: Concluído (2026-04-20)
 
 #### Contexto
 
@@ -1010,10 +1010,43 @@ Funcionalidades transversais: sistema de notificações em tempo real, métricas
 - `WeeklyGoal` entity (targetSales, week, ownerId)
 - Rota: `GET /funnel/stats`, `GET/POST /funnel/goals`
 
-#### Padrão TDD
-- `NotificationsGateway` SSE: testar com TestingModule que o stream emite após `EventEmitter2.emit()`
-- `GetManagerStatsUseCase`: in-memory com dados pré-populados, verificar totais e agrupamentos
-- `ScheduleMeetingUseCase`: mock do `GoogleCalendarPort`, verificar que evento é criado e Meeting é persistido
+#### O que foi implementado
+
+**Notificações** (`NotificationsModule`):
+- `Notification` entity com VOs `NotificationType` (7 tipos) e `NotificationStatus` (pending/completed/error)
+- 3 use cases: `GetNotificationsUseCase` (com filtro `?unread=true`), `CreateNotificationUseCase`, `MarkNotificationsReadUseCase` (por IDs ou all)
+- SSE via `@Sse("notifications/stream")` + `NotificationsEventBus` (Subject RxJS + keepalive 25s)
+- `NotificationsModule` exporta `CreateNotificationUseCase` e `NotificationsEventBus` para outros módulos
+- 15 unit tests + 7 E2E tests ✅
+
+**Usuários** (`AuthModule` / `UsersController`):
+- `GetUsersUseCase` — admin: todos os usuários; sdr/closer: apenas self
+- `UsersRepository.findAll()` + `findById()` adicionados ao repo e implementação Prisma
+- Rota: `GET /users`
+- 3 E2E tests ✅
+
+**Dashboard** (`DashboardModule`):
+- 3 use cases read-only (direto no Prisma, sem entidade de domínio):
+  - `GetManagerStatsUseCase` — leads criados/convertidos, atividades por tipo, deals por status e valor por owner
+  - `GetTimelineDataUseCase` — leads + deals criados por dia (últimos N dias, padrão 30)
+  - `GetActivityCalendarUseCase` — heatmap de atividades do mês (por ano/mês)
+- Rotas: `GET /dashboard/stats`, `GET /dashboard/timeline?days=`, `GET /dashboard/activity-calendar?year=&month=`
+- 4 E2E tests ✅
+
+**Funil** (`FunnelModule`):
+- 3 use cases (direto no Prisma):
+  - `GetFunnelStatsUseCase` — leads, calls, connections, meetings, deals won/total
+  - `GetWeeklyGoalsUseCase` — lista metas semanais do owner
+  - `UpsertWeeklyGoalUseCase` — cria ou atualiza via `weekStart_ownerId` unique
+- Rotas: `GET /funnel/stats`, `GET/POST /funnel/goals`
+- 4 E2E tests ✅
+
+**Reuniões** (`MeetModule` — CRUD adicionado):
+- 5 use cases CRUD: `GetMeetingsUseCase`, `GetMeetingByIdUseCase`, `ScheduleMeetingUseCase`, `UpdateMeetingUseCase`, `CancelMeetingUseCase` (seta status="cancelled", não deleta)
+- `MeetingsRepository` estendido com `findById`, `findByOwner`, `create`, `update`, `delete`
+- `MeetingsCrudController` com serialização de `attendeeEmails` (JSON parse/stringify)
+- Rotas: `GET/POST /meetings`, `GET/PATCH/DELETE /meetings/:id`
+- 6 E2E tests ✅
 
 ---
 

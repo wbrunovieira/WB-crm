@@ -8,4 +8,6 @@ export interface UserRecord {
 
 export abstract class UsersRepository {
   abstract findByEmail(email: string): Promise<UserRecord | null>;
+  abstract findAll(): Promise<UserRecord[]>;
+  abstract findById(id: string): Promise<UserRecord | null>;
 }

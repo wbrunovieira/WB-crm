@@ -12,6 +12,10 @@ import { MeetingsRepository } from "./application/repositories/meetings.reposito
 // Use Cases
 import { DetectMeetRecordingsUseCase } from "./application/use-cases/detect-meet-recordings.use-case";
 import { PollMeetTranscriptionsUseCase } from "./application/use-cases/poll-meet-transcriptions.use-case";
+import {
+  GetMeetingsUseCase, GetMeetingByIdUseCase, ScheduleMeetingUseCase,
+  UpdateMeetingUseCase, CancelMeetingUseCase,
+} from "./application/use-cases/meetings-crud.use-cases";
 
 // Infrastructure
 import { GoogleDriveClient } from "./infra/google-drive.client";
@@ -19,13 +23,21 @@ import { GoogleCalendarClient } from "./infra/google-calendar.client";
 import { PrismaMeetingsRepository } from "./infra/prisma-meetings.repository";
 import { MeetRecordingsCronService } from "./infra/scheduled/meet-recordings-cron.service";
 import { MeetTranscriptionsCronService } from "./infra/scheduled/meet-transcriptions-cron.service";
+import { MeetingsCrudController } from "./infra/meetings-crud.controller";
+import { AuthModule } from "@/infra/auth/auth.module";
 
 @Module({
-  imports: [ScheduleModule.forRoot(), SharedInfraModule],
+  imports: [ScheduleModule.forRoot(), SharedInfraModule, AuthModule],
+  controllers: [MeetingsCrudController],
   providers: [
     // Use Cases
     DetectMeetRecordingsUseCase,
     PollMeetTranscriptionsUseCase,
+    GetMeetingsUseCase,
+    GetMeetingByIdUseCase,
+    ScheduleMeetingUseCase,
+    UpdateMeetingUseCase,
+    CancelMeetingUseCase,
 
     // Port implementations
     { provide: GoogleDrivePort, useClass: GoogleDriveClient },

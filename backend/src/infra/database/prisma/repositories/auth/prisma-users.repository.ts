@@ -11,12 +11,17 @@ export class PrismaUsersRepository extends UsersRepository {
   async findByEmail(email: string): Promise<UserRecord | null> {
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || !user.password) return null;
-    return {
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      role: user.role,
-      passwordHash: user.password,
-    };
+    return { id: user.id, name: user.name, email: user.email, role: user.role, passwordHash: user.password };
+  }
+
+  async findById(id: string): Promise<UserRecord | null> {
+    const user = await this.prisma.user.findUnique({ where: { id } });
+    if (!user) return null;
+    return { id: user.id, name: user.name, email: user.email, role: user.role, passwordHash: user.password ?? "" };
+  }
+
+  async findAll(): Promise<UserRecord[]> {
+    const users = await this.prisma.user.findMany({ orderBy: { name: "asc" } });
+    return users.map(u => ({ id: u.id, name: u.name, email: u.email, role: u.role, passwordHash: u.password ?? "" }));
   }
 }
