@@ -10,9 +10,23 @@ import { UniqueEntityID } from "@/core/unique-entity-id";
 export class ListBusinessLinesUseCase {
   constructor(private readonly repo: AdminRepository) {}
 
-  async execute(): Promise<Either<Error, { items: BusinessLine[] }>> {
-    const items = await this.repo.findBusinessLines();
+  async execute(active?: boolean): Promise<Either<Error, { items: BusinessLine[] }>> {
+    const all = await this.repo.findBusinessLines();
+    const items = active !== undefined ? all.filter((bl) => bl.isActive === active) : all;
     return right({ items });
+  }
+}
+
+// ─── Get By Id ────────────────────────────────────────────────────────────────
+
+@Injectable()
+export class GetBusinessLineByIdUseCase {
+  constructor(private readonly repo: AdminRepository) {}
+
+  async execute(id: string): Promise<Either<Error, { item: BusinessLine }>> {
+    const item = await this.repo.findBusinessLineById(id);
+    if (!item) return left(new Error("Linha de negócio não encontrada"));
+    return right({ item });
   }
 }
 

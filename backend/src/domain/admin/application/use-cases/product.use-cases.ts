@@ -9,9 +9,23 @@ import { Product } from "../../enterprise/entities/product";
 export class ListProductsUseCase {
   constructor(private readonly repo: AdminRepository) {}
 
-  async execute(businessLineId?: string): Promise<Either<Error, { items: Product[] }>> {
-    const items = await this.repo.findProducts(businessLineId);
+  async execute(businessLineId?: string, active?: boolean): Promise<Either<Error, { items: Product[] }>> {
+    const all = await this.repo.findProducts(businessLineId);
+    const items = active !== undefined ? all.filter((p) => p.isActive === active) : all;
     return right({ items });
+  }
+}
+
+// ─── Get By Id ────────────────────────────────────────────────────────────────
+
+@Injectable()
+export class GetProductByIdUseCase {
+  constructor(private readonly repo: AdminRepository) {}
+
+  async execute(id: string): Promise<Either<Error, { item: Product }>> {
+    const item = await this.repo.findProductById(id);
+    if (!item) return left(new Error("Produto não encontrado"));
+    return right({ item });
   }
 }
 

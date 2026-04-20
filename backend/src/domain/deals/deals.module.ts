@@ -8,6 +8,7 @@ import { CreateDealUseCase } from "./application/use-cases/create-deal.use-case"
 import { UpdateDealUseCase } from "./application/use-cases/update-deal.use-case";
 import { DeleteDealUseCase } from "./application/use-cases/delete-deal.use-case";
 import { UpdateDealStageUseCase } from "./application/use-cases/update-deal-stage.use-case";
+import { UpdateStageHistoryDateUseCase } from "./application/use-cases/update-stage-history-date.use-case";
 import { DealsController } from "@/infra/controllers/deals.controller";
 
 @Module({
@@ -21,6 +22,7 @@ import { DealsController } from "@/infra/controllers/deals.controller";
     UpdateDealUseCase,
     DeleteDealUseCase,
     UpdateDealStageUseCase,
+    UpdateStageHistoryDateUseCase,
   ],
   exports: [DealsRepository],
 })

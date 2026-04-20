@@ -6,6 +6,7 @@ import { AdminController } from "@/infra/controllers/admin.controller";
 
 import {
   ListBusinessLinesUseCase,
+  GetBusinessLineByIdUseCase,
   CreateBusinessLineUseCase,
   UpdateBusinessLineUseCase,
   DeleteBusinessLineUseCase,
@@ -14,6 +15,7 @@ import {
 
 import {
   ListProductsUseCase,
+  GetProductByIdUseCase,
   CreateProductUseCase,
   UpdateProductUseCase,
   DeleteProductUseCase,
@@ -35,12 +37,14 @@ import {
     { provide: AdminRepository, useClass: PrismaAdminRepository },
     // BusinessLine
     ListBusinessLinesUseCase,
+    GetBusinessLineByIdUseCase,
     CreateBusinessLineUseCase,
     UpdateBusinessLineUseCase,
     DeleteBusinessLineUseCase,
     ToggleBusinessLineUseCase,
     // Product
     ListProductsUseCase,
+    GetProductByIdUseCase,
     CreateProductUseCase,
     UpdateProductUseCase,
     DeleteProductUseCase,

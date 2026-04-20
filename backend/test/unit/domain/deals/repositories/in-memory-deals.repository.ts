@@ -112,4 +112,8 @@ export class InMemoryDealsRepository extends DealsRepository {
   async createStageHistory(input: CreateStageHistoryInput): Promise<void> {
     this.stageHistories.push(input);
   }
+
+  async updateStageHistoryDate(_historyId: string, _changedAt: Date): Promise<{ dealId: string } | null> {
+    return null;
+  }
 }

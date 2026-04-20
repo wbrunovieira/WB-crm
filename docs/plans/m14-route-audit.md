@@ -20,13 +20,13 @@
 | `createLead` | POST | `POST /leads` | ⚠️ | Action pode retornar `{ status: "created" \| "duplicate_found", lead, duplicates }` — backend retorna Lead diretamente sem detecção de duplicata no create |
 | `createLeadWithContacts` | POST | `POST /leads` | ❌ | Backend não cria contatos junto com o lead em um único request |
 | `updateLead` | PATCH | `PATCH /leads/:id` | ✅ | |
-| `bulkArchiveLeads` | PATCH | ❌ | ❌ | Nenhuma rota de bulk archive; backend só tem `PATCH /leads/:id/archive` individual |
-| `getLeadContacts` | GET | ❌ | ❌ | Nenhuma rota `GET /leads/:id/contacts` |
-| `createLeadContact` | POST | ❌ | ❌ | Nenhuma rota `POST /leads/:id/contacts` |
-| `updateLeadContact` | PATCH | ❌ | ❌ | Nenhuma rota `PATCH /leads/:id/contacts/:contactId` |
-| `deleteLeadContact` | DELETE | ❌ | ❌ | Nenhuma rota `DELETE /leads/:id/contacts/:contactId` |
-| `toggleLeadContactActive` | PATCH | ❌ | ❌ | Nenhuma rota `PATCH /leads/:id/contacts/:contactId/toggle` |
-| `qualifyProspect` | PATCH | ❌ | ❌ | Nenhuma rota `PATCH /leads/:id/qualify` |
+| `bulkArchiveLeads` | PATCH | `PATCH /leads/bulk-archive` | ✅ | |
+| `getLeadContacts` | GET | `GET /leads/:id/contacts` | ✅ | |
+| `createLeadContact` | POST | `POST /leads/:id/contacts` | ✅ | |
+| `updateLeadContact` | PATCH | `PATCH /leads/:id/contacts/:contactId` | ✅ | |
+| `deleteLeadContact` | DELETE | `DELETE /leads/:id/contacts/:contactId` | ✅ | |
+| `toggleLeadContactActive` | PATCH | `PATCH /leads/:id/contacts/:contactId/toggle` | ✅ | |
+| `qualifyProspect` | PATCH | `PATCH /leads/:id/qualify` | ✅ | |
 | `checkLeadDuplicates` | POST | `POST /leads/check-duplicates` | ✅ | |
 | `convertLeadToOrganization` | POST | `POST /leads/:id/convert` | ✅ | |
 | `updateLeadActivityOrder` | PATCH | ❌ | ❌ | Nenhuma rota para reordenar atividades de um lead |
@@ -63,7 +63,7 @@
 | `updateDeal` (via API route) | PATCH | `PATCH /deals/:id` | ✅ | |
 | `deleteDeal` | DELETE | `DELETE /deals/:id` | ✅ | |
 | `moveStage` | PATCH | `PATCH /deals/:id/stage` | ✅ | |
-| `updateStageHistoryDate` | PATCH | ❌ | ❌ | Nenhuma rota `PATCH /deals/stage-history/:historyId` |
+| `updateStageHistoryDate` | PATCH | `PATCH /deals/stage-history/:historyId` | ✅ | |
 | Products: list/add/update/remove | GET/POST/PATCH/DELETE | `/deals/:dealId/products/*` | ✅ | |
 | Tech stack (categories) | — | ❌ | ❌ | `DealTechStack`, `DealLanguage`, `DealFramework` não têm rotas no backend |
 
@@ -181,8 +181,8 @@
 | Server Action | Método | Rota NestJS | Status | Observação |
 |---|---|---|---|---|
 | `getBusinessLines` | GET | `GET /admin/business-lines` | ✅ | |
-| `getActiveBusinessLines` | GET | `GET /admin/business-lines?active=true` | ⚠️ | Backend não tem filtro `?active=` |
-| `getBusinessLineById` | GET | ❌ | ❌ | Sem rota `GET /admin/business-lines/:id` |
+| `getActiveBusinessLines` | GET | `GET /admin/business-lines?active=true` | ✅ | |
+| `getBusinessLineById` | GET | `GET /admin/business-lines/:id` | ✅ | |
 | `createBusinessLine` | POST | `POST /admin/business-lines` | ✅ | |
 | `updateBusinessLine` | PATCH | `PATCH /admin/business-lines/:id` | ✅ | |
 | `deleteBusinessLine` | DELETE | `DELETE /admin/business-lines/:id` | ✅ | |
@@ -191,8 +191,8 @@
 | `generateUniqueBusinessLineSlug` | GET | ❌ | ❌ | Sem rota de geração de slug |
 | `getUsedBusinessLineOrders` | GET | ❌ | ❌ | Sem rota |
 | `getProducts` | GET | `GET /admin/products` | ✅ | |
-| `getActiveProducts` | GET | `GET /admin/products?active=true` | ⚠️ | Backend não tem filtro `?active=` |
-| `getProductById` | GET | ❌ | ❌ | Sem rota `GET /admin/products/:id` |
+| `getActiveProducts` | GET | `GET /admin/products?active=true` | ✅ | |
+| `getProductById` | GET | `GET /admin/products/:id` | ✅ | |
 | `createProduct` | POST | `POST /admin/products` | ✅ | |
 | `updateProduct` | PATCH | `PATCH /admin/products/:id` | ✅ | |
 | `deleteProduct` | DELETE | `DELETE /admin/products/:id` | ✅ | |

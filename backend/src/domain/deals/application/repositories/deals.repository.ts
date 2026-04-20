@@ -31,4 +31,5 @@ export abstract class DealsRepository {
   abstract save(deal: Deal): Promise<void>;
   abstract delete(id: string): Promise<void>;
   abstract createStageHistory(input: CreateStageHistoryInput): Promise<void>;
+  abstract updateStageHistoryDate(historyId: string, changedAt: Date): Promise<{ dealId: string } | null>;
 }

@@ -372,4 +372,41 @@ describe("Deals API (e2e)", () => {
       expect(res.status).toBe(404);
     });
   });
+
+  // ─── PATCH /deals/stage-history/:historyId ─────────────────────────────────
+
+  describe("PATCH /deals/stage-history/:historyId", () => {
+    it("atualiza changedAt do histórico de etapa", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/deals")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ title: "Deal Stage History", stageId });
+
+      const dealInDb = await prisma.deal.findUnique({
+        where: { id: created.body.id },
+        include: { stageHistory: true },
+      });
+      const historyId = dealInDb!.stageHistory[0].id;
+      const newDate = "2025-01-15T12:00:00.000Z";
+
+      const res = await request(app.getHttpServer())
+        .patch(`/deals/stage-history/${historyId}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ changedAt: newDate })
+        .expect(200);
+
+      expect(res.body.dealId).toBe(created.body.id);
+
+      const updated = await prisma.dealStageHistory.findUnique({ where: { id: historyId } });
+      expect(updated!.changedAt.toISOString()).toBe(newDate);
+    });
+
+    it("retorna 404 para historyId inexistente", async () => {
+      await request(app.getHttpServer())
+        .patch("/deals/stage-history/nao-existe")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ changedAt: "2025-01-15T12:00:00.000Z" })
+        .expect(404);
+    });
+  });
 });

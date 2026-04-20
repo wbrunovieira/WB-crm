@@ -33,6 +33,7 @@ import { CreateDealUseCase, type CreateDealInput } from "@/domain/deals/applicat
 import { UpdateDealUseCase, type UpdateDealInput } from "@/domain/deals/application/use-cases/update-deal.use-case";
 import { DeleteDealUseCase } from "@/domain/deals/application/use-cases/delete-deal.use-case";
 import { UpdateDealStageUseCase } from "@/domain/deals/application/use-cases/update-deal-stage.use-case";
+import { UpdateStageHistoryDateUseCase } from "@/domain/deals/application/use-cases/update-stage-history-date.use-case";
 import type { Deal } from "@/domain/deals/enterprise/entities/deal";
 
 /* ─── DTOs ──────────────────────────────────────────────────────────────── */
@@ -126,6 +127,7 @@ export class DealsController {
     private readonly updateDeal: UpdateDealUseCase,
     private readonly deleteDeal: DeleteDealUseCase,
     private readonly updateStage: UpdateDealStageUseCase,
+    private readonly updateStageHistoryDate: UpdateStageHistoryDateUseCase,
   ) {}
 
   @Get()
@@ -242,5 +244,23 @@ export class DealsController {
     });
     if (result.isLeft()) handleError(result);
     return serialize(result.value.deal);
+  }
+
+  @Patch("stage-history/:historyId")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Atualizar data de um registro de histórico de etapa" })
+  @ApiParam({ name: "historyId" })
+  @ApiResponse({ status: 200, description: "Data atualizada" })
+  @ApiResponse({ status: 404, description: "Registro não encontrado" })
+  async updateStageHistory(
+    @Param("historyId") historyId: string,
+    @Body() body: { changedAt: string },
+  ) {
+    const result = await this.updateStageHistoryDate.execute({
+      historyId,
+      changedAt: new Date(body.changedAt),
+    });
+    if (result.isLeft()) handleError(result);
+    return result.value;
   }
 }

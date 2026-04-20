@@ -203,4 +203,11 @@ export class PrismaDealsRepository extends DealsRepository {
       },
     });
   }
+
+  async updateStageHistoryDate(historyId: string, changedAt: Date): Promise<{ dealId: string } | null> {
+    const existing = await this.prisma.dealStageHistory.findUnique({ where: { id: historyId }, select: { dealId: true } });
+    if (!existing) return null;
+    await this.prisma.dealStageHistory.update({ where: { id: historyId }, data: { changedAt } });
+    return { dealId: existing.dealId };
+  }
 }

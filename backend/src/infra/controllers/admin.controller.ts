@@ -11,8 +11,8 @@ import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { Left } from "@/core/either";
 import { TECH_OPTION_TYPES, type TechOptionType } from "@/domain/admin/enterprise/entities/admin-tech-option";
 
-import { ListBusinessLinesUseCase, CreateBusinessLineUseCase, UpdateBusinessLineUseCase, DeleteBusinessLineUseCase, ToggleBusinessLineUseCase } from "@/domain/admin/application/use-cases/business-line.use-cases";
-import { ListProductsUseCase, CreateProductUseCase, UpdateProductUseCase, DeleteProductUseCase, ToggleProductUseCase } from "@/domain/admin/application/use-cases/product.use-cases";
+import { ListBusinessLinesUseCase, GetBusinessLineByIdUseCase, CreateBusinessLineUseCase, UpdateBusinessLineUseCase, DeleteBusinessLineUseCase, ToggleBusinessLineUseCase } from "@/domain/admin/application/use-cases/business-line.use-cases";
+import { ListProductsUseCase, GetProductByIdUseCase, CreateProductUseCase, UpdateProductUseCase, DeleteProductUseCase, ToggleProductUseCase } from "@/domain/admin/application/use-cases/product.use-cases";
 import { ListTechOptionsUseCase, CreateTechOptionUseCase, UpdateTechOptionUseCase, DeleteTechOptionUseCase, ToggleTechOptionUseCase } from "@/domain/admin/application/use-cases/tech-option.use-cases";
 
 /* ─── DTOs ───────────────────────────────────────────────────────────────── */
@@ -118,12 +118,14 @@ function validateTechType(type: string): TechOptionType {
 export class AdminController {
   constructor(
     private readonly listBusinessLines: ListBusinessLinesUseCase,
+    private readonly getBusinessLineById: GetBusinessLineByIdUseCase,
     private readonly createBusinessLine: CreateBusinessLineUseCase,
     private readonly updateBusinessLine: UpdateBusinessLineUseCase,
     private readonly deleteBusinessLine: DeleteBusinessLineUseCase,
     private readonly toggleBusinessLine: ToggleBusinessLineUseCase,
 
     private readonly listProducts: ListProductsUseCase,
+    private readonly getProductById: GetProductByIdUseCase,
     private readonly createProduct: CreateProductUseCase,
     private readonly updateProduct: UpdateProductUseCase,
     private readonly deleteProduct: DeleteProductUseCase,
@@ -140,9 +142,20 @@ export class AdminController {
 
   @Get("business-lines")
   @ApiOperation({ summary: "Listar linhas de negócio" })
-  async getBLs() {
-    const result = await this.listBusinessLines.execute();
+  @ApiQuery({ name: "active", required: false, description: "Filtrar por ativo (true/false)" })
+  async getBLs(@Query("active") activeStr?: string) {
+    const active = activeStr === "true" ? true : activeStr === "false" ? false : undefined;
+    const result = await this.listBusinessLines.execute(active);
     return (result.value as { items: unknown[] }).items.map(serializeBL as never);
+  }
+
+  @Get("business-lines/:id")
+  @ApiOperation({ summary: "Buscar linha de negócio por ID" })
+  @ApiParam({ name: "id" })
+  async getBLById(@Param("id") id: string) {
+    const result = await this.getBusinessLineById.execute(id);
+    if (result.isLeft()) handleError(result);
+    return serializeBL((result.value as { item: import("@/domain/admin/enterprise/entities/business-line").BusinessLine }).item);
   }
 
   @Post("business-lines")
@@ -185,9 +198,23 @@ export class AdminController {
   @Get("products")
   @ApiOperation({ summary: "Listar produtos" })
   @ApiQuery({ name: "businessLineId", required: false })
-  async getProducts(@Query("businessLineId") businessLineId?: string) {
-    const result = await this.listProducts.execute(businessLineId);
+  @ApiQuery({ name: "active", required: false, description: "Filtrar por ativo (true/false)" })
+  async getProducts(
+    @Query("businessLineId") businessLineId?: string,
+    @Query("active") activeStr?: string,
+  ) {
+    const active = activeStr === "true" ? true : activeStr === "false" ? false : undefined;
+    const result = await this.listProducts.execute(businessLineId, active);
     return (result.value as { items: unknown[] }).items.map(serializeProduct as never);
+  }
+
+  @Get("products/:id")
+  @ApiOperation({ summary: "Buscar produto por ID" })
+  @ApiParam({ name: "id" })
+  async getProductByIdHandler(@Param("id") id: string) {
+    const result = await this.getProductById.execute(id);
+    if (result.isLeft()) handleError(result);
+    return serializeProduct((result.value as { item: import("@/domain/admin/enterprise/entities/product").Product }).item);
   }
 
   @Post("products")
