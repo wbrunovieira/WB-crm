@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { MeetingsRepository, MeetingRecord, MeetingFilters } from "../repositories/meetings.repository";
+import { GoogleCalendarPort } from "../ports/google-calendar.port";
 
 export class MeetingNotFoundError extends Error { name = "MeetingNotFoundError"; }
 export class MeetingForbiddenError extends Error { name = "MeetingForbiddenError"; }
@@ -51,15 +52,16 @@ export class GetMeetingByIdUseCase {
 
 @Injectable()
 export class ScheduleMeetingUseCase {
-  constructor(private readonly repo: MeetingsRepository) {}
+  constructor(
+    private readonly repo: MeetingsRepository,
+    private readonly calendarPort: GoogleCalendarPort,
+  ) {}
 
   async execute(input: {
     title: string;
     startAt: Date;
     endAt?: Date;
     attendeeEmails: string[];
-    googleEventId?: string;
-    meetLink?: string;
     description?: string;
     leadId?: string;
     contactId?: string;
@@ -67,15 +69,36 @@ export class ScheduleMeetingUseCase {
     dealId?: string;
     requesterId: string;
     createActivity?: boolean;
+    skipCalendar?: boolean;
   }): Promise<Either<Error, MeetingRecord>> {
     if (!input.title.trim()) return left(new Error("title não pode ser vazio"));
+
+    let googleEventId: string | undefined;
+    let meetLink: string | undefined;
+
+    if (!input.skipCalendar) {
+      try {
+        const calResult = await this.calendarPort.createMeetEvent({
+          title: input.title.trim(),
+          startAt: input.startAt,
+          endAt: input.endAt ?? new Date(input.startAt.getTime() + 60 * 60 * 1000),
+          attendeeEmails: input.attendeeEmails,
+          description: input.description,
+        });
+        googleEventId = calResult.googleEventId;
+        meetLink = calResult.meetLink ?? undefined;
+      } catch {
+        // Calendar failure is non-fatal — meeting is still created without a Google event
+      }
+    }
+
     const meeting = await this.repo.create({
       title: input.title.trim(),
       startAt: input.startAt,
       endAt: input.endAt,
       attendeeEmails: input.attendeeEmails,
-      googleEventId: input.googleEventId,
-      meetLink: input.meetLink,
+      googleEventId,
+      meetLink,
       description: input.description,
       leadId: input.leadId,
       contactId: input.contactId,
@@ -90,7 +113,10 @@ export class ScheduleMeetingUseCase {
 
 @Injectable()
 export class UpdateMeetingUseCase {
-  constructor(private readonly repo: MeetingsRepository) {}
+  constructor(
+    private readonly repo: MeetingsRepository,
+    private readonly calendarPort: GoogleCalendarPort,
+  ) {}
 
   async execute(input: {
     id: string;
@@ -104,6 +130,19 @@ export class UpdateMeetingUseCase {
     const meeting = await this.repo.findById(input.id);
     if (!meeting) return left(new MeetingNotFoundError("Reunião não encontrada"));
     if (meeting.ownerId !== input.requesterId) return left(new MeetingForbiddenError("Acesso negado"));
+
+    if (meeting.googleEventId && (input.title || input.startAt || input.endAt || input.attendeeEmails)) {
+      try {
+        await this.calendarPort.updateEvent(meeting.googleEventId, {
+          title: input.title,
+          startAt: input.startAt,
+          endAt: input.endAt,
+          attendeeEmails: input.attendeeEmails,
+        });
+      } catch {
+        // Non-fatal — proceed with DB update even if Calendar fails
+      }
+    }
 
     const updated = await this.repo.update(input.id, {
       title: input.title,
@@ -124,12 +163,24 @@ export class UpdateMeetingUseCase {
 
 @Injectable()
 export class CancelMeetingUseCase {
-  constructor(private readonly repo: MeetingsRepository) {}
+  constructor(
+    private readonly repo: MeetingsRepository,
+    private readonly calendarPort: GoogleCalendarPort,
+  ) {}
 
   async execute(input: { id: string; requesterId: string }): Promise<Either<Error, void>> {
     const meeting = await this.repo.findById(input.id);
     if (!meeting) return left(new MeetingNotFoundError("Reunião não encontrada"));
     if (meeting.ownerId !== input.requesterId) return left(new MeetingForbiddenError("Acesso negado"));
+
+    if (meeting.googleEventId) {
+      try {
+        await this.calendarPort.cancelEvent(meeting.googleEventId);
+      } catch {
+        // Non-fatal — proceed with DB cancellation even if Calendar fails
+      }
+    }
+
     await this.repo.update(input.id, { status: "cancelled" });
     if (meeting.activityId) {
       await this.repo.skipActivity(meeting.activityId, "Reunião cancelada");

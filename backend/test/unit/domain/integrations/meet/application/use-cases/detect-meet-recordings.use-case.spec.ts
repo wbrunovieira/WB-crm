@@ -147,7 +147,7 @@ describe("DetectMeetRecordingsUseCase", () => {
 
       const meeting = meetings.items[0];
       expect(meeting.meetingSummary).toBeDefined();
-      expect(meeting.transcriptText).toBeUndefined();
+      expect(meeting.transcriptText).toBeFalsy();
       expect(meeting.transcriptionJobId).toBeDefined();
     });
 

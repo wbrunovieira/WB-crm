@@ -1,4 +1,4 @@
-import { CadencesRepository, LeadCadenceRecord, ApplyCadenceInput, GeneratedActivity } from "@/domain/cadences/application/repositories/cadences.repository";
+import { CadencesRepository, LeadCadenceRecord, LeadCadenceDetail, AvailableCadenceForLead, ApplyCadenceInput, GeneratedActivity } from "@/domain/cadences/application/repositories/cadences.repository";
 import { Cadence } from "@/domain/cadences/enterprise/entities/cadence";
 import { CadenceStep } from "@/domain/cadences/enterprise/entities/cadence-step";
 import { UniqueEntityID } from "@/core/unique-entity-id";
@@ -108,5 +108,26 @@ export class InMemoryCadencesRepository extends CadencesRepository {
 
   async countActiveLeads(cadenceId: string): Promise<number> {
     return this.leadCadences.filter(lc => lc.cadenceId === cadenceId && lc.status === "active").length;
+  }
+
+  async getLeadCadencesDetail(_leadId: string): Promise<LeadCadenceDetail[]> {
+    return [];
+  }
+
+  async completeLeadCadence(id: string, _disqualificationReason?: string): Promise<void> {
+    const lc = this.leadCadences.find(l => l.id === id);
+    if (lc) { lc.status = "completed"; lc.completedAt = new Date(); }
+  }
+
+  async cancelAllActiveCadencesByTemplate(_cadenceId: string): Promise<{ cancelledIds: string[]; skippedActivitiesCount: number }> {
+    return { cancelledIds: [], skippedActivitiesCount: 0 };
+  }
+
+  async getAvailableCadencesForLead(_leadId: string, _ownerId: string): Promise<AvailableCadenceForLead[]> {
+    return [];
+  }
+
+  async registerLeadReply(_leadId: string, _ownerId: string, _channel: string, _notes?: string): Promise<{ activityId: string; cancelledCadences: number; skippedActivities: number }> {
+    return { activityId: "", cancelledCadences: 0, skippedActivities: 0 };
   }
 }

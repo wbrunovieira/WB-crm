@@ -1,6 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
-import { GmailPort } from "../ports/gmail.port";
+import { GmailPort, GmailAttachment } from "../ports/gmail.port";
 import { GoogleOAuthPort } from "../ports/google-oauth.port";
 import { EmailMessagesRepository, EmailMessage } from "../repositories/email-messages.repository";
 import { EmailTrackingRepository, EmailTrackingRecord } from "../repositories/email-tracking.repository";
@@ -12,12 +12,14 @@ export interface SendEmailInput {
   subject: string;
   bodyHtml: string;
   threadId?: string;
+  attachments?: GmailAttachment[];
   ownerId: string;
 }
 
 export interface SendEmailOutput {
   messageId: string;
   threadId: string;
+  trackingToken: string;
 }
 
 /** Generates a URL-safe random token without external dependencies */
@@ -64,7 +66,7 @@ export class SendEmailUseCase {
   ) {}
 
   async execute(input: SendEmailInput): Promise<Either<Error, SendEmailOutput>> {
-    const { userId, to, subject, bodyHtml, threadId, ownerId } = input;
+    const { userId, to, subject, bodyHtml, threadId, attachments, ownerId } = input;
 
     // 1. Validate email address
     const emailResult = EmailAddress.create(to);
@@ -101,6 +103,7 @@ export class SendEmailUseCase {
         subject,
         bodyHtml: trackedHtml,
         threadId,
+        attachments,
       });
       messageId = sendResult.messageId;
       resultThreadId = sendResult.threadId;
@@ -155,6 +158,6 @@ export class SendEmailUseCase {
       });
     }
 
-    return right({ messageId, threadId: resultThreadId });
+    return right({ messageId, threadId: resultThreadId, trackingToken });
   }
 }

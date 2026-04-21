@@ -47,7 +47,20 @@ export class InMemorySharedEntitiesRepository extends SharedEntitiesRepository {
 
   async transferOwnership(entityType: SharedEntityType, entityId: string, newOwnerId: string): Promise<void> {
     this.ownershipChanges.push({ entityType, entityId, newOwnerId });
-    // Remove all shares after transfer
     this.items = this.items.filter((i) => !(i.entityType === entityType && i.entityId === entityId));
+  }
+
+  async findBatchSharedUsers(entityType: SharedEntityType, entityIds: string[]): Promise<Record<string, { id: string; name: string }[]>> {
+    const result: Record<string, { id: string; name: string }[]> = {};
+    for (const entityId of entityIds) {
+      result[entityId] = this.items
+        .filter((i) => i.entityType === entityType && i.entityId === entityId)
+        .map((i) => ({ id: i.sharedWithUserId, name: `User ${i.sharedWithUserId}` }));
+    }
+    return result;
+  }
+
+  async findAvailableUsersForSharing(_entityType: SharedEntityType, _entityId: string): Promise<{ id: string; name: string; email: string }[]> {
+    return [];
   }
 }

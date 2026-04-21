@@ -1,4 +1,4 @@
-import { LeadsRepository, type LeadFilters, type LeadRelations, type PaginatedLeads } from "@/domain/leads/application/repositories/leads.repository";
+import { LeadsRepository, type LeadFilters, type LeadRelations, type PaginatedLeads, type LeadSelectItem } from "@/domain/leads/application/repositories/leads.repository";
 import type { Lead } from "@/domain/leads/enterprise/entities/lead";
 import type { LeadSummary, LeadDetail } from "@/domain/leads/enterprise/read-models/lead-read-models";
 
@@ -151,5 +151,13 @@ export class InMemoryLeadsRepository extends LeadsRepository {
 
   async delete(id: string): Promise<void> {
     this.items = this.items.filter((l) => l.id.toString() !== id);
+  }
+
+  async findForSelect(_requesterId: string, _requesterRole: string): Promise<LeadSelectItem[]> {
+    return this.items.map((l) => ({
+      id: l.id.toString(),
+      businessName: l.businessName,
+      leadContacts: [],
+    }));
   }
 }

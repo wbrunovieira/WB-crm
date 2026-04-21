@@ -30,6 +30,8 @@ export class InMemoryHostingRenewalsRepository extends HostingRenewalsRepository
           hostingRenewalDate: org.hostingRenewalDate,
           ownerId: org.ownerId,
           daysUntilRenewal: diff,
+          hostingPlan: null,
+          hostingValue: null,
         };
       })
       .sort((a, b) => a.daysUntilRenewal - b.daysUntilRenewal);

@@ -143,4 +143,6 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
   async delete(id: string): Promise<void> {
     this.items = this.items.filter((a) => a.id.toString() !== id);
   }
+
+  async markThreadReplied(_threadId: string): Promise<void> {}
 }

@@ -16,6 +16,16 @@ export class FakeCnaeRepository extends CnaeRepository {
     return this.items.find((c) => c.id === id) ?? null;
   }
 
+  async listForLead(leadId: string): Promise<CnaeRecord[]> {
+    const ids = this.leadLinks.get(leadId) ?? new Set<string>();
+    return this.items.filter(c => ids.has(c.id));
+  }
+
+  async listForOrganization(organizationId: string): Promise<CnaeRecord[]> {
+    const ids = this.orgLinks.get(organizationId) ?? new Set<string>();
+    return this.items.filter(c => ids.has(c.id));
+  }
+
   async addToLead(cnaeId: string, leadId: string): Promise<void> {
     if (!this.leadLinks.has(leadId)) this.leadLinks.set(leadId, new Set());
     this.leadLinks.get(leadId)!.add(cnaeId);

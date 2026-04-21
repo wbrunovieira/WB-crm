@@ -274,7 +274,7 @@ export class PrismaCadencesRepository extends CadencesRepository {
           id: a.id,
           scheduledDate: a.scheduledDate,
           cadenceStep: a.cadenceStep,
-          activity: { id: a.activity.id, completed: a.activity.completed, subject: a.activity.subject, dueDate: a.activity.dueDate, failedAt: a.activity.failedAt, skippedAt: a.activity.skippedAt },
+          activity: { id: a.activity.id, completed: a.activity.completed, subject: a.activity.subject, dueDate: a.activity.dueDate ?? new Date(), failedAt: a.activity.failedAt, skippedAt: a.activity.skippedAt },
         })),
         totalSteps: total,
         completedSteps: completed,

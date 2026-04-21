@@ -158,7 +158,7 @@ export class PrismaPipelinesRepository extends PipelinesRepository {
           title: deal.title,
           value: deal.value,
           currency: deal.currency,
-          probability: deal.probability,
+          probability: null,
           status: deal.status,
           createdAt: deal.createdAt,
           contact: deal.contact ? { id: deal.contact.id, name: deal.contact.name, email: deal.contact.email } : null,

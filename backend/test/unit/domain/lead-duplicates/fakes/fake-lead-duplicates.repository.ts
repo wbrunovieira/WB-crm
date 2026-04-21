@@ -27,7 +27,19 @@ export class FakeLeadDuplicatesRepository extends LeadDuplicatesRepository {
       if (input.address && lead.address && lead.address.toLowerCase().includes(input.address.toLowerCase())) matched.push("address");
 
       if (matched.length > 0) {
-        results.push({ leadId: lead.id, businessName: lead.businessName, matchedFields: matched, score: matched.length * 25 });
+        results.push({
+          leadId: lead.id,
+          businessName: lead.businessName,
+          companyRegistrationID: lead.cnpj ?? null,
+          phone: lead.phone ?? null,
+          email: lead.email ?? null,
+          city: null,
+          state: null,
+          isArchived: false,
+          status: "new",
+          matchedFields: matched,
+          score: matched.length * 25,
+        });
       }
     }
 

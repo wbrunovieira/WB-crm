@@ -4,9 +4,9 @@ import { InMemoryLeadsRepository } from "../../repositories/in-memory-leads.repo
 import { Lead } from "@/domain/leads/enterprise/entities/lead";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 
-function makeLead(id: string, overrides: Parameters<typeof Lead.create>[0] = {}): Lead {
+function makeLead(id: string, overrides: Partial<Parameters<typeof Lead.create>[0]> = {}): Lead {
   return Lead.create(
-    { ownerId: "user-1", businessName: "Empresa Teste", ...overrides },
+    { ownerId: "user-1", businessName: "Empresa Teste", ...overrides } as Parameters<typeof Lead.create>[0],
     new UniqueEntityID(id),
   );
 }

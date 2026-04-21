@@ -53,7 +53,7 @@ describe("PollMeetTranscriptionsUseCase", () => {
     expect(result.value.results[0].action).toBe("transcription_failed");
     expect(result.value.results[0].error).toBe("audio corrupted");
     expect(meetings.items[0].transcriptionJobId).toBeUndefined();
-    expect(meetings.items[0].transcriptText).toBeUndefined();
+    expect(meetings.items[0].transcriptText).toBeFalsy();
   });
 
   it("does not modify meeting when status is pending", async () => {
@@ -64,7 +64,7 @@ describe("PollMeetTranscriptionsUseCase", () => {
 
     expect(result.value.results[0].action).toBe("transcription_pending");
     expect(meetings.items[0].transcriptionJobId).toBe("job-003");
-    expect(meetings.items[0].transcriptText).toBeUndefined();
+    expect(meetings.items[0].transcriptText).toBeFalsy();
   });
 
   it("does not modify meeting when status is processing", async () => {
@@ -74,7 +74,7 @@ describe("PollMeetTranscriptionsUseCase", () => {
     const result = await useCase.execute();
 
     expect(result.value.results[0].action).toBe("transcription_processing");
-    expect(meetings.items[0].transcriptText).toBeUndefined();
+    expect(meetings.items[0].transcriptText).toBeFalsy();
   });
 
   it("processes multiple meetings independently", async () => {

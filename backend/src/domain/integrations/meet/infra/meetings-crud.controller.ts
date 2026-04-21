@@ -81,18 +81,16 @@ export class MeetingsCrudController {
   @Post()
   async create(@Request() req: any, @Body() body: {
     title: string; startAt: string; endAt?: string;
-    attendeeEmails?: string[]; googleEventId?: string; meetLink?: string;
+    attendeeEmails?: string[];
     description?: string;
     leadId?: string; contactId?: string; organizationId?: string; dealId?: string;
-    createActivity?: boolean;
+    createActivity?: boolean; skipCalendar?: boolean;
   }) {
     const r = await this.schedule.execute({
       title: body.title,
       startAt: new Date(body.startAt),
       endAt: body.endAt ? new Date(body.endAt) : undefined,
       attendeeEmails: body.attendeeEmails ?? [],
-      googleEventId: body.googleEventId,
-      meetLink: body.meetLink,
       description: body.description,
       leadId: body.leadId,
       contactId: body.contactId,
@@ -100,6 +98,7 @@ export class MeetingsCrudController {
       dealId: body.dealId,
       requesterId: req.user.id,
       createActivity: body.createActivity,
+      skipCalendar: body.skipCalendar,
     });
     if (r.isLeft()) throwIfError(r.value);
     return serialize(r.unwrap());

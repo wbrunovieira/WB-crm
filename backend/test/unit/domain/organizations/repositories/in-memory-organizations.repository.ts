@@ -139,4 +139,21 @@ export class InMemoryOrganizationsRepository extends OrganizationsRepository {
   async delete(id: string): Promise<void> {
     this.items = this.items.filter((o) => o.id.toString() !== id);
   }
+
+  async linkExternalProject(orgId: string, projectId: string): Promise<string[]> {
+    const org = this.items.find((o) => o.id.toString() === orgId);
+    if (!org) return [];
+    const ids: string[] = JSON.parse(org.externalProjectIds ?? "[]");
+    if (!ids.includes(projectId)) ids.push(projectId);
+    org.update({ externalProjectIds: JSON.stringify(ids) });
+    return ids;
+  }
+
+  async unlinkExternalProject(orgId: string, projectId: string): Promise<string[]> {
+    const org = this.items.find((o) => o.id.toString() === orgId);
+    if (!org) return [];
+    const ids: string[] = (JSON.parse(org.externalProjectIds ?? "[]") as string[]).filter((id) => id !== projectId);
+    org.update({ externalProjectIds: JSON.stringify(ids) });
+    return ids;
+  }
 }

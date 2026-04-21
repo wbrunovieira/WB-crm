@@ -1,4 +1,4 @@
-import { OperationsRepository, OperationsEntityType } from "@/domain/operations/application/repositories/operations.repository";
+import { OperationsRepository, OperationsEntityType, OperationsSearchResult } from "@/domain/operations/application/repositories/operations.repository";
 
 interface FakeEntity { id: string; ownerId: string; inOperationsAt: Date | null; }
 
@@ -23,5 +23,9 @@ export class FakeOperationsRepository extends OperationsRepository {
     const key = `${entityType}:${entityId}`;
     const entity = this.entities.get(key);
     if (entity) this.entities.set(key, { ...entity, inOperationsAt: null });
+  }
+
+  async search(_query: string): Promise<OperationsSearchResult[]> {
+    return [];
   }
 }

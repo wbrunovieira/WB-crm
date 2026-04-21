@@ -10,6 +10,12 @@ export interface GmailMessage {
   inReplyTo?: string;
 }
 
+export interface GmailAttachment {
+  filename: string;
+  mimeType: string;
+  data: string;
+}
+
 export abstract class GmailPort {
   abstract send(params: {
     userId: string;
@@ -17,6 +23,7 @@ export abstract class GmailPort {
     subject: string;
     bodyHtml: string;
     threadId?: string;
+    attachments?: GmailAttachment[];
   }): Promise<{ messageId: string; threadId: string }>;
 
   abstract pollHistory(userId: string, historyId: string): Promise<GmailMessage[]>;

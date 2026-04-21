@@ -46,6 +46,8 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
     this.items = this.items.filter((a) => a.id.toString() !== id);
   }
 
+  async markThreadReplied(_threadId: string): Promise<void> {}
+
   createAndAdd(props: Parameters<typeof Activity.create>[0]): Activity {
     const activity = Activity.create(props, new UniqueEntityID());
     this.items.push(activity);

@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { GmailPort, GmailMessage } from "../application/ports/gmail.port";
+import { GmailPort, GmailMessage, GmailAttachment } from "../application/ports/gmail.port";
 
 /**
  * Gmail API client.
@@ -19,30 +19,13 @@ export class GmailClient extends GmailPort {
     subject: string;
     bodyHtml: string;
     threadId?: string;
+    attachments?: GmailAttachment[];
   }): Promise<{ messageId: string; threadId: string }> {
-    const { userId, to, subject, bodyHtml, threadId } = params;
+    const { userId, to, subject, bodyHtml, threadId, attachments } = params;
 
     this.logger.log("GmailClient.send", { userId, to, subject });
 
-    // Build RFC 2822 email
-    const boundary = `boundary_${Date.now()}`;
-    const emailLines = [
-      `To: ${to}`,
-      `Subject: ${subject}`,
-      "MIME-Version: 1.0",
-      `Content-Type: multipart/alternative; boundary="${boundary}"`,
-      "",
-      `--${boundary}`,
-      "Content-Type: text/html; charset=utf-8",
-      "Content-Transfer-Encoding: quoted-printable",
-      "",
-      bodyHtml,
-      "",
-      `--${boundary}--`,
-    ];
-
-    const rawEmail = emailLines.join("\r\n");
-    const encodedEmail = Buffer.from(rawEmail).toString("base64url");
+    const encodedEmail = this.buildMimeMessage({ to, subject, bodyHtml, threadId, attachments });
 
     const apiUrl = `https://gmail.googleapis.com/gmail/v1/users/${userId}/messages/send`;
     const token = await this.getAccessToken(userId);
@@ -147,6 +130,44 @@ export class GmailClient extends GmailPort {
 
     const data = await response.json() as GmailApiMessage;
     return this.parseMessage(data);
+  }
+
+  private buildMimeMessage(opts: {
+    to: string;
+    subject: string;
+    bodyHtml: string;
+    threadId?: string;
+    attachments?: GmailAttachment[];
+  }): string {
+    const boundary = `wb_crm_${Date.now()}`;
+    const hasAttachments = (opts.attachments ?? []).length > 0;
+
+    const headers = [
+      `To: ${opts.to}`,
+      `Subject: ${opts.subject}`,
+      "MIME-Version: 1.0",
+    ];
+
+    let body: string;
+
+    if (!hasAttachments) {
+      headers.push("Content-Type: text/html; charset=utf-8");
+      headers.push("Content-Transfer-Encoding: base64");
+      body = headers.join("\r\n") + "\r\n\r\n" + Buffer.from(opts.bodyHtml).toString("base64");
+    } else {
+      headers.push(`Content-Type: multipart/mixed; boundary="${boundary}"`);
+      const parts: string[] = [
+        `--${boundary}\r\nContent-Type: text/html; charset=utf-8\r\nContent-Transfer-Encoding: base64\r\n\r\n${Buffer.from(opts.bodyHtml).toString("base64")}`,
+      ];
+      for (const att of opts.attachments!) {
+        parts.push(
+          `--${boundary}\r\nContent-Type: ${att.mimeType}\r\nContent-Transfer-Encoding: base64\r\nContent-Disposition: attachment; filename="${att.filename}"\r\n\r\n${att.data}`,
+        );
+      }
+      body = headers.join("\r\n") + "\r\n\r\n" + parts.join("\r\n") + `\r\n--${boundary}--`;
+    }
+
+    return Buffer.from(body).toString("base64url");
   }
 
   private async getAccessToken(_userId: string): Promise<string> {

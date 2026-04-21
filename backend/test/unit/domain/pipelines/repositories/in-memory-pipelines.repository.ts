@@ -2,7 +2,7 @@ import { PipelinesRepository } from "@/domain/pipelines/application/repositories
 import type { Pipeline } from "@/domain/pipelines/enterprise/entities/pipeline";
 import type { Stage } from "@/domain/pipelines/enterprise/entities/stage";
 import { Stage as StageEntity } from "@/domain/pipelines/enterprise/entities/stage";
-import type { PipelineSummary, PipelineDetail, StageSummary } from "@/domain/pipelines/enterprise/read-models/pipeline-read-models";
+import type { PipelineSummary, PipelineDetail, PipelineView, StageSummary } from "@/domain/pipelines/enterprise/read-models/pipeline-read-models";
 
 const DEFAULT_STAGES = [
   { name: "Qualificação", order: 1, probability: 10 },
@@ -115,5 +115,27 @@ export class InMemoryPipelinesRepository extends PipelinesRepository {
       const stage = StageEntity.create({ ...d, pipelineId });
       this.stages.push(stage);
     }
+  }
+
+  async findView(_requesterId: string, _requesterRole: string, pipelineId?: string): Promise<PipelineView | null> {
+    const p = pipelineId
+      ? this.pipelines.find((p) => p.id.toString() === pipelineId)
+      : this.pipelines.find((p) => p.isDefault);
+    if (!p) return null;
+    return {
+      id: p.id.toString(),
+      name: p.name,
+      isDefault: p.isDefault,
+      stages: this.stages
+        .filter((s) => s.pipelineId === p.id.toString())
+        .sort((a, b) => a.order - b.order)
+        .map((s) => ({
+          id: s.id.toString(),
+          name: s.name,
+          order: s.order,
+          probability: s.probability,
+          deals: [],
+        })),
+    };
   }
 }

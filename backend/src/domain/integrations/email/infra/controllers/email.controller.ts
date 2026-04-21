@@ -22,11 +22,18 @@ import { EmailMessagesRepository } from "../../application/repositories/email-me
 import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTemplateUseCase, DeleteGmailTemplateUseCase } from "../../application/use-cases/gmail-templates.use-cases";
 import { GetGoogleTokenUseCase, SaveGoogleTokenUseCase, DeleteGoogleTokenUseCase, UpdateTokenHistoryIdUseCase } from "../../application/use-cases/google-token.use-cases";
 
+interface SendEmailAttachment {
+  filename: string;
+  mimeType: string;
+  data: string;
+}
+
 interface SendEmailBody {
   to: string;
   subject: string;
   bodyHtml: string;
   threadId?: string;
+  attachments?: SendEmailAttachment[];
 }
 
 @ApiTags("Email")
@@ -56,7 +63,7 @@ export class EmailController {
   async send(
     @Body() body: SendEmailBody,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<{ ok: boolean; messageId?: string; threadId?: string; error?: string }> {
+  ): Promise<{ ok: boolean; messageId?: string; threadId?: string; trackingToken?: string; error?: string }> {
     if (!body.to || !body.subject || !body.bodyHtml) {
       throw new BadRequestException("Missing required fields: to, subject, bodyHtml");
     }
@@ -67,6 +74,7 @@ export class EmailController {
       subject: body.subject,
       bodyHtml: body.bodyHtml,
       threadId: body.threadId,
+      attachments: body.attachments,
       ownerId: user.id,
     });
 

@@ -11,11 +11,7 @@ import {
 export class FakeMeetingsRepository extends MeetingsRepository {
   public items: (MeetingRecord & {
     transcriptionJobId?: string;
-    transcriptText?: string;
     transcribedAt?: Date;
-    attendeeEmails?: string;
-    meetingSummary?: string;
-    recordingUrl?: string;
   })[] = [];
 
   public completedActivities: { activityId: string; at: Date }[] = [];
@@ -114,7 +110,8 @@ export class FakeMeetingsRepository extends MeetingsRepository {
       meetLink: data.meetLink ?? null, startAt: data.startAt, endAt: data.endAt ?? null,
       actualStartAt: null, actualEndAt: null, attendeeEmails: JSON.stringify(data.attendeeEmails),
       status: "scheduled", activityId: null, nativeTranscriptUrl: null,
-      recordingDriveId: null, leadId: data.leadId ?? null, contactId: data.contactId ?? null,
+      recordingDriveId: null, recordingUrl: null, transcriptText: null, meetingSummary: null,
+      leadId: data.leadId ?? null, contactId: data.contactId ?? null,
       organizationId: data.organizationId ?? null, dealId: data.dealId ?? null,
       ownerId: data.ownerId, createdAt: new Date(), updatedAt: new Date(),
     };
@@ -140,7 +137,8 @@ export class FakeMeetingsRepository extends MeetingsRepository {
     this.items.push({
       googleEventId: null, meetLink: null, endAt: null, actualStartAt: null,
       actualEndAt: null, attendeeEmails: "[]", activityId: null, nativeTranscriptUrl: null,
-      recordingDriveId: null, leadId: null, contactId: null, organizationId: null,
+      recordingDriveId: null, recordingUrl: null, transcriptText: null, meetingSummary: null,
+      leadId: null, contactId: null, organizationId: null,
       dealId: null, ownerId: "system", createdAt: new Date(), updatedAt: new Date(),
       ...meeting,
     } as any);
