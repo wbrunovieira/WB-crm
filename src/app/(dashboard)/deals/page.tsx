@@ -29,7 +29,7 @@ export default async function DealsPage({
   const view = searchParams.view || "list";
   const groupBy = searchParams.groupBy || "none";
 
-  const users = await backendFetch<UserListItem[]>('/users');
+  const users = await backendFetch<UserListItem[]>('/users').catch(() => [] as UserListItem[]);
 
   if (view === "kanban") {
     const [pipelineData, allPipelines] = await Promise.all([

@@ -11,7 +11,7 @@ export default async function ContactsPage() {
   const currentUserId = session?.user?.id ?? "";
 
   // Dados que ainda vivem no Next.js (não migrados ao NestJS)
-  const users = await backendFetch<UserListItem[]>('/users');
+  const users = await backendFetch<UserListItem[]>('/users').catch(() => [] as UserListItem[]);
 
   return (
     <ContactsListClient
