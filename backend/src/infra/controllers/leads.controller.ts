@@ -33,6 +33,7 @@ import {
   UpdateGooglePlacesSearchUseCase,
   CheckLeadGoogleIdExistsUseCase,
 } from "@/domain/leads/application/use-cases/google-places-searches.use-cases";
+import { GooglePlacesPort, PlacesRateLimitError } from "@/domain/leads/application/ports/google-places.port";
 import { GetLeadsUseCase } from "@/domain/leads/application/use-cases/get-leads.use-case";
 import { GetLeadByIdUseCase } from "@/domain/leads/application/use-cases/get-lead-by-id.use-case";
 import { CreateLeadUseCase, type CreateLeadInput } from "@/domain/leads/application/use-cases/create-lead.use-case";
@@ -578,6 +579,7 @@ export class LeadsController {
     private readonly findOrCreateGoogleSearch: FindOrCreateGooglePlacesSearchUseCase,
     private readonly updateGoogleSearch: UpdateGooglePlacesSearchUseCase,
     private readonly checkGoogleId: CheckLeadGoogleIdExistsUseCase,
+    private readonly googlePlaces: GooglePlacesPort,
   ) {}
 
   @Get("for-select")
@@ -937,5 +939,29 @@ export class LeadsController {
   async checkGoogleIdExists(@Query("googleId") googleId: string) {
     const result = await this.checkGoogleId.execute(googleId);
     return result.value;
+  }
+
+  @Post("google-places/search")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Buscar empresas no Google Places" })
+  async searchGooglePlaces(
+    @Body() body: { textQuery: string; pageToken?: string; languageCode?: string },
+  ) {
+    try {
+      return await this.googlePlaces.search({
+        textQuery: body.textQuery,
+        pageToken: body.pageToken,
+        languageCode: body.languageCode,
+      });
+    } catch (err) {
+      if (err instanceof PlacesRateLimitError) {
+        const { HttpException, HttpStatus } = await import("@nestjs/common");
+        throw new HttpException(
+          { message: "Rate limit exceeded", retryAfterSeconds: err.retryAfterSeconds },
+          HttpStatus.TOO_MANY_REQUESTS,
+        );
+      }
+      throw err;
+    }
   }
 }

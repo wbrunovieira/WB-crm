@@ -1,6 +1,0 @@
-import { NextRequest, NextResponse } from "next/server";
-
-/** WhatsApp transcription polling is handled by NestJS WhatsAppTranscriptionCronService (every 5 min). */
-export async function GET(_req: NextRequest) {
-  return NextResponse.json({ ok: true, message: "handled by NestJS cron" });
-}

@@ -35,12 +35,24 @@ import type { LeadFormData } from "@/lib/validations/lead";
 import { mapRowToLeadData, type ColumnMapping } from "@/lib/import/lead-mapping";
 export type { ColumnMapping };
 
+interface DuplicateMatchItem {
+  id: string;
+  businessName: string;
+}
+
 export interface LeadDuplicates {
-  cnpj: Array<{ leadId: string; businessName: string }>;
-  name: Array<{ leadId: string; businessName: string }>;
-  phone: Array<{ leadId: string; businessName: string }>;
-  email: Array<{ leadId: string; businessName: string }>;
-  address: Array<{ leadId: string; businessName: string }>;
+  cnpj: DuplicateMatchItem[];
+  name: DuplicateMatchItem[];
+  phone: DuplicateMatchItem[];
+  email: DuplicateMatchItem[];
+  address: DuplicateMatchItem[];
+}
+
+interface BackendDuplicateMatch {
+  leadId: string;
+  businessName: string;
+  matchedFields: string[];
+  score: number;
 }
 
 // ---------------------------------------------------------------------------
@@ -133,14 +145,20 @@ export async function importLeads(input: ImportLeadsInput): Promise<ImportResult
     // 4. Verifica duplicatas (quando não ignoradas) e cria o lead
     try {
       if (!skipDuplicateCheck) {
-        const dups = await backendFetch<LeadDuplicates>("/leads/check-duplicates", {
+        const { hasDuplicates, duplicates } = await backendFetch<{ hasDuplicates: boolean; duplicates: BackendDuplicateMatch[] }>("/leads/check-duplicates", {
           method: "POST",
           body: JSON.stringify({ name: leadData.businessName, cnpj: leadData.companyRegistrationID, phone: leadData.phone, email: leadData.email }),
         });
-        const hasDups = dups.cnpj.length > 0 || dups.name.length > 0 || dups.phone.length > 0 || dups.email.length > 0 || dups.address.length > 0;
-        if (hasDups) {
+        if (hasDuplicates) {
+          const matches: LeadDuplicates = { cnpj: [], name: [], phone: [], email: [], address: [] };
+          for (const match of duplicates) {
+            const item = { id: match.leadId, businessName: match.businessName };
+            for (const field of match.matchedFields) {
+              if (field in matches) matches[field as keyof LeadDuplicates].push(item);
+            }
+          }
           result.duplicates++;
-          result.duplicateDetails.push({ rowIndex: i, row, matches: dups });
+          result.duplicateDetails.push({ rowIndex: i, row, matches });
           continue;
         }
       }
@@ -160,22 +178,10 @@ export async function importLeads(input: ImportLeadsInput): Promise<ImportResult
     }
   }
 
+  if (result.created > 0) {
+    const { revalidatePath } = await import("next/cache");
+    revalidatePath("/leads");
+  }
+
   return result;
-}
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function emptyResult(overrides: Partial<ImportResult> = {}): ImportResult {
-  return {
-    total: 0,
-    created: 0,
-    duplicates: 0,
-    errors: 0,
-    skipped: 0,
-    duplicateDetails: [],
-    errorDetails: [],
-    ...overrides,
-  };
 }

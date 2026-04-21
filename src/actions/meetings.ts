@@ -4,7 +4,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { createMeetEvent, cancelMeetEvent, updateMeetEvent } from "@/lib/google/calendar";
 import { backendFetch } from "@/lib/backend/client";
 
 const scheduleMeetingSchema = z.object({
@@ -34,13 +33,17 @@ export type UpdateMeetingInput = z.infer<typeof updateMeetingSchema>;
 
 export async function getMeetings({
   leadId, contactId, organizationId, dealId,
-}: { leadId?: string; contactId?: string; organizationId?: string; dealId?: string }) {
-  const params = new URLSearchParams();
-  if (leadId) params.set("leadId", leadId);
-  if (contactId) params.set("contactId", contactId);
-  if (organizationId) params.set("organizationId", organizationId);
-  if (dealId) params.set("dealId", dealId);
-  return backendFetch<unknown[]>(`/meetings?${params.toString()}`);
+}: { leadId?: string; contactId?: string; organizationId?: string; dealId?: string }): Promise<unknown[]> {
+  try {
+    const params = new URLSearchParams();
+    if (leadId) params.set("leadId", leadId);
+    if (contactId) params.set("contactId", contactId);
+    if (organizationId) params.set("organizationId", organizationId);
+    if (dealId) params.set("dealId", dealId);
+    return await backendFetch<unknown[]>(`/meetings?${params.toString()}`);
+  } catch {
+    return [];
+  }
 }
 
 export async function scheduleMeeting(input: ScheduleMeetingInput) {
@@ -49,24 +52,13 @@ export async function scheduleMeeting(input: ScheduleMeetingInput) {
 
   const validated = scheduleMeetingSchema.parse(input);
 
-  const { googleEventId, meetLink, attendees } = await createMeetEvent({
-    title: validated.title,
-    startAt: validated.startAt,
-    endAt: validated.endAt,
-    attendeeEmails: validated.attendeeEmails,
-    description: validated.description,
-    timeZone: validated.timeZone,
-  });
-
   const meeting = await backendFetch("/meetings", {
     method: "POST",
     body: JSON.stringify({
       title: validated.title,
       startAt: validated.startAt.toISOString(),
       endAt: validated.endAt.toISOString(),
-      attendeeEmails: attendees.map((a) => a.email),
-      googleEventId,
-      meetLink,
+      attendeeEmails: validated.attendeeEmails,
       description: validated.description,
       leadId: validated.leadId,
       contactId: validated.contactId,
@@ -92,10 +84,6 @@ export async function cancelMeeting(meetingId: string) {
 
   if (!meeting) throw new Error("Reunião não encontrada");
 
-  if (meeting.googleEventId) {
-    await cancelMeetEvent(meeting.googleEventId);
-  }
-
   await backendFetch(`/meetings/${meetingId}/cancel`, { method: "PATCH" });
 
   if (meeting.leadId) revalidatePath(`/leads/${meeting.leadId}`);
@@ -105,25 +93,33 @@ export async function cancelMeeting(meetingId: string) {
 }
 
 export async function checkMeetingTitleExists(title: string, excludeMeetingId?: string): Promise<string | null> {
-  const params = new URLSearchParams({ title: title.trim() });
-  if (excludeMeetingId) params.set("excludeId", excludeMeetingId);
-  const result = await backendFetch<{ exists: boolean }>(`/meetings/check-title?${params.toString()}`);
-  return result.exists ? title.trim() : null;
+  try {
+    const params = new URLSearchParams({ title: title.trim() });
+    if (excludeMeetingId) params.set("excludeId", excludeMeetingId);
+    const result = await backendFetch<{ exists: boolean }>(`/meetings/check-title?${params.toString()}`);
+    return result.exists ? title.trim() : null;
+  } catch {
+    return null;
+  }
 }
 
-export async function updateMeetingSummary(meetingId: string, summary: string) {
+export async function updateMeetingSummary(meetingId: string, summary: string): Promise<void> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new Error("Não autorizado");
 
-  await backendFetch(`/meetings/${meetingId}/summary`, {
-    method: "PATCH",
-    body: JSON.stringify({ summary: summary.trim() || null }),
-  });
+  try {
+    await backendFetch(`/meetings/${meetingId}/summary`, {
+      method: "PATCH",
+      body: JSON.stringify({ summary: summary.trim() || null }),
+    });
 
-  const meeting = await backendFetch<{ leadId: string | null; dealId: string | null; contactId: string | null }>(`/meetings/${meetingId}`);
-  if (meeting.leadId) revalidatePath(`/leads/${meeting.leadId}`);
-  if (meeting.dealId) revalidatePath(`/deals/${meeting.dealId}`);
-  if (meeting.contactId) revalidatePath(`/contacts/${meeting.contactId}`);
+    const meeting = await backendFetch<{ leadId: string | null; dealId: string | null; contactId: string | null }>(`/meetings/${meetingId}`);
+    if (meeting.leadId) revalidatePath(`/leads/${meeting.leadId}`);
+    if (meeting.dealId) revalidatePath(`/deals/${meeting.dealId}`);
+    if (meeting.contactId) revalidatePath(`/contacts/${meeting.contactId}`);
+  } catch (err) {
+    throw err instanceof Error ? err : new Error(String(err));
+  }
 }
 
 export async function updateMeeting(meetingId: string, input: UpdateMeetingInput) {
@@ -137,27 +133,13 @@ export async function updateMeeting(meetingId: string, input: UpdateMeetingInput
   if (!meeting) throw new Error("Reunião não encontrada");
   if (meeting.status !== "scheduled") throw new Error("Somente reuniões agendadas podem ser editadas");
 
-  let updatedAttendeeEmails: string[] | undefined;
-
-  if (meeting.googleEventId) {
-    const result = await updateMeetEvent(meeting.googleEventId, {
-      title: validated.title,
-      startAt: validated.startAt,
-      endAt: validated.endAt,
-      attendeeEmails: validated.attendeeEmails,
-      description: validated.description,
-      timeZone: validated.timeZone,
-    });
-    updatedAttendeeEmails = result.attendees.map((a) => a.email);
-  }
-
   const updated = await backendFetch(`/meetings/${meetingId}`, {
     method: "PATCH",
     body: JSON.stringify({
       title: validated.title,
       startAt: validated.startAt?.toISOString(),
       endAt: validated.endAt?.toISOString(),
-      attendeeEmails: updatedAttendeeEmails,
+      attendeeEmails: validated.attendeeEmails,
     }),
   });
 

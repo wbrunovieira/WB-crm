@@ -4,8 +4,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { sendEmail } from "@/lib/google/gmail";
-import { generateTrackingToken, injectTracking } from "@/lib/email-tracking";
 import { logger } from "@/lib/logger";
 import { backendFetch } from "@/lib/backend/client";
 
@@ -53,24 +51,33 @@ export async function sendGmailMessage(input: SendGmailInput): Promise<SendGmail
     }
     const validated = parsed.data;
 
-    const trackingToken = generateTrackingToken();
-    const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-    const trackedHtml = injectTracking(validated.html, trackingToken, baseUrl);
-
     let messageId: string;
     let threadId: string;
+    let trackingToken: string;
 
     try {
-      const result = await sendEmail({
-        to: validated.to,
-        subject: validated.subject,
-        html: trackedHtml,
-        threadId: validated.threadId,
-        attachments: validated.attachments,
-      });
+      const result = await backendFetch<{ ok: boolean; messageId: string; threadId: string; trackingToken: string; error?: string }>(
+        "/email/send",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            to: validated.to,
+            subject: validated.subject,
+            bodyHtml: validated.html,
+            threadId: validated.threadId,
+            attachments: validated.attachments,
+          }),
+        },
+      );
+
+      if (!result.ok || !result.messageId) {
+        log.error("Falha ao enviar e-mail via NestJS", { error: result.error, to: validated.to });
+        return { success: false, error: result.error ?? "Falha ao enviar e-mail" };
+      }
 
       messageId = result.messageId;
       threadId = result.threadId;
+      trackingToken = result.trackingToken;
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       log.error("Falha ao enviar e-mail via Gmail", { error: message, to: validated.to });

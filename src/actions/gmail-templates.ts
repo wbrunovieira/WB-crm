@@ -16,12 +16,23 @@ export interface GmailTemplateResult {
   error?: string;
 }
 
-export async function getGmailTemplates() {
-  return backendFetch<Array<{ id: string; name: string; subject: string; body: string; category: string | null; active: boolean; createdAt: Date }>>("/email/templates");
+export type GmailTemplate = { id: string; name: string; subject: string; body: string; category: string | null; active: boolean; createdAt: Date };
+export type GmailTemplateActive = { id: string; name: string; subject: string; body: string; category: string | null };
+
+export async function getGmailTemplates(): Promise<GmailTemplate[]> {
+  try {
+    return await backendFetch<GmailTemplate[]>("/email/templates");
+  } catch {
+    return [];
+  }
 }
 
-export async function getActiveGmailTemplates() {
-  return backendFetch<Array<{ id: string; name: string; subject: string; body: string; category: string | null }>>("/email/templates?onlyActive=true");
+export async function getActiveGmailTemplates(): Promise<GmailTemplateActive[]> {
+  try {
+    return await backendFetch<GmailTemplateActive[]>("/email/templates?onlyActive=true");
+  } catch {
+    return [];
+  }
 }
 
 export async function createGmailTemplate(data: GmailTemplateInput): Promise<GmailTemplateResult> {

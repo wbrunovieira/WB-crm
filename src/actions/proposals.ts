@@ -2,6 +2,7 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { revalidatePath } from "next/cache";
 import { uploadFile, deleteFile } from "@/lib/google/drive";
 import { getLeadFolder } from "@/lib/google/drive-folders";
 import { backendFetch } from "@/lib/backend/client";
@@ -18,8 +19,21 @@ export interface CreateProposalInput {
   fileBase64?: string;
 }
 
+export interface ProposalRecord {
+  id: string;
+  title: string;
+  leadId: string | null;
+  dealId: string | null;
+  driveFileId: string | null;
+  driveUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  status: ProposalStatus;
+  createdAt: string;
+}
+
 /** Cria uma proposta, fazendo upload para o Drive quando há arquivo, depois persiste via NestJS */
-export async function createProposal(input: CreateProposalInput) {
+export async function createProposal(input: CreateProposalInput): Promise<ProposalRecord> {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) throw new Error("Não autorizado");
 
@@ -48,7 +62,7 @@ export async function createProposal(input: CreateProposalInput) {
     driveUrl = uploaded.webViewLink;
   }
 
-  return backendFetch("/proposals", {
+  const proposal = await backendFetch<ProposalRecord>("/proposals", {
     method: "POST",
     body: JSON.stringify({
       title: input.title,
@@ -61,10 +75,18 @@ export async function createProposal(input: CreateProposalInput) {
       driveUrl,
     }),
   });
+
+  if (input.leadId) revalidatePath(`/leads/${input.leadId}`);
+  if (input.dealId) revalidatePath(`/deals/${input.dealId}`);
+
+  return proposal;
 }
 
 /** Deleta uma proposta e o arquivo do Drive, via NestJS */
-export async function deleteProposal(proposalId: string) {
+export async function deleteProposal(proposalId: string): Promise<void> {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) throw new Error("Não autorizado");
+
   const proposal = await backendFetch<{ driveFileId: string | null; leadId: string | null; dealId: string | null }>(`/proposals/${proposalId}`);
 
   if (proposal?.driveFileId) {
@@ -76,4 +98,7 @@ export async function deleteProposal(proposalId: string) {
   }
 
   await backendFetch(`/proposals/${proposalId}`, { method: "DELETE" });
+
+  if (proposal?.leadId) revalidatePath(`/leads/${proposal.leadId}`);
+  if (proposal?.dealId) revalidatePath(`/deals/${proposal.dealId}`);
 }

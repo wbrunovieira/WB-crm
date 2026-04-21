@@ -4,7 +4,15 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { backendFetch } from "@/lib/backend/client";
-import { searchPlaces, PlacesRateLimitError } from "@/lib/google/places";
+
+export class PlacesRateLimitError extends Error {
+  retryAfterSeconds: number;
+  constructor(retryAfterSeconds = 60) {
+    super("Google Places API rate limit exceeded");
+    this.name = "PlacesRateLimitError";
+    this.retryAfterSeconds = retryAfterSeconds;
+  }
+}
 
 export interface ExcludeCriteria {
   withoutPhone?: boolean;
@@ -101,9 +109,15 @@ export async function importGoogleLeads(
 
   try {
     while (imported < params.requestedCount) {
-      const result = await searchPlaces({
-        textQuery: searchQuery,
-        pageToken,
+      const result = await backendFetch<{ places: Array<{ placeId: string; businessName: string; address: string; city?: string; state?: string; zipCode?: string; country?: string; neighborhood?: string; phone?: string; internationalPhone?: string; website?: string; rating?: number; userRatingCount?: number; priceLevel?: number; businessStatus?: string; types?: string[]; primaryType?: string; description?: string; latitude?: number; longitude?: number; googleMapsUrl?: string; openingHours?: string }>; nextPageToken?: string }>("/leads/google-places/search", {
+        method: "POST",
+        body: JSON.stringify({ textQuery: searchQuery, pageToken }),
+      }).catch((err: unknown) => {
+        if (err instanceof Error && (err as Error & { status?: number }).status === 429) {
+          const body = (err as Error & { body?: { retryAfterSeconds?: number } }).body;
+          throw new PlacesRateLimitError(body?.retryAfterSeconds ?? 60);
+        }
+        throw err;
       });
 
       if (result.places.length === 0) {

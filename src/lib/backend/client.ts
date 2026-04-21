@@ -32,7 +32,10 @@ export async function backendFetch<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(body?.message ?? `Backend error ${res.status}`);
+    const err = new Error(body?.message ?? `Backend error ${res.status}`) as Error & { status: number; body: unknown };
+    err.status = res.status;
+    err.body = body;
+    throw err;
   }
 
   if (res.status === 204) return undefined as T;
