@@ -22,7 +22,7 @@ export async function trackEmailOpen(
 }
 
 export async function trackEmailClick(token: string): Promise<TrackResult> {
-  await fetch(`${BACKEND_URL}/track/click/${token}?url=about:blank`, { method: "GET" });
+  await fetch(`${BACKEND_URL}/track/click/${token}`, { method: "GET" });
   return { counted: true };
 }
 
