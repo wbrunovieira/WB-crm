@@ -1,7 +1,6 @@
 import { backendFetch } from "@/lib/backend/client";
 import DealForm from "@/components/deals/DealForm";
 import { getContactsList } from "@/lib/lists/contacts-list";
-import { backendFetch } from "@/lib/backend/client";
 import { getStagesList } from "@/lib/lists/stages-list";
 import { notFound } from "next/navigation";
 import Link from "next/link";

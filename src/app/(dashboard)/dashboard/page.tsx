@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import Link from "next/link";
-import { getUpcomingRenewals } from "@/actions/hosting-renewals";
+import { backendFetch } from "@/lib/backend/client";
 import { HostingRenewalsWidget } from "@/components/dashboard/HostingRenewalsWidget";
 
 export default async function DashboardPage() {
@@ -12,8 +12,22 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // Get hosting renewals for the next 30 days
-  const upcomingRenewals = await getUpcomingRenewals(30);
+  type NestRenewal = {
+    organizationId: string; organizationName: string;
+    hostingRenewalDate: string; hostingPlan: string | null; hostingValue: number | null;
+  };
+  const nestRenewals = await backendFetch<NestRenewal[]>('/hosting-renewals?daysAhead=30').catch(() => []);
+  const upcomingRenewals = nestRenewals.map(r => ({
+    id: r.organizationId,
+    name: r.organizationName,
+    hostingRenewalDate: new Date(r.hostingRenewalDate),
+    hostingPlan: r.hostingPlan,
+    hostingValue: r.hostingValue,
+    hostingReminderDays: 0,
+    hostingNotes: null,
+    email: null,
+    phone: null,
+  }));
 
   return (
     <div className="p-8">

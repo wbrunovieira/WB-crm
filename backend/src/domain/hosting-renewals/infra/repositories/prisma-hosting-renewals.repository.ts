@@ -23,6 +23,8 @@ export class PrismaHostingRenewalsRepository extends HostingRenewalsRepository {
         name: true,
         hostingRenewalDate: true,
         ownerId: true,
+        hostingPlan: true,
+        hostingValue: true,
       },
       orderBy: { hostingRenewalDate: "asc" },
     });
@@ -35,6 +37,8 @@ export class PrismaHostingRenewalsRepository extends HostingRenewalsRepository {
         hostingRenewalDate: org.hostingRenewalDate!,
         ownerId: org.ownerId,
         daysUntilRenewal: diff,
+        hostingPlan: org.hostingPlan ?? null,
+        hostingValue: org.hostingValue ? Number(org.hostingValue) : null,
       };
     });
   }

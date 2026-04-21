@@ -2,7 +2,22 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
-import { getActivityCalendarData, type DailyActivityData } from "@/actions/admin-manager";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
+
+interface DailyActivityData {
+  date: string;
+  total: number;
+  completed: number;
+  pending: number;
+  failed: number;
+  skipped: number;
+  byType: Record<string, number>;
+  completedByType: Record<string, number>;
+  pendingByType: Record<string, number>;
+  failedByType: Record<string, number>;
+  skippedByType: Record<string, number>;
+}
 
 const activityTypeLabels: Record<string, { label: string; color: string }> = {
   call: { label: "Ligacao", color: "#3b82f6" },
@@ -28,6 +43,8 @@ function getIntensityClass(total: number): string {
 
 export function ActivityCalendar() {
   const now = new Date();
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [year, setYear] = useState(now.getFullYear());
   const [month, setMonth] = useState(now.getMonth() + 1);
   const [data, setData] = useState<DailyActivityData[]>([]);
@@ -38,7 +55,10 @@ export function ActivityCalendar() {
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getActivityCalendarData(year, month);
+      const result = await apiFetch<DailyActivityData[]>(
+        `/dashboard/activity-calendar?year=${year}&month=${month}`,
+        token,
+      );
       setData(result);
     } catch {
       setData([]);

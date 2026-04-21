@@ -1,7 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { getManagerStats } from "@/actions/admin-manager";
+import { backendFetch } from "@/lib/backend/client";
+import type { ManagerStats } from "@/actions/admin-manager";
 import { ManagerDashboard } from "@/components/admin/manager";
 import { type PeriodOption } from "@/lib/validations/manager";
 
@@ -30,12 +31,10 @@ export default async function ManagerPage({ searchParams }: PageProps) {
   const startDate = params.startDate;
   const endDate = params.endDate;
 
-  // Fetch stats
-  const stats = await getManagerStats({
-    period,
-    startDate: startDate ? new Date(startDate) : undefined,
-    endDate: endDate ? new Date(endDate) : undefined,
-  });
+  const qs = new URLSearchParams({ period });
+  if (startDate) qs.set("startDate", startDate);
+  if (endDate) qs.set("endDate", endDate);
+  const stats = await backendFetch<ManagerStats>(`/dashboard/stats?${qs}`);
 
   return (
     <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8 py-8">

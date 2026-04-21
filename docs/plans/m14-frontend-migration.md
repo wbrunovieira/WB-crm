@@ -362,7 +362,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 18 — Dashboard & Funnel
+## ~~FASE 18 — Dashboard & Funnel~~ ✅
 
 **Páginas**: `/admin/manager`, `/dashboard`
 
@@ -471,7 +471,7 @@ ssh root@45.90.123.190 "docker logs wb-crm-backend --tail=20"
 | 15 | Proposals & Meetings | ✅ | SSR reads migrados para `backendFetch`. NestJS meetings recebeu filtros (`leadId`,`dealId`,`organizationId`,`contactId`), `meetingSummary`/`transcriptText`/`activity` no response, `PATCH /meetings/:id/summary`, `GET /meetings/check-title`. `ProposalsList`: `updateProposalStatus`/`deleteProposal` → `apiFetch`. `MeetingsList`: `updateMeetingSummary` → `apiFetch`. `ScheduleMeetingModal`: `checkMeetingTitleExists` → `apiFetch`. **Mantidos**: `createProposal` (Drive), `cancelMeeting`/`scheduleMeeting`/`updateMeeting` (Google Calendar). |
 | 16 | Campaigns | ✅ | `actions/campaigns.ts` já usava `backendFetch` internamente. Nenhuma mudança necessária. |
 | 17 | Shared Entities | ✅ | NestJS recebeu `GET /shared-entities/batch` e `GET /shared-entities/available-users`. Páginas de lista (`leads`, `contacts`, `deals`, `organizations`, `partners`) usam `backendFetch` para batch. `EntityManagementPanel`, `SharedUsersList`, `ShareDialog`, `TransferDialog` migrados para `apiFetch` com token via `useSession`. F15 tokens corrigidos em `ProposalsList`, `MeetingsList`, `ScheduleMeetingModal`. |
-| 18 | Dashboard & Funnel | ⏳ | |
+| 18 | Dashboard & Funnel | ✅ | NestJS hosting-renewals extended with `hostingPlan`/`hostingValue`. `dashboard/page.tsx`: `backendFetch('/hosting-renewals')`. `admin/manager/page.tsx`: `backendFetch('/dashboard/stats')`. `ActivityCalendar`: `apiFetch('/dashboard/activity-calendar')` com `useSession` token. |
 | 19 | Integrações (Gmail, WhatsApp, GoTo) | ⏳ | |
 | 20 | Notificações | ⏳ | |
 | 21 | Limpeza final | ⏳ | |

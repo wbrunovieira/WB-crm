@@ -10,6 +10,8 @@ function serializeRenewal(r: UpcomingRenewal) {
     hostingRenewalDate: r.hostingRenewalDate,
     ownerId: r.ownerId,
     daysUntilRenewal: r.daysUntilRenewal,
+    hostingPlan: r.hostingPlan,
+    hostingValue: r.hostingValue,
   };
 }
 

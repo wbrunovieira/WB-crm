@@ -4,6 +4,8 @@ export interface UpcomingRenewal {
   hostingRenewalDate: Date;
   ownerId: string;
   daysUntilRenewal: number;
+  hostingPlan: string | null;
+  hostingValue: number | null;
 }
 
 export abstract class HostingRenewalsRepository {
