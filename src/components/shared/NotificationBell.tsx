@@ -2,7 +2,9 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Bell, Mail, MessageCircle, CheckCheck } from "lucide-react";
+import { apiFetch } from "@/lib/api-client";
 
 interface NotificationItem {
   id: string;
@@ -19,20 +21,21 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
 
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Fetch initial notifications
   const fetchNotifications = useCallback(async () => {
+    if (!token) return;
     try {
-      const res = await fetch("/api/notifications?limit=20");
-      if (!res.ok) return;
-      const data: NotificationItem[] = await res.json();
-      setNotifications(data);
+      const data = await apiFetch<{ notifications: NotificationItem[] }>("/notifications?limit=20", token);
+      setNotifications(data.notifications);
     } catch {
       // silently ignore
     }
-  }, []);
+  }, [token]);
 
   // SSE connection with auto-reconnect
   useEffect(() => {
@@ -86,20 +89,22 @@ export function NotificationBell() {
     setNotifications((prev) =>
       prev.map((n) => (ids.includes(n.id) ? { ...n, read: true } : n))
     );
-    await fetch("/api/notifications", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ids }),
-    });
+    if (token) {
+      await apiFetch("/notifications/read", token, {
+        method: "PATCH",
+        body: JSON.stringify({ ids }),
+      }).catch(() => {});
+    }
   }
 
   async function markAllRead() {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
-    await fetch("/api/notifications", {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ all: true }),
-    });
+    if (token) {
+      await apiFetch("/notifications/read", token, {
+        method: "PATCH",
+        body: JSON.stringify({ all: true }),
+      }).catch(() => {});
+    }
   }
 
   function handleNotificationClick(notification: NotificationItem) {

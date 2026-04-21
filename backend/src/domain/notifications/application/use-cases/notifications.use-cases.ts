@@ -12,8 +12,10 @@ export class GetNotificationsUseCase {
   async execute(input: {
     requesterId: string;
     onlyUnread?: boolean;
+    type?: string;
+    limit?: number;
   }): Promise<Either<Error, { notifications: Notification[]; unreadCount: number }>> {
-    const notifications = await this.repo.findByUser(input.requesterId, input.onlyUnread);
+    const notifications = await this.repo.findByUser(input.requesterId, input.onlyUnread, input.type, input.limit);
     const unreadCount = notifications.filter(n => !n.read).length;
     return right({ notifications, unreadCount });
   }

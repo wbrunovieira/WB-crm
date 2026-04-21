@@ -1,7 +1,7 @@
 import { Notification } from "../../enterprise/entities/notification";
 
 export abstract class NotificationsRepository {
-  abstract findByUser(userId: string, onlyUnread?: boolean): Promise<Notification[]>;
+  abstract findByUser(userId: string, onlyUnread?: boolean, type?: string, limit?: number): Promise<Notification[]>;
   abstract findById(id: string): Promise<Notification | null>;
   abstract save(notification: Notification): Promise<void>;
   abstract markManyAsRead(ids: string[], userId: string): Promise<void>;

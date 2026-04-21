@@ -15,6 +15,7 @@ function serialize(n: any) {
     status: n.status,
     title: n.title,
     summary: n.summary,
+    payload: n.payload ?? null,
     read: n.read,
     userId: n.userId,
     jobId: n.jobId,
@@ -33,10 +34,17 @@ export class NotificationsController {
   ) {}
 
   @Get()
-  async list(@Request() req: any, @Query("unread") unread?: string) {
+  async list(
+    @Request() req: any,
+    @Query("unread") unread?: string,
+    @Query("type") type?: string,
+    @Query("limit") limit?: string,
+  ) {
     const result = await this.getNotifications.execute({
       requesterId: req.user.id,
       onlyUnread: unread === "true",
+      type: type || undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
     });
     if (result.isLeft()) throw result.value;
     const { notifications, unreadCount } = result.unwrap();

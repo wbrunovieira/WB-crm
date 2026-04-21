@@ -2,7 +2,9 @@
 
 import { useEffect, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+import { apiFetch } from "@/lib/api-client";
 
 type Notification = {
   id: string;
@@ -21,38 +23,33 @@ type Notification = {
  */
 export function LeadResearchNotifications() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const shownNotifications = useRef<Set<string>>(new Set());
 
   const checkNotifications = useCallback(async () => {
+    if (!token) return;
     try {
-      const response = await fetch(
-        "/api/notifications?type=LEAD_RESEARCH_COMPLETE&read=false&limit=5"
-      );
+      const [completeData, errorData] = await Promise.all([
+        apiFetch<{ notifications: Notification[] }>(
+          "/notifications?type=LEAD_RESEARCH_COMPLETE&unread=true&limit=5",
+          token,
+        ).catch(() => ({ notifications: [] as Notification[] })),
+        apiFetch<{ notifications: Notification[] }>(
+          "/notifications?type=LEAD_RESEARCH_ERROR&unread=true&limit=5",
+          token,
+        ).catch(() => ({ notifications: [] as Notification[] })),
+      ]);
 
-      if (!response.ok) return;
+      const notifications = [...completeData.notifications, ...errorData.notifications];
 
-      const notifications: Notification[] = await response.json();
-
-      // Also check for error notifications
-      const errorResponse = await fetch(
-        "/api/notifications?type=LEAD_RESEARCH_ERROR&read=false&limit=5"
-      );
-
-      if (errorResponse.ok) {
-        const errorNotifications: Notification[] = await errorResponse.json();
-        notifications.push(...errorNotifications);
-      }
-
-      // Filter out already shown notifications
       const newNotifications = notifications.filter(
         (n) => !shownNotifications.current.has(n.id)
       );
 
       for (const notification of newNotifications) {
-        // Mark as shown
         shownNotifications.current.add(notification.id);
 
-        // Show toast based on type
         if (notification.type === "LEAD_RESEARCH_COMPLETE") {
           toast.success(notification.summary, {
             description: "Clique para ver os novos leads",
@@ -74,14 +71,11 @@ export function LeadResearchNotifications() {
           });
         }
 
-        // Mark notification as read
-        await fetch("/api/notifications", {
+        await apiFetch("/notifications/read", token, {
           method: "PATCH",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ ids: [notification.id] }),
-        });
+        }).catch(() => {});
 
-        // Refresh the page to show new leads
         if (notification.type === "LEAD_RESEARCH_COMPLETE") {
           router.refresh();
         }
@@ -89,7 +83,7 @@ export function LeadResearchNotifications() {
     } catch (error) {
       console.error("Error checking notifications:", error);
     }
-  }, [router]);
+  }, [router, token]);
 
   useEffect(() => {
     // Check immediately on mount

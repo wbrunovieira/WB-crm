@@ -23,10 +23,15 @@ function toDomain(raw: any): Notification {
 export class PrismaNotificationsRepository extends NotificationsRepository {
   constructor(private readonly prisma: PrismaService) { super(); }
 
-  async findByUser(userId: string, onlyUnread?: boolean): Promise<Notification[]> {
+  async findByUser(userId: string, onlyUnread?: boolean, type?: string, limit?: number): Promise<Notification[]> {
     const rows = await this.prisma.notification.findMany({
-      where: { userId, ...(onlyUnread ? { read: false } : {}) },
+      where: {
+        userId,
+        ...(onlyUnread ? { read: false } : {}),
+        ...(type ? { type } : {}),
+      },
       orderBy: { createdAt: "desc" },
+      ...(limit ? { take: limit } : {}),
     });
     return rows.map(toDomain);
   }
