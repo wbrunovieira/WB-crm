@@ -3,13 +3,16 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   Param,
+  Query,
   UseGuards,
   Logger,
   HttpCode,
   BadRequestException,
   NotFoundException,
+  UnauthorizedException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
@@ -21,6 +24,7 @@ import { GetWhatsAppMediaMessagesUseCase } from "@/domain/integrations/whatsapp/
 import { SaveWhatsAppVerificationUseCase } from "@/domain/integrations/whatsapp/application/use-cases/save-whatsapp-verification.use-case";
 import { SaveWhatsAppNumberUseCase } from "@/domain/integrations/whatsapp/application/use-cases/save-whatsapp-number.use-case";
 import { EvolutionApiPort } from "@/domain/integrations/whatsapp/application/ports/evolution-api.port";
+import { GetWhatsAppTemplatesUseCase, CreateWhatsAppTemplateUseCase, UpdateWhatsAppTemplateUseCase, DeleteWhatsAppTemplateUseCase } from "@/domain/integrations/whatsapp/application/use-cases/whatsapp-templates.use-cases";
 
 interface SendMessageBody {
   to: string;
@@ -69,6 +73,10 @@ export class WhatsAppController {
     private readonly saveVerification: SaveWhatsAppVerificationUseCase,
     private readonly saveNumber: SaveWhatsAppNumberUseCase,
     private readonly evolutionApi: EvolutionApiPort,
+    private readonly getTemplates: GetWhatsAppTemplatesUseCase,
+    private readonly createTemplate: CreateWhatsAppTemplateUseCase,
+    private readonly updateTemplate: UpdateWhatsAppTemplateUseCase,
+    private readonly deleteTemplate: DeleteWhatsAppTemplateUseCase,
   ) {}
 
   @Post("send")
@@ -180,5 +188,48 @@ export class WhatsAppController {
   ): Promise<unknown[]> {
     const result = await this.getMediaMessages.execute(activityId);
     return result.value.messages;
+  }
+
+  @Get("templates")
+  @ApiOperation({ summary: "Listar templates de WhatsApp" })
+  async listTemplates(@Query("onlyActive") onlyActive?: string) {
+    const result = await this.getTemplates.execute(onlyActive === "true");
+    return result.value.templates;
+  }
+
+  @Post("templates")
+  @HttpCode(201)
+  @ApiOperation({ summary: "Criar template de WhatsApp (admin)" })
+  async addTemplate(
+    @Body() body: { name: string; text: string; category?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.createTemplate.execute({ ...body, requesterRole: user.role ?? "sdr" });
+    if (result.isLeft()) throw new UnauthorizedException(result.value.message);
+    return result.value.template;
+  }
+
+  @Patch("templates/:id")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Atualizar template de WhatsApp (admin)" })
+  async editTemplate(
+    @Param("id") id: string,
+    @Body() body: { name?: string; text?: string; category?: string; active?: boolean },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.updateTemplate.execute({ id, ...body, requesterRole: user.role ?? "sdr" });
+    if (result.isLeft()) throw new UnauthorizedException(result.value.message);
+    return result.value.template;
+  }
+
+  @Delete("templates/:id")
+  @HttpCode(204)
+  @ApiOperation({ summary: "Deletar template de WhatsApp (admin)" })
+  async removeTemplate(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.deleteTemplate.execute({ id, requesterRole: user.role ?? "sdr" });
+    if (result.isLeft()) throw new UnauthorizedException(result.value.message);
   }
 }

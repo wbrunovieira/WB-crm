@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { X, Send, Loader2, Smile, Paperclip, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
-import { getWhatsAppTemplates } from "@/actions/whatsapp-templates";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 
@@ -159,11 +158,11 @@ export default function WhatsAppSendModal({ to, name, onClose }: WhatsAppSendMod
   const handleOpenTemplates = useCallback(async () => {
     setShowTemplates((v) => !v);
     if (!templatesLoaded) {
-      const data = await getWhatsAppTemplates(true);
+      const data = await apiFetch<{ id: string; name: string; text: string; category: string | null; active: boolean; createdAt: Date }[]>("/whatsapp/templates?onlyActive=true", token);
       setTemplates(data);
       setTemplatesLoaded(true);
     }
-  }, [templatesLoaded]);
+  }, [templatesLoaded, token]);
 
   // Inserir emoji no cursor
   function insertEmoji(emoji: string) {

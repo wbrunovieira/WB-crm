@@ -1,10 +1,12 @@
-import { getWhatsAppTemplates } from "@/actions/whatsapp-templates";
+import { backendFetch } from "@/lib/backend/client";
 import { WhatsAppTemplatesList } from "@/components/admin/WhatsAppTemplatesList";
 import { WhatsAppTemplateForm } from "@/components/admin/WhatsAppTemplateForm";
 import Link from "next/link";
 
+type Template = { id: string; name: string; text: string; category: string | null; active: boolean; createdAt: Date };
+
 export default async function WhatsAppTemplatesPage() {
-  const templates = await getWhatsAppTemplates();
+  const templates = await backendFetch<Template[]>("/whatsapp/templates");
 
   return (
     <div className="p-8">

@@ -21,9 +21,14 @@ import { SendWhatsAppMediaUseCase } from "./application/use-cases/send-whatsapp-
 import { GetWhatsAppMediaMessagesUseCase } from "./application/use-cases/get-whatsapp-media-messages.use-case";
 import { SaveWhatsAppVerificationUseCase } from "./application/use-cases/save-whatsapp-verification.use-case";
 import { SaveWhatsAppNumberUseCase } from "./application/use-cases/save-whatsapp-number.use-case";
+import { GetWhatsAppTemplatesUseCase, CreateWhatsAppTemplateUseCase, UpdateWhatsAppTemplateUseCase, DeleteWhatsAppTemplateUseCase } from "./application/use-cases/whatsapp-templates.use-cases";
+
+// Repository abstracts
+import { WhatsAppTemplatesRepository } from "./application/repositories/whatsapp-templates.repository";
 
 // Infrastructure
 import { EvolutionApiClient } from "./infra/evolution-api.client";
+import { PrismaWhatsAppTemplatesRepository } from "./infra/prisma-whatsapp-templates.repository";
 import { PrismaWhatsAppMessagesRepository } from "./infra/prisma-whatsapp-messages.repository";
 import { PrismaWhatsAppEntityRepository } from "./infra/prisma-whatsapp-entity.repository";
 import { WhatsAppWebhookController } from "./infra/controllers/whatsapp-webhook.controller";
@@ -44,6 +49,10 @@ import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-tra
     GetWhatsAppMediaMessagesUseCase,
     SaveWhatsAppVerificationUseCase,
     SaveWhatsAppNumberUseCase,
+    GetWhatsAppTemplatesUseCase,
+    CreateWhatsAppTemplateUseCase,
+    UpdateWhatsAppTemplateUseCase,
+    DeleteWhatsAppTemplateUseCase,
     // Port implementations
     { provide: EvolutionApiPort, useClass: EvolutionApiClient },
     // Repositories
@@ -51,6 +60,8 @@ import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-tra
     { provide: WhatsAppMessagesRepository, useClass: PrismaWhatsAppMessagesRepository },
     PrismaWhatsAppEntityRepository,
     { provide: WhatsAppEntityRepository, useClass: PrismaWhatsAppEntityRepository },
+    PrismaWhatsAppTemplatesRepository,
+    { provide: WhatsAppTemplatesRepository, useClass: PrismaWhatsAppTemplatesRepository },
     // Scheduled
     WhatsAppTranscriptionCronService,
   ],

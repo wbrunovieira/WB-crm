@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { createWhatsAppTemplate, updateWhatsAppTemplate } from "@/actions/whatsapp-templates";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 
 interface WhatsAppTemplateFormProps {
   template?: {
@@ -16,6 +17,8 @@ interface WhatsAppTemplateFormProps {
 }
 
 export function WhatsAppTemplateForm({ template, onSuccess }: WhatsAppTemplateFormProps) {
+  const { data: session } = useSession();
+  const token = (session?.user as any)?.accessToken ?? "";
   const [name, setName] = useState(template?.name ?? "");
   const [text, setText] = useState(template?.text ?? "");
   const [category, setCategory] = useState(template?.category ?? "");
@@ -26,10 +29,10 @@ export function WhatsAppTemplateForm({ template, onSuccess }: WhatsAppTemplateFo
     setLoading(true);
     try {
       if (template) {
-        await updateWhatsAppTemplate(template.id, { name, text, category });
+        await apiFetch(`/whatsapp/templates/${template.id}`, token, { method: "PATCH", body: JSON.stringify({ name, text, category }) });
         toast.success("Template atualizado");
       } else {
-        await createWhatsAppTemplate({ name, text, category });
+        await apiFetch("/whatsapp/templates", token, { method: "POST", body: JSON.stringify({ name, text, category }) });
         toast.success("Template criado");
         setName("");
         setText("");

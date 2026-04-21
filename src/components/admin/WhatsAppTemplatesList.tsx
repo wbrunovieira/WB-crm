@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { deleteWhatsAppTemplate, updateWhatsAppTemplate } from "@/actions/whatsapp-templates";
 import { WhatsAppTemplateForm } from "./WhatsAppTemplateForm";
 import { toast } from "sonner";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { Pencil, Trash2, ToggleLeft, ToggleRight, X } from "lucide-react";
 
 type Template = {
@@ -20,6 +21,8 @@ interface WhatsAppTemplatesListProps {
 }
 
 export function WhatsAppTemplatesList({ templates }: WhatsAppTemplatesListProps) {
+  const { data: session } = useSession();
+  const token = (session?.user as any)?.accessToken ?? "";
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Group by category
@@ -32,7 +35,7 @@ export function WhatsAppTemplatesList({ templates }: WhatsAppTemplatesListProps)
 
   async function handleToggle(t: Template) {
     try {
-      await updateWhatsAppTemplate(t.id, { active: !t.active });
+      await apiFetch(`/whatsapp/templates/${t.id}`, token, { method: "PATCH", body: JSON.stringify({ active: !t.active }) });
       toast.success(t.active ? "Template desativado" : "Template ativado");
     } catch {
       toast.error("Erro ao alterar status");
@@ -42,7 +45,7 @@ export function WhatsAppTemplatesList({ templates }: WhatsAppTemplatesListProps)
   async function handleDelete(id: string, name: string) {
     if (!confirm(`Deletar template "${name}"?`)) return;
     try {
-      await deleteWhatsAppTemplate(id);
+      await apiFetch(`/whatsapp/templates/${id}`, token, { method: "DELETE" });
       toast.success("Template deletado");
     } catch {
       toast.error("Erro ao deletar template");
