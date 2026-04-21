@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { X } from "lucide-react";
-import { addProductToDeal } from "@/actions/product-links";
+import { useAddDealProduct } from "@/hooks/product-links/use-product-links";
 
 interface Product {
   id: string;
@@ -30,6 +30,7 @@ export function AddProductToDealModal({
   onClose,
   onSuccess,
 }: AddProductToDealModalProps) {
+  const addDealProductMutation = useAddDealProduct();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -79,15 +80,12 @@ export function AddProductToDealModal({
     setError("");
 
     try {
-      await addProductToDeal({
+      await addDealProductMutation.mutateAsync({
         dealId,
         productId: selectedProductId,
         quantity,
         unitPrice,
-        discount,
-        totalValue: calculateTotal(),
-        description: description || null,
-        deliveryTime: deliveryTime || null,
+        notes: description || undefined,
       });
 
       onSuccess();

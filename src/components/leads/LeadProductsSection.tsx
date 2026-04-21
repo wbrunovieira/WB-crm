@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getLeadProducts, removeProductFromLead } from "@/actions/product-links";
 import { X, Package } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { useLeadProducts, useRemoveLeadProduct } from "@/hooks/product-links/use-product-links";
 
 interface LeadProductsSectionProps {
   leadId: string;
@@ -40,35 +39,14 @@ const interestLevelColors: Record<string, string> = {
 };
 
 export function LeadProductsSection({ leadId, isConverted }: LeadProductsSectionProps) {
-  const [products, setProducts] = useState<LeadProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [removing, setRemoving] = useState<string | null>(null);
+  const { data: rawProducts = [], isLoading: loading } = useLeadProducts(leadId);
+  const removeLeadProductMutation = useRemoveLeadProduct();
   const { confirm, dialogProps } = useConfirmDialog();
 
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        const data = await getLeadProducts(leadId);
-        setProducts(data);
-      } catch (error) {
-        console.error("Erro ao carregar produtos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadProducts();
-  }, [leadId]);
+  // Cast to rich interface — backend returns nested product+businessLine
+  const products = rawProducts as unknown as LeadProduct[];
 
-  const refreshProducts = async () => {
-    try {
-      const data = await getLeadProducts(leadId);
-      setProducts(data);
-    } catch (error) {
-      console.error("Erro ao carregar produtos:", error);
-    }
-  };
-
-  const handleRemove = async (id: string, productName: string) => {
+  const handleRemove = async (item: LeadProduct, productName: string) => {
     const confirmed = await confirm({
       title: "Confirmar",
       message: `Remover "${productName}" deste lead?`,
@@ -77,14 +55,10 @@ export function LeadProductsSection({ leadId, isConverted }: LeadProductsSection
     });
     if (!confirmed) return;
 
-    setRemoving(id);
     try {
-      await removeProductFromLead(id);
-      await refreshProducts();
+      await removeLeadProductMutation.mutateAsync({ leadId, productId: item.product.id });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao remover produto");
-    } finally {
-      setRemoving(null);
     }
   };
 
@@ -156,8 +130,8 @@ export function LeadProductsSection({ leadId, isConverted }: LeadProductsSection
 
               {!isConverted && (
                 <button
-                  onClick={() => handleRemove(item.id, item.product.name)}
-                  disabled={removing === item.id}
+                  onClick={() => handleRemove(item, item.product.name)}
+                  disabled={removeLeadProductMutation.isPending}
                   className="ml-2 text-gray-400 hover:text-red-600 disabled:opacity-50"
                   title="Remover produto"
                 >

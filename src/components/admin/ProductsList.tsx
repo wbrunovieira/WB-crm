@@ -1,8 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { toggleProductActive, deleteProduct } from "@/actions/products";
+import { useToggleProduct, useDeleteProduct } from "@/hooks/admin/use-admin";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -22,7 +21,7 @@ interface Product {
     name: string;
     color: string | null;
   };
-  _count: {
+  _count?: {
     leadProducts: number;
     organizationProducts: number;
     dealProducts: number;
@@ -35,15 +34,15 @@ interface ProductsListProps {
 }
 
 export function ProductsList({ products }: ProductsListProps) {
-  const router = useRouter();
+  const toggleMutation = useToggleProduct();
+  const deleteMutation = useDeleteProduct();
   const [loading, setLoading] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
     try {
-      await toggleProductActive(id);
-      router.refresh();
+      await toggleMutation.mutateAsync(id);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar produto");
     } finally {
@@ -69,8 +68,7 @@ export function ProductsList({ products }: ProductsListProps) {
 
     setLoading(id);
     try {
-      await deleteProduct(id);
-      router.refresh();
+      await deleteMutation.mutateAsync(id);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao excluir produto");
     } finally {
@@ -127,11 +125,12 @@ export function ProductsList({ products }: ProductsListProps) {
 
           <div className="space-y-2">
             {group.products.map((product) => {
-              const totalLinks =
-                product._count.leadProducts +
-                product._count.organizationProducts +
-                product._count.dealProducts +
-                product._count.partnerProducts;
+              const totalLinks = product._count
+                ? product._count.leadProducts +
+                  product._count.organizationProducts +
+                  product._count.dealProducts +
+                  product._count.partnerProducts
+                : 0;
 
               return (
                 <div
@@ -176,10 +175,14 @@ export function ProductsList({ products }: ProductsListProps) {
                             )}
                           </span>
                         )}
-                        <span>Leads: {product._count.leadProducts}</span>
-                        <span>Orgs: {product._count.organizationProducts}</span>
-                        <span>Deals: {product._count.dealProducts}</span>
-                        <span>Partners: {product._count.partnerProducts}</span>
+                        {product._count && (
+                          <>
+                            <span>Leads: {product._count.leadProducts}</span>
+                            <span>Orgs: {product._count.organizationProducts}</span>
+                            <span>Deals: {product._count.dealProducts}</span>
+                            <span>Partners: {product._count.partnerProducts}</span>
+                          </>
+                        )}
                         <span>Ordem: {product.order}</span>
                       </div>
                     </div>

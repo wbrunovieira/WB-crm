@@ -1,13 +1,19 @@
-import { getBusinessLines, getUsedBusinessLineOrders } from "@/actions/business-lines";
+import { backendFetch } from "@/lib/backend/client";
+import type { BusinessLineSummary, ProductSummary } from "@/hooks/admin/use-admin";
 import { BusinessLineForm } from "@/components/admin/BusinessLineForm";
 import { BusinessLinesList } from "@/components/admin/BusinessLinesList";
 import Link from "next/link";
 
 export default async function BusinessLinesPage() {
-  const [businessLines, usedOrders] = await Promise.all([
-    getBusinessLines(),
-    getUsedBusinessLineOrders(),
+  const [businessLines, products] = await Promise.all([
+    backendFetch<BusinessLineSummary[]>('/admin/business-lines'),
+    backendFetch<ProductSummary[]>('/admin/products'),
   ]);
+  const usedOrders = businessLines.map(bl => bl.order);
+  const blWithCount = businessLines.map(bl => ({
+    ...bl,
+    _count: { products: products.filter(p => p.businessLineId === bl.id).length },
+  }));
 
   return (
     <div className="p-8">
@@ -44,7 +50,7 @@ export default async function BusinessLinesPage() {
 
         {/* Lista de Business Lines */}
         <div className="lg:col-span-2">
-          <BusinessLinesList businessLines={businessLines} />
+          <BusinessLinesList businessLines={blWithCount} />
         </div>
       </div>
     </div>

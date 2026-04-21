@@ -28,13 +28,13 @@ vi.mock("@/lib/auth", () => ({
   authOptions: {},
 }));
 
-// Mock getActiveProducts action
-vi.mock("@/actions/products", () => ({
-  getActiveProducts: vi.fn(),
+// Mock backendFetch
+vi.mock("@/lib/backend/client", () => ({
+  backendFetch: vi.fn(),
 }));
 
 import { getServerSession } from "next-auth";
-import { getActiveProducts } from "@/actions/products";
+import { backendFetch } from "@/lib/backend/client";
 import { GET } from "@/app/api/products/active/route";
 
 describe("Products API Routes", () => {
@@ -58,23 +58,23 @@ describe("Products API Routes", () => {
       vi.mocked(getServerSession).mockResolvedValue(sessionUserA as any);
 
       const mockProducts = [
-        { id: PRODUCT_ID_1, name: "Product 1", active: true },
-        { id: PRODUCT_ID_2, name: "Product 2", active: true },
+        { id: PRODUCT_ID_1, name: "Product 1", isActive: true },
+        { id: PRODUCT_ID_2, name: "Product 2", isActive: true },
       ];
 
-      vi.mocked(getActiveProducts).mockResolvedValue(mockProducts as any);
+      vi.mocked(backendFetch).mockResolvedValue(mockProducts as any);
 
       const response = await GET();
       const data = await response.json();
 
       expect(response.status).toBe(200);
       expect(data).toHaveLength(2);
-      expect(getActiveProducts).toHaveBeenCalled();
+      expect(backendFetch).toHaveBeenCalledWith('/admin/products?active=true');
     });
 
     it("should return empty array when no active products", async () => {
       vi.mocked(getServerSession).mockResolvedValue(sessionUserA as any);
-      vi.mocked(getActiveProducts).mockResolvedValue([]);
+      vi.mocked(backendFetch).mockResolvedValue([] as any);
 
       const response = await GET();
       const data = await response.json();
@@ -83,18 +83,19 @@ describe("Products API Routes", () => {
       expect(data).toEqual([]);
     });
 
-    it("should call getActiveProducts action", async () => {
+    it("should call backendFetch with correct path", async () => {
       vi.mocked(getServerSession).mockResolvedValue(sessionUserA as any);
-      vi.mocked(getActiveProducts).mockResolvedValue([]);
+      vi.mocked(backendFetch).mockResolvedValue([] as any);
 
       await GET();
 
-      expect(getActiveProducts).toHaveBeenCalledTimes(1);
+      expect(backendFetch).toHaveBeenCalledTimes(1);
+      expect(backendFetch).toHaveBeenCalledWith('/admin/products?active=true');
     });
 
     it("should return 500 on error", async () => {
       vi.mocked(getServerSession).mockResolvedValue(sessionUserA as any);
-      vi.mocked(getActiveProducts).mockRejectedValue(new Error("Database error"));
+      vi.mocked(backendFetch).mockRejectedValue(new Error("Backend error"));
 
       const response = await GET();
       const data = await response.json();
@@ -112,16 +113,16 @@ describe("Products API Routes", () => {
       const response = await GET();
 
       expect(response.status).toBe(401);
-      expect(getActiveProducts).not.toHaveBeenCalled();
+      expect(backendFetch).not.toHaveBeenCalled();
     });
 
-    it("should call getActiveProducts only when authenticated", async () => {
+    it("should call backendFetch only when authenticated", async () => {
       vi.mocked(getServerSession).mockResolvedValue(sessionUserA as any);
-      vi.mocked(getActiveProducts).mockResolvedValue([]);
+      vi.mocked(backendFetch).mockResolvedValue([] as any);
 
       await GET();
 
-      expect(getActiveProducts).toHaveBeenCalled();
+      expect(backendFetch).toHaveBeenCalled();
     });
   });
 });

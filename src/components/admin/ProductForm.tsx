@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { createProduct } from "@/actions/products";
+import { useCreateProduct } from "@/hooks/admin/use-admin";
 
 interface BusinessLine {
   id: string;
@@ -16,7 +15,7 @@ interface ProductFormProps {
 }
 
 export function ProductForm({ businessLines, usedOrders }: ProductFormProps) {
-  const router = useRouter();
+  const createProductMutation = useCreateProduct();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -33,6 +32,16 @@ export function ProductForm({ businessLines, usedOrders }: ProductFormProps) {
     return orders;
   }, [usedOrders]);
 
+  const generateSlug = (name: string): string => {
+    return name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .substring(0, 50);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -40,30 +49,24 @@ export function ProductForm({ businessLines, usedOrders }: ProductFormProps) {
 
     const form = e.currentTarget;
     const formData = new FormData(form);
+    const name = formData.get("name") as string;
 
     try {
-      await createProduct({
-        name: formData.get("name") as string,
-        // slug será gerado automaticamente
-        description: (formData.get("description") as string) || null,
+      await createProductMutation.mutateAsync({
+        name,
+        slug: generateSlug(name),
+        description: (formData.get("description") as string) || undefined,
         businessLineId: formData.get("businessLineId") as string,
         basePrice: formData.get("basePrice")
           ? parseFloat(formData.get("basePrice") as string)
-          : null,
+          : undefined,
         currency: "BRL",
-        pricingType:
-          (formData.get("pricingType") as
-            | "fixed"
-            | "custom"
-            | "hourly"
-            | "monthly"
-            | null) || null,
+        pricingType: (formData.get("pricingType") as string) || undefined,
         isActive: true,
         order: parseInt(formData.get("order") as string) || 0,
       });
 
       form.reset();
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar produto");
     } finally {

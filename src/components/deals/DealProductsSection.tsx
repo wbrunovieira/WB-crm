@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getAllDealProducts, removeProductFromDeal } from "@/actions/product-links";
+import { useState } from "react";
 import { X, Package, Plus } from "lucide-react";
 import { AddProductToDealModal } from "./AddProductToDealModal";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { toast } from "sonner";
+import { useDealProducts, useRemoveDealProduct } from "@/hooks/product-links/use-product-links";
 
 interface DealProductsSectionProps {
   dealId: string;
@@ -48,36 +48,15 @@ const statusConfig: Record<string, { label: string; badge: string; border: strin
 };
 
 export function DealProductsSection({ dealId }: DealProductsSectionProps) {
-  const [products, setProducts] = useState<DealProduct[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [removing, setRemoving] = useState<string | null>(null);
+  const { data: rawProducts = [], isLoading: loading, refetch } = useDealProducts(dealId);
+  const removeDealProductMutation = useRemoveDealProduct();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { confirm, dialogProps } = useConfirmDialog();
 
-  useEffect(() => {
-    const loadProducts = async () => {
-      try {
-        const data = await getAllDealProducts(dealId);
-        setProducts(data);
-      } catch (error) {
-        console.error("Erro ao carregar produtos:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadProducts();
-  }, [dealId]);
+  // Cast to rich interface — backend returns nested product+businessLine
+  const products = rawProducts as unknown as DealProduct[];
 
-  const refreshProducts = async () => {
-    try {
-      const data = await getAllDealProducts(dealId);
-      setProducts(data);
-    } catch (error) {
-      console.error("Erro ao carregar produtos:", error);
-    }
-  };
-
-  const handleRemove = async (id: string, productName: string) => {
+  const handleRemove = async (item: DealProduct, productName: string) => {
     const confirmed = await confirm({
       title: "Remover Produto",
       message: `Remover "${productName}" deste deal? O produto ficará no histórico.`,
@@ -86,15 +65,11 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
     });
     if (!confirmed) return;
 
-    setRemoving(id);
     try {
-      await removeProductFromDeal(id);
-      await refreshProducts();
+      await removeDealProductMutation.mutateAsync({ dealId, productId: item.product.id });
       toast.success(`"${productName}" removido com sucesso`);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao remover produto");
-    } finally {
-      setRemoving(null);
     }
   };
 
@@ -125,7 +100,7 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
           dealId={dealId}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={refreshProducts}
+          onSuccess={() => refetch()}
         />
       </>
     );
@@ -156,7 +131,7 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
           dealId={dealId}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={refreshProducts}
+          onSuccess={() => refetch()}
         />
       </>
     );
@@ -208,8 +183,8 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
 
           {!isInactive && (
             <button
-              onClick={() => handleRemove(item.id, item.product.name)}
-              disabled={removing === item.id}
+              onClick={() => handleRemove(item, item.product.name)}
+              disabled={removeDealProductMutation.isPending}
               className="ml-2 text-gray-400 hover:text-red-600 disabled:opacity-50"
               title="Remover produto"
             >
@@ -345,7 +320,7 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
       dealId={dealId}
       isOpen={isModalOpen}
       onClose={() => setIsModalOpen(false)}
-      onSuccess={refreshProducts}
+      onSuccess={() => refetch()}
     />
     <ConfirmDialog {...dialogProps} />
     </>

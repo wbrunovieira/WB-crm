@@ -1,15 +1,25 @@
-import { getProducts, getUsedProductOrders } from "@/actions/products";
-import { getBusinessLines } from "@/actions/business-lines";
+import { backendFetch } from "@/lib/backend/client";
+import type { BusinessLineSummary, ProductSummary } from "@/hooks/admin/use-admin";
 import { ProductForm } from "@/components/admin/ProductForm";
 import { ProductsList } from "@/components/admin/ProductsList";
 import Link from "next/link";
 
 export default async function ProductsPage() {
-  const [products, businessLines, usedOrders] = await Promise.all([
-    getProducts(),
-    getBusinessLines(),
-    getUsedProductOrders(),
+  const [products, businessLines] = await Promise.all([
+    backendFetch<ProductSummary[]>('/admin/products'),
+    backendFetch<BusinessLineSummary[]>('/admin/business-lines'),
   ]);
+  const usedOrders = products.map(p => p.order);
+  const blMap = Object.fromEntries(businessLines.map(bl => [bl.id, bl]));
+  const enrichedProducts = products.map(p => ({
+    ...p,
+    description: p.description ?? null,
+    basePrice: p.basePrice ?? null,
+    pricingType: p.pricingType ?? null,
+    businessLine: blMap[p.businessLineId]
+      ? { id: p.businessLineId, name: blMap[p.businessLineId].name, color: blMap[p.businessLineId].color ?? null }
+      : { id: p.businessLineId, name: "Desconhecida", color: null },
+  }));
 
   return (
     <div className="p-8">
@@ -44,7 +54,7 @@ export default async function ProductsPage() {
 
         {/* Lista de Products */}
         <div className="lg:col-span-2">
-          <ProductsList products={products} />
+          <ProductsList products={enrichedProducts} />
         </div>
       </div>
     </div>

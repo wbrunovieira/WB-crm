@@ -1,11 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import {
-  toggleBusinessLineActive,
-  deleteBusinessLine,
-} from "@/actions/business-lines";
+import { useToggleBusinessLine, useDeleteBusinessLine } from "@/hooks/admin/use-admin";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -29,15 +25,15 @@ interface BusinessLinesListProps {
 }
 
 export function BusinessLinesList({ businessLines }: BusinessLinesListProps) {
-  const router = useRouter();
+  const toggleMutation = useToggleBusinessLine();
+  const deleteMutation = useDeleteBusinessLine();
   const [loading, setLoading] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
     try {
-      await toggleBusinessLineActive(id);
-      router.refresh();
+      await toggleMutation.mutateAsync(id);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar linha de negócio");
     } finally {
@@ -63,8 +59,7 @@ export function BusinessLinesList({ businessLines }: BusinessLinesListProps) {
 
     setLoading(id);
     try {
-      await deleteBusinessLine(id);
-      router.refresh();
+      await deleteMutation.mutateAsync(id);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao excluir linha de negócio");
     } finally {

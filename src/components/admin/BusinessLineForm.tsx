@@ -1,9 +1,18 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
-import { createBusinessLine, generateUniqueBusinessLineSlug } from "@/actions/business-lines";
+import { useCreateBusinessLine } from "@/hooks/admin/use-admin";
+
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .substring(0, 50);
+}
 
 // Character limits
 const LIMITS = {
@@ -17,7 +26,7 @@ interface BusinessLineFormProps {
 }
 
 export function BusinessLineForm({ usedOrders }: BusinessLineFormProps) {
-  const router = useRouter();
+  const createBusinessLineMutation = useCreateBusinessLine();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
@@ -125,15 +134,14 @@ export function BusinessLineForm({ usedOrders }: BusinessLineFormProps) {
     setLoading(true);
 
     try {
-      // Generate unique slug from name
-      const slug = await generateUniqueBusinessLineSlug(name);
+      const slug = generateSlug(name);
 
-      await createBusinessLine({
+      await createBusinessLineMutation.mutateAsync({
         name,
         slug,
-        description: description || null,
-        color: color || null,
-        icon: icon || null,
+        description: description || undefined,
+        color: color || undefined,
+        icon: icon || undefined,
         isActive: true,
         order,
       });
@@ -147,7 +155,6 @@ export function BusinessLineForm({ usedOrders }: BusinessLineFormProps) {
       setFieldErrors({});
 
       setTimeout(() => setSuccess(false), 3000);
-      router.refresh();
     } catch (err) {
       setError(parseBackendError(err));
     } finally {
