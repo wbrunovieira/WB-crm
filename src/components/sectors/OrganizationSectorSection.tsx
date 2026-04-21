@@ -1,49 +1,21 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
 import { Building2, Plus, X, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import {
-  getOrganizationSectors,
-  linkOrganizationToSector,
-  unlinkOrganizationFromSector,
-  getSectorsForSelect,
-} from "@/actions/sectors";
+  useOrgSectors,
+  useSectors,
+  useLinkOrgToSector,
+  useUnlinkOrgFromSector,
+} from "@/hooks/sectors/use-sectors";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
-
-type SectorSelect = { id: string; name: string; slug: string };
-
-type LinkedSector = {
-  id: string;
-  sectorId: string;
-  sector: {
-    id: string;
-    name: string;
-    slug: string;
-    description: string | null;
-    marketSize: string | null;
-    marketSizeNotes: string | null;
-    averageTicket: string | null;
-    budgetSeason: string | null;
-    salesCycleDays: number | null;
-    salesCycleNotes: string | null;
-    decisionMakers: string | null;
-    buyingProcess: string | null;
-    mainObjections: string | null;
-    mainPains: string | null;
-    referenceCompanies: string | null;
-    competitorsLandscape: string | null;
-    jargons: string | null;
-    regulatoryNotes: string | null;
-  };
-};
 
 interface OrganizationSectorSectionProps {
   organizationId: string;
 }
 
-function InfoRow({ label, value }: { label: string; value: string | null }) {
+function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
   if (!value) return null;
   return (
     <div className="space-y-0.5">
@@ -54,48 +26,33 @@ function InfoRow({ label, value }: { label: string; value: string | null }) {
 }
 
 export function OrganizationSectorSection({ organizationId }: OrganizationSectorSectionProps) {
-  const router = useRouter();
-  const [linked, setLinked] = useState<LinkedSector[]>([]);
-  const [available, setAvailable] = useState<SectorSelect[]>([]);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedSectorId, setSelectedSectorId] = useState("");
-  const [linking, setLinking] = useState(false);
   const [unlinkingId, setUnlinkingId] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
 
-  const loadData = useCallback(async () => {
-    const [linkedData, allSectors] = await Promise.all([
-      getOrganizationSectors(organizationId),
-      getSectorsForSelect(),
-    ]);
-    setLinked(linkedData as LinkedSector[]);
-    const linkedIds = new Set(linkedData.map((l) => l.sectorId));
-    setAvailable(allSectors.filter((s) => !linkedIds.has(s.id)));
-  }, [organizationId]);
+  const { data: linked = [] } = useOrgSectors(organizationId);
+  const { data: allSectors = [] } = useSectors();
+  const linkMutation = useLinkOrgToSector();
+  const unlinkMutation = useUnlinkOrgFromSector();
 
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
+  const linkedIds = useMemo(() => new Set(linked.map((l) => l.sector.id)), [linked]);
+  const available = useMemo(() => allSectors.filter((s) => !linkedIds.has(s.id)), [allSectors, linkedIds]);
 
   const handleLink = async () => {
     if (!selectedSectorId) return;
-    setLinking(true);
     try {
-      await linkOrganizationToSector(organizationId, selectedSectorId);
+      await linkMutation.mutateAsync({ orgId: organizationId, sectorId: selectedSectorId });
       toast.success("Setor vinculado");
       setShowForm(false);
       setSelectedSectorId("");
-      await loadData();
-      router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao vincular setor");
-    } finally {
-      setLinking(false);
     }
   };
 
-  const handleUnlink = async (linkId: string, sectorName: string) => {
+  const handleUnlink = async (sectorId: string, sectorName: string) => {
     const confirmed = await confirm({
       title: "Desvincular setor",
       message: `Remover "${sectorName}" desta organização?`,
@@ -104,15 +61,10 @@ export function OrganizationSectorSection({ organizationId }: OrganizationSector
     });
     if (!confirmed) return;
 
-    setUnlinkingId(linkId);
+    setUnlinkingId(sectorId);
     try {
-      const link = linked.find((l) => l.id === linkId);
-      if (link) {
-        await unlinkOrganizationFromSector(organizationId, link.sectorId);
-        toast.success("Setor removido");
-        await loadData();
-        router.refresh();
-      }
+      await unlinkMutation.mutateAsync({ orgId: organizationId, sectorId });
+      toast.success("Setor removido");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao remover setor");
     } finally {
@@ -157,10 +109,10 @@ export function OrganizationSectorSection({ organizationId }: OrganizationSector
           </select>
           <button
             onClick={handleLink}
-            disabled={!selectedSectorId || linking}
+            disabled={!selectedSectorId || linkMutation.isPending}
             className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-primary/90 disabled:opacity-50"
           >
-            {linking ? <Loader2 className="h-4 w-4 animate-spin" /> : "Vincular"}
+            {linkMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Vincular"}
           </button>
           <button
             onClick={() => { setShowForm(false); setSelectedSectorId(""); }}
@@ -175,15 +127,14 @@ export function OrganizationSectorSection({ organizationId }: OrganizationSector
         <p className="text-sm text-gray-400 italic">Nenhum setor vinculado</p>
       ) : (
         <div className="space-y-3">
-          {linked.map((link) => {
-            const s = link.sector;
-            const isExpanded = expandedId === link.id;
+          {linked.map(({ sector: s }) => {
+            const isExpanded = expandedId === s.id;
             return (
-              <div key={link.id} className="rounded-lg border border-gray-200 overflow-hidden">
+              <div key={s.id} className="rounded-lg border border-gray-200 overflow-hidden">
                 <div className="flex items-center justify-between px-4 py-3 bg-gray-50">
                   <button
                     className="flex items-center gap-2 text-left flex-1 min-w-0"
-                    onClick={() => setExpandedId(isExpanded ? null : link.id)}
+                    onClick={() => setExpandedId(isExpanded ? null : s.id)}
                   >
                     <span className="font-semibold text-gray-900 text-sm">{s.name}</span>
                     {s.marketSize && (
@@ -198,11 +149,11 @@ export function OrganizationSectorSection({ organizationId }: OrganizationSector
                     )}
                   </button>
                   <button
-                    onClick={() => handleUnlink(link.id, s.name)}
-                    disabled={unlinkingId === link.id}
+                    onClick={() => handleUnlink(s.id, s.name)}
+                    disabled={unlinkingId === s.id}
                     className="ml-3 shrink-0 rounded-lg p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
                   >
-                    {unlinkingId === link.id ? (
+                    {unlinkingId === s.id ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
                       <X className="h-4 w-4" />

@@ -1,19 +1,23 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
 import {
-  createTechProfileLanguage,
-  createTechProfileFramework,
-  createTechProfileHosting,
-  createTechProfileDatabase,
-  createTechProfileERP,
-  createTechProfileCRM,
-  createTechProfileEcommerce,
-  generateUniqueTechProfileSlug,
-} from "@/actions/tech-profile-options";
+  useCreateTechOption,
+  type TechOptionType,
+} from "@/hooks/admin/use-admin";
+import { generateSlug } from "@/lib/utils";
 
 type TechProfileType = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
+
+const TYPE_MAP: Record<TechProfileType, TechOptionType> = {
+  languages: "profile-language",
+  frameworks: "profile-framework",
+  hosting: "profile-hosting",
+  databases: "profile-database",
+  erps: "profile-erp",
+  crms: "profile-crm",
+  ecommerces: "profile-ecommerce",
+};
 
 interface TechProfileGenericFormProps {
   type: TechProfileType;
@@ -21,9 +25,9 @@ interface TechProfileGenericFormProps {
 }
 
 export function TechProfileGenericForm({ type, usedOrders }: TechProfileGenericFormProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const createMutation = useCreateTechOption(TYPE_MAP[type]);
 
   const needsTypeField = type === "hosting" || type === "databases";
 
@@ -49,49 +53,24 @@ export function TechProfileGenericForm({ type, usedOrders }: TechProfileGenericF
     const name = formData.get("name") as string;
 
     try {
-      const slug = await generateUniqueTechProfileSlug(type, name);
+      const slug = generateSlug(name);
 
-      const baseData = {
+      const payload: Record<string, unknown> = {
         name,
         slug,
-        color: (formData.get("color") as string) || null,
-        icon: (formData.get("icon") as string) || null,
+        color: (formData.get("color") as string) || undefined,
+        icon: (formData.get("icon") as string) || undefined,
         order: parseInt(formData.get("order") as string) || 0,
         isActive: true,
       };
 
-      switch (type) {
-        case "languages":
-          await createTechProfileLanguage(baseData);
-          break;
-        case "frameworks":
-          await createTechProfileFramework(baseData);
-          break;
-        case "hosting":
-          await createTechProfileHosting({
-            ...baseData,
-            type: (formData.get("type") as "cloud" | "vps" | "shared" | "dedicated" | "serverless") || "cloud",
-          });
-          break;
-        case "databases":
-          await createTechProfileDatabase({
-            ...baseData,
-            type: (formData.get("type") as "relational" | "nosql" | "cache" | "search") || "relational",
-          });
-          break;
-        case "erps":
-          await createTechProfileERP(baseData);
-          break;
-        case "crms":
-          await createTechProfileCRM(baseData);
-          break;
-        case "ecommerces":
-          await createTechProfileEcommerce(baseData);
-          break;
+      if (needsTypeField) {
+        payload.subType = (formData.get("type") as string) || undefined;
       }
 
+      await createMutation.mutateAsync(payload);
+
       form.reset();
-      router.refresh();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao criar item";
       setError(message);

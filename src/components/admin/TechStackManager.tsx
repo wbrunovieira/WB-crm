@@ -7,64 +7,20 @@ import { TechLanguageForm } from "./TechLanguageForm";
 import { TechLanguagesList } from "./TechLanguagesList";
 import { TechFrameworkForm } from "./TechFrameworkForm";
 import { TechFrameworksList } from "./TechFrameworksList";
-
-interface TechCategory {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  color: string | null;
-  icon: string | null;
-  order: number;
-  isActive: boolean;
-  _count: {
-    dealTechStacks: number;
-  };
-}
-
-interface TechLanguage {
-  id: string;
-  name: string;
-  slug: string;
-  color: string | null;
-  icon: string | null;
-  isActive: boolean;
-  _count: {
-    dealLanguages: number;
-  };
-}
-
-interface TechFramework {
-  id: string;
-  name: string;
-  slug: string;
-  languageSlug: string | null;
-  color: string | null;
-  icon: string | null;
-  isActive: boolean;
-  _count: {
-    dealFrameworks: number;
-  };
-}
-
-interface TechStackManagerProps {
-  categories: TechCategory[];
-  languages: TechLanguage[];
-  frameworks: TechFramework[];
-}
+import { useTechOptions } from "@/hooks/admin/use-admin";
 
 type Tab = "categories" | "languages" | "frameworks";
 
-export function TechStackManager({
-  categories,
-  languages,
-  frameworks,
-}: TechStackManagerProps) {
+export function TechStackManager() {
   const [activeTab, setActiveTab] = useState<Tab>("categories");
+
+  const { data: categories = [] } = useTechOptions("tech-category");
+  const { data: languages = [] } = useTechOptions("tech-language");
+  const { data: frameworks = [] } = useTechOptions("tech-framework");
 
   // Extract used orders from categories
   const usedCategoryOrders = useMemo(() => {
-    return categories.map((c) => c.order);
+    return categories.map((c) => c.order ?? 0);
   }, [categories]);
 
   return (
@@ -115,7 +71,7 @@ export function TechStackManager({
             </div>
           </div>
           <div className="lg:col-span-2">
-            <TechCategoriesList categories={categories} />
+            <TechCategoriesList />
           </div>
         </div>
       )}
@@ -129,7 +85,7 @@ export function TechStackManager({
             </div>
           </div>
           <div className="lg:col-span-2">
-            <TechLanguagesList languages={languages} />
+            <TechLanguagesList />
           </div>
         </div>
       )}
@@ -143,7 +99,7 @@ export function TechStackManager({
             </div>
           </div>
           <div className="lg:col-span-2">
-            <TechFrameworksList frameworks={frameworks} />
+            <TechFrameworksList />
           </div>
         </div>
       )}

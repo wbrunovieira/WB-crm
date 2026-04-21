@@ -1,41 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
-  toggleTechLanguageActive,
-  deleteTechLanguage,
-} from "@/actions/tech-languages";
+  useTechOptions,
+  useToggleTechOption,
+  useDeleteTechOption,
+} from "@/hooks/admin/use-admin";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
-interface TechLanguage {
-  id: string;
-  name: string;
-  slug: string;
-  color: string | null;
-  icon: string | null;
-  isActive: boolean;
-  _count: {
-    dealLanguages: number;
-  };
-}
+export function TechLanguagesList() {
+  const { data: languages = [] } = useTechOptions("tech-language");
+  const toggleMutation = useToggleTechOption("tech-language");
+  const deleteMutation = useDeleteTechOption("tech-language");
 
-interface TechLanguagesListProps {
-  languages: TechLanguage[];
-}
-
-export function TechLanguagesList({ languages }: TechLanguagesListProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
     try {
-      await toggleTechLanguageActive(id);
-      router.refresh();
+      await toggleMutation.mutateAsync(id);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao atualizar linguagem";
       toast.error(message);
@@ -44,14 +30,7 @@ export function TechLanguagesList({ languages }: TechLanguagesListProps) {
     }
   };
 
-  const handleDelete = async (id: string, name: string, dealCount: number) => {
-    if (dealCount > 0) {
-      toast.warning(
-        `Não é possível excluir "${name}" pois possui ${dealCount} deal(s) vinculado(s).`
-      );
-      return;
-    }
-
+  const handleDelete = async (id: string, name: string) => {
     const confirmed = await confirm({
       title: "Confirmar",
       message: `Tem certeza que deseja excluir "${name}"?`,
@@ -62,8 +41,7 @@ export function TechLanguagesList({ languages }: TechLanguagesListProps) {
 
     setLoading(id);
     try {
-      await deleteTechLanguage(id);
-      router.refresh();
+      await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao excluir linguagem";
       toast.error(message);
@@ -120,10 +98,6 @@ export function TechLanguagesList({ languages }: TechLanguagesListProps) {
                   {language.slug}
                 </span>
               </p>
-
-              <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
-                <span>{language._count.dealLanguages} deal(s)</span>
-              </div>
             </div>
 
             <div className="flex gap-2">
@@ -141,14 +115,8 @@ export function TechLanguagesList({ languages }: TechLanguagesListProps) {
               </button>
 
               <button
-                onClick={() =>
-                  handleDelete(
-                    language.id,
-                    language.name,
-                    language._count.dealLanguages
-                  )
-                }
-                disabled={loading === language.id || language._count.dealLanguages > 0}
+                onClick={() => handleDelete(language.id, language.name)}
+                disabled={loading === language.id}
                 className="rounded-md p-2 text-gray-600 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                 title="Excluir"
               >

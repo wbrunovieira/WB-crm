@@ -1,17 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { X } from "lucide-react";
 import { toast } from "sonner";
-import {
-  getActiveTechProfileLanguages,
-  getActiveTechProfileFrameworks,
-  getActiveTechProfileHosting,
-  getActiveTechProfileDatabases,
-  getActiveTechProfileERPs,
-  getActiveTechProfileCRMs,
-  getActiveTechProfileEcommerces,
-} from "@/actions/tech-profile-options";
+import { useTechOptions } from "@/hooks/admin/use-admin";
 import {
   addLanguageToLead,
   addFrameworkToLead,
@@ -41,21 +33,8 @@ interface AddTechProfileModalProps {
 
 type TabType = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
 
-interface TechOption {
-  id: string;
-  name: string;
-  slug: string;
-  color?: string | null;
-  icon?: string | null;
-  type?: string | null;
-}
-
-type TechOptions = Record<TabType, TechOption[]>;
-
 export function AddTechProfileModal({ entityId, entityType, isOpen, onClose, onSuccess }: AddTechProfileModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>("languages");
-  const [options, setOptions] = useState<Partial<TechOptions>>({});
-  const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState<string | null>(null);
 
   const tabs = [
@@ -68,29 +47,23 @@ export function AddTechProfileModal({ entityId, entityType, isOpen, onClose, onS
     { key: "ecommerces" as TabType, label: "E-commerce" },
   ];
 
-  useEffect(() => {
-    if (isOpen) {
-      loadData();
-    }
-  }, [isOpen]);
+  const { data: languages = [] } = useTechOptions("profile-language");
+  const { data: frameworks = [] } = useTechOptions("profile-framework");
+  const { data: hosting = [] } = useTechOptions("profile-hosting");
+  const { data: databases = [] } = useTechOptions("profile-database");
+  const { data: erps = [] } = useTechOptions("profile-erp");
+  const { data: crms = [] } = useTechOptions("profile-crm");
+  const { data: ecommerces = [] } = useTechOptions("profile-ecommerce");
 
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const [languages, frameworks, hosting, databases, erps, crms, ecommerces] = await Promise.all([
-        getActiveTechProfileLanguages(),
-        getActiveTechProfileFrameworks(),
-        getActiveTechProfileHosting(),
-        getActiveTechProfileDatabases(),
-        getActiveTechProfileERPs(),
-        getActiveTechProfileCRMs(),
-        getActiveTechProfileEcommerces(),
-      ]);
-      setOptions({ languages, frameworks, hosting, databases, erps, crms, ecommerces });
-    } catch (error) {
-      console.error("Erro ao carregar opções:", error);
-    } finally {
-      setLoading(false);
+  const getOptions = () => {
+    switch (activeTab) {
+      case "languages": return languages;
+      case "frameworks": return frameworks;
+      case "hosting": return hosting;
+      case "databases": return databases;
+      case "erps": return erps;
+      case "crms": return crms;
+      case "ecommerces": return ecommerces;
     }
   };
 
@@ -129,7 +102,7 @@ export function AddTechProfileModal({ entityId, entityType, isOpen, onClose, onS
 
   if (!isOpen) return null;
 
-  const currentOptions = options[activeTab] || [];
+  const currentOptions = getOptions().filter((o) => o.isActive);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -165,45 +138,41 @@ export function AddTechProfileModal({ entityId, entityType, isOpen, onClose, onS
         </div>
 
         {/* Content */}
-        {loading ? (
-          <div className="py-8 text-center text-gray-500">Carregando...</div>
-        ) : (
-          <div className="space-y-2">
-            {currentOptions.length === 0 ? (
-              <p className="py-8 text-center text-gray-500">
-                Nenhuma opção disponível
-              </p>
-            ) : (
-              currentOptions.map((item) => (
-                <div
-                  key={item.id}
-                  className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    {item.color && (
-                      <span
-                        className="inline-block h-4 w-4 rounded"
-                        style={{ backgroundColor: item.color }}
-                      />
-                    )}
-                    {item.icon && <span>{item.icon}</span>}
-                    <span className="font-medium text-gray-900">{item.name}</span>
-                    {item.type && (
-                      <span className="text-xs text-gray-500">({item.type})</span>
-                    )}
-                  </div>
-                  <button
-                    onClick={() => handleAdd(item.id)}
-                    disabled={adding === item.id}
-                    className="rounded-md bg-primary px-3 py-1 text-sm text-white hover:bg-purple-700 disabled:opacity-50"
-                  >
-                    {adding === item.id ? "Adicionando..." : "Adicionar"}
-                  </button>
+        <div className="space-y-2">
+          {currentOptions.length === 0 ? (
+            <p className="py-8 text-center text-gray-500">
+              Nenhuma opção disponível
+            </p>
+          ) : (
+            currentOptions.map((item) => (
+              <div
+                key={item.id}
+                className="flex items-center justify-between rounded-lg border border-gray-200 bg-gray-50 p-3"
+              >
+                <div className="flex items-center gap-3">
+                  {item.color && (
+                    <span
+                      className="inline-block h-4 w-4 rounded"
+                      style={{ backgroundColor: item.color }}
+                    />
+                  )}
+                  {item.icon && <span>{item.icon}</span>}
+                  <span className="font-medium text-gray-900">{item.name}</span>
+                  {item.subType && (
+                    <span className="text-xs text-gray-500">({item.subType})</span>
+                  )}
                 </div>
-              ))
-            )}
-          </div>
-        )}
+                <button
+                  onClick={() => handleAdd(item.id)}
+                  disabled={adding === item.id}
+                  className="rounded-md bg-primary px-3 py-1 text-sm text-white hover:bg-purple-700 disabled:opacity-50"
+                >
+                  {adding === item.id ? "Adicionando..." : "Adicionar"}
+                </button>
+              </div>
+            ))
+          )}
+        </div>
 
         <div className="mt-6 flex justify-end">
           <button

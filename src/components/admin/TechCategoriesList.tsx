@@ -1,43 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
-  toggleTechCategoryActive,
-  deleteTechCategory,
-} from "@/actions/tech-categories";
+  useTechOptions,
+  useToggleTechOption,
+  useDeleteTechOption,
+} from "@/hooks/admin/use-admin";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
-interface TechCategory {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  color: string | null;
-  icon: string | null;
-  order: number;
-  isActive: boolean;
-  _count: {
-    dealTechStacks: number;
-  };
-}
+export function TechCategoriesList() {
+  const { data: categories = [] } = useTechOptions("tech-category");
+  const toggleMutation = useToggleTechOption("tech-category");
+  const deleteMutation = useDeleteTechOption("tech-category");
 
-interface TechCategoriesListProps {
-  categories: TechCategory[];
-}
-
-export function TechCategoriesList({ categories }: TechCategoriesListProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
     try {
-      await toggleTechCategoryActive(id);
-      router.refresh();
+      await toggleMutation.mutateAsync(id);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao atualizar categoria";
       toast.error(message);
@@ -46,14 +30,7 @@ export function TechCategoriesList({ categories }: TechCategoriesListProps) {
     }
   };
 
-  const handleDelete = async (id: string, name: string, dealCount: number) => {
-    if (dealCount > 0) {
-      toast.warning(
-        `Não é possível excluir "${name}" pois possui ${dealCount} deal(s) vinculado(s).`
-      );
-      return;
-    }
-
+  const handleDelete = async (id: string, name: string) => {
     const confirmed = await confirm({
       title: "Confirmar",
       message: `Tem certeza que deseja excluir "${name}"?`,
@@ -64,8 +41,7 @@ export function TechCategoriesList({ categories }: TechCategoriesListProps) {
 
     setLoading(id);
     try {
-      await deleteTechCategory(id);
-      router.refresh();
+      await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao excluir categoria";
       toast.error(message);
@@ -130,8 +106,7 @@ export function TechCategoriesList({ categories }: TechCategoriesListProps) {
               </p>
 
               <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
-                <span>{category._count.dealTechStacks} deal(s)</span>
-                <span>Ordem: {category.order}</span>
+                <span>Ordem: {category.order ?? 0}</span>
               </div>
             </div>
 
@@ -150,14 +125,8 @@ export function TechCategoriesList({ categories }: TechCategoriesListProps) {
               </button>
 
               <button
-                onClick={() =>
-                  handleDelete(
-                    category.id,
-                    category.name,
-                    category._count.dealTechStacks
-                  )
-                }
-                disabled={loading === category.id || category._count.dealTechStacks > 0}
+                onClick={() => handleDelete(category.id, category.name)}
+                disabled={loading === category.id}
                 className="rounded-md p-2 text-gray-600 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                 title="Excluir"
               >

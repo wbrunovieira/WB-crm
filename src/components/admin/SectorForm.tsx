@@ -1,9 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, X } from "lucide-react";
-import { createSector, updateSector } from "@/actions/sectors";
+import { useCreateSector, useUpdateSector } from "@/hooks/sectors/use-sectors";
 import type { SectorFormData } from "@/lib/validations/sector";
 import { toast } from "sonner";
 
@@ -65,10 +64,11 @@ const empty: SectorFormData = {
 };
 
 export function SectorForm({ editingSector, onCancelEdit }: SectorFormProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<SectorFormData>(empty);
   const [slugManual, setSlugManual] = useState(false);
+  const createMutation = useCreateSector();
+  const updateMutation = useUpdateSector();
 
   const isEditing = !!editingSector;
 
@@ -124,16 +124,15 @@ export function SectorForm({ editingSector, onCancelEdit }: SectorFormProps) {
     setLoading(true);
     try {
       if (isEditing && editingSector) {
-        await updateSector(editingSector.id, form);
+        await updateMutation.mutateAsync({ id: editingSector.id, ...form });
         toast.success("Setor atualizado");
         onCancelEdit?.();
       } else {
-        await createSector(form);
+        await createMutation.mutateAsync({ ...form, isActive: form.isActive ?? true });
         toast.success("Setor criado");
         setForm(empty);
         setSlugManual(false);
       }
-      router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar setor");
     } finally {

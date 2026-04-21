@@ -1,26 +1,7 @@
-import {
-  getTechProfileLanguages,
-  getTechProfileFrameworks,
-  getTechProfileHosting,
-  getTechProfileDatabases,
-  getTechProfileERPs,
-  getTechProfileCRMs,
-  getTechProfileEcommerces,
-} from "@/actions/tech-profile-options";
 import { TechProfileManager } from "@/components/admin/TechProfileManager";
 import Link from "next/link";
 
-export default async function TechProfilePage() {
-  const [languages, frameworks, hosting, databases, erps, crms, ecommerces] = await Promise.all([
-    getTechProfileLanguages(),
-    getTechProfileFrameworks(),
-    getTechProfileHosting(),
-    getTechProfileDatabases(),
-    getTechProfileERPs(),
-    getTechProfileCRMs(),
-    getTechProfileEcommerces(),
-  ]);
-
+export default function TechProfilePage() {
   return (
     <div className="p-8">
       <div className="mb-4">
@@ -35,15 +16,7 @@ export default async function TechProfilePage() {
         </p>
       </div>
 
-      <TechProfileManager
-        languages={languages}
-        frameworks={frameworks}
-        hosting={hosting}
-        databases={databases}
-        erps={erps}
-        crms={crms}
-        ecommerces={ecommerces}
-      />
+      <TechProfileManager />
     </div>
   );
 }

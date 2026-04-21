@@ -1,13 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createTechLanguage, generateUniqueTechLanguageSlug } from "@/actions/tech-languages";
+import { useCreateTechOption } from "@/hooks/admin/use-admin";
+import { generateSlug } from "@/lib/utils";
 
 export function TechLanguageForm() {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const createMutation = useCreateTechOption("tech-language");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -19,18 +19,17 @@ export function TechLanguageForm() {
 
     try {
       const name = formData.get("name") as string;
-      const slug = await generateUniqueTechLanguageSlug(name);
+      const slug = generateSlug(name);
 
-      await createTechLanguage({
+      await createMutation.mutateAsync({
         name,
         slug,
-        color: (formData.get("color") as string) || null,
-        icon: (formData.get("icon") as string) || null,
+        color: (formData.get("color") as string) || undefined,
+        icon: (formData.get("icon") as string) || undefined,
         isActive: true,
       });
 
       form.reset();
-      router.refresh();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao criar linguagem";
       setError(message);

@@ -1,42 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
-  toggleTechFrameworkActive,
-  deleteTechFramework,
-} from "@/actions/tech-frameworks";
+  useTechOptions,
+  useToggleTechOption,
+  useDeleteTechOption,
+} from "@/hooks/admin/use-admin";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
-interface TechFramework {
-  id: string;
-  name: string;
-  slug: string;
-  languageSlug: string | null;
-  color: string | null;
-  icon: string | null;
-  isActive: boolean;
-  _count: {
-    dealFrameworks: number;
-  };
-}
+export function TechFrameworksList() {
+  const { data: frameworks = [] } = useTechOptions("tech-framework");
+  const toggleMutation = useToggleTechOption("tech-framework");
+  const deleteMutation = useDeleteTechOption("tech-framework");
 
-interface TechFrameworksListProps {
-  frameworks: TechFramework[];
-}
-
-export function TechFrameworksList({ frameworks }: TechFrameworksListProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
     try {
-      await toggleTechFrameworkActive(id);
-      router.refresh();
+      await toggleMutation.mutateAsync(id);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao atualizar framework";
       toast.error(message);
@@ -45,14 +30,7 @@ export function TechFrameworksList({ frameworks }: TechFrameworksListProps) {
     }
   };
 
-  const handleDelete = async (id: string, name: string, dealCount: number) => {
-    if (dealCount > 0) {
-      toast.warning(
-        `Não é possível excluir "${name}" pois possui ${dealCount} deal(s) vinculado(s).`
-      );
-      return;
-    }
-
+  const handleDelete = async (id: string, name: string) => {
     const confirmed = await confirm({
       title: "Confirmar",
       message: `Tem certeza que deseja excluir "${name}"?`,
@@ -63,8 +41,7 @@ export function TechFrameworksList({ frameworks }: TechFrameworksListProps) {
 
     setLoading(id);
     try {
-      await deleteTechFramework(id);
-      router.refresh();
+      await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao excluir framework";
       toast.error(message);
@@ -129,10 +106,6 @@ export function TechFrameworksList({ frameworks }: TechFrameworksListProps) {
                   </>
                 )}
               </p>
-
-              <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
-                <span>{framework._count.dealFrameworks} deal(s)</span>
-              </div>
             </div>
 
             <div className="flex gap-2">
@@ -150,14 +123,8 @@ export function TechFrameworksList({ frameworks }: TechFrameworksListProps) {
               </button>
 
               <button
-                onClick={() =>
-                  handleDelete(
-                    framework.id,
-                    framework.name,
-                    framework._count.dealFrameworks
-                  )
-                }
-                disabled={loading === framework.id || framework._count.dealFrameworks > 0}
+                onClick={() => handleDelete(framework.id, framework.name)}
+                disabled={loading === framework.id}
                 className="rounded-md p-2 text-gray-600 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                 title="Excluir"
               >

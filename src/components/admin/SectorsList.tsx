@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Pencil, Trash2, Eye, EyeOff, Loader2, Building2 } from "lucide-react";
-import { updateSector, deleteSector } from "@/actions/sectors";
+import { useUpdateSector, useDeleteSector } from "@/hooks/sectors/use-sectors";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
@@ -36,15 +35,15 @@ interface SectorsListProps {
 }
 
 export function SectorsList({ sectors, onEdit }: SectorsListProps) {
-  const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
+  const updateMutation = useUpdateSector();
+  const deleteMutation = useDeleteSector();
 
   const handleToggleActive = async (sector: Sector) => {
     setLoadingId(sector.id);
     try {
-      await updateSector(sector.id, { isActive: !sector.isActive });
-      router.refresh();
+      await updateMutation.mutateAsync({ id: sector.id, isActive: !sector.isActive });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao atualizar setor");
     } finally {
@@ -63,9 +62,8 @@ export function SectorsList({ sectors, onEdit }: SectorsListProps) {
 
     setLoadingId(sector.id);
     try {
-      await deleteSector(sector.id);
+      await deleteMutation.mutateAsync(sector.id);
       toast.success("Setor excluído");
-      router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao excluir setor");
     } finally {

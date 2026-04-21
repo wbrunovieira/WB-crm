@@ -1,65 +1,45 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
-  toggleTechProfileLanguageActive,
-  deleteTechProfileLanguage,
-  toggleTechProfileFrameworkActive,
-  deleteTechProfileFramework,
-  toggleTechProfileHostingActive,
-  deleteTechProfileHosting,
-  toggleTechProfileDatabaseActive,
-  deleteTechProfileDatabase,
-  toggleTechProfileERPActive,
-  deleteTechProfileERP,
-  toggleTechProfileCRMActive,
-  deleteTechProfileCRM,
-  toggleTechProfileEcommerceActive,
-  deleteTechProfileEcommerce,
-} from "@/actions/tech-profile-options";
+  useTechOptions,
+  useToggleTechOption,
+  useDeleteTechOption,
+  type TechOptionType,
+} from "@/hooks/admin/use-admin";
 import { Eye, EyeOff, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
 type TechProfileType = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
 
-interface TechProfileItem {
-  id: string;
-  name: string;
-  slug: string;
-  color?: string | null;
-  icon?: string | null;
-  type?: string | null;
-  isActive: boolean;
-  order: number;
-  _count: Record<string, number>;
-}
+const TYPE_MAP: Record<TechProfileType, TechOptionType> = {
+  languages: "profile-language",
+  frameworks: "profile-framework",
+  hosting: "profile-hosting",
+  databases: "profile-database",
+  erps: "profile-erp",
+  crms: "profile-crm",
+  ecommerces: "profile-ecommerce",
+};
 
 interface TechProfileGenericListProps {
   type: TechProfileType;
-  items: TechProfileItem[];
-  countKeys: { lead: string; org: string };
 }
 
-export function TechProfileGenericList({ type, items, countKeys }: TechProfileGenericListProps) {
-  const router = useRouter();
+export function TechProfileGenericList({ type }: TechProfileGenericListProps) {
+  const optionType = TYPE_MAP[type];
+  const { data: items = [] } = useTechOptions(optionType);
+  const toggleMutation = useToggleTechOption(optionType);
+  const deleteMutation = useDeleteTechOption(optionType);
+
   const [loading, setLoading] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
 
   const handleToggleActive = async (id: string) => {
     setLoading(id);
     try {
-      switch (type) {
-        case "languages": await toggleTechProfileLanguageActive(id); break;
-        case "frameworks": await toggleTechProfileFrameworkActive(id); break;
-        case "hosting": await toggleTechProfileHostingActive(id); break;
-        case "databases": await toggleTechProfileDatabaseActive(id); break;
-        case "erps": await toggleTechProfileERPActive(id); break;
-        case "crms": await toggleTechProfileCRMActive(id); break;
-        case "ecommerces": await toggleTechProfileEcommerceActive(id); break;
-      }
-      router.refresh();
+      await toggleMutation.mutateAsync(id);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao atualizar";
       toast.error(message);
@@ -68,14 +48,7 @@ export function TechProfileGenericList({ type, items, countKeys }: TechProfileGe
     }
   };
 
-  const handleDelete = async (id: string, name: string, totalCount: number) => {
-    if (totalCount > 0) {
-      toast.warning(
-        `Não é possível excluir "${name}" pois possui ${totalCount} lead(s)/organização(ões) vinculado(s).`
-      );
-      return;
-    }
-
+  const handleDelete = async (id: string, name: string) => {
     const confirmed = await confirm({
       title: "Confirmar",
       message: `Tem certeza que deseja excluir "${name}"?`,
@@ -86,16 +59,7 @@ export function TechProfileGenericList({ type, items, countKeys }: TechProfileGe
 
     setLoading(id);
     try {
-      switch (type) {
-        case "languages": await deleteTechProfileLanguage(id); break;
-        case "frameworks": await deleteTechProfileFramework(id); break;
-        case "hosting": await deleteTechProfileHosting(id); break;
-        case "databases": await deleteTechProfileDatabase(id); break;
-        case "erps": await deleteTechProfileERP(id); break;
-        case "crms": await deleteTechProfileCRM(id); break;
-        case "ecommerces": await deleteTechProfileEcommerce(id); break;
-      }
-      router.refresh();
+      await deleteMutation.mutateAsync(id);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao excluir";
       toast.error(message);
@@ -120,87 +84,75 @@ export function TechProfileGenericList({ type, items, countKeys }: TechProfileGe
   return (
     <>
     <div className="space-y-3">
-      {items.map((item) => {
-        const leadCount = item._count[countKeys.lead] || 0;
-        const orgCount = item._count[countKeys.org] || 0;
-        const totalCount = leadCount + orgCount;
-
-        return (
-          <div
-            key={item.id}
-            className={`rounded-lg border bg-white p-4 shadow-sm ${
-              !item.isActive ? "opacity-60" : ""
-            }`}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3">
-                  {item.color && (
-                    <span
-                      className="inline-block h-4 w-4 rounded"
-                      style={{ backgroundColor: item.color }}
-                    />
-                  )}
-                  {item.icon && <span>{item.icon}</span>}
-                  <h3 className="text-lg font-semibold text-gray-900">
-                    {item.name}
-                  </h3>
-                  {!item.isActive && (
-                    <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600">
-                      Inativo
-                    </span>
-                  )}
-                  {item.type && (
-                    <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
-                      {item.type}
-                    </span>
-                  )}
-                </div>
-
-                <p className="mt-1 text-sm text-gray-600">
-                  <span className="font-mono text-xs text-gray-400">
-                    {item.slug}
+      {items.map((item) => (
+        <div
+          key={item.id}
+          className={`rounded-lg border bg-white p-4 shadow-sm ${
+            !item.isActive ? "opacity-60" : ""
+          }`}
+        >
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3">
+                {item.color && (
+                  <span
+                    className="inline-block h-4 w-4 rounded"
+                    style={{ backgroundColor: item.color }}
+                  />
+                )}
+                {item.icon && <span>{item.icon}</span>}
+                <h3 className="text-lg font-semibold text-gray-900">
+                  {item.name}
+                </h3>
+                {!item.isActive && (
+                  <span className="rounded-full bg-gray-200 px-2 py-0.5 text-xs font-medium text-gray-600">
+                    Inativo
                   </span>
-                </p>
-
-                <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
-                  <span>{totalCount} vinculação(ões)</span>
-                  {totalCount > 0 && (
-                    <span className="text-xs">
-                      ({leadCount} leads, {orgCount} organizations)
-                    </span>
-                  )}
-                  <span>Ordem: {item.order}</span>
-                </div>
+                )}
+                {item.subType && (
+                  <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                    {item.subType}
+                  </span>
+                )}
               </div>
 
-              <div className="flex gap-2">
-                <button
-                  onClick={() => handleToggleActive(item.id)}
-                  disabled={loading === item.id}
-                  className="rounded-md p-2 text-gray-600 hover:bg-gray-100"
-                  title={item.isActive ? "Desativar" : "Ativar"}
-                >
-                  {item.isActive ? (
-                    <Eye className="h-5 w-5" />
-                  ) : (
-                    <EyeOff className="h-5 w-5" />
-                  )}
-                </button>
+              <p className="mt-1 text-sm text-gray-600">
+                <span className="font-mono text-xs text-gray-400">
+                  {item.slug}
+                </span>
+              </p>
 
-                <button
-                  onClick={() => handleDelete(item.id, item.name, totalCount)}
-                  disabled={loading === item.id || totalCount > 0}
-                  className="rounded-md p-2 text-gray-600 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Excluir"
-                >
-                  <Trash2 className="h-5 w-5" />
-                </button>
+              <div className="mt-2 flex items-center gap-4 text-sm text-gray-500">
+                <span>Ordem: {item.order ?? 0}</span>
               </div>
             </div>
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => handleToggleActive(item.id)}
+                disabled={loading === item.id}
+                className="rounded-md p-2 text-gray-600 hover:bg-gray-100"
+                title={item.isActive ? "Desativar" : "Ativar"}
+              >
+                {item.isActive ? (
+                  <Eye className="h-5 w-5" />
+                ) : (
+                  <EyeOff className="h-5 w-5" />
+                )}
+              </button>
+
+              <button
+                onClick={() => handleDelete(item.id, item.name)}
+                disabled={loading === item.id}
+                className="rounded-md p-2 text-gray-600 hover:bg-red-50 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
+                title="Excluir"
+              >
+                <Trash2 className="h-5 w-5" />
+              </button>
+            </div>
           </div>
-        );
-      })}
+        </div>
+      ))}
     </div>
     <ConfirmDialog {...dialogProps} />
     </>

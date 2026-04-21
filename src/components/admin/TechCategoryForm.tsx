@@ -1,17 +1,17 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { useRouter } from "next/navigation";
-import { createTechCategory, generateUniqueTechCategorySlug } from "@/actions/tech-categories";
+import { useCreateTechOption } from "@/hooks/admin/use-admin";
+import { generateSlug } from "@/lib/utils";
 
 interface TechCategoryFormProps {
   usedOrders: number[];
 }
 
 export function TechCategoryForm({ usedOrders }: TechCategoryFormProps) {
-  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const createMutation = useCreateTechOption("tech-category");
 
   // Gera lista de ordens disponíveis (0 a 99, excluindo as já usadas)
   const availableOrders = useMemo(() => {
@@ -34,20 +34,19 @@ export function TechCategoryForm({ usedOrders }: TechCategoryFormProps) {
 
     try {
       const name = formData.get("name") as string;
-      const slug = await generateUniqueTechCategorySlug(name);
+      const slug = generateSlug(name);
 
-      await createTechCategory({
+      await createMutation.mutateAsync({
         name,
         slug,
-        description: (formData.get("description") as string) || null,
-        color: (formData.get("color") as string) || null,
-        icon: (formData.get("icon") as string) || null,
+        description: (formData.get("description") as string) || undefined,
+        color: (formData.get("color") as string) || undefined,
+        icon: (formData.get("icon") as string) || undefined,
         order: parseInt(formData.get("order") as string) || 0,
         isActive: true,
       });
 
       form.reset();
-      router.refresh();
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Erro ao criar categoria";
       setError(message);

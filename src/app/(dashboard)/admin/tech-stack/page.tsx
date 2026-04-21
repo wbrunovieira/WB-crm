@@ -1,16 +1,7 @@
-import { getTechCategories } from "@/actions/tech-categories";
-import { getTechLanguages } from "@/actions/tech-languages";
-import { getTechFrameworks } from "@/actions/tech-frameworks";
 import { TechStackManager } from "@/components/admin/TechStackManager";
 import Link from "next/link";
 
-export default async function TechStackPage() {
-  const [categories, languages, frameworks] = await Promise.all([
-    getTechCategories(),
-    getTechLanguages(),
-    getTechFrameworks(),
-  ]);
-
+export default function TechStackPage() {
   return (
     <div className="p-8">
       <div className="mb-4">
@@ -25,11 +16,7 @@ export default async function TechStackPage() {
         </p>
       </div>
 
-      <TechStackManager
-        categories={categories}
-        languages={languages}
-        frameworks={frameworks}
-      />
+      <TechStackManager />
     </div>
   );
 }

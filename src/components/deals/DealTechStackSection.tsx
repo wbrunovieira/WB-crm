@@ -1,7 +1,13 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { getDealTechStack, removeCategoryFromDeal, removeLanguageFromDeal, removeFrameworkFromDeal, setPrimaryLanguage } from "@/actions/deal-tech-stack";
+import { useState } from "react";
+import {
+  useDealTechStack,
+  useRemoveCategoryFromDeal,
+  useRemoveLanguageFromDeal,
+  useRemoveFrameworkFromDeal,
+  useSetPrimaryLanguage,
+} from "@/hooks/deals/use-deal-tech-stack";
 import { X, Code, Plus, Star } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog, useConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -11,80 +17,20 @@ interface DealTechStackSectionProps {
   dealId: string;
 }
 
-interface TechCategory {
-  id: string;
-  name: string;
-  slug: string;
-  color: string | null;
-  icon: string | null;
-  description: string | null;
-}
-
-interface TechLanguage {
-  id: string;
-  name: string;
-  slug: string;
-  color: string | null;
-  icon: string | null;
-}
-
-interface TechFramework {
-  id: string;
-  name: string;
-  slug: string;
-  color: string | null;
-  icon: string | null;
-}
-
-interface DealTechStackData {
-  categories: {
-    id: string;
-    techCategory: TechCategory;
-  }[];
-  languages: {
-    id: string;
-    isPrimary: boolean;
-    language: TechLanguage;
-  }[];
-  frameworks: {
-    id: string;
-    framework: TechFramework;
-  }[];
-}
-
 export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
-  const [techStack, setTechStack] = useState<DealTechStackData>({
-    categories: [],
-    languages: [],
-    frameworks: [],
-  });
-  const [loading, setLoading] = useState(true);
+  const { data: techStack, isLoading: loading } = useDealTechStack(dealId);
+  const removeCategoryMutation = useRemoveCategoryFromDeal();
+  const removeLanguageMutation = useRemoveLanguageFromDeal();
+  const removeFrameworkMutation = useRemoveFrameworkFromDeal();
+  const setPrimaryMutation = useSetPrimaryLanguage();
+
   const [removing, setRemoving] = useState<string | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { confirm, dialogProps } = useConfirmDialog();
 
-  useEffect(() => {
-    const loadTechStack = async () => {
-      try {
-        const data = await getDealTechStack(dealId);
-        setTechStack(data);
-      } catch (error) {
-        console.error("Erro ao carregar tech stack:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadTechStack();
-  }, [dealId]);
-
-  const refreshTechStack = async () => {
-    try {
-      const data = await getDealTechStack(dealId);
-      setTechStack(data);
-    } catch (error) {
-      console.error("Erro ao carregar tech stack:", error);
-    }
-  };
+  const categories = techStack?.categories ?? [];
+  const languages = techStack?.languages ?? [];
+  const frameworks = techStack?.frameworks ?? [];
 
   const handleRemoveCategory = async (categoryId: string, categoryName: string) => {
     const confirmed = await confirm({
@@ -97,8 +43,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
 
     setRemoving(categoryId);
     try {
-      await removeCategoryFromDeal(dealId, categoryId);
-      await refreshTechStack();
+      await removeCategoryMutation.mutateAsync({ dealId, categoryId });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao remover categoria";
       toast.error(message);
@@ -118,8 +63,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
 
     setRemoving(languageId);
     try {
-      await removeLanguageFromDeal(dealId, languageId);
-      await refreshTechStack();
+      await removeLanguageMutation.mutateAsync({ dealId, languageId });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao remover linguagem";
       toast.error(message);
@@ -139,8 +83,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
 
     setRemoving(frameworkId);
     try {
-      await removeFrameworkFromDeal(dealId, frameworkId);
-      await refreshTechStack();
+      await removeFrameworkMutation.mutateAsync({ dealId, frameworkId });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao remover framework";
       toast.error(message);
@@ -152,8 +95,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
   const handleSetPrimary = async (languageId: string) => {
     setRemoving(languageId);
     try {
-      await setPrimaryLanguage(dealId, languageId);
-      await refreshTechStack();
+      await setPrimaryMutation.mutateAsync({ dealId, languageId });
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao definir linguagem principal";
       toast.error(message);
@@ -162,7 +104,7 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
     }
   };
 
-  const hasAnyTechStack = techStack.categories.length > 0 || techStack.languages.length > 0 || techStack.frameworks.length > 0;
+  const hasAnyTechStack = categories.length > 0 || languages.length > 0 || frameworks.length > 0;
 
   if (loading) {
     return (
@@ -187,7 +129,6 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
           dealId={dealId}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={refreshTechStack}
         />
         <ConfirmDialog {...dialogProps} />
       </>
@@ -219,7 +160,6 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
           dealId={dealId}
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
-          onSuccess={refreshTechStack}
         />
         <ConfirmDialog {...dialogProps} />
       </>
@@ -245,32 +185,23 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
 
         <div className="space-y-6">
           {/* Categories */}
-          {techStack.categories.length > 0 && (
+          {categories.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
                 Categorias
               </h3>
               <div className="flex flex-wrap gap-2">
-                {techStack.categories.map((item) => (
+                {categories.map((item) => (
                   <div
                     key={item.id}
                     className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
                   >
-                    {item.techCategory.color && (
-                      <span
-                        className="inline-block h-3 w-3 rounded-full"
-                        style={{ backgroundColor: item.techCategory.color }}
-                      />
-                    )}
-                    {item.techCategory.icon && (
-                      <span>{item.techCategory.icon}</span>
-                    )}
                     <span className="text-sm font-medium text-gray-900">
-                      {item.techCategory.name}
+                      {item.categoryName}
                     </span>
                     <button
-                      onClick={() => handleRemoveCategory(item.techCategory.id, item.techCategory.name)}
-                      disabled={removing === item.techCategory.id}
+                      onClick={() => handleRemoveCategory(item.categoryId, item.categoryName)}
+                      disabled={removing === item.categoryId}
                       className="ml-1 text-gray-400 hover:text-red-600 disabled:opacity-50"
                       title="Remover categoria"
                     >
@@ -283,13 +214,13 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
           )}
 
           {/* Languages */}
-          {techStack.languages.length > 0 && (
+          {languages.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
                 Linguagens
               </h3>
               <div className="flex flex-wrap gap-2">
-                {techStack.languages.map((item) => (
+                {languages.map((item) => (
                   <div
                     key={item.id}
                     className={`inline-flex items-center gap-2 rounded-lg border px-3 py-2 ${
@@ -298,27 +229,20 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
                         : "border-gray-200 bg-gray-50"
                     }`}
                   >
-                    {item.language.color && (
-                      <span
-                        className="inline-block h-3 w-3 rounded-full"
-                        style={{ backgroundColor: item.language.color }}
-                      />
-                    )}
-                    {item.language.icon && <span>{item.language.icon}</span>}
                     <span
                       className={`text-sm font-medium ${
                         item.isPrimary ? "text-primary" : "text-gray-900"
                       }`}
                     >
-                      {item.language.name}
+                      {item.languageName}
                     </span>
                     {item.isPrimary && (
                       <Star className="h-3 w-3 fill-primary text-primary" />
                     )}
                     {!item.isPrimary && (
                       <button
-                        onClick={() => handleSetPrimary(item.language.id)}
-                        disabled={removing === item.language.id}
+                        onClick={() => handleSetPrimary(item.languageId)}
+                        disabled={removing === item.languageId}
                         className="ml-1 text-gray-400 hover:text-primary disabled:opacity-50"
                         title="Definir como principal"
                       >
@@ -326,8 +250,8 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
                       </button>
                     )}
                     <button
-                      onClick={() => handleRemoveLanguage(item.language.id, item.language.name)}
-                      disabled={removing === item.language.id}
+                      onClick={() => handleRemoveLanguage(item.languageId, item.languageName)}
+                      disabled={removing === item.languageId}
                       className="ml-1 text-gray-400 hover:text-red-600 disabled:opacity-50"
                       title="Remover linguagem"
                     >
@@ -340,30 +264,23 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
           )}
 
           {/* Frameworks */}
-          {techStack.frameworks.length > 0 && (
+          {frameworks.length > 0 && (
             <div>
               <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
                 Frameworks
               </h3>
               <div className="flex flex-wrap gap-2">
-                {techStack.frameworks.map((item) => (
+                {frameworks.map((item) => (
                   <div
                     key={item.id}
                     className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-gray-50 px-3 py-2"
                   >
-                    {item.framework.color && (
-                      <span
-                        className="inline-block h-3 w-3 rounded-full"
-                        style={{ backgroundColor: item.framework.color }}
-                      />
-                    )}
-                    {item.framework.icon && <span>{item.framework.icon}</span>}
                     <span className="text-sm font-medium text-gray-900">
-                      {item.framework.name}
+                      {item.frameworkName}
                     </span>
                     <button
-                      onClick={() => handleRemoveFramework(item.framework.id, item.framework.name)}
-                      disabled={removing === item.framework.id}
+                      onClick={() => handleRemoveFramework(item.frameworkId, item.frameworkName)}
+                      disabled={removing === item.frameworkId}
                       className="ml-1 text-gray-400 hover:text-red-600 disabled:opacity-50"
                       title="Remover framework"
                     >
@@ -381,7 +298,6 @@ export function DealTechStackSection({ dealId }: DealTechStackSectionProps) {
         dealId={dealId}
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        onSuccess={refreshTechStack}
       />
       <ConfirmDialog {...dialogProps} />
     </>

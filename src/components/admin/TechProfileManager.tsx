@@ -3,58 +3,30 @@
 import { useState, useMemo } from "react";
 import { TechProfileGenericForm } from "./TechProfileGenericForm";
 import { TechProfileGenericList } from "./TechProfileGenericList";
-
-type TechProfileItem = {
-  id: string;
-  name: string;
-  slug: string;
-  color: string | null;
-  icon: string | null;
-  order: number;
-  isActive: boolean;
-  _count: {
-    leadLanguages?: number;
-    organizationLanguages?: number;
-    leadFrameworks?: number;
-    organizationFrameworks?: number;
-    leadHosting?: number;
-    organizationHosting?: number;
-    leadDatabases?: number;
-    organizationDatabases?: number;
-    leadERPs?: number;
-    organizationERPs?: number;
-    leadCRMs?: number;
-    organizationCRMs?: number;
-    leadEcommerces?: number;
-    organizationEcommerces?: number;
-  };
-};
-
-type TechProfileHosting = TechProfileItem & { type: string };
-type TechProfileDatabase = TechProfileItem & { type: string };
-
-interface TechProfileManagerProps {
-  languages: TechProfileItem[];
-  frameworks: TechProfileItem[];
-  hosting: TechProfileHosting[];
-  databases: TechProfileDatabase[];
-  erps: TechProfileItem[];
-  crms: TechProfileItem[];
-  ecommerces: TechProfileItem[];
-}
+import { useTechOptions, type TechOptionType } from "@/hooks/admin/use-admin";
 
 type Tab = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
 
-export function TechProfileManager({
-  languages,
-  frameworks,
-  hosting,
-  databases,
-  erps,
-  crms,
-  ecommerces,
-}: TechProfileManagerProps) {
+const TYPE_MAP: Record<Tab, TechOptionType> = {
+  languages: "profile-language",
+  frameworks: "profile-framework",
+  hosting: "profile-hosting",
+  databases: "profile-database",
+  erps: "profile-erp",
+  crms: "profile-crm",
+  ecommerces: "profile-ecommerce",
+};
+
+export function TechProfileManager() {
   const [activeTab, setActiveTab] = useState<Tab>("languages");
+
+  const { data: languages = [] } = useTechOptions("profile-language");
+  const { data: frameworks = [] } = useTechOptions("profile-framework");
+  const { data: hosting = [] } = useTechOptions("profile-hosting");
+  const { data: databases = [] } = useTechOptions("profile-database");
+  const { data: erps = [] } = useTechOptions("profile-erp");
+  const { data: crms = [] } = useTechOptions("profile-crm");
+  const { data: ecommerces = [] } = useTechOptions("profile-ecommerce");
 
   const tabs = [
     { key: "languages" as Tab, label: "Linguagens", count: languages.length },
@@ -66,7 +38,7 @@ export function TechProfileManager({
     { key: "ecommerces" as Tab, label: "E-commerce", count: ecommerces.length },
   ];
 
-  const getActiveData = () => {
+  const getActiveItems = () => {
     switch (activeTab) {
       case "languages": return languages;
       case "frameworks": return frameworks;
@@ -78,31 +50,10 @@ export function TechProfileManager({
     }
   };
 
-  const getCountKey = () => {
-    switch (activeTab) {
-      case "languages": return { lead: "leadLanguages", org: "organizationLanguages" };
-      case "frameworks": return { lead: "leadFrameworks", org: "organizationFrameworks" };
-      case "hosting": return { lead: "leadHosting", org: "organizationHosting" };
-      case "databases": return { lead: "leadDatabases", org: "organizationDatabases" };
-      case "erps": return { lead: "leadERPs", org: "organizationERPs" };
-      case "crms": return { lead: "leadCRMs", org: "organizationCRMs" };
-      case "ecommerces": return { lead: "leadEcommerces", org: "organizationEcommerces" };
-    }
-  };
-
   // Get used orders for the active tab
   const usedOrders = useMemo(() => {
-    let data: TechProfileItem[];
-    switch (activeTab) {
-      case "languages": data = languages; break;
-      case "frameworks": data = frameworks; break;
-      case "hosting": data = hosting; break;
-      case "databases": data = databases; break;
-      case "erps": data = erps; break;
-      case "crms": data = crms; break;
-      case "ecommerces": data = ecommerces; break;
-    }
-    return data.map((item) => item.order);
+    return getActiveItems().map((item) => item.order ?? 0);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, languages, frameworks, hosting, databases, erps, crms, ecommerces]);
 
   return (
@@ -137,11 +88,7 @@ export function TechProfileManager({
           </div>
         </div>
         <div className="lg:col-span-2">
-          <TechProfileGenericList
-            type={activeTab}
-            items={getActiveData()}
-            countKeys={getCountKey()}
-          />
+          <TechProfileGenericList type={activeTab} />
         </div>
       </div>
     </div>

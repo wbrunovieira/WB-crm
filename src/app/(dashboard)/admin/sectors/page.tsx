@@ -1,11 +1,8 @@
-import { getSectors } from "@/actions/sectors";
 import { SectorsAdminClient } from "@/components/admin/SectorsAdminClient";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 
-export default async function SectorsAdminPage() {
-  const sectors = await getSectors();
-
+export default function SectorsAdminPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -22,7 +19,7 @@ export default async function SectorsAdminPage() {
         </p>
       </div>
 
-      <SectorsAdminClient sectors={sectors} />
+      <SectorsAdminClient />
     </div>
   );
 }

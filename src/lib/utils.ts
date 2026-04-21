@@ -4,6 +4,19 @@ export function cn(...inputs: ClassValue[]) {
   return clsx(inputs);
 }
 
+/**
+ * Generates a URL-friendly slug from a name string (pure, client-safe).
+ */
+export function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .substring(0, 45);
+}
+
 export function formatCurrency(value: number, currency: string = "BRL"): string {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
