@@ -1,6 +1,6 @@
 import type { Pipeline } from "../../enterprise/entities/pipeline";
 import type { Stage } from "../../enterprise/entities/stage";
-import type { PipelineSummary, PipelineDetail } from "../../enterprise/read-models/pipeline-read-models";
+import type { PipelineSummary, PipelineDetail, PipelineView } from "../../enterprise/read-models/pipeline-read-models";
 
 export abstract class PipelinesRepository {
   abstract findMany(): Promise<PipelineSummary[]>;
@@ -18,4 +18,5 @@ export abstract class PipelinesRepository {
   abstract reorderStages(pipelineId: string, stageIds: string[]): Promise<void>;
   abstract countDealsInStage(stageId: string): Promise<number>;
   abstract createDefaultStages(pipelineId: string): Promise<void>;
+  abstract findView(requesterId: string, requesterRole: string, pipelineId?: string): Promise<PipelineView | null>;
 }

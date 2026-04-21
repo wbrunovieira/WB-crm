@@ -1,6 +1,6 @@
 import {
   Body, Controller, Delete, Get, HttpCode,
-  NotFoundException, Param, Patch, Post,
+  NotFoundException, Param, Patch, Post, Query,
   UnprocessableEntityException, UseGuards,
 } from "@nestjs/common";
 import {
@@ -19,6 +19,9 @@ import { CreateStageUseCase } from "@/domain/pipelines/application/use-cases/cre
 import { UpdateStageUseCase } from "@/domain/pipelines/application/use-cases/update-stage.use-case";
 import { DeleteStageUseCase } from "@/domain/pipelines/application/use-cases/delete-stage.use-case";
 import { ReorderStagesUseCase } from "@/domain/pipelines/application/use-cases/reorder-stages.use-case";
+import { GetPipelineViewUseCase } from "@/domain/pipelines/application/use-cases/get-pipeline-view.use-case";
+import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 
 /* ─── DTOs ───────────────────────────────────────────────────────────────── */
 
@@ -94,9 +97,21 @@ export class PipelinesController {
     private readonly updateStage: UpdateStageUseCase,
     private readonly deleteStage: DeleteStageUseCase,
     private readonly reorderStages: ReorderStagesUseCase,
+    private readonly getPipelineView: GetPipelineViewUseCase,
   ) {}
 
   // ─── Pipelines ──────────────────────────────────────────────────────────
+
+  @Get("view")
+  @ApiOperation({ summary: "Buscar pipeline com estágios e deals para o kanban" })
+  async view(
+    @Query("pipelineId") pipelineId: string | undefined,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.getPipelineView.execute(user.id, user.role ?? "sdr", pipelineId);
+    if (result.isLeft()) throw new NotFoundException(result.value.message);
+    return result.value.view;
+  }
 
   @Get()
   @ApiOperation({ summary: "Listar todos os pipelines com estágios" })

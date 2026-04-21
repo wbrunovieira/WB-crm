@@ -1,39 +1,11 @@
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { backendFetch } from "@/lib/backend/client";
 
-export async function getLeadsList() {
-  const session = await getServerSession(authOptions);
+interface LeadSelectItem {
+  id: string;
+  businessName: string;
+  leadContacts: Array<{ id: string; name: string; email: string | null; role: string | null; isPrimary: boolean }>;
+}
 
-  if (!session?.user) {
-    return [];
-  }
-
-  const leads = await prisma.lead.findMany({
-    where: {
-      ownerId: session.user.id,
-      convertedAt: null,
-      isArchived: false,
-    },
-    select: {
-      id: true,
-      businessName: true,
-      leadContacts: {
-        where: { isActive: true },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          role: true,
-          isPrimary: true,
-        },
-        orderBy: [{ isPrimary: "desc" }, { name: "asc" }],
-      },
-    },
-    orderBy: {
-      businessName: "asc",
-    },
-  });
-
-  return leads;
+export async function getLeadsList(): Promise<LeadSelectItem[]> {
+  return backendFetch<LeadSelectItem[]>("/leads/for-select").catch(() => []);
 }

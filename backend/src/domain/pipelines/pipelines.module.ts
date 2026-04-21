@@ -11,6 +11,7 @@ import { CreateStageUseCase } from "./application/use-cases/create-stage.use-cas
 import { UpdateStageUseCase } from "./application/use-cases/update-stage.use-case";
 import { DeleteStageUseCase } from "./application/use-cases/delete-stage.use-case";
 import { ReorderStagesUseCase } from "./application/use-cases/reorder-stages.use-case";
+import { GetPipelineViewUseCase } from "./application/use-cases/get-pipeline-view.use-case";
 import { PrismaPipelinesRepository } from "@/infra/database/prisma/repositories/pipelines/prisma-pipelines.repository";
 import { PipelinesController } from "@/infra/controllers/pipelines.controller";
 
@@ -29,6 +30,7 @@ import { PipelinesController } from "@/infra/controllers/pipelines.controller";
     UpdateStageUseCase,
     DeleteStageUseCase,
     ReorderStagesUseCase,
+    GetPipelineViewUseCase,
   ],
   exports: [PipelinesRepository],
 })

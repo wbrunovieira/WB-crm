@@ -412,4 +412,27 @@ export class PrismaLeadsRepository extends LeadsRepository {
   async delete(id: string): Promise<void> {
     await this.prisma.lead.delete({ where: { id } });
   }
+
+  async findForSelect(requesterId: string, requesterRole: string): Promise<import("@/domain/leads/application/repositories/leads.repository").LeadSelectItem[]> {
+    const sharedIds = requesterRole !== "admin" ? await this.getSharedIds(requesterId) : [];
+    const ownerFilter = requesterRole === "admin"
+      ? {}
+      : { OR: [{ ownerId: requesterId }, { id: { in: sharedIds } }] };
+
+    const rows = await this.prisma.lead.findMany({
+      where: { ...ownerFilter, convertedAt: null, isArchived: false, status: { not: "disqualified" } },
+      orderBy: { businessName: "asc" },
+      select: {
+        id: true,
+        businessName: true,
+        leadContacts: {
+          where: { isActive: true },
+          select: { id: true, name: true, email: true, role: true, isPrimary: true },
+          orderBy: [{ isPrimary: "desc" }, { name: "asc" }],
+        },
+      },
+    });
+
+    return rows;
+  }
 }

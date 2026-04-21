@@ -40,6 +40,12 @@ export interface LeadRelations {
   contacts?: LeadContactInput[];
 }
 
+export interface LeadSelectItem {
+  id: string;
+  businessName: string;
+  leadContacts: Array<{ id: string; name: string; email: string | null; role: string | null; isPrimary: boolean }>;
+}
+
 export abstract class LeadsRepository {
   abstract findMany(requesterId: string, requesterRole: string, filters?: LeadFilters): Promise<PaginatedLeads>;
   abstract findById(id: string, requesterId: string, requesterRole: string): Promise<LeadDetail | null>;
@@ -47,4 +53,5 @@ export abstract class LeadsRepository {
   abstract save(lead: Lead): Promise<void>;
   abstract saveWithRelations(lead: Lead, relations: LeadRelations): Promise<void>;
   abstract delete(id: string): Promise<void>;
+  abstract findForSelect(requesterId: string, requesterRole: string): Promise<LeadSelectItem[]>;
 }

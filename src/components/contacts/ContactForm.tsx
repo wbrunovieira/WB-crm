@@ -4,8 +4,15 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ContactFormData } from "@/lib/validations/contact";
 import { useCreateContact, useUpdateContact } from "@/hooks/contacts/use-contacts";
-import { getCompaniesList, CompanyOption } from "@/actions/companies-list";
-import { getLeadContactsList } from "@/actions/leads-list";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
+
+type CompanyOption = {
+  id: string;
+  name: string;
+  type: "lead" | "organization" | "partner";
+  status?: string;
+};
 import { departments, contactSources, contactStatuses } from "@/lib/lists/departments-list";
 import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 
@@ -38,6 +45,8 @@ interface ContactFormProps {
 }
 
 export function ContactForm({ contact, leadId, preselectedOrganizationId, partnerId }: ContactFormProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const router = useRouter();
   const [error, setError] = useState("");
   const createMutation = useCreateContact();
@@ -80,14 +89,28 @@ export function ContactForm({ contact, leadId, preselectedOrganizationId, partne
   const [selectedCompany, setSelectedCompany] = useState(`${initialCompanyType}:${initialCompanyId}`);
 
   useEffect(() => {
-    getCompaniesList().then(setCompanies);
-  }, []);
+    if (!token) return;
+    Promise.all([
+      apiFetch<Array<{ id: string; businessName: string; status: string }>>("/leads/for-select", token).catch(() => []),
+      apiFetch<Array<{ id: string; name: string }>>("/organizations", token).catch(() => []),
+      apiFetch<Array<{ id: string; name: string }>>("/partners", token).catch(() => []),
+    ]).then(([leads, orgs, partners]) => {
+      const combined: CompanyOption[] = [
+        ...leads.map((l) => ({ id: l.id, name: l.businessName, type: "lead" as const, status: l.status })),
+        ...orgs.map((o) => ({ id: o.id, name: o.name, type: "organization" as const })),
+        ...partners.map((p) => ({ id: p.id, name: p.name, type: "partner" as const })),
+      ];
+      combined.sort((a, b) => a.name.localeCompare(b.name));
+      setCompanies(combined);
+    });
+  }, [token]);
 
   useEffect(() => {
-    if (leadId) {
-      getLeadContactsList(leadId).then(setLeadContacts);
-    }
-  }, [leadId]);
+    if (!leadId || !token) return;
+    apiFetch<Array<{ id: string; name: string; role: string | null }>>(`/leads/${leadId}/contacts`, token)
+      .then(setLeadContacts)
+      .catch(() => {});
+  }, [leadId, token]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

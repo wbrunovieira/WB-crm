@@ -22,6 +22,7 @@ import {
   UpdateLeadActivityOrderUseCase,
   ResetLeadActivityOrderUseCase,
 } from "./application/use-cases/update-lead-activity-order.use-case";
+import { GetLeadsForSelectUseCase } from "./application/use-cases/get-leads-for-select.use-case";
 import { PrismaLeadsRepository } from "@/infra/database/prisma/repositories/leads/prisma-leads.repository";
 import { PrismaLeadContactsRepository } from "@/infra/database/prisma/repositories/leads/prisma-lead-contacts.repository";
 import { LeadsController } from "@/infra/controllers/leads.controller";
@@ -48,6 +49,7 @@ import { LeadsController } from "@/infra/controllers/leads.controller";
     ToggleLeadContactActiveUseCase,
     UpdateLeadActivityOrderUseCase,
     ResetLeadActivityOrderUseCase,
+    GetLeadsForSelectUseCase,
   ],
   exports: [LeadsRepository, LeadContactsRepository],
 })

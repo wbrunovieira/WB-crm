@@ -48,6 +48,7 @@ import {
   UpdateLeadActivityOrderUseCase,
   ResetLeadActivityOrderUseCase,
 } from "@/domain/leads/application/use-cases/update-lead-activity-order.use-case";
+import { GetLeadsForSelectUseCase } from "@/domain/leads/application/use-cases/get-leads-for-select.use-case";
 import type { Lead } from "@/domain/leads/enterprise/entities/lead";
 
 /* ─── DTOs ──────────────────────────────────────────────────────────────── */
@@ -562,7 +563,15 @@ export class LeadsController {
     private readonly toggleLeadContact: ToggleLeadContactActiveUseCase,
     private readonly updateActivityOrder: UpdateLeadActivityOrderUseCase,
     private readonly resetActivityOrder: ResetLeadActivityOrderUseCase,
+    private readonly getLeadsForSelect: GetLeadsForSelectUseCase,
   ) {}
+
+  @Get("for-select")
+  @ApiOperation({ summary: "Listar leads com contatos para seleção em formulários" })
+  async listForSelect(@CurrentUser() user: AuthenticatedUser) {
+    const result = await this.getLeadsForSelect.execute(user.id, user.role ?? "sdr");
+    return result.value.leads;
+  }
 
   @Get()
   @ApiOperation({ summary: "Listar leads", description: "Retorna todos os leads acessíveis pelo usuário autenticado. Admin vê todos." })
