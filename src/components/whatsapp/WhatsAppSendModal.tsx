@@ -5,8 +5,10 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { X, Send, Loader2, Smile, Paperclip, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
-import { sendWhatsAppMessage, sendWhatsAppMedia } from "@/actions/whatsapp";
+import { sendWhatsAppMedia } from "@/actions/whatsapp";
 import { getWhatsAppTemplates } from "@/actions/whatsapp-templates";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 
 // ---------------------------------------------------------------------------
 // Emoji picker (curado — sem dependência externa)
@@ -120,6 +122,8 @@ interface WhatsAppSendModalProps {
 
 export default function WhatsAppSendModal({ to, name, onClose }: WhatsAppSendModalProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -225,7 +229,12 @@ export default function WhatsAppSendModal({ to, name, onClose }: WhatsAppSendMod
           contactName: name,
         });
       } else {
-        result = await sendWhatsAppMessage(to, trimmed, name);
+        const nestResult = await apiFetch<{ ok: boolean; error?: string }>(
+          "/whatsapp/send",
+          token,
+          { method: "POST", body: JSON.stringify({ to, text: trimmed, contactName: name }) },
+        );
+        result = { success: nestResult.ok, error: nestResult.error };
       }
 
       if (result.success) {

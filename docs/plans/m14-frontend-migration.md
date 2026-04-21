@@ -379,7 +379,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 19 — Integrações (Gmail, WhatsApp, GoTo)
+## ~~FASE 19 — Integrações (Gmail, WhatsApp, GoTo)~~ ✅ (parcial)
 
 **Páginas**: `/admin/google`, emails em leads/deals
 
@@ -472,6 +472,6 @@ ssh root@45.90.123.190 "docker logs wb-crm-backend --tail=20"
 | 16 | Campaigns | ✅ | `actions/campaigns.ts` já usava `backendFetch` internamente. Nenhuma mudança necessária. |
 | 17 | Shared Entities | ✅ | NestJS recebeu `GET /shared-entities/batch` e `GET /shared-entities/available-users`. Páginas de lista (`leads`, `contacts`, `deals`, `organizations`, `partners`) usam `backendFetch` para batch. `EntityManagementPanel`, `SharedUsersList`, `ShareDialog`, `TransferDialog` migrados para `apiFetch` com token via `useSession`. F15 tokens corrigidos em `ProposalsList`, `MeetingsList`, `ScheduleMeetingModal`. |
 | 18 | Dashboard & Funnel | ✅ | NestJS hosting-renewals extended with `hostingPlan`/`hostingValue`. `dashboard/page.tsx`: `backendFetch('/hosting-renewals')`. `admin/manager/page.tsx`: `backendFetch('/dashboard/stats')`. `ActivityCalendar`: `apiFetch('/dashboard/activity-calendar')` com `useSession` token. |
-| 19 | Integrações (Gmail, WhatsApp, GoTo) | ⏳ | |
+| 19 | Integrações (Gmail, WhatsApp, GoTo) | ✅ (parcial) | `WhatsAppSendModal`: `sendWhatsAppMessage` → `apiFetch('/whatsapp/send')`. `WhatsAppCheckButton`: `checkWhatsApp` → `apiFetch('/whatsapp/check')`. **Mantidos como Server Action**: `sendGmailMessage` (tracking + Activity com entityIds + attachments), `sendWhatsAppMedia` (sem endpoint NestJS), templates gmail/whatsapp (sem endpoints NestJS), `syncGmailNow` (cron automático no NestJS). |
 | 20 | Notificações | ⏳ | |
 | 21 | Limpeza final | ⏳ | |

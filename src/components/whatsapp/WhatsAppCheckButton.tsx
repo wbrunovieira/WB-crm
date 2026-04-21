@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { checkWhatsApp, saveWhatsAppNumber, saveWhatsAppVerification } from "@/actions/whatsapp";
+import { saveWhatsAppNumber, saveWhatsAppVerification } from "@/actions/whatsapp";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 
 interface WhatsAppCheckButtonProps {
@@ -38,6 +40,8 @@ export function WhatsAppCheckButton({
   canSave = false,
   verified,
 }: WhatsAppCheckButtonProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [status, setStatus] = useState<Status>("idle");
   const [checkResult, setCheckResult] = useState<CheckResult | undefined>();
   const [errorMsg, setErrorMsg] = useState<string>("");
@@ -84,11 +88,16 @@ export function WhatsAppCheckButton({
     setStatus("checking");
     setErrorMsg("");
 
-    const result = await checkWhatsApp(phone);
-
-    if (!result.success) {
+    let result: { exists: boolean; number?: string; name?: string };
+    try {
+      result = await apiFetch<{ exists: boolean; jid?: string; number?: string; name?: string }>(
+        "/whatsapp/check",
+        token,
+        { method: "POST", body: JSON.stringify({ phone }) },
+      );
+    } catch (err) {
       setStatus("error");
-      setErrorMsg(result.error ?? "Erro desconhecido");
+      setErrorMsg(err instanceof Error ? err.message : "Erro ao verificar número");
       return;
     }
 
