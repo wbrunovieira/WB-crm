@@ -18,6 +18,10 @@ import { SendEmailUseCase } from "./application/use-cases/send-email.use-case";
 import { PollGmailUseCase } from "./application/use-cases/poll-gmail.use-case";
 import { TrackEmailOpenUseCase } from "./application/use-cases/track-email-open.use-case";
 import { TrackEmailClickUseCase } from "./application/use-cases/track-email-click.use-case";
+import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTemplateUseCase, DeleteGmailTemplateUseCase } from "./application/use-cases/gmail-templates.use-cases";
+
+// Repositories
+import { GmailTemplatesRepository } from "./application/repositories/gmail-templates.repository";
 
 // Infrastructure
 import { GmailClient } from "./infra/gmail.client";
@@ -27,6 +31,7 @@ import { PrismaEmailTrackingRepository } from "./infra/prisma-email-tracking.rep
 import { EmailWebhookController } from "./infra/controllers/email-webhook.controller";
 import { EmailController } from "./infra/controllers/email.controller";
 import { GmailPollCronService } from "./infra/scheduled/gmail-poll-cron.service";
+import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.repository";
 
 @Module({
   imports: [ScheduleModule.forRoot(), SharedInfraModule, ActivitiesModule, AuthModule],
@@ -38,6 +43,10 @@ import { GmailPollCronService } from "./infra/scheduled/gmail-poll-cron.service"
     PollGmailUseCase,
     TrackEmailOpenUseCase,
     TrackEmailClickUseCase,
+    GetGmailTemplatesUseCase,
+    CreateGmailTemplateUseCase,
+    UpdateGmailTemplateUseCase,
+    DeleteGmailTemplateUseCase,
 
     // Port implementations
     { provide: GmailPort, useClass: GmailClient },
@@ -48,6 +57,10 @@ import { GmailPollCronService } from "./infra/scheduled/gmail-poll-cron.service"
     { provide: EmailMessagesRepository, useClass: PrismaEmailMessagesRepository },
     PrismaEmailTrackingRepository,
     { provide: EmailTrackingRepository, useClass: PrismaEmailTrackingRepository },
+
+    // Gmail templates
+    PrismaGmailTemplatesRepository,
+    { provide: GmailTemplatesRepository, useClass: PrismaGmailTemplatesRepository },
 
     // Scheduled
     GmailPollCronService,

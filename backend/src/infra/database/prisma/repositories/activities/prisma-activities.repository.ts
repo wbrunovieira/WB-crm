@@ -280,6 +280,13 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     await this.prisma.activity.delete({ where: { id } });
   }
 
+  async markThreadReplied(threadId: string): Promise<void> {
+    await this.prisma.activity.updateMany({
+      where: { emailThreadId: threadId, emailReplied: false, emailFromAddress: { not: null } },
+      data: { emailReplied: true },
+    });
+  }
+
   private buildOrderBy(sortBy?: string): Record<string, any>[] {
     switch (sortBy) {
       case "dueDate-asc":

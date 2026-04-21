@@ -13,6 +13,7 @@ import { MarkActivitySkippedUseCase } from "./application/use-cases/mark-activit
 import { RevertActivityOutcomeUseCase } from "./application/use-cases/revert-activity-outcome.use-case";
 import { LinkActivityToDealUseCase } from "./application/use-cases/link-activity-to-deal.use-case";
 import { UnlinkActivityFromDealUseCase } from "./application/use-cases/unlink-activity-from-deal.use-case";
+import { MarkThreadRepliedUseCase } from "./application/use-cases/mark-thread-replied.use-case";
 import { ActivitiesController } from "@/infra/controllers/activities.controller";
 
 @Module({
@@ -31,6 +32,7 @@ import { ActivitiesController } from "@/infra/controllers/activities.controller"
     RevertActivityOutcomeUseCase,
     LinkActivityToDealUseCase,
     UnlinkActivityFromDealUseCase,
+    MarkThreadRepliedUseCase,
   ],
   exports: [ActivitiesRepository],
 })

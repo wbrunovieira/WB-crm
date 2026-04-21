@@ -2,19 +2,19 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { sendEmail } from "@/lib/google/gmail";
 import { generateTrackingToken, injectTracking } from "@/lib/email-tracking";
 import { logger } from "@/lib/logger";
+import { backendFetch } from "@/lib/backend/client";
 
 const log = logger.child({ context: "gmail-action" });
 
 const attachmentSchema = z.object({
   filename: z.string().min(1),
   mimeType: z.string().min(1),
-  data: z.string().min(1), // base64
+  data: z.string().min(1),
 });
 
 const sendGmailSchema = z.object({
@@ -77,27 +77,22 @@ export async function sendGmailMessage(input: SendGmailInput): Promise<SendGmail
       return { success: false, error: message };
     }
 
-    // Preview do corpo (primeiros 500 chars sem tags HTML)
     const bodyPreview = validated.html
       .replace(/<[^>]+>/g, " ")
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, 500);
 
-    // Se é um reply, marca o e-mail recebido original como respondido
     if (validated.threadId) {
-      await prisma.activity.updateMany({
-        where: {
-          emailThreadId: validated.threadId,
-          emailReplied: false,
-          emailFromAddress: { not: null },
-        },
-        data: { emailReplied: true },
-      });
+      await backendFetch("/activities/mark-thread-replied", {
+        method: "PATCH",
+        body: JSON.stringify({ threadId: validated.threadId }),
+      }).catch(() => {});
     }
 
-    await prisma.activity.create({
-      data: {
+    await backendFetch("/activities", {
+      method: "POST",
+      body: JSON.stringify({
         type: "email",
         subject: validated.subject,
         description: bodyPreview,
@@ -106,18 +101,16 @@ export async function sendGmailMessage(input: SendGmailInput): Promise<SendGmail
         emailSubject: validated.subject,
         emailTrackingToken: trackingToken,
         completed: true,
-        completedAt: new Date(),
-        ownerId: session.user.id,
-        ...(validated.contactId ? { contactId: validated.contactId } : {}),
-        ...(validated.leadId ? { leadId: validated.leadId } : {}),
-        ...(validated.organizationId ? { organizationId: validated.organizationId } : {}),
-        ...(validated.dealId ? { dealId: validated.dealId } : {}),
-      },
+        completedAt: new Date().toISOString(),
+        contactIds: validated.contactId ? [validated.contactId] : undefined,
+        leadId: validated.leadId,
+        organizationId: validated.organizationId,
+        dealId: validated.dealId,
+      }),
     });
 
     log.info("E-mail enviado e Activity criada", { to: validated.to, messageId });
 
-    // Revalidar páginas relevantes
     if (validated.contactId) revalidatePath(`/contacts/${validated.contactId}`);
     if (validated.leadId) revalidatePath(`/leads/${validated.leadId}`);
     if (validated.organizationId) revalidatePath(`/organizations/${validated.organizationId}`);

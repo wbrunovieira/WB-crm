@@ -21,6 +21,7 @@ import { MarkActivitySkippedUseCase } from "@/domain/activities/application/use-
 import { RevertActivityOutcomeUseCase } from "@/domain/activities/application/use-cases/revert-activity-outcome.use-case";
 import { LinkActivityToDealUseCase } from "@/domain/activities/application/use-cases/link-activity-to-deal.use-case";
 import { UnlinkActivityFromDealUseCase } from "@/domain/activities/application/use-cases/unlink-activity-from-deal.use-case";
+import { MarkThreadRepliedUseCase } from "@/domain/activities/application/use-cases/mark-thread-replied.use-case";
 import type { Activity } from "@/domain/activities/enterprise/entities/activity";
 
 /* ─── DTOs ─────────────────────────────────────────────────────────────────── */
@@ -38,6 +39,13 @@ class CreateActivityDto {
   @ApiPropertyOptional() partnerId?: string;
   @ApiPropertyOptional({ enum: ["gatekeeper", "decisor"] }) callContactType?: string;
   @ApiPropertyOptional() meetingNoShow?: boolean;
+  @ApiPropertyOptional() completed?: boolean;
+  @ApiPropertyOptional() completedAt?: string;
+  // Email-specific fields
+  @ApiPropertyOptional() emailMessageId?: string;
+  @ApiPropertyOptional() emailThreadId?: string;
+  @ApiPropertyOptional() emailSubject?: string;
+  @ApiPropertyOptional() emailTrackingToken?: string;
 }
 
 class UpdateActivityDto {
@@ -116,6 +124,7 @@ export class ActivitiesController {
     private readonly revertOutcome: RevertActivityOutcomeUseCase,
     private readonly linkToDeal: LinkActivityToDealUseCase,
     private readonly unlinkFromDeal: UnlinkActivityFromDealUseCase,
+    private readonly markThreadReplied: MarkThreadRepliedUseCase,
   ) {}
 
   @Get()
@@ -185,6 +194,7 @@ export class ActivitiesController {
       ...body,
       ownerId: user.id,
       dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
+      completedAt: body.completedAt ? new Date(body.completedAt) : undefined,
     });
     if (result.isLeft()) handleError(result);
     return serializeActivity(result.value.activity);
@@ -317,5 +327,14 @@ export class ActivitiesController {
     });
     if (result.isLeft()) handleError(result);
     return serializeActivity(result.value.activity);
+  }
+
+  @Patch("mark-thread-replied")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Marcar atividades de uma thread de e-mail como respondidas" })
+  async markEmailThreadReplied(@Body() body: { threadId: string }) {
+    if (!body.threadId) throw new Error("threadId obrigatório");
+    await this.markThreadReplied.execute(body.threadId);
+    return { ok: true };
   }
 }

@@ -22,4 +22,5 @@ export abstract class ActivitiesRepository {
   abstract findFirst(where: { gotoCallId?: string }): Promise<Activity | null>;
   abstract save(activity: Activity): Promise<void>;
   abstract delete(id: string): Promise<void>;
+  abstract markThreadReplied(threadId: string): Promise<void>;
 }

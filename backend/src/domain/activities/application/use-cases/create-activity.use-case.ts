@@ -9,6 +9,8 @@ export interface CreateActivityInput {
   subject: string;
   description?: string;
   dueDate?: Date;
+  completed?: boolean;
+  completedAt?: Date;
   dealId?: string;
   contactIds?: string[]; // array — converted to JSON + primary
   leadContactIds?: string[]; // array — converted to JSON
@@ -17,6 +19,11 @@ export interface CreateActivityInput {
   partnerId?: string;
   callContactType?: string;
   meetingNoShow?: boolean;
+  // Email-specific fields
+  emailMessageId?: string;
+  emailThreadId?: string;
+  emailSubject?: string;
+  emailTrackingToken?: string;
 }
 
 type Output = Either<Error, { activity: Activity }>;
@@ -39,7 +46,8 @@ export class CreateActivityUseCase {
       subject: input.subject.trim(),
       description: input.description,
       dueDate: input.dueDate,
-      completed: false,
+      completed: input.completed ?? false,
+      completedAt: input.completedAt,
       meetingNoShow: input.meetingNoShow ?? false,
       emailReplied: false,
       emailOpenCount: 0,
@@ -54,6 +62,10 @@ export class CreateActivityUseCase {
       organizationId: input.organizationId,
       partnerId: input.partnerId,
       callContactType: input.callContactType,
+      emailMessageId: input.emailMessageId,
+      emailThreadId: input.emailThreadId,
+      emailSubject: input.emailSubject,
+      emailTrackingToken: input.emailTrackingToken,
     });
 
     await this.activities.save(activity);
