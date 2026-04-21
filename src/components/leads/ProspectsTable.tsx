@@ -12,7 +12,8 @@ import {
   Loader2,
   Trash2,
 } from "lucide-react";
-import { qualifyProspect } from "@/actions/leads";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { useDeleteLead } from "@/hooks/leads/use-leads";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -49,6 +50,8 @@ const BUSINESS_STATUS_LABELS: Record<string, string> = {
 };
 
 export function ProspectsTable({ prospects, currentUserId }: ProspectsTableProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
@@ -65,7 +68,7 @@ export function ProspectsTable({ prospects, currentUserId }: ProspectsTableProps
 
     setLoadingId(id);
     try {
-      await qualifyProspect(id);
+      await apiFetch(`/leads/${id}/qualify`, token, { method: "PATCH" });
       toast.success("Lead qualificado com sucesso");
       router.refresh();
     } catch (err) {

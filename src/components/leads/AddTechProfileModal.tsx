@@ -1,27 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 import { useTechOptions } from "@/hooks/admin/use-admin";
-import {
-  addLanguageToLead,
-  addFrameworkToLead,
-  addHostingToLead,
-  addDatabaseToLead,
-  addERPToLead,
-  addCRMToLead,
-  addEcommerceToLead,
-} from "@/actions/lead-tech-profile";
-import {
-  addLanguageToOrganization,
-  addFrameworkToOrganization,
-  addHostingToOrganization,
-  addDatabaseToOrganization,
-  addERPToOrganization,
-  addCRMToOrganization,
-  addEcommerceToOrganization,
-} from "@/actions/organization-tech-profile";
 
 interface AddTechProfileModalProps {
   entityId: string;
@@ -33,7 +17,14 @@ interface AddTechProfileModalProps {
 
 type TabType = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
 
+const TAB_TO_TYPE: Record<TabType, string> = {
+  languages: "language", frameworks: "framework", hosting: "hosting",
+  databases: "database", erps: "erp", crms: "crm", ecommerces: "ecommerce",
+};
+
 export function AddTechProfileModal({ entityId, entityType, isOpen, onClose, onSuccess }: AddTechProfileModalProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [activeTab, setActiveTab] = useState<TabType>("languages");
   const [adding, setAdding] = useState<string | null>(null);
 
@@ -69,28 +60,10 @@ export function AddTechProfileModal({ entityId, entityType, isOpen, onClose, onS
 
   const handleAdd = async (itemId: string) => {
     setAdding(itemId);
+    const type = TAB_TO_TYPE[activeTab];
+    const base = entityType === "lead" ? `leads/${entityId}` : `organizations/${entityId}`;
     try {
-      if (entityType === "lead") {
-        switch (activeTab) {
-          case "languages": await addLanguageToLead(entityId, itemId); break;
-          case "frameworks": await addFrameworkToLead(entityId, itemId); break;
-          case "hosting": await addHostingToLead(entityId, itemId); break;
-          case "databases": await addDatabaseToLead(entityId, itemId); break;
-          case "erps": await addERPToLead(entityId, itemId); break;
-          case "crms": await addCRMToLead(entityId, itemId); break;
-          case "ecommerces": await addEcommerceToLead(entityId, itemId); break;
-        }
-      } else {
-        switch (activeTab) {
-          case "languages": await addLanguageToOrganization(entityId, itemId); break;
-          case "frameworks": await addFrameworkToOrganization(entityId, itemId); break;
-          case "hosting": await addHostingToOrganization(entityId, itemId); break;
-          case "databases": await addDatabaseToOrganization(entityId, itemId); break;
-          case "erps": await addERPToOrganization(entityId, itemId); break;
-          case "crms": await addCRMToOrganization(entityId, itemId); break;
-          case "ecommerces": await addEcommerceToOrganization(entityId, itemId); break;
-        }
-      }
+      await apiFetch(`/${base}/tech-profile/${type}/${itemId}`, token, { method: "POST" });
       onSuccess();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao adicionar";

@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { convertLeadToOrganization } from "@/actions/leads";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export function ConvertLeadButton({
@@ -12,6 +13,8 @@ export function ConvertLeadButton({
   leadId: string;
   hasContacts: boolean;
 }) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const router = useRouter();
   const [isConverting, setIsConverting] = useState(false);
 
@@ -29,7 +32,7 @@ export function ConvertLeadButton({
         onClick: async () => {
           setIsConverting(true);
           try {
-            const result = await convertLeadToOrganization(leadId);
+            const result = await apiFetch<{ organization: { id: string; name: string }; contacts: unknown[] }>(`/leads/${leadId}/convert`, token, { method: "POST" });
             toast.success("Lead convertido com sucesso!", {
               description: `Organização ${result.organization.name} e ${result.contacts.length} contato(s) criados.`,
             });

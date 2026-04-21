@@ -1,11 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
-import { deleteLeadContact, toggleLeadContactActive } from "@/actions/leads";
 import { useRouter } from "next/navigation";
 import { AddLeadContactModal } from "./AddLeadContactModal";
-import { updateLeadContact } from "@/actions/leads";
 import { Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCircle, User, Briefcase, Copy, Check, UserX, UserCheck, Globe } from "lucide-react";
 import { PhoneLink } from "@/components/ui/phone-link";
 import { LanguageBadges, LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
@@ -248,15 +248,19 @@ function ContactDetailModal({
 
 function EditContactModal({
   contact,
+  leadId,
   isOpen,
   onClose,
   onSuccess,
 }: {
   contact: LeadContact;
+  leadId: string;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
 }) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const parseLanguages = (json: string | null): LanguageEntry[] => {
@@ -283,16 +287,19 @@ function EditContactModal({
     setLoading(true);
     setError(null);
     try {
-      await updateLeadContact(contact.id, {
-        name: form.name,
-        role: form.role || undefined,
-        email: form.email || undefined,
-        phone: form.phone || undefined,
-        whatsapp: form.whatsapp || undefined,
-        linkedin: form.linkedin || undefined,
-        instagram: form.instagram || undefined,
-        isPrimary: form.isPrimary,
-        languages: form.languages.length > 0 ? form.languages : null,
+      await apiFetch(`/leads/${leadId}/contacts/${contact.id}`, token, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: form.name,
+          role: form.role || undefined,
+          email: form.email || undefined,
+          phone: form.phone || undefined,
+          whatsapp: form.whatsapp || undefined,
+          linkedin: form.linkedin || undefined,
+          instagram: form.instagram || undefined,
+          isPrimary: form.isPrimary,
+          languages: form.languages.length > 0 ? form.languages : null,
+        }),
       });
       toast.success("Contato atualizado!");
       onSuccess();
@@ -452,6 +459,8 @@ export function LeadContactsList({
   leadContacts: LeadContact[];
   isConverted: boolean;
 }) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -462,7 +471,7 @@ export function LeadContactsList({
   async function handleToggleActive(contactId: string, isActive: boolean) {
     setTogglingId(contactId);
     try {
-      await toggleLeadContactActive(contactId);
+      await apiFetch(`/leads/${leadId}/contacts/${contactId}/toggle`, token, { method: "PATCH" });
       toast.success(isActive ? "Contato desativado" : "Contato reativado");
       router.refresh();
     } catch (error) {
@@ -484,7 +493,7 @@ export function LeadContactsList({
         onClick: async () => {
           setDeletingId(contactId);
           try {
-            await deleteLeadContact(contactId);
+            await apiFetch(`/leads/${leadId}/contacts/${contactId}`, token, { method: "DELETE" });
             toast.success("Contato excluído com sucesso!");
             router.refresh();
           } catch (error) {
@@ -650,6 +659,7 @@ export function LeadContactsList({
       {editingContact && (
         <EditContactModal
           contact={editingContact}
+          leadId={leadId}
           isOpen={!!editingContact}
           onClose={() => setEditingContact(null)}
           onSuccess={() => {

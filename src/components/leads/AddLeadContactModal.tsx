@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
-import { createLeadContact } from "@/actions/leads";
 import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 
 type AddLeadContactModalProps = {
@@ -17,6 +18,8 @@ export function AddLeadContactModal({
   isOpen,
   onClose,
 }: AddLeadContactModalProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [languages, setLanguages] = useState<LanguageEntry[]>([]);
@@ -46,7 +49,7 @@ export function AddLeadContactModal({
     };
 
     try {
-      await createLeadContact(leadId, data);
+      await apiFetch(`/leads/${leadId}/contacts`, token, { method: "POST", body: JSON.stringify(data) });
       toast.success("Contato adicionado com sucesso!");
       router.refresh();
       onClose();

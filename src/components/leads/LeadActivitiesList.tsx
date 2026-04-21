@@ -11,7 +11,8 @@ import WhatsAppMessageLog from "@/components/whatsapp/WhatsAppMessageLog";
 import type { WhatsAppMediaMessage } from "@/components/whatsapp/WhatsAppMessageLog";
 import { formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
 import { useToggleActivityCompleted, useMarkActivityFailed, useMarkActivitySkipped, useRevertActivityOutcome, useUpdateActivity } from "@/hooks/activities/use-activities";
-import { updateLeadActivityOrder, resetLeadActivityOrder } from "@/actions/leads";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { registerLeadReply } from "@/actions/lead-cadences";
 import { toast } from "sonner";
 import {
@@ -507,6 +508,8 @@ export function LeadActivitiesList({
   activityOrder?: string | null;
   leadContacts?: LeadContact[];
 }) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const router = useRouter();
   const toggleCompleted = useToggleActivityCompleted();
   const markFailed = useMarkActivityFailed();
@@ -578,7 +581,7 @@ export function LeadActivitiesList({
 
     setSavingOrder(true);
     try {
-      await updateLeadActivityOrder(leadId, newOrder.map((a) => a.id));
+      await apiFetch(`/leads/${leadId}/activity-order`, token, { method: "PATCH", body: JSON.stringify({ activityIds: newOrder.map((a) => a.id) }) });
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar ordem");
@@ -591,7 +594,7 @@ export function LeadActivitiesList({
   const handleResetOrder = async () => {
     setSavingOrder(true);
     try {
-      await resetLeadActivityOrder(leadId);
+      await apiFetch(`/leads/${leadId}/activity-order`, token, { method: "DELETE" });
       toast.success("Ordem restaurada por data");
       router.refresh();
     } catch (err) {

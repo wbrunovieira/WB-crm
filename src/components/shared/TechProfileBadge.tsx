@@ -1,25 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { X } from "lucide-react";
-import {
-  removeLanguageFromLead,
-  removeFrameworkFromLead,
-  removeHostingFromLead,
-  removeDatabaseFromLead,
-  removeERPFromLead,
-  removeCRMFromLead,
-  removeEcommerceFromLead,
-} from "@/actions/lead-tech-profile";
-import {
-  removeLanguageFromOrganization,
-  removeFrameworkFromOrganization,
-  removeHostingFromOrganization,
-  removeDatabaseFromOrganization,
-  removeERPFromOrganization,
-  removeCRMFromOrganization,
-  removeEcommerceFromOrganization,
-} from "@/actions/organization-tech-profile";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
@@ -41,7 +25,14 @@ interface TechProfileBadgeProps {
   onUpdate: () => void;
 }
 
+const TAB_TO_TYPE: Record<string, string> = {
+  languages: "language", frameworks: "framework", hosting: "hosting",
+  databases: "database", erps: "erp", crms: "crm", ecommerces: "ecommerce",
+};
+
 export function TechProfileBadge({ title, items, entityId, entityType, profileType, onUpdate }: TechProfileBadgeProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [removing, setRemoving] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
 
@@ -55,28 +46,10 @@ export function TechProfileBadge({ title, items, entityId, entityType, profileTy
     if (!confirmed) return;
 
     setRemoving(itemId);
+    const type = TAB_TO_TYPE[profileType] ?? profileType;
+    const base = entityType === "lead" ? `leads/${entityId}` : `organizations/${entityId}`;
     try {
-      if (entityType === "lead") {
-        switch (profileType) {
-          case "languages": await removeLanguageFromLead(entityId, itemId); break;
-          case "frameworks": await removeFrameworkFromLead(entityId, itemId); break;
-          case "hosting": await removeHostingFromLead(entityId, itemId); break;
-          case "databases": await removeDatabaseFromLead(entityId, itemId); break;
-          case "erps": await removeERPFromLead(entityId, itemId); break;
-          case "crms": await removeCRMFromLead(entityId, itemId); break;
-          case "ecommerces": await removeEcommerceFromLead(entityId, itemId); break;
-        }
-      } else {
-        switch (profileType) {
-          case "languages": await removeLanguageFromOrganization(entityId, itemId); break;
-          case "frameworks": await removeFrameworkFromOrganization(entityId, itemId); break;
-          case "hosting": await removeHostingFromOrganization(entityId, itemId); break;
-          case "databases": await removeDatabaseFromOrganization(entityId, itemId); break;
-          case "erps": await removeERPFromOrganization(entityId, itemId); break;
-          case "crms": await removeCRMFromOrganization(entityId, itemId); break;
-          case "ecommerces": await removeEcommerceFromOrganization(entityId, itemId); break;
-        }
-      }
+      await apiFetch(`/${base}/tech-profile/${type}/${itemId}`, token, { method: "DELETE" });
       await onUpdate();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : "Erro ao remover";

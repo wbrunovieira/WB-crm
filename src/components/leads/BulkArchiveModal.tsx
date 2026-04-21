@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { bulkArchiveLeads } from "@/actions/leads";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { Archive, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -12,13 +13,18 @@ interface BulkArchiveModalProps {
 }
 
 export function BulkArchiveModal({ leadIds, onClose, onSuccess }: BulkArchiveModalProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const result = await bulkArchiveLeads(leadIds, reason.trim() || undefined);
+      const result = await apiFetch<{ archived: number; skipped: number }>("/leads/bulk-archive", token, {
+        method: "PATCH",
+        body: JSON.stringify({ ids: leadIds, ...(reason.trim() ? { reason: reason.trim() } : {}) }),
+      });
       const msg =
         result.skipped > 0
           ? `${result.archived} arquivado(s), ${result.skipped} ignorado(s) (já arquivado ou convertido)`

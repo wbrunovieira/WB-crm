@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getOrganizationTechProfile } from "@/actions/organization-tech-profile";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { Database, Plus } from "lucide-react";
 import { AddTechProfileModal } from "../leads/AddTechProfileModal";
 import { TechProfileBadge } from "../shared/TechProfileBadge";
@@ -29,14 +30,17 @@ interface TechProfile {
 }
 
 export function OrganizationTechProfileSection({ organizationId }: OrganizationTechProfileSectionProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [techProfile, setTechProfile] = useState<TechProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    if (!token) return;
     const loadTechProfile = async () => {
       try {
-        const data = await getOrganizationTechProfile(organizationId);
+        const data = await apiFetch<TechProfile>(`/organizations/${organizationId}/tech-profile`, token);
         setTechProfile(data);
       } catch (error) {
         console.error("Erro ao carregar tech profile:", error);
@@ -45,11 +49,11 @@ export function OrganizationTechProfileSection({ organizationId }: OrganizationT
       }
     };
     loadTechProfile();
-  }, [organizationId]);
+  }, [organizationId, token]);
 
   const refreshTechProfile = async () => {
     try {
-      const data = await getOrganizationTechProfile(organizationId);
+      const data = await apiFetch<TechProfile>(`/organizations/${organizationId}/tech-profile`, token);
       setTechProfile(data);
     } catch (error) {
       console.error("Erro ao carregar tech profile:", error);

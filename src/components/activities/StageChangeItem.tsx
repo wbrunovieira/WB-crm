@@ -3,24 +3,30 @@
 import { useState } from "react";
 import { ArrowRight, Pencil, Check, X } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { updateStageHistoryDate } from "@/actions/deals";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import type { StageChange } from "./ActivityTimeline";
 
 export function StageChangeItem({ stageChange }: { stageChange: StageChange }) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const router = useRouter();
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dateValue, setDateValue] = useState(() => {
     const d = new Date(stageChange.changedAt);
-    return d.toISOString().slice(0, 16); // yyyy-MM-ddTHH:mm
+    return d.toISOString().slice(0, 16);
   });
 
   const handleSave = async () => {
     setSaving(true);
     try {
-      await updateStageHistoryDate(stageChange.id, new Date(dateValue));
+      await apiFetch(`/deals/stage-history/${stageChange.id}`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ changedAt: new Date(dateValue).toISOString() }),
+      });
       setEditing(false);
       router.refresh();
     } catch (error) {

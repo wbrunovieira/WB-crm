@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getLeadTechProfile } from "@/actions/lead-tech-profile";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { Database, Plus } from "lucide-react";
 import { AddTechProfileModal } from "./AddTechProfileModal";
 import { TechProfileBadge } from "../shared/TechProfileBadge";
@@ -29,14 +30,17 @@ interface TechProfile {
 }
 
 export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [techProfile, setTechProfile] = useState<TechProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
+    if (!token) return;
     const loadTechProfile = async () => {
       try {
-        const data = await getLeadTechProfile(leadId);
+        const data = await apiFetch<TechProfile>(`/leads/${leadId}/tech-profile`, token);
         setTechProfile(data);
       } catch (error) {
         console.error("Erro ao carregar tech profile:", error);
@@ -45,11 +49,11 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
       }
     };
     loadTechProfile();
-  }, [leadId]);
+  }, [leadId, token]);
 
   const refreshTechProfile = async () => {
     try {
-      const data = await getLeadTechProfile(leadId);
+      const data = await apiFetch<TechProfile>(`/leads/${leadId}/tech-profile`, token);
       setTechProfile(data);
     } catch (error) {
       console.error("Erro ao carregar tech profile:", error);
