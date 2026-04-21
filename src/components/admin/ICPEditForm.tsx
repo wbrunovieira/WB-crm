@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { updateICP } from "@/actions/icps";
+import { useUpdateICP } from "@/hooks/icps/use-icps";
 
 interface ICP {
   id: string;
@@ -18,31 +18,28 @@ interface ICPEditFormProps {
 
 export function ICPEditForm({ icp }: ICPEditFormProps) {
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const updateMutation = useUpdateICP();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
     const form = e.currentTarget;
     const formData = new FormData(form);
 
     try {
-      await updateICP(icp.id, {
+      await updateMutation.mutateAsync({
+        id: icp.id,
         name: formData.get("name") as string,
         slug: formData.get("slug") as string,
         content: formData.get("content") as string,
         status: formData.get("status") as "draft" | "active" | "archived",
-        changeReason: formData.get("changeReason") as string || undefined,
+        changeReason: (formData.get("changeReason") as string) || undefined,
       });
       router.push(`/admin/icps/${icp.id}`);
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao atualizar ICP");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -135,10 +132,10 @@ export function ICPEditForm({ icp }: ICPEditFormProps) {
         <div className="flex gap-3 pt-4">
           <button
             type="submit"
-            disabled={loading}
+            disabled={updateMutation.isPending}
             className="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
           >
-            {loading ? "Salvando..." : "Salvar Alterações"}
+            {updateMutation.isPending ? "Salvando..." : "Salvar Alterações"}
           </button>
           <button
             type="button"

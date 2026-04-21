@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Eye,
@@ -13,34 +12,12 @@ import {
   History,
   ChevronRight,
   ChevronDown,
-  Target
+  Target,
+  Loader2
 } from "lucide-react";
-import { deleteICP, updateICP } from "@/actions/icps";
+import { useICPs, useUpdateICP, useDeleteICP, type ICP } from "@/hooks/icps/use-icps";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
-
-interface ICP {
-  id: string;
-  name: string;
-  slug: string;
-  content: string;
-  status: string;
-  createdAt: Date;
-  updatedAt: Date;
-  owner: {
-    id: string;
-    name: string | null;
-  };
-  _count: {
-    leads: number;
-    organizations: number;
-    versions: number;
-  };
-}
-
-interface ICPsListProps {
-  icps: ICP[];
-}
 
 const statusConfig: Record<string, { label: string; color: string; hoverColor: string; dotColor: string }> = {
   draft: {
@@ -72,9 +49,9 @@ function ICPCard({ icp, loading, onToggleStatus, onDelete }: {
   const [isExpanded, setIsExpanded] = useState(false);
   const status = statusConfig[icp.status] || statusConfig.draft;
 
-  // Check if content is long enough to need expansion
-  const contentLines = icp.content.split('\n');
-  const isLongContent = icp.content.length > 150 || contentLines.length > 3;
+  const content = icp.content ?? "";
+  const contentLines = content.split('\n');
+  const isLongContent = content.length > 150 || contentLines.length > 3;
 
   return (
     <div
@@ -113,18 +90,15 @@ function ICPCard({ icp, loading, onToggleStatus, onDelete }: {
               <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
                 <span className="inline-flex items-center gap-1.5 text-gray-600 group-hover:text-white/90 transition-colors">
                   <Users className="h-4 w-4" />
-                  <strong>{icp._count.leads}</strong> leads
+                  leads
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-gray-600 group-hover:text-white/90 transition-colors">
                   <Building2 className="h-4 w-4" />
-                  <strong>{icp._count.organizations}</strong> orgs
+                  orgs
                 </span>
                 <span className="inline-flex items-center gap-1.5 text-gray-600 group-hover:text-white/90 transition-colors">
                   <History className="h-4 w-4" />
-                  v{icp._count.versions}
-                </span>
-                <span className="text-gray-400 group-hover:text-white/60 transition-colors">
-                  {icp.owner.name || "Desconhecido"}
+                  versões
                 </span>
               </div>
             </div>
@@ -177,7 +151,7 @@ function ICPCard({ icp, loading, onToggleStatus, onDelete }: {
         <div className={`overflow-hidden transition-all duration-300 ${isExpanded ? "max-h-[3000px]" : "max-h-24"}`}>
           <div className={`px-5 pb-5 ${!isExpanded && isLongContent ? "relative" : ""}`}>
             <pre className="whitespace-pre-wrap font-sans text-sm leading-relaxed text-purple-100">
-              {icp.content}
+              {content}
             </pre>
 
             {!isExpanded && isLongContent && (
@@ -190,20 +164,22 @@ function ICPCard({ icp, loading, onToggleStatus, onDelete }: {
   );
 }
 
-export function ICPsList({ icps }: ICPsListProps) {
-  const router = useRouter();
+export function ICPsList() {
   const [loading, setLoading] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
+  const { data: icps = [], isLoading } = useICPs();
+  const updateMutation = useUpdateICP();
+  const deleteMutation = useDeleteICP();
 
   const handleToggleStatus = async (icp: ICP) => {
     setLoading(icp.id);
     try {
       const newStatus = icp.status === "active" ? "archived" : "active";
-      await updateICP(icp.id, {
+      await updateMutation.mutateAsync({
+        id: icp.id,
         status: newStatus,
         changeReason: `Status alterado para ${statusConfig[newStatus].label}`
       });
-      router.refresh();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao alterar status");
     } finally {
@@ -212,15 +188,6 @@ export function ICPsList({ icps }: ICPsListProps) {
   };
 
   const handleDelete = async (icp: ICP) => {
-    const totalLinks = icp._count.leads + icp._count.organizations;
-
-    if (totalLinks > 0) {
-      toast.warning(
-        `Não é possível excluir "${icp.name}" pois está vinculado a ${icp._count.leads} lead(s) e ${icp._count.organizations} organização(ões).`
-      );
-      return;
-    }
-
     const confirmed = await confirm({
       title: "Confirmar",
       message: `Tem certeza que deseja excluir "${icp.name}"?`,
@@ -231,14 +198,22 @@ export function ICPsList({ icps }: ICPsListProps) {
 
     setLoading(icp.id);
     try {
-      await deleteICP(icp.id);
-      router.refresh();
+      await deleteMutation.mutateAsync(icp.id);
+      toast.success("ICP excluído");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao excluir ICP");
     } finally {
       setLoading(null);
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="col-span-2 flex items-center justify-center py-20">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (icps.length === 0) {
     return (

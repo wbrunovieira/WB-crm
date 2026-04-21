@@ -1,12 +1,9 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getICPs } from "@/actions/icps";
 import { ICPForm } from "@/components/admin/ICPForm";
 import { ICPsList } from "@/components/admin/ICPsList";
 
-export default async function ICPsPage() {
-  const icps = await getICPs();
-
+export default function ICPsPage() {
   return (
     <div className="p-8">
       <div className="mb-8">
@@ -32,7 +29,7 @@ export default async function ICPsPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <ICPForm />
-        <ICPsList icps={icps} />
+        <ICPsList />
       </div>
     </div>
   );

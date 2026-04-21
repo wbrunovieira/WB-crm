@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 import Link from "next/link";
 import { Target, Plus, X, Loader2, ChevronDown, ChevronUp, Save, HelpCircle } from "lucide-react";
-import { getOrganizationICPs, linkOrganizationToICP, unlinkOrganizationFromICP, updateOrganizationICP } from "@/actions/icp-links";
-import { getICPs } from "@/actions/icps";
+import {
+  useOrgICPs,
+  useICPs,
+  useLinkOrgToICP,
+  useUpdateOrgICP,
+  useUnlinkOrgFromICP,
+  type ICPOrgLink,
+} from "@/hooks/icps/use-icps";
 import type {
   ICPFitStatus,
   RealDecisionMaker,
@@ -146,11 +151,11 @@ interface OrganizationICPSectionProps {
 }
 
 export function OrganizationICPSection({ organizationId }: OrganizationICPSectionProps) {
-  const router = useRouter();
-  const [linkedICPs, setLinkedICPs] = useState<OrganizationICP[]>([]);
-  const [availableICPs, setAvailableICPs] = useState<ICP[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [linking, setLinking] = useState(false);
+  const { data: linkedICPs = [], isLoading: loading } = useOrgICPs(organizationId);
+  const { data: availableICPs = [] } = useICPs("active");
+  const linkMutation = useLinkOrgToICP();
+  const updateMutation = useUpdateOrgICP();
+  const unlinkMutation = useUnlinkOrgFromICP();
   const [unlinking, setUnlinking] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedICP, setSelectedICP] = useState("");
@@ -158,7 +163,6 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
   const { confirm, dialogProps } = useConfirmDialog();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     matchScore: "",
@@ -201,35 +205,14 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
     expansionPotential: "",
   });
 
-  const loadData = useCallback(async () => {
-    try {
-      const [links, icps] = await Promise.all([
-        getOrganizationICPs(organizationId),
-        getICPs({ status: "active" }),
-      ]);
-      setLinkedICPs(links);
-      setAvailableICPs(icps);
-    } catch (err) {
-      console.error("Error loading ICPs:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [organizationId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   const handleLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedICP) return;
 
-    setLinking(true);
     setError(null);
-
     try {
-      await linkOrganizationToICP({
-        organizationId,
+      await linkMutation.mutateAsync({
+        orgId: organizationId,
         icpId: selectedICP,
         matchScore: formData.matchScore ? parseInt(formData.matchScore) : undefined,
         notes: formData.notes || undefined,
@@ -237,12 +220,8 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
       setShowForm(false);
       setSelectedICP("");
       setFormData({ matchScore: "", notes: "" });
-      await loadData();
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao vincular ICP");
-    } finally {
-      setLinking(false);
     }
   };
 
@@ -257,9 +236,7 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
 
     setUnlinking(icpId);
     try {
-      await unlinkOrganizationFromICP(organizationId, icpId);
-      await loadData();
-      router.refresh();
+      await unlinkMutation.mutateAsync({ orgId: organizationId, icpId });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao remover vínculo");
     } finally {
@@ -293,11 +270,11 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
     return [];
   };
 
-  const handleExpand = (link: OrganizationICP) => {
-    if (expandedId === link.id) {
+  const handleExpand = (link: ICPOrgLink) => {
+    if (expandedId === link.icpId) {
       setExpandedId(null);
     } else {
-      setExpandedId(link.id);
+      setExpandedId(link.icpId);
       setEditData({
         matchScore: link.matchScore?.toString() || "",
         notes: link.notes || "",
@@ -320,12 +297,11 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
   };
 
   const handleSave = async (icpId: string) => {
-    setSaving(true);
     setError(null);
 
     try {
-      await updateOrganizationICP({
-        organizationId,
+      await updateMutation.mutateAsync({
+        orgId: organizationId,
         icpId,
         matchScore: editData.matchScore ? parseInt(editData.matchScore) : null,
         notes: editData.notes || null,
@@ -344,13 +320,9 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
         estimatedDecisionTime: (editData.estimatedDecisionTime as EstimatedDecisionTime) || null,
         expansionPotential: editData.expansionPotential ? parseInt(editData.expansionPotential) : null,
       });
-      await loadData();
       setExpandedId(null);
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar");
-    } finally {
-      setSaving(false);
     }
   };
 
@@ -456,10 +428,10 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
             <div className="flex gap-2">
               <button
                 type="submit"
-                disabled={linking}
+                disabled={linkMutation.isPending}
                 className="rounded-md bg-primary px-4 py-2 text-base font-medium text-white hover:bg-primary/90 disabled:opacity-50"
               >
-                {linking ? "Vinculando..." : "Vincular"}
+                {linkMutation.isPending ? "Vinculando..." : "Vincular"}
               </button>
               <button
                 type="button"
@@ -492,7 +464,7 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
         <div className="space-y-3">
           {linkedICPs.map((link) => (
             <div
-              key={link.id}
+              key={link.icpId}
               className="rounded-lg border border-gray-200 hover:border-primary/30 transition-colors"
             >
               <div className="flex items-center justify-between p-3">
@@ -529,9 +501,9 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
                   <button
                     onClick={() => handleExpand(link)}
                     className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-primary"
-                    title={expandedId === link.id ? "Fechar detalhes" : "Editar categorização"}
+                    title={expandedId === link.icpId ? "Fechar detalhes" : "Editar categorização"}
                   >
-                    {expandedId === link.id ? (
+                    {expandedId === link.icpId ? (
                       <ChevronUp className="h-5 w-5" />
                     ) : (
                       <ChevronDown className="h-5 w-5" />
@@ -552,7 +524,7 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
                 </div>
               </div>
 
-              {expandedId === link.id && (
+              {expandedId === link.icpId && (
                 <div className="border-t border-gray-100 bg-gray-50 p-5">
                   {error && (
                     <div className="mb-4 rounded-md bg-red-50 p-3 text-base text-red-700">
@@ -852,15 +824,15 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
                   <div className="flex gap-2 pt-2">
                     <button
                       onClick={() => handleSave(link.icp.id)}
-                      disabled={saving}
+                      disabled={updateMutation.isPending}
                       className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-base font-medium text-white hover:bg-primary/90 disabled:opacity-50"
                     >
-                      {saving ? (
+                      {updateMutation.isPending ? (
                         <Loader2 className="h-5 w-5 animate-spin" />
                       ) : (
                         <Save className="h-5 w-5" />
                       )}
-                      {saving ? "Salvando..." : "Salvar"}
+                      {updateMutation.isPending ? "Salvando..." : "Salvar"}
                     </button>
                     <button
                       onClick={() => setExpandedId(null)}

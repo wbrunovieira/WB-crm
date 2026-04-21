@@ -1,43 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createICP, generateUniqueICPSlug } from "@/actions/icps";
+import { useCreateICP } from "@/hooks/icps/use-icps";
+
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "");
+}
 
 export function ICPForm() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [content, setContent] = useState("");
   const [status, setStatus] = useState<"draft" | "active" | "archived">("draft");
+  const createMutation = useCreateICP();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
     try {
-      // Generate unique slug from name
-      const slug = await generateUniqueICPSlug(name);
-
-      await createICP({
-        name,
-        slug,
-        content,
-        status,
-      });
-
-      // Reset form
+      await createMutation.mutateAsync({ name, slug: slugify(name), content, status });
       setName("");
       setContent("");
       setStatus("draft");
-
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar ICP");
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -100,10 +92,10 @@ export function ICPForm() {
 
         <button
           type="submit"
-          disabled={loading}
+          disabled={createMutation.isPending}
           className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50"
         >
-          {loading ? "Criando..." : "Criar ICP"}
+          {createMutation.isPending ? "Criando..." : "Criar ICP"}
         </button>
       </form>
     </div>

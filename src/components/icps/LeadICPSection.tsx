@@ -1,11 +1,16 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { Target, Plus, X, Loader2, ChevronDown, ChevronUp, Save, HelpCircle } from "lucide-react";
-import { getLeadICPs, linkLeadToICP, unlinkLeadFromICP, updateLeadICP } from "@/actions/icp-links";
-import { getICPs } from "@/actions/icps";
+import {
+  useLeadICPs,
+  useICPs,
+  useLinkLeadToICP,
+  useUpdateLeadICP,
+  useUnlinkLeadFromICP,
+  type ICPLeadLink,
+} from "@/hooks/icps/use-icps";
 import type {
   ICPFitStatus,
   RealDecisionMaker,
@@ -147,11 +152,11 @@ interface LeadICPSectionProps {
 }
 
 export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionProps) {
-  const router = useRouter();
-  const [linkedICPs, setLinkedICPs] = useState<LeadICP[]>([]);
-  const [availableICPs, setAvailableICPs] = useState<ICP[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [linking, setLinking] = useState(false);
+  const { data: linkedICPs = [], isLoading: loading } = useLeadICPs(leadId);
+  const { data: availableICPs = [] } = useICPs("active");
+  const linkMutation = useLinkLeadToICP();
+  const updateMutation = useUpdateLeadICP();
+  const unlinkMutation = useUnlinkLeadFromICP();
   const [unlinking, setUnlinking] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
   const [selectedICP, setSelectedICP] = useState("");
@@ -159,7 +164,6 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
   const { confirm, dialogProps } = useConfirmDialog();
 
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [saving, setSaving] = useState(false);
 
   const [formData, setFormData] = useState({
     matchScore: "",
@@ -202,34 +206,13 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
     expansionPotential: "",
   });
 
-  const loadData = useCallback(async () => {
-    try {
-      const [links, icps] = await Promise.all([
-        getLeadICPs(leadId),
-        getICPs({ status: "active" }),
-      ]);
-      setLinkedICPs(links);
-      setAvailableICPs(icps);
-    } catch (err) {
-      console.error("Error loading ICPs:", err);
-    } finally {
-      setLoading(false);
-    }
-  }, [leadId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
   const handleLink = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedICP) return;
 
-    setLinking(true);
     setError(null);
-
     try {
-      await linkLeadToICP({
+      await linkMutation.mutateAsync({
         leadId,
         icpId: selectedICP,
         matchScore: formData.matchScore ? parseInt(formData.matchScore) : undefined,
@@ -238,12 +221,8 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
       setShowForm(false);
       setSelectedICP("");
       setFormData({ matchScore: "", notes: "" });
-      await loadData();
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao vincular ICP");
-    } finally {
-      setLinking(false);
     }
   };
 
@@ -258,9 +237,7 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
 
     setUnlinking(icpId);
     try {
-      await unlinkLeadFromICP(leadId, icpId);
-      await loadData();
-      router.refresh();
+      await unlinkMutation.mutateAsync({ leadId, icpId });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao remover vínculo");
     } finally {
@@ -294,11 +271,11 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
     return [];
   };
 
-  const handleExpand = (link: LeadICP) => {
-    if (expandedId === link.id) {
+  const handleExpand = (link: ICPLeadLink) => {
+    if (expandedId === link.icpId) {
       setExpandedId(null);
     } else {
-      setExpandedId(link.id);
+      setExpandedId(link.icpId);
       setEditData({
         matchScore: link.matchScore?.toString() || "",
         notes: link.notes || "",
@@ -321,11 +298,10 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
   };
 
   const handleSave = async (icpId: string) => {
-    setSaving(true);
     setError(null);
 
     try {
-      await updateLeadICP({
+      await updateMutation.mutateAsync({
         leadId,
         icpId,
         matchScore: editData.matchScore ? parseInt(editData.matchScore) : null,
@@ -345,13 +321,10 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
         estimatedDecisionTime: (editData.estimatedDecisionTime as EstimatedDecisionTime) || null,
         expansionPotential: editData.expansionPotential ? parseInt(editData.expansionPotential) : null,
       });
-      await loadData();
       setExpandedId(null);
-      router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar");
     } finally {
-      setSaving(false);
     }
   };
 
@@ -457,10 +430,10 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
             <div className="flex gap-2">
               <button
                 type="submit"
-                disabled={linking}
+                disabled={linkMutation.isPending}
                 className="rounded-md bg-primary px-4 py-2 text-base font-medium text-white hover:bg-primary/90 disabled:opacity-50"
               >
-                {linking ? "Vinculando..." : "Vincular"}
+                {linkMutation.isPending ? "Vinculando..." : "Vincular"}
               </button>
               <button
                 type="button"
@@ -493,7 +466,7 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
         <div className="space-y-3">
           {linkedICPs.map((link) => (
             <div
-              key={link.id}
+              key={link.icpId}
               className="rounded-lg border border-gray-200 hover:border-primary/30 transition-colors"
             >
               <div className="flex items-center justify-between p-3">
@@ -532,9 +505,9 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
                       <button
                         onClick={() => handleExpand(link)}
                         className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-primary"
-                        title={expandedId === link.id ? "Fechar detalhes" : "Editar categorização"}
+                        title={expandedId === link.icpId ? "Fechar detalhes" : "Editar categorização"}
                       >
-                        {expandedId === link.id ? (
+                        {expandedId === link.icpId ? (
                           <ChevronUp className="h-5 w-5" />
                         ) : (
                           <ChevronDown className="h-5 w-5" />
@@ -557,7 +530,7 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
                 </div>
               </div>
 
-              {expandedId === link.id && (
+              {expandedId === link.icpId && (
                 <div className="border-t border-gray-100 bg-gray-50 p-5">
                   {error && (
                     <div className="mb-4 rounded-md bg-red-50 p-3 text-base text-red-700">
@@ -857,15 +830,15 @@ export function LeadICPSection({ leadId, isConverted = false }: LeadICPSectionPr
                   <div className="flex gap-2 pt-2">
                     <button
                       onClick={() => handleSave(link.icp.id)}
-                      disabled={saving}
+                      disabled={updateMutation.isPending}
                       className="inline-flex items-center gap-2 rounded-md bg-primary px-5 py-2.5 text-base font-medium text-white hover:bg-primary/90 disabled:opacity-50"
                     >
-                      {saving ? (
+                      {updateMutation.isPending ? (
                         <Loader2 className="h-5 w-5 animate-spin" />
                       ) : (
                         <Save className="h-5 w-5" />
                       )}
-                      {saving ? "Salvando..." : "Salvar"}
+                      {updateMutation.isPending ? "Salvando..." : "Salvar"}
                     </button>
                     <button
                       onClick={() => setExpandedId(null)}

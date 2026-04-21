@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Target, Users, Calendar, Zap } from "lucide-react";
 import { getCadenceById, getActiveLeadCadencesCount } from "@/actions/cadences";
-import { getICPs } from "@/actions/icps";
+import { backendFetch } from "@/lib/backend/client";
 import { CadenceStepForm } from "@/components/admin/CadenceStepForm";
 import { CadenceStepsList } from "@/components/admin/CadenceStepsList";
 import { CadenceHeader } from "@/components/admin/CadenceHeader";
@@ -16,7 +16,7 @@ export default async function CadenceDetailPage({ params }: CadenceDetailPagePro
 
   const [cadence, icps, activeLeadCadencesCount] = await Promise.all([
     getCadenceById(id),
-    getICPs(),
+    backendFetch<{ id: string; name: string }[]>('/icps').catch(() => []),
     getActiveLeadCadencesCount(id),
   ]);
 

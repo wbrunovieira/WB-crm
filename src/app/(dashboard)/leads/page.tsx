@@ -1,7 +1,7 @@
 import { getLeads } from "@/actions/leads";
 import { backendFetch } from "@/lib/backend/client";
 import type { UserListItem } from "@/hooks/users/use-users";
-import { getICPs } from "@/actions/icps";
+import type { ICP as ICPType } from "@/hooks/icps/use-icps";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { LeadsFilters } from "@/components/leads/LeadsFilters";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
@@ -35,7 +35,7 @@ export default async function LeadsPage({
   const [leadsResult, users, icps] = await Promise.all([
     getLeads(searchParams),
     backendFetch<UserListItem[]>('/users'),
-    getICPs({ status: "active" }),
+    backendFetch<ICPType[]>('/icps?status=active').catch(() => [] as ICPType[]),
   ]);
 
   const { leads, total, page, pageSize } = leadsResult;

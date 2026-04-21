@@ -7,14 +7,13 @@ import { checkLeadDuplicates, type LeadDuplicates, type LeadSummary } from "@/ac
 import { useCreateLead, useUpdateLead, type CreateLeadPayload } from "@/hooks/leads/use-leads";
 import { normalizeCNPJ, validateCNPJ } from "@/lib/validations/cnpj";
 import { Trash2, Plus } from "lucide-react";
-import { getLeadICPs } from "@/actions/icp-links";
+import { useICPs, useLeadICPs } from "@/hooks/icps/use-icps";
 import { useState, useEffect } from "react";
 import { MultiLabelSelect } from "@/components/shared/MultiLabelSelect";
 import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
 import { brazilianStates } from "@/lib/lists/brazilian-states";
-import { getActiveICPsForSelect } from "@/actions/icps";
 import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 import { PresenceSelectField } from "@/components/leads/PresenceSelectField";
 import { StarRatingInput } from "@/components/leads/StarRatingInput";
@@ -107,8 +106,8 @@ export function LeadForm({ lead }: LeadFormProps) {
   const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(null);
   const [selectedIcpId, setSelectedIcpId] = useState<string>("");
   const [originalIcpId, setOriginalIcpId] = useState<string>("");
-  const [availableIcps, setAvailableIcps] = useState<{ id: string; name: string }[]>([]);
-  const [loadingIcps, setLoadingIcps] = useState(true);
+  const { data: availableIcps = [], isLoading: loadingIcps } = useICPs("active");
+  const { data: leadICPs = [] } = useLeadICPs(lead?.id ?? "");
   const [contacts, setContacts] = useState<ContactFormData[]>([]);
   const [leadLanguages, setLeadLanguages] = useState<LanguageEntry[]>(() => {
     if (lead?.languages) {
@@ -125,31 +124,13 @@ export function LeadForm({ lead }: LeadFormProps) {
     payload: CreateLeadPayload;
   } | null>(null);
 
-  // Load available ICPs and current ICP (for both new and edit)
   useEffect(() => {
-    async function loadData() {
-      try {
-        // Load available ICPs
-        const icps = await getActiveICPsForSelect();
-        setAvailableIcps(icps);
-
-        // If editing, load current ICP
-        if (lead?.id) {
-          const leadIcps = await getLeadICPs(lead.id);
-          if (leadIcps.length > 0) {
-            const currentIcpId = leadIcps[0].icp.id;
-            setSelectedIcpId(currentIcpId);
-            setOriginalIcpId(currentIcpId);
-          }
-        }
-      } catch (err) {
-        console.error("Error loading ICPs:", err);
-      } finally {
-        setLoadingIcps(false);
-      }
+    if (leadICPs.length > 0) {
+      const currentIcpId = leadICPs[0].icp.id;
+      setSelectedIcpId(currentIcpId);
+      setOriginalIcpId(currentIcpId);
     }
-    loadData();
-  }, [lead?.id]);
+  }, [leadICPs]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

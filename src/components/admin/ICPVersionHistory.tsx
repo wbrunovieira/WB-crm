@@ -1,38 +1,22 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { RotateCcw, ChevronDown, ChevronUp } from "lucide-react";
-import { restoreICPVersion } from "@/actions/icps";
+import { RotateCcw, ChevronDown, ChevronUp, Loader2 } from "lucide-react";
+import { useICPVersions, useRestoreICPVersion } from "@/hooks/icps/use-icps";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
-interface Version {
-  id: string;
-  versionNumber: number;
-  name: string;
-  content: string;
-  status: string;
-  changeReason: string | null;
-  createdAt: Date;
-  user: {
-    id: string;
-    name: string | null;
-  };
-}
-
 interface ICPVersionHistoryProps {
   icpId: string;
-  versions: Version[];
 }
 
-export function ICPVersionHistory({ icpId, versions }: ICPVersionHistoryProps) {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [expandedVersion, setExpandedVersion] = useState<number | null>(null);
+export function ICPVersionHistory({ icpId }: ICPVersionHistoryProps) {
+  const [expandedVersion, setExpandedVersion] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
+  const { data: versions = [], isLoading } = useICPVersions(icpId);
+  const restoreMutation = useRestoreICPVersion();
 
-  const handleRestore = async (versionNumber: number) => {
+  const handleRestore = async (versionId: string, versionNumber: number) => {
     const confirmed = await confirm({
       title: "Confirmar",
       message: `Restaurar para a versão ${versionNumber}? Uma nova versão será criada com o conteúdo restaurado.`,
@@ -41,16 +25,17 @@ export function ICPVersionHistory({ icpId, versions }: ICPVersionHistoryProps) {
     });
     if (!confirmed) return;
 
-    setLoading(true);
     try {
-      await restoreICPVersion(icpId, versionNumber);
-      router.refresh();
+      await restoreMutation.mutateAsync({ icpId, versionId });
+      toast.success("Versão restaurada");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao restaurar versão");
-    } finally {
-      setLoading(false);
     }
   };
+
+  if (isLoading) {
+    return <Loader2 className="h-4 w-4 animate-spin text-gray-400" />;
+  }
 
   if (versions.length === 0) {
     return <p className="text-sm text-gray-500">Nenhuma versão disponível.</p>;
@@ -61,7 +46,7 @@ export function ICPVersionHistory({ icpId, versions }: ICPVersionHistoryProps) {
     <div className="space-y-2">
       {versions.map((version, index) => {
         const isLatest = index === 0;
-        const isExpanded = expandedVersion === version.versionNumber;
+        const isExpanded = expandedVersion === version.id;
 
         return (
           <div
@@ -88,8 +73,7 @@ export function ICPVersionHistory({ icpId, versions }: ICPVersionHistoryProps) {
                     hour: "2-digit",
                     minute: "2-digit",
                   })}
-                  {" por "}
-                  {version.user.name || "Desconhecido"}
+                  {version.user && ` por ${version.user.name || "Desconhecido"}`}
                 </p>
                 {version.changeReason && (
                   <p className="mt-1 text-xs text-gray-600 italic">
@@ -101,8 +85,8 @@ export function ICPVersionHistory({ icpId, versions }: ICPVersionHistoryProps) {
               <div className="flex items-center gap-1">
                 {!isLatest && (
                   <button
-                    onClick={() => handleRestore(version.versionNumber)}
-                    disabled={loading}
+                    onClick={() => handleRestore(version.id, version.versionNumber)}
+                    disabled={restoreMutation.isPending}
                     className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-primary disabled:opacity-50"
                     title="Restaurar esta versão"
                   >
@@ -110,9 +94,7 @@ export function ICPVersionHistory({ icpId, versions }: ICPVersionHistoryProps) {
                   </button>
                 )}
                 <button
-                  onClick={() =>
-                    setExpandedVersion(isExpanded ? null : version.versionNumber)
-                  }
+                  onClick={() => setExpandedVersion(isExpanded ? null : version.id)}
                   className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-primary"
                   title={isExpanded ? "Recolher" : "Expandir"}
                 >

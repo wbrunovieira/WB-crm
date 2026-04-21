@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { getICPById } from "@/actions/icps";
+import { backendFetch } from "@/lib/backend/client";
 import { ICPEditForm } from "@/components/admin/ICPEditForm";
 
 interface ICPEditPageProps {
@@ -10,7 +10,9 @@ interface ICPEditPageProps {
 
 export default async function ICPEditPage({ params }: ICPEditPageProps) {
   const { id } = await params;
-  const icp = await getICPById(id);
+  const icp = await backendFetch<{ id: string; name: string; slug: string; content: string; status: string } | null>(
+    `/icps/${id}`
+  ).catch(() => null);
 
   if (!icp) {
     notFound();
