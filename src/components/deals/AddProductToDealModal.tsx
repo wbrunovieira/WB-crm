@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { X } from "lucide-react";
 import { useAddDealProduct } from "@/hooks/product-links/use-product-links";
 
@@ -30,6 +32,8 @@ export function AddProductToDealModal({
   onClose,
   onSuccess,
 }: AddProductToDealModalProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const addDealProductMutation = useAddDealProduct();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
@@ -44,15 +48,14 @@ export function AddProductToDealModal({
   const [deliveryTime, setDeliveryTime] = useState<number | undefined>();
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && token) {
       loadProducts();
     }
-  }, [isOpen]);
+  }, [isOpen, token]);
 
   const loadProducts = async () => {
     try {
-      const response = await fetch("/api/products/active");
-      const data = await response.json();
+      const data = await apiFetch<Product[]>("/admin/products?active=true", token);
       setProducts(data);
     } catch (error) {
       console.error("Erro ao carregar produtos:", error);

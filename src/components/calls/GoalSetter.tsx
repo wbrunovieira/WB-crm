@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { computeGoalBreakdown, type GoalBreakdown } from "@/lib/funnel/computeGoalBreakdown";
 import { Target, Phone, Users, UserCheck, Calendar, CheckCircle2, TrendingUp } from "lucide-react";
 
@@ -19,6 +21,8 @@ const ROWS = [
 ] as const;
 
 export function GoalSetter({ weekStart, initialTargetSales, onBreakdownChange }: Props) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [targetSales, setTargetSales] = useState(initialTargetSales);
   const [saving, setSaving] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -35,11 +39,12 @@ export function GoalSetter({ weekStart, initialTargetSales, onBreakdownChange }:
     debounceRef.current = setTimeout(async () => {
       setSaving(true);
       try {
-        await fetch("/api/funnel/goals", {
+        await apiFetch("/funnel/goals", token, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ weekStart, targetSales: value }),
         });
+      } catch {
+        // silently ignore save errors
       } finally {
         setSaving(false);
       }

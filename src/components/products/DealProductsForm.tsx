@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { X } from "lucide-react";
 import { toast } from "sonner";
 
@@ -39,15 +41,17 @@ export function DealProductsForm({
   selectedProducts,
   onChange,
 }: DealProductsFormProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProductId, setSelectedProductId] = useState("");
 
   useEffect(() => {
+    if (!token) return;
     async function loadProducts() {
       try {
-        const response = await fetch("/api/products/active");
-        const data = await response.json();
+        const data = await apiFetch<Product[]>("/admin/products?active=true", token);
         setProducts(data);
       } catch (error) {
         console.error("Erro ao carregar produtos:", error);
@@ -57,7 +61,7 @@ export function DealProductsForm({
     }
 
     loadProducts();
-  }, []);
+  }, [token]);
 
   const calculateTotalValue = (
     quantity: number,

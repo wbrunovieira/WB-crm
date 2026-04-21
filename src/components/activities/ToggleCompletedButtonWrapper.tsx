@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import ToggleCompletedButton from "./ToggleCompletedButton";
 
 interface Activity {
@@ -27,6 +29,8 @@ interface ToggleCompletedButtonWrapperProps {
 export default function ToggleCompletedButtonWrapper({
   activity,
 }: ToggleCompletedButtonWrapperProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [availableData, setAvailableData] = useState<{
     deals: Array<{ id: string; title: string }>;
     contacts: Array<{ id: string; name: string }>;
@@ -35,42 +39,30 @@ export default function ToggleCompletedButtonWrapper({
   } | null>(null);
 
   useEffect(() => {
-    // Fetch available data when component mounts
+    if (!token) return;
     const fetchData = async () => {
       try {
-        const [dealsRes, contactsRes, leadsRes, partnersRes] = await Promise.all([
-          fetch("/api/deals"),
-          fetch("/api/contacts"),
-          fetch("/api/leads"),
-          fetch("/api/partners"),
-        ]);
-
-        const [deals, contacts, leads, partners] = await Promise.all([
-          dealsRes.ok ? dealsRes.json() : [],
-          contactsRes.ok ? contactsRes.json() : [],
-          leadsRes.ok ? leadsRes.json() : [],
-          partnersRes.ok ? partnersRes.json() : [],
+        const [deals, contacts, leadsData, partners] = await Promise.all([
+          apiFetch<{ id: string; title: string }[]>("/deals", token).catch(() => []),
+          apiFetch<{ id: string; name: string }[]>("/contacts", token).catch(() => []),
+          apiFetch<{ leads: { id: string; businessName: string }[] }>("/leads?pageSize=200", token).catch(() => ({ leads: [] })),
+          apiFetch<{ id: string; name: string }[]>("/partners", token).catch(() => []),
         ]);
 
         setAvailableData({
-          deals: deals.map((d: { id: string; title: string }) => ({ id: d.id, title: d.title })),
-          contacts: contacts.map((c: { id: string; name: string }) => ({ id: c.id, name: c.name })),
-          leads: leads.map((l: { id: string; businessName: string }) => ({ id: l.id, businessName: l.businessName })),
-          partners: partners.map((p: { id: string; name: string }) => ({ id: p.id, name: p.name })),
+          deals: deals.map((d) => ({ id: d.id, title: d.title })),
+          contacts: contacts.map((c) => ({ id: c.id, name: c.name })),
+          leads: leadsData.leads.map((l) => ({ id: l.id, businessName: l.businessName })),
+          partners: partners.map((p) => ({ id: p.id, name: p.name })),
         });
       } catch (error) {
         console.error("Error fetching data:", error);
-        setAvailableData({
-          deals: [],
-          contacts: [],
-          leads: [],
-          partners: [],
-        });
+        setAvailableData({ deals: [], contacts: [], leads: [], partners: [] });
       }
     };
 
     fetchData();
-  }, []);
+  }, [token]);
 
   if (!availableData) {
     return (
