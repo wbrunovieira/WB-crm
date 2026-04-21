@@ -1,4 +1,3 @@
-import { getActivities } from "@/actions/activities";
 import { getDeals } from "@/actions/deals";
 import { getLeads } from "@/actions/leads";
 import { backendFetch } from "@/lib/backend/client";
@@ -61,20 +60,17 @@ export default async function ActivitiesPage({
   const hasStatusFilter = searchParams.completed !== undefined || searchParams.outcome !== undefined;
   const effectiveCompleted = hasStatusFilter ? searchParams.completed : "false";
 
-  const filters = {
-    ...(searchParams.type && { type: searchParams.type }),
-    ...(effectiveCompleted && effectiveCompleted !== "all" && {
-      completed: effectiveCompleted === "true",
-    }),
-    ...(searchParams.sortBy && { sortBy: searchParams.sortBy }),
-    ...(searchParams.owner && { owner: searchParams.owner }),
-    ...(searchParams.dateFrom && { dateFrom: searchParams.dateFrom }),
-    ...(searchParams.dateTo && { dateTo: searchParams.dateTo }),
-    ...(searchParams.showArchived === "true" && { includeArchivedLeads: true }),
-    ...(searchParams.outcome && { outcome: searchParams.outcome }),
-  };
+  const qs = new URLSearchParams();
+  if (searchParams.type) qs.set("type", searchParams.type);
+  if (effectiveCompleted && effectiveCompleted !== "all") qs.set("completed", effectiveCompleted);
+  if (searchParams.sortBy) qs.set("sortBy", searchParams.sortBy);
+  if (searchParams.owner) qs.set("owner", searchParams.owner);
+  if (searchParams.dateFrom) qs.set("dateFrom", searchParams.dateFrom);
+  if (searchParams.dateTo) qs.set("dateTo", searchParams.dateTo);
+  if (searchParams.showArchived === "true") qs.set("includeArchivedLeads", "true");
+  if (searchParams.outcome) qs.set("outcome", searchParams.outcome);
 
-  const activities = await getActivities(filters);
+  const activities = await backendFetch<unknown[]>(`/activities${qs.toString() ? `?${qs}` : ""}`).catch(() => []);
 
   // Fetch available data for the modal
   const [deals, contacts, leads, partners, users] = await Promise.all([

@@ -1,4 +1,4 @@
-import { getActivityById } from "@/actions/activities";
+import { backendFetch } from "@/lib/backend/client";
 import ActivityForm from "@/components/activities/ActivityForm";
 import { getContactsList } from "@/lib/lists/contacts-list";
 import { getDealsList } from "@/lib/lists/deals-list";
@@ -13,7 +13,7 @@ export default async function EditActivityPage({
   params: { id: string };
 }) {
   const [activity, contacts, deals, leads, organizations] = await Promise.all([
-    getActivityById(params.id),
+    backendFetch(`/activities/${params.id}`).catch(() => null),
     getContactsList(),
     getDealsList(),
     getLeadsList(),

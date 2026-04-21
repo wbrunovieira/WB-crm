@@ -1,4 +1,4 @@
-import { getActivityById } from "@/actions/activities";
+import { backendFetch } from "@/lib/backend/client";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
@@ -13,7 +13,7 @@ export default async function ActivityDetailPage({
 }: {
   params: { id: string };
 }) {
-  const activity = await getActivityById(params.id);
+  const activity = await backendFetch(`/activities/${params.id}`).catch(() => null);
 
   if (!activity) {
     notFound();
