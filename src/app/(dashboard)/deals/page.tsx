@@ -1,4 +1,3 @@
-import { getDeals } from "@/actions/deals";
 import { backendFetch } from "@/lib/backend/client";
 import type { UserListItem } from "@/hooks/users/use-users";
 import { getPipelineView } from "@/actions/pipeline-view";
@@ -52,17 +51,18 @@ export default async function DealsPage({
     );
   }
 
-  const deals = await getDeals({
-    search: searchParams.search,
-    status: searchParams.status,
-    valueRange: searchParams.valueRange,
-    sortBy: searchParams.sortBy,
-    owner: searchParams.owner,
-    closedMonth: searchParams.closedMonth,
-  });
+  const dealsQs = new URLSearchParams();
+  if (searchParams.search) dealsQs.set("search", searchParams.search);
+  if (searchParams.status) dealsQs.set("status", searchParams.status);
+  if (searchParams.valueRange) dealsQs.set("valueRange", searchParams.valueRange);
+  if (searchParams.sortBy) dealsQs.set("sortBy", searchParams.sortBy);
+  if (searchParams.owner) dealsQs.set("owner", searchParams.owner);
+  if (searchParams.closedMonth) dealsQs.set("closedMonth", searchParams.closedMonth);
+
+  const deals = await backendFetch<unknown[]>(`/deals?${dealsQs}`).catch(() => []);
 
   // Get shared users for all deals (batch query)
-  const dealIds = deals.map((deal) => deal.id);
+  const dealIds = (deals as { id: string }[]).map((deal) => deal.id);
   const sharedUsersMap = await getSharedUsersForEntities("deal", dealIds);
 
   return (

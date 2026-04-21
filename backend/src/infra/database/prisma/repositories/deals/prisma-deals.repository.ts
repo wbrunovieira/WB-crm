@@ -34,11 +34,51 @@ export class PrismaDealsRepository extends DealsRepository {
         : { ownerId: requesterId };
     }
 
+    const valueWhere: Record<string, unknown> = {};
+    if (filters.valueRange && filters.valueRange !== "all") {
+      if (filters.valueRange === "100000+") {
+        valueWhere.value = { gte: 100000 };
+      } else {
+        const [minStr, maxStr] = filters.valueRange.split("-");
+        valueWhere.value = { gte: Number(minStr), lt: Number(maxStr) };
+      }
+    }
+
+    let statusWhere: Record<string, unknown> = {};
+    if (filters.status) {
+      statusWhere = { status: filters.status };
+    } else if (!filters.closedMonth || filters.closedMonth !== "all") {
+      const now = new Date();
+      let year: number;
+      let month: number;
+      if (filters.closedMonth) {
+        const [y, m] = filters.closedMonth.split("-").map(Number);
+        year = y;
+        month = m - 1;
+      } else {
+        year = now.getFullYear();
+        month = now.getMonth();
+      }
+      const monthStart = new Date(year, month, 1);
+      const monthEnd = new Date(year, month + 1, 1);
+      statusWhere = {
+        OR: [
+          { status: "open" },
+          { status: { in: ["won", "lost"] }, closedAt: { gte: monthStart, lt: monthEnd } },
+        ],
+      };
+    }
+
+    const orderBy: Record<string, string>[] = filters.sortBy
+      ? [{ [filters.sortBy]: filters.sortOrder ?? "asc" }]
+      : [{ updatedAt: "desc" }];
+
     const rows = await this.prisma.deal.findMany({
       where: {
         ...ownerFilter,
+        ...valueWhere,
+        ...statusWhere,
         ...(filters.stageId && { stageId: filters.stageId }),
-        ...(filters.status && { status: filters.status }),
         ...(filters.organizationId && { organizationId: filters.organizationId }),
         ...(filters.contactId && { contactId: filters.contactId }),
         ...(filters.search && {
@@ -50,13 +90,13 @@ export class PrismaDealsRepository extends DealsRepository {
       },
       include: {
         owner: { select: { id: true, name: true, email: true } },
-        stage: { select: { id: true, name: true, probability: true } },
+        stage: { select: { id: true, name: true, probability: true, pipeline: { select: { id: true, name: true } } } },
         contact: { select: { id: true, name: true, email: true } },
         organization: { select: { id: true, name: true } },
         lead: { select: { id: true, businessName: true } },
         _count: { select: { activities: true, dealProducts: true } },
       },
-      orderBy: [{ updatedAt: "desc" }],
+      orderBy,
     });
 
     return rows.map((row) => {
@@ -92,15 +132,26 @@ export class PrismaDealsRepository extends DealsRepository {
       where: { id },
       include: {
         owner: { select: { id: true, name: true, email: true } },
-        stage: { select: { id: true, name: true, probability: true } },
+        stage: { select: { id: true, name: true, probability: true, pipeline: { select: { id: true, name: true } } } },
         contact: { select: { id: true, name: true, email: true } },
         organization: { select: { id: true, name: true } },
         lead: { select: { id: true, businessName: true } },
         _count: { select: { activities: true, dealProducts: true } },
         activities: {
-          select: { id: true, type: true, subject: true, completed: true, dueDate: true, createdAt: true },
+          select: {
+            id: true, type: true, subject: true, completed: true, dueDate: true, createdAt: true,
+            whatsappMessages: {
+              where: { mediaDriveId: { not: null } },
+              select: {
+                id: true, fromMe: true, pushName: true, timestamp: true,
+                messageType: true, mediaDriveId: true, mediaMimeType: true,
+                mediaLabel: true, mediaTranscriptText: true,
+              },
+              orderBy: { timestamp: "asc" },
+            },
+          },
           orderBy: { createdAt: "desc" },
-          take: 10,
+          take: 50,
         },
         dealProducts: {
           select: {
@@ -122,6 +173,7 @@ export class PrismaDealsRepository extends DealsRepository {
             changedAt: true,
             fromStage: { select: { id: true, name: true } },
             toStage: { select: { id: true, name: true } },
+            changedBy: { select: { id: true, name: true, email: true } },
           },
           orderBy: { changedAt: "desc" },
         },

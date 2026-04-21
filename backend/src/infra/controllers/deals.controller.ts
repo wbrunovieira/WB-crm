@@ -151,6 +151,10 @@ export class DealsController {
   @ApiQuery({ name: "status", required: false, enum: ["open", "won", "lost"] })
   @ApiQuery({ name: "organizationId", required: false })
   @ApiQuery({ name: "contactId", required: false })
+  @ApiQuery({ name: "valueRange", required: false, description: "'0-10000', '10000-50000', '50000-100000', '100000+', 'all'" })
+  @ApiQuery({ name: "sortBy", required: false, enum: ["value", "title", "createdAt"] })
+  @ApiQuery({ name: "sortOrder", required: false, enum: ["asc", "desc"] })
+  @ApiQuery({ name: "closedMonth", required: false, description: "'all', 'YYYY-MM'" })
   @ApiResponse({ status: 200, description: "Lista de deals" })
   async list(
     @Query("search") search?: string,
@@ -159,12 +163,17 @@ export class DealsController {
     @Query("status") status?: string,
     @Query("organizationId") organizationId?: string,
     @Query("contactId") contactId?: string,
+    @Query("valueRange") valueRange?: string,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortOrder") sortOrder?: string,
+    @Query("closedMonth") closedMonth?: string,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
+    const sortOrderTyped = sortOrder === "desc" ? "desc" : sortOrder === "asc" ? "asc" : undefined;
     const result = await this.getDeals.execute({
       requesterId: user!.id,
       requesterRole: user!.role ?? "sdr",
-      filters: { search, owner, stageId, status, organizationId, contactId },
+      filters: { search, owner, stageId, status, organizationId, contactId, valueRange, sortBy, sortOrder: sortOrderTyped, closedMonth },
     });
     return result.unwrap().deals;
   }

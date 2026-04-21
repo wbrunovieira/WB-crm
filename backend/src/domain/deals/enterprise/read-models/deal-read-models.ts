@@ -17,7 +17,7 @@ export interface DealSummary {
 
   // Relations
   owner: { id: string; name: string; email: string } | null;
-  stage: { id: string; name: string; probability: number } | null;
+  stage: { id: string; name: string; probability: number; pipeline?: { id: string; name: string } } | null;
   contact: { id: string; name: string; email: string | null } | null;
   organization: { id: string; name: string } | null;
   lead: { id: string; businessName: string } | null;
@@ -33,6 +33,17 @@ export interface DealDetail extends DealSummary {
     completed: boolean;
     dueDate: Date | null;
     createdAt: Date;
+    whatsappMessages?: Array<{
+      id: string;
+      fromMe: boolean;
+      pushName: string | null;
+      timestamp: number;
+      messageType: string;
+      mediaDriveId: string | null;
+      mediaMimeType: string | null;
+      mediaLabel: string | null;
+      mediaTranscriptText: string | null;
+    }>;
   }>;
   dealProducts: Array<{
     id: string;
@@ -51,5 +62,6 @@ export interface DealDetail extends DealSummary {
     changedAt: Date;
     fromStage: { id: string; name: string } | null;
     toStage: { id: string; name: string } | null;
+    changedBy: { id: string; name: string | null; email: string } | null;
   }>;
 }

@@ -292,7 +292,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 14 — Deals
+## ~~FASE 14 — Deals~~ ✅
 
 **Páginas**: `/deals`, `/deals/[id]`, `/pipeline`
 
@@ -467,7 +467,7 @@ ssh root@45.90.123.190 "docker logs wb-crm-backend --tail=20"
 | 11 | Activities | ✅ | `activities.ts` deletado; todos os reads migrados para `backendFetch`; mutations já estavam em hooks |
 | 12 | Organizations | ✅ | `organizations.ts`, `organizations-list.ts` deletados. `organization-tech-profile.ts` **mantido** (sem endpoints NestJS para tech profile de organização) |
 | 13 | Leads | ✅ | Reads migrados para `backendFetch`. NestJS recebeu `contactSearch`, `icpId`, `hasCadence` via TDD (18 testes). `leads.ts` **mantido** (mutations em componentes: `convertLeadToOrganization`, `deleteLeadContact`, `createLeadContact`, `qualifyProspect`, `bulkArchiveLeads`, etc.). `leads-list.ts` **mantido** (`getLeadContactsList` usado em `ContactForm`) |
-| 14 | Deals | ⏳ | |
+| 14 | Deals | ✅ | Reads migrados para `backendFetch`. NestJS recebeu `valueRange`, `sortBy`, `sortOrder`, `closedMonth` via TDD (15 testes). Backend atualizado com `stage.pipeline`, `stageHistory.changedBy`, `whatsappMessages` em activities. `deals.ts` **mantido** (só `updateStageHistoryDate` restante). |
 | 15 | Proposals & Meetings | ⏳ | |
 | 16 | Campaigns | ⏳ | |
 | 17 | Shared Entities | ⏳ | |

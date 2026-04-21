@@ -34,6 +34,49 @@ export class InMemoryDealsRepository extends DealsRepository {
       );
     }
 
+    if (filters.valueRange && filters.valueRange !== "all") {
+      if (filters.valueRange === "100000+") {
+        results = results.filter((d) => d.value >= 100000);
+      } else {
+        const [minStr, maxStr] = filters.valueRange.split("-");
+        const min = Number(minStr);
+        const max = Number(maxStr);
+        results = results.filter((d) => d.value >= min && d.value < max);
+      }
+    }
+
+    const hasExplicitStatus = !!filters.status;
+    if (!hasExplicitStatus) {
+      const now = new Date();
+      if (!filters.closedMonth || filters.closedMonth === "all") {
+        if (!filters.closedMonth) {
+          results = results.filter((d) => {
+            if (d.status === "open") return true;
+            if (!d.closedAt) return false;
+            return d.closedAt.getFullYear() === now.getFullYear() && d.closedAt.getMonth() === now.getMonth();
+          });
+        }
+      } else {
+        const [yearStr, monthStr] = filters.closedMonth.split("-");
+        const year = Number(yearStr);
+        const month = Number(monthStr) - 1;
+        results = results.filter((d) => {
+          if (d.status === "open") return true;
+          if (!d.closedAt) return false;
+          return d.closedAt.getFullYear() === year && d.closedAt.getMonth() === month;
+        });
+      }
+    }
+
+    if (filters.sortBy) {
+      const order = filters.sortOrder === "desc" ? -1 : 1;
+      results = [...results].sort((a, b) => {
+        if (filters.sortBy === "value") return (a.value - b.value) * order;
+        if (filters.sortBy === "title") return a.title.localeCompare(b.title) * order;
+        return 0;
+      });
+    }
+
     return results.map((d) => ({
       id: d.id.toString(),
       ownerId: d.ownerId,

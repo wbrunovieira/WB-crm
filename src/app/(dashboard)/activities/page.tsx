@@ -1,4 +1,3 @@
-import { getDeals } from "@/actions/deals";
 import { backendFetch } from "@/lib/backend/client";
 import type { ContactSummary } from "@/types/contact";
 import type { UserListItem } from "@/hooks/users/use-users";
@@ -73,7 +72,7 @@ export default async function ActivitiesPage({
 
   // Fetch available data for the modal
   const [deals, contacts, leads, partners, users] = await Promise.all([
-    getDeals(),
+    backendFetch<{ id: string; title: string }[]>("/deals").catch(() => []),
     backendFetch<ContactSummary[]>("/contacts").catch(() => []),
     backendFetch<{ leads: { id: string; businessName: string }[] }>("/leads?isProspect=false&isArchived=false&pageSize=200").then(r => r.leads).catch(() => []),
     backendFetch<{ id: string; name: string }[]>("/partners").catch(() => []),
