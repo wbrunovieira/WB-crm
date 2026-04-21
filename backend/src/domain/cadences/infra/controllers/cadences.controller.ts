@@ -16,8 +16,10 @@ import {
   PublishCadenceUseCase, UnpublishCadenceUseCase,
   CreateCadenceStepUseCase, UpdateCadenceStepUseCase, DeleteCadenceStepUseCase,
   ReorderCadenceStepsUseCase, GetCadenceStepsUseCase,
-  ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase,
+  ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase, GetLeadCadencesDetailUseCase,
   PauseLeadCadenceUseCase, ResumeLeadCadenceUseCase, CancelLeadCadenceUseCase,
+  CompleteLeadCadenceUseCase, CancelAllActiveCadencesUseCase,
+  GetAvailableCadencesForLeadUseCase, RegisterLeadReplyUseCase,
   GetCadenceLeadCountUseCase, BulkApplyCadenceUseCase,
 } from "../../application/use-cases/cadences.use-cases";
 
@@ -85,13 +87,36 @@ export class CadencesController {
     private readonly cancelLeadCadence: CancelLeadCadenceUseCase,
     private readonly getCadenceLeadCount: GetCadenceLeadCountUseCase,
     private readonly bulkApply: BulkApplyCadenceUseCase,
+    private readonly getLeadCadencesDetail: GetLeadCadencesDetailUseCase,
+    private readonly getAvailableCadencesForLead: GetAvailableCadencesForLeadUseCase,
+    private readonly completeLeadCadence: CompleteLeadCadenceUseCase,
+    private readonly cancelAllActiveCadences: CancelAllActiveCadencesUseCase,
+    private readonly registerLeadReply: RegisterLeadReplyUseCase,
   ) {}
 
   // ── Static routes FIRST to avoid `:id` collision ────────────────────────────
 
   @Get("lead/:leadId")
   async listLeadCadences(@Param("leadId") leadId: string) {
-    const r = await this.getLeadCadences.execute({ leadId });
+    const r = await this.getLeadCadencesDetail.execute({ leadId });
+    if (r.isLeft()) handleError(r);
+    return r.unwrap();
+  }
+
+  @Get("available-for-lead/:leadId")
+  async listAvailableForLead(@Param("leadId") leadId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.getAvailableCadencesForLead.execute({ leadId, requesterId: user.id });
+    if (r.isLeft()) handleError(r);
+    return r.unwrap();
+  }
+
+  @Post("lead/:leadId/reply")
+  async registerReply(
+    @Param("leadId") leadId: string,
+    @Body() body: { channel: string; notes?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const r = await this.registerLeadReply.execute({ leadId, requesterId: user.id, channel: body.channel, notes: body.notes });
     if (r.isLeft()) handleError(r);
     return r.unwrap();
   }
@@ -126,6 +151,16 @@ export class CadencesController {
   @Patch("lead-cadences/:leadCadenceId/cancel")
   async cancel(@Param("leadCadenceId") leadCadenceId: string, @CurrentUser() user: AuthenticatedUser) {
     const r = await this.cancelLeadCadence.execute({ leadCadenceId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+  }
+
+  @Patch("lead-cadences/:leadCadenceId/complete")
+  async complete(
+    @Param("leadCadenceId") leadCadenceId: string,
+    @Body() body: { disqualificationReason?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const r = await this.completeLeadCadence.execute({ leadCadenceId, requesterId: user.id, requesterRole: user.role ?? "sdr", disqualificationReason: body.disqualificationReason });
     if (r.isLeft()) handleError(r);
   }
 
@@ -176,6 +211,13 @@ export class CadencesController {
   async remove(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
     const r = await this.deleteCadence.execute({ id, requesterId: user.id, requesterRole: user.role ?? "sdr" });
     if (r.isLeft()) handleError(r);
+  }
+
+  @Patch(":cadenceId/cancel-all")
+  async cancelAll(@Param("cadenceId") cadenceId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.cancelAllActiveCadences.execute({ cadenceId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+    return r.unwrap();
   }
 
   @Patch(":id/publish")

@@ -2,14 +2,23 @@
 
 import { useState, useEffect } from "react";
 import { X, Loader2, Zap, Target, Calendar, ChevronDown, ChevronUp } from "lucide-react";
-import { getAvailableCadencesForLead } from "@/actions/lead-cadences";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { useApplyCadence } from "@/hooks/cadences/use-cadences";
 import {
   CADENCE_CHANNEL_LABELS,
   type CadenceChannel,
 } from "@/lib/validations/cadence";
 
-type AvailableCadence = Awaited<ReturnType<typeof getAvailableCadencesForLead>>[number];
+interface AvailableCadence {
+  id: string;
+  name: string;
+  slug: string;
+  durationDays: number;
+  icp?: { id: string; name: string } | null;
+  steps: Array<{ id: string; dayNumber: number; channel: string; subject: string }>;
+  _count: { steps: number };
+}
 
 type ApplyCadenceModalProps = {
   leadId: string;
@@ -18,6 +27,8 @@ type ApplyCadenceModalProps = {
 };
 
 export function ApplyCadenceModal({ leadId, onClose, onSuccess }: ApplyCadenceModalProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const applyMutation = useApplyCadence();
   const [cadences, setCadences] = useState<AvailableCadence[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +44,7 @@ export function ApplyCadenceModal({ leadId, onClose, onSuccess }: ApplyCadenceMo
   useEffect(() => {
     async function loadCadences() {
       try {
-        const data = await getAvailableCadencesForLead(leadId);
+        const data = await apiFetch<AvailableCadence[]>(`/cadences/available-for-lead/${leadId}`, token);
         setCadences(data);
         if (data.length === 1) {
           setSelectedCadenceId(data[0].id);

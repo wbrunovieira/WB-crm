@@ -19,7 +19,7 @@ export class PrismaLeadDuplicatesRepository extends LeadDuplicatesRepository {
 
     const rows = await this.prisma.lead.findMany({
       where: { ownerId: input.ownerId, OR: orConditions },
-      select: { id: true, businessName: true, companyRegistrationID: true, phone: true, email: true, address: true },
+      select: { id: true, businessName: true, companyRegistrationID: true, phone: true, email: true, address: true, city: true, state: true, isArchived: true, status: true },
     });
 
     return rows.map((r) => {
@@ -29,7 +29,12 @@ export class PrismaLeadDuplicatesRepository extends LeadDuplicatesRepository {
       if (input.email && r.email?.toLowerCase() === input.email.toLowerCase()) matched.push("email");
       if (input.name && r.businessName.toLowerCase().includes(input.name.toLowerCase())) matched.push("name");
       if (input.address && r.address?.toLowerCase().includes(input.address.toLowerCase())) matched.push("address");
-      return { leadId: r.id, businessName: r.businessName, matchedFields: matched, score: matched.length * 25 };
+      return {
+        leadId: r.id, businessName: r.businessName,
+        companyRegistrationID: r.companyRegistrationID, phone: r.phone, email: r.email,
+        city: r.city, state: r.state, isArchived: r.isArchived, status: r.status,
+        matchedFields: matched, score: matched.length * 25,
+      };
     }).sort((a, b) => b.score - a.score);
   }
 }

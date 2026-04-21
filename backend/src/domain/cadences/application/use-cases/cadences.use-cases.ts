@@ -3,7 +3,7 @@ import { Either, left, right } from "@/core/either";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 import { Cadence } from "../../enterprise/entities/cadence";
 import { CadenceStep } from "../../enterprise/entities/cadence-step";
-import { CadencesRepository, LeadCadenceRecord, GeneratedActivity } from "../repositories/cadences.repository";
+import { CadencesRepository, LeadCadenceRecord, LeadCadenceDetail, AvailableCadenceForLead, GeneratedActivity } from "../repositories/cadences.repository";
 
 export class CadenceNotFoundError extends Error { name = "CadenceNotFoundError"; }
 export class CadenceForbiddenError extends Error { name = "CadenceForbiddenError"; }
@@ -413,5 +413,66 @@ export class BulkApplyCadenceUseCase {
     }
 
     return right({ applied, failed });
+  }
+}
+
+@Injectable()
+export class GetLeadCadencesDetailUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { leadId: string }): Promise<Either<never, LeadCadenceDetail[]>> {
+    const records = await this.repo.getLeadCadencesDetail(input.leadId);
+    return right(records);
+  }
+}
+
+@Injectable()
+export class GetAvailableCadencesForLeadUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { leadId: string; requesterId: string }): Promise<Either<never, AvailableCadenceForLead[]>> {
+    const cadences = await this.repo.getAvailableCadencesForLead(input.leadId, input.requesterId);
+    return right(cadences);
+  }
+}
+
+@Injectable()
+export class CompleteLeadCadenceUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { leadCadenceId: string; requesterId: string; requesterRole: string; disqualificationReason?: string }): Promise<Either<Error, void>> {
+    const lc = await this.repo.findLeadCadenceById(input.leadCadenceId);
+    if (!lc) return left(new LeadCadenceNotFoundError("Cadência do lead não encontrada"));
+    if (input.requesterRole !== "admin" && lc.ownerId !== input.requesterId) {
+      return left(new CadenceForbiddenError("Acesso negado"));
+    }
+    await this.repo.completeLeadCadence(input.leadCadenceId, input.disqualificationReason);
+    return right(undefined);
+  }
+}
+
+@Injectable()
+export class CancelAllActiveCadencesUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { cadenceId: string; requesterId: string; requesterRole: string }): Promise<Either<Error, { cancelledCount: number; skippedActivitiesCount: number }>> {
+    const cadence = await this.repo.findById(input.cadenceId);
+    if (!cadence) return left(new CadenceNotFoundError("Cadência não encontrada"));
+    if (input.requesterRole !== "admin" && cadence.ownerId !== input.requesterId) {
+      return left(new CadenceForbiddenError("Acesso negado"));
+    }
+    const result = await this.repo.cancelAllActiveCadencesByTemplate(input.cadenceId);
+    if (result.cancelledIds.length === 0) return left(new Error("Nenhuma cadência ativa para cancelar"));
+    return right({ cancelledCount: result.cancelledIds.length, skippedActivitiesCount: result.skippedActivitiesCount });
+  }
+}
+
+@Injectable()
+export class RegisterLeadReplyUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { leadId: string; requesterId: string; channel: string; notes?: string }): Promise<Either<never, { activityId: string; cancelledCadences: number; skippedActivities: number }>> {
+    const result = await this.repo.registerLeadReply(input.leadId, input.requesterId, input.channel, input.notes);
+    return right(result);
   }
 }

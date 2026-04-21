@@ -7,8 +7,10 @@ import {
   PublishCadenceUseCase, UnpublishCadenceUseCase,
   CreateCadenceStepUseCase, UpdateCadenceStepUseCase, DeleteCadenceStepUseCase,
   ReorderCadenceStepsUseCase, GetCadenceStepsUseCase,
-  ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase,
+  ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase, GetLeadCadencesDetailUseCase,
   PauseLeadCadenceUseCase, ResumeLeadCadenceUseCase, CancelLeadCadenceUseCase,
+  CompleteLeadCadenceUseCase, CancelAllActiveCadencesUseCase,
+  GetAvailableCadencesForLeadUseCase, RegisterLeadReplyUseCase,
   GetCadenceLeadCountUseCase, BulkApplyCadenceUseCase,
 } from "./application/use-cases/cadences.use-cases";
 import { PrismaCadencesRepository } from "./infra/repositories/prisma-cadences.repository";
@@ -23,8 +25,10 @@ import { CadencesController } from "./infra/controllers/cadences.controller";
     PublishCadenceUseCase, UnpublishCadenceUseCase,
     CreateCadenceStepUseCase, UpdateCadenceStepUseCase, DeleteCadenceStepUseCase,
     ReorderCadenceStepsUseCase, GetCadenceStepsUseCase,
-    ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase,
+    ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase, GetLeadCadencesDetailUseCase,
     PauseLeadCadenceUseCase, ResumeLeadCadenceUseCase, CancelLeadCadenceUseCase,
+    CompleteLeadCadenceUseCase, CancelAllActiveCadencesUseCase,
+    GetAvailableCadencesForLeadUseCase, RegisterLeadReplyUseCase,
     GetCadenceLeadCountUseCase,
     BulkApplyCadenceUseCase,
     { provide: CadencesRepository, useClass: PrismaCadencesRepository },

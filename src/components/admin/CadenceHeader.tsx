@@ -5,7 +5,8 @@ import Link from "next/link";
 import { ArrowLeft, Pencil, XCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { CadenceEditModal } from "./CadenceEditModal";
-import { cancelAllActiveCadences } from "@/actions/lead-cadences";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { cadenceKeys } from "@/hooks/cadences/use-cadences";
 import { CADENCE_STATUS_LABELS, type CadenceStatus } from "@/lib/validations/cadence";
@@ -43,6 +44,8 @@ const statusColors: Record<string, string> = {
 };
 
 export function CadenceHeader({ cadence, icps }: CadenceHeaderProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const queryClient = useQueryClient();
   const [showEditModal, setShowEditModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -56,7 +59,7 @@ export function CadenceHeader({ cadence, icps }: CadenceHeaderProps) {
   const handleCancelAll = async () => {
     setCancelling(true);
     try {
-      const result = await cancelAllActiveCadences(cadence.id);
+      const result = await apiFetch<{ cancelledCount: number; skippedActivitiesCount: number }>(`/cadences/${cadence.id}/cancel-all`, token, { method: "PATCH" });
       toast.success(
         `${result.cancelledCount} cadência(s) cancelada(s). ${result.skippedActivitiesCount} atividade(s) pendente(s) pulada(s).`
       );

@@ -13,7 +13,6 @@ import { formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
 import { useToggleActivityCompleted, useMarkActivityFailed, useMarkActivitySkipped, useRevertActivityOutcome, useUpdateActivity } from "@/hooks/activities/use-activities";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
-import { registerLeadReply } from "@/actions/lead-cadences";
 import { toast } from "sonner";
 import {
   DndContext,
@@ -711,10 +710,11 @@ export function LeadActivitiesList({
   const handleRegisterReply = async () => {
     setReplyLoading(true);
     try {
-      const result = await registerLeadReply(leadId, {
-        channel: replyChannel,
-        notes: replyNotes || undefined,
-      });
+      const result = await apiFetch<{ activityId: string; cancelledCadences: number; skippedActivities: number }>(
+        `/cadences/lead/${leadId}/reply`,
+        token,
+        { method: "POST", body: JSON.stringify({ channel: replyChannel, notes: replyNotes || undefined }) },
+      );
       const msgs: string[] = ["Resposta registrada!"];
       if (result.cancelledCadences > 0) {
         msgs.push(`${result.cancelledCadences} cadência(s) cancelada(s)`);

@@ -13,10 +13,8 @@ import {
   Calendar,
   Target,
 } from "lucide-react";
-import {
-  getLeadCadences,
-  completeLeadCadence,
-} from "@/actions/lead-cadences";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import {
   usePauseLeadCadence,
   useResumeLeadCadence,
@@ -34,7 +32,24 @@ import {
 } from "@/lib/validations/cadence";
 import { formatDate } from "@/lib/utils";
 
-type LeadCadence = Awaited<ReturnType<typeof getLeadCadences>>[number];
+interface LeadCadenceActivity {
+  id: string;
+  scheduledDate: string;
+  cadenceStep: { dayNumber: number; channel: string; subject: string };
+  activity: { id: string; completed: boolean; subject: string; dueDate: string };
+}
+interface LeadCadence {
+  id: string;
+  leadId: string;
+  cadenceId: string;
+  status: string;
+  startDate: string;
+  cadence: { name: string; slug: string; durationDays: number; icp?: { id: string; name: string } | null };
+  activities: LeadCadenceActivity[];
+  progress: number;
+  completedSteps: number;
+  totalSteps: number;
+}
 
 type LeadCadenceSectionProps = {
   leadId: string;
@@ -43,6 +58,8 @@ type LeadCadenceSectionProps = {
 
 export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceSectionProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const pauseMutation = usePauseLeadCadence();
   const resumeMutation = useResumeLeadCadence();
   const cancelMutation = useCancelLeadCadence();
@@ -58,7 +75,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
   useEffect(() => {
     async function loadCadences() {
       try {
-        const data = await getLeadCadences(leadId);
+        const data = await apiFetch<LeadCadence[]>(`/cadences/lead/${leadId}`, token);
         setCadences(data);
       } catch {
         console.error("Erro ao carregar cadências");
@@ -140,7 +157,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
     if (!completeTarget) return;
     setCompleteLoading(true);
     try {
-      await completeLeadCadence(completeTarget, reason);
+      await apiFetch(`/cadences/lead-cadences/${completeTarget}/complete`, token, { method: "PATCH", body: JSON.stringify({ disqualificationReason: reason }) });
       setCompleteTarget(null);
       const data = await getLeadCadences(leadId);
       setCadences(data);

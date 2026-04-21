@@ -29,13 +29,19 @@
  * └──────────────────────────────────────────────────────────────────────────┘
  */
 
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
-import { createLeadWithContacts, type LeadDuplicates } from "@/actions/leads";
+import { backendFetch } from "@/lib/backend/client";
 import type { ParsedRow } from "@/lib/import/parse-file";
 import type { LeadFormData } from "@/lib/validations/lead";
 import { mapRowToLeadData, type ColumnMapping } from "@/lib/import/lead-mapping";
 export type { ColumnMapping };
+
+export interface LeadDuplicates {
+  cnpj: Array<{ leadId: string; businessName: string }>;
+  name: Array<{ leadId: string; businessName: string }>;
+  phone: Array<{ leadId: string; businessName: string }>;
+  email: Array<{ leadId: string; businessName: string }>;
+  address: Array<{ leadId: string; businessName: string }>;
+}
 
 // ---------------------------------------------------------------------------
 // Tipos públicos
@@ -80,10 +86,6 @@ export interface ImportResult {
 // ---------------------------------------------------------------------------
 
 export async function importLeads(input: ImportLeadsInput): Promise<ImportResult> {
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
-    return emptyResult({ error: "Não autorizado" });
-  }
 
   const { rows, mapping, skipDuplicateCheck = false, defaultSource } = input;
 
@@ -128,24 +130,26 @@ export async function importLeads(input: ImportLeadsInput): Promise<ImportResult
       continue;
     }
 
-    // 4. Chama createLeadWithContacts (inclui validação Zod + detecção de duplicidade)
+    // 4. Verifica duplicatas (quando não ignoradas) e cria o lead
     try {
-      const createResult = await createLeadWithContacts(
-        leadData as LeadFormData,
-        [],
-        { skipDuplicateCheck }
-      );
-
-      if (createResult.status === "duplicate_found") {
-        result.duplicates++;
-        result.duplicateDetails.push({
-          rowIndex: i,
-          row,
-          matches: createResult.duplicates,
+      if (!skipDuplicateCheck) {
+        const dups = await backendFetch<LeadDuplicates>("/leads/check-duplicates", {
+          method: "POST",
+          body: JSON.stringify({ name: leadData.businessName, cnpj: leadData.companyRegistrationID, phone: leadData.phone, email: leadData.email }),
         });
-      } else {
-        result.created++;
+        const hasDups = dups.cnpj.length > 0 || dups.name.length > 0 || dups.phone.length > 0 || dups.email.length > 0 || dups.address.length > 0;
+        if (hasDups) {
+          result.duplicates++;
+          result.duplicateDetails.push({ rowIndex: i, row, matches: dups });
+          continue;
+        }
       }
+
+      await backendFetch("/leads", {
+        method: "POST",
+        body: JSON.stringify(leadData),
+      });
+      result.created++;
     } catch (err) {
       result.errors++;
       result.errorDetails.push({

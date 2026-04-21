@@ -3,7 +3,8 @@
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
-import { checkLeadDuplicates, type LeadDuplicates, type LeadSummary } from "@/actions/leads";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { useCreateLead, useUpdateLead, type CreateLeadPayload } from "@/hooks/leads/use-leads";
 import { normalizeCNPJ, validateCNPJ } from "@/lib/validations/cnpj";
 import { Trash2, Plus } from "lucide-react";
@@ -17,6 +18,25 @@ import { brazilianStates } from "@/lib/lists/brazilian-states";
 import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 import { PresenceSelectField } from "@/components/leads/PresenceSelectField";
 import { StarRatingInput } from "@/components/leads/StarRatingInput";
+
+interface LeadSummary {
+  leadId: string;
+  businessName: string;
+  companyRegistrationID: string | null;
+  phone: string | null;
+  email: string | null;
+  city: string | null;
+  state: string | null;
+  isArchived: boolean;
+  status: string;
+}
+interface LeadDuplicates {
+  cnpj: LeadSummary[];
+  name: LeadSummary[];
+  phone: LeadSummary[];
+  email: LeadSummary[];
+  address: LeadSummary[];
+}
 
 type Lead = {
   id?: string;
@@ -98,6 +118,8 @@ const emptyContact: ContactFormData = {
 
 export function LeadForm({ lead }: LeadFormProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const createLead = useCreateLead();
   const updateLead = useUpdateLead();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -255,12 +277,14 @@ export function LeadForm({ lead }: LeadFormProps) {
         router.push(`/leads/${lead.id}`);
       } else {
         // CREATE — verificar duplicatas antes
-        const dupResult = await checkLeadDuplicates({
-          businessName: data.businessName as string,
-          companyRegistrationID: data.companyRegistrationID,
-          phone: data.phone,
-          whatsapp: data.whatsapp,
-          email: data.email,
+        const dupResult = await apiFetch<LeadDuplicates>("/leads/check-duplicates", token, {
+          method: "POST",
+          body: JSON.stringify({
+            name: data.businessName as string,
+            cnpj: data.companyRegistrationID,
+            phone: data.phone,
+            email: data.email,
+          }),
         });
 
         const foundDuplicates = dupResult.cnpj.length > 0 || dupResult.name.length > 0 || dupResult.phone.length > 0 || dupResult.email.length > 0 || dupResult.address.length > 0;
@@ -1266,10 +1290,10 @@ function DuplicateWarningPanel({
             </p>
             <ul className="space-y-1">
               {duplicates[category].map((lead: LeadSummary) => (
-                <li key={lead.id} className="flex items-center gap-2 text-sm">
+                <li key={lead.leadId} className="flex items-center gap-2 text-sm">
                   <span className={`inline-block h-2 w-2 rounded-full flex-shrink-0 ${lead.isArchived ? "bg-gray-400" : "bg-green-400"}`} />
                   <Link
-                    href={`/leads/${lead.id}`}
+                    href={`/leads/${lead.leadId}`}
                     target="_blank"
                     className="text-yellow-200 hover:underline font-medium"
                   >

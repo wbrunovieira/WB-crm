@@ -3,6 +3,8 @@ import { PrismaService } from "@/infra/database/prisma.service";
 import {
   CadencesRepository,
   LeadCadenceRecord,
+  LeadCadenceDetail,
+  AvailableCadenceForLead,
   ApplyCadenceInput,
   GeneratedActivity,
 } from "../../application/repositories/cadences.repository";
@@ -227,5 +229,184 @@ export class PrismaCadencesRepository extends CadencesRepository {
 
   async countActiveLeads(cadenceId: string): Promise<number> {
     return this.prisma.leadCadence.count({ where: { cadenceId, status: "active" } });
+  }
+
+  async getLeadCadencesDetail(leadId: string): Promise<LeadCadenceDetail[]> {
+    const rows = await this.prisma.leadCadence.findMany({
+      where: { leadId },
+      orderBy: { createdAt: "desc" },
+      include: {
+        cadence: {
+          select: { name: true, slug: true, durationDays: true, icp: { select: { id: true, name: true } } },
+        },
+        activities: {
+          include: {
+            cadenceStep: { select: { dayNumber: true, channel: true, subject: true } },
+            activity: { select: { id: true, completed: true, subject: true, dueDate: true, failedAt: true, skippedAt: true } },
+          },
+          orderBy: { scheduledDate: "asc" },
+        },
+      },
+    });
+
+    return rows.map((row) => {
+      const total = row.activities.length;
+      const completed = row.activities.filter((a) => a.activity.completed).length;
+      return {
+        id: row.id,
+        leadId: row.leadId,
+        cadenceId: row.cadenceId,
+        status: row.status,
+        startDate: row.startDate,
+        currentStep: row.currentStep,
+        notes: row.notes ?? undefined,
+        ownerId: row.ownerId,
+        pausedAt: row.pausedAt ?? undefined,
+        completedAt: row.completedAt ?? undefined,
+        cancelledAt: row.cancelledAt ?? undefined,
+        cadence: {
+          name: row.cadence.name,
+          slug: row.cadence.slug,
+          durationDays: row.cadence.durationDays,
+          icp: row.cadence.icp ?? null,
+        },
+        activities: row.activities.map((a) => ({
+          id: a.id,
+          scheduledDate: a.scheduledDate,
+          cadenceStep: a.cadenceStep,
+          activity: { id: a.activity.id, completed: a.activity.completed, subject: a.activity.subject, dueDate: a.activity.dueDate, failedAt: a.activity.failedAt, skippedAt: a.activity.skippedAt },
+        })),
+        totalSteps: total,
+        completedSteps: completed,
+        progress: total > 0 ? Math.round((completed / total) * 100) : 0,
+      };
+    });
+  }
+
+  async getAvailableCadencesForLead(leadId: string, ownerId: string): Promise<AvailableCadenceForLead[]> {
+    const lead = await this.prisma.lead.findUnique({
+      where: { id: leadId },
+      include: {
+        icps: { select: { icpId: true } },
+        leadCadences: { select: { cadenceId: true } },
+      },
+    });
+    if (!lead) return [];
+
+    const linkedICPIds = lead.icps.map((i) => i.icpId);
+    const appliedCadenceIds = lead.leadCadences.map((lc) => lc.cadenceId);
+
+    const cadences = await this.prisma.cadence.findMany({
+      where: {
+        ownerId,
+        status: "active",
+        id: appliedCadenceIds.length > 0 ? { notIn: appliedCadenceIds } : undefined,
+        OR: [
+          { icpId: null },
+          { icpId: { in: linkedICPIds } },
+        ],
+      },
+      include: {
+        icp: { select: { id: true, name: true } },
+        steps: { orderBy: [{ dayNumber: "asc" }, { order: "asc" }], select: { id: true, dayNumber: true, channel: true, subject: true } },
+        _count: { select: { steps: true } },
+      },
+      orderBy: { name: "asc" },
+    });
+
+    return cadences.map((c) => ({
+      id: c.id,
+      name: c.name,
+      slug: c.slug,
+      durationDays: c.durationDays,
+      icp: c.icp ?? null,
+      steps: c.steps,
+      _count: { steps: c._count.steps },
+    }));
+  }
+
+  async completeLeadCadence(id: string, disqualificationReason?: string): Promise<void> {
+    await this.prisma.leadCadence.update({
+      where: { id },
+      data: {
+        status: "completed",
+        completedAt: new Date(),
+        ...(disqualificationReason ? { disqualificationReason } : {}),
+      },
+    });
+  }
+
+  async cancelAllActiveCadencesByTemplate(cadenceId: string): Promise<{ cancelledIds: string[]; skippedActivitiesCount: number }> {
+    const activeLeadCadences = await this.prisma.leadCadence.findMany({
+      where: { cadenceId, status: { in: ["active", "paused"] } },
+    });
+
+    if (activeLeadCadences.length === 0) return { cancelledIds: [], skippedActivitiesCount: 0 };
+
+    let skippedActivitiesCount = 0;
+    const now = new Date();
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const lc of activeLeadCadences) {
+        const cadenceActivities = await tx.leadCadenceActivity.findMany({
+          where: { leadCadenceId: lc.id },
+          include: { activity: true },
+        });
+        for (const ca of cadenceActivities) {
+          if (!ca.activity.completed && !ca.activity.failedAt && !ca.activity.skippedAt) {
+            await tx.activity.update({ where: { id: ca.activity.id }, data: { skippedAt: now, skipReason: "Cadência cancelada" } });
+            skippedActivitiesCount++;
+          }
+        }
+        await tx.leadCadence.update({ where: { id: lc.id }, data: { status: "cancelled", cancelledAt: now } });
+      }
+    });
+
+    return { cancelledIds: activeLeadCadences.map((lc) => lc.id), skippedActivitiesCount };
+  }
+
+  async registerLeadReply(leadId: string, ownerId: string, channel: string, notes?: string): Promise<{ activityId: string; cancelledCadences: number; skippedActivities: number }> {
+    const channelLabels: Record<string, string> = {
+      email: "E-mail", whatsapp: "WhatsApp", linkedin: "LinkedIn",
+      call: "Ligação", instagram: "Instagram", meeting: "Reunião", other: "Outro canal",
+    };
+    const channelLabel = channelLabels[channel] || channel;
+    const now = new Date();
+    let activityId = "";
+    let cancelledCadences = 0;
+    let skippedActivities = 0;
+
+    await this.prisma.$transaction(async (tx) => {
+      const replyActivity = await tx.activity.create({
+        data: {
+          type: channel === "other" ? "task" : channel,
+          subject: `Resposta recebida via ${channelLabel}`,
+          description: notes ?? null,
+          completed: true,
+          leadId,
+          ownerId,
+          dueDate: now,
+        },
+      });
+      activityId = replyActivity.id;
+
+      const activeCadences = await tx.leadCadence.findMany({
+        where: { leadId, status: { in: ["active", "paused"] } },
+        include: { activities: { include: { activity: true } } },
+      });
+
+      for (const lc of activeCadences) {
+        for (const ca of lc.activities) {
+          if (!ca.activity.completed && !ca.activity.failedAt && !ca.activity.skippedAt) {
+            await tx.activity.update({ where: { id: ca.activity.id }, data: { skippedAt: now, skipReason: `Lead respondeu via ${channelLabel}` } });
+            skippedActivities++;
+          }
+        }
+        await tx.leadCadence.update({ where: { id: lc.id }, data: { status: "cancelled", cancelledAt: now, notes: `Cancelada automaticamente - lead respondeu via ${channelLabel}` } });
+        cancelledCadences++;
+      }
+    });
+
+    return { activityId, cancelledCadences, skippedActivities };
   }
 }
