@@ -1,48 +1,34 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Eye, EyeOff, Trash2, Zap, Target, Users, ChevronRight } from "lucide-react";
-import { deleteCadence, updateCadence } from "@/actions/cadences";
+import { Eye, EyeOff, Trash2, Zap, ChevronRight, Loader2 } from "lucide-react";
+import {
+  useCadences,
+  usePublishCadence,
+  useUnpublishCadence,
+  useDeleteCadence,
+} from "@/hooks/cadences/use-cadences";
 import { CADENCE_STATUS_LABELS, type CadenceStatus } from "@/lib/validations/cadence";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
-type Cadence = {
-  id: string;
-  name: string;
-  slug: string;
-  description: string | null;
-  objective: string | null;
-  durationDays: number;
-  status: string;
-  icp: {
-    id: string;
-    name: string;
-    slug: string;
-  } | null;
-  _count: {
-    steps: number;
-    leadCadences: number;
-  };
-};
-
-type CadencesListProps = {
-  cadences: Cadence[];
-};
-
-export function CadencesList({ cadences }: CadencesListProps) {
-  const router = useRouter();
+export function CadencesList() {
+  const { data: cadences = [], isLoading } = useCadences();
   const [loading, setLoading] = useState<string | null>(null);
+  const publishMutation = usePublishCadence();
+  const unpublishMutation = useUnpublishCadence();
+  const deleteMutation = useDeleteCadence();
   const { confirm, dialogProps } = useConfirmDialog();
 
-  const handleToggleStatus = async (cadence: Cadence) => {
-    setLoading(cadence.id);
+  const handleToggleStatus = async (id: string, currentStatus: string) => {
+    setLoading(id);
     try {
-      const newStatus = cadence.status === "active" ? "archived" : "active";
-      await updateCadence(cadence.id, { status: newStatus });
-      router.refresh();
+      if (currentStatus === "active") {
+        await unpublishMutation.mutateAsync(id);
+      } else {
+        await publishMutation.mutateAsync(id);
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao atualizar status");
     } finally {
@@ -50,19 +36,18 @@ export function CadencesList({ cadences }: CadencesListProps) {
     }
   };
 
-  const handleDelete = async (cadence: Cadence) => {
+  const handleDelete = async (id: string, name: string) => {
     const confirmed = await confirm({
       title: "Confirmar",
-      message: `Excluir cadência "${cadence.name}"?`,
+      message: `Excluir cadência "${name}"?`,
       confirmLabel: "Excluir",
       variant: "danger",
     });
     if (!confirmed) return;
 
-    setLoading(cadence.id);
+    setLoading(id);
     try {
-      await deleteCadence(cadence.id);
-      router.refresh();
+      await deleteMutation.mutateAsync(id);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao excluir");
     } finally {
@@ -82,6 +67,14 @@ export function CadencesList({ cadences }: CadencesListProps) {
       </span>
     );
   };
+
+  if (isLoading) {
+    return (
+      <div className="col-span-2 flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (cadences.length === 0) {
     return (
@@ -128,26 +121,7 @@ export function CadencesList({ cadences }: CadencesListProps) {
                 )}
 
                 <div className="mt-2 flex flex-wrap items-center gap-4 text-sm text-gray-500 transition-colors duration-200 ease-in-out group-hover:text-white/80">
-                  <span className={`flex items-center gap-1 ${cadence._count.steps === 0 ? "text-amber-600 font-medium group-hover:text-amber-200" : ""}`}>
-                    <Zap className="h-4 w-4" />
-                    {cadence._count.steps} etapas
-                    {cadence._count.steps === 0 && (
-                      <span className="text-xs">(clique para adicionar)</span>
-                    )}
-                  </span>
                   <span>{cadence.durationDays} dias</span>
-                  {cadence.icp && (
-                    <span className="flex items-center gap-1">
-                      <Target className="h-4 w-4" />
-                      {cadence.icp.name}
-                    </span>
-                  )}
-                  {cadence._count.leadCadences > 0 && (
-                    <span className="flex items-center gap-1">
-                      <Users className="h-4 w-4" />
-                      {cadence._count.leadCadences} leads
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -156,11 +130,11 @@ export function CadencesList({ cadences }: CadencesListProps) {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    handleToggleStatus(cadence);
+                    handleToggleStatus(cadence.id, cadence.status);
                   }}
                   disabled={loading === cadence.id}
                   className="rounded-md p-2 text-gray-400 hover:bg-white/20 hover:text-gray-600 group-hover:text-white/70 group-hover:hover:text-white group-hover:hover:bg-white/20 disabled:opacity-50 transition-colors duration-200"
-                  title={cadence.status === "active" ? "Arquivar" : "Ativar"}
+                  title={cadence.status === "active" ? "Desativar" : "Ativar"}
                 >
                   {cadence.status === "active" ? (
                     <EyeOff className="h-4 w-4" />
@@ -172,7 +146,7 @@ export function CadencesList({ cadences }: CadencesListProps) {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    handleDelete(cadence);
+                    handleDelete(cadence.id, cadence.name);
                   }}
                   disabled={loading === cadence.id}
                   className="rounded-md p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 group-hover:text-white/70 group-hover:hover:text-red-200 group-hover:hover:bg-red-500/30 disabled:opacity-50 transition-colors duration-200"

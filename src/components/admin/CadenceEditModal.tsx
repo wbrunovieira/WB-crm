@@ -1,10 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, X, Pencil } from "lucide-react";
-import { updateCadence, generateUniqueCadenceSlug } from "@/actions/cadences";
+import { useUpdateCadence, usePublishCadence, useUnpublishCadence } from "@/hooks/cadences/use-cadences";
 import { CADENCE_STATUS_LABELS, type CadenceStatus } from "@/lib/validations/cadence";
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .substring(0, 45);
+}
 
 type ICP = {
   id: string;
@@ -30,7 +39,9 @@ type CadenceEditModalProps = {
 };
 
 export function CadenceEditModal({ cadence, icps, onClose, onSuccess }: CadenceEditModalProps) {
-  const router = useRouter();
+  const updateMutation = useUpdateCadence();
+  const publishMutation = usePublishCadence();
+  const unpublishMutation = useUnpublishCadence();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,23 +58,26 @@ export function CadenceEditModal({ cadence, icps, onClose, onSuccess }: CadenceE
     setError(null);
 
     try {
-      // Generate new slug if name changed
-      let slug = cadence.slug;
-      if (name !== cadence.name) {
-        slug = await generateUniqueCadenceSlug(name);
-      }
+      const slug = name !== cadence.name ? slugify(name) : cadence.slug;
 
-      await updateCadence(cadence.id, {
+      await updateMutation.mutateAsync({
+        id: cadence.id,
         name,
         slug,
         description: description || null,
         objective: objective || null,
         durationDays,
         icpId: icpId || null,
-        status,
       });
 
-      router.refresh();
+      if (status !== cadence.status) {
+        if (status === "active") {
+          await publishMutation.mutateAsync(cadence.id);
+        } else {
+          await unpublishMutation.mutateAsync(cadence.id);
+        }
+      }
+
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao atualizar cadência");

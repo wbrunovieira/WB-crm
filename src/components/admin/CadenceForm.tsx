@@ -1,11 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, AlertCircle, CheckCircle } from "lucide-react";
-import { createCadence, generateUniqueCadenceSlug } from "@/actions/cadences";
+import { useCreateCadence } from "@/hooks/cadences/use-cadences";
 import { cadenceSchema, CADENCE_STATUS_LABELS, type CadenceStatus } from "@/lib/validations/cadence";
 import { ZodError } from "zod";
+
+function slugify(name: string): string {
+  return name
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .substring(0, 45);
+}
 
 type ICP = {
   id: string;
@@ -31,7 +40,7 @@ const LIMITS = {
 };
 
 export function CadenceForm({ icps }: CadenceFormProps) {
-  const router = useRouter();
+  const createMutation = useCreateCadence();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -161,9 +170,7 @@ export function CadenceForm({ icps }: CadenceFormProps) {
     setLoading(true);
 
     try {
-      // Validate with Zod schema on frontend
-      const slug = await generateUniqueCadenceSlug(name);
-
+      const slug = slugify(name);
       const data = {
         name,
         slug,
@@ -174,13 +181,10 @@ export function CadenceForm({ icps }: CadenceFormProps) {
         status,
       };
 
-      // Frontend schema validation
       cadenceSchema.parse(data);
 
-      // Send to backend
-      await createCadence(data);
+      await createMutation.mutateAsync(data);
 
-      // Success
       setSuccess(true);
       setName("");
       setDescription("");
@@ -192,8 +196,6 @@ export function CadenceForm({ icps }: CadenceFormProps) {
 
       // Hide success message after 3 seconds
       setTimeout(() => setSuccess(false), 3000);
-
-      router.refresh();
     } catch (err) {
       setError(parseBackendError(err));
     } finally {

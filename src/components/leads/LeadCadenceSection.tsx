@@ -15,11 +15,13 @@ import {
 } from "lucide-react";
 import {
   getLeadCadences,
-  pauseLeadCadence,
-  resumeLeadCadence,
-  cancelLeadCadence,
   completeLeadCadence,
 } from "@/actions/lead-cadences";
+import {
+  usePauseLeadCadence,
+  useResumeLeadCadence,
+  useCancelLeadCadence,
+} from "@/hooks/cadences/use-cadences";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ApplyCadenceModal } from "./ApplyCadenceModal";
@@ -41,6 +43,9 @@ type LeadCadenceSectionProps = {
 
 export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceSectionProps) {
   const router = useRouter();
+  const pauseMutation = usePauseLeadCadence();
+  const resumeMutation = useResumeLeadCadence();
+  const cancelMutation = useCancelLeadCadence();
   const [cadences, setCadences] = useState<LeadCadence[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
@@ -74,7 +79,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
     if (!confirmed) return;
     setActionLoading(id);
     try {
-      await pauseLeadCadence(id);
+      await pauseMutation.mutateAsync({ leadCadenceId: id, leadId });
       const data = await getLeadCadences(leadId);
       setCadences(data);
       router.refresh();
@@ -95,7 +100,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
     if (!confirmed) return;
     setActionLoading(id);
     try {
-      await resumeLeadCadence(id);
+      await resumeMutation.mutateAsync({ leadCadenceId: id, leadId });
       const data = await getLeadCadences(leadId);
       setCadences(data);
       router.refresh();
@@ -116,7 +121,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
     if (!confirmed) return;
     setActionLoading(id);
     try {
-      await cancelLeadCadence(id);
+      await cancelMutation.mutateAsync({ leadCadenceId: id, leadId });
       const data = await getLeadCadences(leadId);
       setCadences(data);
       router.refresh();

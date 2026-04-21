@@ -1,9 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { createCadenceStep } from "@/actions/cadence-steps";
+import { useCreateCadenceStep } from "@/hooks/cadences/use-cadences";
 import { CADENCE_CHANNEL_LABELS, type CadenceChannel } from "@/lib/validations/cadence";
 
 type CadenceStepFormProps = {
@@ -12,7 +11,7 @@ type CadenceStepFormProps = {
 };
 
 export function CadenceStepForm({ cadenceId, maxDay = 1 }: CadenceStepFormProps) {
-  const router = useRouter();
+  const createMutation = useCreateCadenceStep();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,7 +26,7 @@ export function CadenceStepForm({ cadenceId, maxDay = 1 }: CadenceStepFormProps)
     setError(null);
 
     try {
-      await createCadenceStep({
+      await createMutation.mutateAsync({
         cadenceId,
         dayNumber,
         channel,
@@ -36,12 +35,9 @@ export function CadenceStepForm({ cadenceId, maxDay = 1 }: CadenceStepFormProps)
         order: 0,
       });
 
-      // Reset form, keeping dayNumber for convenience
       setSubject("");
       setDescription("");
-      setDayNumber(dayNumber + 2); // Suggest next day
-
-      router.refresh();
+      setDayNumber(dayNumber + 2);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao criar etapa");
     } finally {

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Pencil, XCircle, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { CadenceEditModal } from "./CadenceEditModal";
 import { cancelAllActiveCadences } from "@/actions/lead-cadences";
+import { useQueryClient } from "@tanstack/react-query";
+import { cadenceKeys } from "@/hooks/cadences/use-cadences";
 import { CADENCE_STATUS_LABELS, type CadenceStatus } from "@/lib/validations/cadence";
 
 type ICP = {
@@ -42,14 +43,14 @@ const statusColors: Record<string, string> = {
 };
 
 export function CadenceHeader({ cadence, icps }: CadenceHeaderProps) {
-  const router = useRouter();
+  const queryClient = useQueryClient();
   const [showEditModal, setShowEditModal] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleEditSuccess = () => {
     setShowEditModal(false);
-    router.refresh();
+    queryClient.invalidateQueries({ queryKey: cadenceKeys.all });
   };
 
   const handleCancelAll = async () => {
@@ -60,7 +61,7 @@ export function CadenceHeader({ cadence, icps }: CadenceHeaderProps) {
         `${result.cancelledCount} cadência(s) cancelada(s). ${result.skippedActivitiesCount} atividade(s) pendente(s) pulada(s).`
       );
       setShowConfirm(false);
-      router.refresh();
+      queryClient.invalidateQueries({ queryKey: cadenceKeys.all });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao cancelar cadências");
     } finally {

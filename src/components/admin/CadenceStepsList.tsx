@@ -1,29 +1,24 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { Trash2, Zap, Pencil, Copy, Check } from "lucide-react";
-import { deleteCadenceStep } from "@/actions/cadence-steps";
+import { Trash2, Zap, Pencil, Copy, Check, Loader2 } from "lucide-react";
+import {
+  useCadenceSteps,
+  useDeleteCadenceStep,
+  type CadenceStep,
+} from "@/hooks/cadences/use-cadences";
 import { CADENCE_CHANNEL_LABELS, type CadenceChannel } from "@/lib/validations/cadence";
 import { CadenceStepEditModal } from "./CadenceStepEditModal";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 
-type CadenceStep = {
-  id: string;
-  dayNumber: number;
-  channel: string;
-  subject: string;
-  description: string | null;
-  order: number;
-};
-
 type CadenceStepsListProps = {
-  steps: CadenceStep[];
+  cadenceId: string;
 };
 
-export function CadenceStepsList({ steps }: CadenceStepsListProps) {
-  const router = useRouter();
+export function CadenceStepsList({ cadenceId }: CadenceStepsListProps) {
+  const { data: steps = [], isLoading } = useCadenceSteps(cadenceId);
+  const deleteMutation = useDeleteCadenceStep();
   const [loading, setLoading] = useState<string | null>(null);
   const [editingStep, setEditingStep] = useState<CadenceStep | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -47,8 +42,7 @@ export function CadenceStepsList({ steps }: CadenceStepsListProps) {
 
     setLoading(step.id);
     try {
-      await deleteCadenceStep(step.id);
-      router.refresh();
+      await deleteMutation.mutateAsync({ stepId: step.id, cadenceId });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Erro ao excluir");
     } finally {
@@ -60,54 +54,31 @@ export function CadenceStepsList({ steps }: CadenceStepsListProps) {
     return CADENCE_CHANNEL_LABELS[channel as CadenceChannel] || { label: channel, icon: "📌" };
   };
 
-  // Returns border accent color and badge styles for each channel
   const getChannelStyles = (channel: string) => {
     const styles: Record<string, { border: string; badge: string; badgeText: string }> = {
-      email: {
-        border: "border-l-[#792990]",
-        badge: "bg-[#792990]/10",
-        badgeText: "text-[#792990]",
-      },
-      linkedin: {
-        border: "border-l-[#0A66C2]",
-        badge: "bg-[#0A66C2]/10",
-        badgeText: "text-[#0A66C2]",
-      },
-      whatsapp: {
-        border: "border-l-[#25D366]",
-        badge: "bg-[#25D366]/10",
-        badgeText: "text-[#128C7E]",
-      },
-      call: {
-        border: "border-l-[#5B4BA0]",
-        badge: "bg-[#5B4BA0]/10",
-        badgeText: "text-[#5B4BA0]",
-      },
-      meeting: {
-        border: "border-l-[#E91E63]",
-        badge: "bg-[#E91E63]/10",
-        badgeText: "text-[#C2185B]",
-      },
-      instagram: {
-        border: "border-l-[#E4405F]",
-        badge: "bg-[#E4405F]/10",
-        badgeText: "text-[#C13584]",
-      },
+      email: { border: "border-l-[#792990]", badge: "bg-[#792990]/10", badgeText: "text-[#792990]" },
+      linkedin: { border: "border-l-[#0A66C2]", badge: "bg-[#0A66C2]/10", badgeText: "text-[#0A66C2]" },
+      whatsapp: { border: "border-l-[#25D366]", badge: "bg-[#25D366]/10", badgeText: "text-[#128C7E]" },
+      call: { border: "border-l-[#5B4BA0]", badge: "bg-[#5B4BA0]/10", badgeText: "text-[#5B4BA0]" },
+      meeting: { border: "border-l-[#E91E63]", badge: "bg-[#E91E63]/10", badgeText: "text-[#C2185B]" },
+      instagram: { border: "border-l-[#E4405F]", badge: "bg-[#E4405F]/10", badgeText: "text-[#C13584]" },
     };
-    return styles[channel] || {
-      border: "border-l-gray-400",
-      badge: "bg-gray-100",
-      badgeText: "text-gray-600",
-    };
+    return styles[channel] || { border: "border-l-gray-400", badge: "bg-gray-100", badgeText: "text-gray-600" };
   };
+
+  if (isLoading) {
+    return (
+      <div className="col-span-2 flex items-center justify-center py-8">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   if (steps.length === 0) {
     return (
       <div className="col-span-2 rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
         <Zap className="mx-auto h-12 w-12 text-gray-400" />
-        <h3 className="mt-4 text-lg font-medium text-gray-900">
-          Nenhuma etapa
-        </h3>
+        <h3 className="mt-4 text-lg font-medium text-gray-900">Nenhuma etapa</h3>
         <p className="mt-2 text-sm text-gray-500">
           Adicione etapas para criar a sequência de prospecção.
         </p>
@@ -115,38 +86,28 @@ export function CadenceStepsList({ steps }: CadenceStepsListProps) {
     );
   }
 
-  // Group steps by day
   const stepsByDay = steps.reduce((acc, step) => {
-    if (!acc[step.dayNumber]) {
-      acc[step.dayNumber] = [];
-    }
+    if (!acc[step.dayNumber]) acc[step.dayNumber] = [];
     acc[step.dayNumber].push(step);
     return acc;
   }, {} as Record<number, CadenceStep[]>);
 
-  const sortedDays = Object.keys(stepsByDay)
-    .map(Number)
-    .sort((a, b) => a - b);
+  const sortedDays = Object.keys(stepsByDay).map(Number).sort((a, b) => a - b);
 
   return (
     <div className="col-span-2 space-y-4">
-      <h2 className="text-lg font-semibold text-gray-900">
-        Etapas ({steps.length})
-      </h2>
+      <h2 className="text-lg font-semibold text-gray-900">Etapas ({steps.length})</h2>
 
       <div className="relative">
-        {/* Timeline line */}
         <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-[#792990]/20" />
 
         <div className="space-y-6">
           {sortedDays.map((day) => (
             <div key={day} className="relative flex gap-4">
-              {/* Day marker */}
               <div className="relative z-10 flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border-2 border-primary bg-white font-bold text-primary">
                 D{day}
               </div>
 
-              {/* Steps for this day */}
               <div className="flex-1 space-y-2 pt-1">
                 {stepsByDay[day].map((step) => {
                   const channelInfo = getChannelInfo(step.channel);
@@ -158,25 +119,19 @@ export function CadenceStepsList({ steps }: CadenceStepsListProps) {
                     >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          {/* Channel badge */}
                           <div className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 ${channelStyles.badge}`}>
                             <span className="text-base">{channelInfo.icon}</span>
                             <span className={`text-sm font-medium ${channelStyles.badgeText}`}>
                               {channelInfo.label}
                             </span>
                           </div>
-                          {/* Subject */}
-                          <p className="mt-2 font-semibold text-gray-900">
-                            {step.subject}
-                          </p>
-                          {/* Description */}
+                          <p className="mt-2 font-semibold text-gray-900">{step.subject}</p>
                           {step.description && (
                             <pre className="mt-1.5 text-sm text-gray-600 leading-relaxed whitespace-pre-wrap font-sans break-words">
                               {step.description}
                             </pre>
                           )}
                         </div>
-                        {/* Action buttons */}
                         <div className="flex items-center gap-1 ml-3 shrink-0">
                           <button
                             onClick={() => handleCopy(step)}
@@ -215,7 +170,6 @@ export function CadenceStepsList({ steps }: CadenceStepsListProps) {
         </div>
       </div>
 
-      {/* Edit Modal */}
       {editingStep && (
         <CadenceStepEditModal
           step={editingStep}

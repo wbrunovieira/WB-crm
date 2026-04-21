@@ -1,13 +1,13 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Loader2, X } from "lucide-react";
-import { updateCadenceStep } from "@/actions/cadence-steps";
+import { useUpdateCadenceStep } from "@/hooks/cadences/use-cadences";
 import { CADENCE_CHANNEL_LABELS, type CadenceChannel } from "@/lib/validations/cadence";
 
 type CadenceStep = {
   id: string;
+  cadenceId: string;
   dayNumber: number;
   channel: string;
   subject: string;
@@ -22,7 +22,7 @@ type CadenceStepEditModalProps = {
 };
 
 export function CadenceStepEditModal({ step, isOpen, onClose }: CadenceStepEditModalProps) {
-  const router = useRouter();
+  const updateMutation = useUpdateCadenceStep();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -46,14 +46,15 @@ export function CadenceStepEditModal({ step, isOpen, onClose }: CadenceStepEditM
     setError(null);
 
     try {
-      await updateCadenceStep(step.id, {
+      await updateMutation.mutateAsync({
+        stepId: step.id,
+        cadenceId: step.cadenceId,
         dayNumber,
         channel,
         subject,
         description: description || null,
       });
 
-      router.refresh();
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao atualizar etapa");

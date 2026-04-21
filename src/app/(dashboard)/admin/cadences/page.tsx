@@ -1,15 +1,11 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getCadences } from "@/actions/cadences";
 import { backendFetch } from "@/lib/backend/client";
 import { CadenceForm } from "@/components/admin/CadenceForm";
 import { CadencesList } from "@/components/admin/CadencesList";
 
 export default async function CadencesPage() {
-  const [cadences, icpOptions] = await Promise.all([
-    getCadences(),
-    backendFetch<{ id: string; name: string }[]>('/icps').catch(() => []),
-  ]);
+  const icpOptions = await backendFetch<{ id: string; name: string }[]>('/icps').catch(() => []);
 
   return (
     <div className="p-8">
@@ -36,7 +32,7 @@ export default async function CadencesPage() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
         <CadenceForm icps={icpOptions as { id: string; name: string }[]} />
-        <CadencesList cadences={cadences} />
+        <CadencesList />
       </div>
     </div>
   );

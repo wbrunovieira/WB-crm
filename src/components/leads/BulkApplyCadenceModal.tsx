@@ -1,23 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { X, Loader2, Zap, Target, Calendar, ChevronDown, ChevronUp } from "lucide-react";
-import { getCadences } from "@/actions/cadences";
-import { applyCadenceToBulkLeads } from "@/actions/lead-cadences";
+import { X, Loader2, Zap, Calendar } from "lucide-react";
 import {
-  CADENCE_CHANNEL_LABELS,
-  type CadenceChannel,
-} from "@/lib/validations/cadence";
+  useCadences,
+  useBulkApplyCadence,
+} from "@/hooks/cadences/use-cadences";
 import { toast } from "sonner";
-
-type Cadence = {
-  id: string;
-  name: string;
-  durationDays: number;
-  icp: { id: string; name: string } | null;
-  steps?: { id: string; dayNumber: number; channel: string; subject: string }[];
-  _count: { steps: number };
-};
+import { useState } from "react";
 
 type BulkApplyCadenceModalProps = {
   leadIds: string[];
@@ -26,34 +15,14 @@ type BulkApplyCadenceModalProps = {
 };
 
 export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApplyCadenceModalProps) {
-  const [cadences, setCadences] = useState<Cadence[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data: cadences = [], isLoading } = useCadences();
+  const activeCadences = cadences.filter((c) => c.status === "active");
+  const bulkApplyMutation = useBulkApplyCadence();
 
   const [selectedCadenceId, setSelectedCadenceId] = useState<string | null>(null);
-  const [startDate, setStartDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
+  const [startDate, setStartDate] = useState(new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
-  const [expandedCadence, setExpandedCadence] = useState<string | null>(null);
-
-  useEffect(() => {
-    async function loadCadences() {
-      try {
-        const data = await getCadences({ status: "active" });
-        setCadences(data as Cadence[]);
-        if (data.length === 1) {
-          setSelectedCadenceId(data[0].id);
-        }
-      } catch {
-        setError("Erro ao carregar cadências");
-      } finally {
-        setLoading(false);
-      }
-    }
-    loadCadences();
-  }, []);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,13 +32,12 @@ export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApply
       return;
     }
 
-    setSubmitting(true);
     setError(null);
 
     try {
-      const result = await applyCadenceToBulkLeads({
-        leadIds,
+      const result = await bulkApplyMutation.mutateAsync({
         cadenceId: selectedCadenceId,
+        leadIds,
         startDate: new Date(startDate),
         notes: notes || undefined,
       });
@@ -77,7 +45,9 @@ export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApply
       if (result.applied > 0) {
         toast.success(
           `Cadência aplicada a ${result.applied} lead${result.applied > 1 ? "s" : ""}${
-            result.skipped > 0 ? `. ${result.skipped} pulado${result.skipped > 1 ? "s" : ""} (já possuíam esta cadência)` : ""
+            result.skipped > 0
+              ? `. ${result.skipped} pulado${result.skipped > 1 ? "s" : ""} (já possuíam esta cadência)`
+              : ""
           }`
         );
       } else {
@@ -87,12 +57,10 @@ export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApply
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao aplicar cadência em lote");
-    } finally {
-      setSubmitting(false);
     }
   };
 
-  const selectedCadence = cadences.find((c) => c.id === selectedCadenceId);
+  const selectedCadence = activeCadences.find((c) => c.id === selectedCadenceId);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
@@ -121,16 +89,14 @@ export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApply
             </p>
           </div>
 
-          {loading ? (
+          {isLoading ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : cadences.length === 0 ? (
+          ) : activeCadences.length === 0 ? (
             <div className="text-center py-12">
               <Zap className="mx-auto h-12 w-12 text-gray-300" />
-              <p className="mt-4 text-gray-600">
-                Nenhuma cadência ativa disponível.
-              </p>
+              <p className="mt-4 text-gray-600">Nenhuma cadência ativa disponível.</p>
               <p className="mt-2 text-sm text-gray-500">
                 Crie cadências em Administração &gt; Cadências.
               </p>
@@ -138,9 +104,7 @@ export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApply
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
-                <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
-                  {error}
-                </div>
+                <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">{error}</div>
               )}
 
               {/* Cadence Selection */}
@@ -149,7 +113,7 @@ export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApply
                   Selecione a Cadência *
                 </label>
                 <div className="max-h-64 space-y-3 overflow-y-auto pr-1">
-                  {cadences.map((cadence) => (
+                  {activeCadences.map((cadence) => (
                     <div
                       key={cadence.id}
                       className={`rounded-lg border-2 transition-colors cursor-pointer ${
@@ -157,102 +121,26 @@ export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApply
                           ? "border-primary bg-primary/5"
                           : "border-gray-200 hover:border-gray-300"
                       }`}
+                      onClick={() => setSelectedCadenceId(cadence.id)}
                     >
-                      <div
-                        className="p-4"
-                        onClick={() => setSelectedCadenceId(cadence.id)}
-                      >
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-3">
-                              <input
-                                type="radio"
-                                name="cadence"
-                                checked={selectedCadenceId === cadence.id}
-                                onChange={() => setSelectedCadenceId(cadence.id)}
-                                className="h-4 w-4 text-primary focus:ring-primary"
-                              />
-                              <h4 className="font-semibold text-gray-900">
-                                {cadence.name}
-                              </h4>
-                            </div>
-                            <div className="mt-2 ml-7 flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                              <span className="flex items-center gap-1">
-                                <Zap className="h-4 w-4" />
-                                {cadence._count.steps} etapas
-                              </span>
-                              <span className="flex items-center gap-1">
-                                <Calendar className="h-4 w-4" />
-                                {cadence.durationDays} dias
-                              </span>
-                              {cadence.icp ? (
-                                <span className="flex items-center gap-1 text-primary">
-                                  <Target className="h-4 w-4" />
-                                  {cadence.icp.name}
-                                </span>
-                              ) : (
-                                <span className="text-gray-400">
-                                  Cadência Genérica
-                                </span>
-                              )}
-                            </div>
-                          </div>
+                      <div className="p-4">
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="radio"
+                            name="cadence"
+                            checked={selectedCadenceId === cadence.id}
+                            onChange={() => setSelectedCadenceId(cadence.id)}
+                            className="h-4 w-4 text-primary focus:ring-primary"
+                          />
+                          <h4 className="font-semibold text-gray-900">{cadence.name}</h4>
                         </div>
-
-                        {/* Toggle Steps Preview */}
-                        {cadence.steps && cadence.steps.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setExpandedCadence(
-                                expandedCadence === cadence.id ? null : cadence.id
-                              );
-                            }}
-                            className="mt-3 ml-7 flex items-center gap-1 text-sm text-primary hover:underline"
-                          >
-                            {expandedCadence === cadence.id ? (
-                              <>
-                                <ChevronUp className="h-4 w-4" />
-                                Ocultar etapas
-                              </>
-                            ) : (
-                              <>
-                                <ChevronDown className="h-4 w-4" />
-                                Ver etapas
-                              </>
-                            )}
-                          </button>
-                        )}
+                        <div className="mt-2 ml-7 flex flex-wrap items-center gap-3 text-sm text-gray-500">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-4 w-4" />
+                            {cadence.durationDays} dias
+                          </span>
+                        </div>
                       </div>
-
-                      {/* Expanded Steps Preview */}
-                      {expandedCadence === cadence.id && cadence.steps && (
-                        <div className="border-t bg-gray-50 p-4">
-                          <div className="space-y-2">
-                            {cadence.steps.map((step) => {
-                              const channelInfo = CADENCE_CHANNEL_LABELS[step.channel as CadenceChannel];
-                              return (
-                                <div
-                                  key={step.id}
-                                  className="flex items-center gap-3 text-sm"
-                                >
-                                  <span className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-white border font-semibold text-xs">
-                                    D{step.dayNumber}
-                                  </span>
-                                  <span className="text-lg">{channelInfo?.icon || ""}</span>
-                                  <span className="text-gray-700">
-                                    {channelInfo?.label || step.channel}
-                                  </span>
-                                  <span className="text-gray-500 truncate">
-                                    - {step.subject}
-                                  </span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      )}
                     </div>
                   ))}
                 </div>
@@ -260,10 +148,7 @@ export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApply
 
               {/* Start Date */}
               <div>
-                <label
-                  htmlFor="startDate"
-                  className="block text-sm font-medium text-gray-700"
-                >
+                <label htmlFor="startDate" className="block text-sm font-medium text-gray-700">
                   Data de Início *
                 </label>
                 <input
@@ -281,10 +166,7 @@ export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApply
 
               {/* Notes */}
               <div>
-                <label
-                  htmlFor="notes"
-                  className="block text-sm font-medium text-gray-700"
-                >
+                <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
                   Observações
                 </label>
                 <textarea
@@ -306,10 +188,6 @@ export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApply
                       Cadência: <strong>{selectedCadence.name}</strong>
                     </li>
                     <li>
-                      {leadIds.length} leads x {selectedCadence._count.steps} etapas = até{" "}
-                      <strong>{leadIds.length * selectedCadence._count.steps} atividades</strong>
-                    </li>
-                    <li>
                       Duração: {selectedCadence.durationDays} dias a partir de{" "}
                       {new Date(startDate).toLocaleDateString("pt-BR")}
                     </li>
@@ -328,10 +206,10 @@ export function BulkApplyCadenceModal({ leadIds, onClose, onSuccess }: BulkApply
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting || !selectedCadenceId}
+                  disabled={bulkApplyMutation.isPending || !selectedCadenceId}
                   className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
                 >
-                  {submitting ? (
+                  {bulkApplyMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Aplicando...

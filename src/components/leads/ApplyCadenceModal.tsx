@@ -2,10 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { X, Loader2, Zap, Target, Calendar, ChevronDown, ChevronUp } from "lucide-react";
-import {
-  getAvailableCadencesForLead,
-  applyCadenceToLead,
-} from "@/actions/lead-cadences";
+import { getAvailableCadencesForLead } from "@/actions/lead-cadences";
+import { useApplyCadence } from "@/hooks/cadences/use-cadences";
 import {
   CADENCE_CHANNEL_LABELS,
   type CadenceChannel,
@@ -20,9 +18,9 @@ type ApplyCadenceModalProps = {
 };
 
 export function ApplyCadenceModal({ leadId, onClose, onSuccess }: ApplyCadenceModalProps) {
+  const applyMutation = useApplyCadence();
   const [cadences, setCadences] = useState<AvailableCadence[]>([]);
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const [selectedCadenceId, setSelectedCadenceId] = useState<string | null>(null);
@@ -57,21 +55,18 @@ export function ApplyCadenceModal({ leadId, onClose, onSuccess }: ApplyCadenceMo
       return;
     }
 
-    setSubmitting(true);
     setError(null);
 
     try {
-      await applyCadenceToLead({
-        leadId,
+      await applyMutation.mutateAsync({
         cadenceId: selectedCadenceId,
+        leadId,
         startDate: new Date(startDate),
         notes: notes || undefined,
       });
       onSuccess();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao aplicar cadência");
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -300,10 +295,10 @@ export function ApplyCadenceModal({ leadId, onClose, onSuccess }: ApplyCadenceMo
                 </button>
                 <button
                   type="submit"
-                  disabled={submitting || !selectedCadenceId}
+                  disabled={applyMutation.isPending || !selectedCadenceId}
                   className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary/90 disabled:opacity-50"
                 >
-                  {submitting ? (
+                  {applyMutation.isPending ? (
                     <>
                       <Loader2 className="h-4 w-4 animate-spin" />
                       Aplicando...
