@@ -103,4 +103,11 @@ export class PrismaWhatsAppMessagesRepository extends WhatsAppMessagesRepository
       },
     });
   }
+
+  async findMediaByActivityId(activityId: string): Promise<WhatsAppMessageData[]> {
+    return this.prisma.whatsAppMessage.findMany({
+      where: { activityId, mediaDriveId: { not: null } },
+      orderBy: { timestamp: "asc" },
+    });
+  }
 }

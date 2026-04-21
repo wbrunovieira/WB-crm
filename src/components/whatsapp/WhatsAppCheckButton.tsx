@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { saveWhatsAppNumber, saveWhatsAppVerification } from "@/actions/whatsapp";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
@@ -108,9 +107,10 @@ export function WhatsAppCheckButton({
 
     // Salva usando o valor original do campo como chave, para que a comparação
     // na página (whatsappVerifiedNumber === phone) funcione ao recarregar.
-    saveWhatsAppVerification(entityType, entityId, phone, result.exists ?? false).then(() => {
-      router.refresh();
-    });
+    apiFetch("/whatsapp/save-verification", token, {
+      method: "PATCH",
+      body: JSON.stringify({ entityType, entityId, verifiedNumber: phone, exists: result.exists ?? false }),
+    }).then(() => router.refresh()).catch(() => {});
 
     if (result.exists) {
       setStatus("found");
@@ -128,14 +128,16 @@ export function WhatsAppCheckButton({
     if (!checkResult?.number) return;
     setStatus("saving");
 
-    const result = await saveWhatsAppNumber(entityType, entityId, checkResult.number);
-
-    if (result.success) {
+    try {
+      await apiFetch("/whatsapp/save-number", token, {
+        method: "PATCH",
+        body: JSON.stringify({ entityType, entityId, whatsapp: checkResult.number }),
+      });
       setStatus("saved");
       router.refresh();
-    } else {
+    } catch (err) {
       setStatus("error");
-      setErrorMsg(result.error ?? "Erro ao salvar");
+      setErrorMsg(err instanceof Error ? err.message : "Erro ao salvar");
     }
   }
 

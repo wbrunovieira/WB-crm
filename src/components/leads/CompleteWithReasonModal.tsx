@@ -1,12 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { X, CheckCircle2, Plus, Loader2 } from "lucide-react";
-import {
-  getDisqualificationReasons,
-  createDisqualificationReason,
-} from "@/actions/disqualification-reasons";
 import { toast } from "sonner";
+
+const DEFAULT_DISQUALIFICATION_REASONS = [
+  "Capacidade Produtiva",
+  "Orçamento",
+  "Cadência Excedida",
+  "Perda de Contato",
+  "Barrado pelo GateKeeper",
+  "Concorrência",
+];
 
 interface CompleteWithReasonModalProps {
   onConfirm: (reason: string | undefined) => void;
@@ -19,33 +26,45 @@ export function CompleteWithReasonModal({
   onClose,
   loading = false,
 }: CompleteWithReasonModalProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [reasons, setReasons] = useState<string[]>([]);
   const [selected, setSelected] = useState<string>("");
   const [newReason, setNewReason] = useState("");
   const [savingNew, setSavingNew] = useState(false);
   const [loadingReasons, setLoadingReasons] = useState(true);
 
+  const fetchReasons = async () => {
+    const data = await apiFetch<{ id: string; name: string }[]>("/disqualification-reasons", token);
+    const customNames = data.map((r) => r.name);
+    const defaults = DEFAULT_DISQUALIFICATION_REASONS.filter((d) => !customNames.includes(d));
+    return [...defaults, ...customNames];
+  };
+
   useEffect(() => {
-    getDisqualificationReasons()
-      .then(setReasons)
-      .finally(() => setLoadingReasons(false));
-  }, []);
+    if (!token) return;
+    fetchReasons().then(setReasons).finally(() => setLoadingReasons(false));
+  }, [token]);
 
   async function handleAddReason() {
     const trimmed = newReason.trim();
     if (!trimmed) return;
     setSavingNew(true);
-    const result = await createDisqualificationReason(trimmed);
-    if (result.success) {
-      const updated = await getDisqualificationReasons();
+    try {
+      await apiFetch("/disqualification-reasons", token, {
+        method: "POST",
+        body: JSON.stringify({ name: trimmed }),
+      });
+      const updated = await fetchReasons();
       setReasons(updated);
       setSelected(trimmed);
       setNewReason("");
       toast.success("Motivo cadastrado");
-    } else {
-      toast.error(result.error ?? "Erro ao cadastrar motivo");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao cadastrar motivo");
+    } finally {
+      setSavingNew(false);
     }
-    setSavingNew(false);
   }
 
   function handleConfirm() {

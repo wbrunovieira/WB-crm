@@ -11,6 +11,8 @@ import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import {
   SearchCnaesUseCase,
   GetCnaeByIdUseCase,
+  ListSecondaryCnaesForLeadUseCase,
+  ListSecondaryCnaesForOrganizationUseCase,
   AddSecondaryCnaeToLeadUseCase,
   RemoveSecondaryCnaeFromLeadUseCase,
   AddSecondaryCnaeToOrganizationUseCase,
@@ -29,6 +31,8 @@ export class CnaeController {
   constructor(
     private readonly search: SearchCnaesUseCase,
     private readonly getById: GetCnaeByIdUseCase,
+    private readonly listForLead: ListSecondaryCnaesForLeadUseCase,
+    private readonly listForOrg: ListSecondaryCnaesForOrganizationUseCase,
     private readonly addToLead: AddSecondaryCnaeToLeadUseCase,
     private readonly removeFromLead: RemoveSecondaryCnaeFromLeadUseCase,
     private readonly addToOrg: AddSecondaryCnaeToOrganizationUseCase,
@@ -46,6 +50,18 @@ export class CnaeController {
     const result = await this.getById.execute(id);
     if (result.isLeft()) handleError(result);
     if (result.isRight()) return result.value.cnae;
+  }
+
+  @Get("leads/:leadId")
+  async listLeadCnaes(@Param("leadId") leadId: string) {
+    const result = await this.listForLead.execute(leadId);
+    return result.value.cnaes;
+  }
+
+  @Get("organizations/:orgId")
+  async listOrgCnaes(@Param("orgId") orgId: string) {
+    const result = await this.listForOrg.execute(orgId);
+    return result.value.cnaes;
   }
 
   @Post("leads/:leadId/:cnaeId")

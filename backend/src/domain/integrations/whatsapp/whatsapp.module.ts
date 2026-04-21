@@ -7,8 +7,9 @@ import { AuthModule } from "@/infra/auth/auth.module";
 // Ports
 import { EvolutionApiPort } from "./application/ports/evolution-api.port";
 
-// Repository abstract
+// Repository abstracts
 import { WhatsAppMessagesRepository } from "./application/repositories/whatsapp-messages.repository";
+import { WhatsAppEntityRepository } from "./application/repositories/whatsapp-entity.repository";
 
 // Use Cases
 import { HandleWhatsAppWebhookUseCase } from "./application/use-cases/handle-whatsapp-webhook.use-case";
@@ -16,10 +17,15 @@ import { ProcessWhatsAppMessageUseCase } from "./application/use-cases/process-w
 import { ProcessWhatsAppMediaUseCase } from "./application/use-cases/process-whatsapp-media.use-case";
 import { PollWhatsAppTranscriptionsUseCase } from "./application/use-cases/poll-whatsapp-transcriptions.use-case";
 import { SendWhatsAppMessageUseCase } from "./application/use-cases/send-whatsapp-message.use-case";
+import { SendWhatsAppMediaUseCase } from "./application/use-cases/send-whatsapp-media.use-case";
+import { GetWhatsAppMediaMessagesUseCase } from "./application/use-cases/get-whatsapp-media-messages.use-case";
+import { SaveWhatsAppVerificationUseCase } from "./application/use-cases/save-whatsapp-verification.use-case";
+import { SaveWhatsAppNumberUseCase } from "./application/use-cases/save-whatsapp-number.use-case";
 
 // Infrastructure
 import { EvolutionApiClient } from "./infra/evolution-api.client";
 import { PrismaWhatsAppMessagesRepository } from "./infra/prisma-whatsapp-messages.repository";
+import { PrismaWhatsAppEntityRepository } from "./infra/prisma-whatsapp-entity.repository";
 import { WhatsAppWebhookController } from "./infra/controllers/whatsapp-webhook.controller";
 import { WhatsAppController } from "./infra/controllers/whatsapp.controller";
 import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-transcription-cron.service";
@@ -34,11 +40,17 @@ import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-tra
     ProcessWhatsAppMediaUseCase,
     PollWhatsAppTranscriptionsUseCase,
     SendWhatsAppMessageUseCase,
+    SendWhatsAppMediaUseCase,
+    GetWhatsAppMediaMessagesUseCase,
+    SaveWhatsAppVerificationUseCase,
+    SaveWhatsAppNumberUseCase,
     // Port implementations
     { provide: EvolutionApiPort, useClass: EvolutionApiClient },
-    // Repository
+    // Repositories
     PrismaWhatsAppMessagesRepository,
     { provide: WhatsAppMessagesRepository, useClass: PrismaWhatsAppMessagesRepository },
+    PrismaWhatsAppEntityRepository,
+    { provide: WhatsAppEntityRepository, useClass: PrismaWhatsAppEntityRepository },
     // Scheduled
     WhatsAppTranscriptionCronService,
   ],

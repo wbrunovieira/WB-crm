@@ -1,15 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import {
-  getLeadSecondaryCNAEs,
-  getOrganizationSecondaryCNAEs,
-  addSecondaryCNAEToLead,
-  addSecondaryCNAEToOrganization,
-  removeSecondaryCNAEFromLead,
-  removeSecondaryCNAEFromOrganization,
-  searchCNAEs,
-} from "@/actions/cnaes";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { Plus, X, Search } from "lucide-react";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -26,6 +19,8 @@ interface SecondaryCNAEsManagerProps {
 }
 
 export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsManagerProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [cnaes, setCnaes] = useState<CNAE[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAdd, setShowAdd] = useState(false);
@@ -37,19 +32,20 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
   const { confirm, dialogProps } = useConfirmDialog();
 
   const loadCNAEs = useCallback(async () => {
+    if (!token) return;
     setLoading(true);
     try {
-      const data =
-        entityType === "lead"
-          ? await getLeadSecondaryCNAEs(entityId)
-          : await getOrganizationSecondaryCNAEs(entityId);
+      const path = entityType === "lead"
+        ? `/cnaes/leads/${entityId}`
+        : `/cnaes/organizations/${entityId}`;
+      const data = await apiFetch<CNAE[]>(path, token);
       setCnaes(data);
     } catch (err) {
       console.error("Error loading CNAEs:", err);
     } finally {
       setLoading(false);
     }
-  }, [entityId, entityType]);
+  }, [entityId, entityType, token]);
 
   useEffect(() => {
     loadCNAEs();
@@ -60,7 +56,7 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
       if (query.length >= 2) {
         setSearching(true);
         try {
-          const results = await searchCNAEs(query);
+          const results = await apiFetch<CNAE[]>(`/cnaes?q=${encodeURIComponent(query)}`, token);
           // Filter out already added CNAEs
           const filtered = results.filter(
             (r) => !cnaes.some((c) => c.id === r.id)
@@ -82,11 +78,10 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
   const handleAdd = async (cnaeId: string) => {
     setAdding(cnaeId);
     try {
-      if (entityType === "lead") {
-        await addSecondaryCNAEToLead(entityId, cnaeId);
-      } else {
-        await addSecondaryCNAEToOrganization(entityId, cnaeId);
-      }
+      const path = entityType === "lead"
+        ? `/cnaes/leads/${entityId}/${cnaeId}`
+        : `/cnaes/organizations/${entityId}/${cnaeId}`;
+      await apiFetch(path, token, { method: "POST" });
       await loadCNAEs();
       setQuery("");
       setSearchResults([]);
@@ -110,11 +105,10 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
 
     setRemoving(cnaeId);
     try {
-      if (entityType === "lead") {
-        await removeSecondaryCNAEFromLead(entityId, cnaeId);
-      } else {
-        await removeSecondaryCNAEFromOrganization(entityId, cnaeId);
-      }
+      const path = entityType === "lead"
+        ? `/cnaes/leads/${entityId}/${cnaeId}`
+        : `/cnaes/organizations/${entityId}/${cnaeId}`;
+      await apiFetch(path, token, { method: "DELETE" });
       await loadCNAEs();
     } catch (err) {
       const error = err as Error;

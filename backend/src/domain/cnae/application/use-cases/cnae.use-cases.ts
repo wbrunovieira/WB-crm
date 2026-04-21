@@ -31,6 +31,26 @@ export class GetCnaeByIdUseCase {
   }
 }
 
+// ─── ListSecondaryCNAEs ───────────────────────────────────────────────────────
+
+@Injectable()
+export class ListSecondaryCnaesForLeadUseCase {
+  constructor(private readonly repo: CnaeRepository) {}
+  async execute(leadId: string): Promise<Either<never, { cnaes: CnaeRecord[] }>> {
+    const cnaes = await this.repo.listForLead(leadId);
+    return right({ cnaes });
+  }
+}
+
+@Injectable()
+export class ListSecondaryCnaesForOrganizationUseCase {
+  constructor(private readonly repo: CnaeRepository) {}
+  async execute(organizationId: string): Promise<Either<never, { cnaes: CnaeRecord[] }>> {
+    const cnaes = await this.repo.listForOrganization(organizationId);
+    return right({ cnaes });
+  }
+}
+
 // ─── AddSecondaryCNAEToLead ───────────────────────────────────────────────────
 
 export interface CnaeLinkInput {

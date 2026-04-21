@@ -5,7 +5,6 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { X, Send, Loader2, Smile, Paperclip, FileText, ChevronDown, ChevronUp } from "lucide-react";
 import { toast } from "sonner";
-import { sendWhatsAppMedia } from "@/actions/whatsapp";
 import { getWhatsAppTemplates } from "@/actions/whatsapp-templates";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
@@ -219,15 +218,23 @@ export default function WhatsAppSendModal({ to, name, onClose }: WhatsAppSendMod
 
       if (attachment) {
         const mediaBase64 = await fileToBase64(attachment);
-        result = await sendWhatsAppMedia({
-          to,
-          mediatype: getMediatype(attachment.type),
-          mediaBase64,
-          fileName: attachment.name,
-          mimetype: attachment.type,
-          caption: trimmed || undefined,
-          contactName: name,
-        });
+        const nestResult = await apiFetch<{ ok: boolean; error?: string }>(
+          "/whatsapp/send-media",
+          token,
+          {
+            method: "POST",
+            body: JSON.stringify({
+              to,
+              mediatype: getMediatype(attachment.type),
+              mediaBase64,
+              fileName: attachment.name,
+              mimetype: attachment.type,
+              caption: trimmed || undefined,
+              contactName: name,
+            }),
+          },
+        );
+        result = { success: nestResult.ok, error: nestResult.error };
       } else {
         const nestResult = await apiFetch<{ ok: boolean; error?: string }>(
           "/whatsapp/send",

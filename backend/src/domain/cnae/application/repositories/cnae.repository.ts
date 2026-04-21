@@ -9,10 +9,12 @@ export abstract class CnaeRepository {
   abstract findById(id: string): Promise<CnaeRecord | null>;
 
   // Lead secondary CNAEs
+  abstract listForLead(leadId: string): Promise<CnaeRecord[]>;
   abstract addToLead(cnaeId: string, leadId: string): Promise<void>;
   abstract removeFromLead(cnaeId: string, leadId: string): Promise<void>;
 
   // Organization secondary CNAEs
+  abstract listForOrganization(organizationId: string): Promise<CnaeRecord[]>;
   abstract addToOrganization(cnaeId: string, organizationId: string): Promise<void>;
   abstract removeFromOrganization(cnaeId: string, organizationId: string): Promise<void>;
 }

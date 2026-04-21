@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { searchCNAEs } from "@/actions/cnaes";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { Search, X } from "lucide-react";
 
 interface CNAE {
@@ -25,6 +26,8 @@ export function CNAEAutocomplete({
   label,
   error,
 }: CNAEAutocompleteProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<CNAE[]>([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -48,7 +51,7 @@ export function CNAEAutocomplete({
       if (query.length >= 2) {
         setLoading(true);
         try {
-          const cnaes = await searchCNAEs(query);
+          const cnaes = await apiFetch<CNAE[]>(`/cnaes?q=${encodeURIComponent(query)}`, token);
           setResults(cnaes);
           setIsOpen(true);
         } catch (error) {

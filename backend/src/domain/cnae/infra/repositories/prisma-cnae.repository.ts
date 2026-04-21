@@ -25,6 +25,15 @@ export class PrismaCnaeRepository extends CnaeRepository {
     return this.prisma.cNAE.findUnique({ where: { id } });
   }
 
+  async listForLead(leadId: string): Promise<CnaeRecord[]> {
+    const rows = await this.prisma.leadSecondaryCNAE.findMany({
+      where: { leadId },
+      include: { cnae: true },
+      orderBy: { cnae: { code: "asc" } },
+    });
+    return rows.map((r) => r.cnae);
+  }
+
   async addToLead(cnaeId: string, leadId: string): Promise<void> {
     await this.prisma.leadSecondaryCNAE.upsert({
       where: { leadId_cnaeId: { leadId, cnaeId } },
@@ -35,6 +44,15 @@ export class PrismaCnaeRepository extends CnaeRepository {
 
   async removeFromLead(cnaeId: string, leadId: string): Promise<void> {
     await this.prisma.leadSecondaryCNAE.deleteMany({ where: { leadId, cnaeId } });
+  }
+
+  async listForOrganization(organizationId: string): Promise<CnaeRecord[]> {
+    const rows = await this.prisma.organizationSecondaryCNAE.findMany({
+      where: { organizationId },
+      include: { cnae: true },
+      orderBy: { cnae: { code: "asc" } },
+    });
+    return rows.map((r) => r.cnae);
   }
 
   async addToOrganization(cnaeId: string, organizationId: string): Promise<void> {

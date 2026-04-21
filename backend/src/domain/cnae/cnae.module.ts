@@ -4,6 +4,8 @@ import { CnaeRepository } from "./application/repositories/cnae.repository";
 import {
   SearchCnaesUseCase,
   GetCnaeByIdUseCase,
+  ListSecondaryCnaesForLeadUseCase,
+  ListSecondaryCnaesForOrganizationUseCase,
   AddSecondaryCnaeToLeadUseCase,
   RemoveSecondaryCnaeFromLeadUseCase,
   AddSecondaryCnaeToOrganizationUseCase,
@@ -18,6 +20,8 @@ import { CnaeController } from "./infra/controllers/cnae.controller";
   providers: [
     SearchCnaesUseCase,
     GetCnaeByIdUseCase,
+    ListSecondaryCnaesForLeadUseCase,
+    ListSecondaryCnaesForOrganizationUseCase,
     AddSecondaryCnaeToLeadUseCase,
     RemoveSecondaryCnaeFromLeadUseCase,
     AddSecondaryCnaeToOrganizationUseCase,
