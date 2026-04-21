@@ -30,6 +30,14 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
     return rows.map(this.toDomain);
   }
 
+  async findScheduledWithRsvpData(): Promise<Array<{ id: string; googleEventId: string; attendeeEmails: string }>> {
+    const rows = await this.prisma.meeting.findMany({
+      where: { status: "scheduled", googleEventId: { not: null } },
+      select: { id: true, googleEventId: true, attendeeEmails: true },
+    });
+    return rows.map((r) => ({ id: r.id, googleEventId: r.googleEventId!, attendeeEmails: r.attendeeEmails }));
+  }
+
   async findEndedPendingRecording(since: Date): Promise<MeetingRecord[]> {
     const rows = await this.prisma.meeting.findMany({
       where: {

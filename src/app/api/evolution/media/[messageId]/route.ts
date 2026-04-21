@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { getAuthenticatedClient } from "@/lib/google/auth";
 import { google } from "googleapis";
 import { Readable } from "stream";
 
-/**
- * GET /api/evolution/media/[messageId]
- *
- * Serve o arquivo de mídia de um WhatsAppMessage diretamente do Google Drive.
- * Suporta ?inline=true para visualização inline (áudio, vídeo, imagem) vs download.
- */
+const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:3010";
+
 export async function GET(
   req: NextRequest,
   { params }: { params: { messageId: string } }
@@ -21,24 +16,24 @@ export async function GET(
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  const message = await prisma.whatsAppMessage.findUnique({
-    where: { id: params.messageId },
-    select: {
-      mediaDriveId: true,
-      mediaMimeType: true,
-      mediaLabel: true,
-      ownerId: true,
-    },
+  const token = session.user.accessToken;
+  if (!token) {
+    return NextResponse.json({ error: "Sem token de acesso" }, { status: 401 });
+  }
+
+  const msgRes = await fetch(`${BACKEND_URL}/whatsapp/message/${params.messageId}`, {
+    headers: { Authorization: `Bearer ${token}` },
   });
 
-  if (!message) {
-    return NextResponse.json({ error: "Mensagem não encontrada" }, { status: 404 });
+  if (!msgRes.ok) {
+    const status = msgRes.status === 404 ? 404 : msgRes.status === 403 ? 403 : 500;
+    return NextResponse.json({ error: "Mensagem não encontrada" }, { status });
   }
+
+  const message = await msgRes.json() as { mediaDriveId: string | null; mediaMimeType: string | null; mediaLabel: string | null };
+
   if (!message.mediaDriveId) {
     return NextResponse.json({ error: "Mídia não disponível" }, { status: 404 });
-  }
-  if (session.user.role !== "admin" && message.ownerId !== session.user.id) {
-    return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
   }
 
   try {

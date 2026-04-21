@@ -1,8 +1,8 @@
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { computeFunnelStats } from "@/lib/funnel/computeFunnelStats";
+import { backendFetch } from "@/lib/backend/client";
+import { computeFunnelStats, type FunnelActivity, type FunnelDeal } from "@/lib/funnel/computeFunnelStats";
 import { FunnelDashboard } from "@/components/calls/FunnelDashboard";
 
 /** Returns Monday of the current week at UTC midnight. */
@@ -13,40 +13,35 @@ function currentWeekStart(): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diff));
 }
 
+interface WeeklyFunnelData {
+  activities: FunnelActivity[];
+  wonDeals: FunnelDeal[];
+  targetSales: number;
+}
+
 export default async function CallsPage() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
 
-  const ownerId = session.user.id;
   const weekStart = currentWeekStart();
   const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const weekStartStr = weekStart.toISOString().slice(0, 10);
 
-  const [activities, deals, goalRecord] = await Promise.all([
-    prisma.activity.findMany({
-      where: { ownerId, dueDate: { gte: weekStart, lt: weekEnd } },
-      select: {
-        type: true,
-        gotoDuration: true,
-        callContactType: true,
-        completed: true,
-        meetingNoShow: true,
-        dueDate: true,
-        leadId: true,
-        contactId: true,
-      },
-    }),
-    prisma.deal.findMany({
-      where: { ownerId, status: "won", closedAt: { gte: weekStart, lt: weekEnd } },
-      select: { status: true, closedAt: true },
-    }),
-    prisma.weeklyGoal.findUnique({
-      where: {
-        weekStart_ownerId: { weekStart, ownerId },
-      },
-    }),
-  ]);
+  const data = await backendFetch<WeeklyFunnelData>(
+    `/funnel/weekly-stats?weekStart=${weekStartStr}`
+  ).catch(() => ({ activities: [], wonDeals: [], targetSales: 6 }));
 
-  const stats = computeFunnelStats(activities, deals, weekStart, weekEnd);
+  // Normalise dates (backendFetch returns plain JSON — dates are strings)
+  const activities = data.activities.map((a) => ({
+    ...a,
+    dueDate: a.dueDate ? new Date(a.dueDate) : null,
+  }));
+  const wonDeals = data.wonDeals.map((d) => ({
+    ...d,
+    closedAt: d.closedAt ? new Date(d.closedAt) : null,
+  }));
+
+  const stats = computeFunnelStats(activities, wonDeals, weekStart, weekEnd);
 
   // Calls per day
   const callsPerDay: Record<string, number> = {};
@@ -70,8 +65,6 @@ export default async function CallsPage() {
     : null;
   const maxDuration = durations.length > 0 ? Math.max(...durations) : null;
 
-  const weekStartStr = weekStart.toISOString().slice(0, 10);
-
   return (
     <div className="min-h-screen" style={{ backgroundColor: "#350045" }}>
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
@@ -88,7 +81,7 @@ export default async function CallsPage() {
           callsPerDay={callsPerDay}
           avgDuration={avgDuration}
           maxDuration={maxDuration}
-          initialTargetSales={goalRecord?.targetSales ?? 6}
+          initialTargetSales={data.targetSales}
         />
       </div>
     </div>

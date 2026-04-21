@@ -18,6 +18,7 @@ export interface WhatsAppMessageData {
 }
 
 export abstract class WhatsAppMessagesRepository {
+  abstract findById(id: string): Promise<WhatsAppMessageData | null>;
   abstract findByMessageId(messageId: string): Promise<WhatsAppMessageData | null>;
   abstract findLastInSession(
     remoteJid: string,

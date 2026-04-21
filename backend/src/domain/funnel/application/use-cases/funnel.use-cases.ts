@@ -21,6 +21,28 @@ export interface WeeklyGoalRecord {
 
 export class WeeklyGoalNotFoundError extends Error { name = "WeeklyGoalNotFoundError"; }
 
+export interface WeeklyFunnelActivity {
+  type: string;
+  gotoDuration: number | null;
+  callContactType: string | null;
+  completed: boolean;
+  meetingNoShow: boolean;
+  dueDate: Date | null;
+  leadId: string | null;
+  contactId: string | null;
+}
+
+export interface WeeklyFunnelDeal {
+  status: string;
+  closedAt: Date | null;
+}
+
+export interface WeeklyFunnelData {
+  activities: WeeklyFunnelActivity[];
+  wonDeals: WeeklyFunnelDeal[];
+  targetSales: number;
+}
+
 @Injectable()
 export class GetFunnelStatsUseCase {
   constructor(private readonly prisma: PrismaService) {}
@@ -57,6 +79,41 @@ export class GetWeeklyGoalsUseCase {
       orderBy: { weekStart: "desc" },
     });
     return right(goals.map(g => ({ id: g.id, weekStart: g.weekStart, targetSales: g.targetSales, ownerId: g.ownerId })));
+  }
+}
+
+@Injectable()
+export class GetWeeklyFunnelDataUseCase {
+  constructor(private readonly prisma: PrismaService) {}
+
+  async execute(input: {
+    requesterId: string;
+    weekStart: Date;
+    weekEnd: Date;
+  }): Promise<Either<Error, WeeklyFunnelData>> {
+    const [activities, wonDeals, goalRecord] = await Promise.all([
+      this.prisma.activity.findMany({
+        where: { ownerId: input.requesterId, dueDate: { gte: input.weekStart, lt: input.weekEnd } },
+        select: {
+          type: true, gotoDuration: true, callContactType: true,
+          completed: true, meetingNoShow: true, dueDate: true,
+          leadId: true, contactId: true,
+        },
+      }),
+      this.prisma.deal.findMany({
+        where: { ownerId: input.requesterId, status: "won", closedAt: { gte: input.weekStart, lt: input.weekEnd } },
+        select: { status: true, closedAt: true },
+      }),
+      this.prisma.weeklyGoal.findUnique({
+        where: { weekStart_ownerId: { weekStart: input.weekStart, ownerId: input.requesterId } },
+      }),
+    ]);
+
+    return right({
+      activities: activities as WeeklyFunnelActivity[],
+      wonDeals: wonDeals as WeeklyFunnelDeal[],
+      targetSales: goalRecord?.targetSales ?? 6,
+    });
   }
 }
 

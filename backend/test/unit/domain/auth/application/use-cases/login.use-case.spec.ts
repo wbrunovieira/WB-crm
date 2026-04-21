@@ -11,6 +11,11 @@ class InMemoryUsersRepository extends UsersRepository {
   }
   async findById(id: string) { return this.items.find((u) => u.id === id) ?? null; }
   async findAll() { return this.items; }
+  async create(data: { id: string; name: string; email: string; passwordHash: string }) {
+    const record = { ...data, role: "sdr" };
+    this.items.push(record);
+    return record;
+  }
 }
 
 const fakeJwt = { signAsync: vi.fn().mockResolvedValue("signed.jwt.token") };

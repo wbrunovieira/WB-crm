@@ -24,6 +24,12 @@ export class FakeMeetingsRepository extends MeetingsRepository {
     return this.items.filter((m) => m.status === "scheduled");
   }
 
+  async findScheduledWithRsvpData(): Promise<Array<{ id: string; googleEventId: string; attendeeEmails: string }>> {
+    return this.items
+      .filter((m) => m.status === "scheduled" && m.googleEventId !== null)
+      .map((m) => ({ id: m.id, googleEventId: m.googleEventId!, attendeeEmails: m.attendeeEmails ?? "[]" }));
+  }
+
   async findEndedPendingRecording(since: Date): Promise<MeetingRecord[]> {
     return this.items.filter(
       (m) =>
@@ -78,6 +84,19 @@ export class FakeMeetingsRepository extends MeetingsRepository {
 
   async completeActivity(activityId: string, at: Date): Promise<void> {
     this.completedActivities.push({ activityId, at });
+  }
+
+  async skipActivity(_activityId: string, _reason: string): Promise<void> { /* no-op in fake */ }
+
+  async updateActivitySchedule(_activityId: string, _data: { dueDate?: Date; subject?: string }): Promise<void> { /* no-op in fake */ }
+
+  async titleExistsByOwner(_ownerId: string, _title: string, _excludeId?: string): Promise<boolean> {
+    return false;
+  }
+
+  async updateSummary(id: string, summary: string | null): Promise<void> {
+    const item = this.items.find(m => m.id === id);
+    if (item) item.meetingSummary = summary;
   }
 
   async findById(id: string): Promise<MeetingRecord | null> {

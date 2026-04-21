@@ -11,6 +11,11 @@ export class PrismaWhatsAppMessagesRepository extends WhatsAppMessagesRepository
     super();
   }
 
+  async findById(id: string): Promise<WhatsAppMessageData | null> {
+    const msg = await this.prisma.whatsAppMessage.findUnique({ where: { id } });
+    return msg ?? null;
+  }
+
   async findByMessageId(messageId: string): Promise<WhatsAppMessageData | null> {
     const msg = await this.prisma.whatsAppMessage.findUnique({
       where: { messageId },

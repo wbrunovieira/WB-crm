@@ -24,4 +24,11 @@ export class PrismaUsersRepository extends UsersRepository {
     const users = await this.prisma.user.findMany({ orderBy: { name: "asc" } });
     return users.map(u => ({ id: u.id, name: u.name, email: u.email, role: u.role, passwordHash: u.password ?? "" }));
   }
+
+  async create(data: { id: string; name: string; email: string; passwordHash: string }): Promise<UserRecord> {
+    const user = await this.prisma.user.create({
+      data: { id: data.id, name: data.name, email: data.email, password: data.passwordHash },
+    });
+    return { id: user.id, name: user.name, email: user.email, role: user.role, passwordHash: user.password ?? "" };
+  }
 }

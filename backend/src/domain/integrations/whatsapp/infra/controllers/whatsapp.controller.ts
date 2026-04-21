@@ -11,6 +11,7 @@ import {
   Logger,
   HttpCode,
   BadRequestException,
+  ForbiddenException,
   NotFoundException,
   UnauthorizedException,
 } from "@nestjs/common";
@@ -25,6 +26,7 @@ import { SaveWhatsAppVerificationUseCase } from "@/domain/integrations/whatsapp/
 import { SaveWhatsAppNumberUseCase } from "@/domain/integrations/whatsapp/application/use-cases/save-whatsapp-number.use-case";
 import { EvolutionApiPort } from "@/domain/integrations/whatsapp/application/ports/evolution-api.port";
 import { GetWhatsAppTemplatesUseCase, CreateWhatsAppTemplateUseCase, UpdateWhatsAppTemplateUseCase, DeleteWhatsAppTemplateUseCase } from "@/domain/integrations/whatsapp/application/use-cases/whatsapp-templates.use-cases";
+import { GetWhatsAppMessageByIdUseCase } from "@/domain/integrations/whatsapp/application/use-cases/get-whatsapp-message-by-id.use-case";
 
 interface SendMessageBody {
   to: string;
@@ -77,6 +79,7 @@ export class WhatsAppController {
     private readonly createTemplate: CreateWhatsAppTemplateUseCase,
     private readonly updateTemplate: UpdateWhatsAppTemplateUseCase,
     private readonly deleteTemplate: DeleteWhatsAppTemplateUseCase,
+    private readonly getMessageById: GetWhatsAppMessageByIdUseCase,
   ) {}
 
   @Post("send")
@@ -179,6 +182,21 @@ export class WhatsAppController {
 
     if (result.isLeft()) throw new NotFoundException(result.value.message);
     return { ok: true };
+  }
+
+  @Get("message/:id")
+  @ApiOperation({ summary: "Get a WhatsApp message by database ID" })
+  async getMessageByIdHandler(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<unknown> {
+    const result = await this.getMessageById.execute(id);
+    if (result.isLeft()) throw new NotFoundException(result.value.message);
+    const msg = result.value;
+    if (user.role !== "admin" && msg.ownerId !== user.id) {
+      throw new ForbiddenException("Acesso negado");
+    }
+    return msg;
   }
 
   @Get("messages/:activityId")

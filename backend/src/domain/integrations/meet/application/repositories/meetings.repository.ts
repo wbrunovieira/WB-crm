@@ -80,6 +80,7 @@ export interface SaveRecordingData {
 
 export abstract class MeetingsRepository {
   abstract findScheduled(): Promise<MeetingRecord[]>;
+  abstract findScheduledWithRsvpData(): Promise<Array<{ id: string; googleEventId: string; attendeeEmails: string }>>;
   abstract findEndedPendingRecording(since: Date): Promise<MeetingRecord[]>;
   abstract findPendingTranscriptions(): Promise<MeetingTranscriptionRecord[]>;
   abstract markAsEnded(id: string, data: EndMeetingData): Promise<void>;

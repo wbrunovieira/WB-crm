@@ -1,10 +1,11 @@
 import {
   Body, Controller, Get, HttpCode, Post, Query, Redirect,
-  UnauthorizedException, ForbiddenException, UseGuards,
+  UnauthorizedException, ForbiddenException, ConflictException, BadRequestException, UseGuards,
 } from "@nestjs/common";
 import { ApiOperation, ApiProperty, ApiResponse, ApiTags, ApiBearerAuth } from "@nestjs/swagger";
 import { google } from "googleapis";
 import { LoginUseCase } from "@/domain/auth/application/use-cases/login.use-case";
+import { RegisterUserUseCase, UserAlreadyExistsError } from "@/domain/auth/application/use-cases/register-user.use-case";
 import {
   StoreGoogleTokensUseCase,
   DisconnectGoogleUseCase,
@@ -59,10 +60,27 @@ function frontendUrl() {
 export class AuthController {
   constructor(
     private readonly login: LoginUseCase,
+    private readonly register: RegisterUserUseCase,
     private readonly storeGoogleTokens: StoreGoogleTokensUseCase,
     private readonly disconnectGoogle: DisconnectGoogleUseCase,
     private readonly storeGoToTokens: StoreGoToTokensUseCase,
   ) {}
+
+  @Post("register")
+  @HttpCode(201)
+  @ApiOperation({ summary: "Registrar novo usuário" })
+  async doRegister(@Body() body: { name: string; email: string; password: string }) {
+    if (!body.name || !body.email || !body.password) {
+      throw new BadRequestException("name, email e password são obrigatórios");
+    }
+    if (body.password.length < 6) throw new BadRequestException("Senha deve ter no mínimo 6 caracteres");
+    const result = await this.register.execute(body);
+    if (result.isLeft()) {
+      if (result.value instanceof UserAlreadyExistsError) throw new ConflictException(result.value.message);
+      throw new BadRequestException(result.value.message);
+    }
+    return { user: result.value };
+  }
 
   @Post("login")
   @HttpCode(200)

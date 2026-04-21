@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { LoginUseCase } from "@/domain/auth/application/use-cases/login.use-case";
+import { RegisterUserUseCase } from "@/domain/auth/application/use-cases/register-user.use-case";
 import { UsersRepository } from "@/domain/auth/application/repositories/users.repository";
 import { OAuthRepository } from "@/domain/auth/application/repositories/oauth.repository";
 import {
@@ -26,6 +27,7 @@ import { GetUsersUseCase } from "@/domain/auth/application/use-cases/get-users.u
   providers: [
     JwtAuthGuard,
     LoginUseCase,
+    RegisterUserUseCase,
     GetUsersUseCase,
     StoreGoogleTokensUseCase,
     DisconnectGoogleUseCase,

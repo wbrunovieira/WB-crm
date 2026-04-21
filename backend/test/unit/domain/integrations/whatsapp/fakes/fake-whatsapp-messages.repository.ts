@@ -7,6 +7,10 @@ import { randomUUID } from "crypto";
 export class FakeWhatsAppMessagesRepository extends WhatsAppMessagesRepository {
   public items: WhatsAppMessageData[] = [];
 
+  async findById(id: string): Promise<WhatsAppMessageData | null> {
+    return this.items.find((m) => m.id === id) ?? null;
+  }
+
   async findByMessageId(messageId: string): Promise<WhatsAppMessageData | null> {
     return this.items.find((m) => m.messageId === messageId) ?? null;
   }
@@ -65,5 +69,9 @@ export class FakeWhatsAppMessagesRepository extends WhatsAppMessagesRepository {
       this.items[idx].mediaTranscriptText = text;
       this.items[idx].mediaTranscriptionJobId = null;
     }
+  }
+
+  async findMediaByActivityId(activityId: string): Promise<WhatsAppMessageData[]> {
+    return this.items.filter((m) => m.activityId === activityId && m.mediaDriveId != null);
   }
 }

@@ -1,9 +1,10 @@
-import { Controller, Get, Post, Body, Query, UseGuards, Request } from "@nestjs/common";
+import { Controller, Get, Post, Body, Query, UseGuards, Request, BadRequestException } from "@nestjs/common";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import {
   GetFunnelStatsUseCase,
   GetWeeklyGoalsUseCase,
   UpsertWeeklyGoalUseCase,
+  GetWeeklyFunnelDataUseCase,
 } from "../../application/use-cases/funnel.use-cases";
 
 @UseGuards(JwtAuthGuard)
@@ -13,6 +14,7 @@ export class FunnelController {
     private readonly getStats: GetFunnelStatsUseCase,
     private readonly getGoals: GetWeeklyGoalsUseCase,
     private readonly upsertGoal: UpsertWeeklyGoalUseCase,
+    private readonly getWeeklyData: GetWeeklyFunnelDataUseCase,
   ) {}
 
   @Get("stats")
@@ -29,6 +31,17 @@ export class FunnelController {
   @Get("goals")
   async goals(@Request() req: any) {
     const result = await this.getGoals.execute({ requesterId: req.user.id });
+    if (result.isLeft()) throw result.value;
+    return result.unwrap();
+  }
+
+  @Get("weekly-stats")
+  async weeklyStats(@Request() req: any, @Query("weekStart") weekStartStr: string) {
+    if (!weekStartStr) throw new BadRequestException("weekStart query param required (YYYY-MM-DD)");
+    const weekStart = new Date(weekStartStr);
+    if (isNaN(weekStart.getTime())) throw new BadRequestException("Invalid weekStart date");
+    const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const result = await this.getWeeklyData.execute({ requesterId: req.user.id, weekStart, weekEnd });
     if (result.isLeft()) throw result.value;
     return result.unwrap();
   }

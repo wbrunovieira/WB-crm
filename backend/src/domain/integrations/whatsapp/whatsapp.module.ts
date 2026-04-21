@@ -22,6 +22,7 @@ import { GetWhatsAppMediaMessagesUseCase } from "./application/use-cases/get-wha
 import { SaveWhatsAppVerificationUseCase } from "./application/use-cases/save-whatsapp-verification.use-case";
 import { SaveWhatsAppNumberUseCase } from "./application/use-cases/save-whatsapp-number.use-case";
 import { GetWhatsAppTemplatesUseCase, CreateWhatsAppTemplateUseCase, UpdateWhatsAppTemplateUseCase, DeleteWhatsAppTemplateUseCase } from "./application/use-cases/whatsapp-templates.use-cases";
+import { GetWhatsAppMessageByIdUseCase } from "./application/use-cases/get-whatsapp-message-by-id.use-case";
 
 // Repository abstracts
 import { WhatsAppTemplatesRepository } from "./application/repositories/whatsapp-templates.repository";
@@ -53,6 +54,7 @@ import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-tra
     CreateWhatsAppTemplateUseCase,
     UpdateWhatsAppTemplateUseCase,
     DeleteWhatsAppTemplateUseCase,
+    GetWhatsAppMessageByIdUseCase,
     // Port implementations
     { provide: EvolutionApiPort, useClass: EvolutionApiClient },
     // Repositories

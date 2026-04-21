@@ -12,6 +12,7 @@ import { MeetingsRepository } from "./application/repositories/meetings.reposito
 // Use Cases
 import { DetectMeetRecordingsUseCase } from "./application/use-cases/detect-meet-recordings.use-case";
 import { PollMeetTranscriptionsUseCase } from "./application/use-cases/poll-meet-transcriptions.use-case";
+import { RefreshMeetRsvpUseCase } from "./application/use-cases/refresh-meet-rsvp.use-case";
 import {
   GetMeetingsUseCase, GetMeetingByIdUseCase, ScheduleMeetingUseCase,
   UpdateMeetingUseCase, CancelMeetingUseCase,
@@ -24,6 +25,7 @@ import { GoogleCalendarClient } from "./infra/google-calendar.client";
 import { PrismaMeetingsRepository } from "./infra/prisma-meetings.repository";
 import { MeetRecordingsCronService } from "./infra/scheduled/meet-recordings-cron.service";
 import { MeetTranscriptionsCronService } from "./infra/scheduled/meet-transcriptions-cron.service";
+import { MeetRsvpCronService } from "./infra/scheduled/meet-rsvp-cron.service";
 import { MeetingsCrudController } from "./infra/meetings-crud.controller";
 import { AuthModule } from "@/infra/auth/auth.module";
 
@@ -34,6 +36,7 @@ import { AuthModule } from "@/infra/auth/auth.module";
     // Use Cases
     DetectMeetRecordingsUseCase,
     PollMeetTranscriptionsUseCase,
+    RefreshMeetRsvpUseCase,
     GetMeetingsUseCase,
     GetMeetingByIdUseCase,
     ScheduleMeetingUseCase,
@@ -53,6 +56,7 @@ import { AuthModule } from "@/infra/auth/auth.module";
     // Scheduled
     MeetRecordingsCronService,
     MeetTranscriptionsCronService,
+    MeetRsvpCronService,
   ],
 })
 export class MeetModule {}
