@@ -1,5 +1,4 @@
 import { getDeals } from "@/actions/deals";
-import { getLeads } from "@/actions/leads";
 import { backendFetch } from "@/lib/backend/client";
 import type { ContactSummary } from "@/types/contact";
 import type { UserListItem } from "@/hooks/users/use-users";
@@ -76,7 +75,7 @@ export default async function ActivitiesPage({
   const [deals, contacts, leads, partners, users] = await Promise.all([
     getDeals(),
     backendFetch<ContactSummary[]>("/contacts").catch(() => []),
-    getLeads({}).then(r => r.leads),
+    backendFetch<{ leads: { id: string; businessName: string }[] }>("/leads?isProspect=false&isArchived=false&pageSize=200").then(r => r.leads).catch(() => []),
     backendFetch<{ id: string; name: string }[]>("/partners").catch(() => []),
     backendFetch<UserListItem[]>('/users'),
   ]);

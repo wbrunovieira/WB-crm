@@ -3,7 +3,6 @@ import DealForm from "@/components/deals/DealForm";
 import { getContactsList } from "@/lib/lists/contacts-list";
 import { backendFetch } from "@/lib/backend/client";
 import { getStagesList } from "@/lib/lists/stages-list";
-import { getLeadsList } from "@/actions/leads-list";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
@@ -17,10 +16,10 @@ export default async function EditDealPage({
     getContactsList(),
     backendFetch<{ id: string; name: string }[]>("/organizations").catch(() => []),
     getStagesList(),
-    getLeadsList(),
+    backendFetch<{ leads: { id: string; businessName: string }[] }>("/leads?isArchived=false&isProspect=false&pageSize=200").catch(() => ({ leads: [] })),
   ]);
 
-  const leads = leadsData.map((l) => ({ id: l.id, businessName: l.businessName }));
+  const leads = leadsData.leads.map((l) => ({ id: l.id, businessName: l.businessName }));
 
   if (!deal) {
     notFound();

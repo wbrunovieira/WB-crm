@@ -3,11 +3,14 @@ import type { LeadSummary, LeadDetail } from "../../enterprise/read-models/lead-
 
 export interface LeadFilters {
   search?: string;
+  contactSearch?: string;
   status?: string;
   quality?: string;
   isArchived?: boolean;
   isProspect?: boolean;
   ownerIdFilter?: string; // "all", "mine", or userId
+  icpId?: string;
+  hasCadence?: "yes" | "no";
   page?: number;
   pageSize?: number;
 }

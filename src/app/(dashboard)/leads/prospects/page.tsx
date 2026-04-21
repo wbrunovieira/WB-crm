@@ -1,4 +1,3 @@
-import { getProspects } from "@/actions/leads";
 import { backendFetch } from "@/lib/backend/client";
 import type { UserListItem } from "@/hooks/users/use-users";
 import { ProspectsTable } from "@/components/leads/ProspectsTable";
@@ -20,10 +19,16 @@ export default async function ProspectsPage({
   const isAdmin = session?.user?.role === "admin";
   const currentUserId = session?.user?.id || "";
 
-  const [prospects, users] = await Promise.all([
-    getProspects(searchParams),
+  const prospectsQs = new URLSearchParams({ isProspect: "true" });
+  if (searchParams.search) prospectsQs.set("search", searchParams.search);
+  if (searchParams.owner) prospectsQs.set("owner", searchParams.owner);
+
+  type LeadSummary = { id: string; ownerId: string; businessName: string; status: string; quality: string | null; isArchived: boolean; phone: string | null; whatsapp: string | null; email: string | null; city: string | null; state: string | null; starRating: number | null; fieldsFilled: number | null; createdAt: string; updatedAt: string; owner: { id: string; name: string; email: string } | null; labels: Array<{ id: string; name: string; color: string }>; };
+  const [prospectsResult, users] = await Promise.all([
+    backendFetch<{ leads: LeadSummary[]; total: number }>(`/leads?${prospectsQs}`).catch(() => ({ leads: [], total: 0 })),
     backendFetch<UserListItem[]>('/users'),
   ]);
+  const prospects = prospectsResult.leads;
 
   return (
     <div className="p-8">

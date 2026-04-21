@@ -4,6 +4,10 @@ import type { LeadSummary, LeadDetail } from "@/domain/leads/enterprise/read-mod
 
 export class InMemoryLeadsRepository extends LeadsRepository {
   public items: Lead[] = [];
+  // Auxiliary maps for filter testing (leadId → data)
+  public leadContacts: Map<string, string[]> = new Map(); // leadId → contact names
+  public leadIcps: Map<string, string[]> = new Map();     // leadId → icp ids
+  public leadHasCadence: Map<string, boolean> = new Map(); // leadId → has cadence
 
   async findMany(requesterId: string, requesterRole: string, filters: LeadFilters = {}): Promise<PaginatedLeads> {
     let results = this.items;
@@ -27,6 +31,27 @@ export class InMemoryLeadsRepository extends LeadsRepository {
 
     if (filters.isArchived !== undefined) {
       results = results.filter((l) => l.isArchived === filters.isArchived);
+    }
+
+    if (filters.contactSearch) {
+      const q = filters.contactSearch.toLowerCase();
+      results = results.filter((l) => {
+        const contacts = this.leadContacts.get(l.id.toString()) ?? [];
+        return contacts.some((name) => name.toLowerCase().includes(q));
+      });
+    }
+
+    if (filters.icpId) {
+      results = results.filter((l) => {
+        const icps = this.leadIcps.get(l.id.toString()) ?? [];
+        return icps.includes(filters.icpId!);
+      });
+    }
+
+    if (filters.hasCadence === "yes") {
+      results = results.filter((l) => this.leadHasCadence.get(l.id.toString()) === true);
+    } else if (filters.hasCadence === "no") {
+      results = results.filter((l) => this.leadHasCadence.get(l.id.toString()) !== true);
     }
 
     const total = results.length;

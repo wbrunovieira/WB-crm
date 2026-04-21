@@ -1,4 +1,3 @@
-import { getLeads } from "@/actions/leads";
 import { backendFetch } from "@/lib/backend/client";
 import type { UserListItem } from "@/hooks/users/use-users";
 import type { ICP as ICPType } from "@/hooks/icps/use-icps";
@@ -32,8 +31,39 @@ export default async function LeadsPage({
   const isAdmin = session?.user?.role === "admin";
   const currentUserId = session?.user?.id || "";
 
+  type LeadSummary = {
+    id: string; ownerId: string; businessName: string; status: string;
+    quality: string | null; isArchived: boolean; isProspect: boolean;
+    email: string | null; phone: string | null; whatsapp: string | null;
+    city: string | null; state: string | null; country: string | null;
+    starRating: number | null; fieldsFilled: number | null;
+    convertedToOrganizationId: string | null; convertedAt: string | null;
+    referredByPartnerId: string | null; driveFolderId: string | null;
+    inOperationsAt: string | null; createdAt: string; updatedAt: string;
+    owner: { id: string; name: string; email: string } | null;
+    referredByPartner: { id: string; name: string } | null;
+    labels: Array<{ id: string; name: string; color: string }>;
+    primaryCNAE: { id: string; code: string; description: string } | null;
+  };
+  type LeadsResult = { leads: LeadSummary[]; total: number; page: number; pageSize: number };
+
+  const leadsQs = new URLSearchParams();
+  if (searchParams.search) leadsQs.set("search", searchParams.search);
+  if (searchParams.contactSearch) leadsQs.set("contactSearch", searchParams.contactSearch);
+  if (searchParams.status) leadsQs.set("status", searchParams.status);
+  if (searchParams.quality) leadsQs.set("quality", searchParams.quality);
+  if (searchParams.owner) leadsQs.set("owner", searchParams.owner);
+  if (searchParams.icpId) leadsQs.set("icpId", searchParams.icpId);
+  if (searchParams.hasCadence) leadsQs.set("hasCadence", searchParams.hasCadence);
+  if (searchParams.page) leadsQs.set("page", searchParams.page);
+  // Map archived → isArchived
+  if (searchParams.archived === "yes") leadsQs.set("isArchived", "true");
+  else if (searchParams.archived === "all") { /* no filter */ }
+  else leadsQs.set("isArchived", "false");
+  leadsQs.set("isProspect", "false");
+
   const [leadsResult, users, icps] = await Promise.all([
-    getLeads(searchParams),
+    backendFetch<LeadsResult>(`/leads?${leadsQs}`).catch(() => ({ leads: [], total: 0, page: 1, pageSize: 50 })),
     backendFetch<UserListItem[]>('/users'),
     backendFetch<ICPType[]>('/icps?status=active').catch(() => [] as ICPType[]),
   ]);

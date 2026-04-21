@@ -69,6 +69,38 @@ export class PrismaLeadsRepository extends LeadsRepository {
     // isProspect
     if (filters.isProspect !== undefined) where.isProspect = filters.isProspect;
 
+    // contactSearch — match leads where any contact name/email contains the search term
+    if (filters.contactSearch) {
+      const existing = where.AND
+        ? (Array.isArray(where.AND) ? where.AND : [where.AND])
+        : [];
+      where.AND = [
+        ...existing,
+        {
+          leadContacts: {
+            some: {
+              OR: [
+                { name: { contains: filters.contactSearch, mode: "insensitive" } },
+                { email: { contains: filters.contactSearch, mode: "insensitive" } },
+              ],
+            },
+          },
+        },
+      ];
+    }
+
+    // icpId — leads linked to the given ICP
+    if (filters.icpId) {
+      where.icps = { some: { icpId: filters.icpId } };
+    }
+
+    // hasCadence — leads with/without any lead cadence record
+    if (filters.hasCadence === "yes") {
+      where.leadCadences = { some: {} };
+    } else if (filters.hasCadence === "no") {
+      where.leadCadences = { none: {} };
+    }
+
     return where;
   }
 

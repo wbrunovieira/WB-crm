@@ -567,22 +567,28 @@ export class LeadsController {
   @Get()
   @ApiOperation({ summary: "Listar leads", description: "Retorna todos os leads acessíveis pelo usuário autenticado. Admin vê todos." })
   @ApiQuery({ name: "search", required: false, description: "Busca por nome, email ou telefone" })
+  @ApiQuery({ name: "contactSearch", required: false, description: "Busca por nome ou email de contato vinculado ao lead" })
   @ApiQuery({ name: "status", required: false, enum: ["new", "contacted", "qualified", "disqualified"], description: "Filtrar por status" })
   @ApiQuery({ name: "quality", required: false, enum: ["cold", "warm", "hot"], description: "Filtrar por qualidade" })
   @ApiQuery({ name: "isArchived", required: false, description: "Filtrar arquivados (true/false)" })
   @ApiQuery({ name: "isProspect", required: false, description: "Filtrar prospects (true/false)" })
   @ApiQuery({ name: "owner", required: false, description: "Filtrar por dono (admin only: 'all', 'mine', ou userId)" })
+  @ApiQuery({ name: "icpId", required: false, description: "Filtrar leads vinculados ao ICP informado" })
+  @ApiQuery({ name: "hasCadence", required: false, enum: ["yes", "no"], description: "Filtrar leads com (yes) ou sem (no) cadência" })
   @ApiQuery({ name: "page", required: false, type: Number, description: "Página (default: 1)" })
   @ApiQuery({ name: "pageSize", required: false, type: Number, description: "Itens por página (default: 50, max: 200)" })
   @ApiResponse({ status: 200, description: "Lista de leads com relações e paginação" })
   @ApiResponse({ status: 401, description: "Token inválido ou ausente" })
   async list(
     @Query("search") search?: string,
+    @Query("contactSearch") contactSearch?: string,
     @Query("status") status?: string,
     @Query("quality") quality?: string,
     @Query("isArchived") isArchivedStr?: string,
     @Query("isProspect") isProspectStr?: string,
     @Query("owner") owner?: string,
+    @Query("icpId") icpId?: string,
+    @Query("hasCadence") hasCadence?: string,
     @Query("page") pageStr?: string,
     @Query("pageSize") pageSizeStr?: string,
     @CurrentUser() user?: AuthenticatedUser,
@@ -593,11 +599,25 @@ export class LeadsController {
       isProspectStr === "true" ? true : isProspectStr === "false" ? false : undefined;
     const page = pageStr ? parseInt(pageStr, 10) : undefined;
     const pageSize = pageSizeStr ? parseInt(pageSizeStr, 10) : undefined;
+    const hasCadenceFilter =
+      hasCadence === "yes" ? "yes" : hasCadence === "no" ? "no" : undefined;
 
     const result = await this.getLeads.execute({
       requesterId: user!.id,
       requesterRole: user!.role ?? "sdr",
-      filters: { search, status, quality, isArchived, isProspect, ownerIdFilter: owner, page, pageSize },
+      filters: {
+        search,
+        contactSearch,
+        status,
+        quality,
+        isArchived,
+        isProspect,
+        ownerIdFilter: owner,
+        icpId,
+        hasCadence: hasCadenceFilter,
+        page,
+        pageSize,
+      },
     });
     return result.unwrap();
   }
