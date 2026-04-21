@@ -82,7 +82,9 @@ export class MeetingsCrudController {
   async create(@Request() req: any, @Body() body: {
     title: string; startAt: string; endAt?: string;
     attendeeEmails?: string[]; googleEventId?: string; meetLink?: string;
+    description?: string;
     leadId?: string; contactId?: string; organizationId?: string; dealId?: string;
+    createActivity?: boolean;
   }) {
     const r = await this.schedule.execute({
       title: body.title,
@@ -91,11 +93,13 @@ export class MeetingsCrudController {
       attendeeEmails: body.attendeeEmails ?? [],
       googleEventId: body.googleEventId,
       meetLink: body.meetLink,
+      description: body.description,
       leadId: body.leadId,
       contactId: body.contactId,
       organizationId: body.organizationId,
       dealId: body.dealId,
       requesterId: req.user.id,
+      createActivity: body.createActivity,
     });
     if (r.isLeft()) throwIfError(r.value);
     return serialize(r.unwrap());

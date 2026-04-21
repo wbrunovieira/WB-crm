@@ -44,6 +44,8 @@ export interface CreateMeetingData {
   organizationId?: string;
   dealId?: string;
   ownerId: string;
+  description?: string;
+  createActivity?: boolean;
 }
 
 export interface UpdateMeetingData {
@@ -85,6 +87,8 @@ export abstract class MeetingsRepository {
   abstract saveTranscription(id: string, text: string): Promise<void>;
   abstract clearTranscriptionJob(id: string): Promise<void>;
   abstract completeActivity(activityId: string, at: Date): Promise<void>;
+  abstract skipActivity(activityId: string, reason: string): Promise<void>;
+  abstract updateActivitySchedule(activityId: string, data: { dueDate?: Date; subject?: string }): Promise<void>;
   // CRUD methods
   abstract findById(id: string): Promise<MeetingRecord | null>;
   abstract findByOwner(ownerId: string, filters?: MeetingFilters): Promise<MeetingRecord[]>;

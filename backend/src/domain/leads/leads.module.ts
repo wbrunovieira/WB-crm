@@ -28,9 +28,16 @@ import {
   CreateLeadDropdownOptionUseCase,
 } from "./application/use-cases/lead-dropdown-options.use-cases";
 import { LeadDropdownOptionsRepository } from "./application/repositories/lead-dropdown-options.repository";
+import { GooglePlacesSearchesRepository } from "./application/repositories/google-places-searches.repository";
+import {
+  FindOrCreateGooglePlacesSearchUseCase,
+  UpdateGooglePlacesSearchUseCase,
+  CheckLeadGoogleIdExistsUseCase,
+} from "./application/use-cases/google-places-searches.use-cases";
 import { PrismaLeadsRepository } from "@/infra/database/prisma/repositories/leads/prisma-leads.repository";
 import { PrismaLeadContactsRepository } from "@/infra/database/prisma/repositories/leads/prisma-lead-contacts.repository";
 import { PrismaLeadDropdownOptionsRepository } from "@/infra/database/prisma/repositories/leads/prisma-lead-dropdown-options.repository";
+import { PrismaGooglePlacesSearchesRepository } from "@/infra/database/prisma/repositories/leads/prisma-google-places-searches.repository";
 import { LeadsController } from "@/infra/controllers/leads.controller";
 
 @Module({
@@ -40,6 +47,7 @@ import { LeadsController } from "@/infra/controllers/leads.controller";
     { provide: LeadsRepository, useClass: PrismaLeadsRepository },
     { provide: LeadContactsRepository, useClass: PrismaLeadContactsRepository },
     { provide: LeadDropdownOptionsRepository, useClass: PrismaLeadDropdownOptionsRepository },
+    { provide: GooglePlacesSearchesRepository, useClass: PrismaGooglePlacesSearchesRepository },
     GetLeadsUseCase,
     GetLeadByIdUseCase,
     CreateLeadUseCase,
@@ -59,6 +67,9 @@ import { LeadsController } from "@/infra/controllers/leads.controller";
     GetLeadsForSelectUseCase,
     GetLeadDropdownOptionsUseCase,
     CreateLeadDropdownOptionUseCase,
+    FindOrCreateGooglePlacesSearchUseCase,
+    UpdateGooglePlacesSearchUseCase,
+    CheckLeadGoogleIdExistsUseCase,
   ],
   exports: [LeadsRepository, LeadContactsRepository],
 })

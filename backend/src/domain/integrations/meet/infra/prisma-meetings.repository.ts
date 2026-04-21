@@ -104,6 +104,22 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
     });
   }
 
+  async skipActivity(activityId: string, reason: string): Promise<void> {
+    await this.prisma.activity.update({
+      where: { id: activityId },
+      data: { skippedAt: new Date(), skipReason: reason },
+    });
+  }
+
+  async updateActivitySchedule(activityId: string, data: { dueDate?: Date; subject?: string }): Promise<void> {
+    const update: Record<string, unknown> = {};
+    if (data.dueDate) update.dueDate = data.dueDate;
+    if (data.subject) update.subject = data.subject;
+    if (Object.keys(update).length > 0) {
+      await this.prisma.activity.update({ where: { id: activityId }, data: update });
+    }
+  }
+
   async findById(id: string): Promise<MeetingRecord | null> {
     const row = await this.prisma.meeting.findUnique({ where: { id } });
     return row ? this.toDomain(row as any) : null;
@@ -145,9 +161,54 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
   }
 
   async create(data: CreateMeetingData): Promise<MeetingRecord> {
+    const meetingId = new UniqueEntityID().toString();
+
+    if (data.createActivity) {
+      const activityId = new UniqueEntityID().toString();
+      await this.prisma.$transaction(async (tx) => {
+        await tx.activity.create({
+          data: {
+            id: activityId,
+            type: "meeting",
+            subject: `Reunião: ${data.title}`,
+            description: data.description,
+            dueDate: data.startAt,
+            completed: false,
+            emailReplied: false,
+            emailOpenCount: 0,
+            emailLinkClickCount: 0,
+            meetingNoShow: false,
+            leadId: data.leadId,
+            contactId: data.contactId,
+            dealId: data.dealId,
+            ownerId: data.ownerId,
+          },
+        });
+        await tx.meeting.create({
+          data: {
+            id: meetingId,
+            title: data.title,
+            startAt: data.startAt,
+            endAt: data.endAt,
+            attendeeEmails: JSON.stringify(data.attendeeEmails),
+            googleEventId: data.googleEventId,
+            meetLink: data.meetLink,
+            leadId: data.leadId,
+            contactId: data.contactId,
+            organizationId: data.organizationId,
+            dealId: data.dealId,
+            ownerId: data.ownerId,
+            activityId,
+          },
+        });
+      });
+      const row = await this.prisma.meeting.findUniqueOrThrow({ where: { id: meetingId } });
+      return this.toDomain(row as any);
+    }
+
     const row = await this.prisma.meeting.create({
       data: {
-        id: new UniqueEntityID().toString(),
+        id: meetingId,
         title: data.title,
         startAt: data.startAt,
         endAt: data.endAt,

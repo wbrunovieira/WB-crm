@@ -60,11 +60,13 @@ export class ScheduleMeetingUseCase {
     attendeeEmails: string[];
     googleEventId?: string;
     meetLink?: string;
+    description?: string;
     leadId?: string;
     contactId?: string;
     organizationId?: string;
     dealId?: string;
     requesterId: string;
+    createActivity?: boolean;
   }): Promise<Either<Error, MeetingRecord>> {
     if (!input.title.trim()) return left(new Error("title não pode ser vazio"));
     const meeting = await this.repo.create({
@@ -74,11 +76,13 @@ export class ScheduleMeetingUseCase {
       attendeeEmails: input.attendeeEmails,
       googleEventId: input.googleEventId,
       meetLink: input.meetLink,
+      description: input.description,
       leadId: input.leadId,
       contactId: input.contactId,
       organizationId: input.organizationId,
       dealId: input.dealId,
       ownerId: input.requesterId,
+      createActivity: input.createActivity,
     });
     return right(meeting);
   }
@@ -108,6 +112,12 @@ export class UpdateMeetingUseCase {
       status: input.status,
       attendeeEmails: input.attendeeEmails,
     });
+    if (meeting.activityId && (input.startAt || input.title)) {
+      await this.repo.updateActivitySchedule(meeting.activityId, {
+        dueDate: input.startAt,
+        subject: input.title ? `Reunião: ${input.title}` : undefined,
+      });
+    }
     return right(updated);
   }
 }
@@ -121,6 +131,9 @@ export class CancelMeetingUseCase {
     if (!meeting) return left(new MeetingNotFoundError("Reunião não encontrada"));
     if (meeting.ownerId !== input.requesterId) return left(new MeetingForbiddenError("Acesso negado"));
     await this.repo.update(input.id, { status: "cancelled" });
+    if (meeting.activityId) {
+      await this.repo.skipActivity(meeting.activityId, "Reunião cancelada");
+    }
     return right(undefined);
   }
 }

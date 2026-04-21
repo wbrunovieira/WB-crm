@@ -2,8 +2,8 @@
 
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
+import { backendFetch } from "@/lib/backend/client";
 import { searchPlaces, PlacesRateLimitError } from "@/lib/google/places";
 
 export interface ExcludeCriteria {
@@ -75,32 +75,17 @@ export async function importGoogleLeads(
   const ownerId = session.user.id;
   const searchQuery = buildSearchQuery(params);
 
-  // Carrega perfil existente ou cria novo
-  const profileWhere = {
-    ownerId,
-    country: params.country,
-    city: params.city ?? null,
-    zipCode: params.zipCode ?? null,
-    typeKeyword: params.typeKeyword,
-  };
-
-  let searchProfile = await prisma.googlePlacesSearch.findFirst({
-    where: profileWhere,
+  const searchProfile = await backendFetch<{ id: string; fetchedPlaceIds: string }>("/leads/google-places-searches/find-or-create", {
+    method: "POST",
+    body: JSON.stringify({
+      ownerId,
+      country: params.country,
+      city: params.city,
+      zipCode: params.zipCode,
+      typeKeyword: params.typeKeyword,
+      searchQuery,
+    }),
   });
-
-  if (!searchProfile) {
-    searchProfile = await prisma.googlePlacesSearch.create({
-      data: {
-        ownerId,
-        country: params.country,
-        city: params.city,
-        zipCode: params.zipCode,
-        typeKeyword: params.typeKeyword,
-        searchQuery,
-        fetchedPlaceIds: "[]",
-      },
-    });
-  }
 
   let fetchedPlaceIds: string[] = [];
   try {
@@ -122,44 +107,36 @@ export async function importGoogleLeads(
       });
 
       if (result.places.length === 0) {
-        await updateProfile(searchProfile.id, fetchedPlaceIds, newlySeenIds, imported, skipped);
+        await updateProfile(searchProfile.id, fetchedPlaceIds, newlySeenIds, imported);
         return { success: true, imported, skipped, status: "exhausted" };
       }
 
       for (const place of result.places) {
-        // Skip malformed places from the API
         if (!place.placeId) { skipped++; continue; }
 
-        // 1. Já vimos este place nesta busca?
         if (fetchedPlaceIds.includes(place.placeId)) {
           skipped++;
           continue;
         }
 
-        // Marca como visto (independente de importar ou não)
         newlySeenIds.push(place.placeId);
         fetchedPlaceIds.push(place.placeId);
 
-        // 2. Aplica critérios de exclusão
         if (!passesExcludeCriteria(place, params.excludeCriteria)) {
           skipped++;
           continue;
         }
 
-        // 3. Já existe Lead com este googleId (busca global, sem filtro de owner)?
-        const existing = await prisma.lead.findFirst({
-          where: { googleId: place.placeId },
-          select: { id: true },
-        });
+        const { exists } = await backendFetch<{ exists: boolean }>(`/leads/check-google-id?googleId=${encodeURIComponent(place.placeId)}`);
 
-        if (existing) {
+        if (exists) {
           skipped++;
           continue;
         }
 
-        // 4. Cria como Prospect (pré-cadastro para análise)
-        await prisma.lead.create({
-          data: {
+        await backendFetch("/leads", {
+          method: "POST",
+          body: JSON.stringify({
             googleId: place.placeId,
             businessName: place.businessName,
             address: place.address,
@@ -187,7 +164,7 @@ export async function importGoogleLeads(
             isProspect: true,
             ownerId,
             googlePlacesSearchId: searchProfile.id,
-          },
+          }),
         });
 
         imported++;
@@ -198,23 +175,21 @@ export async function importGoogleLeads(
       if (imported >= params.requestedCount) break;
 
       if (!result.nextPageToken) {
-        await updateProfile(searchProfile.id, fetchedPlaceIds, newlySeenIds, imported, skipped);
+        await updateProfile(searchProfile.id, fetchedPlaceIds, newlySeenIds, imported);
         return { success: true, imported, skipped, status: "exhausted" };
       }
 
       pageToken = result.nextPageToken;
 
-      // Google exige ~2s antes de usar o next_page_token
       await new Promise((r) => setTimeout(r, 2000));
     }
 
-    await updateProfile(searchProfile.id, fetchedPlaceIds, newlySeenIds, imported, skipped);
+    await updateProfile(searchProfile.id, fetchedPlaceIds, newlySeenIds, imported);
     revalidatePath("/leads");
     revalidatePath("/leads/prospects");
     return { success: true, imported, skipped, status: "complete" };
   } catch (err) {
-    // Salva progresso mesmo em caso de erro
-    await updateProfile(searchProfile.id, fetchedPlaceIds, newlySeenIds, imported, skipped).catch(() => {});
+    await updateProfile(searchProfile.id, fetchedPlaceIds, newlySeenIds, imported).catch(() => {});
 
     if (err instanceof PlacesRateLimitError) {
       return {
@@ -241,21 +216,13 @@ async function updateProfile(
   allFetchedIds: string[],
   newlySeenIds: string[],
   imported: number,
-  _skipped: number
 ) {
-  const current = await prisma.googlePlacesSearch.findUnique({
-    where: { id },
-    select: { totalFetched: true, totalImported: true },
-  });
-
-  await prisma.googlePlacesSearch.update({
-    where: { id },
-    data: {
+  await backendFetch(`/leads/google-places-searches/${id}`, {
+    method: "PATCH",
+    body: JSON.stringify({
       fetchedPlaceIds: JSON.stringify(allFetchedIds),
-      totalFetched: (current?.totalFetched ?? 0) + newlySeenIds.length,
-      totalImported: (current?.totalImported ?? 0) + imported,
-      lastFetchedAt: new Date(),
-      status: "active",
-    },
+      newlySeenCount: newlySeenIds.length,
+      importedCount: imported,
+    }),
   });
 }

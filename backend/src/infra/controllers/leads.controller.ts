@@ -28,6 +28,11 @@ import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { Left } from "@/core/either";
+import {
+  FindOrCreateGooglePlacesSearchUseCase,
+  UpdateGooglePlacesSearchUseCase,
+  CheckLeadGoogleIdExistsUseCase,
+} from "@/domain/leads/application/use-cases/google-places-searches.use-cases";
 import { GetLeadsUseCase } from "@/domain/leads/application/use-cases/get-leads.use-case";
 import { GetLeadByIdUseCase } from "@/domain/leads/application/use-cases/get-lead-by-id.use-case";
 import { CreateLeadUseCase, type CreateLeadInput } from "@/domain/leads/application/use-cases/create-lead.use-case";
@@ -570,6 +575,9 @@ export class LeadsController {
     private readonly getLeadsForSelect: GetLeadsForSelectUseCase,
     private readonly getLeadDropdownOptions: GetLeadDropdownOptionsUseCase,
     private readonly createLeadDropdownOption: CreateLeadDropdownOptionUseCase,
+    private readonly findOrCreateGoogleSearch: FindOrCreateGooglePlacesSearchUseCase,
+    private readonly updateGoogleSearch: UpdateGooglePlacesSearchUseCase,
+    private readonly checkGoogleId: CheckLeadGoogleIdExistsUseCase,
   ) {}
 
   @Get("for-select")
@@ -901,5 +909,33 @@ export class LeadsController {
     });
     if (result.isLeft()) throw new Error(result.value.message);
     return result.value.option;
+  }
+
+  @Post("google-places-searches/find-or-create")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Encontrar ou criar perfil de busca Google Places" })
+  async findOrCreateSearch(
+    @Body() body: { ownerId: string; country: string; city?: string; zipCode?: string; typeKeyword: string; searchQuery: string },
+  ) {
+    const result = await this.findOrCreateGoogleSearch.execute(body);
+    return result.value.profile;
+  }
+
+  @Patch("google-places-searches/:id")
+  @HttpCode(204)
+  @ApiOperation({ summary: "Atualizar perfil de busca Google Places" })
+  async updateSearch(
+    @Param("id") id: string,
+    @Body() body: { fetchedPlaceIds: string; newlySeenCount: number; importedCount: number },
+  ) {
+    await this.updateGoogleSearch.execute({ id, ...body });
+  }
+
+  @Get("check-google-id")
+  @ApiOperation({ summary: "Verificar se já existe lead com este googleId" })
+  @ApiQuery({ name: "googleId", required: true })
+  async checkGoogleIdExists(@Query("googleId") googleId: string) {
+    const result = await this.checkGoogleId.execute(googleId);
+    return result.value;
   }
 }
