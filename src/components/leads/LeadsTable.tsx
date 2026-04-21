@@ -228,7 +228,7 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
                   </div>
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
-                  {lead.icps[0]?.icp ? (
+                  {lead.icps?.[0]?.icp ? (
                     <span className="inline-flex rounded-full bg-purple-100 px-2 text-xs font-semibold leading-5 text-purple-800">
                       {lead.icps[0].icp.name}
                     </span>
