@@ -1,4 +1,3 @@
-import { getPartners } from "@/actions/partners";
 import { backendFetch } from "@/lib/backend/client";
 import type { UserListItem } from "@/hooks/users/use-users";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
@@ -20,8 +19,23 @@ export default async function PartnersPage({
   const isAdmin = session?.user?.role === "admin";
   const currentUserId = session?.user?.id || "";
 
+  const params = new URLSearchParams();
+  if (searchParams.search) params.set("search", searchParams.search);
+  if (searchParams.owner) params.set("owner", searchParams.owner);
+  const qs = params.toString();
+
+  type PartnerSummary = {
+    id: string; ownerId: string; name: string; partnerType: string;
+    email?: string | null; phone?: string | null; city?: string | null;
+    state?: string | null; country?: string | null; industry?: string | null;
+    expertise?: string | null; companySize?: string | null;
+    lastContactDate?: string | null; website?: string | null;
+    owner?: { id: string; name: string; email: string } | null;
+    _count: { contacts: number; activities: number; referredLeads: number };
+  };
+
   const [partners, users] = await Promise.all([
-    getPartners({ search: searchParams.search, owner: searchParams.owner }),
+    backendFetch<PartnerSummary[]>(`/partners${qs ? `?${qs}` : ""}`).catch(() => []),
     backendFetch<UserListItem[]>('/users'),
   ]);
 

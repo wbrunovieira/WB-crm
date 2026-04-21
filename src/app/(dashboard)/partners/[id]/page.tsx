@@ -1,4 +1,4 @@
-import { getPartnerById } from "@/actions/partners";
+import { backendFetch } from "@/lib/backend/client";
 import { PhoneLink } from "@/components/ui/phone-link";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
@@ -16,7 +16,7 @@ export default async function PartnerDetailPage({
   params: { id: string };
 }) {
   const [partner, session] = await Promise.all([
-    getPartnerById(params.id),
+    backendFetch(`/partners/${params.id}`).catch(() => null),
     getServerSession(authOptions),
   ]);
 

@@ -1,9 +1,8 @@
 import { getActivities } from "@/actions/activities";
 import { getDeals } from "@/actions/deals";
-import { getContacts } from "@/actions/contacts";
 import { getLeads } from "@/actions/leads";
-import { getPartners } from "@/actions/partners";
 import { backendFetch } from "@/lib/backend/client";
+import type { ContactSummary } from "@/types/contact";
 import type { UserListItem } from "@/hooks/users/use-users";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
@@ -80,9 +79,9 @@ export default async function ActivitiesPage({
   // Fetch available data for the modal
   const [deals, contacts, leads, partners, users] = await Promise.all([
     getDeals(),
-    getContacts(),
+    backendFetch<ContactSummary[]>("/contacts").catch(() => []),
     getLeads({}).then(r => r.leads),
-    getPartners(),
+    backendFetch<{ id: string; name: string }[]>("/partners").catch(() => []),
     backendFetch<UserListItem[]>('/users'),
   ]);
 
