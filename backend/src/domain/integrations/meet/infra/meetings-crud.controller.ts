@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, UseGuards, Request, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Request, HttpCode, HttpStatus } from "@nestjs/common";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import {
   GetMeetingsUseCase,
@@ -6,6 +6,8 @@ import {
   ScheduleMeetingUseCase,
   UpdateMeetingUseCase,
   CancelMeetingUseCase,
+  CheckMeetingTitleUseCase,
+  UpdateMeetingSummaryUseCase,
   MeetingNotFoundError,
   MeetingForbiddenError,
 } from "../application/use-cases/meetings-crud.use-cases";
@@ -14,10 +16,15 @@ import { NotFoundException, ForbiddenException } from "@nestjs/common";
 function serialize(m: any) {
   return {
     id: m.id, title: m.title, googleEventId: m.googleEventId, meetLink: m.meetLink,
-    startAt: m.startAt, endAt: m.endAt, status: m.status,
-    attendeeEmails: (() => { try { return JSON.parse(m.attendeeEmails); } catch { return []; } })(),
+    startAt: m.startAt, endAt: m.endAt, actualStartAt: m.actualStartAt, actualEndAt: m.actualEndAt,
+    status: m.status,
+    attendeeEmails: m.attendeeEmails,
+    recordingDriveId: m.recordingDriveId, recordingUrl: m.recordingUrl,
+    transcriptText: m.transcriptText, nativeTranscriptUrl: m.nativeTranscriptUrl,
+    meetingSummary: m.meetingSummary, activityId: m.activityId,
     leadId: m.leadId, contactId: m.contactId, organizationId: m.organizationId, dealId: m.dealId,
-    ownerId: m.ownerId, createdAt: m.createdAt,
+    ownerId: m.ownerId, createdAt: m.createdAt, updatedAt: m.updatedAt,
+    activity: m.activity ?? null,
   };
 }
 
@@ -36,13 +43,32 @@ export class MeetingsCrudController {
     private readonly schedule: ScheduleMeetingUseCase,
     private readonly update: UpdateMeetingUseCase,
     private readonly cancel: CancelMeetingUseCase,
+    private readonly checkTitle: CheckMeetingTitleUseCase,
+    private readonly updateSummary: UpdateMeetingSummaryUseCase,
   ) {}
 
   @Get()
-  async list(@Request() req: any) {
-    const r = await this.getMeetings.execute({ requesterId: req.user.id });
+  async list(
+    @Request() req: any,
+    @Query("leadId") leadId?: string,
+    @Query("dealId") dealId?: string,
+    @Query("organizationId") organizationId?: string,
+    @Query("contactId") contactId?: string,
+  ) {
+    const r = await this.getMeetings.execute({ requesterId: req.user.id, filters: { leadId, dealId, organizationId, contactId } });
     if (r.isLeft()) throwIfError(r.value);
     return r.unwrap().map(serialize);
+  }
+
+  @Get("check-title")
+  async checkTitleExists(
+    @Request() req: any,
+    @Query("title") title: string,
+    @Query("excludeId") excludeId?: string,
+  ) {
+    const r = await this.checkTitle.execute({ requesterId: req.user.id, title, excludeId });
+    if (r.isLeft()) throwIfError(r.value);
+    return r.unwrap();
   }
 
   @Get(":id")
@@ -73,6 +99,13 @@ export class MeetingsCrudController {
     });
     if (r.isLeft()) throwIfError(r.value);
     return serialize(r.unwrap());
+  }
+
+  @Patch(":id/summary")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async updateSummaryPatch(@Request() req: any, @Param("id") id: string, @Body() body: { summary: string | null }) {
+    const r = await this.updateSummary.execute({ id, requesterId: req.user.id, summary: body.summary });
+    if (r.isLeft()) throwIfError(r.value);
   }
 
   @Patch(":id")

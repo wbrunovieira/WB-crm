@@ -15,7 +15,8 @@ import {
   Check,
   NotebookPen,
 } from "lucide-react";
-import { cancelMeeting, updateMeetingSummary } from "@/actions/meetings";
+import { cancelMeeting } from "@/actions/meetings";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
 import ScheduleMeetingModal, { type SuggestedContact, type MeetingInitialData } from "./ScheduleMeetingModal";
@@ -342,7 +343,7 @@ function MeetingCard({
   async function handleSaveSummary() {
     setSavingSummary(true);
     try {
-      await updateMeetingSummary(meeting.id, summaryDraft);
+      await apiFetch(`/meetings/${meeting.id}/summary`, { method: "PATCH", body: JSON.stringify({ summary: summaryDraft.trim() || null }) });
       onSummaryUpdated(meeting.id, summaryDraft.trim() || null);
       setEditingSummary(false);
       toast.success("Resumo salvo.");

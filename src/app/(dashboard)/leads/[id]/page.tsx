@@ -1,6 +1,4 @@
 import { backendFetch } from "@/lib/backend/client";
-import { getProposals } from "@/actions/proposals";
-import { getMeetings } from "@/actions/meetings";
 import ProposalsList from "@/components/proposals/ProposalsList";
 import MeetingsList from "@/components/meetings/MeetingsList";
 import { PhoneLink } from "@/components/ui/phone-link";
@@ -35,8 +33,8 @@ export default async function LeadDetailPage({
   const [lead, session, proposals, meetings] = await Promise.all([
     backendFetch(`/leads/${params.id}`).catch(() => null),
     getServerSession(authOptions),
-    getProposals({ leadId: params.id }),
-    getMeetings({ leadId: params.id }),
+    backendFetch(`/proposals?leadId=${params.id}`).catch(() => []),
+    backendFetch(`/meetings?leadId=${params.id}`).catch(() => []),
   ]);
 
   if (!lead) {

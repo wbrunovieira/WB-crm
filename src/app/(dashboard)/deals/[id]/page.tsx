@@ -1,6 +1,4 @@
 import { backendFetch } from "@/lib/backend/client";
-import { getProposals } from "@/actions/proposals";
-import { getMeetings } from "@/actions/meetings";
 import ProposalsList from "@/components/proposals/ProposalsList";
 import MeetingsList from "@/components/meetings/MeetingsList";
 import { notFound } from "next/navigation";
@@ -24,8 +22,8 @@ export default async function DealDetailPage({
   const [deal, session, proposals, meetings] = await Promise.all([
     backendFetch(`/deals/${params.id}`).catch(() => null),
     getServerSession(authOptions),
-    getProposals({ dealId: params.id }),
-    getMeetings({ dealId: params.id }),
+    backendFetch(`/proposals?dealId=${params.id}`).catch(() => []),
+    backendFetch(`/meetings?dealId=${params.id}`).catch(() => []),
   ]);
 
   if (!deal) {

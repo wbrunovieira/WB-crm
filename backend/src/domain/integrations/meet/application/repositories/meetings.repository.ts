@@ -12,6 +12,9 @@ export interface MeetingRecord {
   activityId: string | null;
   nativeTranscriptUrl: string | null;
   recordingDriveId: string | null;
+  recordingUrl: string | null;
+  transcriptText: string | null;
+  meetingSummary: string | null;
   leadId: string | null;
   contactId: string | null;
   organizationId: string | null;
@@ -19,6 +22,14 @@ export interface MeetingRecord {
   ownerId: string;
   createdAt: Date;
   updatedAt: Date;
+  activity?: { id: string; completed: boolean; completedAt: Date | null } | null;
+}
+
+export interface MeetingFilters {
+  leadId?: string;
+  dealId?: string;
+  organizationId?: string;
+  contactId?: string;
 }
 
 export interface CreateMeetingData {
@@ -76,7 +87,9 @@ export abstract class MeetingsRepository {
   abstract completeActivity(activityId: string, at: Date): Promise<void>;
   // CRUD methods
   abstract findById(id: string): Promise<MeetingRecord | null>;
-  abstract findByOwner(ownerId: string): Promise<MeetingRecord[]>;
+  abstract findByOwner(ownerId: string, filters?: MeetingFilters): Promise<MeetingRecord[]>;
+  abstract titleExistsByOwner(ownerId: string, title: string, excludeId?: string): Promise<boolean>;
+  abstract updateSummary(id: string, summary: string | null): Promise<void>;
   abstract create(data: CreateMeetingData): Promise<MeetingRecord>;
   abstract update(id: string, data: UpdateMeetingData): Promise<MeetingRecord>;
   abstract delete(id: string): Promise<void>;

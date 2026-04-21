@@ -311,7 +311,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 15 — Proposals & Meetings
+## ~~FASE 15 — Proposals & Meetings~~ ✅
 
 **Páginas**: `/deals/[id]`, `/leads/[id]`, `/organizations/[id]`
 
@@ -468,7 +468,7 @@ ssh root@45.90.123.190 "docker logs wb-crm-backend --tail=20"
 | 12 | Organizations | ✅ | `organizations.ts`, `organizations-list.ts` deletados. `organization-tech-profile.ts` **mantido** (sem endpoints NestJS para tech profile de organização) |
 | 13 | Leads | ✅ | Reads migrados para `backendFetch`. NestJS recebeu `contactSearch`, `icpId`, `hasCadence` via TDD (18 testes). `leads.ts` **mantido** (mutations em componentes: `convertLeadToOrganization`, `deleteLeadContact`, `createLeadContact`, `qualifyProspect`, `bulkArchiveLeads`, etc.). `leads-list.ts` **mantido** (`getLeadContactsList` usado em `ContactForm`) |
 | 14 | Deals | ✅ | Reads migrados para `backendFetch`. NestJS recebeu `valueRange`, `sortBy`, `sortOrder`, `closedMonth` via TDD (15 testes). Backend atualizado com `stage.pipeline`, `stageHistory.changedBy`, `whatsappMessages` em activities. `deals.ts` **mantido** (só `updateStageHistoryDate` restante). |
-| 15 | Proposals & Meetings | ⏳ | |
+| 15 | Proposals & Meetings | ✅ | SSR reads migrados para `backendFetch`. NestJS meetings recebeu filtros (`leadId`,`dealId`,`organizationId`,`contactId`), `meetingSummary`/`transcriptText`/`activity` no response, `PATCH /meetings/:id/summary`, `GET /meetings/check-title`. `ProposalsList`: `updateProposalStatus`/`deleteProposal` → `apiFetch`. `MeetingsList`: `updateMeetingSummary` → `apiFetch`. `ScheduleMeetingModal`: `checkMeetingTitleExists` → `apiFetch`. **Mantidos**: `createProposal` (Drive), `cancelMeeting`/`scheduleMeeting`/`updateMeeting` (Google Calendar). |
 | 16 | Campaigns | ⏳ | |
 | 17 | Shared Entities | ⏳ | |
 | 18 | Dashboard & Funnel | ⏳ | |

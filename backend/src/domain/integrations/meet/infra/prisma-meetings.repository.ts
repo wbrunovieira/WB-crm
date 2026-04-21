@@ -3,6 +3,7 @@ import { PrismaService } from "@/infra/database/prisma.service";
 import {
   MeetingsRepository,
   MeetingRecord,
+  MeetingFilters,
   MeetingTranscriptionRecord,
   EndMeetingData,
   SaveRecordingData,
@@ -108,12 +109,39 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
     return row ? this.toDomain(row as any) : null;
   }
 
-  async findByOwner(ownerId: string): Promise<MeetingRecord[]> {
+  async findByOwner(ownerId: string, filters: MeetingFilters = {}): Promise<MeetingRecord[]> {
     const rows = await this.prisma.meeting.findMany({
-      where: { ownerId },
+      where: {
+        ownerId,
+        ...(filters.leadId && { leadId: filters.leadId }),
+        ...(filters.dealId && { dealId: filters.dealId }),
+        ...(filters.organizationId && { organizationId: filters.organizationId }),
+        ...(filters.contactId && { contactId: filters.contactId }),
+      },
+      include: {
+        activity: { select: { id: true, completed: true, completedAt: true } },
+      },
       orderBy: { startAt: "desc" },
     });
     return rows.map(r => this.toDomain(r as any));
+  }
+
+  async titleExistsByOwner(ownerId: string, title: string, excludeId?: string): Promise<boolean> {
+    const count = await this.prisma.meeting.count({
+      where: {
+        ownerId,
+        title: { equals: title, mode: "insensitive" },
+        ...(excludeId && { id: { not: excludeId } }),
+      },
+    });
+    return count > 0;
+  }
+
+  async updateSummary(id: string, summary: string | null): Promise<void> {
+    await this.prisma.meeting.update({
+      where: { id },
+      data: { meetingSummary: summary },
+    });
   }
 
   async create(data: CreateMeetingData): Promise<MeetingRecord> {
@@ -161,9 +189,14 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
       actualStartAt: row.actualStartAt ?? null, actualEndAt: row.actualEndAt ?? null,
       attendeeEmails: row.attendeeEmails ?? "[]", status: row.status,
       activityId: row.activityId ?? null, nativeTranscriptUrl: row.nativeTranscriptUrl ?? null,
-      recordingDriveId: row.recordingDriveId ?? null, leadId: row.leadId ?? null,
-      contactId: row.contactId ?? null, organizationId: row.organizationId ?? null,
-      dealId: row.dealId ?? null, ownerId: row.ownerId, createdAt: row.createdAt, updatedAt: row.updatedAt,
+      recordingDriveId: row.recordingDriveId ?? null,
+      recordingUrl: row.recordingUrl ?? null,
+      transcriptText: row.transcriptText ?? null,
+      meetingSummary: row.meetingSummary ?? null,
+      leadId: row.leadId ?? null, contactId: row.contactId ?? null,
+      organizationId: row.organizationId ?? null, dealId: row.dealId ?? null,
+      ownerId: row.ownerId, createdAt: row.createdAt, updatedAt: row.updatedAt,
+      activity: row.activity ?? null,
     };
   }
 }

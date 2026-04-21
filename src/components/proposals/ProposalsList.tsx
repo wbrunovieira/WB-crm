@@ -15,8 +15,9 @@ import {
   Eye,
   MonitorDown,
 } from "lucide-react";
-import { updateProposalStatus, deleteProposal } from "@/actions/proposals";
-import type { ProposalStatus } from "@/actions/proposals";
+import { apiFetch } from "@/lib/api-client";
+
+type ProposalStatus = "draft" | "sent" | "accepted" | "rejected";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
 import ProposalUploadModal from "./ProposalUploadModal";
@@ -90,7 +91,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
   async function handleStatusChange(id: string, status: ProposalStatus) {
     setUpdating(id);
     try {
-      await updateProposalStatus(id, status);
+      await apiFetch(`/proposals/${id}`, { method: "PATCH", body: JSON.stringify({ status }) });
       setProposals((prev) =>
         prev.map((p) =>
           p.id === id ? { ...p, status, sentAt: status === "sent" ? new Date() : p.sentAt } : p
@@ -108,7 +109,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
     if (!confirm("Remover esta proposta? O arquivo no Drive também será excluído.")) return;
     setDeleting(id);
     try {
-      await deleteProposal(id);
+      await apiFetch(`/proposals/${id}`, { method: "DELETE" });
       setProposals((prev) => prev.filter((p) => p.id !== id));
       toast.success("Proposta removida");
     } catch {

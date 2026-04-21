@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
-import { MeetingsRepository, MeetingRecord } from "../repositories/meetings.repository";
+import { MeetingsRepository, MeetingRecord, MeetingFilters } from "../repositories/meetings.repository";
 
 export class MeetingNotFoundError extends Error { name = "MeetingNotFoundError"; }
 export class MeetingForbiddenError extends Error { name = "MeetingForbiddenError"; }
@@ -9,8 +9,31 @@ export class MeetingForbiddenError extends Error { name = "MeetingForbiddenError
 export class GetMeetingsUseCase {
   constructor(private readonly repo: MeetingsRepository) {}
 
-  async execute(input: { requesterId: string }): Promise<Either<Error, MeetingRecord[]>> {
-    return right(await this.repo.findByOwner(input.requesterId));
+  async execute(input: { requesterId: string; filters?: MeetingFilters }): Promise<Either<Error, MeetingRecord[]>> {
+    return right(await this.repo.findByOwner(input.requesterId, input.filters));
+  }
+}
+
+@Injectable()
+export class CheckMeetingTitleUseCase {
+  constructor(private readonly repo: MeetingsRepository) {}
+
+  async execute(input: { requesterId: string; title: string; excludeId?: string }): Promise<Either<Error, { exists: boolean }>> {
+    const exists = await this.repo.titleExistsByOwner(input.requesterId, input.title, input.excludeId);
+    return right({ exists });
+  }
+}
+
+@Injectable()
+export class UpdateMeetingSummaryUseCase {
+  constructor(private readonly repo: MeetingsRepository) {}
+
+  async execute(input: { id: string; requesterId: string; summary: string | null }): Promise<Either<Error, void>> {
+    const meeting = await this.repo.findById(input.id);
+    if (!meeting) return left(new MeetingNotFoundError("Reunião não encontrada"));
+    if (meeting.ownerId !== input.requesterId) return left(new MeetingForbiddenError("Acesso negado"));
+    await this.repo.updateSummary(input.id, input.summary);
+    return right(undefined);
   }
 }
 

@@ -1,5 +1,4 @@
 import { backendFetch } from "@/lib/backend/client";
-import { getMeetings } from "@/actions/meetings";
 import MeetingsList from "@/components/meetings/MeetingsList";
 import GmailButton from "@/components/gmail/GmailButton";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
@@ -28,7 +27,7 @@ export default async function OrganizationDetailPage({
   const [organization, session, meetings] = await Promise.all([
     backendFetch(`/organizations/${params.id}`).catch(() => null),
     getServerSession(authOptions),
-    getMeetings({ organizationId: params.id }),
+    backendFetch(`/meetings?organizationId=${params.id}`).catch(() => []),
   ]);
 
   if (!organization) {

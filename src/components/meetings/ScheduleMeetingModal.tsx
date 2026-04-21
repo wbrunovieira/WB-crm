@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { X, Video, Plus, Trash2, Loader2, UserCheck, User } from "lucide-react";
-import { scheduleMeeting, updateMeeting, checkMeetingTitleExists } from "@/actions/meetings";
+import { scheduleMeeting, updateMeeting } from "@/actions/meetings";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
 export interface SuggestedContact {
@@ -178,14 +179,13 @@ export default function ScheduleMeetingModal({
     // validation errors must be surfaced from client code, not from throws.
     setLoading(true);
     try {
-      const conflictTitle = await checkMeetingTitleExists(
-        title.trim(),
-        isEditMode ? meetingId : undefined
-      );
-      if (conflictTitle) {
+      const qs = new URLSearchParams({ title: title.trim() });
+      if (isEditMode && meetingId) qs.set("excludeId", meetingId);
+      const { exists } = await apiFetch<{ exists: boolean }>(`/meetings/check-title?${qs}`);
+      if (exists) {
         const suggestion = `${title.trim()} - ${startDate.split("-").reverse().join("/")} ${startTime}`;
         setError(
-          `Já existe uma reunião com o título "${conflictTitle}". Use um nome único — sugestão: "${suggestion}"`
+          `Já existe uma reunião com o título "${title.trim()}". Use um nome único — sugestão: "${suggestion}"`
         );
         setLoading(false);
         return;

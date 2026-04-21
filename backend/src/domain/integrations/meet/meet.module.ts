@@ -15,6 +15,7 @@ import { PollMeetTranscriptionsUseCase } from "./application/use-cases/poll-meet
 import {
   GetMeetingsUseCase, GetMeetingByIdUseCase, ScheduleMeetingUseCase,
   UpdateMeetingUseCase, CancelMeetingUseCase,
+  CheckMeetingTitleUseCase, UpdateMeetingSummaryUseCase,
 } from "./application/use-cases/meetings-crud.use-cases";
 
 // Infrastructure
@@ -38,6 +39,8 @@ import { AuthModule } from "@/infra/auth/auth.module";
     ScheduleMeetingUseCase,
     UpdateMeetingUseCase,
     CancelMeetingUseCase,
+    CheckMeetingTitleUseCase,
+    UpdateMeetingSummaryUseCase,
 
     // Port implementations
     { provide: GoogleDrivePort, useClass: GoogleDriveClient },
