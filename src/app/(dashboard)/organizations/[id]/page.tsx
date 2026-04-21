@@ -1,4 +1,4 @@
-import { getOrganizationById } from "@/actions/organizations";
+import { backendFetch } from "@/lib/backend/client";
 import { getMeetings } from "@/actions/meetings";
 import MeetingsList from "@/components/meetings/MeetingsList";
 import GmailButton from "@/components/gmail/GmailButton";
@@ -26,7 +26,7 @@ export default async function OrganizationDetailPage({
   params: { id: string };
 }) {
   const [organization, session, meetings] = await Promise.all([
-    getOrganizationById(params.id),
+    backendFetch(`/organizations/${params.id}`).catch(() => null),
     getServerSession(authOptions),
     getMeetings({ organizationId: params.id }),
   ]);

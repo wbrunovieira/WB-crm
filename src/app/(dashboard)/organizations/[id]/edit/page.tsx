@@ -1,4 +1,4 @@
-import { getOrganizationById } from "@/actions/organizations";
+import { backendFetch } from "@/lib/backend/client";
 import { OrganizationForm } from "@/components/organizations/OrganizationForm";
 import { notFound } from "next/navigation";
 
@@ -7,7 +7,7 @@ export default async function EditOrganizationPage({
 }: {
   params: { id: string };
 }) {
-  const organization = await getOrganizationById(params.id);
+  const organization = await backendFetch(`/organizations/${params.id}`).catch(() => null);
 
   if (!organization) {
     notFound();

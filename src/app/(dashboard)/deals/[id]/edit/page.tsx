@@ -1,7 +1,7 @@
 import { getDealById } from "@/actions/deals";
 import DealForm from "@/components/deals/DealForm";
 import { getContactsList } from "@/lib/lists/contacts-list";
-import { getOrganizationsList } from "@/actions/organizations-list";
+import { backendFetch } from "@/lib/backend/client";
 import { getStagesList } from "@/lib/lists/stages-list";
 import { getLeadsList } from "@/actions/leads-list";
 import { notFound } from "next/navigation";
@@ -15,7 +15,7 @@ export default async function EditDealPage({
   const [deal, contacts, organizations, stages, leadsData] = await Promise.all([
     getDealById(params.id),
     getContactsList(),
-    getOrganizationsList(),
+    backendFetch<{ id: string; name: string }[]>("/organizations").catch(() => []),
     getStagesList(),
     getLeadsList(),
   ]);

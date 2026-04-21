@@ -1,6 +1,5 @@
-import { getOrganizations } from "@/actions/organizations";
-import { PhoneLink } from "@/components/ui/phone-link";
 import { backendFetch } from "@/lib/backend/client";
+import { PhoneLink } from "@/components/ui/phone-link";
 import type { UserListItem } from "@/hooks/users/use-users";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
@@ -23,8 +22,23 @@ export default async function OrganizationsPage({
   const currentUserId = session?.user?.id || "";
   const hasHostingFilter = searchParams.hasHosting === "true" ? true : searchParams.hasHosting === "false" ? false : undefined;
 
+  const orgQs = new URLSearchParams();
+  if (searchParams.search) orgQs.set("search", searchParams.search);
+  if (searchParams.owner) orgQs.set("owner", searchParams.owner);
+  if (searchParams.hasHosting !== undefined) orgQs.set("hasHosting", searchParams.hasHosting);
+
+  type OrgSummary = {
+    id: string; ownerId: string; name: string; email?: string | null; phone?: string | null;
+    city?: string | null; state?: string | null; country?: string | null; industry?: string | null;
+    companySize?: string | null; hasHosting: boolean; hostingRenewalDate?: string | null;
+    owner?: { id: string; name: string; email: string } | null;
+    primaryCNAE?: { id: string; code: string; description: string } | null;
+    labels: Array<{ id: string; name: string; color: string }>;
+    _count: { contacts: number; deals: number };
+  };
+
   const [organizations, users] = await Promise.all([
-    getOrganizations({ search: searchParams.search, owner: searchParams.owner, hasHosting: hasHostingFilter }),
+    backendFetch<OrgSummary[]>(`/organizations${orgQs.toString() ? `?${orgQs}` : ""}`).catch(() => []),
     backendFetch<UserListItem[]>('/users'),
   ]);
 
