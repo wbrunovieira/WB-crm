@@ -2,7 +2,7 @@
 
 import { Users, DollarSign, Activity, Building2 } from "lucide-react";
 import { MetricCard } from "./MetricCard";
-import type { ManagerStats } from "@/actions/admin-manager";
+import type { ManagerStats } from "@/types/admin-manager";
 
 interface StatsOverviewProps {
   stats: ManagerStats;

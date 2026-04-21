@@ -8,7 +8,7 @@ import {
   Legend,
   Tooltip,
 } from "recharts";
-import type { TotalMetrics } from "@/actions/admin-manager";
+import type { TotalMetrics } from "@/types/admin-manager";
 
 interface DealsChartProps {
   deals: TotalMetrics["deals"];

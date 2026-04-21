@@ -8,7 +8,7 @@ import { ActivitiesChart } from "./ActivitiesChart";
 import { StageChangesChart } from "./StageChangesChart";
 import { UserPerformanceTable } from "./UserPerformanceTable";
 import { ActivityCalendar } from "./ActivityCalendar";
-import type { ManagerStats } from "@/actions/admin-manager";
+import type { ManagerStats } from "@/types/admin-manager";
 import type { PeriodOption } from "@/lib/validations/manager";
 
 interface ManagerDashboardProps {

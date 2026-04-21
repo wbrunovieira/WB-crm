@@ -9,7 +9,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { TotalMetrics } from "@/actions/admin-manager";
+import type { TotalMetrics } from "@/types/admin-manager";
 
 interface ActivitiesChartProps {
   activities: TotalMetrics["activities"];

@@ -1,6 +1,6 @@
 "use client";
 
-import type { UserMetrics } from "@/actions/admin-manager";
+import type { UserMetrics } from "@/types/admin-manager";
 
 interface UserPerformanceTableProps {
   byUser: UserMetrics[];

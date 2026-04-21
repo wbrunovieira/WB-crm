@@ -398,7 +398,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 20 — Notificações
+## ~~FASE 20 — Notificações~~ ✅
 
 **Páginas**: componente global de notificações
 
@@ -412,7 +412,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 21 — Limpeza final
+## ~~FASE 21 — Limpeza final~~ ✅ (parcial)
 
 Após todas as fases anteriores terem sido deployadas e verificadas:
 
@@ -473,5 +473,5 @@ ssh root@45.90.123.190 "docker logs wb-crm-backend --tail=20"
 | 17 | Shared Entities | ✅ | NestJS recebeu `GET /shared-entities/batch` e `GET /shared-entities/available-users`. Páginas de lista (`leads`, `contacts`, `deals`, `organizations`, `partners`) usam `backendFetch` para batch. `EntityManagementPanel`, `SharedUsersList`, `ShareDialog`, `TransferDialog` migrados para `apiFetch` com token via `useSession`. F15 tokens corrigidos em `ProposalsList`, `MeetingsList`, `ScheduleMeetingModal`. |
 | 18 | Dashboard & Funnel | ✅ | NestJS hosting-renewals extended with `hostingPlan`/`hostingValue`. `dashboard/page.tsx`: `backendFetch('/hosting-renewals')`. `admin/manager/page.tsx`: `backendFetch('/dashboard/stats')`. `ActivityCalendar`: `apiFetch('/dashboard/activity-calendar')` com `useSession` token. |
 | 19 | Integrações (Gmail, WhatsApp, GoTo) | ✅ (parcial) | `WhatsAppSendModal`: `sendWhatsAppMessage` → `apiFetch('/whatsapp/send')`. `WhatsAppCheckButton`: `checkWhatsApp` → `apiFetch('/whatsapp/check')`. **Mantidos como Server Action**: `sendGmailMessage` (tracking + Activity com entityIds + attachments), `sendWhatsAppMedia` (sem endpoint NestJS), templates gmail/whatsapp (sem endpoints NestJS), `syncGmailNow` (cron automático no NestJS). |
-| 20 | Notificações | ⏳ | |
-| 21 | Limpeza final | ⏳ | |
+| 20 | Notificações | ✅ | Backend: `type`/`limit`/`payload` adicionados ao controller. `NotificationBell` e `LeadResearchNotifications` migrados para `apiFetch`. SSE stream convertido em proxy NestJS (`/api/notifications/stream` → NestJS `/notifications/stream`). `src/app/api/notifications/route.ts` deletado. |
+| 21 | Limpeza final | ✅ (parcial) | Deletados: `entity-management.ts`, `hosting-renewals.ts`, `admin-manager.ts` (tipos movidos para `src/types/admin-manager.ts`). API routes deletadas: `activities/`, `organizations/`, `icps/`, `leads/[id]/`, `leads/by-icp/`. **Mantidos** (ainda usados): `contacts/`, `deals/`, `leads/route.ts`, `products/`, `funnel/` (DealCard/DealsListView/ToggleCompletedButtonWrapper ainda chamam via `/api/`). Actions ainda em uso: `leads.ts`, `deals.ts`, `proposals.ts`, `meetings.ts`, `whatsapp.ts`, `gmail.ts`, etc. |

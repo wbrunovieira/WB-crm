@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { backendFetch } from "@/lib/backend/client";
-import type { ManagerStats } from "@/actions/admin-manager";
+import type { ManagerStats } from "@/types/admin-manager";
 import { ManagerDashboard } from "@/components/admin/manager";
 import { type PeriodOption } from "@/lib/validations/manager";
 
