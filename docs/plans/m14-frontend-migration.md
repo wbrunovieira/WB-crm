@@ -28,7 +28,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 1 — Labels
+## ~~FASE 1 — Labels~~ ✅
 
 **Páginas que consomem**: `/leads`, `/leads/[id]`, `/organizations`, `/organizations/[id]`
 
@@ -45,7 +45,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 2 — Users
+## ~~FASE 2 — Users~~ ✅
 
 **Páginas**: `/leads`, `/organizations`, `/deals`, `/contacts`, `/partners`, `/activities`
 
@@ -57,7 +57,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 3 — Pipelines & Stages
+## ~~FASE 3 — Pipelines & Stages~~ ✅
 
 **Páginas**: `/pipeline`, `/pipelines`, `/deals`
 
@@ -80,7 +80,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 4 — Admin: Business Lines & Products
+## ~~FASE 4 — Admin: Business Lines & Products~~ ✅
 
 **Páginas**: `/admin/products`, `/admin/business-lines`
 
@@ -106,7 +106,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 5 — Admin: Tech Options (8 tipos)
+## ~~FASE 5 — Admin: Tech Options (8 tipos)~~ ✅
 
 **Páginas**: `/admin/tech-profile`, `/admin/tech-stack`
 
@@ -121,7 +121,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 6 — Admin: Sectors
+## ~~FASE 6 — Admin: Sectors~~ ✅
 
 **Páginas**: `/admin/sectors`
 
@@ -136,7 +136,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 7 — ICPs
+## ~~FASE 7 — ICPs~~ ✅
 
 **Páginas**: `/admin/icps`, `/admin/icps/[id]`
 
@@ -157,7 +157,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 8 — Cadences
+## ~~FASE 8 — Cadences~~ ✅ (parcial)
 
 **Páginas**: `/admin/cadences`, `/admin/cadences/[id]`
 
@@ -178,7 +178,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 9 — Contacts
+## ~~FASE 9 — Contacts~~ ✅
 
 **Páginas**: `/contacts`, `/contacts/[id]`
 
@@ -197,7 +197,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 10 — Partners
+## ~~FASE 10 — Partners~~ ✅
 
 **Páginas**: `/partners`, `/partners/[id]`
 
@@ -215,7 +215,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 11 — Activities
+## ~~FASE 11 — Activities~~ ✅
 
 **Páginas**: `/activities`, `/activities/[id]`, `/activities/calendar`
 
@@ -237,7 +237,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 12 — Organizations
+## ~~FASE 12 — Organizations~~ ✅ (parcial)
 
 **Páginas**: `/organizations`, `/organizations/[id]`
 
@@ -262,7 +262,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 13 — Leads
+## ~~FASE 13 — Leads~~ ✅ (reads migrados; mutations em componentes pendentes)
 
 **Páginas**: `/leads`, `/leads/[id]`, `/leads/prospects`, `/leads/import`
 
@@ -452,26 +452,26 @@ ssh root@45.90.123.190 "docker logs wb-crm-backend --tail=20"
 
 ## Status das fases
 
-| Fase | Domínio | Status |
-|---|---|---|
-| 1 | Labels | ⏳ |
-| 2 | Users | ⏳ |
-| 3 | Pipelines & Stages | ⏳ |
-| 4 | Admin: Business Lines & Products | ⏳ |
-| 5 | Admin: Tech Options | ⏳ |
-| 6 | Admin: Sectors | ⏳ |
-| 7 | ICPs | ⏳ |
-| 8 | Cadences | ⏳ |
-| 9 | Contacts | ⏳ |
-| 10 | Partners | ⏳ |
-| 11 | Activities | ⏳ |
-| 12 | Organizations | ⏳ |
-| 13 | Leads | ⏳ |
-| 14 | Deals | ⏳ |
-| 15 | Proposals & Meetings | ⏳ |
-| 16 | Campaigns | ⏳ |
-| 17 | Shared Entities | ⏳ |
-| 18 | Dashboard & Funnel | ⏳ |
-| 19 | Integrações (Gmail, WhatsApp, GoTo) | ⏳ |
-| 20 | Notificações | ⏳ |
-| 21 | Limpeza final | ⏳ |
+| Fase | Domínio | Status | Observações |
+|---|---|---|---|
+| 1 | Labels | ✅ | `labels.ts`, `lead-labels.ts`, `organization-labels.ts` deletados |
+| 2 | Users | ✅ | `users.ts` deletado; `backendFetch('/users')` em todas as páginas |
+| 3 | Pipelines & Stages | ✅ | `pipelines.ts`, `stages.ts`, `pipeline-view.ts` deletados |
+| 4 | Admin: Business Lines & Products | ✅ | `business-lines.ts`, `products.ts` deletados; slug gerado no cliente |
+| 5 | Admin: Tech Options | ✅ | `tech-categories.ts`, `tech-languages.ts`, `tech-frameworks.ts`, `tech-profile-options.ts` deletados |
+| 6 | Admin: Sectors | ✅ | `sectors.ts` deletado |
+| 7 | ICPs | ✅ | `icps.ts`, `icp-links.ts` deletados |
+| 8 | Cadences | ✅ | `cadences.ts`, `cadence-steps.ts` deletados. `lead-cadences.ts` **parcial**: `applyCadenceToLead`, `applyCadenceToBulkLeads`, `pauseLeadCadence`, `resumeLeadCadence`, `cancelLeadCadence` removidos; mantidos `getLeadCadences`, `completeLeadCadence`, `cancelAllActiveCadences`, `getAvailableCadencesForLead`, `registerLeadReply` (NestJS não retorna detalhes ricos de cadência por lead) |
+| 9 | Contacts | ✅ | `contacts.ts` deletado; `activities/page.tsx` usa `backendFetch('/contacts')` |
+| 10 | Partners | ✅ | `partners.ts` deletado; `activities/page.tsx` e páginas de parceiros usam `backendFetch` |
+| 11 | Activities | ✅ | `activities.ts` deletado; todos os reads migrados para `backendFetch`; mutations já estavam em hooks |
+| 12 | Organizations | ✅ | `organizations.ts`, `organizations-list.ts` deletados. `organization-tech-profile.ts` **mantido** (sem endpoints NestJS para tech profile de organização) |
+| 13 | Leads | ✅ | Reads migrados para `backendFetch`. NestJS recebeu `contactSearch`, `icpId`, `hasCadence` via TDD (18 testes). `leads.ts` **mantido** (mutations em componentes: `convertLeadToOrganization`, `deleteLeadContact`, `createLeadContact`, `qualifyProspect`, `bulkArchiveLeads`, etc.). `leads-list.ts` **mantido** (`getLeadContactsList` usado em `ContactForm`) |
+| 14 | Deals | ⏳ | |
+| 15 | Proposals & Meetings | ⏳ | |
+| 16 | Campaigns | ⏳ | |
+| 17 | Shared Entities | ⏳ | |
+| 18 | Dashboard & Funnel | ⏳ | |
+| 19 | Integrações (Gmail, WhatsApp, GoTo) | ⏳ | |
+| 20 | Notificações | ⏳ | |
+| 21 | Limpeza final | ⏳ | |
