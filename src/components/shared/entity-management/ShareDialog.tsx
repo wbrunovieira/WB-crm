@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { Share2, X, Loader2, Search, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { shareEntity, getAvailableUsersForSharing, type EntityType } from "@/actions/entity-management";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
+import type { EntityType } from "./EntityManagementPanel";
 import { toast } from "sonner";
 
 interface ShareDialogProps {
@@ -23,6 +25,8 @@ export function ShareDialog({
   entityName,
   onShared,
 }: ShareDialogProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [users, setUsers] = useState<{ id: string; name: string; email: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [sharing, setSharing] = useState(false);
@@ -32,7 +36,10 @@ export function ShareDialog({
   const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const availableUsers = await getAvailableUsersForSharing(entityType, entityId);
+      const availableUsers = await apiFetch<{ id: string; name: string; email: string }[]>(
+        `/shared-entities/available-users?entityType=${entityType}&entityId=${entityId}`,
+        token,
+      );
       setUsers(availableUsers);
     } catch {
       toast.error("Erro ao carregar usuários");
@@ -64,7 +71,10 @@ export function ShareDialog({
       let successCount = 0;
       for (const userId of selectedUserIds) {
         try {
-          await shareEntity(entityType, entityId, userId);
+          await apiFetch("/shared-entities", token, {
+            method: "POST",
+            body: JSON.stringify({ entityType, entityId, sharedWithUserId: userId }),
+          });
           successCount++;
         } catch (err) {
           const message = err instanceof Error ? err.message : "Erro desconhecido";

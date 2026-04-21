@@ -12,6 +12,8 @@ export abstract class SharedEntitiesRepository {
   abstract findById(id: string): Promise<SharedEntity | null>;
   abstract findByEntity(entityType: SharedEntityType, entityId: string): Promise<SharedEntity[]>;
   abstract findSharedUserInfo(entityType: SharedEntityType, entityId: string): Promise<SharedUserInfo[]>;
+  abstract findBatchSharedUsers(entityType: SharedEntityType, entityIds: string[]): Promise<Record<string, { id: string; name: string }[]>>;
+  abstract findAvailableUsersForSharing(entityType: SharedEntityType, entityId: string): Promise<{ id: string; name: string; email: string }[]>;
   abstract save(entity: SharedEntity): Promise<void>;
   abstract delete(id: string): Promise<void>;
   abstract existsForUser(entityType: SharedEntityType, entityId: string, sharedWithUserId: string): Promise<boolean>;

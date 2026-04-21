@@ -2,7 +2,6 @@ import { backendFetch } from "@/lib/backend/client";
 import type { UserListItem } from "@/hooks/users/use-users";
 import { getPipelineView } from "@/actions/pipeline-view";
 import type { PipelineSummary } from "@/hooks/pipelines/use-pipelines";
-import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { DealsView } from "@/components/deals/DealsView";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -61,9 +60,12 @@ export default async function DealsPage({
 
   const deals = await backendFetch<unknown[]>(`/deals?${dealsQs}`).catch(() => []);
 
-  // Get shared users for all deals (batch query)
   const dealIds = (deals as { id: string }[]).map((deal) => deal.id);
-  const sharedUsersMap = await getSharedUsersForEntities("deal", dealIds);
+  const sharedUsersMap = dealIds.length > 0
+    ? await backendFetch<Record<string, { id: string; name: string }[]>>(
+        `/shared-entities/batch?entityType=deal&entityIds=${dealIds.join(",")}`
+      ).catch(() => ({}))
+    : {};
 
   return (
     <DealsView

@@ -16,6 +16,7 @@ import {
   NotebookPen,
 } from "lucide-react";
 import { cancelMeeting } from "@/actions/meetings";
+import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
@@ -312,6 +313,8 @@ function MeetingCard({
   onCancel: (id: string) => Promise<void>;
   onEdit: (meeting: Meeting) => void;
 }) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const contactByEmail = new Map(suggestedContacts.map((c) => [c.email, c]));
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -343,7 +346,7 @@ function MeetingCard({
   async function handleSaveSummary() {
     setSavingSummary(true);
     try {
-      await apiFetch(`/meetings/${meeting.id}/summary`, { method: "PATCH", body: JSON.stringify({ summary: summaryDraft.trim() || null }) });
+      await apiFetch(`/meetings/${meeting.id}/summary`, token, { method: "PATCH", body: JSON.stringify({ summary: summaryDraft.trim() || null }) });
       onSummaryUpdated(meeting.id, summaryDraft.trim() || null);
       setEditingSummary(false);
       toast.success("Resumo salvo.");

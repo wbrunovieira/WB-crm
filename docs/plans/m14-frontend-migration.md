@@ -330,7 +330,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 16 — Campaigns
+## ~~FASE 16 — Campaigns~~ ✅
 
 **Páginas**: `/campaigns`, `/campaigns/[id]`
 
@@ -345,7 +345,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## FASE 17 — Shared Entities & Entity Management
+## ~~FASE 17 — Shared Entities & Entity Management~~ ✅
 
 **Páginas**: `/admin/operations`
 
@@ -469,8 +469,8 @@ ssh root@45.90.123.190 "docker logs wb-crm-backend --tail=20"
 | 13 | Leads | ✅ | Reads migrados para `backendFetch`. NestJS recebeu `contactSearch`, `icpId`, `hasCadence` via TDD (18 testes). `leads.ts` **mantido** (mutations em componentes: `convertLeadToOrganization`, `deleteLeadContact`, `createLeadContact`, `qualifyProspect`, `bulkArchiveLeads`, etc.). `leads-list.ts` **mantido** (`getLeadContactsList` usado em `ContactForm`) |
 | 14 | Deals | ✅ | Reads migrados para `backendFetch`. NestJS recebeu `valueRange`, `sortBy`, `sortOrder`, `closedMonth` via TDD (15 testes). Backend atualizado com `stage.pipeline`, `stageHistory.changedBy`, `whatsappMessages` em activities. `deals.ts` **mantido** (só `updateStageHistoryDate` restante). |
 | 15 | Proposals & Meetings | ✅ | SSR reads migrados para `backendFetch`. NestJS meetings recebeu filtros (`leadId`,`dealId`,`organizationId`,`contactId`), `meetingSummary`/`transcriptText`/`activity` no response, `PATCH /meetings/:id/summary`, `GET /meetings/check-title`. `ProposalsList`: `updateProposalStatus`/`deleteProposal` → `apiFetch`. `MeetingsList`: `updateMeetingSummary` → `apiFetch`. `ScheduleMeetingModal`: `checkMeetingTitleExists` → `apiFetch`. **Mantidos**: `createProposal` (Drive), `cancelMeeting`/`scheduleMeeting`/`updateMeeting` (Google Calendar). |
-| 16 | Campaigns | ⏳ | |
-| 17 | Shared Entities | ⏳ | |
+| 16 | Campaigns | ✅ | `actions/campaigns.ts` já usava `backendFetch` internamente. Nenhuma mudança necessária. |
+| 17 | Shared Entities | ✅ | NestJS recebeu `GET /shared-entities/batch` e `GET /shared-entities/available-users`. Páginas de lista (`leads`, `contacts`, `deals`, `organizations`, `partners`) usam `backendFetch` para batch. `EntityManagementPanel`, `SharedUsersList`, `ShareDialog`, `TransferDialog` migrados para `apiFetch` com token via `useSession`. F15 tokens corrigidos em `ProposalsList`, `MeetingsList`, `ScheduleMeetingModal`. |
 | 18 | Dashboard & Funnel | ⏳ | |
 | 19 | Integrações (Gmail, WhatsApp, GoTo) | ⏳ | |
 | 20 | Notificações | ⏳ | |

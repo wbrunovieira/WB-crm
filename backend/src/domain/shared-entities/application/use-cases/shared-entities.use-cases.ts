@@ -87,6 +87,32 @@ export class GetEntitySharesUseCase {
   }
 }
 
+// ─── Batch Shares ─────────────────────────────────────────────────────────────
+
+@Injectable()
+export class GetBatchEntitySharesUseCase {
+  constructor(private readonly repo: SharedEntitiesRepository) {}
+
+  async execute(entityType: SharedEntityType, entityIds: string[]): Promise<Record<string, { id: string; name: string }[]>> {
+    return this.repo.findBatchSharedUsers(entityType, entityIds);
+  }
+}
+
+// ─── Available Users for Sharing ─────────────────────────────────────────────
+
+@Injectable()
+export class GetAvailableUsersForSharingUseCase {
+  constructor(private readonly repo: SharedEntitiesRepository) {}
+
+  async execute(requesterRole: string, entityType: SharedEntityType, entityId: string): Promise<Either<Error, { users: { id: string; name: string; email: string }[] }>> {
+    if (requesterRole !== "admin") {
+      return left(new Error("Apenas administradores podem visualizar usuários disponíveis"));
+    }
+    const users = await this.repo.findAvailableUsersForSharing(entityType, entityId);
+    return right({ users });
+  }
+}
+
 // ─── Transfer Ownership ───────────────────────────────────────────────────────
 
 export interface TransferEntityInput {

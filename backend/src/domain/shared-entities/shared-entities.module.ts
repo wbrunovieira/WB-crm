@@ -7,6 +7,8 @@ import {
   ShareEntityUseCase,
   UnshareEntityUseCase,
   GetEntitySharesUseCase,
+  GetBatchEntitySharesUseCase,
+  GetAvailableUsersForSharingUseCase,
   TransferEntityUseCase,
 } from "./application/use-cases/shared-entities.use-cases";
 
@@ -18,6 +20,8 @@ import {
     ShareEntityUseCase,
     UnshareEntityUseCase,
     GetEntitySharesUseCase,
+    GetBatchEntitySharesUseCase,
+    GetAvailableUsersForSharingUseCase,
     TransferEntityUseCase,
   ],
   exports: [SharedEntitiesRepository],

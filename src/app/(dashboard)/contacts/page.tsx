@@ -2,7 +2,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { backendFetch } from "@/lib/backend/client";
 import type { UserListItem } from "@/hooks/users/use-users";
-import { getSharedUsersForEntities } from "@/actions/entity-management";
+
 import { ContactsListClient } from "@/components/contacts/ContactsListClient";
 
 export default async function ContactsPage() {

@@ -3,10 +3,21 @@
 import { useState, useEffect, useCallback } from "react";
 import { ArrowRightLeft, User, Loader2, UserPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSession } from "next-auth/react";
 import { TransferDialog } from "./TransferDialog";
 import { ShareDialog } from "./ShareDialog";
 import { SharedUsersList } from "./SharedUsersList";
-import { getSharedUsers, type EntityType, type SharedUser } from "@/actions/entity-management";
+import { apiFetch } from "@/lib/api-client";
+
+export type EntityType = "lead" | "contact" | "organization" | "partner" | "deal";
+
+export interface SharedUser {
+  shareId: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  sharedAt: Date;
+}
 
 interface EntityManagementPanelProps {
   entityType: EntityType;
@@ -29,6 +40,8 @@ export function EntityManagementPanel({
   isAdmin,
   className,
 }: EntityManagementPanelProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [showTransferDialog, setShowTransferDialog] = useState(false);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [sharedUsers, setSharedUsers] = useState<SharedUser[]>([]);
@@ -37,7 +50,7 @@ export function EntityManagementPanel({
   const loadSharedUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const users = await getSharedUsers(entityType, entityId);
+      const users = await apiFetch<SharedUser[]>(`/shared-entities?entityType=${entityType}&entityId=${entityId}`, token);
       setSharedUsers(users);
     } catch (err) {
       console.error("Error loading shared users:", err);

@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback } from "react";
 import { ArrowRightLeft, X, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { transferEntity, getUsersForTransfer, type EntityType } from "@/actions/entity-management";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
+import type { EntityType } from "./EntityManagementPanel";
 import { toast } from "sonner";
 
 interface TransferDialogProps {
@@ -27,6 +29,8 @@ export function TransferDialog({
   currentOwnerName,
   onTransferred,
 }: TransferDialogProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [users, setUsers] = useState<{ id: string; name: string; email: string; role: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [transferring, setTransferring] = useState(false);
@@ -36,8 +40,8 @@ export function TransferDialog({
   const loadUsers = useCallback(async () => {
     setLoading(true);
     try {
-      const availableUsers = await getUsersForTransfer(currentOwnerId);
-      setUsers(availableUsers);
+      const allUsers = await apiFetch<{ id: string; name: string; email: string; role: string }[]>("/users", token);
+      setUsers(allUsers.filter((u) => u.id !== currentOwnerId));
     } catch {
       toast.error("Erro ao carregar usuários");
     } finally {
@@ -56,12 +60,13 @@ export function TransferDialog({
 
     setTransferring(true);
     try {
-      const result = await transferEntity(entityType, entityId, selectedUserId);
-      if (result.success) {
-        toast.success(result.message);
-        onTransferred?.();
-        onClose();
-      }
+      await apiFetch("/shared-entities/transfer", token, {
+        method: "PATCH",
+        body: JSON.stringify({ entityType, entityId, newOwnerId: selectedUserId }),
+      });
+      toast.success("Transferência realizada com sucesso");
+      onTransferred?.();
+      onClose();
     } catch (err) {
       const message = err instanceof Error ? err.message : "Erro ao transferir";
       toast.error(message);

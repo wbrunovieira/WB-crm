@@ -1,7 +1,6 @@
 import { backendFetch } from "@/lib/backend/client";
 import { PhoneLink } from "@/components/ui/phone-link";
 import type { UserListItem } from "@/hooks/users/use-users";
-import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { SearchInput } from "@/components/shared/SearchInput";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
@@ -42,9 +41,12 @@ export default async function OrganizationsPage({
     backendFetch<UserListItem[]>('/users'),
   ]);
 
-  // Get shared users for all organizations (batch query)
   const orgIds = organizations.map((org) => org.id);
-  const sharedUsersMap = await getSharedUsersForEntities("organization", orgIds);
+  const sharedUsersMap = orgIds.length > 0
+    ? await backendFetch<Record<string, { id: string; name: string }[]>>(
+        `/shared-entities/batch?entityType=organization&entityIds=${orgIds.join(",")}`
+      ).catch(() => ({}))
+    : {};
 
   return (
     <div className="p-8">

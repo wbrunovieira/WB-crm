@@ -1,6 +1,5 @@
 import { backendFetch } from "@/lib/backend/client";
 import type { UserListItem } from "@/hooks/users/use-users";
-import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { SearchInput } from "@/components/shared/SearchInput";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
@@ -39,9 +38,12 @@ export default async function PartnersPage({
     backendFetch<UserListItem[]>('/users'),
   ]);
 
-  // Get shared users for all partners (batch query)
   const partnerIds = partners.map((partner) => partner.id);
-  const sharedUsersMap = await getSharedUsersForEntities("partner", partnerIds);
+  const sharedUsersMap = partnerIds.length > 0
+    ? await backendFetch<Record<string, { id: string; name: string }[]>>(
+        `/shared-entities/batch?entityType=partner&entityIds=${partnerIds.join(",")}`
+      ).catch(() => ({}))
+    : {};
 
   return (
     <div className="p-8">

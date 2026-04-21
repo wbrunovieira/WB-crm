@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, Video, Plus, Trash2, Loader2, UserCheck, User } from "lucide-react";
 import { scheduleMeeting, updateMeeting } from "@/actions/meetings";
+import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
@@ -82,6 +83,8 @@ export default function ScheduleMeetingModal({
       ? Math.round((new Date(initialData.endAt).getTime() - new Date(initialData.startAt).getTime()) / 60000)
       : 60;
 
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [description, setDescription] = useState(initialData?.description ?? "");
   const [startDate, setStartDate] = useState(initialStart?.date ?? "");
@@ -181,7 +184,7 @@ export default function ScheduleMeetingModal({
     try {
       const qs = new URLSearchParams({ title: title.trim() });
       if (isEditMode && meetingId) qs.set("excludeId", meetingId);
-      const { exists } = await apiFetch<{ exists: boolean }>(`/meetings/check-title?${qs}`);
+      const { exists } = await apiFetch<{ exists: boolean }>(`/meetings/check-title?${qs}`, token);
       if (exists) {
         const suggestion = `${title.trim()} - ${startDate.split("-").reverse().join("/")} ${startTime}`;
         setError(

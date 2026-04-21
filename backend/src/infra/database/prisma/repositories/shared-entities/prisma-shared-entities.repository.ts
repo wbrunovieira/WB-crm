@@ -83,6 +83,40 @@ export class PrismaSharedEntitiesRepository extends SharedEntitiesRepository {
     await this.prisma.sharedEntity.delete({ where: { id } });
   }
 
+  async findBatchSharedUsers(entityType: SharedEntityType, entityIds: string[]): Promise<Record<string, { id: string; name: string }[]>> {
+    if (entityIds.length === 0) return {};
+    const rows = await this.prisma.sharedEntity.findMany({
+      where: { entityType, entityId: { in: entityIds } },
+      include: { sharedWithUser: { select: { id: true, name: true } } },
+    });
+    const result: Record<string, { id: string; name: string }[]> = {};
+    for (const row of rows) {
+      if (!result[row.entityId]) result[row.entityId] = [];
+      result[row.entityId].push({ id: row.sharedWithUser.id, name: row.sharedWithUser.name });
+    }
+    return result;
+  }
+
+  async findAvailableUsersForSharing(entityType: SharedEntityType, entityId: string): Promise<{ id: string; name: string; email: string }[]> {
+    const entity = await (this.prisma as any)[ENTITY_TABLE[entityType]].findUnique({
+      where: { id: entityId },
+      select: { ownerId: true },
+    });
+    const existingShares = await this.prisma.sharedEntity.findMany({
+      where: { entityType, entityId },
+      select: { sharedWithUserId: true },
+    });
+    const excludedIds = [
+      ...(entity ? [entity.ownerId] : []),
+      ...existingShares.map((s: { sharedWithUserId: string }) => s.sharedWithUserId),
+    ];
+    return this.prisma.user.findMany({
+      where: { id: { notIn: excludedIds } },
+      select: { id: true, name: true, email: true },
+      orderBy: { name: "asc" },
+    });
+  }
+
   async existsForUser(entityType: SharedEntityType, entityId: string, sharedWithUserId: string): Promise<boolean> {
     const count = await this.prisma.sharedEntity.count({
       where: { entityType, entityId, sharedWithUserId },

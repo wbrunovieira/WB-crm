@@ -15,6 +15,8 @@ import {
   ShareEntityUseCase,
   UnshareEntityUseCase,
   GetEntitySharesUseCase,
+  GetBatchEntitySharesUseCase,
+  GetAvailableUsersForSharingUseCase,
   TransferEntityUseCase,
 } from "@/domain/shared-entities/application/use-cases/shared-entities.use-cases";
 import type { SharedEntityType } from "@/domain/shared-entities/enterprise/entities/shared-entity";
@@ -62,8 +64,37 @@ export class SharedEntitiesController {
     private readonly shareEntity: ShareEntityUseCase,
     private readonly unshareEntity: UnshareEntityUseCase,
     private readonly getEntityShares: GetEntitySharesUseCase,
+    private readonly getBatchShares: GetBatchEntitySharesUseCase,
+    private readonly getAvailableUsers: GetAvailableUsersForSharingUseCase,
     private readonly transferEntity: TransferEntityUseCase,
   ) {}
+
+  @Get("batch")
+  @ApiOperation({ summary: "Batch: usuários com acesso a múltiplas entidades" })
+  @ApiQuery({ name: "entityType", example: "lead" })
+  @ApiQuery({ name: "entityIds", example: "id1,id2,id3", description: "Comma-separated IDs" })
+  async batchShares(
+    @Query("entityType") entityType: SharedEntityType,
+    @Query("entityIds") entityIdsParam: string,
+    @CurrentUser() _user: AuthenticatedUser,
+  ) {
+    const entityIds = entityIdsParam ? entityIdsParam.split(",").filter(Boolean) : [];
+    return this.getBatchShares.execute(entityType, entityIds);
+  }
+
+  @Get("available-users")
+  @ApiOperation({ summary: "Usuários disponíveis para compartilhar uma entidade (admin)" })
+  @ApiQuery({ name: "entityType", example: "lead" })
+  @ApiQuery({ name: "entityId", example: "cuid-da-entidade" })
+  async availableUsers(
+    @Query("entityType") entityType: SharedEntityType,
+    @Query("entityId") entityId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.getAvailableUsers.execute(user.role ?? "", entityType, entityId);
+    if (result.isLeft()) handleError(result);
+    return (result.value as { users: unknown[] }).users;
+  }
 
   @Get()
   @ApiOperation({ summary: "Listar usuários com acesso a uma entidade (admin)" })

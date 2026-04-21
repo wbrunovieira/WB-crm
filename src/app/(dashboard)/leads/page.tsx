@@ -1,7 +1,7 @@
 import { backendFetch } from "@/lib/backend/client";
 import type { UserListItem } from "@/hooks/users/use-users";
 import type { ICP as ICPType } from "@/hooks/icps/use-icps";
-import { getSharedUsersForEntities } from "@/actions/entity-management";
+
 import { LeadsFilters } from "@/components/leads/LeadsFilters";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { AgentLeadGenerationButton } from "@/components/leads/AgentLeadGenerationButton";
@@ -70,9 +70,10 @@ export default async function LeadsPage({
 
   const { leads, total, page, pageSize } = leadsResult;
 
-  // Get shared users for all leads (batch query)
   const leadIds = leads.map((lead) => lead.id);
-  const sharedUsersMap = await getSharedUsersForEntities("lead", leadIds);
+  const sharedUsersMap = leadIds.length > 0
+    ? await backendFetch<Record<string, { id: string; name: string }[]>>(`/shared-entities/batch?entityType=lead&entityIds=${leadIds.join(",")}`).catch(() => ({}))
+    : {};
 
   return (
     <div className="p-8">
