@@ -15,4 +15,6 @@ export abstract class OrganizationsRepository {
   abstract save(organization: Organization): Promise<void>;
   abstract saveWithLabels(organization: Organization, labelIds: string[]): Promise<void>;
   abstract delete(id: string): Promise<void>;
+  abstract linkExternalProject(orgId: string, projectId: string): Promise<string[]>;
+  abstract unlinkExternalProject(orgId: string, projectId: string): Promise<string[]>;
 }

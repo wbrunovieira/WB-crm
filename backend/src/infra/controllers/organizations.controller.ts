@@ -32,6 +32,7 @@ import { GetOrganizationByIdUseCase } from "@/domain/organizations/application/u
 import { CreateOrganizationUseCase, type CreateOrganizationInput } from "@/domain/organizations/application/use-cases/create-organization.use-case";
 import { UpdateOrganizationUseCase, type UpdateOrganizationInput } from "@/domain/organizations/application/use-cases/update-organization.use-case";
 import { DeleteOrganizationUseCase } from "@/domain/organizations/application/use-cases/delete-organization.use-case";
+import { LinkExternalProjectUseCase, UnlinkExternalProjectUseCase } from "@/domain/organizations/application/use-cases/link-external-project.use-case";
 import type { Organization } from "@/domain/organizations/enterprise/entities/organization";
 
 /* ─── DTOs ──────────────────────────────────────────────────────────────── */
@@ -343,6 +344,8 @@ export class OrganizationsController {
     private readonly createOrganization: CreateOrganizationUseCase,
     private readonly updateOrganization: UpdateOrganizationUseCase,
     private readonly deleteOrganization: DeleteOrganizationUseCase,
+    private readonly linkExternalProject: LinkExternalProjectUseCase,
+    private readonly unlinkExternalProject: UnlinkExternalProjectUseCase,
   ) {}
 
   @Get()
@@ -447,5 +450,49 @@ export class OrganizationsController {
       requesterRole: user.role ?? "sdr",
     });
     if (result.isLeft()) handleError(result);
+  }
+
+  @Post(":id/projects/:projectId")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Vincular projeto externo à organização" })
+  @ApiParam({ name: "id", description: "ID da organização" })
+  @ApiParam({ name: "projectId", description: "ID do projeto externo" })
+  @ApiResponse({ status: 200, description: "Lista de projectIds após vinculação" })
+  @ApiResponse({ status: 404, description: "Organização não encontrada" })
+  async linkProject(
+    @Param("id") id: string,
+    @Param("projectId") projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.linkExternalProject.execute({
+      orgId: id,
+      projectId,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) handleError(result);
+    return result.value;
+  }
+
+  @Delete(":id/projects/:projectId")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Desvincular projeto externo da organização" })
+  @ApiParam({ name: "id", description: "ID da organização" })
+  @ApiParam({ name: "projectId", description: "ID do projeto externo" })
+  @ApiResponse({ status: 200, description: "Lista de projectIds após desvinculação" })
+  @ApiResponse({ status: 404, description: "Organização não encontrada" })
+  async unlinkProject(
+    @Param("id") id: string,
+    @Param("projectId") projectId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.unlinkExternalProject.execute({
+      orgId: id,
+      projectId,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) handleError(result);
+    return result.value;
   }
 }

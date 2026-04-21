@@ -310,4 +310,20 @@ export class PrismaOrganizationsRepository extends OrganizationsRepository {
   async delete(id: string): Promise<void> {
     await this.prisma.organization.delete({ where: { id } });
   }
+
+  async linkExternalProject(orgId: string, projectId: string): Promise<string[]> {
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId }, select: { externalProjectIds: true } });
+    const ids: string[] = org?.externalProjectIds ? JSON.parse(org.externalProjectIds) : [];
+    if (!ids.includes(projectId)) ids.push(projectId);
+    await this.prisma.organization.update({ where: { id: orgId }, data: { externalProjectIds: JSON.stringify(ids) } });
+    return ids;
+  }
+
+  async unlinkExternalProject(orgId: string, projectId: string): Promise<string[]> {
+    const org = await this.prisma.organization.findUnique({ where: { id: orgId }, select: { externalProjectIds: true } });
+    const ids: string[] = org?.externalProjectIds ? JSON.parse(org.externalProjectIds) : [];
+    const updated = ids.filter((id) => id !== projectId);
+    await this.prisma.organization.update({ where: { id: orgId }, data: { externalProjectIds: JSON.stringify(updated) } });
+    return updated;
+  }
 }

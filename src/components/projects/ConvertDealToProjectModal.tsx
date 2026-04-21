@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { createExternalProject, ProjectType, listWorkspaces, Workspace } from "@/lib/external-api/projects";
-import { linkProjectToOrganization } from "@/actions/external-projects";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 
 type ConvertDealToProjectModalProps = {
   dealId: string;
@@ -24,6 +25,7 @@ export function ConvertDealToProjectModal({
 }: ConvertDealToProjectModalProps) {
   void _dealId; // Reserved for future use
   const router = useRouter();
+  const { data: session } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [projectName, setProjectName] = useState(dealTitle);
@@ -76,7 +78,8 @@ export function ConvertDealToProjectModal({
 
       // Vincular projeto à organização se existir
       if (organizationId && project.id) {
-        await linkProjectToOrganization(organizationId, project.id);
+        const token = (session?.user as any)?.accessToken;
+        await apiFetch(`/organizations/${organizationId}/projects/${project.id}`, token, { method: "POST" });
       }
 
       if (organizationId) {

@@ -6,6 +6,7 @@ import { GetOrganizationByIdUseCase } from "./application/use-cases/get-organiza
 import { CreateOrganizationUseCase } from "./application/use-cases/create-organization.use-case";
 import { UpdateOrganizationUseCase } from "./application/use-cases/update-organization.use-case";
 import { DeleteOrganizationUseCase } from "./application/use-cases/delete-organization.use-case";
+import { LinkExternalProjectUseCase, UnlinkExternalProjectUseCase } from "./application/use-cases/link-external-project.use-case";
 import { PrismaOrganizationsRepository } from "@/infra/database/prisma/repositories/organizations/prisma-organizations.repository";
 import { OrganizationsController } from "@/infra/controllers/organizations.controller";
 
@@ -19,6 +20,8 @@ import { OrganizationsController } from "@/infra/controllers/organizations.contr
     CreateOrganizationUseCase,
     UpdateOrganizationUseCase,
     DeleteOrganizationUseCase,
+    LinkExternalProjectUseCase,
+    UnlinkExternalProjectUseCase,
   ],
   exports: [OrganizationsRepository],
 })
