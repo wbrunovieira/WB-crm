@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
-import { OperationsRepository, OperationsEntityType } from "../repositories/operations.repository";
+import { OperationsRepository, OperationsEntityType, OperationsSearchResult } from "../repositories/operations.repository";
 
 export class OperationsEntityNotFoundError extends Error { name = "OperationsEntityNotFoundError"; }
 export class OperationsForbiddenError extends Error { name = "OperationsForbiddenError"; }
@@ -33,6 +33,16 @@ export class TransferToOperationsUseCase {
     const transferredAt = new Date();
     await this.repo.transferToOperations(entityType, input.entityId, transferredAt);
     return right({ entityId: input.entityId, transferredAt });
+  }
+}
+
+@Injectable()
+export class SearchEntitiesForTransferUseCase {
+  constructor(private readonly repo: OperationsRepository) {}
+
+  async execute(query: string): Promise<Either<never, { results: OperationsSearchResult[] }>> {
+    const results = await this.repo.search(query.trim());
+    return right({ results });
   }
 }
 

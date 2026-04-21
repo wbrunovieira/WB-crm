@@ -23,8 +23,14 @@ import {
   ResetLeadActivityOrderUseCase,
 } from "./application/use-cases/update-lead-activity-order.use-case";
 import { GetLeadsForSelectUseCase } from "./application/use-cases/get-leads-for-select.use-case";
+import {
+  GetLeadDropdownOptionsUseCase,
+  CreateLeadDropdownOptionUseCase,
+} from "./application/use-cases/lead-dropdown-options.use-cases";
+import { LeadDropdownOptionsRepository } from "./application/repositories/lead-dropdown-options.repository";
 import { PrismaLeadsRepository } from "@/infra/database/prisma/repositories/leads/prisma-leads.repository";
 import { PrismaLeadContactsRepository } from "@/infra/database/prisma/repositories/leads/prisma-lead-contacts.repository";
+import { PrismaLeadDropdownOptionsRepository } from "@/infra/database/prisma/repositories/leads/prisma-lead-dropdown-options.repository";
 import { LeadsController } from "@/infra/controllers/leads.controller";
 
 @Module({
@@ -33,6 +39,7 @@ import { LeadsController } from "@/infra/controllers/leads.controller";
   providers: [
     { provide: LeadsRepository, useClass: PrismaLeadsRepository },
     { provide: LeadContactsRepository, useClass: PrismaLeadContactsRepository },
+    { provide: LeadDropdownOptionsRepository, useClass: PrismaLeadDropdownOptionsRepository },
     GetLeadsUseCase,
     GetLeadByIdUseCase,
     CreateLeadUseCase,
@@ -50,6 +57,8 @@ import { LeadsController } from "@/infra/controllers/leads.controller";
     UpdateLeadActivityOrderUseCase,
     ResetLeadActivityOrderUseCase,
     GetLeadsForSelectUseCase,
+    GetLeadDropdownOptionsUseCase,
+    CreateLeadDropdownOptionUseCase,
   ],
   exports: [LeadsRepository, LeadContactsRepository],
 })

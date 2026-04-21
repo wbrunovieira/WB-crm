@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "@/infra/auth/auth.module";
 import { OperationsRepository } from "./application/repositories/operations.repository";
-import { TransferToOperationsUseCase, RevertFromOperationsUseCase } from "./application/use-cases/operations.use-cases";
+import { TransferToOperationsUseCase, RevertFromOperationsUseCase, SearchEntitiesForTransferUseCase } from "./application/use-cases/operations.use-cases";
 import { PrismaOperationsRepository } from "./infra/repositories/prisma-operations.repository";
 import { OperationsController } from "./infra/controllers/operations.controller";
 
@@ -11,6 +11,7 @@ import { OperationsController } from "./infra/controllers/operations.controller"
   providers: [
     TransferToOperationsUseCase,
     RevertFromOperationsUseCase,
+    SearchEntitiesForTransferUseCase,
     { provide: OperationsRepository, useClass: PrismaOperationsRepository },
   ],
 })

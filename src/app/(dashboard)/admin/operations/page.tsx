@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowLeft, Building2, Users, Search } from "lucide-react";
-import { searchEntitiesForTransfer } from "@/actions/operations-transfer";
+import { backendFetch } from "@/lib/backend/client";
 import { formatDate } from "@/lib/utils";
 import OperationsTransferButton from "@/components/admin/OperationsTransferButton";
 import OperationsSearchForm from "@/components/admin/OperationsSearchForm";
@@ -11,7 +11,9 @@ export default async function OperationsPage({
   searchParams: { q?: string };
 }) {
   const query = searchParams.q?.trim() ?? "";
-  const results = query.length >= 2 ? await searchEntitiesForTransfer(query) : [];
+  const results = query.length >= 2
+    ? await backendFetch<Array<{ id: string; name: string; type: string; inOperationsAt: string | null }>>(`/operations/search?q=${encodeURIComponent(query)}`).catch(() => [])
+    : [];
 
   return (
     <div className="p-8">

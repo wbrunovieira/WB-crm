@@ -49,6 +49,10 @@ import {
   ResetLeadActivityOrderUseCase,
 } from "@/domain/leads/application/use-cases/update-lead-activity-order.use-case";
 import { GetLeadsForSelectUseCase } from "@/domain/leads/application/use-cases/get-leads-for-select.use-case";
+import {
+  GetLeadDropdownOptionsUseCase,
+  CreateLeadDropdownOptionUseCase,
+} from "@/domain/leads/application/use-cases/lead-dropdown-options.use-cases";
 import type { Lead } from "@/domain/leads/enterprise/entities/lead";
 
 /* ─── DTOs ──────────────────────────────────────────────────────────────── */
@@ -564,6 +568,8 @@ export class LeadsController {
     private readonly updateActivityOrder: UpdateLeadActivityOrderUseCase,
     private readonly resetActivityOrder: ResetLeadActivityOrderUseCase,
     private readonly getLeadsForSelect: GetLeadsForSelectUseCase,
+    private readonly getLeadDropdownOptions: GetLeadDropdownOptionsUseCase,
+    private readonly createLeadDropdownOption: CreateLeadDropdownOptionUseCase,
   ) {}
 
   @Get("for-select")
@@ -868,5 +874,32 @@ export class LeadsController {
     const result = await this.toggleLeadContact.execute({ id: contactId });
     if (result.isLeft()) handleError(result);
     return result.value;
+  }
+
+  @Get("dropdown-options")
+  @ApiOperation({ summary: "Listar opções customizadas de dropdown por categoria" })
+  @ApiQuery({ name: "category", required: true, description: "Categoria da opção (ex: website_platform)" })
+  async listDropdownOptions(
+    @Query("category") category: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.getLeadDropdownOptions.execute(user.id, category);
+    return result.value.options;
+  }
+
+  @Post("dropdown-options")
+  @HttpCode(201)
+  @ApiOperation({ summary: "Criar opção customizada de dropdown" })
+  async addDropdownOption(
+    @Body() body: { name: string; category: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.createLeadDropdownOption.execute({
+      name: body.name,
+      category: body.category,
+      ownerId: user.id,
+    });
+    if (result.isLeft()) throw new Error(result.value.message);
+    return result.value.option;
   }
 }

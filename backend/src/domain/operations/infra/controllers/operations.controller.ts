@@ -1,5 +1,5 @@
 import {
-  Controller, Patch, Body, UseGuards,
+  Controller, Get, Patch, Body, Query, UseGuards,
   NotFoundException, ForbiddenException, UnprocessableEntityException,
 } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth } from "@nestjs/swagger";
@@ -7,7 +7,7 @@ import { Left } from "@/core/either";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
-import { TransferToOperationsUseCase, RevertFromOperationsUseCase } from "../../application/use-cases/operations.use-cases";
+import { TransferToOperationsUseCase, RevertFromOperationsUseCase, SearchEntitiesForTransferUseCase } from "../../application/use-cases/operations.use-cases";
 
 function handleError(err: Left<Error, unknown>): never {
   const msg = err.value.message;
@@ -24,7 +24,14 @@ export class OperationsController {
   constructor(
     private readonly transfer: TransferToOperationsUseCase,
     private readonly revert: RevertFromOperationsUseCase,
+    private readonly search: SearchEntitiesForTransferUseCase,
   ) {}
+
+  @Get("search")
+  async searchEntities(@Query("q") q = "") {
+    const result = await this.search.execute(q);
+    return result.value.results;
+  }
 
   @Patch("transfer")
   async transferToOperations(@Body() body: { entityType: string; entityId: string }, @CurrentUser() user: AuthenticatedUser) {

@@ -4,8 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowRightLeft, Undo2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
-import { transferToOperations, revertFromOperations } from "@/actions/operations-transfer";
-import type { EntityTransferType } from "@/actions/operations-transfer";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
+
+type EntityTransferType = "lead" | "organization";
 
 interface Props {
   entityType: EntityTransferType;
@@ -20,6 +22,8 @@ export default function OperationsTransferButton({
   entityName,
   inOperationsAt,
 }: Props) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const isInOps = !!inOperationsAt;
@@ -66,10 +70,10 @@ export default function OperationsTransferButton({
     setLoading(true);
     try {
       if (isInOps) {
-        await revertFromOperations(entityType, entityId);
+        await apiFetch("/operations/revert", token, { method: "PATCH", body: JSON.stringify({ entityType, entityId }) });
         toast.success(`"${entityName}" revertido para o CRM.`);
       } else {
-        await transferToOperations(entityType, entityId);
+        await apiFetch("/operations/transfer", token, { method: "PATCH", body: JSON.stringify({ entityType, entityId }) });
         toast.success(`"${entityName}" transferido para Operações.`);
       }
       router.refresh();

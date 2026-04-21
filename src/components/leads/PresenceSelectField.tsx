@@ -2,11 +2,9 @@
 
 import { useState, useEffect } from "react";
 import { Plus, Loader2 } from "lucide-react";
-import {
-  getLeadDropdownOptions,
-  createLeadDropdownOption,
-} from "@/actions/lead-dropdown-options";
-import type { DigitalPresenceCategory } from "@/lib/lists/digital-presence-options";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
+import { DEFAULT_DIGITAL_PRESENCE_OPTIONS, type DigitalPresenceCategory } from "@/lib/lists/digital-presence-options";
 import { toast } from "sonner";
 
 interface PresenceSelectFieldProps {
@@ -26,29 +24,45 @@ export function PresenceSelectField({
   onChange,
   className = "",
 }: PresenceSelectFieldProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [options, setOptions] = useState<{ value: string; label: string }[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [newOption, setNewOption] = useState("");
   const [saving, setSaving] = useState(false);
 
+  async function loadOptions() {
+    const custom = await apiFetch<Array<{ name: string }>>(
+      `/leads/dropdown-options?category=${encodeURIComponent(category)}`,
+      token,
+    ).catch(() => []);
+    const defaultValues = DEFAULT_DIGITAL_PRESENCE_OPTIONS.map((o) => o.value as string);
+    const filteredCustom = custom
+      .filter((c) => !defaultValues.includes(c.name))
+      .map((c) => ({ value: c.name, label: c.name }));
+    setOptions([...DEFAULT_DIGITAL_PRESENCE_OPTIONS, ...filteredCustom]);
+  }
+
   useEffect(() => {
-    getLeadDropdownOptions(category).then(setOptions);
-  }, [category]);
+    if (token) loadOptions();
+  }, [category, token]);
 
   async function handleAdd() {
     const trimmed = newOption.trim();
     if (!trimmed) return;
     setSaving(true);
-    const result = await createLeadDropdownOption(trimmed, category);
-    if (result.success) {
-      const updated = await getLeadDropdownOptions(category);
-      setOptions(updated);
+    try {
+      await apiFetch("/leads/dropdown-options", token, {
+        method: "POST",
+        body: JSON.stringify({ name: trimmed, category }),
+      });
+      await loadOptions();
       onChange(trimmed);
       setNewOption("");
       setShowAdd(false);
       toast.success("Opção cadastrada");
-    } else {
-      toast.error(result.error ?? "Erro ao cadastrar opção");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao cadastrar opção");
     }
     setSaving(false);
   }
