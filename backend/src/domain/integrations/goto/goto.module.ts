@@ -13,6 +13,7 @@ import { HandleGotoWebhookUseCase } from "./application/use-cases/handle-goto-we
 import { CreateCallActivityUseCase } from "./application/use-cases/create-call-activity.use-case";
 import { ProcessCallRecordingUseCase } from "./application/use-cases/process-call-recording.use-case";
 import { PollCallTranscriptionsUseCase } from "./application/use-cases/poll-call-transcriptions.use-case";
+import { SyncGotoCallReportsUseCase } from "./application/use-cases/sync-goto-call-reports.use-case";
 
 // Infrastructure
 import { GoToApiClient } from "./infra/goto-api.client";
@@ -28,6 +29,7 @@ import { GoToRecordingCronService } from "./infra/scheduled/goto-recording-cron.
     // Use Cases
     HandleGotoWebhookUseCase,
     CreateCallActivityUseCase,
+    SyncGotoCallReportsUseCase,
     ProcessCallRecordingUseCase,
     PollCallTranscriptionsUseCase,
     // Port implementations

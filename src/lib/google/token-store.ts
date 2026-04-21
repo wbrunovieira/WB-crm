@@ -1,4 +1,7 @@
-import { prisma } from "@/lib/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+
+const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:3010";
 
 export interface TokenData {
   accessToken: string;
@@ -8,45 +11,49 @@ export interface TokenData {
   email: string;
 }
 
-/** Margem de segurança: renovar 5 min antes de expirar */
 const EXPIRY_BUFFER_MS = 5 * 60 * 1000;
 
-// Usamos um ID fixo pois só existe um token da empresa no banco
-const SINGLETON_ID = "google-token-singleton";
-
-export async function getStoredToken() {
-  return prisma.googleToken.findFirst();
+async function apiFetch(path: string, options: RequestInit = {}) {
+  const session = await getServerSession(authOptions);
+  const token = session?.user?.accessToken;
+  if (!token) throw new Error("Sem sessão para acessar token Google");
+  const res = await fetch(`${BACKEND_URL}${path}`, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(options.headers ?? {}),
+    },
+  });
+  if (!res.ok && res.status !== 204) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body?.message ?? `Backend error ${res.status}`);
+  }
+  return res;
 }
 
-export async function saveToken(data: TokenData) {
-  return prisma.googleToken.upsert({
-    where: { id: SINGLETON_ID },
-    create: {
-      id: SINGLETON_ID,
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
-      expiresAt: data.expiresAt,
-      scope: data.scope,
-      email: data.email,
-    },
-    update: {
-      accessToken: data.accessToken,
-      refreshToken: data.refreshToken,
-      expiresAt: data.expiresAt,
-      scope: data.scope,
-      email: data.email,
-    },
+export async function getStoredToken(): Promise<(TokenData & { gmailHistoryId: string | null }) | null> {
+  const res = await apiFetch("/email/token");
+  const data = await res.json().catch(() => null);
+  if (!data) return null;
+  return { ...data, expiresAt: new Date(data.expiresAt) };
+}
+
+export async function saveToken(data: TokenData): Promise<void> {
+  await apiFetch("/email/token", {
+    method: "POST",
+    body: JSON.stringify({ ...data, expiresAt: data.expiresAt.toISOString() }),
   });
 }
 
-export async function deleteToken() {
-  return prisma.googleToken.deleteMany();
+export async function deleteToken(): Promise<void> {
+  await apiFetch("/email/token", { method: "DELETE" });
 }
 
-/** Atualiza o gmailHistoryId após cada ciclo de polling */
-export async function updateHistoryId(historyId: string) {
-  return prisma.googleToken.updateMany({
-    data: { gmailHistoryId: historyId },
+export async function updateHistoryId(historyId: string): Promise<void> {
+  await apiFetch("/email/token/history", {
+    method: "PATCH",
+    body: JSON.stringify({ historyId }),
   });
 }
 

@@ -11,6 +11,7 @@ import {
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import type { Request } from "express";
 import { HandleGotoWebhookUseCase } from "@/domain/integrations/goto/application/use-cases/handle-goto-webhook.use-case";
+import { SyncGotoCallReportsUseCase } from "@/domain/integrations/goto/application/use-cases/sync-goto-call-reports.use-case";
 
 interface GoToWebhookPayload {
   eventType?: string;
@@ -34,6 +35,7 @@ export class GoToWebhookController {
 
   constructor(
     private readonly handleGotoWebhook: HandleGotoWebhookUseCase,
+    private readonly syncCallReports: SyncGotoCallReportsUseCase,
   ) {}
 
   @Post("calls")
@@ -88,5 +90,18 @@ export class GoToWebhookController {
     }
 
     return { ok: true };
+  }
+
+  @Post("sync")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Manual GoTo call report sync (internal)" })
+  async syncReports(@Query("secret") secret: string): Promise<{ ok: boolean; fetched: number; created: number; skipped: number }> {
+    const expectedSecret = process.env.GOTO_WEBHOOK_SECRET;
+    if (!expectedSecret || secret !== expectedSecret) {
+      throw new UnauthorizedException("Invalid webhook secret");
+    }
+    const ownerId = process.env.GOTO_DEFAULT_OWNER_ID ?? "";
+    const result = await this.syncCallReports.execute({ ownerId });
+    return { ok: true, ...result.value };
   }
 }

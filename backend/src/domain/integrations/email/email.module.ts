@@ -19,6 +19,9 @@ import { PollGmailUseCase } from "./application/use-cases/poll-gmail.use-case";
 import { TrackEmailOpenUseCase } from "./application/use-cases/track-email-open.use-case";
 import { TrackEmailClickUseCase } from "./application/use-cases/track-email-click.use-case";
 import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTemplateUseCase, DeleteGmailTemplateUseCase } from "./application/use-cases/gmail-templates.use-cases";
+import { GetGoogleTokenUseCase, SaveGoogleTokenUseCase, DeleteGoogleTokenUseCase, UpdateTokenHistoryIdUseCase } from "./application/use-cases/google-token.use-cases";
+import { GoogleTokenRepository } from "./application/repositories/google-token.repository";
+import { PrismaGoogleTokenRepository } from "./infra/prisma-google-token.repository";
 
 // Repositories
 import { GmailTemplatesRepository } from "./application/repositories/gmail-templates.repository";
@@ -47,6 +50,10 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     CreateGmailTemplateUseCase,
     UpdateGmailTemplateUseCase,
     DeleteGmailTemplateUseCase,
+    GetGoogleTokenUseCase,
+    SaveGoogleTokenUseCase,
+    DeleteGoogleTokenUseCase,
+    UpdateTokenHistoryIdUseCase,
 
     // Port implementations
     { provide: GmailPort, useClass: GmailClient },
@@ -61,6 +68,9 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     // Gmail templates
     PrismaGmailTemplatesRepository,
     { provide: GmailTemplatesRepository, useClass: PrismaGmailTemplatesRepository },
+    // Google token
+    PrismaGoogleTokenRepository,
+    { provide: GoogleTokenRepository, useClass: PrismaGoogleTokenRepository },
 
     // Scheduled
     GmailPollCronService,

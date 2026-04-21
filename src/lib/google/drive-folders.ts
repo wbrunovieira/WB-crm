@@ -1,4 +1,4 @@
-import { prisma } from "@/lib/prisma";
+import { backendFetch } from "@/lib/backend/client";
 import { getOrCreateFolder } from "./drive";
 
 const ROOT_FOLDER_NAME = "WB-CRM";
@@ -18,24 +18,17 @@ async function getProposalsFolder(): Promise<string> {
   return getOrCreateFolder(PROPOSALS_FOLDER_NAME, root);
 }
 
-/**
- * Retorna (ou cria) a pasta do Drive para um Lead.
- * Persiste o folderId no banco para evitar buscas repetidas.
- */
 export async function getLeadFolder(leadId: string, leadName: string): Promise<string> {
-  const lead = await prisma.lead.findUnique({
-    where: { id: leadId },
-    select: { driveFolderId: true },
-  });
+  const lead = await backendFetch<{ id: string; driveFolderId: string | null }>(`/leads/${leadId}`);
 
   if (lead?.driveFolderId) return lead.driveFolderId;
 
   const proposalsFolder = await getProposalsFolder();
   const folderId = await getOrCreateFolder(leadName, proposalsFolder);
 
-  await prisma.lead.update({
-    where: { id: leadId },
-    data: { driveFolderId: folderId },
+  await backendFetch(`/leads/${leadId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ driveFolderId: folderId }),
   });
 
   return folderId;
@@ -50,36 +43,25 @@ async function getWhatsAppRootFolder(): Promise<string> {
   return whatsAppRootFolderId;
 }
 
-/**
- * Retorna (ou cria) a pasta do Drive para uma conversa WhatsApp.
- * Estrutura: WB-CRM/WhatsApp/{entityName}/
- */
 export async function getWhatsAppFolder(entityName: string): Promise<string> {
   const whatsAppRoot = await getWhatsAppRootFolder();
   return getOrCreateFolder(entityName, whatsAppRoot);
 }
 
-/**
- * Retorna (ou cria) a pasta do Drive para uma Organization.
- * Persiste o folderId no banco para evitar buscas repetidas.
- */
 export async function getOrganizationFolder(
   organizationId: string,
   organizationName: string
 ): Promise<string> {
-  const org = await prisma.organization.findUnique({
-    where: { id: organizationId },
-    select: { driveFolderId: true },
-  });
+  const org = await backendFetch<{ id: string; driveFolderId: string | null }>(`/organizations/${organizationId}`);
 
   if (org?.driveFolderId) return org.driveFolderId;
 
   const proposalsFolder = await getProposalsFolder();
   const folderId = await getOrCreateFolder(organizationName, proposalsFolder);
 
-  await prisma.organization.update({
-    where: { id: organizationId },
-    data: { driveFolderId: folderId },
+  await backendFetch(`/organizations/${organizationId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ driveFolderId: folderId }),
   });
 
   return folderId;

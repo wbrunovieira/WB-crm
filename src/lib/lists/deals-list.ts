@@ -1,28 +1,12 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { backendFetch } from "@/lib/backend/client";
 
 export async function getDealsList() {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user) {
+  try {
+    const deals = await backendFetch<{ id: string; title: string }[]>("/deals");
+    return deals.map((d) => ({ id: d.id, title: d.title }));
+  } catch {
     return [];
   }
-
-  const deals = await prisma.deal.findMany({
-    where: {
-      ownerId: session.user.id,
-    },
-    select: {
-      id: true,
-      title: true,
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-  });
-
-  return deals;
 }

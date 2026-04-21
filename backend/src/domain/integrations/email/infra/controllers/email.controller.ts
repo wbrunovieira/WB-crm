@@ -20,6 +20,7 @@ import { SendEmailUseCase } from "../../application/use-cases/send-email.use-cas
 import { PollGmailUseCase } from "../../application/use-cases/poll-gmail.use-case";
 import { EmailMessagesRepository } from "../../application/repositories/email-messages.repository";
 import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTemplateUseCase, DeleteGmailTemplateUseCase } from "../../application/use-cases/gmail-templates.use-cases";
+import { GetGoogleTokenUseCase, SaveGoogleTokenUseCase, DeleteGoogleTokenUseCase, UpdateTokenHistoryIdUseCase } from "../../application/use-cases/google-token.use-cases";
 
 interface SendEmailBody {
   to: string;
@@ -43,6 +44,10 @@ export class EmailController {
     private readonly createTemplate: CreateGmailTemplateUseCase,
     private readonly updateTemplate: UpdateGmailTemplateUseCase,
     private readonly deleteTemplate: DeleteGmailTemplateUseCase,
+    private readonly getToken: GetGoogleTokenUseCase,
+    private readonly saveToken: SaveGoogleTokenUseCase,
+    private readonly deleteToken: DeleteGoogleTokenUseCase,
+    private readonly updateHistoryId: UpdateTokenHistoryIdUseCase,
   ) {}
 
   @Post("send")
@@ -123,5 +128,46 @@ export class EmailController {
   @ApiOperation({ summary: "Deletar template de Gmail" })
   async removeTemplate(@Param("id") id: string) {
     await this.deleteTemplate.execute(id);
+  }
+
+  @Get("token")
+  @ApiOperation({ summary: "Get stored Google OAuth token" })
+  async getStoredToken() {
+    const result = await this.getToken.execute();
+    return result.value.token;
+  }
+
+  @Post("token")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Save Google OAuth token" })
+  async saveStoredToken(@Body() body: {
+    accessToken: string;
+    refreshToken: string;
+    expiresAt: string;
+    scope: string;
+    email: string;
+  }) {
+    const result = await this.saveToken.execute({
+      accessToken: body.accessToken,
+      refreshToken: body.refreshToken,
+      expiresAt: new Date(body.expiresAt),
+      scope: body.scope,
+      email: body.email,
+    });
+    return result.value.token;
+  }
+
+  @Delete("token")
+  @HttpCode(204)
+  @ApiOperation({ summary: "Delete stored Google OAuth token" })
+  async deleteStoredToken() {
+    await this.deleteToken.execute();
+  }
+
+  @Patch("token/history")
+  @HttpCode(204)
+  @ApiOperation({ summary: "Update Gmail history ID" })
+  async updateGmailHistoryId(@Body() body: { historyId: string }) {
+    await this.updateHistoryId.execute(body.historyId);
   }
 }

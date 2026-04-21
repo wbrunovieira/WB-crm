@@ -1,48 +1,20 @@
 "use server";
 
-import { prisma } from "@/lib/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/lib/auth";
+import { backendFetch } from "@/lib/backend/client";
 
 export async function getContactsList() {
-  const session = await getServerSession(authOptions);
-
-  if (!session?.user) {
+  try {
+    const contacts = await backendFetch<{
+      id: string;
+      name: string;
+      organizationId: string | null;
+      leadId: string | null;
+      organization: { id: string; name: string } | null;
+      lead: { id: string; businessName: string } | null;
+      partner: { id: string; name: string } | null;
+    }[]>("/contacts");
+    return contacts;
+  } catch {
     return [];
   }
-
-  const contacts = await prisma.contact.findMany({
-    where: {
-      ownerId: session.user.id,
-    },
-    select: {
-      id: true,
-      name: true,
-      organizationId: true,
-      leadId: true,
-      organization: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-      lead: {
-        select: {
-          id: true,
-          businessName: true,
-        },
-      },
-      partner: {
-        select: {
-          id: true,
-          name: true,
-        },
-      },
-    },
-    orderBy: {
-      name: "asc",
-    },
-  });
-
-  return contacts;
 }
