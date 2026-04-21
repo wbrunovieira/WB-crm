@@ -1,9 +1,10 @@
-import { getPipelines } from "@/actions/pipelines";
+import { backendFetch } from "@/lib/backend/client";
+import type { PipelineSummary } from "@/hooks/pipelines/use-pipelines";
 import Link from "next/link";
 import { PipelineCreateButton } from "@/components/pipeline/PipelineCreateButton";
 
 export default async function PipelinesPage() {
-  const pipelines = await getPipelines();
+  const pipelines = await backendFetch<PipelineSummary[]>('/pipelines');
 
   return (
     <div className="p-8">

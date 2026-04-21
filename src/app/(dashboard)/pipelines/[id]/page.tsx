@@ -1,4 +1,5 @@
-import { getPipelineById } from "@/actions/pipelines";
+import { backendFetch } from "@/lib/backend/client";
+import type { PipelineSummary } from "@/hooks/pipelines/use-pipelines";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { PipelineManager } from "@/components/pipeline/PipelineManager";
@@ -9,7 +10,7 @@ export default async function PipelineDetailPage({
 }: {
   params: { id: string };
 }) {
-  const pipeline = await getPipelineById(params.id);
+  const pipeline = await backendFetch<PipelineSummary | null>(`/pipelines/${params.id}`).catch(() => null);
 
   if (!pipeline) {
     notFound();

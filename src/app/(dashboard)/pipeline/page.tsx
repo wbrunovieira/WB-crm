@@ -1,5 +1,6 @@
 import { getPipelineView } from "@/actions/pipeline-view";
-import { getPipelines } from "@/actions/pipelines";
+import { backendFetch } from "@/lib/backend/client";
+import type { PipelineSummary } from "@/hooks/pipelines/use-pipelines";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
 import PipelineSelector from "@/components/pipeline/PipelineSelector";
 import Link from "next/link";
@@ -11,7 +12,7 @@ export default async function PipelineViewPage({
 }) {
   const [pipelineData, allPipelines] = await Promise.all([
     getPipelineView(searchParams.pipelineId),
-    getPipelines(),
+    backendFetch<PipelineSummary[]>('/pipelines'),
   ]);
 
   return (

@@ -2,7 +2,7 @@ import { getDeals } from "@/actions/deals";
 import { backendFetch } from "@/lib/backend/client";
 import type { UserListItem } from "@/hooks/users/use-users";
 import { getPipelineView } from "@/actions/pipeline-view";
-import { getPipelines } from "@/actions/pipelines";
+import type { PipelineSummary } from "@/hooks/pipelines/use-pipelines";
 import { getSharedUsersForEntities } from "@/actions/entity-management";
 import { DealsView } from "@/components/deals/DealsView";
 import { getServerSession } from "next-auth";
@@ -36,7 +36,7 @@ export default async function DealsPage({
   if (view === "kanban") {
     const [pipelineData, allPipelines] = await Promise.all([
       getPipelineView(searchParams.pipelineId),
-      getPipelines(),
+      backendFetch<PipelineSummary[]>('/pipelines'),
     ]);
 
     return (

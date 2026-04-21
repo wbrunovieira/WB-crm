@@ -1,20 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 import { useUpdateDealStage } from "@/hooks/deals/use-deals";
-import { getStages } from "@/actions/stages";
+import { usePipelines } from "@/hooks/pipelines/use-pipelines";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-
-type Stage = {
-  id: string;
-  name: string;
-  pipeline: {
-    id: string;
-    name: string;
-    isDefault: boolean;
-  };
-};
 
 type DealStageSelectProps = {
   dealId: string;
@@ -27,43 +17,31 @@ export function DealStageSelect({
 }: DealStageSelectProps) {
   const router = useRouter();
   const updateStageMutation = useUpdateDealStage();
-  const [selectedStageId, setSelectedStageId] = useState(currentStageId);
-  const [stages, setStages] = useState<Stage[]>([]);
+  const { data: pipelines = [], isLoading } = usePipelines();
 
-  useEffect(() => {
-    async function loadStages() {
-      try {
-        const data = await getStages();
-        setStages(data);
-      } catch (error) {
-        console.error("Erro ao carregar estágios:", error);
-      }
-    }
-    loadStages();
-  }, []);
+  const stages = useMemo(
+    () => pipelines.flatMap((p) => p.stages),
+    [pipelines]
+  );
 
   const handleStageChange = async (newStageId: string) => {
-    if (newStageId === selectedStageId) return;
-
-    setSelectedStageId(newStageId);
+    if (newStageId === currentStageId) return;
 
     try {
       await updateStageMutation.mutateAsync({ id: dealId, stageId: newStageId });
       router.refresh();
-    } catch (error) {
-      console.error("Erro ao atualizar estágio:", error);
-      setSelectedStageId(currentStageId);
+    } catch {
       toast.error("Erro ao atualizar estágio");
     }
   };
 
-  if (stages.length === 0) {
+  if (isLoading || stages.length === 0) {
     return <span className="text-xs text-gray-500">Carregando...</span>;
   }
 
   return (
     <select
-      value={selectedStageId}
+      value={currentStageId}
       onChange={(e) => handleStageChange(e.target.value)}
       disabled={updateStageMutation.isPending}
       className="inline-flex rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-primary border-0 cursor-pointer hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-1 disabled:opacity-50 disabled:cursor-not-allowed"
