@@ -4,15 +4,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { revalidatePath } from "next/cache";
 import { backendFetch } from "@/lib/backend/client";
-
-export class PlacesRateLimitError extends Error {
-  retryAfterSeconds: number;
-  constructor(retryAfterSeconds = 60) {
-    super("Google Places API rate limit exceeded");
-    this.name = "PlacesRateLimitError";
-    this.retryAfterSeconds = retryAfterSeconds;
-  }
-}
+import { PlacesRateLimitError } from "@/lib/google/places";
+export { PlacesRateLimitError };
 
 export interface ExcludeCriteria {
   withoutPhone?: boolean;
