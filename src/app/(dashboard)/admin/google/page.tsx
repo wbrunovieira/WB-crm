@@ -1,7 +1,24 @@
 import Link from "next/link";
-import { getStoredToken } from "@/lib/google/token-store";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
 import { GoogleDisconnectButton } from "@/components/admin/GoogleDisconnectButton";
 import { CheckCircle, XCircle, Mail } from "lucide-react";
+
+const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:3010";
+
+async function fetchGoogleToken(accessToken: string) {
+  try {
+    const res = await fetch(`${BACKEND_URL}/email/token`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export default async function GoogleAdminPage({
   searchParams,
@@ -9,7 +26,8 @@ export default async function GoogleAdminPage({
   searchParams: Promise<{ success?: string; error?: string }>;
 }) {
   const params = await searchParams;
-  const token = await getStoredToken();
+  const session = await getServerSession(authOptions);
+  const token = await fetchGoogleToken(session?.user?.accessToken ?? "");
   const isConnected = !!token;
 
   return (
