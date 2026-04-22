@@ -277,7 +277,7 @@ export function LeadForm({ lead }: LeadFormProps) {
         router.push(`/leads/${lead.id}`);
       } else {
         // CREATE — verificar duplicatas antes
-        const dupResult = await apiFetch<LeadDuplicates>("/leads/check-duplicates", token, {
+        const rawDup = await apiFetch<{ hasDuplicates: boolean; duplicates: Array<{ leadId: string; businessName: string; matchedFields: string[]; score: number }> }>("/leads/check-duplicates", token, {
           method: "POST",
           body: JSON.stringify({
             name: data.businessName as string,
@@ -286,6 +286,14 @@ export function LeadForm({ lead }: LeadFormProps) {
             email: data.email,
           }),
         });
+
+        const dupResult: LeadDuplicates = { cnpj: [], name: [], phone: [], email: [], address: [] };
+        for (const match of rawDup.duplicates ?? []) {
+          const item: LeadSummary = { leadId: match.leadId, businessName: match.businessName, companyRegistrationID: null, phone: null, email: null, city: null, state: null, isArchived: false, status: "" };
+          for (const field of match.matchedFields) {
+            if (field in dupResult) dupResult[field as keyof LeadDuplicates].push(item);
+          }
+        }
 
         const foundDuplicates = dupResult.cnpj.length > 0 || dupResult.name.length > 0 || dupResult.phone.length > 0 || dupResult.email.length > 0 || dupResult.address.length > 0;
 
