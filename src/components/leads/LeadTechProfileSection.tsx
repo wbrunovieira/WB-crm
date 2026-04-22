@@ -20,13 +20,13 @@ interface TechItem {
 }
 
 interface TechProfile {
-  languages: Array<{ language: TechItem }>;
-  frameworks: Array<{ framework: TechItem }>;
-  hosting: Array<{ hosting: TechItem }>;
-  databases: Array<{ database: TechItem }>;
-  erps: Array<{ erp: TechItem }>;
-  crms: Array<{ crm: TechItem }>;
-  ecommerces: Array<{ ecommerce: TechItem }>;
+  languages: TechItem[];
+  frameworks: TechItem[];
+  hosting: TechItem[];
+  databases: TechItem[];
+  erps: TechItem[];
+  crms: TechItem[];
+  ecommerce: TechItem[];
 }
 
 export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) {
@@ -61,13 +61,13 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
   };
 
   const hasAnyTech = techProfile && (
-    techProfile.languages.length > 0 ||
-    techProfile.frameworks.length > 0 ||
-    techProfile.hosting.length > 0 ||
-    techProfile.databases.length > 0 ||
-    techProfile.erps.length > 0 ||
-    techProfile.crms.length > 0 ||
-    techProfile.ecommerces.length > 0
+    (techProfile.languages?.length ?? 0) > 0 ||
+    (techProfile.frameworks?.length ?? 0) > 0 ||
+    (techProfile.hosting?.length ?? 0) > 0 ||
+    (techProfile.databases?.length ?? 0) > 0 ||
+    (techProfile.erps?.length ?? 0) > 0 ||
+    (techProfile.crms?.length ?? 0) > 0 ||
+    (techProfile.ecommerce?.length ?? 0) > 0
   );
 
   if (loading) {
@@ -108,10 +108,10 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
           </p>
         ) : (
           <div className="space-y-4">
-            {techProfile.languages.length > 0 && (
+            {(techProfile.languages?.length ?? 0) > 0 && (
               <TechProfileBadge
                 title="Linguagens"
-                items={techProfile.languages.map((l) => l.language)}
+                items={techProfile.languages}
                 entityId={leadId}
                 entityType="lead"
                 profileType="languages"
@@ -119,10 +119,10 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
               />
             )}
 
-            {techProfile.frameworks.length > 0 && (
+            {(techProfile.frameworks?.length ?? 0) > 0 && (
               <TechProfileBadge
                 title="Frameworks"
-                items={techProfile.frameworks.map((f) => f.framework)}
+                items={techProfile.frameworks}
                 entityId={leadId}
                 entityType="lead"
                 profileType="frameworks"
@@ -130,10 +130,10 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
               />
             )}
 
-            {techProfile.hosting.length > 0 && (
+            {(techProfile.hosting?.length ?? 0) > 0 && (
               <TechProfileBadge
                 title="Hospedagem"
-                items={techProfile.hosting.map((h) => h.hosting)}
+                items={techProfile.hosting}
                 entityId={leadId}
                 entityType="lead"
                 profileType="hosting"
@@ -141,10 +141,10 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
               />
             )}
 
-            {techProfile.databases.length > 0 && (
+            {(techProfile.databases?.length ?? 0) > 0 && (
               <TechProfileBadge
                 title="Bancos de Dados"
-                items={techProfile.databases.map((d) => d.database)}
+                items={techProfile.databases}
                 entityId={leadId}
                 entityType="lead"
                 profileType="databases"
@@ -152,10 +152,10 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
               />
             )}
 
-            {techProfile.erps.length > 0 && (
+            {(techProfile.erps?.length ?? 0) > 0 && (
               <TechProfileBadge
                 title="ERPs"
-                items={techProfile.erps.map((e) => e.erp)}
+                items={techProfile.erps}
                 entityId={leadId}
                 entityType="lead"
                 profileType="erps"
@@ -163,10 +163,10 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
               />
             )}
 
-            {techProfile.crms.length > 0 && (
+            {(techProfile.crms?.length ?? 0) > 0 && (
               <TechProfileBadge
                 title="CRMs"
-                items={techProfile.crms.map((c) => c.crm)}
+                items={techProfile.crms}
                 entityId={leadId}
                 entityType="lead"
                 profileType="crms"
@@ -174,13 +174,13 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
               />
             )}
 
-            {techProfile.ecommerces.length > 0 && (
+            {(techProfile.ecommerce?.length ?? 0) > 0 && (
               <TechProfileBadge
                 title="E-commerce"
-                items={techProfile.ecommerces.map((e) => e.ecommerce)}
+                items={techProfile.ecommerce}
                 entityId={leadId}
                 entityType="lead"
-                profileType="ecommerces"
+                profileType="ecommerce"
                 onUpdate={refreshTechProfile}
               />
             )}
