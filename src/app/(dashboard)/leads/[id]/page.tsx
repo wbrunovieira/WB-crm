@@ -136,7 +136,7 @@ export default async function LeadDetailPage({
                     </Link>
                     <ConvertLeadButton
                       leadId={lead.id}
-                      hasContacts={lead.leadContacts.length > 0}
+                      hasContacts={(lead.leadContacts?.length ?? 0) > 0}
                     />
                   </>
                 )}
@@ -674,7 +674,7 @@ export default async function LeadDetailPage({
       <div className="mt-6">
         <LeadContactsList
           leadId={lead.id}
-          leadContacts={lead.leadContacts}
+          leadContacts={lead.leadContacts ?? []}
           isConverted={!!lead.convertedAt}
         />
       </div>
@@ -695,7 +695,7 @@ export default async function LeadDetailPage({
               ? [{ id: `lead-${lead.id}`, name: lead.businessName, email: lead.email, role: "Empresa" }]
               : []),
             // Individual lead contacts with email
-            ...lead.leadContacts
+            ...(lead.leadContacts ?? [])
               .filter((c) => c.email && c.isActive !== false)
               .map((c) => ({
                 id: c.id,
@@ -716,7 +716,7 @@ export default async function LeadDetailPage({
           leadId={lead.id}
           activities={lead.activities}
           activityOrder={lead.activityOrder}
-          leadContacts={lead.leadContacts.map((c) => ({
+          leadContacts={(lead.leadContacts ?? []).map((c) => ({
             id: c.id,
             name: c.name,
             role: c.role,
