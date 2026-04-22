@@ -27,15 +27,22 @@ let useCase: ProcessIncomingEmailUseCase;
 // Fake PrismaService
 const fakePrisma = {
   contact: {
-    findFirst: vi.fn().mockResolvedValue(null),
+    findFirst: vi.fn(),
   },
   leadContact: {
+    findFirst: vi.fn().mockResolvedValue(null),
+  },
+  organization: {
     findFirst: vi.fn().mockResolvedValue(null),
   },
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: sender matches a known contact so activity is created
+  fakePrisma.contact.findFirst.mockResolvedValue({ id: "contact-default" });
+  fakePrisma.leadContact.findFirst.mockResolvedValue(null);
+  fakePrisma.organization.findFirst.mockResolvedValue(null);
   emailMessagesRepo = new FakeEmailMessagesRepository();
   activitiesRepo = new FakeActivitiesRepository();
 
@@ -85,7 +92,7 @@ describe("ProcessIncomingEmailUseCase", () => {
   });
 
   it("links activity to contact when contact email matches", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValueOnce({ id: "contact-abc" });
+    fakePrisma.contact.findFirst.mockResolvedValue({ id: "contact-abc" });
 
     const message = makeMessage({ from: "contact@example.com" });
     const result = await useCase.execute(message, OWNER_ID);
@@ -97,8 +104,8 @@ describe("ProcessIncomingEmailUseCase", () => {
   });
 
   it("links activity to lead when no contact found but leadContact matches", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValueOnce(null);
-    fakePrisma.leadContact.findFirst.mockResolvedValueOnce({ leadId: "lead-xyz" });
+    fakePrisma.contact.findFirst.mockResolvedValue(null);
+    fakePrisma.leadContact.findFirst.mockResolvedValue({ leadId: "lead-xyz" });
 
     const message = makeMessage({ from: "lead-contact@example.com" });
     const result = await useCase.execute(message, OWNER_ID);
@@ -109,15 +116,33 @@ describe("ProcessIncomingEmailUseCase", () => {
     expect(activity.contactId).toBeUndefined();
   });
 
-  it("creates activity without contact/lead link when no match found", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValueOnce(null);
-    fakePrisma.leadContact.findFirst.mockResolvedValueOnce(null);
+  it("skips processing when sender email matches no contact, lead contact, or organization", async () => {
+    fakePrisma.contact.findFirst.mockResolvedValue(null);
+    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
+    fakePrisma.organization.findFirst.mockResolvedValue(null);
 
     const message = makeMessage({ from: "unknown@nowhere.com" });
     const result = await useCase.execute(message, OWNER_ID);
 
     expect(result.isRight()).toBe(true);
+    expect(result.unwrap().skipped).toBe(true);
+    expect(activitiesRepo.items).toHaveLength(0);
+    expect(emailMessagesRepo.items).toHaveLength(0);
+  });
+
+  it("links activity to organization when organization email matches and no contact/lead found", async () => {
+    fakePrisma.contact.findFirst.mockResolvedValue(null);
+    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
+    fakePrisma.organization.findFirst.mockResolvedValue({ id: "org-999" });
+
+    const message = makeMessage({ from: "contact@organization.com" });
+    const result = await useCase.execute(message, OWNER_ID);
+
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().skipped).toBe(false);
+    expect(activitiesRepo.items).toHaveLength(1);
     const activity = activitiesRepo.items[0];
+    expect(activity.organizationId).toBe("org-999");
     expect(activity.contactId).toBeUndefined();
     expect(activity.leadId).toBeUndefined();
   });

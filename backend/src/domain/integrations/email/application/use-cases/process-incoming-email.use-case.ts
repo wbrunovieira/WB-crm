@@ -35,12 +35,12 @@ export class ProcessIncomingEmailUseCase {
       // 2. Extract sender email (strip display name if present: "Name <email@example.com>")
       const fromEmail = this.extractEmail(message.from);
 
-      // 3. Find matching contact/lead by email
+      // 3. Find matching contact/lead/organization by email
       let contactId: string | undefined;
       let leadId: string | undefined;
+      let organizationId: string | undefined;
 
       if (fromEmail) {
-        // Check Contact table
         const contact = await this.prisma.contact.findFirst({
           where: { email: { equals: fromEmail, mode: "insensitive" }, ownerId },
           select: { id: true },
@@ -49,7 +49,6 @@ export class ProcessIncomingEmailUseCase {
         if (contact) {
           contactId = contact.id;
         } else {
-          // Check LeadContact table
           const leadContact = await this.prisma.leadContact.findFirst({
             where: {
               email: { equals: fromEmail, mode: "insensitive" },
@@ -60,8 +59,22 @@ export class ProcessIncomingEmailUseCase {
 
           if (leadContact) {
             leadId = leadContact.leadId;
+          } else {
+            const organization = await this.prisma.organization.findFirst({
+              where: { email: { equals: fromEmail, mode: "insensitive" }, ownerId },
+              select: { id: true },
+            });
+
+            if (organization) {
+              organizationId = organization.id;
+            }
           }
         }
+      }
+
+      // Skip emails from unknown senders — no contact, lead contact, or organization matched
+      if (!contactId && !leadId && !organizationId) {
+        return right({ skipped: true });
       }
 
       // 4. Create Activity of type 'email'
@@ -81,6 +94,7 @@ export class ProcessIncomingEmailUseCase {
         dueDate: message.receivedAt,
         contactId,
         leadId,
+        organizationId,
         meetingNoShow: false,
         emailReplied: false,
         emailMessageId: message.messageId,
