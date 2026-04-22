@@ -1,4 +1,3 @@
-"use server";
 
 import { backendFetch } from "@/lib/backend/client";
 

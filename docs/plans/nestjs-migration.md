@@ -1049,8 +1049,8 @@ Funcionalidades transversais: sistema de notificações em tempo real, métricas
 
 ---
 
-### 🔄 M14 — Remover Next.js Backend (Frontend Puro)
-**Status**: Em andamento (2026-04-22)
+### ✅ M14 — Remover Next.js Backend (Frontend Puro)
+**Status**: Concluído em 2026-04-22 (fase principal)
 
 Pré-requisito: M10, M11, M12, M13 concluídos e validados em produção.
 
