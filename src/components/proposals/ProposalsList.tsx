@@ -16,7 +16,7 @@ import {
   MonitorDown,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, BACKEND_URL } from "@/lib/api-client";
 
 type ProposalStatus = "draft" | "sent" | "accepted" | "rejected";
 import { toast } from "sonner";
@@ -245,7 +245,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
 
                     {/* 2. Download para a máquina */}
                     <a
-                      href={`/api/proposals/${proposal.id}/file`}
+                      href={`${BACKEND_URL}/proposals/${proposal.id}/file?token=${encodeURIComponent(token)}`}
                       download={proposal.fileName ?? true}
                       className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
                     >
@@ -255,7 +255,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
 
                     {/* 3. Abrir com app padrão da máquina */}
                     <a
-                      href={`/api/proposals/${proposal.id}/file?inline=true`}
+                      href={`${BACKEND_URL}/proposals/${proposal.id}/file?inline=true&token=${encodeURIComponent(token)}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"

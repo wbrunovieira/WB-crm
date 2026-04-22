@@ -34,11 +34,12 @@ import { PrismaWhatsAppMessagesRepository } from "./infra/prisma-whatsapp-messag
 import { PrismaWhatsAppEntityRepository } from "./infra/prisma-whatsapp-entity.repository";
 import { WhatsAppWebhookController } from "./infra/controllers/whatsapp-webhook.controller";
 import { WhatsAppController } from "./infra/controllers/whatsapp.controller";
+import { WhatsAppMediaController } from "./infra/controllers/whatsapp-media.controller";
 import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-transcription-cron.service";
 
 @Module({
   imports: [ScheduleModule.forRoot(), SharedInfraModule, ActivitiesModule, AuthModule],
-  controllers: [WhatsAppWebhookController, WhatsAppController],
+  controllers: [WhatsAppWebhookController, WhatsAppController, WhatsAppMediaController],
   providers: [
     // Use Cases
     HandleWhatsAppWebhookUseCase,

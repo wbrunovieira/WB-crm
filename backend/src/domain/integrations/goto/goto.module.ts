@@ -20,11 +20,12 @@ import { GoToApiClient } from "./infra/goto-api.client";
 import { GoToTokenService } from "./infra/goto-token.service";
 import { S3RecordingClient } from "./infra/s3-recording.client";
 import { GoToWebhookController } from "./infra/controllers/goto-webhook.controller";
+import { GoToRecordingsController } from "./infra/controllers/goto-recordings.controller";
 import { GoToRecordingCronService } from "./infra/scheduled/goto-recording-cron.service";
 
 @Module({
   imports: [ScheduleModule.forRoot(), SharedInfraModule, ActivitiesModule],
-  controllers: [GoToWebhookController],
+  controllers: [GoToWebhookController, GoToRecordingsController],
   providers: [
     // Use Cases
     HandleGotoWebhookUseCase,

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp, Download, FileText, Play } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { BACKEND_URL } from "@/lib/api-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -84,9 +86,9 @@ function mergeWithMedia(
 
 // ─── Media rendering ──────────────────────────────────────────────────────────
 
-function AudioPlayer({ messageId, transcript }: { messageId: string; transcript: string | null }) {
+function AudioPlayer({ messageId, transcript, token }: { messageId: string; transcript: string | null; token: string }) {
   const [showTranscript, setShowTranscript] = useState(false);
-  const src = `/api/evolution/media/${messageId}?inline=true`;
+  const src = `${BACKEND_URL}/whatsapp/media/${messageId}?inline=true&token=${encodeURIComponent(token)}`;
 
   return (
     <div className="mt-2 space-y-2 min-w-[240px]">
@@ -117,9 +119,9 @@ function AudioPlayer({ messageId, transcript }: { messageId: string; transcript:
   );
 }
 
-function VideoPlayer({ messageId, transcript }: { messageId: string; transcript: string | null }) {
+function VideoPlayer({ messageId, transcript, token }: { messageId: string; transcript: string | null; token: string }) {
   const [showTranscript, setShowTranscript] = useState(false);
-  const src = `/api/evolution/media/${messageId}?inline=true`;
+  const src = `${BACKEND_URL}/whatsapp/media/${messageId}?inline=true&token=${encodeURIComponent(token)}`;
 
   return (
     <div className="mt-1 space-y-1">
@@ -150,10 +152,10 @@ function VideoPlayer({ messageId, transcript }: { messageId: string; transcript:
   );
 }
 
-function ImagePreview({ messageId }: { messageId: string }) {
+function ImagePreview({ messageId, token }: { messageId: string; token: string }) {
   const [open, setOpen] = useState(false);
-  const src = `/api/evolution/media/${messageId}?inline=true`;
-  const downloadSrc = `/api/evolution/media/${messageId}`;
+  const src = `${BACKEND_URL}/whatsapp/media/${messageId}?inline=true&token=${encodeURIComponent(token)}`;
+  const downloadSrc = `${BACKEND_URL}/whatsapp/media/${messageId}?token=${encodeURIComponent(token)}`;
 
   return (
     <div className="mt-1">
@@ -196,10 +198,10 @@ function ImagePreview({ messageId }: { messageId: string }) {
   );
 }
 
-function DocumentDownload({ messageId, label }: { messageId: string; label: string | null }) {
+function DocumentDownload({ messageId, label, token }: { messageId: string; label: string | null; token: string }) {
   const fileName = label?.replace("📄 ", "") ?? "documento";
-  const inlineSrc = `/api/evolution/media/${messageId}?inline=true`;
-  const downloadSrc = `/api/evolution/media/${messageId}`;
+  const inlineSrc = `${BACKEND_URL}/whatsapp/media/${messageId}?inline=true&token=${encodeURIComponent(token)}`;
+  const downloadSrc = `${BACKEND_URL}/whatsapp/media/${messageId}?token=${encodeURIComponent(token)}`;
 
   return (
     <div className="mt-2 min-w-[220px] rounded border border-gray-200 bg-white/60 overflow-hidden">
@@ -230,16 +232,16 @@ function DocumentDownload({ messageId, label }: { messageId: string; label: stri
   );
 }
 
-function MediaContent({ media }: { media: WhatsAppMediaMessage }) {
+function MediaContent({ media, token }: { media: WhatsAppMediaMessage; token: string }) {
   switch (media.messageType) {
     case "audioMessage":
-      return <AudioPlayer messageId={media.id} transcript={media.mediaTranscriptText} />;
+      return <AudioPlayer messageId={media.id} transcript={media.mediaTranscriptText} token={token} />;
     case "videoMessage":
-      return <VideoPlayer messageId={media.id} transcript={media.mediaTranscriptText} />;
+      return <VideoPlayer messageId={media.id} transcript={media.mediaTranscriptText} token={token} />;
     case "imageMessage":
-      return <ImagePreview messageId={media.id} />;
+      return <ImagePreview messageId={media.id} token={token} />;
     case "documentMessage":
-      return <DocumentDownload messageId={media.id} label={media.mediaLabel} />;
+      return <DocumentDownload messageId={media.id} label={media.mediaLabel} token={token} />;
     default:
       return null;
   }
@@ -260,7 +262,7 @@ function Avatar({ name, fromMe }: { name: string; fromMe: boolean }) {
   );
 }
 
-function MessageRow({ line }: { line: ParsedLine }) {
+function MessageRow({ line, token }: { line: ParsedLine; token: string }) {
   return (
     <div className={`flex items-end gap-1.5 ${line.fromMe ? "flex-row-reverse" : "flex-row"}`}>
       {/* Avatar */}
@@ -287,7 +289,7 @@ function MessageRow({ line }: { line: ParsedLine }) {
           </span>
 
           {/* Player / preview inline quando há mídia */}
-          {line.media && <MediaContent media={line.media} />}
+          {line.media && <MediaContent media={line.media} token={token} />}
         </div>
 
         {/* Timestamp */}
@@ -307,6 +309,8 @@ export default function WhatsAppMessageLog({
   previewCount = 3,
 }: WhatsAppMessageLogProps) {
   const [expanded, setExpanded] = useState(false);
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
 
   const rawLines = description
     .split("\n")
@@ -325,7 +329,7 @@ export default function WhatsAppMessageLog({
     <div className="mt-2 space-y-1">
       {visibleLines.map((line, i) =>
         line ? (
-          <MessageRow key={i} line={line} />
+          <MessageRow key={i} line={line} token={token} />
         ) : (
           <p key={i} className="text-xs text-gray-500 italic">
             {rawLines[i]}

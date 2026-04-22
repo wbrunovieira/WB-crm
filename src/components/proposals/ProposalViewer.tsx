@@ -1,6 +1,8 @@
 "use client";
 
 import { X, FileText, Download } from "lucide-react";
+import { useSession } from "next-auth/react";
+import { BACKEND_URL } from "@/lib/api-client";
 
 interface Props {
   proposalId: string;
@@ -47,8 +49,10 @@ const OFFICE_TYPES = new Set([
 ]);
 
 export default function ProposalViewer({ proposalId, fileName, onClose }: Props) {
-  const fileUrl = `/api/proposals/${proposalId}/file?inline=true`;
-  const downloadUrl = `/api/proposals/${proposalId}/file`;
+  const { data: session } = useSession();
+  const token = encodeURIComponent(session?.user?.accessToken ?? "");
+  const fileUrl = `${BACKEND_URL}/proposals/${proposalId}/file?inline=true&token=${token}`;
+  const downloadUrl = `${BACKEND_URL}/proposals/${proposalId}/file?token=${token}`;
 
   const mimeType = getMimeTypeFromFileName(fileName);
   const isDirectPreview = DIRECT_PREVIEW.has(mimeType);

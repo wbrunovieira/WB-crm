@@ -16,6 +16,8 @@
  */
 
 import { useRef, useState, useEffect, useCallback } from "react";
+import { useSession } from "next-auth/react";
+import { BACKEND_URL } from "@/lib/api-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,6 +77,9 @@ export default function GoToCallPlayer({
   transcriptText,
   compact = false,
 }: Props) {
+  const { data: session } = useSession();
+  const token = encodeURIComponent(session?.user?.accessToken ?? "");
+
   const agentAudio = useRef<HTMLAudioElement>(null);
   const clientAudio = useRef<HTMLAudioElement>(null);
   const clientDelayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -195,13 +200,13 @@ export default function GoToCallPlayer({
       <audio
         ref={agentAudio}
         preload="metadata"
-        src={`/api/goto/recordings/${activityId}?track=agent`}
+        src={`${BACKEND_URL}/goto/recordings/${activityId}?track=agent&token=${token}`}
       />
       {clientKey && (
         <audio
           ref={clientAudio}
           preload="metadata"
-          src={`/api/goto/recordings/${activityId}?track=client`}
+          src={`${BACKEND_URL}/goto/recordings/${activityId}?track=client&token=${token}`}
         />
       )}
 

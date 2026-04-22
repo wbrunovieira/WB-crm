@@ -4,6 +4,7 @@ import { TranscriberService } from "./transcriber/transcriber.service";
 import { PhoneMatcherService } from "./phone-matcher/phone-matcher.service";
 import { GoogleDrivePort } from "@/domain/integrations/whatsapp/application/ports/google-drive.port";
 import { GoogleDriveService } from "./google-drive/google-drive.service";
+import { GoogleDriveDownloadService } from "./google-drive-download/google-drive-download.service";
 
 @Global()
 @Module({
@@ -11,7 +12,8 @@ import { GoogleDriveService } from "./google-drive/google-drive.service";
     { provide: TranscriberPort, useClass: TranscriberService },
     PhoneMatcherService,
     { provide: GoogleDrivePort, useClass: GoogleDriveService },
+    GoogleDriveDownloadService,
   ],
-  exports: [TranscriberPort, PhoneMatcherService, GoogleDrivePort],
+  exports: [TranscriberPort, PhoneMatcherService, GoogleDrivePort, GoogleDriveDownloadService],
 })
 export class SharedInfraModule {}

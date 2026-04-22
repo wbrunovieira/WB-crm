@@ -7,10 +7,11 @@ import {
 } from "./application/use-cases/proposals.use-cases";
 import { PrismaProposalsRepository } from "./infra/repositories/prisma-proposals.repository";
 import { ProposalsController } from "./infra/controllers/proposals.controller";
+import { ProposalsFileController } from "./infra/controllers/proposals-file.controller";
 
 @Module({
   imports: [AuthModule],
-  controllers: [ProposalsController],
+  controllers: [ProposalsController, ProposalsFileController],
   providers: [
     GetProposalsUseCase, GetProposalByIdUseCase,
     CreateProposalUseCase, UpdateProposalUseCase, DeleteProposalUseCase,
