@@ -1049,35 +1049,38 @@ Funcionalidades transversais: sistema de notificações em tempo real, métricas
 
 ---
 
-### 🔲 M14 — Remover Next.js Backend (Frontend Puro)
-**Status**: Pendente
+### 🔄 M14 — Remover Next.js Backend (Frontend Puro)
+**Status**: Em andamento (2026-04-22)
 
 Pré-requisito: M10, M11, M12, M13 concluídos e validados em produção.
 
-#### O que remover
+#### O que remover — progresso
 
-```
-src/actions/           → tudo (exceto server actions de auth do NextAuth)
-src/app/api/goto/      → GoTo webhooks e OAuth
-src/app/api/evolution/ → WhatsApp webhook
-src/app/api/google/    → Gmail, Drive, Meet, Calendar
-src/app/api/track/     → Email tracking
-src/app/api/webhooks/  → Lead research
-src/app/api/icps/      → ICPs
-src/app/api/funnel/    → Funil
-src/app/api/proposals/ → Propostas
-src/app/api/notifications/ → Notificações + SSE
-src/app/api/register/  → Registro (já no NestJS)
-src/lib/goto/          → GoTo client e utils
-src/lib/evolution/     → Evolution client e utils
-src/lib/google/        → Gmail, Drive, Calendar, Meet
-src/lib/transcriptor.ts
-src/lib/email-tracking.ts
-src/lib/event-bus.ts
-src/lib/funnel/
-src/lib/internal-auth.ts
-src/lib/backend/client.ts
-```
+| Item | Status |
+|------|--------|
+| `src/actions/` (9 arquivos) | ✅ Deletado |
+| `src/lib/evolution/` | ✅ Deletado |
+| `src/lib/event-bus.ts` | ✅ Deletado |
+| `src/lib/goto/` (exceto s3-recording.ts) | ✅ Deletado |
+| `src/lib/google/` (exceto auth.ts, token-store.ts) | ✅ Deletado |
+| `src/app/api/google/gmail-poll/` | ✅ Deletado |
+| `src/app/api/goto/webhook` | 🔲 Aguarda reconfiguração GoTo → NestJS direct |
+| `src/app/api/goto/sync` | 🔲 Aguarda reconfiguração GoTo → NestJS direct |
+| `src/app/api/evolution/webhook` | 🔲 Aguarda reconfiguração Evolution → NestJS direct |
+| `src/app/api/evolution/media/[messageId]` | 🔲 Move Drive streaming p/ NestJS |
+| `src/app/api/track/` | 🔲 Atualizar URLs de tracking p/ NestJS |
+| `src/app/api/goto/recordings/[activityId]` | 🔲 Move S3 streaming p/ NestJS |
+| `src/app/api/webhooks/lead-research` | 🔲 Reconfigurar n8n p/ NestJS direct |
+| `src/app/api/notifications/stream` | 🔲 Migrar SSE p/ NestJS |
+| `src/app/api/google/` (auth, callback, disconnect) | 🔲 Migrar OAuth Google p/ NestJS |
+| `src/app/api/proposals/[id]/file` | 🔲 Migrar Drive download p/ NestJS |
+| `src/lib/goto/s3-recording.ts` | 🔲 Após migrar recordings route |
+| `src/lib/google/auth.ts`, `token-store.ts` | 🔲 Após migrar OAuth |
+| `src/lib/email-tracking.ts` | 🔲 Após migrar track routes |
+| `src/lib/internal-auth.ts` | 🔲 Após migrar webhook routes |
+| `src/lib/funnel/` | 🔲 Puro utilitário frontend — manter ou mover |
+| `src/lib/transcriptor.ts` | 🔲 Verificar se ainda usado |
+| `src/lib/prisma.ts` | 🔲 Após remover de lib/auth.ts |
 
 #### O que fica no Next.js
 ```
