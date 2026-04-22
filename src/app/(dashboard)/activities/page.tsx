@@ -76,7 +76,7 @@ export default async function ActivitiesPage({
     backendFetch<ContactSummary[]>("/contacts").catch(() => []),
     backendFetch<{ leads: { id: string; businessName: string }[] }>("/leads?isProspect=false&isArchived=false&pageSize=200").then(r => r.leads).catch(() => []),
     backendFetch<{ id: string; name: string }[]>("/partners").catch(() => []),
-    backendFetch<UserListItem[]>('/users'),
+    backendFetch<UserListItem[]>('/users').catch(() => [] as UserListItem[]),
   ]);
 
   const availableData = {

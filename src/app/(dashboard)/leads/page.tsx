@@ -64,7 +64,7 @@ export default async function LeadsPage({
 
   const [leadsResult, users, icps] = await Promise.all([
     backendFetch<LeadsResult>(`/leads?${leadsQs}`).catch(() => ({ leads: [], total: 0, page: 1, pageSize: 50 })),
-    backendFetch<UserListItem[]>('/users'),
+    backendFetch<UserListItem[]>('/users').catch(() => [] as UserListItem[]),
     backendFetch<ICPType[]>('/icps?status=active').catch(() => [] as ICPType[]),
   ]);
 

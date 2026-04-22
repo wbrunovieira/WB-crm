@@ -38,7 +38,7 @@ export default async function OrganizationsPage({
 
   const [organizations, users] = await Promise.all([
     backendFetch<OrgSummary[]>(`/organizations${orgQs.toString() ? `?${orgQs}` : ""}`).catch(() => []),
-    backendFetch<UserListItem[]>('/users'),
+    backendFetch<UserListItem[]>('/users').catch(() => [] as UserListItem[]),
   ]);
 
   const orgIds = organizations.map((org) => org.id);

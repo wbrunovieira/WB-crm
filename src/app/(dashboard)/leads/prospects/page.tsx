@@ -26,7 +26,7 @@ export default async function ProspectsPage({
   type LeadSummary = { id: string; ownerId: string; businessName: string; status: string; quality: string | null; isArchived: boolean; phone: string | null; whatsapp: string | null; email: string | null; city: string | null; state: string | null; starRating: number | null; fieldsFilled: number | null; createdAt: string; updatedAt: string; owner: { id: string; name: string; email: string } | null; labels: Array<{ id: string; name: string; color: string }>; };
   const [prospectsResult, users] = await Promise.all([
     backendFetch<{ leads: LeadSummary[]; total: number }>(`/leads?${prospectsQs}`).catch(() => ({ leads: [], total: 0 })),
-    backendFetch<UserListItem[]>('/users'),
+    backendFetch<UserListItem[]>('/users').catch(() => [] as UserListItem[]),
   ]);
   const prospects = prospectsResult.leads;
 

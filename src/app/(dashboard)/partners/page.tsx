@@ -35,7 +35,7 @@ export default async function PartnersPage({
 
   const [partners, users] = await Promise.all([
     backendFetch<PartnerSummary[]>(`/partners${qs ? `?${qs}` : ""}`).catch(() => []),
-    backendFetch<UserListItem[]>('/users'),
+    backendFetch<UserListItem[]>('/users').catch(() => [] as UserListItem[]),
   ]);
 
   const partnerIds = partners.map((partner) => partner.id);
