@@ -34,12 +34,13 @@ import { PrismaEmailMessagesRepository } from "./infra/prisma-email-messages.rep
 import { PrismaEmailTrackingRepository } from "./infra/prisma-email-tracking.repository";
 import { EmailWebhookController } from "./infra/controllers/email-webhook.controller";
 import { EmailController } from "./infra/controllers/email.controller";
+import { GoogleOAuthController } from "./infra/controllers/google-oauth.controller";
 import { GmailPollCronService } from "./infra/scheduled/gmail-poll-cron.service";
 import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.repository";
 
 @Module({
   imports: [ScheduleModule.forRoot(), SharedInfraModule, ActivitiesModule, AuthModule],
-  controllers: [EmailWebhookController, EmailController],
+  controllers: [EmailWebhookController, EmailController, GoogleOAuthController],
   providers: [
     // Use Cases
     ProcessIncomingEmailUseCase,

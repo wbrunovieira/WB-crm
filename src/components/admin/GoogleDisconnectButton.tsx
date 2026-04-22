@@ -2,18 +2,25 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { toast } from "sonner";
+
+const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3010";
 
 export function GoogleDisconnectButton() {
   const [loading, setLoading] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const router = useRouter();
+  const { data: session } = useSession();
 
   async function handleDisconnect() {
     setLoading(true);
     setConfirming(false);
     try {
-      const res = await fetch("/api/google/disconnect", { method: "POST" });
+      const res = await fetch(`${BACKEND_URL}/google/disconnect`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session?.user?.accessToken ?? ""}` },
+      });
       if (res.ok) {
         toast.success("Conta Google desconectada.");
         router.refresh();
