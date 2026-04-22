@@ -9,6 +9,7 @@ import { useCreateLead, useUpdateLead, type CreateLeadPayload } from "@/hooks/le
 import { normalizeCNPJ, validateCNPJ } from "@/lib/validations/cnpj";
 import { Trash2, Plus } from "lucide-react";
 import { useICPs, useLeadICPs } from "@/hooks/icps/use-icps";
+import { usePartnersForSelect } from "@/hooks/partners/use-partners";
 import { useState, useEffect } from "react";
 import { MultiLabelSelect } from "@/components/shared/MultiLabelSelect";
 import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
@@ -88,6 +89,7 @@ type Lead = {
   metaAds?: string | null;
   googleAds?: string | null;
   starRating?: number | null;
+  referredByPartnerId?: string | null;
 };
 
 type LeadFormProps = {
@@ -128,8 +130,10 @@ export function LeadForm({ lead }: LeadFormProps) {
   const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(null);
   const [selectedIcpId, setSelectedIcpId] = useState<string>("");
   const [originalIcpId, setOriginalIcpId] = useState<string>("");
+  const [referredByPartnerId, setReferredByPartnerId] = useState<string>(lead?.referredByPartnerId ?? "");
   const { data: availableIcps = [], isLoading: loadingIcps } = useICPs("active");
   const { data: leadICPs = [] } = useLeadICPs(lead?.id ?? "");
+  const { data: partners = [] } = usePartnersForSelect();
   const [contacts, setContacts] = useState<ContactFormData[]>([]);
   const [leadLanguages, setLeadLanguages] = useState<LanguageEntry[]>(() => {
     if (lead?.languages) {
@@ -230,6 +234,7 @@ export function LeadForm({ lead }: LeadFormProps) {
       metaAds: metaAds || undefined,
       googleAds: googleAds || undefined,
       starRating: starRating ?? undefined,
+      referredByPartnerId: referredByPartnerId || undefined,
     };
 
     // Validação client-side do CNPJ antes de chamar o servidor
@@ -396,6 +401,28 @@ export function LeadForm({ lead }: LeadFormProps) {
             )}
             <p className="mt-1 text-xs text-gray-400">
               Vincule o lead a um ICP para melhor segmentação
+            </p>
+          </div>
+
+          {/* Partner referral */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Indicado por (parceiro)
+            </label>
+            <select
+              value={referredByPartnerId}
+              onChange={(e) => setReferredByPartnerId(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            >
+              <option value="">Nenhum parceiro (opcional)</option>
+              {partners.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-400">
+              Registre o parceiro que indicou este lead
             </p>
           </div>
         </div>

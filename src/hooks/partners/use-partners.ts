@@ -1,8 +1,25 @@
 "use client";
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
+
+export interface PartnerSelectItem {
+  id: string;
+  name: string;
+  partnerType: string;
+}
+
+export function usePartnersForSelect() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  return useQuery<PartnerSelectItem[]>({
+    queryKey: ["partners", "select"],
+    queryFn: () => apiFetch<PartnerSelectItem[]>("/partners?pageSize=200", token),
+    enabled: !!token,
+    staleTime: 60_000,
+  });
+}
 
 // ─── Query keys ──────────────────────────────────────────────────────────────
 
