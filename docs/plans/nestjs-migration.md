@@ -1161,12 +1161,66 @@ Next.js: `/api/google/auth` e `/api/google/callback` viram thin proxies. `/api/g
 
 ---
 
-### ⏳ M2.5 — Lead Frontend Completo
-**Status**: Pendente (backend concluído)
+### ✅ M2.5 — Lead Frontend Completo
+**Status**: Concluído em 2026-04-22
 
-- [ ] Enriquecer `POST /leads` no NestJS com contatos inline + tech profile + CNAE + labels em transação
-- [ ] Adicionar `useLeads` e `useLead` queries em `src/hooks/leads/use-leads.ts`
-- [ ] Seletor de partner (`referredByPartnerId`) no `LeadForm`
+- ✅ `POST /leads` e `PATCH /leads/:id` no NestJS aceitam `contacts`, `labelIds`, `icpId`, `referredByPartnerId`
+- ✅ `LeadForm` usa `useCreateLead` / `useUpdateLead` (NestJS direto, sem server action)
+- ✅ Lista de leads (`/leads`) e detalhe (`/leads/[id]`) usam `backendFetch` → NestJS
+- ✅ `usePartnersForSelect()` adicionado a `use-partners.ts`
+- ✅ Seletor "Indicado por (parceiro)" adicionado ao `LeadForm` (campo `referredByPartnerId`)
+- ✅ `src/actions/leads.ts` deletado — nenhuma server action de lead restante
+
+---
+
+### ⏳ M15 — Deploy de Validação em Produção
+**Status**: Pendente — acumulou mudanças desde o último deploy
+
+Validar em produção todas as fases concluídas desde o último deploy (M14.2–M14.6, M2.5):
+
+- [ ] `ansible-playbook deploy-backend.yml` (novos controllers: WhatsApp media, Proposals file, GoTo recordings, Google OAuth, GoogleDriveDownloadService)
+- [ ] `ansible-playbook quick-deploy.yml` (frontend: remoção de proxy routes, LeadForm, GoToCallPlayer, WhatsAppMessageLog, ProposalViewer, ProposalsList, GoogleDisconnectButton, register page)
+- [ ] Verificar nos logs Nginx que `/whatsapp/media/`, `/proposals/:id/file`, `/goto/recordings/`, `/google/auth`, `/google/callback`, `/google/disconnect` chegam ao NestJS (porta 3010)
+- [ ] Testar fluxo OAuth Google no browser: conectar conta, desconectar
+- [ ] Testar reprodução de áudio WhatsApp, download de proposta, reprodução de gravação GoTo
+- [ ] Testar criação de lead com parceiro indicador
+- [ ] Confirmar que o register page funciona (chama NestJS diretamente)
+- [ ] Confirmar que login/sessão funciona sem PrismaAdapter
+
+---
+
+### ⏳ M16 — Verificar `_count.leadCadences` na Lista de Leads
+**Status**: Pendente — verificar se o dado é exibido corretamente
+
+O endpoint `GET /leads` retorna `_count.leadCadences`? Verificar se a `LeadsTable` exibe o indicador de cadência ativa e se o filtro `hasCadence` funciona corretamente após a migração SSR.
+
+- [ ] Testar filtro `?hasCadence=yes` e `?hasCadence=no` na lista
+- [ ] Confirmar que colunas de cadência na `LeadsTable` não estão quebradas
+- [ ] Se necessário, adicionar `_count: { leadCadences: true }` no `findMany` do `PrismaLeadsRepository`
+
+---
+
+### ⏳ M17 — `referredByPartnerId` em Prospects e outros formulários
+**Status**: Pendente
+
+O campo `referredByPartnerId` foi adicionado ao `LeadForm` principal. Verificar se outros formulários/telas que criam ou editam leads também precisam do seletor:
+
+- [ ] Verificar tela de Prospects (`/leads/prospects`) — exibe `referredByPartner`?
+- [ ] Verificar importação de leads em lote (`/leads/import`) — mapear coluna para `referredByPartnerId`?
+- [ ] Verificar `AgentLeadGenerationButton` — geração via IA inclui `referredByPartnerId`?
+
+---
+
+### ⏳ M18 — Nginx Direto para OAuth Google (eliminar thin proxies)
+**Status**: Pendente — depende de atualização do `GOOGLE_REDIRECT_URI` no Google Console
+
+Atualmente `/api/google/auth` e `/api/google/callback` são thin proxies no Next.js que redirecionam para NestJS. Após atualizar `GOOGLE_REDIRECT_URI` no Google Cloud Console para apontar direto ao NestJS (via Nginx):
+
+- [ ] Adicionar regra Nginx: `location /api/google/ { proxy_pass http://localhost:3010/google/; }`
+- [ ] Atualizar `GOOGLE_REDIRECT_URI` no `.env` de produção para `https://crm.wbdigitalsolutions.com/api/google/callback` (roteado pelo Nginx para NestJS)
+- [ ] Atualizar no Google Cloud Console: OAuth → Redirect URIs
+- [ ] Deletar `src/app/api/google/auth/route.ts` e `src/app/api/google/callback/route.ts`
+- [ ] `src/app/api/` ficará apenas com `auth/` e `docs/` — objetivo final do M14
 
 ---
 
