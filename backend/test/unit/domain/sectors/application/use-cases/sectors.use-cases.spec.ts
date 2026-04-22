@@ -4,6 +4,7 @@ import {
   CreateSectorUseCase, UpdateSectorUseCase, DeleteSectorUseCase,
   LinkSectorToLeadUseCase, UnlinkSectorFromLeadUseCase,
   LinkSectorToOrganizationUseCase, UnlinkSectorFromOrganizationUseCase,
+  GetLeadSectorsUseCase, GetOrgSectorsUseCase,
 } from "@/domain/sectors/application/use-cases/sectors.use-cases";
 import { FakeSectorsRepository } from "../../fakes/fake-sectors.repository";
 import { Sector } from "@/domain/sectors/enterprise/entities/sector";
@@ -108,6 +109,38 @@ describe("DeleteSectorUseCase", () => {
   it("returns error when not owner", async () => {
     seed("s1", "Tech", "tech", "user-001");
     expect((await new DeleteSectorUseCase(repo).execute("s1", "user-999")).isLeft()).toBe(true);
+  });
+});
+
+describe("GetLeadSectorsUseCase", () => {
+  it("returns sectors linked to a lead", async () => {
+    seed("s1", "Tech", "tech", "user-001");
+    seed("s2", "Saúde", "saude", "user-001");
+    await repo.addToLead("s1", "lead-001");
+    await repo.addToLead("s2", "lead-001");
+    const { sectors } = (await new GetLeadSectorsUseCase(repo).execute("lead-001")).unwrap();
+    expect(sectors).toHaveLength(2);
+    expect(sectors.map((s) => s.id.toString())).toEqual(expect.arrayContaining(["s1", "s2"]));
+  });
+
+  it("returns empty array when lead has no sectors", async () => {
+    const { sectors } = (await new GetLeadSectorsUseCase(repo).execute("lead-999")).unwrap();
+    expect(sectors).toHaveLength(0);
+  });
+});
+
+describe("GetOrgSectorsUseCase", () => {
+  it("returns sectors linked to an organization", async () => {
+    seed("s1", "Tech", "tech", "user-001");
+    await repo.addToOrganization("s1", "org-001");
+    const { sectors } = (await new GetOrgSectorsUseCase(repo).execute("org-001")).unwrap();
+    expect(sectors).toHaveLength(1);
+    expect(sectors[0].id.toString()).toBe("s1");
+  });
+
+  it("returns empty array when org has no sectors", async () => {
+    const { sectors } = (await new GetOrgSectorsUseCase(repo).execute("org-999")).unwrap();
+    expect(sectors).toHaveLength(0);
   });
 });
 

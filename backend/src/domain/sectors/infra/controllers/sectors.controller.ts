@@ -13,6 +13,7 @@ import {
   CreateSectorUseCase, UpdateSectorUseCase, DeleteSectorUseCase,
   LinkSectorToLeadUseCase, UnlinkSectorFromLeadUseCase,
   LinkSectorToOrganizationUseCase, UnlinkSectorFromOrganizationUseCase,
+  GetLeadSectorsUseCase, GetOrgSectorsUseCase,
 } from "../../application/use-cases/sectors.use-cases";
 
 function handleError(err: Left<Error, unknown>): never {
@@ -37,6 +38,8 @@ export class SectorsController {
     private readonly unlinkFromLead: UnlinkSectorFromLeadUseCase,
     private readonly linkToOrg: LinkSectorToOrganizationUseCase,
     private readonly unlinkFromOrg: UnlinkSectorFromOrganizationUseCase,
+    private readonly getLeadSectors: GetLeadSectorsUseCase,
+    private readonly getOrgSectors: GetOrgSectorsUseCase,
   ) {}
 
   @Get()
@@ -75,6 +78,18 @@ export class SectorsController {
   async remove(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.deleteSector.execute(id, user.id);
     if (result.isLeft()) handleError(result);
+  }
+
+  @Get("leads/:leadId")
+  async getLeadSectorsList(@Param("leadId") leadId: string) {
+    const { sectors } = (await this.getLeadSectors.execute(leadId)).unwrap();
+    return sectors.map((s) => ({ sector: { id: s.id.toString(), name: s.name, slug: s.slug, isActive: s.isActive, description: s.description, marketSize: s.marketSize, salesCycleDays: s.salesCycleDays } }));
+  }
+
+  @Get("organizations/:orgId")
+  async getOrgSectorsList(@Param("orgId") orgId: string) {
+    const { sectors } = (await this.getOrgSectors.execute(orgId)).unwrap();
+    return sectors.map((s) => ({ sector: { id: s.id.toString(), name: s.name, slug: s.slug, isActive: s.isActive, description: s.description, marketSize: s.marketSize, salesCycleDays: s.salesCycleDays } }));
   }
 
   @Post("leads/:leadId/:sectorId")

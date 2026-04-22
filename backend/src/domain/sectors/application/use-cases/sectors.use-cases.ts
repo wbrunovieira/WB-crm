@@ -120,6 +120,26 @@ export class DeleteSectorUseCase {
   }
 }
 
+// ─── GetLeadSectors ──────────────────────────────────────────────────────────
+
+@Injectable()
+export class GetLeadSectorsUseCase {
+  constructor(private readonly repo: SectorsRepository) {}
+  async execute(leadId: string): Promise<Either<never, { sectors: Sector[] }>> {
+    return right({ sectors: await this.repo.findByLead(leadId) });
+  }
+}
+
+// ─── GetOrgSectors ───────────────────────────────────────────────────────────
+
+@Injectable()
+export class GetOrgSectorsUseCase {
+  constructor(private readonly repo: SectorsRepository) {}
+  async execute(orgId: string): Promise<Either<never, { sectors: Sector[] }>> {
+    return right({ sectors: await this.repo.findByOrganization(orgId) });
+  }
+}
+
 // ─── Link/Unlink ─────────────────────────────────────────────────────────────
 
 export interface SectorLinkInput {

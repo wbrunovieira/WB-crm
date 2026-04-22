@@ -37,6 +37,11 @@ export class FakeSectorsRepository extends SectorsRepository {
     this.leadLinks.get(leadId)?.delete(sectorId);
   }
 
+  async findByLead(leadId: string): Promise<Sector[]> {
+    const ids = this.leadLinks.get(leadId) ?? new Set();
+    return this.items.filter((s) => ids.has(s.id.toString()));
+  }
+
   async addToOrganization(sectorId: string, orgId: string): Promise<void> {
     if (!this.orgLinks.has(orgId)) this.orgLinks.set(orgId, new Set());
     this.orgLinks.get(orgId)!.add(sectorId);
@@ -44,5 +49,10 @@ export class FakeSectorsRepository extends SectorsRepository {
 
   async removeFromOrganization(sectorId: string, orgId: string): Promise<void> {
     this.orgLinks.get(orgId)?.delete(sectorId);
+  }
+
+  async findByOrganization(orgId: string): Promise<Sector[]> {
+    const ids = this.orgLinks.get(orgId) ?? new Set();
+    return this.items.filter((s) => ids.has(s.id.toString()));
   }
 }

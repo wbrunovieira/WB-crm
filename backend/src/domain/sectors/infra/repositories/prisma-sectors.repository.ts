@@ -100,6 +100,14 @@ export class PrismaSectorsRepository extends SectorsRepository {
     await this.prisma.leadSector.deleteMany({ where: { leadId, sectorId } });
   }
 
+  async findByLead(leadId: string): Promise<Sector[]> {
+    const rows = await this.prisma.leadSector.findMany({
+      where: { leadId },
+      include: { sector: true },
+    });
+    return rows.map((r) => toDomain(r.sector));
+  }
+
   async addToOrganization(sectorId: string, organizationId: string): Promise<void> {
     await this.prisma.organizationSector.upsert({
       where: { organizationId_sectorId: { organizationId, sectorId } },
@@ -110,5 +118,13 @@ export class PrismaSectorsRepository extends SectorsRepository {
 
   async removeFromOrganization(sectorId: string, organizationId: string): Promise<void> {
     await this.prisma.organizationSector.deleteMany({ where: { organizationId, sectorId } });
+  }
+
+  async findByOrganization(organizationId: string): Promise<Sector[]> {
+    const rows = await this.prisma.organizationSector.findMany({
+      where: { organizationId },
+      include: { sector: true },
+    });
+    return rows.map((r) => toDomain(r.sector));
   }
 }

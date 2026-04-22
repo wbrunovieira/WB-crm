@@ -9,6 +9,8 @@ export abstract class SectorsRepository {
 
   abstract addToLead(sectorId: string, leadId: string): Promise<void>;
   abstract removeFromLead(sectorId: string, leadId: string): Promise<void>;
+  abstract findByLead(leadId: string): Promise<Sector[]>;
   abstract addToOrganization(sectorId: string, organizationId: string): Promise<void>;
   abstract removeFromOrganization(sectorId: string, organizationId: string): Promise<void>;
+  abstract findByOrganization(organizationId: string): Promise<Sector[]>;
 }
