@@ -589,6 +589,33 @@ export class LeadsController {
     return result.value.leads;
   }
 
+  @Get("dropdown-options")
+  @ApiOperation({ summary: "Listar opções customizadas de dropdown por categoria" })
+  @ApiQuery({ name: "category", required: true, description: "Categoria da opção (ex: website_platform)" })
+  async listDropdownOptions(
+    @Query("category") category: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.getLeadDropdownOptions.execute(user.id, category);
+    return result.value.options;
+  }
+
+  @Post("dropdown-options")
+  @HttpCode(201)
+  @ApiOperation({ summary: "Criar opção customizada de dropdown" })
+  async addDropdownOption(
+    @Body() body: { name: string; category: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.createLeadDropdownOption.execute({
+      name: body.name,
+      category: body.category,
+      ownerId: user.id,
+    });
+    if (result.isLeft()) throw new Error(result.value.message);
+    return result.value.option;
+  }
+
   @Get()
   @ApiOperation({ summary: "Listar leads", description: "Retorna todos os leads acessíveis pelo usuário autenticado. Admin vê todos." })
   @ApiQuery({ name: "search", required: false, description: "Busca por nome, email ou telefone" })
@@ -884,33 +911,6 @@ export class LeadsController {
     const result = await this.toggleLeadContact.execute({ id: contactId });
     if (result.isLeft()) handleError(result);
     return result.value;
-  }
-
-  @Get("dropdown-options")
-  @ApiOperation({ summary: "Listar opções customizadas de dropdown por categoria" })
-  @ApiQuery({ name: "category", required: true, description: "Categoria da opção (ex: website_platform)" })
-  async listDropdownOptions(
-    @Query("category") category: string,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const result = await this.getLeadDropdownOptions.execute(user.id, category);
-    return result.value.options;
-  }
-
-  @Post("dropdown-options")
-  @HttpCode(201)
-  @ApiOperation({ summary: "Criar opção customizada de dropdown" })
-  async addDropdownOption(
-    @Body() body: { name: string; category: string },
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const result = await this.createLeadDropdownOption.execute({
-      name: body.name,
-      category: body.category,
-      ownerId: user.id,
-    });
-    if (result.isLeft()) throw new Error(result.value.message);
-    return result.value.option;
   }
 
   @Post("google-places-searches/find-or-create")
