@@ -1050,7 +1050,7 @@ Funcionalidades transversais: sistema de notificações em tempo real, métricas
 ---
 
 ### ✅ M14 — Remover Next.js Backend (Frontend Puro)
-**Status**: Fase 1 concluída em 2026-04-22 | Fases 2–4 pendentes
+**Status**: Concluído em 2026-04-22 — Next.js é agora frontend puro
 
 Pré-requisito: M10, M11, M12, M13 concluídos e validados em produção.
 
@@ -1081,8 +1081,9 @@ Pré-requisito: M10, M11, M12, M13 concluídos e validados em produção.
 | `src/app/api/google/disconnect` | ✅ M14.4 — `POST /google/disconnect` no NestJS |
 | `src/app/api/google/auth` + `callback` | ✅ M14.4 — thin proxies → NestJS OAuth controller |
 | `src/app/api/register/` | ✅ M14.5 — register page chama NestJS diretamente |
-| `src/lib/funnel/` | 🔲 Avaliar — utilitários puros de UI, manter ou mover |
-| `src/lib/prisma.ts` | 🔲 Após remover dependência em lib/auth.ts (NextAuth) |
+| `src/lib/funnel/` | ✅ Mantido — utilitários puros de UI (sem acesso a DB) |
+| `src/lib/prisma.ts` | ✅ M14.6 — deletado; PrismaAdapter removido de auth.ts |
+| `@next-auth/prisma-adapter` | ✅ M14.6 — desinstalado do package.json |
 
 #### O que fica no Next.js
 ```
@@ -1096,11 +1097,16 @@ src/app/api/google/    → Thin proxies OAuth (auth, callback)
 src/app/api/docs/      → Proxy Swagger (manter enquanto útil)
 ```
 
-#### Critério de conclusão total
-- Zero imports de `prisma` no Next.js (fora de `lib/prisma.ts` e `lib/auth.ts`)
-- Zero `"use server"` fora de `src/app/api/auth/`
-- Zero chamadas a serviços externos (GoTo, Evolution, Gmail, Drive, S3) no Next.js
-- Todos os dados chegam via `apiFetch()` ou `backendFetch()` → NestJS
+#### Critério de conclusão total — ✅ ATINGIDO (2026-04-22)
+- ✅ Zero imports de `prisma` no Next.js production code
+- ✅ Zero `"use server"` fora de `src/app/api/auth/` e `src/lib/backend/`
+- ✅ Zero chamadas a serviços externos (GoTo, Evolution, Gmail, Drive, S3) no Next.js
+- ✅ Todos os dados chegam via `apiFetch()` ou `backendFetch()` → NestJS
+
+**4 rotas Next.js restantes (legítimas):**
+- `src/app/api/auth/` → NextAuth (permanece indefinidamente)
+- `src/app/api/docs/` → Swagger UI do Next.js
+- `src/app/api/google/auth` + `callback` → thin proxies OAuth (podem virar Nginx routes futuramente)
 
 ---
 
