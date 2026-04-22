@@ -2,11 +2,20 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { X, Send, Loader2, Paperclip, FileText, ChevronDown, LayoutTemplate } from "lucide-react";
 import { sendGmailMessage } from "@/actions/gmail";
 import { getActiveGmailTemplates } from "@/actions/gmail-templates";
 import { applyVariables } from "@/lib/gmail-variables";
+import { apiFetch } from "@/lib/api-client";
 import RichTextEditor, { RichTextEditorHandle } from "@/components/gmail/RichTextEditor";
+
+interface SendAsAlias {
+  email: string;
+  displayName: string;
+  isDefault: boolean;
+  isPrimary: boolean;
+}
 
 interface AttachmentFile {
   filename: string;
@@ -70,6 +79,8 @@ export default function GmailComposeModal({
   onClose,
 }: GmailComposeModalProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [subject, setSubject] = useState(initialSubject ?? "");
   const [cc, setCc] = useState("");
   const [showCc, setShowCc] = useState(false);
@@ -79,13 +90,26 @@ export default function GmailComposeModal({
   const [attachments, setAttachments] = useState<AttachmentFile[]>([]);
   const [templates, setTemplates] = useState<TemplateOption[]>([]);
   const [showTemplates, setShowTemplates] = useState(false);
+  const [aliases, setAliases] = useState<SendAsAlias[]>([]);
+  const [fromEmail, setFromEmail] = useState<string>("");
   const editorRef = useRef<RichTextEditorHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Carrega templates ativos ao abrir o modal
+  // Carrega aliases e templates ao abrir o modal
   useEffect(() => {
     getActiveGmailTemplates().then(setTemplates).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    apiFetch<{ aliases: SendAsAlias[] }>("/email/aliases", token)
+      .then(({ aliases: list }) => {
+        setAliases(list);
+        const defaultAlias = list.find((a) => a.isDefault) ?? list[0];
+        if (defaultAlias) setFromEmail(defaultAlias.email);
+      })
+      .catch(() => {});
+  }, [token]);
 
   function applyTemplate(template: TemplateOption) {
     const values = {
@@ -161,6 +185,7 @@ export default function GmailComposeModal({
         to,
         subject: subject.trim(),
         html,
+        fromEmail: fromEmail || undefined,
         contactId,
         leadId,
         organizationId,
@@ -214,6 +239,25 @@ export default function GmailComposeModal({
             <X className="h-4 w-4" />
           </button>
         </div>
+
+        {/* De (alias selector — só mostra se houver mais de 1) */}
+        {aliases.length > 1 && (
+          <div className="flex items-center gap-2 border-b px-3 py-2 text-sm">
+            <span className="text-gray-500 w-8">De</span>
+            <select
+              value={fromEmail}
+              onChange={(e) => setFromEmail(e.target.value)}
+              disabled={sending || sent}
+              className="flex-1 bg-transparent text-sm text-gray-900 outline-none cursor-pointer"
+            >
+              {aliases.map((a) => (
+                <option key={a.email} value={a.email}>
+                  {a.displayName ? `${a.displayName} <${a.email}>` : a.email}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         {/* To */}
         <div className="flex items-center gap-2 border-b px-3 py-2 text-sm">
