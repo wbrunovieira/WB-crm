@@ -540,12 +540,9 @@ Repository   → interface abstrata no domain; implementação Prisma fica em in
 - [ ] VOs para `Email`, `PhoneNumber`, `TaxId` nos domínios Contacts e Leads
 - [ ] Revisar Deals, Activities, Partners para validações inline
 
-### Dívida: Meet — tabela `Meeting` no Prisma
+### ~~Dívida: Meet — tabela `Meeting` no Prisma~~ (resolvido em M10.4)
 
-M10.4 implementa detecção de gravações e polling de transcrições (cron jobs), mas ainda não tem:
-- [ ] Modelo `Meeting` no `prisma/schema.prisma` (para persistir reuniões agendadas)
-- [ ] `POST /meetings`, `GET /meetings` — endpoints de agendamento (planejados para M13)
-- Por ora, o cron detecta reuniões via Google Drive + Calendar sem persistência própria
+M10.4 implementou modelo `Meeting` completo no Prisma, endpoints CRUD REST e cron jobs de detecção/polling.
 
 ---
 
@@ -667,7 +664,7 @@ if (requesterRole !== "admin" && row.ownerId !== requesterId) {
 | Email tracking open pixel | `api/track/open/[token]/route.ts` | ✅ `GET /track/open/:token` | Endpoint público |
 | Email tracking click redirect | `api/track/click/[token]/route.ts` | ✅ `GET /track/click/:token` | Endpoint público |
 | Email tracking logic | `lib/email-tracking.ts` | ✅ `TrackEmailOpenUseCase` + `TrackEmailClickUseCase` | Use cases |
-| Google Meet recordings (3 passes) | `api/google/check-recordings/route.ts` | 🔲 | Cron 15min |
+| Google Meet recordings (3 passes) | `api/google/check-recordings/route.ts` | ✅ | Cron 15min |
 | Meet transcription cron | `api/google/check-transcriptions/route.ts` | 🔲 | Cron 5min |
 | Meet recording detector | `lib/google/recording-detector.ts` | 🔲 | Adapter |
 | Google Drive client | `lib/google/drive.ts` | 🔲 `GoogleDriveService` (shared) | Adapter |
@@ -762,17 +759,20 @@ TRANSCRIPTOR_BASE_URL, TRANSCRIPTOR_API_KEY
 - Substituir stubs em memória por `PrismaEmailMessagesRepository` e `PrismaEmailTrackingRepository` reais
 - Migration em produção + deploy
 
-#### M10.4 — Google Meet 🔲 Pendente
+#### M10.4 — Google Meet ✅ Completo em 2026-04-22
 
-**O que migrar do Next.js:**
-- `api/google/check-recordings/route.ts` → `@Cron("*/15 * * * *")` com 3 passes
-  - Pass 0: Drive-first (lista "Meet Recordings" folder, last 6h)
-  - Pass 1: time-based fallback (reuniões cujo horário passou + 30min)
-  - Pass 2: retry pendentes (Google pode demorar >15min para processar)
-- `lib/google/recording-detector.ts` → `MeetRecordingDetectorService`
-- `api/google/check-transcriptions/route.ts` → `@Cron("*/5 * * * *")`
-
-**Port a criar:** `GoogleDrivePort` (listFiles, downloadFile, moveFile, exportDoc), `GoogleCalendarPort` (getEvent, createEvent, updateEvent)
+**Implementado:**
+- `DetectMeetRecordingsUseCase` — 3-pass strategy: Pass 0 (Drive-first), Pass 1 (time-based fallback), Pass 2 (retry pendentes 4h)
+- `PollMeetTranscriptionsUseCase` — polling de jobs de transcrição de vídeo
+- `RefreshMeetRsvpUseCase` — polling de RSVP via Google Calendar (5min)
+- `MeetRecordingsCronService` (`*/15 * * * *`), `MeetTranscriptionsCronService` (`*/5 * * * *`), `MeetRsvpCronService` (`*/5 * * * *`)
+- `GoogleDrivePort` + `GoogleDriveClient` — findMeetRecordingsFolder, listFilesInFolder, exportDocText, downloadFile
+- `GoogleCalendarPort` + `GoogleCalendarClient` — getMeetEvent, createMeetEvent, updateEvent, cancelEvent
+- Meetings CRUD (7 use cases): GetMeetings, GetMeetingById, ScheduleMeeting, UpdateMeeting, CancelMeeting, CheckMeetingTitle, UpdateMeetingSummary
+- `MeetingsCrudController` — 7 endpoints REST autenticados via JWT
+- `PrismaMeetingsRepository` — 20+ métodos com transações atômicas
+- `MeetModule` registrado em `app.module.ts`
+- **36 unit tests** cobrindo todos os use cases + cenários de resiliência (36/36 ✅)
 
 #### M10.5 — Lead Research Webhook ✅ Completo em 2026-04-20
 
