@@ -60,4 +60,24 @@ describe("CheckLeadDuplicatesUseCase", () => {
     expect(result.isLeft()).toBe(true);
     expect((result.value as Error).name).toBe("NoCriteriaError");
   });
+
+  it("finds duplicate when input name contains the existing name (reverse substring match)", async () => {
+    // Existing lead: "teste" — new lead: "teste para telefonar e reuniao"
+    repo.leads = [
+      { id: "l-short", businessName: "teste", ownerId: "user-001" },
+    ];
+    const { duplicates, hasDuplicates } = (await useCase.execute({ ownerId: "user-001", name: "teste para telefonar e reuniao" })).unwrap();
+    expect(hasDuplicates).toBe(true);
+    expect(duplicates[0].leadId).toBe("l-short");
+    expect(duplicates[0].matchedFields).toContain("name");
+  });
+
+  it("finds duplicate when existing name is a leading word of the input name", async () => {
+    repo.leads = [
+      { id: "l-acme", businessName: "Acme", ownerId: "user-001" },
+    ];
+    const { duplicates } = (await useCase.execute({ ownerId: "user-001", name: "Acme Tech Solutions" })).unwrap();
+    expect(duplicates).toHaveLength(1);
+    expect(duplicates[0].matchedFields).toContain("name");
+  });
 });

@@ -12,7 +12,16 @@ export class PrismaLeadDuplicatesRepository extends LeadDuplicatesRepository {
     if (input.cnpj) orConditions.push({ companyRegistrationID: input.cnpj });
     if (input.phone) orConditions.push({ phone: input.phone });
     if (input.email) orConditions.push({ email: { equals: input.email, mode: "insensitive" } });
-    if (input.name) orConditions.push({ businessName: { contains: input.name, mode: "insensitive" } });
+    if (input.name) {
+      // forward: existing name contains input query
+      orConditions.push({ businessName: { contains: input.name, mode: "insensitive" } });
+      // word-by-word: each significant word from input as a separate contains condition
+      // catches reverse case where "teste" matches input "teste para reuniao"
+      const words = input.name.split(/\s+/).filter((w) => w.length >= 4);
+      for (const word of words) {
+        orConditions.push({ businessName: { contains: word, mode: "insensitive" } });
+      }
+    }
     if (input.address) orConditions.push({ address: { contains: input.address, mode: "insensitive" } });
 
     if (orConditions.length === 0) return [];
@@ -27,7 +36,11 @@ export class PrismaLeadDuplicatesRepository extends LeadDuplicatesRepository {
       if (input.cnpj && r.companyRegistrationID === input.cnpj) matched.push("cnpj");
       if (input.phone && r.phone === input.phone) matched.push("phone");
       if (input.email && r.email?.toLowerCase() === input.email.toLowerCase()) matched.push("email");
-      if (input.name && r.businessName.toLowerCase().includes(input.name.toLowerCase())) matched.push("name");
+      if (input.name) {
+        const existingLower = r.businessName.toLowerCase();
+        const inputLower = input.name.toLowerCase();
+        if (existingLower.includes(inputLower) || inputLower.includes(existingLower)) matched.push("name");
+      }
       if (input.address && r.address?.toLowerCase().includes(input.address.toLowerCase())) matched.push("address");
       return {
         leadId: r.id, businessName: r.businessName,

@@ -23,7 +23,12 @@ export class FakeLeadDuplicatesRepository extends LeadDuplicatesRepository {
       if (input.cnpj && lead.cnpj && lead.cnpj === input.cnpj) matched.push("cnpj");
       if (input.phone && lead.phone && lead.phone === input.phone) matched.push("phone");
       if (input.email && lead.email && lead.email.toLowerCase() === input.email.toLowerCase()) matched.push("email");
-      if (input.name && lead.businessName.toLowerCase().includes(input.name.toLowerCase())) matched.push("name");
+      if (input.name) {
+        const existingLower = lead.businessName.toLowerCase();
+        const inputLower = input.name.toLowerCase();
+        // forward: existing name contains input, OR reverse: input contains existing name
+        if (existingLower.includes(inputLower) || inputLower.includes(existingLower)) matched.push("name");
+      }
       if (input.address && lead.address && lead.address.toLowerCase().includes(input.address.toLowerCase())) matched.push("address");
 
       if (matched.length > 0) {
