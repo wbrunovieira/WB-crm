@@ -39,10 +39,10 @@ export default async function PartnersPage({
   ]);
 
   const partnerIds = partners.map((partner) => partner.id);
-  const sharedUsersMap = partnerIds.length > 0
+  const sharedUsersMap: Record<string, { id: string; name: string }[]> = partnerIds.length > 0
     ? await backendFetch<Record<string, { id: string; name: string }[]>>(
         `/shared-entities/batch?entityType=partner&entityIds=${partnerIds.join(",")}`
-      ).catch(() => ({}))
+      ).catch(() => ({} as Record<string, { id: string; name: string }[]>))
     : {};
 
   return (

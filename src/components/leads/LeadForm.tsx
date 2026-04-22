@@ -43,7 +43,7 @@ type Lead = {
   googleId?: string | null;
   businessName: string;
   registeredName?: string | null;
-  foundationDate?: Date | null;
+  foundationDate?: string | Date | null;
   companyRegistrationID?: string | null;
   address?: string | null;
   city?: string | null;

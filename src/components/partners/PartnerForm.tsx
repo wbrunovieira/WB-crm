@@ -13,7 +13,7 @@ interface PartnerFormProps {
     id: string;
     name: string;
     legalName: string | null;
-    foundationDate: Date | null;
+    foundationDate: Date | string | null;
     partnerType: string;
     website: string | null;
     email: string | null;

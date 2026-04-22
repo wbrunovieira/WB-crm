@@ -24,7 +24,7 @@ import { formatDate } from "@/lib/utils";
 import ProposalUploadModal from "./ProposalUploadModal";
 import ProposalViewer from "./ProposalViewer";
 
-interface Proposal {
+export interface Proposal {
   id: string;
   title: string;
   description: string | null;
@@ -33,8 +33,8 @@ interface Proposal {
   driveUrl: string | null;
   fileName: string | null;
   fileSize: number | null;
-  sentAt: Date | null;
-  createdAt: Date;
+  sentAt: string | Date | null;
+  createdAt: string | Date;
 }
 
 interface Props {

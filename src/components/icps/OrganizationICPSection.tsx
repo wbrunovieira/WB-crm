@@ -244,7 +244,8 @@ export function OrganizationICPSection({ organizationId }: OrganizationICPSectio
     }
   };
 
-  const parseJsonArray = (value: string | number | null | undefined): string[] => {
+  const parseJsonArray = (value: string | string[] | number | null | undefined): string[] => {
+    if (Array.isArray(value)) return value;
     if (value === null || value === undefined) return [];
     // Handle old integer format (1-5 for urgency)
     if (typeof value === 'number') {

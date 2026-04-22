@@ -45,7 +45,7 @@ type Deal = {
   organizationId: string | null;
   leadId?: string | null;
   stageId: string;
-  expectedCloseDate: Date | null;
+  expectedCloseDate: string | Date | null;
 };
 
 type DealFormProps = {

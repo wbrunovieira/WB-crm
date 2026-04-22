@@ -18,7 +18,7 @@ interface Deal {
   value: number;
   currency: string;
   status: string;
-  expectedCloseDate: Date | null;
+  expectedCloseDate: Date | string | null;
   contact: { id: string; name: string } | null;
   organization: { id: string; name: string } | null;
   stage: {
@@ -26,7 +26,7 @@ interface Deal {
     name: string;
     pipeline: { id: string; name: string };
   };
-  createdAt: Date;
+  createdAt: Date | string;
   activities?: Array<{
     id: string;
     subject: string;
@@ -61,7 +61,7 @@ export function DealCard({ deal, isAdmin = false, currentUserId = "", sharedWith
     }).format(value);
   };
 
-  const formatDate = (date: Date | null) => {
+  const formatDate = (date: Date | string | null) => {
     if (!date) return "-";
     return new Date(date).toLocaleDateString("pt-BR");
   };

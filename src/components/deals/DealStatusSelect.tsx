@@ -16,7 +16,7 @@ type DealStatusSelectProps = {
     stageId: string;
     contactId: string | null;
     organizationId: string | null;
-    expectedCloseDate: Date | null;
+    expectedCloseDate: string | Date | null;
   };
 };
 

@@ -145,14 +145,14 @@ type Activity = {
   type: string;
   subject: string;
   description: string | null;
-  dueDate: Date | null;
+  dueDate: Date | string | null;
   completed: boolean;
-  completedAt: Date | null;
-  failedAt: Date | null;
-  failReason: string | null;
-  skippedAt: Date | null;
-  skipReason: string | null;
-  leadContactIds: string | null;
+  completedAt?: Date | string | null;
+  failedAt?: Date | string | null;
+  failReason?: string | null;
+  skippedAt?: Date | string | null;
+  skipReason?: string | null;
+  leadContactIds?: string | null;
   gotoCallId?: string | null;
   gotoRecordingUrl?: string | null;
   gotoRecordingUrl2?: string | null;
@@ -366,7 +366,7 @@ function SortableActivityItem({
               </p>
             )}
             {(() => {
-              const names = getContactNames(activity.leadContactIds);
+              const names = getContactNames(activity.leadContactIds ?? null);
               return names.length > 0 ? (
                 <div className="mt-2 flex items-center gap-1.5 flex-wrap">
                   <Users className="h-3.5 w-3.5 text-purple-500 flex-shrink-0" />
@@ -744,8 +744,10 @@ export function LeadActivitiesList({
     const done = [...orderedActivities]
       .filter((a) => !isPending(a))
       .sort((a, b) => {
-        const aDate = (a.completedAt ?? a.failedAt ?? a.skippedAt)?.getTime() ?? 0;
-        const bDate = (b.completedAt ?? b.failedAt ?? b.skippedAt)?.getTime() ?? 0;
+        const aRaw = a.completedAt ?? a.failedAt ?? a.skippedAt;
+        const aDate = aRaw ? new Date(aRaw).getTime() : 0;
+        const bRaw = b.completedAt ?? b.failedAt ?? b.skippedAt;
+        const bDate = bRaw ? new Date(bRaw).getTime() : 0;
         return bDate - aDate;
       });
     return [...pending, ...done];

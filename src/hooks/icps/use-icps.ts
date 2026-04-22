@@ -33,17 +33,17 @@ export interface ICPLinkData {
   icpFitStatus?: string | null;
   realDecisionMaker?: string | null;
   realDecisionMakerOther?: string | null;
-  perceivedUrgency?: string | null;
-  businessMoment?: string | null;
-  currentPlatforms?: string | null;
-  fragmentationLevel?: string | null;
+  perceivedUrgency?: string[] | string | null;
+  businessMoment?: string[] | string | null;
+  currentPlatforms?: string[] | string | null;
+  fragmentationLevel?: number | string | null;
   mainDeclaredPain?: string | null;
   strategicDesire?: string | null;
-  perceivedTechnicalComplexity?: string | null;
+  perceivedTechnicalComplexity?: number | string | null;
   purchaseTrigger?: string | null;
   nonClosingReason?: string | null;
   estimatedDecisionTime?: string | null;
-  expansionPotential?: string | null;
+  expansionPotential?: number | string | null;
 }
 
 export interface ICPLeadLink extends ICPLinkData {

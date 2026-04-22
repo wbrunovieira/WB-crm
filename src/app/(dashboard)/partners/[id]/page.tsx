@@ -1,4 +1,5 @@
 import { backendFetch } from "@/lib/backend/client";
+import type { Partner } from "@/types/partner";
 import { PhoneLink } from "@/components/ui/phone-link";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
@@ -16,7 +17,7 @@ export default async function PartnerDetailPage({
   params: { id: string };
 }) {
   const [partner, session] = await Promise.all([
-    backendFetch(`/partners/${params.id}`).catch(() => null),
+    backendFetch<Partner>(`/partners/${params.id}`).catch(() => null),
     getServerSession(authOptions),
   ]);
 
@@ -437,7 +438,7 @@ export default async function PartnerDetailPage({
             entityName={partner.name}
             ownerId={partner.owner.id}
             ownerName={partner.owner.name}
-            ownerEmail={partner.owner.email}
+            ownerEmail={partner.owner.email ?? undefined}
             isAdmin={isAdmin}
           />
         </div>

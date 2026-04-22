@@ -6,7 +6,7 @@ import { X, Loader2, Bot, Target, MapPin, Building2, Hash, ChevronRight } from "
 type ICP = {
   id: string;
   name: string;
-  content: string;
+  content?: string;
   status: string;
   _count?: {
     leads: number;
@@ -254,8 +254,8 @@ export function AgentLeadGenerationModal({
                             {icp.name}
                           </h3>
                           <p className="mt-1 line-clamp-2 text-sm text-gray-600 group-hover:text-purple-100">
-                            {icp.content.substring(0, 150)}
-                            {icp.content.length > 150 ? "..." : ""}
+                            {(icp.content ?? "").substring(0, 150)}
+                            {(icp.content ?? "").length > 150 ? "..." : ""}
                           </p>
                           {icp._count && (
                             <div className="mt-2 flex gap-4 text-xs text-gray-500 group-hover:text-purple-200">

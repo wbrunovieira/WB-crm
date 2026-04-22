@@ -9,9 +9,9 @@ type Activity = {
   type: string;
   subject: string;
   description: string | null;
-  dueDate: Date | null;
+  dueDate: Date | string | null;
   completed: boolean;
-  createdAt: Date;
+  createdAt: Date | string;
   deal: { title: string } | null;
   contact: { name: string } | null;
 };

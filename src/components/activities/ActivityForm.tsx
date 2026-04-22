@@ -40,17 +40,17 @@ type Activity = {
   id: string;
   type: string;
   subject: string;
-  description: string | null;
-  dueDate: Date | null;
+  description?: string | null;
+  dueDate?: string | Date | null;
   completed: boolean;
-  dealId: string | null;
-  contactId: string | null;
-  contactIds: string | null;
-  leadContactIds: string | null;
-  leadId: string | null;
+  dealId?: string | null;
+  contactId?: string | null;
+  contactIds?: string | null;
+  leadContactIds?: string | null;
+  leadId?: string | null;
   organizationId?: string | null;
-  callContactType: string | null;
-  meetingNoShow: boolean;
+  callContactType?: string | null;
+  meetingNoShow?: boolean;
 };
 
 type ActivityFormProps = {

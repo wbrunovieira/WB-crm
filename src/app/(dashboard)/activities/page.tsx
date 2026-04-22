@@ -1,4 +1,5 @@
 import { backendFetch } from "@/lib/backend/client";
+import type { Activity } from "@/types/activity";
 import type { ContactSummary } from "@/types/contact";
 import type { UserListItem } from "@/hooks/users/use-users";
 import Link from "next/link";
@@ -68,7 +69,7 @@ export default async function ActivitiesPage({
   if (searchParams.showArchived === "true") qs.set("includeArchivedLeads", "true");
   if (searchParams.outcome) qs.set("outcome", searchParams.outcome);
 
-  const activities = await backendFetch<unknown[]>(`/activities${qs.toString() ? `?${qs}` : ""}`).catch(() => []);
+  const activities = await backendFetch<Activity[]>(`/activities${qs.toString() ? `?${qs}` : ""}`).catch(() => []);
 
   // Fetch available data for the modal
   const [deals, contacts, leads, partners, users] = await Promise.all([

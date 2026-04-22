@@ -1,6 +1,9 @@
 import { backendFetch } from "@/lib/backend/client";
+import type { Lead } from "@/types/lead";
 import ProposalsList from "@/components/proposals/ProposalsList";
+import type { Proposal } from "@/components/proposals/ProposalsList";
 import MeetingsList from "@/components/meetings/MeetingsList";
+import type { Meeting } from "@/components/meetings/MeetingsList";
 import { PhoneLink } from "@/components/ui/phone-link";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import { WhatsAppCheckButton } from "@/components/whatsapp/WhatsAppCheckButton";
@@ -31,10 +34,10 @@ export default async function LeadDetailPage({
   params: { id: string };
 }) {
   const [lead, session, proposals, meetings] = await Promise.all([
-    backendFetch(`/leads/${params.id}`).catch(() => null),
+    backendFetch<Lead>(`/leads/${params.id}`).catch(() => null),
     getServerSession(authOptions),
-    backendFetch(`/proposals?leadId=${params.id}`).catch(() => []),
-    backendFetch(`/meetings?leadId=${params.id}`).catch(() => []),
+    backendFetch<Proposal[]>(`/proposals?leadId=${params.id}`).catch((): Proposal[] => []),
+    backendFetch<Meeting[]>(`/meetings?leadId=${params.id}`).catch((): Meeting[] => []),
   ]);
 
   if (!lead) {
@@ -252,7 +255,7 @@ export default async function LeadDetailPage({
                     entityId={lead.id}
                     canSave={!lead.whatsapp}
                     verified={lead.whatsappVerifiedAt && lead.whatsappVerifiedNumber === lead.phone
-                      ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified }
+                      ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified ?? false }
                       : undefined}
                   />
                 </dd>
@@ -268,7 +271,7 @@ export default async function LeadDetailPage({
                     entityType="lead"
                     entityId={lead.id}
                     verified={lead.whatsappVerifiedAt && lead.whatsappVerifiedNumber === lead.whatsapp
-                      ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified }
+                      ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified ?? false }
                       : undefined}
                   />
                   <WhatsAppButton to={lead.whatsapp} name={lead.businessName} variant="icon" />
@@ -304,7 +307,7 @@ export default async function LeadDetailPage({
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Idiomas</dt>
               <dd className="mt-1">
-                <LanguageBadges languages={lead.languages} />
+                <LanguageBadges languages={lead.languages ?? null} />
               </dd>
             </div>
           </dl>
@@ -611,7 +614,7 @@ export default async function LeadDetailPage({
             entityName={lead.businessName}
             ownerId={lead.owner.id}
             ownerName={lead.owner.name}
-            ownerEmail={lead.owner.email}
+            ownerEmail={lead.owner.email ?? undefined}
             isAdmin={isAdmin}
           />
         </div>
@@ -719,9 +722,9 @@ export default async function LeadDetailPage({
           leadContacts={(lead.leadContacts ?? []).map((c) => ({
             id: c.id,
             name: c.name,
-            role: c.role,
-            isPrimary: c.isPrimary,
-            isActive: c.isActive,
+            role: c.role ?? null,
+            isPrimary: c.isPrimary ?? false,
+            isActive: c.isActive ?? true,
           }))}
         />
       </div>

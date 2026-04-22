@@ -172,7 +172,7 @@ export function CadenceStepsList({ cadenceId }: CadenceStepsListProps) {
 
       {editingStep && (
         <CadenceStepEditModal
-          step={editingStep}
+          step={{ ...editingStep, description: editingStep.description ?? null }}
           isOpen={!!editingStep}
           onClose={() => setEditingStep(null)}
         />

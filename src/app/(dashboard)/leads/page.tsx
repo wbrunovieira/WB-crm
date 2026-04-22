@@ -32,7 +32,7 @@ export default async function LeadsPage({
   const currentUserId = session?.user?.id || "";
 
   type LeadSummary = {
-    id: string; ownerId: string; businessName: string; status: string;
+    id: string; ownerId: string; businessName: string; registeredName: string | null; status: string;
     quality: string | null; isArchived: boolean; isProspect: boolean;
     email: string | null; phone: string | null; whatsapp: string | null;
     city: string | null; state: string | null; country: string | null;

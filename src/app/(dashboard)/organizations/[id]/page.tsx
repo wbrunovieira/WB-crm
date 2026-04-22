@@ -1,5 +1,7 @@
 import { backendFetch } from "@/lib/backend/client";
+import type { Organization } from "@/types/organization";
 import MeetingsList from "@/components/meetings/MeetingsList";
+import type { Meeting } from "@/components/meetings/MeetingsList";
 import GmailButton from "@/components/gmail/GmailButton";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { PhoneLink } from "@/components/ui/phone-link";
@@ -25,9 +27,9 @@ export default async function OrganizationDetailPage({
   params: { id: string };
 }) {
   const [organization, session, meetings] = await Promise.all([
-    backendFetch(`/organizations/${params.id}`).catch(() => null),
+    backendFetch<Organization>(`/organizations/${params.id}`).catch(() => null),
     getServerSession(authOptions),
-    backendFetch(`/meetings?organizationId=${params.id}`).catch(() => []),
+    backendFetch<Meeting[]>(`/meetings?organizationId=${params.id}`).catch((): Meeting[] => []),
   ]);
 
   if (!organization) {
@@ -143,7 +145,7 @@ export default async function OrganizationDetailPage({
             </div>
             <div>
               <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Idiomas</dt>
-              <dd className="mt-1"><LanguageBadges languages={organization.languages} /></dd>
+              <dd className="mt-1"><LanguageBadges languages={organization.languages ?? null} /></dd>
             </div>
           </dl>
         </div>
@@ -439,7 +441,7 @@ export default async function OrganizationDetailPage({
             entityName={organization.name}
             ownerId={organization.owner.id}
             ownerName={organization.owner.name}
-            ownerEmail={organization.owner.email}
+            ownerEmail={organization.owner.email ?? undefined}
             isAdmin={isAdmin}
           />
         </div>

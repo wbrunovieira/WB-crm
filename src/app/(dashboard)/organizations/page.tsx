@@ -28,8 +28,9 @@ export default async function OrganizationsPage({
 
   type OrgSummary = {
     id: string; ownerId: string; name: string; email?: string | null; phone?: string | null;
-    city?: string | null; state?: string | null; country?: string | null; industry?: string | null;
-    companySize?: string | null; hasHosting: boolean; hostingRenewalDate?: string | null;
+    website?: string | null; city?: string | null; state?: string | null; country?: string | null;
+    industry?: string | null; companySize?: string | null; hasHosting: boolean;
+    hostingRenewalDate?: string | null;
     owner?: { id: string; name: string; email: string } | null;
     primaryCNAE?: { id: string; code: string; description: string } | null;
     labels: Array<{ id: string; name: string; color: string }>;
@@ -42,10 +43,10 @@ export default async function OrganizationsPage({
   ]);
 
   const orgIds = organizations.map((org) => org.id);
-  const sharedUsersMap = orgIds.length > 0
+  const sharedUsersMap: Record<string, { id: string; name: string }[]> = orgIds.length > 0
     ? await backendFetch<Record<string, { id: string; name: string }[]>>(
         `/shared-entities/batch?entityType=organization&entityIds=${orgIds.join(",")}`
-      ).catch(() => ({}))
+      ).catch(() => ({} as Record<string, { id: string; name: string }[]>))
     : {};
 
   return (

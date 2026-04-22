@@ -1,4 +1,5 @@
 import { backendFetch } from "@/lib/backend/client";
+import type { Partner } from "@/types/partner";
 import { PartnerForm } from "@/components/partners/PartnerForm";
 import { notFound } from "next/navigation";
 import Link from "next/link";
@@ -8,7 +9,7 @@ export default async function EditPartnerPage({
 }: {
   params: { id: string };
 }) {
-  const partner = await backendFetch(`/partners/${params.id}`).catch(() => null);
+  const partner = await backendFetch<Partner>(`/partners/${params.id}`).catch(() => null);
 
   if (!partner) {
     notFound();

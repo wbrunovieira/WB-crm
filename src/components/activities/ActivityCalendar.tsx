@@ -5,38 +5,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { useUpdateActivity } from "@/hooks/activities/use-activities";
 import ActivityTypeIcon from "./ActivityTypeIcon";
-
-type Activity = {
-  id: string;
-  type: string;
-  subject: string;
-  dueDate: Date | null;
-  completed: boolean;
-  deal?: {
-    id: string;
-    title: string;
-    organization: {
-      id: string;
-      name: string;
-    } | null;
-  } | null;
-  contact?: {
-    id: string;
-    name: string;
-    organization: {
-      id: string;
-      name: string;
-    } | null;
-    partner: {
-      id: string;
-      name: string;
-    } | null;
-  } | null;
-  lead?: {
-    id: string;
-    businessName: string;
-  } | null;
-};
+import type { Activity } from "@/types/activity";
 
 type ActivityCalendarProps = {
   activities: Activity[];

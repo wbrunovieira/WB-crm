@@ -22,15 +22,15 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
 import ScheduleMeetingModal, { type SuggestedContact, type MeetingInitialData } from "./ScheduleMeetingModal";
 
-interface Meeting {
+export interface Meeting {
   id: string;
   title: string;
   googleEventId: string | null;
   meetLink: string | null;
-  startAt: Date;
-  endAt: Date | null;
-  actualStartAt: Date | null;
-  actualEndAt: Date | null;
+  startAt: string | Date;
+  endAt: string | Date | null;
+  actualStartAt: string | Date | null;
+  actualEndAt: string | Date | null;
   attendeeEmails: string; // JSON array
   status: string; // scheduled | ended | cancelled
   recordingDriveId: string | null;
@@ -39,7 +39,7 @@ interface Meeting {
   nativeTranscriptUrl: string | null;
   meetingSummary: string | null;
   activityId: string | null;
-  activity?: { id: string; completed: boolean; completedAt: Date | null } | null;
+  activity?: { id: string; completed: boolean; completedAt: string | Date | null } | null;
 }
 
 interface Props {
@@ -70,7 +70,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
   },
 };
 
-function formatDateTime(date: Date): string {
+function formatDateTime(date: string | Date): string {
   return new Intl.DateTimeFormat("pt-BR", {
     day: "2-digit",
     month: "2-digit",

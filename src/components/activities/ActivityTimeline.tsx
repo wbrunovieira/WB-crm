@@ -20,7 +20,7 @@ type Activity = {
   dueDate: Date | string | null;
   completed: boolean;
   completedAt?: Date | string | null;
-  createdAt: Date | string;
+  createdAt?: string | Date | null;
   gotoCallId?: string | null;
   gotoRecordingUrl?: string | null;
   gotoRecordingUrl2?: string | null;
@@ -42,7 +42,7 @@ export type StageChange = {
   fromStage: { id: string; name: string } | null;
   toStage: { id: string; name: string };
   changedBy: { id: string; name: string | null; email: string };
-  changedAt: Date;
+  changedAt: string | Date;
 };
 
 type TimelineItem =
@@ -247,7 +247,7 @@ export default function ActivityTimeline({
     ...activities.map((a) => ({
       kind: "activity" as const,
       data: a,
-      date: new Date(a.createdAt),
+      date: new Date(a.createdAt ?? Date.now()),
     })),
     ...stageChanges.map((sc) => ({
       kind: "stageChange" as const,
@@ -362,7 +362,7 @@ function ActivityItem({
 
         {/* Meta: date */}
         <p className="mt-0.5 text-xs text-gray-400">
-          {formatDate(activity.createdAt)}
+          {formatDate(activity.createdAt ?? null)}
           {!isGoto && activity.type !== "whatsapp" && activity.dueDate && !activity.completed && (
             <span className="ml-2">• Vencimento: {formatDate(activity.dueDate)}</span>
           )}

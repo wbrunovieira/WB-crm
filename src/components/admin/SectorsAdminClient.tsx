@@ -5,14 +5,32 @@ import { Loader2 } from "lucide-react";
 import { useSectors } from "@/hooks/sectors/use-sectors";
 import { SectorForm } from "./SectorForm";
 import { SectorsList } from "./SectorsList";
-import type { Sector as SectorHook } from "@/hooks/sectors/use-sectors";
 
-type Sector = SectorHook & {
-  _count?: { leads: number; organizations: number };
+type SectorWithCount = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  isActive: boolean;
+  marketSize: string | null;
+  marketSizeNotes: string | null;
+  averageTicket: string | null;
+  budgetSeason: string | null;
+  salesCycleDays: number | null;
+  salesCycleNotes: string | null;
+  decisionMakers: string | null;
+  buyingProcess: string | null;
+  mainObjections: string | null;
+  mainPains: string | null;
+  referenceCompanies: string | null;
+  competitorsLandscape: string | null;
+  jargons: string | null;
+  regulatoryNotes: string | null;
+  _count: { leads: number; organizations: number };
 };
 
 export function SectorsAdminClient() {
-  const [editingSector, setEditingSector] = useState<Sector | null>(null);
+  const [editingSector, setEditingSector] = useState<SectorWithCount | null>(null);
   const { data: sectors = [], isLoading } = useSectors();
 
   if (isLoading) {
@@ -23,9 +41,12 @@ export function SectorsAdminClient() {
     );
   }
 
-  const sectorsWithCount = sectors.map((s) => ({
-    ...s,
+  const sectorsWithCount: SectorWithCount[] = sectors.map((s) => ({
+    id: s.id,
+    name: s.name,
+    slug: s.slug,
     description: s.description ?? null,
+    isActive: s.isActive,
     marketSize: s.marketSize ?? null,
     marketSizeNotes: s.marketSizeNotes ?? null,
     averageTicket: s.averageTicket ?? null,

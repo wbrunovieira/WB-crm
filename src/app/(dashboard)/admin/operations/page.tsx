@@ -95,7 +95,7 @@ export default async function OperationsPage({
 
               {/* Right: action button */}
               <OperationsTransferButton
-                entityType={entity.type}
+                entityType={entity.type as "lead" | "organization"}
                 entityId={entity.id}
                 entityName={entity.name}
                 inOperationsAt={entity.inOperationsAt}

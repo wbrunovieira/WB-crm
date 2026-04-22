@@ -9,8 +9,8 @@ import { useMarkActivityFailed, useMarkActivitySkipped } from "@/hooks/activitie
 interface ActivityOutcomeButtonsProps {
   activityId: string;
   completed: boolean;
-  failedAt: Date | string | null;
-  skippedAt: Date | string | null;
+  failedAt?: Date | string | null;
+  skippedAt?: Date | string | null;
 }
 
 export function ActivityOutcomeButtons({

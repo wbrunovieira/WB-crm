@@ -1,4 +1,5 @@
 import { backendFetch } from "@/lib/backend/client";
+import type { Activity } from "@/types/activity";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
@@ -13,7 +14,7 @@ export default async function ActivityDetailPage({
 }: {
   params: { id: string };
 }) {
-  const activity = await backendFetch(`/activities/${params.id}`).catch(() => null);
+  const activity = await backendFetch<Activity>(`/activities/${params.id}`).catch(() => null);
 
   if (!activity) {
     notFound();
@@ -103,14 +104,14 @@ export default async function ActivityDetailPage({
                 Data de Criação
               </dt>
               <dd className="mt-1 text-sm text-gray-900">
-                {formatDate(activity.createdAt)}
+                {formatDate(activity.createdAt ?? null)}
               </dd>
             </div>
 
             <div>
               <dt className="text-sm font-medium text-gray-500">Responsável</dt>
               <dd className="mt-1 text-sm text-gray-900">
-                {activity.owner.name || activity.owner.email}
+                {activity.owner?.name || activity.owner?.email || "—"}
               </dd>
             </div>
           </dl>

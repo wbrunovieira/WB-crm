@@ -1,6 +1,9 @@
 import { backendFetch } from "@/lib/backend/client";
+import type { Deal } from "@/types/deal";
 import ProposalsList from "@/components/proposals/ProposalsList";
+import type { Proposal } from "@/components/proposals/ProposalsList";
 import MeetingsList from "@/components/meetings/MeetingsList";
+import type { Meeting } from "@/components/meetings/MeetingsList";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -20,10 +23,10 @@ export default async function DealDetailPage({
   params: { id: string };
 }) {
   const [deal, session, proposals, meetings] = await Promise.all([
-    backendFetch(`/deals/${params.id}`).catch(() => null),
+    backendFetch<Deal>(`/deals/${params.id}`).catch(() => null),
     getServerSession(authOptions),
-    backendFetch(`/proposals?dealId=${params.id}`).catch(() => []),
-    backendFetch(`/meetings?dealId=${params.id}`).catch(() => []),
+    backendFetch<Proposal[]>(`/proposals?dealId=${params.id}`).catch((): Proposal[] => []),
+    backendFetch<Meeting[]>(`/meetings?dealId=${params.id}`).catch((): Meeting[] => []),
   ]);
 
   if (!deal) {
@@ -239,7 +242,7 @@ export default async function DealDetailPage({
             entityName={deal.title}
             ownerId={deal.owner.id}
             ownerName={deal.owner.name}
-            ownerEmail={deal.owner.email}
+            ownerEmail={deal.owner.email ?? undefined}
             isAdmin={isAdmin}
           />
         </div>

@@ -21,21 +21,21 @@ import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDial
 type Prospect = {
   id: string;
   businessName: string;
-  city: string | null;
-  state: string | null;
-  country: string | null;
-  phone: string | null;
-  website: string | null;
-  rating: number | null;
-  userRatingsTotal: number | null;
-  categories: string | null;
-  businessStatus: string | null;
-  description: string | null;
-  googleMapsUrl: string | null;
-  source: string | null;
-  searchTerm: string | null;
-  createdAt: Date;
-  owner: { id: string; name: string } | null;
+  city?: string | null;
+  state?: string | null;
+  country?: string | null;
+  phone?: string | null;
+  website?: string | null;
+  rating?: number | null;
+  userRatingsTotal?: number | null;
+  categories?: string | null;
+  businessStatus?: string | null;
+  description?: string | null;
+  googleMapsUrl?: string | null;
+  source?: string | null;
+  searchTerm?: string | null;
+  createdAt: Date | string;
+  owner?: { id: string; name: string } | null;
 };
 
 interface ProspectsTableProps {

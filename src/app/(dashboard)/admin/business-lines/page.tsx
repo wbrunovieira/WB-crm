@@ -12,6 +12,9 @@ export default async function BusinessLinesPage() {
   const usedOrders = businessLines.map(bl => bl.order);
   const blWithCount = businessLines.map(bl => ({
     ...bl,
+    description: bl.description ?? null,
+    color: bl.color ?? null,
+    icon: bl.icon ?? null,
     _count: { products: products.filter(p => p.businessLineId === bl.id).length },
   }));
 

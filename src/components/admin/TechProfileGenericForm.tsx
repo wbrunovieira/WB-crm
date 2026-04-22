@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import {
   useCreateTechOption,
   type TechOptionType,
+  type CreateTechOptionPayload,
 } from "@/hooks/admin/use-admin";
 import { generateSlug } from "@/lib/utils";
 
@@ -55,18 +56,15 @@ export function TechProfileGenericForm({ type, usedOrders }: TechProfileGenericF
     try {
       const slug = generateSlug(name);
 
-      const payload: Record<string, unknown> = {
+      const payload: CreateTechOptionPayload = {
         name,
         slug,
         color: (formData.get("color") as string) || undefined,
         icon: (formData.get("icon") as string) || undefined,
         order: parseInt(formData.get("order") as string) || 0,
         isActive: true,
+        subType: needsTypeField ? ((formData.get("type") as string) || undefined) : undefined,
       };
-
-      if (needsTypeField) {
-        payload.subType = (formData.get("type") as string) || undefined;
-      }
 
       await createMutation.mutateAsync(payload);
 

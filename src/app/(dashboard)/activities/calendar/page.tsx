@@ -1,4 +1,5 @@
 import { backendFetch } from "@/lib/backend/client";
+import type { Activity } from "@/types/activity";
 import ActivityCalendar from "@/components/activities/ActivityCalendar";
 import Link from "next/link";
 
@@ -18,7 +19,7 @@ export default async function CalendarPage({
   const view = (searchParams.view || "month") as "month" | "week" | "3day" | "day";
   const selectedDate = searchParams.date ? new Date(searchParams.date) : now;
 
-  const activities = await backendFetch<unknown[]>("/activities").catch(() => []);
+  const activities = await backendFetch<Activity[]>("/activities").catch(() => []);
 
   return (
     <div className="p-8">

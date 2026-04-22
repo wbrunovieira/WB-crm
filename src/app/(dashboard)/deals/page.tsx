@@ -1,4 +1,6 @@
 import { backendFetch } from "@/lib/backend/client";
+import type { DealListItem } from "@/types/deal";
+import type { PipelineData } from "@/components/deals/DealsView";
 import type { UserListItem } from "@/hooks/users/use-users";
 import { getPipelineView } from "@/actions/pipeline-view";
 import type { PipelineSummary } from "@/hooks/pipelines/use-pipelines";
@@ -40,7 +42,7 @@ export default async function DealsPage({
     return (
       <DealsView
         initialView="kanban"
-        pipelineData={pipelineData}
+        pipelineData={(pipelineData ?? undefined) as unknown as PipelineData | undefined}
         allPipelines={allPipelines}
         groupBy={groupBy}
         isAdmin={isAdmin}
@@ -58,7 +60,7 @@ export default async function DealsPage({
   if (searchParams.owner) dealsQs.set("owner", searchParams.owner);
   if (searchParams.closedMonth) dealsQs.set("closedMonth", searchParams.closedMonth);
 
-  const deals = await backendFetch<unknown[]>(`/deals?${dealsQs}`).catch(() => []);
+  const deals = await backendFetch<DealListItem[]>(`/deals?${dealsQs}`).catch((): DealListItem[] => []);
 
   const dealIds = (deals as { id: string }[]).map((deal) => deal.id);
   const sharedUsersMap = dealIds.length > 0

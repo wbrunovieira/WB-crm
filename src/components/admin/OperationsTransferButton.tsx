@@ -13,7 +13,7 @@ interface Props {
   entityType: EntityTransferType;
   entityId: string;
   entityName: string;
-  inOperationsAt: Date | null;
+  inOperationsAt: string | Date | null;
 }
 
 export default function OperationsTransferButton({

@@ -1,4 +1,5 @@
 import { backendFetch } from "@/lib/backend/client";
+import type { Lead } from "@/types/lead";
 import { LeadForm } from "@/components/leads/LeadForm";
 import { LeadTechProfileSection } from "@/components/leads/LeadTechProfileSection";
 import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
@@ -9,7 +10,7 @@ export default async function EditLeadPage({
 }: {
   params: { id: string };
 }) {
-  const lead = await backendFetch(`/leads/${params.id}`).catch(() => null);
+  const lead = await backendFetch<Lead>(`/leads/${params.id}`).catch(() => null);
 
   if (!lead) {
     notFound();

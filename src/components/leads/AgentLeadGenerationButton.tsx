@@ -7,7 +7,7 @@ import { AgentLeadGenerationModal } from "./AgentLeadGenerationModal";
 type ICP = {
   id: string;
   name: string;
-  content: string;
+  content?: string;
   status: string;
   _count?: {
     leads: number;

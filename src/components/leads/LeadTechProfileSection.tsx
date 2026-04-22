@@ -180,7 +180,7 @@ export function LeadTechProfileSection({ leadId }: LeadTechProfileSectionProps) 
                 items={techProfile.ecommerce}
                 entityId={leadId}
                 entityType="lead"
-                profileType="ecommerce"
+                profileType="ecommerces"
                 onUpdate={refreshTechProfile}
               />
             )}

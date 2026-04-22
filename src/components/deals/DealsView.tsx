@@ -15,7 +15,7 @@ interface Deal {
   value: number;
   currency: string;
   status: string;
-  expectedCloseDate: Date | null;
+  expectedCloseDate: string | Date | null;
   contact: { id: string; name: string } | null;
   organization: { id: string; name: string } | null;
   stage: {
@@ -23,7 +23,8 @@ interface Deal {
     name: string;
     pipeline: { id: string; name: string };
   };
-  createdAt: Date;
+  createdAt: string | Date;
+  owner?: { id: string; name: string; email?: string | null };
 }
 
 interface KanbanDeal {
@@ -44,7 +45,7 @@ interface KanbanDeal {
   }>;
 }
 
-interface PipelineData {
+export interface PipelineData {
   id: string;
   name: string;
   stages: Array<{

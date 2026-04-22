@@ -56,6 +56,10 @@ type LeadCadenceSectionProps = {
   isConverted?: boolean;
 };
 
+async function fetchLeadCadences(leadId: string, token: string): Promise<LeadCadence[]> {
+  return apiFetch<LeadCadence[]>(`/cadences/lead/${leadId}`, token);
+}
+
 export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceSectionProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -97,7 +101,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
     setActionLoading(id);
     try {
       await pauseMutation.mutateAsync({ leadCadenceId: id, leadId });
-      const data = await getLeadCadences(leadId);
+      const data = await fetchLeadCadences(leadId, token);
       setCadences(data);
       router.refresh();
     } catch (error) {
@@ -118,7 +122,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
     setActionLoading(id);
     try {
       await resumeMutation.mutateAsync({ leadCadenceId: id, leadId });
-      const data = await getLeadCadences(leadId);
+      const data = await fetchLeadCadences(leadId, token);
       setCadences(data);
       router.refresh();
     } catch (error) {
@@ -139,7 +143,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
     setActionLoading(id);
     try {
       await cancelMutation.mutateAsync({ leadCadenceId: id, leadId });
-      const data = await getLeadCadences(leadId);
+      const data = await fetchLeadCadences(leadId, token);
       setCadences(data);
       router.refresh();
     } catch (error) {
@@ -159,7 +163,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
     try {
       await apiFetch(`/cadences/lead-cadences/${completeTarget}/complete`, token, { method: "PATCH", body: JSON.stringify({ disqualificationReason: reason }) });
       setCompleteTarget(null);
-      const data = await getLeadCadences(leadId);
+      const data = await fetchLeadCadences(leadId, token);
       setCadences(data);
       router.refresh();
     } catch (error) {
@@ -171,7 +175,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
 
   const handleApplySuccess = async () => {
     setShowModal(false);
-    const data = await getLeadCadences(leadId);
+    const data = await fetchLeadCadences(leadId, token);
     setCadences(data);
     router.refresh();
   };

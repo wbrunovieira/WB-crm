@@ -1,4 +1,5 @@
 import { backendFetch } from "@/lib/backend/client";
+import type { Deal } from "@/types/deal";
 import DealForm from "@/components/deals/DealForm";
 import { getContactsList } from "@/lib/lists/contacts-list";
 import { getStagesList } from "@/lib/lists/stages-list";
@@ -11,7 +12,7 @@ export default async function EditDealPage({
   params: { id: string };
 }) {
   const [deal, contacts, organizations, stages, leadsData] = await Promise.all([
-    backendFetch(`/deals/${params.id}`).catch(() => null),
+    backendFetch<Deal>(`/deals/${params.id}`).catch(() => null),
     getContactsList(),
     backendFetch<{ id: string; name: string }[]>("/organizations").catch(() => []),
     getStagesList(),

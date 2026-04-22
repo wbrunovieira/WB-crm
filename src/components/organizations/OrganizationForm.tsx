@@ -16,7 +16,7 @@ interface OrganizationFormProps {
     id: string;
     name: string;
     legalName: string | null;
-    foundationDate: Date | null;
+    foundationDate: Date | string | null;
     website: string | null;
     phone: string | null;
     whatsapp: string | null;
@@ -48,7 +48,7 @@ interface OrganizationFormProps {
     } | null;
     // Hosting fields
     hasHosting: boolean;
-    hostingRenewalDate: Date | null;
+    hostingRenewalDate: Date | string | null;
     hostingPlan: string | null;
     hostingValue: number | null;
     hostingReminderDays: number;
