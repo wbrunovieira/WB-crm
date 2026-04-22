@@ -43,7 +43,12 @@ export function NotificationBell() {
     let retryTimeout: ReturnType<typeof setTimeout> | null = null;
 
     function connect() {
-      es = new EventSource("/api/notifications/stream");
+      if (!token) return;
+      const backendUrl =
+        process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3010";
+      es = new EventSource(
+        `${backendUrl}/notifications/stream?token=${encodeURIComponent(token)}`
+      );
 
       es.onmessage = (event) => {
         try {
@@ -66,13 +71,13 @@ export function NotificationBell() {
     }
 
     fetchNotifications();
-    connect();
+    if (token) connect();
 
     return () => {
       es?.close();
       if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, [fetchNotifications]);
+  }, [fetchNotifications, token]);
 
   // Close dropdown on outside click
   useEffect(() => {

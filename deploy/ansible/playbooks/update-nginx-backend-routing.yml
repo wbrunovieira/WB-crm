@@ -5,7 +5,7 @@
 # Uso: ansible-playbook -i inventory/production.yml playbooks/update-nginx-backend-routing.yml
 
 - name: Update Nginx to route backend paths directly to NestJS
-  hosts: webservers
+  hosts: all
   become: true
   vars:
     domain: crm.wbdigitalsolutions.com

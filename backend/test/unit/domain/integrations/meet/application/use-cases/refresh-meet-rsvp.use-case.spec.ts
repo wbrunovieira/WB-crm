@@ -155,7 +155,7 @@ describe("RefreshMeetRsvpUseCase", () => {
     const result = await useCase.execute();
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.updated).toBe(1);
+    expect(result.unwrap().updated).toBe(1);
   });
 
   it("returns right even when calendar throws", async () => {

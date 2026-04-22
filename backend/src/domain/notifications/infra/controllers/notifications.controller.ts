@@ -2,6 +2,7 @@ import { Controller, Get, Patch, Body, Query, UseGuards, Request, Sse, MessageEv
 import { Observable, Subject, interval, merge } from "rxjs";
 import { map, filter, takeUntil } from "rxjs/operators";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
+import { SseJwtAuthGuard } from "@/infra/auth/guards/sse-jwt-auth.guard";
 import {
   GetNotificationsUseCase,
   MarkNotificationsReadUseCase,
@@ -62,6 +63,7 @@ export class NotificationsController {
     return { ok: true };
   }
 
+  @UseGuards(SseJwtAuthGuard)
   @Sse("stream")
   stream(@Request() req: any): Observable<MessageEvent> {
     const userId = req.user.id;

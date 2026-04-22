@@ -1050,11 +1050,11 @@ Funcionalidades transversais: sistema de notificações em tempo real, métricas
 ---
 
 ### ✅ M14 — Remover Next.js Backend (Frontend Puro)
-**Status**: Concluído em 2026-04-22 (fase principal)
+**Status**: Fase 1 concluída em 2026-04-22 | Fases 2–4 pendentes
 
 Pré-requisito: M10, M11, M12, M13 concluídos e validados em produção.
 
-#### O que remover — progresso
+#### Progresso geral
 
 | Item | Status |
 |------|--------|
@@ -1063,39 +1063,106 @@ Pré-requisito: M10, M11, M12, M13 concluídos e validados em produção.
 | `src/lib/event-bus.ts` | ✅ Deletado |
 | `src/lib/goto/` (exceto s3-recording.ts) | ✅ Deletado |
 | `src/lib/google/` (exceto auth.ts, token-store.ts) | ✅ Deletado |
+| `src/lib/email-tracking.ts` | ✅ Deletado |
+| `src/lib/internal-auth.ts` | ✅ Deletado |
 | `src/app/api/google/gmail-poll/` | ✅ Deletado |
-| `src/app/api/goto/webhook` | 🔲 Aguarda reconfiguração GoTo → NestJS direct |
-| `src/app/api/goto/sync` | 🔲 Aguarda reconfiguração GoTo → NestJS direct |
-| `src/app/api/evolution/webhook` | 🔲 Aguarda reconfiguração Evolution → NestJS direct |
-| `src/app/api/evolution/media/[messageId]` | 🔲 Move Drive streaming p/ NestJS |
-| `src/app/api/track/` | 🔲 Atualizar URLs de tracking p/ NestJS |
-| `src/app/api/goto/recordings/[activityId]` | 🔲 Move S3 streaming p/ NestJS |
-| `src/app/api/webhooks/lead-research` | 🔲 Reconfigurar n8n p/ NestJS direct |
-| `src/app/api/notifications/stream` | 🔲 Migrar SSE p/ NestJS |
-| `src/app/api/google/` (auth, callback, disconnect) | 🔲 Migrar OAuth Google p/ NestJS |
-| `src/app/api/proposals/[id]/file` | 🔲 Migrar Drive download p/ NestJS |
-| `src/lib/goto/s3-recording.ts` | 🔲 Após migrar recordings route |
-| `src/lib/google/auth.ts`, `token-store.ts` | 🔲 Após migrar OAuth |
-| `src/lib/email-tracking.ts` | 🔲 Após migrar track routes |
-| `src/lib/internal-auth.ts` | 🔲 Após migrar webhook routes |
-| `src/lib/funnel/` | 🔲 Puro utilitário frontend — manter ou mover |
-| `src/lib/transcriptor.ts` | 🔲 Verificar se ainda usado |
-| `src/lib/prisma.ts` | 🔲 Após remover de lib/auth.ts |
+| `src/app/api/goto/webhook` | ✅ Deletado + Nginx roteado → NestJS |
+| `src/app/api/goto/sync` | ✅ Deletado + Nginx roteado → NestJS |
+| `src/app/api/evolution/webhook` | ✅ Deletado + Nginx roteado → NestJS |
+| `src/app/api/track/` (open + click) | ✅ Deletado + Nginx roteado → NestJS |
+| `src/app/api/webhooks/lead-research` | ✅ Deletado + Nginx roteado → NestJS |
+| `src/lib/transcriptor.ts` | ✅ Deletado (órfão) |
+| `src/services/` (leads, deals, activities) | ✅ Deletado (órfão) |
+| `src/app/api/notifications/stream` | ✅ M14.2 — SSE via JWT query param (2026-04-22) |
+| `src/app/api/evolution/media/[messageId]` | 🔲 M14.3 — Drive streaming no NestJS |
+| `src/app/api/proposals/[id]/file` | 🔲 M14.3 — Drive download no NestJS |
+| `src/app/api/goto/recordings/[activityId]` | 🔲 M14.3 — S3 streaming no NestJS |
+| `src/app/api/google/` (auth, callback, disconnect) | 🔲 M14.4 — OAuth Google no NestJS |
+| `src/lib/goto/s3-recording.ts` | 🔲 Após M14.3 (recordings route) |
+| `src/lib/google/auth.ts`, `token-store.ts` | 🔲 Após M14.4 (OAuth) |
+| `src/lib/funnel/` | 🔲 Avaliar — utilitários puros de UI, manter ou mover |
+| `src/lib/prisma.ts` | 🔲 Após M14.4 (remover de lib/auth.ts) |
 
 #### O que fica no Next.js
 ```
 src/app/(auth)/        → Login UI
-src/app/(dashboard)/   → Páginas (client components + React Query)
+src/app/(dashboard)/   → Páginas (SSR via backendFetch + React Query)
 src/components/        → Componentes React
 src/hooks/             → React Query hooks chamando NestJS
-src/lib/utils.ts, lists/, validations/  → Utilitários de UI
+src/lib/utils.ts, lists/, validations/, gmail-variables.ts  → Utilitários de UI
+src/app/api/auth/      → NextAuth (permanece)
+src/app/api/register/  → Registro de usuário (permanece até M14.4)
+src/app/api/docs/      → Proxy Swagger (manter enquanto útil)
 ```
 
-#### Critério de conclusão
-- Zero imports de `prisma` no Next.js
+#### Critério de conclusão total
+- Zero imports de `prisma` no Next.js (fora de `lib/prisma.ts` e `lib/auth.ts`)
 - Zero `"use server"` fora de `src/app/api/auth/`
 - Zero chamadas a serviços externos (GoTo, Evolution, Gmail, Drive, S3) no Next.js
-- Todos os dados chegam via `apiFetch()` → NestJS
+- Todos os dados chegam via `apiFetch()` ou `backendFetch()` → NestJS
+
+---
+
+### ✅ M14.2 — SSE Notifications via JWT Query Param
+**Status**: Concluído em 2026-04-22
+
+**Problema**: `EventSource` no browser não suporta headers customizados — impossível enviar `Authorization: Bearer`. O proxy `notifications/stream` atual resolve isso lendo a sessão NextAuth no servidor.
+
+**Solução**: Adicionar suporte a `?token=` no guard NestJS para SSE. O `NotificationBell` passa o `accessToken` como query param ao abrir a conexão SSE diretamente com o NestJS.
+
+**Impacto de segurança**: token no URL aparece nos logs do Nginx — mitigado filtrando `notifications/stream` dos logs, ou aceitando o risco (token expira em 7d, SSE usa HTTPS).
+
+**Implementação**:
+- [x] Criar `SseJwtAuthGuard` em `backend/src/infra/auth/guards/` — aceita `Authorization: Bearer` **ou** `?token=`
+- [x] Trocar guard no endpoint `@Sse("stream")` para `SseJwtAuthGuard`
+- [x] Atualizar `NotificationBell.tsx`: `new EventSource(`${NEXT_PUBLIC_BACKEND_URL}/notifications/stream?token=${token}`)`
+- [x] Deletar `src/app/api/notifications/stream/route.ts`
+- [ ] Deploy + validar SSE no browser
+
+---
+
+### ⏳ M14.3 — Drive/S3 Streaming no NestJS
+**Status**: Pendente
+
+Mover os 3 endpoints de streaming binário do Next.js para o NestJS:
+
+| Rota Next.js | Rota NestJS | Dependência |
+|---|---|---|
+| `GET /api/evolution/media/[messageId]` | `GET /whatsapp/media/:messageId` | `GoogleDriveService` já existe |
+| `GET /api/proposals/[id]/file` | `GET /proposals/:id/file` | `GoogleDriveService` já existe |
+| `GET /api/goto/recordings/[activityId]` | `GET /goto/recordings/:activityId` | `S3RecordingClient` já existe |
+
+Após migrar: deletar `src/lib/goto/s3-recording.ts`.
+
+---
+
+### ⏳ M14.4 — OAuth Google no NestJS
+**Status**: Pendente
+
+Migrar o fluxo OAuth do Google (`/api/google/auth`, `/api/google/callback`, `/api/google/disconnect`) para o NestJS. Unblocks:
+- Deletar `src/lib/google/auth.ts`, `token-store.ts`
+- Deletar `src/lib/prisma.ts` (após remover de `lib/auth.ts`)
+- Simplificar `src/app/api/register/route.ts` → mover para NestJS
+
+---
+
+### ⏳ M2.5 — Lead Frontend Completo
+**Status**: Pendente (backend concluído)
+
+- [ ] Enriquecer `POST /leads` no NestJS com contatos inline + tech profile + CNAE + labels em transação
+- [ ] Adicionar `useLeads` e `useLead` queries em `src/hooks/leads/use-leads.ts`
+- [ ] Seletor de partner (`referredByPartnerId`) no `LeadForm`
+
+---
+
+### ⏳ Tech Debt — VOs para M1–M9
+**Status**: Pendente (não bloqueia nenhuma feature)
+
+| Domínio | O que falta |
+|---------|------------|
+| Leads | `LeadBusinessName` VO no `CreateLeadUseCase` / `UpdateLeadUseCase` |
+| Contacts | VOs para `Email`, `PhoneNumber` |
+| Deals, Activities, Partners | Remover validações inline, extrair para VOs |
 
 ---
 

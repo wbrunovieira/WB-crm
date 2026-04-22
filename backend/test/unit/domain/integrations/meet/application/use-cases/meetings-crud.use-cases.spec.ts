@@ -62,7 +62,7 @@ describe("GetMeetingByIdUseCase", () => {
     const result = await useCase.execute({ id: "m1", requesterId: OWNER });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.id).toBe("m1");
+    expect(result.unwrap().id).toBe("m1");
   });
 
   it("returns MeetingNotFoundError when meeting does not exist", async () => {
@@ -95,7 +95,7 @@ describe("CheckMeetingTitleUseCase", () => {
     const result = await useCase.execute({ requesterId: OWNER, title: "Reunião Nova" });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.exists).toBe(false);
+    expect(result.unwrap().exists).toBe(false);
   });
 
   it("returns exists=true when title is already in use", async () => {
@@ -105,7 +105,7 @@ describe("CheckMeetingTitleUseCase", () => {
 
     const result = await useCase.execute({ requesterId: OWNER, title: "Reunião Existente" });
 
-    expect(result.value.exists).toBe(true);
+    expect(result.unwrap().exists).toBe(true);
   });
 });
 
@@ -168,9 +168,9 @@ describe("ScheduleMeetingUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.title).toBe("Nova Reunião");
-    expect(result.value.googleEventId).toBeDefined();
-    expect(result.value.meetLink).toContain("meet.google.com");
+    expect(result.unwrap().title).toBe("Nova Reunião");
+    expect(result.unwrap().googleEventId).toBeDefined();
+    expect(result.unwrap().meetLink).toContain("meet.google.com");
     expect(calendar.createdEvents).toHaveLength(1);
   });
 
@@ -186,7 +186,7 @@ describe("ScheduleMeetingUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.googleEventId).toBeNull();
+    expect(result.unwrap().googleEventId).toBeNull();
     expect(calendar.createdEvents).toHaveLength(0);
   });
 
@@ -202,7 +202,7 @@ describe("ScheduleMeetingUseCase", () => {
     });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.googleEventId).toBeNull();
+    expect(result.unwrap().googleEventId).toBeNull();
     expect(meetings.items).toHaveLength(1);
   });
 
@@ -217,7 +217,7 @@ describe("ScheduleMeetingUseCase", () => {
     });
 
     expect(result.isLeft()).toBe(true);
-    expect(result.value.message).toMatch(/título|title/i);
+    expect((result.value as Error).message).toMatch(/título|title/i);
   });
 
   it("defaults endAt to startAt + 1 hour when not provided", async () => {
@@ -245,7 +245,7 @@ describe("ScheduleMeetingUseCase", () => {
       skipCalendar: true,
     });
 
-    expect(result.value.title).toBe("Reunião Espaçada");
+    expect(result.unwrap().title).toBe("Reunião Espaçada");
   });
 });
 
@@ -261,7 +261,7 @@ describe("UpdateMeetingUseCase", () => {
     const result = await useCase.execute({ id: "m1", requesterId: OWNER, title: "Reunião Nova" });
 
     expect(result.isRight()).toBe(true);
-    expect(result.value.title).toBe("Reunião Nova");
+    expect(result.unwrap().title).toBe("Reunião Nova");
     expect(calendar.updatedEvents).toHaveLength(1);
     expect(calendar.updatedEvents[0].googleEventId).toBe("gcal-001");
   });
