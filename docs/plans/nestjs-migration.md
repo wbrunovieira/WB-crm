@@ -754,10 +754,9 @@ TRANSCRIPTOR_BASE_URL, TRANSCRIPTOR_API_KEY
 - `BOT_PATTERNS` afinado: `"apple"` removido (batia em AppleWebKit), substituído por `"applebot"` e `"apple-icloud"`
 - `vitest.config.ts` — alias `@test` adicionado para imports cross-domain entre specs
 
-**Pendente (M10.3.5 — schema + Prisma real):**
-- Adicionar modelos `EmailMessage` e `EmailTracking` ao `prisma/schema.prisma`
-- Substituir stubs em memória por `PrismaEmailMessagesRepository` e `PrismaEmailTrackingRepository` reais
-- Migration em produção + deploy
+**M10.3.5 — schema + Prisma real ✅ Completo:**
+- Modelos `EmailMessage` e `EmailTracking` presentes em `prisma/schema.prisma`
+- `PrismaEmailMessagesRepository` e `PrismaEmailTrackingRepository` implementados e wired no módulo
 
 #### M10.4 — Google Meet ✅ Completo em 2026-04-22
 
@@ -864,8 +863,8 @@ Para cada subdomínio:
 
 ---
 
-### 🔄 M12 — Conversão de Lead, Cadências, Importação, Propostas, Operações
-**Status**: Em andamento — M12.1–M12.8 ✅
+### ✅ M12 — Conversão de Lead, Cadências, Importação, Propostas, Operações
+**Status**: Concluído em 2026-04-20 — M12.1–M12.8 ✅
 
 #### Contexto
 

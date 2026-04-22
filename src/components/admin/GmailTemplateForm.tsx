@@ -2,11 +2,9 @@
 
 import { useState, useRef } from "react";
 import { Loader2 } from "lucide-react";
-import {
-  createGmailTemplate,
-  updateGmailTemplate,
-  type GmailTemplateInput,
-} from "@/actions/gmail-templates";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
+import type { GmailTemplateInput } from "@/types/gmail-template";
 import RichTextEditor, { RichTextEditorHandle } from "@/components/gmail/RichTextEditor";
 import { GmailVariablePicker } from "@/components/admin/GmailVariablePicker";
 
@@ -24,6 +22,8 @@ interface GmailTemplateFormProps {
 
 export function GmailTemplateForm({ template, onSuccess }: GmailTemplateFormProps) {
   const isEditing = !!template;
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
 
   const [name, setName] = useState(template?.name ?? "");
   const [subject, setSubject] = useState(template?.subject ?? "");
@@ -76,16 +76,25 @@ export function GmailTemplateForm({ template, onSuccess }: GmailTemplateFormProp
       category: category.trim() || undefined,
     };
 
-    const result = isEditing
-      ? await updateGmailTemplate(template.id, data)
-      : await createGmailTemplate(data);
-
-    setSaving(false);
-
-    if (!result.success) {
-      setError(result.error ?? "Erro ao salvar template.");
+    try {
+      if (isEditing) {
+        await apiFetch(`/email/templates/${template.id}`, token, {
+          method: "PATCH",
+          body: JSON.stringify(data),
+        });
+      } else {
+        await apiFetch("/email/templates", token, {
+          method: "POST",
+          body: JSON.stringify(data),
+        });
+      }
+    } catch (err) {
+      setSaving(false);
+      setError(err instanceof Error ? err.message : "Erro ao salvar template.");
       return;
     }
+
+    setSaving(false);
 
     setSuccess(true);
     setTimeout(() => setSuccess(false), 2000);

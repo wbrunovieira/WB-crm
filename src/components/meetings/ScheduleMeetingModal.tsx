@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { X, Video, Plus, Trash2, Loader2, UserCheck, User } from "lucide-react";
-import { scheduleMeeting, updateMeeting } from "@/actions/meetings";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -199,25 +198,32 @@ export default function ScheduleMeetingModal({
 
     try {
       if (isEditMode && meetingId) {
-        await updateMeeting(meetingId, {
-          title: title.trim(),
-          description: description.trim() || undefined,
-          startAt,
-          endAt,
-          attendeeEmails,
+        await apiFetch(`/meetings/${meetingId}`, token, {
+          method: "PATCH",
+          body: JSON.stringify({
+            title: title.trim(),
+            description: description.trim() || undefined,
+            startAt: startAt.toISOString(),
+            endAt: endAt.toISOString(),
+            attendeeEmails,
+          }),
         });
         toast.success("Reunião atualizada! Os convidados foram notificados.");
       } else {
-        await scheduleMeeting({
-          title: title.trim(),
-          description: description.trim() || undefined,
-          startAt,
-          endAt,
-          attendeeEmails,
-          leadId,
-          contactId,
-          organizationId,
-          dealId,
+        await apiFetch("/meetings", token, {
+          method: "POST",
+          body: JSON.stringify({
+            title: title.trim(),
+            description: description.trim() || undefined,
+            startAt: startAt.toISOString(),
+            endAt: endAt.toISOString(),
+            attendeeEmails,
+            leadId,
+            contactId,
+            organizationId,
+            dealId,
+            createActivity: true,
+          }),
         });
         toast.success("Reunião agendada! Convite enviado por e-mail.");
       }

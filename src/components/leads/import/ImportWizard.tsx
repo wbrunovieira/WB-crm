@@ -3,8 +3,10 @@
 import { useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { importLeads, type ImportResult, type DuplicateDetail } from "@/actions/import-leads";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { IMPORTABLE_FIELDS, type ColumnMapping } from "@/lib/import/lead-mapping";
+import { mapRowToLeadData } from "@/lib/import/lead-mapping";
 import { parseCSV, parseXLSX, type ParsedImportFile, type ParsedRow } from "@/lib/import/parse-file";
 
 // ---------------------------------------------------------------------------
@@ -12,6 +14,42 @@ import { parseCSV, parseXLSX, type ParsedImportFile, type ParsedRow } from "@/li
 // ---------------------------------------------------------------------------
 
 type Step = 1 | 2 | 3;
+
+interface DuplicateMatchItem {
+  id: string;
+  businessName: string;
+}
+
+interface LeadDuplicates {
+  cnpj: DuplicateMatchItem[];
+  name: DuplicateMatchItem[];
+  phone: DuplicateMatchItem[];
+  email: DuplicateMatchItem[];
+  address: DuplicateMatchItem[];
+}
+
+export interface DuplicateDetail {
+  rowIndex: number;
+  row: ParsedRow;
+  matches: LeadDuplicates;
+}
+
+interface ErrorDetail {
+  rowIndex: number;
+  row: ParsedRow;
+  message: string;
+}
+
+export interface ImportResult {
+  total: number;
+  created: number;
+  duplicates: number;
+  errors: number;
+  skipped: number;
+  duplicateDetails: DuplicateDetail[];
+  errorDetails: ErrorDetail[];
+  error?: string;
+}
 
 // ---------------------------------------------------------------------------
 // Auto-suggest: map common column names to CRM fields
@@ -813,6 +851,8 @@ function ResultsStep({
 // ---------------------------------------------------------------------------
 
 export function ImportWizard() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [step, setStep] = useState<Step>(1);
   const [parsedFile, setParsedFile] = useState<ParsedImportFile | null>(null);
   const [mapping, setMapping] = useState<ColumnMapping>({});
@@ -821,6 +861,78 @@ export function ImportWizard() {
   const [isReimporting, setIsReimporting] = useState(false);
   // Keep duplicate rows around for re-import
   const [duplicateRows, setDuplicateRows] = useState<ParsedRow[]>([]);
+
+  // Inline import orchestration (replaces importLeads server action)
+  const runImport = useCallback(async (rows: ParsedRow[], currentMapping: ColumnMapping, skipDuplicateCheck = false): Promise<ImportResult> => {
+    const result: ImportResult = {
+      total: rows.length,
+      created: 0,
+      duplicates: 0,
+      errors: 0,
+      skipped: 0,
+      duplicateDetails: [],
+      errorDetails: [],
+    };
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const leadData = mapRowToLeadData(row, currentMapping);
+
+      const hasContent = Object.values(leadData).some(
+        (v) => v !== undefined && v !== null && String(v).trim() !== ""
+      );
+      if (!hasContent) {
+        result.skipped++;
+        continue;
+      }
+
+      if (!leadData.businessName) {
+        result.errors++;
+        result.errorDetails.push({ rowIndex: i, row, message: "Nome comercial (businessName) é obrigatório" });
+        continue;
+      }
+
+      try {
+        if (!skipDuplicateCheck) {
+          const { hasDuplicates, duplicates } = await apiFetch<{ hasDuplicates: boolean; duplicates: Array<{ leadId: string; businessName: string; matchedFields: string[] }> }>(
+            "/leads/check-duplicates",
+            token,
+            {
+              method: "POST",
+              body: JSON.stringify({ name: leadData.businessName, cnpj: leadData.companyRegistrationID, phone: leadData.phone, email: leadData.email }),
+            },
+          );
+          if (hasDuplicates) {
+            const matches: LeadDuplicates = { cnpj: [], name: [], phone: [], email: [], address: [] };
+            for (const match of duplicates) {
+              const item = { id: match.leadId, businessName: match.businessName };
+              for (const field of match.matchedFields) {
+                if (field in matches) matches[field as keyof LeadDuplicates].push(item);
+              }
+            }
+            result.duplicates++;
+            result.duplicateDetails.push({ rowIndex: i, row, matches });
+            continue;
+          }
+        }
+
+        await apiFetch("/leads", token, {
+          method: "POST",
+          body: JSON.stringify(leadData),
+        });
+        result.created++;
+      } catch (err) {
+        result.errors++;
+        result.errorDetails.push({
+          rowIndex: i,
+          row,
+          message: err instanceof Error ? err.message : "Erro desconhecido",
+        });
+      }
+    }
+
+    return result;
+  }, [token]);
 
   // Step 1 → 2
   const handleParsed = useCallback((file: ParsedImportFile) => {
@@ -835,10 +947,7 @@ export function ImportWizard() {
     setIsImporting(true);
 
     try {
-      const result = await importLeads({
-        rows: parsedFile.rows,
-        mapping,
-      });
+      const result = await runImport(parsedFile.rows, mapping);
 
       if (result.error) {
         toast.error(result.error);
@@ -862,7 +971,7 @@ export function ImportWizard() {
     } finally {
       setIsImporting(false);
     }
-  }, [parsedFile, mapping]);
+  }, [parsedFile, mapping, runImport]);
 
   // Step 3: Re-import duplicates
   const handleReimportDuplicates = useCallback(async () => {
@@ -870,11 +979,7 @@ export function ImportWizard() {
     setIsReimporting(true);
 
     try {
-      const result = await importLeads({
-        rows: duplicateRows,
-        mapping,
-        skipDuplicateCheck: true,
-      });
+      const result = await runImport(duplicateRows, mapping, true);
 
       if (result.error) {
         toast.error(result.error);
@@ -910,7 +1015,7 @@ export function ImportWizard() {
     } finally {
       setIsReimporting(false);
     }
-  }, [duplicateRows, mapping]);
+  }, [duplicateRows, mapping, runImport]);
 
   return (
     <div className="mx-auto max-w-4xl">

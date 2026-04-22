@@ -3,7 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { createCampaign } from "@/actions/campaigns";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
+import type { Campaign } from "@/types/campaign";
 
 interface AntiBlock {
   minDelayMs: number;
@@ -13,6 +15,8 @@ interface AntiBlock {
 
 export function CampaignForm() {
   const router = useRouter();
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
     name: "",
@@ -35,19 +39,22 @@ export function CampaignForm() {
     if (!form.instanceName.trim()) { setError("Nome da instância é obrigatório"); return; }
 
     setLoading(true);
-    const result = await createCampaign({
-      name: form.name.trim(),
-      instanceName: form.instanceName.trim(),
-      description: form.description.trim() || undefined,
-      antiBlockConfig: showAntiBlock ? JSON.stringify(antiBlock) : undefined,
-    });
-    setLoading(false);
-
-    if (result.success && result.campaign) {
+    try {
+      const campaign = await apiFetch<Campaign>("/campaigns", token, {
+        method: "POST",
+        body: JSON.stringify({
+          name: form.name.trim(),
+          instanceName: form.instanceName.trim(),
+          description: form.description.trim() || undefined,
+          antiBlockConfig: showAntiBlock ? JSON.stringify(antiBlock) : undefined,
+        }),
+      });
       toast.success("Campanha criada!");
-      router.push(`/campaigns/${result.campaign.id}`);
-    } else {
-      setError(result.error ?? "Erro ao criar campanha");
+      router.push(`/campaigns/${campaign.id}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Erro ao criar campanha");
+    } finally {
+      setLoading(false);
     }
   };
 

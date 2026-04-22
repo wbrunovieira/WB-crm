@@ -3,19 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  startCampaign,
-  pauseCampaign,
-  resumeCampaign,
-  addCampaignStep,
-  addRecipients,
-} from "@/actions/campaigns";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import type {
   CampaignDetail as TCampaignDetail,
   CampaignStatus,
   StepType,
   SendStatus,
-} from "@/actions/campaigns";
+} from "@/types/campaign";
 
 /* ── Status helpers ── */
 
@@ -57,6 +52,8 @@ interface Props {
 
 export function CampaignDetail({ campaign: initial }: Props) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [campaign] = useState(initial);
   const [tab, setTab] = useState<"steps" | "recipients" | "stats">("steps");
   const [loading, setLoading] = useState<string | null>(null);
@@ -75,14 +72,14 @@ export function CampaignDetail({ campaign: initial }: Props) {
 
   const handleAction = async (action: "start" | "pause" | "resume") => {
     setLoading(action);
-    const fn = action === "start" ? startCampaign : action === "pause" ? pauseCampaign : resumeCampaign;
-    const result = await fn(campaign.id);
-    setLoading(null);
-    if (result.success) {
+    try {
+      await apiFetch(`/campaigns/${campaign.id}/${action}`, token, { method: "POST" });
       toast.success(action === "start" ? "Campanha iniciada!" : action === "pause" ? "Campanha pausada" : "Campanha retomada!");
       router.refresh();
-    } else {
-      toast.error(result.error ?? "Erro");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setLoading(null);
     }
   };
 
@@ -97,15 +94,19 @@ export function CampaignDetail({ campaign: initial }: Props) {
       : stepType === "DELAY" ? { type: stepType, delaySeconds: stepDelay }
       : { type: stepType, typingSeconds: stepTyping };
 
-    const result = await addCampaignStep(campaign.id, data as any);
-    setLoading(null);
-    if (result.success) {
+    try {
+      await apiFetch(`/campaigns/${campaign.id}/steps`, token, {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
       toast.success("Step adicionado!");
       setStepText("");
       setStepMedia({ url: "", caption: "", type: "image" });
       router.refresh();
-    } else {
-      toast.error(result.error ?? "Erro");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setLoading(null);
     }
   };
 
@@ -115,17 +116,25 @@ export function CampaignDetail({ campaign: initial }: Props) {
     const phones = phonesRaw.split(/[\n,;]+/).map((p) => p.trim()).filter(Boolean);
     if (phones.length === 0) { toast.error("Digite ao menos um número"); return; }
     setLoading("addRecipients");
-    const result = await addRecipients(campaign.id, phones);
-    setLoading(null);
-    if (result.success) {
+    try {
+      const result = await apiFetch<{ added: number; invalid: string[] }>(
+        `/campaigns/${campaign.id}/recipients`,
+        token,
+        {
+          method: "POST",
+          body: JSON.stringify({ recipients: phones.map((phone) => ({ phone })) }),
+        },
+      );
       toast.success(`${result.added} destinatário(s) adicionado(s)${result.invalid && result.invalid.length > 0 ? ` · ${result.invalid.length} inválido(s)` : ""}`);
       if (result.invalid && result.invalid.length > 0) {
         toast.warning(`Inválidos: ${result.invalid.join(", ")}`);
       }
       setPhonesRaw("");
       router.refresh();
-    } else {
-      toast.error(result.error ?? "Erro");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro");
+    } finally {
+      setLoading(null);
     }
   };
 

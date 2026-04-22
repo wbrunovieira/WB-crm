@@ -15,7 +15,6 @@ import {
   Check,
   NotebookPen,
 } from "lucide-react";
-import { cancelMeeting } from "@/actions/meetings";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -121,6 +120,8 @@ export default function MeetingsList({
   dealId,
   suggestedContacts = [],
 }: Props) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [meetings, setMeetings] = useState<typeof initial>(initial ?? []);
   const [showModal, setShowModal] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
@@ -143,7 +144,7 @@ export default function MeetingsList({
 
   async function handleCancel(id: string) {
     try {
-      await cancelMeeting(id);
+      await apiFetch(`/meetings/${id}`, token, { method: "DELETE" });
       setMeetings((prev) =>
         prev.map((m) => (m.id === id ? { ...m, status: "cancelled" } : m))
       );

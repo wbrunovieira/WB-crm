@@ -4,8 +4,6 @@ import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { X, Send, Loader2, Paperclip, FileText, ChevronDown, LayoutTemplate } from "lucide-react";
-import { sendGmailMessage } from "@/actions/gmail";
-import { getActiveGmailTemplates } from "@/actions/gmail-templates";
 import { applyVariables } from "@/lib/gmail-variables";
 import { apiFetch } from "@/lib/api-client";
 import RichTextEditor, { RichTextEditorHandle } from "@/components/gmail/RichTextEditor";
@@ -97,8 +95,11 @@ export default function GmailComposeModal({
 
   // Carrega aliases e templates ao abrir o modal
   useEffect(() => {
-    getActiveGmailTemplates().then(setTemplates).catch(() => {});
-  }, []);
+    if (!token) return;
+    apiFetch<TemplateOption[]>("/email/templates?onlyActive=true", token)
+      .then(setTemplates)
+      .catch(() => {});
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
@@ -181,31 +182,63 @@ export default function GmailComposeModal({
       const rawHtml = editorRef.current?.getHTML() ?? "";
       const html = `<div style="font-family: sans-serif; font-size: 14px; line-height: 1.5;">${rawHtml}</div>`;
 
-      const result = await sendGmailMessage({
-        to,
-        subject: subject.trim(),
-        html,
-        fromEmail: fromEmail || undefined,
-        contactId,
-        leadId,
-        organizationId,
-        dealId,
-        threadId,
-        attachments: attachments.length > 0 ? attachments : undefined,
-      });
+      const result = await apiFetch<{ ok: boolean; messageId: string; threadId: string; trackingToken: string; error?: string }>(
+        "/email/send",
+        token,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            to,
+            subject: subject.trim(),
+            bodyHtml: html,
+            fromEmail: fromEmail || undefined,
+            threadId,
+            attachments: attachments.length > 0 ? attachments : undefined,
+          }),
+        },
+      );
 
-      if (!result) {
-        setError("Erro de comunicação com o servidor. Tente novamente.");
+      if (!result.ok || !result.messageId) {
+        setError(result.error ?? "Falha ao enviar e-mail.");
         return;
       }
 
-      if (result.success) {
-        setSent(true);
-        router.refresh();
-        setTimeout(onClose, 1500);
-      } else {
-        setError(result.error ?? "Falha ao enviar e-mail.");
+      // Mark thread as replied if replying
+      if (threadId) {
+        apiFetch("/activities/mark-thread-replied", token, {
+          method: "PATCH",
+          body: JSON.stringify({ threadId }),
+        }).catch(() => {});
       }
+
+      // Create activity record
+      const bodyPreview = html
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .slice(0, 500);
+      apiFetch("/activities", token, {
+        method: "POST",
+        body: JSON.stringify({
+          type: "email",
+          subject: subject.trim(),
+          description: bodyPreview,
+          emailMessageId: result.messageId,
+          emailThreadId: result.threadId,
+          emailSubject: subject.trim(),
+          emailTrackingToken: result.trackingToken,
+          completed: true,
+          completedAt: new Date().toISOString(),
+          contactIds: contactId ? [contactId] : undefined,
+          leadId,
+          organizationId,
+          dealId,
+        }),
+      }).catch(() => {});
+
+      setSent(true);
+      router.refresh();
+      setTimeout(onClose, 1500);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro inesperado.");
     } finally {

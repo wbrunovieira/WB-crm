@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { Pencil, Trash2, X, Check, Tag } from "lucide-react";
-import { deleteGmailTemplate, updateGmailTemplate } from "@/actions/gmail-templates";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { GmailTemplateForm } from "@/components/admin/GmailTemplateForm";
 
 interface Template {
@@ -17,14 +18,27 @@ interface Template {
 export function GmailTemplatesList({ templates }: { templates: Template[] }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
 
   async function handleToggleActive(t: Template) {
-    await updateGmailTemplate(t.id, { active: !t.active });
+    try {
+      await apiFetch(`/email/templates/${t.id}`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ active: !t.active }),
+      });
+    } catch {
+      // silently fail — page refresh will show correct state
+    }
   }
 
   async function handleDelete(id: string) {
     setDeletingId(id);
-    await deleteGmailTemplate(id);
+    try {
+      await apiFetch(`/email/templates/${id}`, token, { method: "DELETE" });
+    } catch {
+      // silently fail
+    }
     setDeletingId(null);
   }
 

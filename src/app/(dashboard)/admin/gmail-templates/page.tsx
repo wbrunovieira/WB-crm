@@ -1,10 +1,11 @@
-import { getGmailTemplates } from "@/actions/gmail-templates";
+import { backendFetch } from "@/lib/backend/client";
+import type { GmailTemplate } from "@/types/gmail-template";
 import { GmailTemplatesList } from "@/components/admin/GmailTemplatesList";
 import { GmailTemplateForm } from "@/components/admin/GmailTemplateForm";
 import Link from "next/link";
 
 export default async function GmailTemplatesPage() {
-  const templates = await getGmailTemplates();
+  const templates = await backendFetch<GmailTemplate[]>("/email/templates").catch(() => [] as GmailTemplate[]);
 
   return (
     <div className="p-8">
@@ -33,7 +34,6 @@ export default async function GmailTemplatesPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-5">
-        {/* Formulário de criação */}
         <div className="lg:col-span-2">
           <div className="rounded-lg bg-white p-6 shadow">
             <h2 className="mb-4 text-lg font-semibold">Novo Template</h2>
@@ -41,7 +41,6 @@ export default async function GmailTemplatesPage() {
           </div>
         </div>
 
-        {/* Lista de templates */}
         <div className="lg:col-span-3">
           <h2 className="mb-4 text-lg font-semibold text-gray-700">
             Templates ({templates.length})

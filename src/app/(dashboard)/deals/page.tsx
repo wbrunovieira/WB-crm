@@ -2,7 +2,6 @@ import { backendFetch } from "@/lib/backend/client";
 import type { DealListItem } from "@/types/deal";
 import type { PipelineData } from "@/components/deals/DealsView";
 import type { UserListItem } from "@/hooks/users/use-users";
-import { getPipelineView } from "@/actions/pipeline-view";
 import type { PipelineSummary } from "@/hooks/pipelines/use-pipelines";
 import { DealsView } from "@/components/deals/DealsView";
 import { getServerSession } from "next-auth";
@@ -34,15 +33,16 @@ export default async function DealsPage({
   const users = await backendFetch<UserListItem[]>('/users').catch(() => [] as UserListItem[]);
 
   if (view === "kanban") {
+    const qs = searchParams.pipelineId ? `?pipelineId=${searchParams.pipelineId}` : "";
     const [pipelineData, allPipelines] = await Promise.all([
-      getPipelineView(searchParams.pipelineId),
+      backendFetch<PipelineData>(`/pipelines/view${qs}`).catch(() => null),
       backendFetch<PipelineSummary[]>('/pipelines'),
     ]);
 
     return (
       <DealsView
         initialView="kanban"
-        pipelineData={(pipelineData ?? undefined) as unknown as PipelineData | undefined}
+        pipelineData={pipelineData ?? undefined}
         allPipelines={allPipelines}
         groupBy={groupBy}
         isAdmin={isAdmin}

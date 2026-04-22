@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { toast } from "sonner";
-import { deleteCampaign, startCampaign, pauseCampaign } from "@/actions/campaigns";
-import type { Campaign, CampaignStatus } from "@/actions/campaigns";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
+import type { Campaign, CampaignStatus } from "@/types/campaign";
 import { useRouter } from "next/navigation";
 
 const STATUS_LABEL: Record<CampaignStatus, string> = {
@@ -27,42 +28,47 @@ interface Props {
 
 export function CampaignsList({ campaigns }: Props) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [loading, setLoading] = useState<string | null>(null);
 
   const handleStart = async (id: string) => {
     setLoading(id + ":start");
-    const result = await startCampaign(id);
-    setLoading(null);
-    if (result.success) {
+    try {
+      await apiFetch(`/campaigns/${id}/start`, token, { method: "POST" });
       toast.success("Campanha iniciada!");
       router.refresh();
-    } else {
-      toast.error(result.error ?? "Erro ao iniciar campanha");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao iniciar campanha");
+    } finally {
+      setLoading(null);
     }
   };
 
   const handlePause = async (id: string) => {
     setLoading(id + ":pause");
-    const result = await pauseCampaign(id);
-    setLoading(null);
-    if (result.success) {
+    try {
+      await apiFetch(`/campaigns/${id}/pause`, token, { method: "POST" });
       toast.success("Campanha pausada");
       router.refresh();
-    } else {
-      toast.error(result.error ?? "Erro ao pausar campanha");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao pausar campanha");
+    } finally {
+      setLoading(null);
     }
   };
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Excluir campanha "${name}"?`)) return;
     setLoading(id + ":delete");
-    const result = await deleteCampaign(id);
-    setLoading(null);
-    if (result.success) {
+    try {
+      await apiFetch(`/campaigns/${id}`, token, { method: "DELETE" });
       toast.success("Campanha excluída");
       router.refresh();
-    } else {
-      toast.error(result.error ?? "Erro ao excluir campanha");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Erro ao excluir campanha");
+    } finally {
+      setLoading(null);
     }
   };
 

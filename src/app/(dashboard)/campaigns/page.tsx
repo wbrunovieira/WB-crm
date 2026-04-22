@@ -1,11 +1,12 @@
-import { getCampaigns } from "@/actions/campaigns";
+import { backendFetch } from "@/lib/backend/client";
+import type { Campaign } from "@/types/campaign";
 import { CampaignsList } from "@/components/campaigns/CampaignsList";
 import Link from "next/link";
 
 export const metadata = { title: "Campanhas WhatsApp | WB CRM" };
 
 export default async function CampaignsPage() {
-  const campaigns = await getCampaigns();
+  const campaigns = await backendFetch<Campaign[]>("/campaigns").catch(() => [] as Campaign[]);
 
   return (
     <div className="p-8">

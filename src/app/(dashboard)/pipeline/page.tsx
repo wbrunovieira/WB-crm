@@ -1,9 +1,30 @@
-import { getPipelineView, type PipelineView } from "@/actions/pipeline-view";
 import { backendFetch } from "@/lib/backend/client";
 import type { PipelineSummary } from "@/hooks/pipelines/use-pipelines";
 import PipelineBoard from "@/components/pipeline/PipelineBoard";
 import PipelineSelector from "@/components/pipeline/PipelineSelector";
 import Link from "next/link";
+
+interface PipelineViewDeal {
+  id: string;
+  title: string;
+  value: number | null;
+  currency: string;
+  contactName: string | null;
+  organizationName: string | null;
+}
+
+interface PipelineView {
+  id: string;
+  name: string;
+  isDefault: boolean;
+  stages: Array<{
+    id: string;
+    name: string;
+    order: number;
+    probability: number;
+    deals: PipelineViewDeal[];
+  }>;
+}
 
 function transformPipelineView(pipelineData: PipelineView) {
   return {
@@ -31,9 +52,10 @@ export default async function PipelineViewPage({
 }: {
   searchParams: { pipelineId?: string };
 }) {
+  const qs = searchParams.pipelineId ? `?pipelineId=${searchParams.pipelineId}` : "";
   const [pipelineData, allPipelines] = await Promise.all([
-    getPipelineView(searchParams.pipelineId),
-    backendFetch<PipelineSummary[]>('/pipelines'),
+    backendFetch<PipelineView>(`/pipelines/view${qs}`).catch(() => null),
+    backendFetch<PipelineSummary[]>('/pipelines').catch(() => [] as PipelineSummary[]),
   ]);
 
   if (!pipelineData) {

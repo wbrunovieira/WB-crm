@@ -2,7 +2,8 @@
 
 import { useState, useRef } from "react";
 import { X, Upload, Loader2, FileText } from "lucide-react";
-import { createProposal } from "@/actions/proposals";
+import { useSession } from "next-auth/react";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
 interface Props {
@@ -31,6 +32,8 @@ async function fileToBase64(file: File): Promise<string> {
 }
 
 export default function ProposalUploadModal({ leadId, dealId, onClose, onCreated }: Props) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [file, setFile] = useState<File | null>(null);
@@ -59,14 +62,17 @@ export default function ProposalUploadModal({ leadId, dealId, onClose, onCreated
         fileName = file.name;
       }
 
-      await createProposal({
-        title: title.trim(),
-        description: description.trim() || undefined,
-        leadId,
-        dealId,
-        fileName,
-        fileMimeType,
-        fileBase64,
+      await apiFetch("/proposals", token, {
+        method: "POST",
+        body: JSON.stringify({
+          title: title.trim(),
+          description: description.trim() || undefined,
+          leadId,
+          dealId,
+          fileName,
+          fileMimeType,
+          fileBase64,
+        }),
       });
 
       toast.success(file ? "Proposta criada e enviada ao Drive" : "Proposta criada");

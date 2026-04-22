@@ -1,4 +1,5 @@
-import { getCampaign } from "@/actions/campaigns";
+import { backendFetch } from "@/lib/backend/client";
+import type { CampaignDetail as CampaignDetailType } from "@/types/campaign";
 import { CampaignDetail } from "@/components/campaigns/CampaignDetail";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -6,7 +7,7 @@ import { notFound } from "next/navigation";
 export const metadata = { title: "Campanha | WB CRM" };
 
 export default async function CampaignPage({ params }: { params: { id: string } }) {
-  const campaign = await getCampaign(params.id);
+  const campaign = await backendFetch<CampaignDetailType>(`/campaigns/${params.id}`).catch(() => null);
   if (!campaign) notFound();
 
   return (
