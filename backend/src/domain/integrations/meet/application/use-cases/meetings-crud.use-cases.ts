@@ -62,6 +62,7 @@ export class ScheduleMeetingUseCase {
     startAt: Date;
     endAt?: Date;
     attendeeEmails: string[];
+    organizerEmail?: string;
     description?: string;
     leadId?: string;
     contactId?: string;
@@ -73,6 +74,11 @@ export class ScheduleMeetingUseCase {
   }): Promise<Either<Error, MeetingRecord>> {
     if (!input.title.trim()) return left(new Error("title não pode ser vazio"));
 
+    // When an alias is chosen, add it to attendees so it appears on the invite
+    const attendeeEmails = input.organizerEmail
+      ? [...new Set([...input.attendeeEmails, input.organizerEmail])]
+      : input.attendeeEmails;
+
     let googleEventId: string | undefined;
     let meetLink: string | undefined;
 
@@ -82,8 +88,9 @@ export class ScheduleMeetingUseCase {
           title: input.title.trim(),
           startAt: input.startAt,
           endAt: input.endAt ?? new Date(input.startAt.getTime() + 60 * 60 * 1000),
-          attendeeEmails: input.attendeeEmails,
+          attendeeEmails,
           description: input.description,
+          organizerEmail: input.organizerEmail,
         });
         googleEventId = calResult.googleEventId;
         meetLink = calResult.meetLink ?? undefined;
@@ -96,7 +103,8 @@ export class ScheduleMeetingUseCase {
       title: input.title.trim(),
       startAt: input.startAt,
       endAt: input.endAt,
-      attendeeEmails: input.attendeeEmails,
+      attendeeEmails,
+      organizerEmail: input.organizerEmail,
       googleEventId,
       meetLink,
       description: input.description,

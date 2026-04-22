@@ -109,6 +109,7 @@ export class FakeMeetingsRepository extends MeetingsRepository {
       title: data.title, googleEventId: data.googleEventId ?? null,
       meetLink: data.meetLink ?? null, startAt: data.startAt, endAt: data.endAt ?? null,
       actualStartAt: null, actualEndAt: null, attendeeEmails: JSON.stringify(data.attendeeEmails),
+      organizerEmail: data.organizerEmail ?? null,
       status: "scheduled", activityId: null, nativeTranscriptUrl: null,
       recordingDriveId: null, recordingUrl: null, transcriptText: null, meetingSummary: null,
       leadId: data.leadId ?? null, contactId: data.contactId ?? null,
@@ -136,8 +137,9 @@ export class FakeMeetingsRepository extends MeetingsRepository {
   addMeeting(meeting: Partial<MeetingRecord> & { id: string; title: string; startAt: Date; status: string }): void {
     this.items.push({
       googleEventId: null, meetLink: null, endAt: null, actualStartAt: null,
-      actualEndAt: null, attendeeEmails: "[]", activityId: null, nativeTranscriptUrl: null,
-      recordingDriveId: null, recordingUrl: null, transcriptText: null, meetingSummary: null,
+      actualEndAt: null, attendeeEmails: "[]", organizerEmail: null, activityId: null,
+      nativeTranscriptUrl: null, recordingDriveId: null, recordingUrl: null,
+      transcriptText: null, meetingSummary: null,
       leadId: null, contactId: null, organizationId: null,
       dealId: null, ownerId: "system", createdAt: new Date(), updatedAt: new Date(),
       ...meeting,

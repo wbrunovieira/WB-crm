@@ -19,6 +19,7 @@ function serialize(m: any) {
     startAt: m.startAt, endAt: m.endAt, actualStartAt: m.actualStartAt, actualEndAt: m.actualEndAt,
     status: m.status,
     attendeeEmails: m.attendeeEmails,
+    organizerEmail: m.organizerEmail ?? null,
     recordingDriveId: m.recordingDriveId, recordingUrl: m.recordingUrl,
     transcriptText: m.transcriptText, nativeTranscriptUrl: m.nativeTranscriptUrl,
     meetingSummary: m.meetingSummary, activityId: m.activityId,
@@ -82,6 +83,7 @@ export class MeetingsCrudController {
   async create(@Request() req: any, @Body() body: {
     title: string; startAt: string; endAt?: string;
     attendeeEmails?: string[];
+    organizerEmail?: string;
     description?: string;
     leadId?: string; contactId?: string; organizationId?: string; dealId?: string;
     createActivity?: boolean; skipCalendar?: boolean;
@@ -91,6 +93,7 @@ export class MeetingsCrudController {
       startAt: new Date(body.startAt),
       endAt: body.endAt ? new Date(body.endAt) : undefined,
       attendeeEmails: body.attendeeEmails ?? [],
+      organizerEmail: body.organizerEmail,
       description: body.description,
       leadId: body.leadId,
       contactId: body.contactId,

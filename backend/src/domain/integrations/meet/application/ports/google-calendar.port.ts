@@ -16,6 +16,7 @@ export interface CreateCalendarEventOptions {
   attendeeEmails: string[];
   description?: string;
   timeZone?: string;
+  organizerEmail?: string;
 }
 
 export interface CreateCalendarEventResult {

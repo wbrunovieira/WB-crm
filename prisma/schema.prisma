@@ -1974,6 +1974,7 @@ model Meeting {
   actualStartAt   DateTime?          // Actual start time (when meeting really began)
   actualEndAt     DateTime?          // Actual end time (when meeting really ended)
   attendeeEmails  String             // JSON array of attendee emails
+  organizerEmail  String?            // alias used as organizer (e.g. bruno@saltoup.com)
   status          String    @default("scheduled") // scheduled | ended | cancelled
 
   // Recording (Google Drive)

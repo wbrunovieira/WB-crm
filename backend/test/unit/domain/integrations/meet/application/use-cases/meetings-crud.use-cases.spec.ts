@@ -247,6 +247,57 @@ describe("ScheduleMeetingUseCase", () => {
 
     expect(result.unwrap().title).toBe("Reunião Espaçada");
   });
+
+  it("adds organizerEmail to attendees when alias is selected", async () => {
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+
+    const result = await useCase.execute({
+      title: "Reunião Salto",
+      startAt: FUTURE,
+      attendeeEmails: ["client@example.com"],
+      organizerEmail: "bruno@saltoup.com",
+      requesterId: OWNER,
+    });
+
+    expect(result.isRight()).toBe(true);
+    const created = result.unwrap();
+    const sentEmails = JSON.parse(created.attendeeEmails) as string[];
+    expect(sentEmails).toContain("bruno@saltoup.com");
+    expect(sentEmails).toContain("client@example.com");
+    expect(created.organizerEmail).toBe("bruno@saltoup.com");
+  });
+
+  it("does not duplicate organizerEmail when already in attendees", async () => {
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+
+    const result = await useCase.execute({
+      title: "Reunião Sem Duplicata",
+      startAt: FUTURE,
+      attendeeEmails: ["bruno@saltoup.com", "client@example.com"],
+      organizerEmail: "bruno@saltoup.com",
+      requesterId: OWNER,
+    });
+
+    expect(result.isRight()).toBe(true);
+    const sentEmails = JSON.parse(result.unwrap().attendeeEmails) as string[];
+    const count = sentEmails.filter((e) => e === "bruno@saltoup.com").length;
+    expect(count).toBe(1);
+  });
+
+  it("saves organizerEmail as null when not provided", async () => {
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+
+    const result = await useCase.execute({
+      title: "Reunião WB",
+      startAt: FUTURE,
+      attendeeEmails: ["client@example.com"],
+      requesterId: OWNER,
+      skipCalendar: true,
+    });
+
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().organizerEmail).toBeNull();
+  });
 });
 
 // ---------------------------------------------------------------------------

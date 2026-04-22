@@ -8,6 +8,7 @@ export interface MeetingRecord {
   actualStartAt: Date | null;
   actualEndAt: Date | null;
   attendeeEmails: string;
+  organizerEmail: string | null;
   status: string;
   activityId: string | null;
   nativeTranscriptUrl: string | null;
@@ -37,6 +38,7 @@ export interface CreateMeetingData {
   startAt: Date;
   endAt?: Date;
   attendeeEmails: string[];
+  organizerEmail?: string;
   googleEventId?: string;
   meetLink?: string;
   leadId?: string;

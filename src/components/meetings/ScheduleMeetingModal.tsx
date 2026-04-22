@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Video, Plus, Trash2, Loader2, UserCheck, User } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
@@ -84,6 +84,24 @@ export default function ScheduleMeetingModal({
 
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
+
+  const [aliases, setAliases] = useState<Array<{ email: string; displayName: string; isPrimary: boolean; isDefault: boolean }>>([]);
+  const [organizerEmail, setOrganizerEmail] = useState<string>("");
+
+  useEffect(() => {
+    if (!token) return;
+    apiFetch<{ aliases: Array<{ email: string; displayName: string; isPrimary: boolean; isDefault: boolean }> }>("/email/aliases", token)
+      .then((res) => {
+        setAliases(res.aliases ?? []);
+        if (res.aliases?.length > 0) {
+          const primary = res.aliases.find((a) => a.isPrimary) ?? res.aliases[0];
+          setOrganizerEmail(primary.email);
+        }
+      })
+      .catch(() => {});
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]);
+
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [description, setDescription] = useState(initialData?.description ?? "");
   const [startDate, setStartDate] = useState(initialStart?.date ?? "");
@@ -218,6 +236,7 @@ export default function ScheduleMeetingModal({
             startAt: startAt.toISOString(),
             endAt: endAt.toISOString(),
             attendeeEmails,
+            organizerEmail: organizerEmail || undefined,
             leadId,
             contactId,
             organizationId,
@@ -339,6 +358,26 @@ export default function ScheduleMeetingModal({
                 className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
               />
             </div>
+
+            {/* ── Organizer alias ──────────────────────────────── */}
+            {aliases.length > 1 && !isEditMode && (
+              <div>
+                <label className="mb-1 block text-sm font-medium text-gray-700">
+                  Enviar convite como
+                </label>
+                <select
+                  value={organizerEmail}
+                  onChange={(e) => setOrganizerEmail(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none"
+                >
+                  {aliases.map((a) => (
+                    <option key={a.email} value={a.email}>
+                      {a.displayName ? `${a.displayName} <${a.email}>` : a.email}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
 
             {/* ── Attendees ────────────────────────────────────── */}
             <div>
