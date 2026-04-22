@@ -28,9 +28,9 @@ type Lead = {
   quality: string | null;
   isArchived: boolean;
   owner: { id: string; name: string } | null;
-  icps: { icp: { id: string; name: string } }[];
+  icps?: { icp: { id: string; name: string } }[];
   leadContacts?: LeadContact[];
-  _count: { leadContacts: number; leadCadences: number };
+  _count?: { leadContacts: number; leadCadences: number };
 };
 
 type SharedUser = { id: string; name: string };
@@ -261,10 +261,10 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
                         ))}
                       </div>
                     ) : (
-                      <span>{lead._count.leadContacts} contato(s)</span>
+                      <span>{lead._count?.leadContacts ?? 0} contato(s)</span>
                     );
                   })() : (
-                    <span>{lead._count.leadContacts} contato(s)</span>
+                    <span>{lead._count?.leadContacts ?? 0} contato(s)</span>
                   )}
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
@@ -298,10 +298,10 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
                   </span>
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
-                  {lead._count.leadCadences > 0 ? (
+                  {(lead._count?.leadCadences ?? 0) > 0 ? (
                     <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-2 text-xs font-semibold leading-5 text-green-800">
                       <Zap className="h-3 w-3" />
-                      {lead._count.leadCadences}
+                      {lead._count?.leadCadences}
                     </span>
                   ) : (
                     <span className="text-sm text-gray-400">-</span>
