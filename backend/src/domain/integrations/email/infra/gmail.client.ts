@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { GmailPort, GmailMessage, GmailAttachment } from "../application/ports/gmail.port";
+import { GmailPort, GmailMessage, GmailAttachment, SendAsAlias } from "../application/ports/gmail.port";
 
 /**
  * Gmail API client.
@@ -18,14 +18,15 @@ export class GmailClient extends GmailPort {
     to: string;
     subject: string;
     bodyHtml: string;
+    from?: string;
     threadId?: string;
     attachments?: GmailAttachment[];
   }): Promise<{ messageId: string; threadId: string }> {
-    const { userId, to, subject, bodyHtml, threadId, attachments } = params;
+    const { userId, to, subject, bodyHtml, from, threadId, attachments } = params;
 
-    this.logger.log("GmailClient.send", { userId, to, subject });
+    this.logger.log("GmailClient.send", { userId, to, subject, from });
 
-    const encodedEmail = this.buildMimeMessage({ to, subject, bodyHtml, threadId, attachments });
+    const encodedEmail = this.buildMimeMessage({ to, subject, bodyHtml, from, threadId, attachments });
 
     const apiUrl = `https://gmail.googleapis.com/gmail/v1/users/${userId}/messages/send`;
     const token = await this.getAccessToken(userId);
@@ -132,10 +133,42 @@ export class GmailClient extends GmailPort {
     return this.parseMessage(data);
   }
 
+  async getSendAsAliases(userId: string): Promise<SendAsAlias[]> {
+    const token = await this.getAccessToken(userId);
+    const url = `https://gmail.googleapis.com/gmail/v1/users/${userId}/settings/sendAs`;
+
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Gmail sendAs API error: ${response.status} ${text}`);
+    }
+
+    const data = await response.json() as {
+      sendAs: Array<{
+        sendAsEmail: string;
+        displayName?: string;
+        isDefault?: boolean;
+        isPrimary?: boolean;
+        verificationStatus?: string;
+      }>;
+    };
+
+    return (data.sendAs ?? []).map((a) => ({
+      email: a.sendAsEmail,
+      displayName: a.displayName ?? "",
+      isDefault: a.isDefault ?? false,
+      isPrimary: a.isPrimary ?? false,
+    }));
+  }
+
   private buildMimeMessage(opts: {
     to: string;
     subject: string;
     bodyHtml: string;
+    from?: string;
     threadId?: string;
     attachments?: GmailAttachment[];
   }): string {
@@ -147,6 +180,10 @@ export class GmailClient extends GmailPort {
       `Subject: ${opts.subject}`,
       "MIME-Version: 1.0",
     ];
+
+    if (opts.from) {
+      headers.push(`From: ${opts.from}`);
+    }
 
     let body: string;
 

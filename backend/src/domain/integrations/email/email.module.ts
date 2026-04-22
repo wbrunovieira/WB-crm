@@ -20,6 +20,7 @@ import { TrackEmailOpenUseCase } from "./application/use-cases/track-email-open.
 import { TrackEmailClickUseCase } from "./application/use-cases/track-email-click.use-case";
 import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTemplateUseCase, DeleteGmailTemplateUseCase } from "./application/use-cases/gmail-templates.use-cases";
 import { GetGoogleTokenUseCase, SaveGoogleTokenUseCase, DeleteGoogleTokenUseCase, UpdateTokenHistoryIdUseCase } from "./application/use-cases/google-token.use-cases";
+import { GetSendAsAliasesUseCase } from "./application/use-cases/get-send-as-aliases.use-case";
 import { GoogleTokenRepository } from "./application/repositories/google-token.repository";
 import { PrismaGoogleTokenRepository } from "./infra/prisma-google-token.repository";
 
@@ -54,6 +55,7 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     SaveGoogleTokenUseCase,
     DeleteGoogleTokenUseCase,
     UpdateTokenHistoryIdUseCase,
+    GetSendAsAliasesUseCase,
 
     // Port implementations
     { provide: GmailPort, useClass: GmailClient },

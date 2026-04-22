@@ -1,4 +1,4 @@
-import { GmailPort, GmailMessage } from "@/domain/integrations/email/application/ports/gmail.port";
+import { GmailPort, GmailMessage, SendAsAlias } from "@/domain/integrations/email/application/ports/gmail.port";
 
 export class FakeGmailPort extends GmailPort {
   public sentMessages: Array<{
@@ -6,8 +6,13 @@ export class FakeGmailPort extends GmailPort {
     to: string;
     subject: string;
     bodyHtml: string;
+    from?: string;
     threadId?: string;
   }> = [];
+
+  public sendAsAliases: SendAsAlias[] = [
+    { email: "owner@example.com", displayName: "Owner", isDefault: true, isPrimary: true },
+  ];
 
   public messages: Map<string, GmailMessage> = new Map();
   public historyMessages: GmailMessage[] = [];
@@ -22,6 +27,7 @@ export class FakeGmailPort extends GmailPort {
     to: string;
     subject: string;
     bodyHtml: string;
+    from?: string;
     threadId?: string;
   }): Promise<{ messageId: string; threadId: string }> {
     if (this.shouldFailSend) {
@@ -57,6 +63,10 @@ export class FakeGmailPort extends GmailPort {
 
   async getMessage(_userId: string, messageId: string): Promise<GmailMessage | null> {
     return this.messages.get(messageId) ?? null;
+  }
+
+  async getSendAsAliases(_userId: string): Promise<SendAsAlias[]> {
+    return this.sendAsAliases;
   }
 
   /** Helper: add a message to be returned by pollHistory */

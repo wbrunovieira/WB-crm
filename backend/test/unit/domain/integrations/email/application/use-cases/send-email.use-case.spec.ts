@@ -138,4 +138,25 @@ describe("SendEmailUseCase", () => {
     const saved = emailMessagesRepo.items[0];
     expect(saved.to).toBe("recipient@example.com");
   });
+
+  it("passes fromEmail alias to GmailPort when provided", async () => {
+    await useCase.execute(makeInput({ fromEmail: "bruno@saltoup.com" }));
+
+    const sent = gmailPort.sentMessages[0];
+    expect(sent.from).toBe("bruno@saltoup.com");
+  });
+
+  it("does not set from when fromEmail is not provided", async () => {
+    await useCase.execute(makeInput());
+
+    const sent = gmailPort.sentMessages[0];
+    expect(sent.from).toBeUndefined();
+  });
+
+  it("stores fromEmail in the EmailMessage record", async () => {
+    await useCase.execute(makeInput({ fromEmail: "bruno@saltoup.com" }));
+
+    const saved = emailMessagesRepo.items[0];
+    expect(saved.from).toBe("bruno@saltoup.com");
+  });
 });

@@ -24,6 +24,8 @@ let emailMessagesRepo: FakeEmailMessagesRepository;
 let activitiesRepo: FakeActivitiesRepository;
 let useCase: ProcessIncomingEmailUseCase;
 
+const createdNotifications: object[] = [];
+
 // Fake PrismaService
 const fakePrisma = {
   contact: {
@@ -35,10 +37,17 @@ const fakePrisma = {
   organization: {
     findFirst: vi.fn().mockResolvedValue(null),
   },
+  notification: {
+    create: vi.fn().mockImplementation(({ data }: { data: object }) => {
+      createdNotifications.push(data);
+      return Promise.resolve(data);
+    }),
+  },
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  createdNotifications.length = 0;
   // Default: sender matches a known contact so activity is created
   fakePrisma.contact.findFirst.mockResolvedValue({ id: "contact-default" });
   fakePrisma.leadContact.findFirst.mockResolvedValue(null);
@@ -197,5 +206,35 @@ describe("ProcessIncomingEmailUseCase", () => {
     expect(result.isRight()).toBe(true);
     const activity = activitiesRepo.items[0];
     expect(activity.subject).toContain("(sem assunto)");
+  });
+
+  it("creates EMAIL_RECEIVED notification when contact match found", async () => {
+    const message = makeMessage({ subject: "Proposta comercial" });
+    await useCase.execute(message, OWNER_ID);
+
+    expect(createdNotifications).toHaveLength(1);
+    const notif = createdNotifications[0] as Record<string, unknown>;
+    expect(notif.type).toBe("EMAIL_RECEIVED");
+    expect(notif.userId).toBe(OWNER_ID);
+    expect((notif.title as string)).toContain("Proposta comercial");
+  });
+
+  it("includes receivedToEmail in notification payload so UI knows which alias was targeted", async () => {
+    const message = makeMessage({ to: "bruno@saltoup.com", subject: "Test" });
+    await useCase.execute(message, OWNER_ID);
+
+    const notif = createdNotifications[0] as Record<string, unknown>;
+    const payload = JSON.parse(notif.payload as string);
+    expect(payload.receivedToEmail).toBe("bruno@saltoup.com");
+  });
+
+  it("does NOT create notification when sender is unknown (skipped)", async () => {
+    fakePrisma.contact.findFirst.mockResolvedValue(null);
+    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
+    fakePrisma.organization.findFirst.mockResolvedValue(null);
+
+    await useCase.execute(makeMessage(), OWNER_ID);
+
+    expect(createdNotifications).toHaveLength(0);
   });
 });

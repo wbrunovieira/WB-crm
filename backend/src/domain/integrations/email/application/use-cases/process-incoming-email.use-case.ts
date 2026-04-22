@@ -108,7 +108,30 @@ export class ProcessIncomingEmailUseCase {
       await this.activitiesRepo.save(activity);
       activityId = activity.id.toString();
 
-      // 5. Save EmailMessage record
+      // 5. Create EMAIL_RECEIVED notification
+      try {
+        await this.prisma.notification.create({
+          data: {
+            type: "EMAIL_RECEIVED",
+            status: "pending",
+            title: `Email recebido — ${subject}`,
+            summary: fromEmail ? `De: ${message.from}` : `De: ${message.from}`,
+            payload: JSON.stringify({
+              activityId,
+              fromEmail: message.from,
+              receivedToEmail: message.to,
+            }),
+            read: false,
+            userId: ownerId,
+          },
+        });
+      } catch (err) {
+        this.logger.warn("ProcessIncomingEmailUseCase: failed to create notification", {
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+
+      // 6. Save EmailMessage record
       const emailRecord: EmailMessage = {
         id: activityId, // use same ID for simplicity
         gmailMessageId: message.messageId,

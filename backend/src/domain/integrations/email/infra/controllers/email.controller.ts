@@ -21,6 +21,7 @@ import { PollGmailUseCase } from "../../application/use-cases/poll-gmail.use-cas
 import { EmailMessagesRepository } from "../../application/repositories/email-messages.repository";
 import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTemplateUseCase, DeleteGmailTemplateUseCase } from "../../application/use-cases/gmail-templates.use-cases";
 import { GetGoogleTokenUseCase, SaveGoogleTokenUseCase, DeleteGoogleTokenUseCase, UpdateTokenHistoryIdUseCase } from "../../application/use-cases/google-token.use-cases";
+import { GetSendAsAliasesUseCase } from "../../application/use-cases/get-send-as-aliases.use-case";
 
 interface SendEmailAttachment {
   filename: string;
@@ -32,6 +33,7 @@ interface SendEmailBody {
   to: string;
   subject: string;
   bodyHtml: string;
+  fromEmail?: string;
   threadId?: string;
   attachments?: SendEmailAttachment[];
 }
@@ -55,6 +57,7 @@ export class EmailController {
     private readonly saveToken: SaveGoogleTokenUseCase,
     private readonly deleteToken: DeleteGoogleTokenUseCase,
     private readonly updateHistoryId: UpdateTokenHistoryIdUseCase,
+    private readonly getSendAsAliases: GetSendAsAliasesUseCase,
   ) {}
 
   @Post("send")
@@ -73,6 +76,7 @@ export class EmailController {
       to: body.to,
       subject: body.subject,
       bodyHtml: body.bodyHtml,
+      fromEmail: body.fromEmail,
       threadId: body.threadId,
       attachments: body.attachments,
       ownerId: user.id,
@@ -84,6 +88,17 @@ export class EmailController {
     }
 
     return { ok: true, ...result.value };
+  }
+
+  @Get("aliases")
+  @ApiOperation({ summary: "List Gmail sendAs aliases for the connected account" })
+  async aliases(@CurrentUser() user: AuthenticatedUser) {
+    const result = await this.getSendAsAliases.execute(user.id);
+    if (result.isLeft()) {
+      this.logger.error("Failed to get sendAs aliases", { error: result.value.message });
+      return { aliases: [] };
+    }
+    return { aliases: result.value.aliases };
   }
 
   @Get("messages")

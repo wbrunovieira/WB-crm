@@ -16,12 +16,20 @@ export interface GmailAttachment {
   data: string;
 }
 
+export interface SendAsAlias {
+  email: string;
+  displayName: string;
+  isDefault: boolean;
+  isPrimary: boolean;
+}
+
 export abstract class GmailPort {
   abstract send(params: {
     userId: string;
     to: string;
     subject: string;
     bodyHtml: string;
+    from?: string;
     threadId?: string;
     attachments?: GmailAttachment[];
   }): Promise<{ messageId: string; threadId: string }>;
@@ -31,4 +39,6 @@ export abstract class GmailPort {
   abstract getProfile(userId: string): Promise<{ emailAddress: string; historyId: string }>;
 
   abstract getMessage(userId: string, messageId: string): Promise<GmailMessage | null>;
+
+  abstract getSendAsAliases(userId: string): Promise<SendAsAlias[]>;
 }

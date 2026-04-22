@@ -11,6 +11,7 @@ export interface SendEmailInput {
   to: string;
   subject: string;
   bodyHtml: string;
+  fromEmail?: string;
   threadId?: string;
   attachments?: GmailAttachment[];
   ownerId: string;
@@ -66,7 +67,7 @@ export class SendEmailUseCase {
   ) {}
 
   async execute(input: SendEmailInput): Promise<Either<Error, SendEmailOutput>> {
-    const { userId, to, subject, bodyHtml, threadId, attachments, ownerId } = input;
+    const { userId, to, subject, bodyHtml, fromEmail, threadId, attachments, ownerId } = input;
 
     // 1. Validate email address
     const emailResult = EmailAddress.create(to);
@@ -102,6 +103,7 @@ export class SendEmailUseCase {
         to: validatedEmail,
         subject,
         bodyHtml: trackedHtml,
+        from: fromEmail,
         threadId,
         attachments,
       });
@@ -121,7 +123,7 @@ export class SendEmailUseCase {
       id: `em-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       gmailMessageId: messageId,
       threadId: resultThreadId,
-      from: userId, // user's email (will be resolved from profile in production)
+      from: fromEmail ?? userId,
       to: validatedEmail,
       subject,
       ownerId,

@@ -35,15 +35,23 @@ const fakePrisma = {
     updateMany: vi.fn().mockResolvedValue({}),
   },
   contact: {
-    findFirst: vi.fn().mockResolvedValue(null),
+    findFirst: vi.fn(),
   },
   leadContact: {
     findFirst: vi.fn().mockResolvedValue(null),
+  },
+  organization: {
+    findFirst: vi.fn().mockResolvedValue(null),
+  },
+  notification: {
+    create: vi.fn().mockResolvedValue({}),
   },
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  // Default: sender matches a contact so messages are processed
+  fakePrisma.contact.findFirst.mockResolvedValue({ id: "contact-default" });
   gmailPort = new FakeGmailPort();
   emailMessagesRepo = new FakeEmailMessagesRepository();
   activitiesRepo = new FakeActivitiesRepository();
