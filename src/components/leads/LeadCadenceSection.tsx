@@ -364,7 +364,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
                     ) : (
                       <>
                         <ChevronDown className="h-4 w-4" />
-                        Ver atividades ({lc.activities.length})
+                        Ver atividades ({lc.activities?.length ?? 0})
                       </>
                     )}
                   </button>
@@ -373,7 +373,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
                 {/* Expanded Activities */}
                 {expandedCadence === lc.id && (
                   <div className="p-4 space-y-2">
-                    {lc.activities.map((activity) => {
+                    {(lc.activities ?? []).map((activity) => {
                       const channelInfo = CADENCE_CHANNEL_LABELS[activity.cadenceStep.channel as CadenceChannel];
                       return (
                         <div
