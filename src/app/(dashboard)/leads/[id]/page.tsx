@@ -681,13 +681,13 @@ export default async function LeadDetailPage({
 
       {/* Proposals */}
       <div className="mt-6">
-        <ProposalsList proposals={proposals} leadId={lead.id} />
+        <ProposalsList proposals={proposals ?? []} leadId={lead.id} />
       </div>
 
       {/* Meetings */}
       <div className="mt-6">
         <MeetingsList
-          meetings={meetings}
+          meetings={meetings ?? []}
           leadId={lead.id}
           suggestedContacts={[
             // Lead's own email (if any)

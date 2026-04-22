@@ -85,7 +85,7 @@ function formatBytes(bytes: number): string {
 export default function ProposalsList({ proposals: initial, leadId, dealId }: Props) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
-  const [proposals, setProposals] = useState(initial);
+  const [proposals, setProposals] = useState<typeof initial>(initial ?? []);
   const [showModal, setShowModal] = useState(false);
   const [updating, setUpdating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);

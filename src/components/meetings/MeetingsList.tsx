@@ -121,7 +121,7 @@ export default function MeetingsList({
   dealId,
   suggestedContacts = [],
 }: Props) {
-  const [meetings, setMeetings] = useState(initial);
+  const [meetings, setMeetings] = useState<typeof initial>(initial ?? []);
   const [showModal, setShowModal] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [expandedTranscript, setExpandedTranscript] = useState<string | null>(null);
