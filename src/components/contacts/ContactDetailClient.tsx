@@ -106,7 +106,7 @@ export function ContactDetailClient({ id, isAdmin }: Props) {
                         : undefined
                     }
                   />
-                  <WhatsAppButton to={contact.whatsapp} name={contact.name} variant="icon" />
+                  <WhatsAppButton to={contact.whatsapp} name={contact.name} variant="icon" contactId={contact.id} />
                 </dd>
               </div>
             )}

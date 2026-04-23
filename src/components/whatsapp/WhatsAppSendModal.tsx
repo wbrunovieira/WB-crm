@@ -112,13 +112,16 @@ interface WhatsAppSendModalProps {
   to: string;
   name: string;
   onClose: () => void;
+  leadId?: string;
+  contactId?: string;
+  organizationId?: string;
 }
 
 // ---------------------------------------------------------------------------
 // Modal principal
 // ---------------------------------------------------------------------------
 
-export default function WhatsAppSendModal({ to, name, onClose }: WhatsAppSendModalProps) {
+export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId, organizationId }: WhatsAppSendModalProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
@@ -238,7 +241,7 @@ export default function WhatsAppSendModal({ to, name, onClose }: WhatsAppSendMod
         const nestResult = await apiFetch<{ ok: boolean; error?: string }>(
           "/whatsapp/send",
           token,
-          { method: "POST", body: JSON.stringify({ to, text: trimmed, contactName: name }) },
+          { method: "POST", body: JSON.stringify({ to, text: trimmed, contactName: name, leadId, contactId, organizationId }) },
         );
         result = { success: nestResult.ok, error: nestResult.error };
       }

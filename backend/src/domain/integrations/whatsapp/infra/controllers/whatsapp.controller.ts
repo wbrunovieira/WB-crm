@@ -32,6 +32,9 @@ interface SendMessageBody {
   to: string;
   text: string;
   contactName?: string;
+  leadId?: string;
+  contactId?: string;
+  organizationId?: string;
 }
 
 interface SendMediaBody {
@@ -98,6 +101,9 @@ export class WhatsAppController {
       text: body.text,
       ownerId: user.id,
       contactName: body.contactName,
+      leadId: body.leadId,
+      contactId: body.contactId,
+      organizationId: body.organizationId,
     });
 
     if (result.isLeft()) {

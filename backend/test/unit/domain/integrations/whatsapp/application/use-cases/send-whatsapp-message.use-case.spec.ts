@@ -97,4 +97,32 @@ describe("SendWhatsAppMessageUseCase", () => {
     const activity = activitiesRepo.items[0];
     expect(activity.subject).toContain(PHONE);
   });
+
+  it("links activity to leadId when provided", async () => {
+    await useCase.execute({
+      to: PHONE,
+      text: "Olá lead",
+      ownerId: OWNER_ID,
+      contactName: "Lead Teste",
+      leadId: "lead-abc",
+    });
+
+    const activity = activitiesRepo.items[0];
+    expect(activity.leadId).toBe("lead-abc");
+    expect(activity.contactId).toBeNull();
+  });
+
+  it("links activity to contactId when provided", async () => {
+    await useCase.execute({
+      to: PHONE,
+      text: "Olá contato",
+      ownerId: OWNER_ID,
+      contactName: "Contato Teste",
+      contactId: "contact-xyz",
+    });
+
+    const activity = activitiesRepo.items[0];
+    expect(activity.contactId).toBe("contact-xyz");
+    expect(activity.leadId).toBeNull();
+  });
 });

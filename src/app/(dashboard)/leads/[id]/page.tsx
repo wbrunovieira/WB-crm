@@ -274,7 +274,7 @@ export default async function LeadDetailPage({
                       ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified ?? false }
                       : undefined}
                   />
-                  <WhatsAppButton to={lead.whatsapp} name={lead.businessName} variant="icon" />
+                  <WhatsAppButton to={lead.whatsapp} name={lead.businessName} variant="icon" leadId={lead.id} />
                 </dd>
               </div>
             )}

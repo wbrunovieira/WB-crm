@@ -10,14 +10,19 @@ const WhatsAppSendModal = dynamic(() => import("./WhatsAppSendModal"), {
 interface WhatsAppButtonProps {
   to: string;
   name: string;
-  /** Variant visual do botão */
   variant?: "icon" | "badge";
+  leadId?: string;
+  contactId?: string;
+  organizationId?: string;
 }
 
 export default function WhatsAppButton({
   to,
   name,
   variant = "badge",
+  leadId,
+  contactId,
+  organizationId,
 }: WhatsAppButtonProps) {
   const [open, setOpen] = useState(false);
 
@@ -32,7 +37,7 @@ export default function WhatsAppButton({
           <WhatsAppIcon className="h-4 w-4" />
         </button>
         {open && (
-          <WhatsAppSendModal to={to} name={name} onClose={() => setOpen(false)} />
+          <WhatsAppSendModal to={to} name={name} onClose={() => setOpen(false)} leadId={leadId} contactId={contactId} organizationId={organizationId} />
         )}
       </>
     );
@@ -48,7 +53,7 @@ export default function WhatsAppButton({
         Enviar WhatsApp
       </button>
       {open && (
-        <WhatsAppSendModal to={to} name={name} onClose={() => setOpen(false)} />
+        <WhatsAppSendModal to={to} name={name} onClose={() => setOpen(false)} leadId={leadId} contactId={contactId} organizationId={organizationId} />
       )}
     </>
   );
