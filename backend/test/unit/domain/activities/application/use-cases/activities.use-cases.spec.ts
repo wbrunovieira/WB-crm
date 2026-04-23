@@ -219,6 +219,40 @@ describe("Activities Use Cases", () => {
 
       expect(result.isLeft()).toBe(true);
     });
+
+    it("atualiza gotoCallOutcome manualmente", async () => {
+      const created = await create.execute({ ownerId: OWNER_ID, type: "call", subject: "Ligação GoTo" });
+      const id = (created.value as any).activity.id.toString();
+
+      const result = await update.execute({
+        id,
+        requesterId: OWNER_ID,
+        requesterRole: "sdr",
+        gotoCallOutcome: "busy",
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.activity.gotoCallOutcome).toBe("busy");
+      }
+    });
+
+    it("atualiza gotoCallOutcome para no_answer", async () => {
+      const created = await create.execute({ ownerId: OWNER_ID, type: "call", subject: "Ligação GoTo" });
+      const id = (created.value as any).activity.id.toString();
+
+      const result = await update.execute({
+        id,
+        requesterId: OWNER_ID,
+        requesterRole: "sdr",
+        gotoCallOutcome: "no_answer",
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.activity.gotoCallOutcome).toBe("no_answer");
+      }
+    });
   });
 
   // ─── DeleteActivityUseCase ────────────────────────────────────────────────

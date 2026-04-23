@@ -27,6 +27,7 @@ export interface ActivityPayload {
   partnerId?: string | null;
   callContactType?: string | null;
   meetingNoShow?: boolean;
+  gotoCallOutcome?: string | null;
 }
 
 export type UpdateActivityPayload = Partial<ActivityPayload>;

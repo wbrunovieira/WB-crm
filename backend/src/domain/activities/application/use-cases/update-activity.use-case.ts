@@ -19,6 +19,7 @@ export interface UpdateActivityInput {
   partnerId?: string | null;
   callContactType?: string | null;
   meetingNoShow?: boolean;
+  gotoCallOutcome?: string | null;
 }
 
 type Output = Either<Error, { activity: Activity }>;
@@ -47,6 +48,7 @@ export class UpdateActivityUseCase {
     if (input.partnerId !== undefined)      updates.partnerId = input.partnerId ?? undefined;
     if (input.callContactType !== undefined) updates.callContactType = input.callContactType ?? undefined;
     if (input.meetingNoShow !== undefined)   updates.meetingNoShow = input.meetingNoShow;
+    if (input.gotoCallOutcome !== undefined) updates.gotoCallOutcome = input.gotoCallOutcome ?? undefined;
 
     if (input.contactIds !== undefined) {
       const ids = input.contactIds ?? [];

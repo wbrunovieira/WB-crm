@@ -61,6 +61,7 @@ class UpdateActivityDto {
   @ApiPropertyOptional() partnerId?: string;
   @ApiPropertyOptional() callContactType?: string;
   @ApiPropertyOptional() meetingNoShow?: boolean;
+  @ApiPropertyOptional() gotoCallOutcome?: string;
 }
 
 class OutcomeReasonDto {
@@ -100,6 +101,7 @@ function serializeActivity(a: Activity) {
     partnerId: a.partnerId ?? null,
     callContactType: a.callContactType ?? null,
     meetingNoShow: a.meetingNoShow,
+    gotoCallOutcome: a.gotoCallOutcome ?? null,
     createdAt: a.createdAt,
     updatedAt: a.updatedAt,
   };

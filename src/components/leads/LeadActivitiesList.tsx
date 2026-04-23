@@ -167,6 +167,13 @@ type Activity = {
   emailReplied?: boolean | null;
 };
 
+const GOTO_OUTCOME_OPTIONS = [
+  { value: "answered",  label: "Atendida" },
+  { value: "no_answer", label: "Não atendeu" },
+  { value: "busy",      label: "Ocupado" },
+  { value: "voicemail", label: "Caixa postal" },
+] as const;
+
 function SortableActivityItem({
   activity,
   isPending,
@@ -176,6 +183,7 @@ function SortableActivityItem({
   handleRevert,
   openAssignModal,
   openReplyModal,
+  onChangeOutcome,
   getContactNames,
   leadContacts,
   typeConfig,
@@ -191,6 +199,7 @@ function SortableActivityItem({
   handleRevert: (e: React.MouseEvent, id: string) => void;
   openAssignModal: (e: React.MouseEvent, activity: Activity) => void;
   openReplyModal: (activity: Activity) => void;
+  onChangeOutcome: (activityId: string, outcome: string) => void;
   getContactNames: (ids: string | null) => string[];
   leadContacts: LeadContact[];
   typeConfig: Record<string, { label: string; bg: string; text: string; border: string; dot: string }>;
@@ -207,7 +216,7 @@ function SortableActivityItem({
     isDragging,
   } = useSortable({ id: activity.id });
 
-
+  const [outcomePickerOpen, setOutcomePickerOpen] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -319,7 +328,36 @@ function SortableActivityItem({
               )}
               {activity.gotoCallId ? (
                 <>
-                  <GoToOutcomeBadge outcome={activity.gotoCallOutcome} />
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setOutcomePickerOpen((v) => !v); }}
+                      className="focus:outline-none"
+                      title="Clique para alterar resultado"
+                    >
+                      <GoToOutcomeBadge outcome={activity.gotoCallOutcome} />
+                    </button>
+                    {outcomePickerOpen && (
+                      <div
+                        className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-gray-200 bg-white shadow-lg"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        {GOTO_OUTCOME_OPTIONS.map((opt) => (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${activity.gotoCallOutcome === opt.value ? "font-semibold text-purple-700" : "text-gray-700"}`}
+                            onClick={() => {
+                              onChangeOutcome(activity.id, opt.value);
+                              setOutcomePickerOpen(false);
+                            }}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                   {activity.completedAt && (
                     <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
                       {formatDate(activity.completedAt)}
@@ -608,6 +646,16 @@ export function LeadActivitiesList({
     } finally {
       setSavingOrder(false);
     }
+  };
+
+  const handleChangeOutcome = (activityId: string, outcome: string) => {
+    updateActivity.mutate(
+      { id: activityId, gotoCallOutcome: outcome },
+      {
+        onSuccess: () => { toast.success("Resultado atualizado"); router.refresh(); },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao atualizar resultado"),
+      },
+    );
   };
 
   const openAssignModal = (e: React.MouseEvent, activity: Activity) => {
@@ -1023,6 +1071,7 @@ export function LeadActivitiesList({
                     handleRevert={handleRevert}
                     openAssignModal={openAssignModal}
                     openReplyModal={setReplyingToActivity}
+                    onChangeOutcome={handleChangeOutcome}
                     getContactNames={getContactNames}
                     leadContacts={leadContacts}
                     typeConfig={typeConfig}
