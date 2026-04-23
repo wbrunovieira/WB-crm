@@ -26,6 +26,7 @@ export abstract class ActivitiesRepository {
   abstract findById(id: string, requesterId: string, requesterRole: string): Promise<ActivityDetail | null>;
   abstract findByIdRaw(id: string): Promise<Activity | null>;
   abstract findByIdForTranscription(id: string): Promise<ActivityWithNames | null>;
+  abstract findByTranscriptionJobId(jobId: string): Promise<Activity | null>;
   abstract findFirst(where: { gotoCallId?: string }): Promise<Activity | null>;
   abstract save(activity: Activity): Promise<void>;
   abstract delete(id: string): Promise<void>;

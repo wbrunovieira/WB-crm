@@ -16,6 +16,7 @@ import { CreateCallActivityUseCase } from "./application/use-cases/create-call-a
 import { ProcessCallRecordingUseCase } from "./application/use-cases/process-call-recording.use-case";
 import { PollCallTranscriptionsUseCase } from "./application/use-cases/poll-call-transcriptions.use-case";
 import { SyncGotoCallReportsUseCase } from "./application/use-cases/sync-goto-call-reports.use-case";
+import { HandleTranscriptionCallbackUseCase } from "./application/use-cases/handle-transcription-callback.use-case";
 
 // Infrastructure
 import { GoToApiClient } from "./infra/goto-api.client";
@@ -23,13 +24,14 @@ import { GoToTokenService } from "./infra/goto-token.service";
 import { S3RecordingClient } from "./infra/s3-recording.client";
 import { GoToWebhookController } from "./infra/controllers/goto-webhook.controller";
 import { GoToRecordingsController } from "./infra/controllers/goto-recordings.controller";
+import { TranscriptionWebhookController } from "./infra/controllers/transcription-webhook.controller";
 import { GoToRecordingCronService } from "./infra/scheduled/goto-recording-cron.service";
 import { GotoActivityCreatedListener } from "./infra/listeners/goto-activity-created.listener";
 import { GotoTranscriptionPollerListener } from "./infra/listeners/goto-transcription-poller.listener";
 
 @Module({
   imports: [ScheduleModule.forRoot(), EventEmitterModule, SharedInfraModule, ActivitiesModule, AuthModule],
-  controllers: [GoToWebhookController, GoToRecordingsController],
+  controllers: [GoToWebhookController, GoToRecordingsController, TranscriptionWebhookController],
   providers: [
     // Use Cases
     HandleGotoWebhookUseCase,
@@ -37,6 +39,7 @@ import { GotoTranscriptionPollerListener } from "./infra/listeners/goto-transcri
     SyncGotoCallReportsUseCase,
     ProcessCallRecordingUseCase,
     PollCallTranscriptionsUseCase,
+    HandleTranscriptionCallbackUseCase,
     // Port implementations
     { provide: GoToApiPort, useClass: GoToApiClient },
     { provide: GoToTokenPort, useClass: GoToTokenService },

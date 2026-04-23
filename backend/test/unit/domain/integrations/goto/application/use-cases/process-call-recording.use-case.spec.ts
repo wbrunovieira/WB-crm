@@ -114,6 +114,38 @@ describe("ProcessCallRecordingUseCase", () => {
     expect(transcriber.submittedJobs[0].fileName).toContain("agent");
   });
 
+  it("passes callback URL to transcriber when TRANSCRIPTION_CALLBACK_URL is set", async () => {
+    process.env.TRANSCRIPTION_CALLBACK_URL = "https://crm.example.com/webhooks/transcription";
+    process.env.TRANSCRIPTION_CALLBACK_SECRET = "secret-123";
+
+    const activity = makeActivity();
+    repo.items.push(activity);
+    const agentKey = "2024/01/01/ts~call-id~phone1~phone2~rec-001.mp3";
+    s3.addRecordingKey("rec-001", agentKey);
+
+    await useCase.execute({ activityId: "activity-001" });
+
+    expect(transcriber.submittedJobs[0].callbackUrl).toBe(
+      "https://crm.example.com/webhooks/transcription",
+    );
+
+    delete process.env.TRANSCRIPTION_CALLBACK_URL;
+    delete process.env.TRANSCRIPTION_CALLBACK_SECRET;
+  });
+
+  it("submits without callback URL when env var is not set", async () => {
+    delete process.env.TRANSCRIPTION_CALLBACK_URL;
+
+    const activity = makeActivity();
+    repo.items.push(activity);
+    const agentKey = "2024/01/01/ts~call-id~phone1~phone2~rec-001.mp3";
+    s3.addRecordingKey("rec-001", agentKey);
+
+    await useCase.execute({ activityId: "activity-001" });
+
+    expect(transcriber.submittedJobs[0].callbackUrl).toBeUndefined();
+  });
+
   it("saves S3 keys and job IDs on activity", async () => {
     const activity = makeActivity();
     repo.items.push(activity);

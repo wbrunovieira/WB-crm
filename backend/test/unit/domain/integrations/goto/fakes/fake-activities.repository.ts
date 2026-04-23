@@ -23,6 +23,14 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
     return this.items.find((a) => a.id.toString() === id) ?? null;
   }
 
+  async findByTranscriptionJobId(jobId: string): Promise<Activity | null> {
+    return (
+      this.items.find(
+        (a) => a.gotoTranscriptionJobId === jobId || a.gotoTranscriptionJobId2 === jobId,
+      ) ?? null
+    );
+  }
+
   async findByIdForTranscription(id: string): Promise<ActivityWithNames | null> {
     const activity = this.items.find((a) => a.id.toString() === id);
     if (!activity) return null;

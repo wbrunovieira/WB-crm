@@ -60,10 +60,15 @@ export class ProcessCallRecordingUseCase {
       const clientKey = siblingResult?.key ?? null;
 
       // 6. Download and submit agent track
+      const callbackUrl = process.env.TRANSCRIPTION_CALLBACK_URL;
+      const callbackSecret = process.env.TRANSCRIPTION_CALLBACK_SECRET;
+      const callbackOpts = callbackUrl ? { callbackUrl, callbackSecret } : undefined;
+
       const agentBuffer = await this.s3Storage.download(agentKey);
       const { jobId: jobAgent } = await this.transcriber.submitAudio(
         agentBuffer,
         `ligacao-${activityId}-agent.mp3`,
+        callbackOpts,
       );
 
       // 7. Download and submit client track if available
@@ -73,6 +78,7 @@ export class ProcessCallRecordingUseCase {
         const { jobId } = await this.transcriber.submitAudio(
           clientBuffer,
           `ligacao-${activityId}-client.mp3`,
+          callbackOpts,
         );
         jobClient = jobId;
       }

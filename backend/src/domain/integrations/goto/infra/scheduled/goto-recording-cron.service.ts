@@ -14,7 +14,7 @@ export class GoToRecordingCronService {
     private readonly pollTranscriptions: PollCallTranscriptionsUseCase,
   ) {}
 
-  @Cron("*/15 * * * *")
+  @Cron("0 * * * *")
   async processRecordings(): Promise<void> {
     this.logger.log("GoTo recording cron: starting");
 

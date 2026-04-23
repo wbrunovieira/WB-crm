@@ -287,6 +287,19 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     };
   }
 
+  async findByTranscriptionJobId(jobId: string): Promise<Activity | null> {
+    const row = await this.prisma.activity.findFirst({
+      where: {
+        OR: [
+          { gotoTranscriptionJobId: jobId },
+          { gotoTranscriptionJobId2: jobId },
+        ],
+      },
+    });
+    if (!row) return null;
+    return ActivityMapper.toDomain(row);
+  }
+
   async findFirst(where: { gotoCallId?: string }): Promise<Activity | null> {
     const row = await this.prisma.activity.findFirst({ where });
     if (!row) return null;

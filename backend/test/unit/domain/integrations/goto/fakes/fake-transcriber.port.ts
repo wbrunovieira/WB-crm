@@ -1,7 +1,7 @@
-import { TranscriberPort, TranscriptionJob, TranscriptionResult } from "@/infra/shared/transcriber/transcriber.port";
+import { TranscriberPort, TranscriberCallbackOptions, TranscriptionJob, TranscriptionResult } from "@/infra/shared/transcriber/transcriber.port";
 
 export class FakeTranscriberPort extends TranscriberPort {
-  public submittedJobs: Array<{ buffer: Buffer; fileName: string; type: "audio" | "video" }> = [];
+  public submittedJobs: Array<{ buffer: Buffer; fileName: string; type: "audio" | "video"; callbackUrl?: string }> = [];
   public jobStatuses: Map<string, TranscriptionJob> = new Map();
   public jobResults: Map<string, TranscriptionResult> = new Map();
   public nextJobId = "job-001";
@@ -18,14 +18,14 @@ export class FakeTranscriberPort extends TranscriberPort {
     this.jobResults.set(jobId, result);
   }
 
-  async submitAudio(buffer: Buffer, fileName: string): Promise<{ jobId: string }> {
-    this.submittedJobs.push({ buffer, fileName, type: "audio" });
+  async submitAudio(buffer: Buffer, fileName: string, callback?: TranscriberCallbackOptions): Promise<{ jobId: string }> {
+    this.submittedJobs.push({ buffer, fileName, type: "audio", callbackUrl: callback?.callbackUrl });
     const jobId = this.nextJobId;
     return { jobId };
   }
 
-  async submitVideo(buffer: Buffer, fileName: string): Promise<{ jobId: string }> {
-    this.submittedJobs.push({ buffer, fileName, type: "video" });
+  async submitVideo(buffer: Buffer, fileName: string, callback?: TranscriberCallbackOptions): Promise<{ jobId: string }> {
+    this.submittedJobs.push({ buffer, fileName, type: "video", callbackUrl: callback?.callbackUrl });
     const jobId = this.nextJobId;
     return { jobId };
   }

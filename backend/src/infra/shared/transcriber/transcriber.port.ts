@@ -18,9 +18,14 @@ export interface TranscriptionResult {
   segments: TranscriptionSegment[];
 }
 
+export interface TranscriberCallbackOptions {
+  callbackUrl: string;
+  callbackSecret?: string;
+}
+
 export abstract class TranscriberPort {
-  abstract submitAudio(buffer: Buffer, fileName: string): Promise<{ jobId: string }>;
-  abstract submitVideo(buffer: Buffer, fileName: string): Promise<{ jobId: string }>;
+  abstract submitAudio(buffer: Buffer, fileName: string, callback?: TranscriberCallbackOptions): Promise<{ jobId: string }>;
+  abstract submitVideo(buffer: Buffer, fileName: string, callback?: TranscriberCallbackOptions): Promise<{ jobId: string }>;
   abstract getStatus(jobId: string): Promise<TranscriptionJob>;
   abstract getResult(jobId: string): Promise<TranscriptionResult>;
 }

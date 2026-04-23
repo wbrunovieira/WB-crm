@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { TranscriberPort, TranscriptionJob, TranscriptionResult } from "./transcriber.port";
+import { TranscriberPort, TranscriberCallbackOptions, TranscriptionJob, TranscriptionResult } from "./transcriber.port";
 
 @Injectable()
 export class TranscriberService extends TranscriberPort {
@@ -11,12 +11,16 @@ export class TranscriberService extends TranscriberPort {
     return { "X-API-Key": process.env.TRANSCRIPTOR_API_KEY ?? "" };
   }
 
-  async submitAudio(buffer: Buffer, fileName: string): Promise<{ jobId: string }> {
+  async submitAudio(buffer: Buffer, fileName: string, callback?: TranscriberCallbackOptions): Promise<{ jobId: string }> {
     const formData = new FormData();
     formData.append(
       "file",
       new File([new Uint8Array(buffer)], fileName, { type: "audio/mpeg" }),
     );
+    if (callback?.callbackUrl) {
+      formData.append("callback_url", callback.callbackUrl);
+      if (callback.callbackSecret) formData.append("callback_secret", callback.callbackSecret);
+    }
 
     const res = await fetch(`${this.baseUrl()}/transcriptions/audio`, {
       method: "POST",
@@ -33,13 +37,17 @@ export class TranscriberService extends TranscriberPort {
     return { jobId: data.job_id };
   }
 
-  async submitVideo(buffer: Buffer, fileName: string): Promise<{ jobId: string }> {
+  async submitVideo(buffer: Buffer, fileName: string, callback?: TranscriberCallbackOptions): Promise<{ jobId: string }> {
     const formData = new FormData();
     formData.append(
       "file",
       new Blob([new Uint8Array(buffer)], { type: "video/mp4" }),
       fileName,
     );
+    if (callback?.callbackUrl) {
+      formData.append("callback_url", callback.callbackUrl);
+      if (callback.callbackSecret) formData.append("callback_secret", callback.callbackSecret);
+    }
 
     const res = await fetch(`${this.baseUrl()}/transcriptions/video`, {
       method: "POST",
