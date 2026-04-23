@@ -66,11 +66,14 @@ export class WhatsAppWebhookController {
     @Headers("x-webhook-secret") secret: string | undefined,
     @Body() body: EvolutionWebhookPayload | undefined,
   ): Promise<{ ok: boolean }> {
-    // 1. Validate secret
+    // 1. Validate secret (optional — if env var not set, accept all)
     const expectedSecret = process.env.EVOLUTION_WEBHOOK_SECRET;
-    if (!expectedSecret || secret !== expectedSecret) {
-      this.logger.warn("WhatsApp webhook: invalid or missing X-Webhook-Secret");
+    if (expectedSecret && secret !== expectedSecret) {
+      this.logger.warn("WhatsApp webhook: invalid X-Webhook-Secret");
       throw new UnauthorizedException("Invalid webhook secret");
+    }
+    if (!expectedSecret) {
+      this.logger.debug("EVOLUTION_WEBHOOK_SECRET not configured — accepting webhook without validation");
     }
 
     // 2. Forward to n8n in background (fire-and-forget)

@@ -16,6 +16,13 @@ export interface ProcessWhatsAppMessageInput {
   mediaLabel?: string | null;
   messageTimestamp: number;
   ownerId: string;
+  /** Override phone matching — used when entity is already known (e.g. sent messages) */
+  entityOverride?: {
+    leadId?: string | null;
+    contactId?: string | null;
+    organizationId?: string | null;
+    partnerId?: string | null;
+  };
 }
 
 export interface ProcessWhatsAppMessageOutput {
@@ -66,6 +73,7 @@ export class ProcessWhatsAppMessageUseCase {
       mediaLabel,
       messageTimestamp,
       ownerId,
+      entityOverride,
     } = input;
 
     // 1. Idempotency check
@@ -80,24 +88,28 @@ export class ProcessWhatsAppMessageUseCase {
       ? remoteJid.slice(0, atIndex).replace(/\D/g, "")
       : remoteJid.replace(/\D/g, "");
 
-    // 3. Phone matching
+    // 3. Phone matching (skip if entity is already known from caller)
     let contactId: string | undefined;
     let leadId: string | undefined;
     let partnerId: string | undefined;
-    let entityName: string | undefined;
 
-    try {
-      const matchResult = await this.phoneMatcher.match(phone, ownerId);
-      if (!matchResult) {
-        this.logger.debug("No phone match found — ignoring message", { phone, ownerId });
+    if (entityOverride) {
+      contactId = entityOverride.contactId ?? undefined;
+      leadId = entityOverride.leadId ?? undefined;
+      partnerId = entityOverride.partnerId ?? undefined;
+    } else {
+      try {
+        const matchResult = await this.phoneMatcher.match(phone, ownerId);
+        if (!matchResult) {
+          this.logger.debug("No phone match found — ignoring message", { phone, ownerId });
+          return right({ ignored: true });
+        }
+        contactId = matchResult.contactId;
+        leadId = matchResult.leadId;
+        partnerId = matchResult.partnerId;
+      } catch {
         return right({ ignored: true });
       }
-      contactId = matchResult.contactId;
-      leadId = matchResult.leadId;
-      partnerId = matchResult.partnerId;
-      entityName = pushName ?? phone;
-    } catch {
-      return right({ ignored: true });
     }
 
     // 4. Format message line

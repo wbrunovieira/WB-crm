@@ -1,9 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { EvolutionApiPort } from "../ports/evolution-api.port";
-import { WhatsAppMessagesRepository } from "../repositories/whatsapp-messages.repository";
-import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
-import { Activity } from "@/domain/activities/enterprise/entities/activity";
+import { ProcessWhatsAppMessageUseCase } from "./process-whatsapp-message.use-case";
 
 export interface SendWhatsAppMessageInput {
   to: string;
@@ -26,8 +24,7 @@ export class SendWhatsAppMessageUseCase {
 
   constructor(
     private readonly evolutionApi: EvolutionApiPort,
-    private readonly whatsAppRepo: WhatsAppMessagesRepository,
-    private readonly activitiesRepo: ActivitiesRepository,
+    private readonly processMessage: ProcessWhatsAppMessageUseCase,
   ) {}
 
   async execute(
@@ -39,48 +36,29 @@ export class SendWhatsAppMessageUseCase {
       // 1. Send via Evolution API
       const sendResult = await this.evolutionApi.sendText(to, text);
 
-      const now = new Date();
+      const now = Math.floor(Date.now() / 1000);
+      const digits = to.replace(/\D/g, "");
+      const remoteJid = digits.includes("@") ? digits : `${digits}@s.whatsapp.net`;
 
-      // 2. Create Activity immediately (fromMe=true, no webhook wait)
-      const subject = `WhatsApp — ${contactName ?? to}`;
-      const hh = String(now.getHours()).padStart(2, "0");
-      const mm = String(now.getMinutes()).padStart(2, "0");
-      const messageLine = `[${hh}:${mm}] Você: ${text}`;
-
-      const activity = Activity.create({
-        ownerId,
-        type: "whatsapp",
-        subject,
-        description: messageLine,
-        completed: true,
-        completedAt: now,
-        dueDate: now,
-        meetingNoShow: false,
-        emailReplied: false,
-        emailOpenCount: 0,
-        emailLinkClickCount: 0,
-        leadId: leadId ?? null,
-        contactId: contactId ?? null,
-        organizationId: organizationId ?? null,
-      });
-
-      await this.activitiesRepo.save(activity);
-      const activityId = activity.id.toString();
-
-      // 3. Save WhatsApp message record
-      await this.whatsAppRepo.create({
+      // 2. Process via shared use case — handles session grouping (2h window)
+      const processResult = await this.processMessage.execute({
         messageId: sendResult.messageId,
-        remoteJid: sendResult.remoteJid,
+        remoteJid,
         fromMe: true,
         messageType: "conversation",
-        pushName: undefined,
+        pushName: contactName,
         text,
-        timestamp: now,
-        activityId,
+        messageTimestamp: sendResult.timestamp ?? now,
         ownerId,
+        entityOverride: { leadId, contactId },
       });
 
-      return right({ messageId: sendResult.messageId, activityId });
+      if (processResult.isRight() && processResult.value.activityId) {
+        return right({ messageId: sendResult.messageId, activityId: processResult.value.activityId });
+      }
+
+      // Fallback: return messageId even if activity creation had issues
+      return right({ messageId: sendResult.messageId, activityId: "" });
     } catch (err) {
       this.logger.error("Error sending WhatsApp message", {
         to,
