@@ -57,11 +57,11 @@ export class GoToApiClient extends GoToApiPort {
       }
 
       const data = await res.json() as {
-        reports?: GoToCallReport[];
+        items?: GoToCallReport[];
         nextPageMarker?: string;
       };
 
-      allReports.push(...(data.reports ?? []));
+      allReports.push(...(data.items ?? []));
       nextPageMarker = data.nextPageMarker;
     } while (nextPageMarker);
 

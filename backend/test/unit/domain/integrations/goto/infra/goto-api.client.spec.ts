@@ -60,7 +60,7 @@ describe("GoToApiClient.fetchReportsSince", () => {
     expect(result).toEqual([]);
   });
 
-  it("returns all reports from response", async () => {
+  it("returns all reports from 'items' field (GoTo API response format)", async () => {
     const mockReport = {
       conversationSpaceId: "call-001",
       accountKey: "acc",
@@ -69,11 +69,20 @@ describe("GoToApiClient.fetchReportsSince", () => {
       callEnded: "2026-04-22T10:05:00Z",
       participants: [],
     };
-    fetchSpy.mockReturnValueOnce(okJson({ reports: [mockReport] }));
+    // GoTo API returns { pageSize: N, items: [...] } not { reports: [...] }
+    fetchSpy.mockReturnValueOnce(okJson({ pageSize: 25, items: [mockReport] }));
 
     const result = await client.fetchReportsSince("token", "2026-04-22T00:00:00.000Z");
 
     expect(result).toHaveLength(1);
     expect(result[0].conversationSpaceId).toBe("call-001");
+  });
+
+  it("returns empty array when no items in response", async () => {
+    fetchSpy.mockReturnValueOnce(okJson({ pageSize: 25, items: [] }));
+
+    const result = await client.fetchReportsSince("token", "2026-04-22T00:00:00.000Z");
+
+    expect(result).toEqual([]);
   });
 });
