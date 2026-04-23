@@ -29,7 +29,7 @@ export class GmailClient extends GmailPort {
 
     const encodedEmail = this.buildMimeMessage({ to, subject, bodyHtml, from, threadId, attachments });
 
-    const apiUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`;
+    const apiUrl = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
     const token = await this.getAccessToken(userId);
 
     const body: Record<string, string> = { raw: encodedEmail };
@@ -64,7 +64,6 @@ export class GmailClient extends GmailPort {
     });
 
     if (response.status === 404) {
-      // historyId expired — return empty, caller should reset
       this.logger.warn("GmailClient.pollHistory: historyId expired", { historyId });
       return [];
     }
@@ -100,7 +99,7 @@ export class GmailClient extends GmailPort {
 
   async getProfile(userId: string): Promise<{ emailAddress: string; historyId: string }> {
     const token = await this.getAccessToken(userId);
-    const url = `https://gmail.googleapis.com/gmail/v1/users/me/profile`;
+    const url = "https://gmail.googleapis.com/gmail/v1/users/me/profile";
 
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
@@ -136,7 +135,7 @@ export class GmailClient extends GmailPort {
 
   async getSendAsAliases(userId: string): Promise<SendAsAlias[]> {
     const token = await this.getAccessToken(userId);
-    const url = `https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs`;
+    const url = "https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs";
 
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
@@ -180,7 +179,7 @@ export class GmailClient extends GmailPort {
       .map((e) => `ATTENDEE;ROLE=REQ-PARTICIPANT;RSVP=TRUE:mailto:${e}`)
       .join("\r\n");
 
-    const icsBody = [
+    const icsLines = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
       "PRODID:-//WB CRM//EN",
@@ -200,19 +199,54 @@ export class GmailClient extends GmailPort {
       "END:VCALENDAR",
     ].filter(Boolean).join("\r\n");
 
-    const icsData = Buffer.from(icsBody).toString("base64");
-    const meetLinkHtml = meetLink
-      ? `<p><a href="${meetLink}">Entrar no Google Meet</a></p>`
-      : "";
+    // Build multipart/mixed → multipart/alternative MIME with inline text/calendar
+    // so Gmail shows Accept/Decline RSVP buttons (not as attachment).
+    const outerBoundary = `wbcrm_cal_${randomUUID().replace(/-/g, "")}`;
+    const innerBoundary = `wbcrm_alt_${randomUUID().replace(/-/g, "")}`;
 
-    await this.send({
-      userId,
-      to,
-      subject,
-      bodyHtml: `${bodyHtml}${meetLinkHtml}`,
-      from,
-      attachments: [{ filename: "invite.ics", mimeType: "text/calendar; method=REQUEST", data: icsData }],
+    const htmlB64 = Buffer.from(bodyHtml).toString("base64");
+    const icsB64 = Buffer.from(icsLines).toString("base64");
+
+    const mime = [
+      `To: ${to}`,
+      `From: ${from}`,
+      `Subject: ${subject}`,
+      "MIME-Version: 1.0",
+      `Content-Type: multipart/mixed; boundary="${outerBoundary}"`,
+      "",
+      `--${outerBoundary}`,
+      `Content-Type: multipart/alternative; boundary="${innerBoundary}"`,
+      "",
+      `--${innerBoundary}`,
+      "Content-Type: text/html; charset=utf-8",
+      "Content-Transfer-Encoding: base64",
+      "",
+      htmlB64,
+      "",
+      `--${innerBoundary}`,
+      "Content-Type: text/calendar; charset=utf-8; method=REQUEST",
+      "Content-Transfer-Encoding: base64",
+      "",
+      icsB64,
+      "",
+      `--${innerBoundary}--`,
+      "",
+      `--${outerBoundary}--`,
+    ].join("\r\n");
+
+    const raw = Buffer.from(mime).toString("base64url");
+    const token = await this.getAccessToken(userId);
+
+    const response = await fetch("https://gmail.googleapis.com/gmail/v1/users/me/messages/send", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ raw }),
     });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Gmail calendar invite send error: ${response.status} ${text}`);
+    }
   }
 
   private buildMimeMessage(opts: {

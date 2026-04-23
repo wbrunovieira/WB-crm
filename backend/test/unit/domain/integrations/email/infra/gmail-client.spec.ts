@@ -118,3 +118,95 @@ describe("GmailClient.send", () => {
     expect(result.threadId).toBe("thread-xyz");
   });
 });
+
+describe("GmailClient.sendCalendarInvite — MIME structure", () => {
+  const START = new Date("2026-04-24T17:31:00Z");
+  const END = new Date("2026-04-24T18:31:00Z");
+
+  async function sendAndGetMime(overrides: Partial<Parameters<GmailClient["sendCalendarInvite"]>[0]> = {}): Promise<string> {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ id: "msg-cal", threadId: "thread-cal" }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await client.sendCalendarInvite({
+      userId: SINGLETON_USER_ID,
+      to: "wbrunovieira77@gmail.com",
+      subject: "Convite: reuniao salto",
+      bodyHtml: "<p>Você foi convidado para <strong>reuniao salto</strong>.</p>",
+      from: "bruno@saltoup.com",
+      organizerEmail: "bruno@saltoup.com",
+      attendeeEmails: ["wbrunovieira77@gmail.com"],
+      startAt: START,
+      endAt: END,
+      title: "reuniao salto",
+      meetLink: "https://meet.google.com/abc-defg-hij",
+      ...overrides,
+    });
+
+    const [, init] = fetchMock.mock.calls[0] as [string, { body: string }];
+    const body = JSON.parse(init.body) as { raw: string };
+    return Buffer.from(body.raw, "base64url").toString("utf-8");
+  }
+
+  /** Extract and decode a base64 MIME part by searching for a content-type marker */
+  function decodePartAfter(mime: string, marker: string): string {
+    const idx = mime.indexOf(marker);
+    if (idx === -1) return "";
+    // Skip headers until blank line
+    const afterHeaders = mime.indexOf("\r\n\r\n", idx);
+    if (afterHeaders === -1) return "";
+    const b64 = mime.slice(afterHeaders + 4).split("\r\n")[0].trim();
+    return Buffer.from(b64, "base64").toString("utf-8");
+  }
+
+  it("MIME has inline text/calendar part (not attachment) so Gmail shows RSVP buttons", async () => {
+    const mime = await sendAndGetMime();
+    expect(mime).toContain("text/calendar");
+    expect(mime).not.toContain("Content-Disposition: attachment");
+  });
+
+  it("text/calendar Content-Type includes method=REQUEST", async () => {
+    const mime = await sendAndGetMime();
+    expect(mime).toMatch(/text\/calendar.*method=REQUEST/i);
+  });
+
+  it("iCal body contains ORGANIZER with alias email", async () => {
+    const mime = await sendAndGetMime();
+    const ics = decodePartAfter(mime, "text/calendar");
+    expect(ics).toContain("ORGANIZER");
+    expect(ics).toContain("bruno@saltoup.com");
+  });
+
+  it("iCal body contains ATTENDEE for the recipient", async () => {
+    const mime = await sendAndGetMime();
+    const ics = decodePartAfter(mime, "text/calendar");
+    expect(ics).toContain("ATTENDEE");
+    expect(ics).toContain("wbrunovieira77@gmail.com");
+  });
+
+  it("HTML body does NOT contain a duplicate Meet link (bodyHtml used as-is)", async () => {
+    const mime = await sendAndGetMime();
+    const html = decodePartAfter(mime, "text/html");
+    // The caller's bodyHtml has no Meet link → so the decoded HTML must not have it either
+    expect(html).not.toContain("meet.google.com");
+  });
+
+  it("iCal LOCATION contains the Meet link", async () => {
+    const mime = await sendAndGetMime();
+    const ics = decodePartAfter(mime, "text/calendar");
+    expect(ics).toContain("LOCATION:https://meet.google.com/abc-defg-hij");
+  });
+
+  it("From header uses the alias email", async () => {
+    const mime = await sendAndGetMime();
+    expect(mime).toContain("From: bruno@saltoup.com");
+  });
+
+  it("iCal has METHOD:REQUEST", async () => {
+    const mime = await sendAndGetMime();
+    const ics = decodePartAfter(mime, "text/calendar");
+    expect(ics).toContain("METHOD:REQUEST");
+  });
+});
