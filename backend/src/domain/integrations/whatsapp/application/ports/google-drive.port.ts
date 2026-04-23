@@ -7,4 +7,6 @@ export abstract class GoogleDrivePort {
   }): Promise<{ id: string; webViewLink: string }>;
 
   abstract getOrCreateFolder(name: string, parentId?: string): Promise<string>;
+
+  abstract deleteFile(fileId: string): Promise<void>;
 }

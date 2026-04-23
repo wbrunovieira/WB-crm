@@ -13,6 +13,8 @@ import {
   CreateProposalUseCase, UpdateProposalUseCase, DeleteProposalUseCase,
 } from "../../application/use-cases/proposals.use-cases";
 import { UploadProposalUseCase } from "../../application/use-cases/upload-proposal.use-case";
+import { UpdateProposalWithFileUseCase } from "../../application/use-cases/update-proposal-with-file.use-case";
+import { GoogleDrivePort } from "@/domain/integrations/whatsapp/application/ports/google-drive.port";
 
 function serialize(p: Proposal) {
   return {
@@ -52,6 +54,8 @@ export class ProposalsController {
     private readonly updateProposal: UpdateProposalUseCase,
     private readonly deleteProposal: DeleteProposalUseCase,
     private readonly uploadProposal: UploadProposalUseCase,
+    private readonly updateWithFile: UpdateProposalWithFileUseCase,
+    private readonly drive: GoogleDrivePort,
   ) {}
 
   @Get()
@@ -115,10 +119,23 @@ export class ProposalsController {
     driveFileId?: string;
     driveUrl?: string;
     fileName?: string;
+    fileMimeType?: string;
+    fileBase64?: string;
     fileSize?: number;
     leadId?: string;
     dealId?: string;
   }, @CurrentUser() user: AuthenticatedUser) {
+    if (body.fileBase64 && body.fileName && body.fileMimeType) {
+      const r = await this.updateWithFile.execute({
+        id, requesterId: user.id, requesterRole: user.role ?? "sdr",
+        title: body.title, description: body.description, status: body.status,
+        leadId: body.leadId, dealId: body.dealId,
+        fileName: body.fileName, fileMimeType: body.fileMimeType, fileBase64: body.fileBase64,
+      });
+      if (r.isLeft()) handleError(r);
+      return serialize(r.unwrap());
+    }
+
     const r = await this.updateProposal.execute({ id, ...body, requesterId: user.id, requesterRole: user.role ?? "sdr" });
     if (r.isLeft()) handleError(r);
     return serialize(r.unwrap());
@@ -126,7 +143,14 @@ export class ProposalsController {
 
   @Delete(":id")
   async remove(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    const found = await this.getProposalById.execute({ id, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    const driveFileId = found.isRight() ? found.value.driveFileId : null;
+
     const r = await this.deleteProposal.execute({ id, requesterId: user.id, requesterRole: user.role ?? "sdr" });
     if (r.isLeft()) handleError(r);
+
+    if (driveFileId) {
+      this.drive.deleteFile(driveFileId).catch(() => { /* arquivo pode já ter sido removido */ });
+    }
   }
 }

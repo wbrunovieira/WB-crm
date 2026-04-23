@@ -63,6 +63,11 @@ export class GoogleDriveService extends GoogleDrivePort {
     return { id: res.data.id!, webViewLink: res.data.webViewLink! };
   }
 
+  async deleteFile(fileId: string): Promise<void> {
+    const drive = await this.getDriveClient();
+    await drive.files.delete({ fileId });
+  }
+
   async getOrCreateFolder(name: string, parentId?: string): Promise<string> {
     const drive = await this.getDriveClient();
 

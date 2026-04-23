@@ -3,7 +3,8 @@ import { GoogleDriveService } from "@/infra/shared/google-drive/google-drive.ser
 
 const mockFilesCreate = vi.fn();
 const mockFilesList = vi.fn();
-const mockDrive = { files: { create: mockFilesCreate, list: mockFilesList } };
+const mockFilesDelete = vi.fn();
+const mockDrive = { files: { create: mockFilesCreate, list: mockFilesList, delete: mockFilesDelete } };
 const mockRefreshAccessToken = vi.fn();
 const mockSetCredentials = vi.fn();
 const mockOAuth2Instance = {
@@ -151,6 +152,20 @@ describe("GoogleDriveService", () => {
       await svc.getOrCreateFolder("Sub", "parent-id");
       const q: string = mockFilesList.mock.calls[0][0].q;
       expect(q).toContain("'parent-id' in parents");
+    });
+  });
+
+  describe("deleteFile", () => {
+    it("throws when no Google token is configured", async () => {
+      const svc = new GoogleDriveService(makePrisma(null) as any);
+      await expect(svc.deleteFile("file-id")).rejects.toThrow("Google token not configured");
+    });
+
+    it("calls drive.files.delete with the given fileId", async () => {
+      mockFilesDelete.mockResolvedValue({});
+      const svc = new GoogleDriveService(makePrisma() as any);
+      await svc.deleteFile("file-to-delete");
+      expect(mockFilesDelete).toHaveBeenCalledWith({ fileId: "file-to-delete" });
     });
   });
 });

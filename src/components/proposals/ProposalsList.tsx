@@ -14,14 +14,17 @@ import {
   Download,
   Eye,
   MonitorDown,
+  Pencil,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { apiFetch, BACKEND_URL } from "@/lib/api-client";
 
 type ProposalStatus = "draft" | "sent" | "accepted" | "rejected";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
 import ProposalUploadModal from "./ProposalUploadModal";
+import ProposalEditModal from "./ProposalEditModal";
 import ProposalViewer from "./ProposalViewer";
 
 export interface Proposal {
@@ -35,6 +38,8 @@ export interface Proposal {
   fileSize: number | null;
   sentAt: string | Date | null;
   createdAt: string | Date;
+  leadId?: string | null;
+  dealId?: string | null;
 }
 
 interface Props {
@@ -85,8 +90,10 @@ function formatBytes(bytes: number): string {
 export default function ProposalsList({ proposals: initial, leadId, dealId }: Props) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
+  const router = useRouter();
   const [proposals, setProposals] = useState<typeof initial>(initial ?? []);
   const [showModal, setShowModal] = useState(false);
+  const [editing, setEditing] = useState<Proposal | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [viewing, setViewing] = useState<Proposal | null>(null);
@@ -109,21 +116,32 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Remover esta proposta? O arquivo no Drive também será excluído.")) return;
     setDeleting(id);
-    try {
-      await apiFetch(`/proposals/${id}`, token, { method: "DELETE" });
-      setProposals((prev) => prev.filter((p) => p.id !== id));
-      toast.success("Proposta removida");
-    } catch {
-      toast.error("Erro ao remover proposta");
-    } finally {
-      setDeleting(null);
-    }
+    const doDelete = async () => {
+      try {
+        await apiFetch(`/proposals/${id}`, token, { method: "DELETE" });
+        setProposals((prev) => prev.filter((p) => p.id !== id));
+        toast.success("Proposta removida");
+      } catch {
+        toast.error("Erro ao remover proposta");
+      } finally {
+        setDeleting(null);
+      }
+    };
+
+    toast("Remover esta proposta? O arquivo no Drive também será excluído.", {
+      action: { label: "Remover", onClick: doDelete },
+      cancel: { label: "Cancelar", onClick: () => setDeleting(null) },
+      duration: 8000,
+    });
   }
 
   function handleCreated() {
-    window.location.reload();
+    router.refresh();
+  }
+
+  function handleSaved(updated: Proposal) {
+    setProposals((prev) => prev.map((p) => p.id === updated.id ? updated : p));
   }
 
   return (
@@ -199,7 +217,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
                     </div>
                   </div>
 
-                  {/* Seletor de status + delete */}
+                  {/* Seletor de status + editar + delete */}
                   <div className="flex flex-shrink-0 items-center gap-2">
                     {isUpdating ? (
                       <Loader2 size={15} className="animate-spin text-gray-400" />
@@ -216,6 +234,14 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
                         ))}
                       </select>
                     )}
+
+                    <button
+                      onClick={() => setEditing(proposal)}
+                      title="Editar proposta"
+                      className="rounded-md p-1.5 text-gray-400 hover:bg-purple-50 hover:text-purple-600"
+                    >
+                      <Pencil size={15} />
+                    </button>
 
                     {isDeleting ? (
                       <Loader2 size={15} className="animate-spin text-red-400" />
@@ -290,6 +316,16 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
           dealId={dealId}
           onClose={() => setShowModal(false)}
           onCreated={handleCreated}
+        />
+      )}
+
+      {editing && (
+        <ProposalEditModal
+          proposal={editing}
+          leadId={leadId}
+          dealId={dealId}
+          onClose={() => setEditing(null)}
+          onSaved={handleSaved}
         />
       )}
 
