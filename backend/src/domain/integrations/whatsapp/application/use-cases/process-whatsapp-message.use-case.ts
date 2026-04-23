@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Either, right } from "@/core/either";
 import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
 import { Activity } from "@/domain/activities/enterprise/entities/activity";
-import type { IPhoneMatcherService } from "@/infra/shared/phone-matcher/phone-matcher.service";
+import { PhoneMatcherService } from "@/infra/shared/phone-matcher/phone-matcher.service";
 import { WhatsAppMessagesRepository } from "../repositories/whatsapp-messages.repository";
 import { PrismaService } from "@/infra/database/prisma.service";
 
@@ -49,7 +49,7 @@ export class ProcessWhatsAppMessageUseCase {
   constructor(
     private readonly whatsAppRepo: WhatsAppMessagesRepository,
     private readonly activitiesRepo: ActivitiesRepository,
-    private readonly phoneMatcher: IPhoneMatcherService,
+    private readonly phoneMatcher: PhoneMatcherService,
     private readonly prisma: PrismaService,
   ) {}
 

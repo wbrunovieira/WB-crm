@@ -5,7 +5,7 @@ import { Activity } from "@/domain/activities/enterprise/entities/activity";
 import { CallOutcome } from "@/domain/integrations/goto/enterprise/value-objects/call-outcome.vo";
 import { CallDuration } from "@/domain/integrations/goto/enterprise/value-objects/call-duration.vo";
 import { GoToCallReport } from "@/domain/integrations/goto/application/ports/goto-api.port";
-import type { IPhoneMatcherService } from "@/infra/shared/phone-matcher/phone-matcher.service";
+import { PhoneMatcherService } from "@/infra/shared/phone-matcher/phone-matcher.service";
 
 export interface CreateCallActivityInput {
   report: GoToCallReport;
@@ -104,7 +104,7 @@ function buildDescription(
 export class CreateCallActivityUseCase {
   constructor(
     private readonly activitiesRepository: ActivitiesRepository,
-    private readonly phoneMatcher: IPhoneMatcherService,
+    private readonly phoneMatcher: PhoneMatcherService,
   ) {}
 
   async execute(

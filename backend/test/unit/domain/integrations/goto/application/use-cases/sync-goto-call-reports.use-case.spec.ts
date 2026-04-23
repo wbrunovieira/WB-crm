@@ -40,7 +40,7 @@ beforeEach(() => {
   goToToken = new FakeGoToTokenPort();
   activitiesRepo = new FakeActivitiesRepository();
   phoneMatcher = new FakePhoneMatcherService();
-  createActivity = new CreateCallActivityUseCase(activitiesRepo, phoneMatcher);
+  createActivity = new CreateCallActivityUseCase(activitiesRepo, phoneMatcher as never);
   useCase = new SyncGotoCallReportsUseCase(goToApi, goToToken, createActivity);
 });
 
