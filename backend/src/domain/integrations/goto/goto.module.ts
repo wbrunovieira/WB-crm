@@ -36,7 +36,12 @@ import { GotoTranscriptionPollerListener } from "./infra/listeners/goto-transcri
     // Use Cases
     HandleGotoWebhookUseCase,
     CreateCallActivityUseCase,
-    SyncGotoCallReportsUseCase,
+    {
+      provide: SyncGotoCallReportsUseCase,
+      useFactory: (goToApi: GoToApiPort, goToToken: GoToTokenPort, createActivity: CreateCallActivityUseCase, emitter: EventEmitter2) =>
+        new SyncGotoCallReportsUseCase(goToApi, goToToken, createActivity, emitter),
+      inject: [GoToApiPort, GoToTokenPort, CreateCallActivityUseCase, EventEmitter2],
+    },
     ProcessCallRecordingUseCase,
     PollCallTranscriptionsUseCase,
     HandleTranscriptionCallbackUseCase,

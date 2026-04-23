@@ -15,6 +15,10 @@ export interface SyncGotoCallReportsOutput {
   skipped: number;
 }
 
+interface EventEmitter {
+  emit(event: string, payload: unknown): void;
+}
+
 @Injectable()
 export class SyncGotoCallReportsUseCase {
   private readonly logger = new Logger(SyncGotoCallReportsUseCase.name);
@@ -23,6 +27,7 @@ export class SyncGotoCallReportsUseCase {
     private readonly goToApi: GoToApiPort,
     private readonly goToToken: GoToTokenPort,
     private readonly createCallActivity: CreateCallActivityUseCase,
+    private readonly eventEmitter: EventEmitter,
   ) {}
 
   async execute(input: SyncGotoCallReportsInput): Promise<Either<never, SyncGotoCallReportsOutput>> {
@@ -42,8 +47,12 @@ export class SyncGotoCallReportsUseCase {
       try {
         const result = await this.createCallActivity.execute({ report, ownerId });
         if (result.isRight()) {
-          if (result.value.alreadyExists) skipped++;
-          else created++;
+          if (result.value.alreadyExists) {
+            skipped++;
+          } else {
+            created++;
+            this.eventEmitter.emit("goto.activity.created", { activityId: result.value.activityId });
+          }
         } else {
           skipped++;
         }
