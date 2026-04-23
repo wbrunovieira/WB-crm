@@ -3,6 +3,7 @@ import { PrismaService } from "@/infra/database/prisma.service";
 import {
   ActivitiesRepository,
   type ActivityFilters,
+  type ActivityWithNames,
 } from "@/domain/activities/application/repositories/activities.repository";
 import type { Activity } from "@/domain/activities/enterprise/entities/activity";
 import type { ActivitySummary, ActivityDetail } from "@/domain/activities/enterprise/read-models/activity-read-models";
@@ -259,6 +260,31 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     const row = await this.prisma.activity.findUnique({ where: { id } });
     if (!row) return null;
     return ActivityMapper.toDomain(row);
+  }
+
+  async findByIdForTranscription(id: string): Promise<ActivityWithNames | null> {
+    const row = await this.prisma.activity.findUnique({
+      where: { id },
+      include: {
+        owner: { select: { name: true } },
+        contact: { select: { name: true } },
+        lead: { select: { businessName: true } },
+        partner: { select: { name: true } },
+      },
+    });
+    if (!row) return null;
+
+    const clientName =
+      row.contact?.name ??
+      row.lead?.businessName ??
+      row.partner?.name ??
+      "Cliente";
+
+    return {
+      activity: ActivityMapper.toDomain(row),
+      ownerName: row.owner?.name ?? "Agente",
+      clientName,
+    };
   }
 
   async findFirst(where: { gotoCallId?: string }): Promise<Activity | null> {

@@ -33,8 +33,10 @@ export class PollCallTranscriptionsUseCase {
   ): Promise<Either<never, PollCallTranscriptionsOutput>> {
     const { activityId } = input;
 
-    const activity = await this.activitiesRepository.findByIdRaw(activityId);
-    if (!activity) return right({ skipped: true });
+    const found = await this.activitiesRepository.findByIdForTranscription(activityId);
+    if (!found) return right({ skipped: true });
+
+    const { activity, ownerName, clientName } = found;
 
     // Skip if already has transcript or no jobs
     if (activity.gotoTranscriptText) return right({ skipped: true });
@@ -68,12 +70,12 @@ export class PollCallTranscriptionsUseCase {
       const segmentsAgent: TranscriptSegment[] = (resultA?.segments ?? []).map((s) => ({
         ...s,
         speaker: "agent",
-        speakerName: "Agente",
+        speakerName: ownerName,
       }));
       const segmentsClient: TranscriptSegment[] = (resultB?.segments ?? []).map((s) => ({
         ...s,
         speaker: "client",
-        speakerName: "Cliente",
+        speakerName: clientName,
       }));
 
       const interleaved = [...segmentsAgent, ...segmentsClient].sort(

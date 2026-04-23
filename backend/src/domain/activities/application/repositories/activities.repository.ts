@@ -15,10 +15,17 @@ export interface ActivityFilters {
   sortBy?: string;
 }
 
+export interface ActivityWithNames {
+  activity: Activity;
+  ownerName: string;
+  clientName: string;
+}
+
 export abstract class ActivitiesRepository {
   abstract findMany(requesterId: string, requesterRole: string, filters?: ActivityFilters): Promise<ActivitySummary[]>;
   abstract findById(id: string, requesterId: string, requesterRole: string): Promise<ActivityDetail | null>;
   abstract findByIdRaw(id: string): Promise<Activity | null>;
+  abstract findByIdForTranscription(id: string): Promise<ActivityWithNames | null>;
   abstract findFirst(where: { gotoCallId?: string }): Promise<Activity | null>;
   abstract save(activity: Activity): Promise<void>;
   abstract delete(id: string): Promise<void>;

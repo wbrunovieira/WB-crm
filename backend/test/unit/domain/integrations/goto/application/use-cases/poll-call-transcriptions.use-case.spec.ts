@@ -36,6 +36,13 @@ beforeEach(() => {
   useCase = new PollCallTranscriptionsUseCase(repo, transcriber);
 });
 
+function setupDoneJobs(agentSegments = [{ start: 0, end: 5, text: "Hi" }], clientSegments = [{ start: 6, end: 9, text: "Hey" }]) {
+  transcriber.addJobStatus("job-agent-001", { jobId: "job-agent-001", status: "done" });
+  transcriber.addJobStatus("job-client-001", { jobId: "job-client-001", status: "done" });
+  transcriber.addJobResult("job-agent-001", { jobId: "job-agent-001", text: "agent", language: "pt", durationSeconds: 30, segments: agentSegments });
+  transcriber.addJobResult("job-client-001", { jobId: "job-client-001", text: "client", language: "pt", durationSeconds: 30, segments: clientSegments });
+}
+
 describe("PollCallTranscriptionsUseCase", () => {
   it("skips jobs still in progress", async () => {
     const activity = makeActivity();
@@ -182,5 +189,44 @@ describe("PollCallTranscriptionsUseCase", () => {
 
     expect(result.isRight()).toBe(true);
     expect(result.value).toMatchObject({ skipped: true });
+  });
+
+  it("uses resolved owner name as agent speakerName", async () => {
+    const activity = makeActivity({ contactId: "contact-001" });
+    repo.items.push(activity);
+    repo.setNames("activity-001", { ownerName: "Bruno Vieira", clientName: "Cliente Teste" });
+    setupDoneJobs();
+
+    await useCase.execute({ activityId: "activity-001" });
+
+    const transcript = JSON.parse(repo.items[0].gotoTranscriptText!);
+    const agentSegment = transcript.find((s: { speaker: string }) => s.speaker === "agent");
+    expect(agentSegment.speakerName).toBe("Bruno Vieira");
+  });
+
+  it("uses resolved client name as client speakerName", async () => {
+    const activity = makeActivity({ contactId: "contact-001" });
+    repo.items.push(activity);
+    repo.setNames("activity-001", { ownerName: "Bruno Vieira", clientName: "João Silva" });
+    setupDoneJobs();
+
+    await useCase.execute({ activityId: "activity-001" });
+
+    const transcript = JSON.parse(repo.items[0].gotoTranscriptText!);
+    const clientSegment = transcript.find((s: { speaker: string }) => s.speaker === "client");
+    expect(clientSegment.speakerName).toBe("João Silva");
+  });
+
+  it("falls back to 'Agente'/'Cliente' when names not resolved", async () => {
+    const activity = makeActivity();
+    repo.items.push(activity);
+    // No setNames call — no resolution available
+    setupDoneJobs();
+
+    await useCase.execute({ activityId: "activity-001" });
+
+    const transcript = JSON.parse(repo.items[0].gotoTranscriptText!);
+    expect(transcript.find((s: { speaker: string }) => s.speaker === "agent").speakerName).toBe("Agente");
+    expect(transcript.find((s: { speaker: string }) => s.speaker === "client").speakerName).toBe("Cliente");
   });
 });
