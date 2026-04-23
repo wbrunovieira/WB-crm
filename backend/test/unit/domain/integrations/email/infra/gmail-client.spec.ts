@@ -18,7 +18,7 @@ afterEach(() => {
 });
 
 describe("GmailClient — token resolution", () => {
-  it("calls getValidToken with the singleton userId", async () => {
+  it("always calls getValidToken with 'google-token-singleton' regardless of userId", async () => {
     const spy = vi.spyOn(googleOAuth, "getValidToken");
 
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
@@ -26,9 +26,11 @@ describe("GmailClient — token resolution", () => {
       json: async () => ({ emailAddress: "bruno@wbdigitalsolutions.com", historyId: "12345" }),
     }));
 
-    await client.getProfile(SINGLETON_USER_ID);
+    // Even when called with a CRM user UUID, the token key must be the singleton
+    await client.getProfile("crm-user-uuid-abc123");
 
-    expect(spy).toHaveBeenCalledWith(SINGLETON_USER_ID);
+    expect(spy).toHaveBeenCalledWith("google-token-singleton");
+    expect(spy).not.toHaveBeenCalledWith("crm-user-uuid-abc123");
   });
 
   it("uses the token returned by GoogleOAuthPort as Bearer header", async () => {
@@ -38,11 +40,12 @@ describe("GmailClient — token resolution", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    await client.getProfile(SINGLETON_USER_ID);
+    await client.getProfile("any-user-id");
 
     const [, init] = fetchMock.mock.calls[0] as [string, RequestInit];
     const auth = (init.headers as Record<string, string>)["Authorization"];
-    expect(auth).toBe(`Bearer live-access-token-${SINGLETON_USER_ID}`);
+    // FakeGoogleOAuthPort returns `${returnToken}-${userId}` — userId here is 'google-token-singleton'
+    expect(auth).toBe("Bearer live-access-token-google-token-singleton");
   });
 
   it("hits users/me in the URL (not users/${userId})", async () => {

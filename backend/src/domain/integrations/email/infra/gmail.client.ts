@@ -207,8 +207,8 @@ export class GmailClient extends GmailPort {
     return Buffer.from(body).toString("base64url");
   }
 
-  private async getAccessToken(userId: string): Promise<string> {
-    return this.googleOAuth.getValidToken(userId);
+  private async getAccessToken(_userId: string): Promise<string> {
+    return this.googleOAuth.getValidToken("google-token-singleton");
   }
 
   private parseMessage(data: GmailApiMessage): GmailMessage {
