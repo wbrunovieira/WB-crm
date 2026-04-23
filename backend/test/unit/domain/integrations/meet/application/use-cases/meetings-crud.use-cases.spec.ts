@@ -248,7 +248,7 @@ describe("ScheduleMeetingUseCase", () => {
     expect(result.unwrap().title).toBe("Reunião Espaçada");
   });
 
-  it("adds organizerEmail to attendees when alias is selected", async () => {
+  it("stores organizerEmail separately (not duplicated in attendees)", async () => {
     const useCase = new ScheduleMeetingUseCase(meetings, calendar);
 
     const result = await useCase.execute({
@@ -262,8 +262,9 @@ describe("ScheduleMeetingUseCase", () => {
     expect(result.isRight()).toBe(true);
     const created = result.unwrap();
     const sentEmails = JSON.parse(created.attendeeEmails) as string[];
-    expect(sentEmails).toContain("bruno@saltoup.com");
+    // organizerEmail is the sender — not added to attendees list (they'd receive via iCal ORGANIZER field)
     expect(sentEmails).toContain("client@example.com");
+    expect(sentEmails).not.toContain("bruno@saltoup.com");
     expect(created.organizerEmail).toBe("bruno@saltoup.com");
   });
 

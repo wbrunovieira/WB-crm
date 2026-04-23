@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
+import { EmailModule } from "@/domain/integrations/email/email.module";
 
 // Ports
 import { GoogleDrivePort } from "./application/ports/google-drive.port";
@@ -30,7 +31,7 @@ import { MeetingsCrudController } from "./infra/meetings-crud.controller";
 import { AuthModule } from "@/infra/auth/auth.module";
 
 @Module({
-  imports: [ScheduleModule.forRoot(), SharedInfraModule, AuthModule],
+  imports: [ScheduleModule.forRoot(), SharedInfraModule, AuthModule, EmailModule],
   controllers: [MeetingsCrudController],
   providers: [
     // Use Cases

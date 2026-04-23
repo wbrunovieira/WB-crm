@@ -17,6 +17,7 @@ export interface CreateCalendarEventOptions {
   description?: string;
   timeZone?: string;
   organizerEmail?: string;
+  sendUpdates?: "all" | "externalOnly" | "none";
 }
 
 export interface CreateCalendarEventResult {

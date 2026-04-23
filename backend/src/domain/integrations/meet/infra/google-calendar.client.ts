@@ -54,7 +54,7 @@ export class GoogleCalendarClient extends GoogleCalendarPort {
     const { data } = await calendar.events.insert({
       calendarId: "primary",
       conferenceDataVersion: 1,
-      sendUpdates: "all",
+      sendUpdates: opts.sendUpdates ?? "all",
       requestBody: {
         summary: opts.title,
         description: opts.description,

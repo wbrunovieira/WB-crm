@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject } from "@nestjs/common";
-import { GmailPort, GmailMessage, GmailAttachment, SendAsAlias } from "../application/ports/gmail.port";
+import { randomUUID } from "crypto";
+import { GmailPort, GmailMessage, GmailAttachment, SendAsAlias, CalendarInviteParams } from "../application/ports/gmail.port";
 import { GoogleOAuthPort } from "../application/ports/google-oauth.port";
 
 @Injectable()
@@ -162,6 +163,56 @@ export class GmailClient extends GmailPort {
       isDefault: a.isDefault ?? false,
       isPrimary: a.isPrimary ?? false,
     }));
+  }
+
+  async sendCalendarInvite(params: CalendarInviteParams): Promise<void> {
+    const {
+      userId, to, subject, bodyHtml, from, organizerEmail,
+      attendeeEmails, startAt, endAt, title, description,
+      googleEventId, meetLink, timeZone,
+    } = params;
+
+    const tz = timeZone ?? "America/Sao_Paulo";
+    const uid = googleEventId ?? randomUUID();
+    const dtFormat = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+
+    const attendeeLines = attendeeEmails
+      .map((e) => `ATTENDEE;ROLE=REQ-PARTICIPANT;RSVP=TRUE:mailto:${e}`)
+      .join("\r\n");
+
+    const icsBody = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//WB CRM//EN",
+      "METHOD:REQUEST",
+      "BEGIN:VEVENT",
+      `DTSTART;TZID=${tz}:${dtFormat(startAt)}`,
+      `DTEND;TZID=${tz}:${dtFormat(endAt)}`,
+      `SUMMARY:${title}`,
+      description ? `DESCRIPTION:${description.replace(/\n/g, "\\n")}` : "",
+      `ORGANIZER;CN=${from}:mailto:${organizerEmail}`,
+      attendeeLines,
+      `UID:${uid}@wbcrm`,
+      meetLink ? `LOCATION:${meetLink}` : "",
+      "STATUS:CONFIRMED",
+      "SEQUENCE:0",
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].filter(Boolean).join("\r\n");
+
+    const icsData = Buffer.from(icsBody).toString("base64");
+    const meetLinkHtml = meetLink
+      ? `<p><a href="${meetLink}">Entrar no Google Meet</a></p>`
+      : "";
+
+    await this.send({
+      userId,
+      to,
+      subject,
+      bodyHtml: `${bodyHtml}${meetLinkHtml}`,
+      from,
+      attachments: [{ filename: "invite.ics", mimeType: "text/calendar; method=REQUEST", data: icsData }],
+    });
   }
 
   private buildMimeMessage(opts: {

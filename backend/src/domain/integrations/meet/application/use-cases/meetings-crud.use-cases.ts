@@ -1,7 +1,8 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger, Optional } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { MeetingsRepository, MeetingRecord, MeetingFilters } from "../repositories/meetings.repository";
 import { GoogleCalendarPort } from "../ports/google-calendar.port";
+import { GmailPort } from "@/domain/integrations/email/application/ports/gmail.port";
 
 export class MeetingNotFoundError extends Error { name = "MeetingNotFoundError"; }
 export class MeetingForbiddenError extends Error { name = "MeetingForbiddenError"; }
@@ -52,9 +53,12 @@ export class GetMeetingByIdUseCase {
 
 @Injectable()
 export class ScheduleMeetingUseCase {
+  private readonly logger = new Logger(ScheduleMeetingUseCase.name);
+
   constructor(
     private readonly repo: MeetingsRepository,
     private readonly calendarPort: GoogleCalendarPort,
+    @Optional() private readonly gmailPort?: GmailPort,
   ) {}
 
   async execute(input: {
@@ -74,10 +78,10 @@ export class ScheduleMeetingUseCase {
   }): Promise<Either<Error, MeetingRecord>> {
     if (!input.title.trim()) return left(new Error("title não pode ser vazio"));
 
-    // When an alias is chosen, add it to attendees so it appears on the invite
-    const attendeeEmails = input.organizerEmail
-      ? [...new Set([...input.attendeeEmails, input.organizerEmail])]
-      : input.attendeeEmails;
+    const useAlias = !!input.organizerEmail && !!this.gmailPort;
+
+    // When an alias is chosen, don't add it to attendees (it's the organizer, not an attendee)
+    const attendeeEmails = [...new Set(input.attendeeEmails)];
 
     let googleEventId: string | undefined;
     let meetLink: string | undefined;
@@ -91,11 +95,43 @@ export class ScheduleMeetingUseCase {
           attendeeEmails,
           description: input.description,
           organizerEmail: input.organizerEmail,
+          // When sending via Gmail alias, Calendar must NOT auto-send invites
+          sendUpdates: useAlias ? "none" : "all",
         });
         googleEventId = calResult.googleEventId;
         meetLink = calResult.meetLink ?? undefined;
       } catch {
-        // Calendar failure is non-fatal — meeting is still created without a Google event
+        // Calendar failure is non-fatal
+      }
+    }
+
+    // Send invites via Gmail from the alias so the organizer shows as the alias
+    if (useAlias && !input.skipCalendar) {
+      const endAt = input.endAt ?? new Date(input.startAt.getTime() + 60 * 60 * 1000);
+      for (const to of attendeeEmails) {
+        try {
+          await this.gmailPort!.sendCalendarInvite({
+            userId: "google-token-singleton",
+            to,
+            subject: `Convite: ${input.title.trim()}`,
+            bodyHtml: `<p>Você foi convidado para <strong>${input.title.trim()}</strong>.</p>${input.description ? `<p>${input.description}</p>` : ""}${meetLink ? `<p><a href="${meetLink}">Entrar no Google Meet</a></p>` : ""}`,
+            from: input.organizerEmail!,
+            organizerEmail: input.organizerEmail!,
+            attendeeEmails,
+            startAt: input.startAt,
+            endAt,
+            title: input.title.trim(),
+            description: input.description,
+            googleEventId,
+            meetLink,
+          });
+        } catch (err) {
+          this.logger.warn("Failed to send calendar invite via Gmail alias", {
+            to,
+            organizerEmail: input.organizerEmail,
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
       }
     }
 

@@ -78,6 +78,6 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     // Scheduled
     GmailPollCronService,
   ],
-  exports: [EmailMessagesRepository, EmailTrackingRepository],
+  exports: [EmailMessagesRepository, EmailTrackingRepository, GmailPort, GoogleOAuthPort],
 })
 export class EmailModule {}

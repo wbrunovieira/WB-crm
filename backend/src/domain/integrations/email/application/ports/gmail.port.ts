@@ -23,6 +23,23 @@ export interface SendAsAlias {
   isPrimary: boolean;
 }
 
+export interface CalendarInviteParams {
+  userId: string;
+  to: string;
+  subject: string;
+  bodyHtml: string;
+  from: string;
+  organizerEmail: string;
+  attendeeEmails: string[];
+  startAt: Date;
+  endAt: Date;
+  title: string;
+  description?: string;
+  googleEventId?: string;
+  meetLink?: string;
+  timeZone?: string;
+}
+
 export abstract class GmailPort {
   abstract send(params: {
     userId: string;
@@ -41,4 +58,6 @@ export abstract class GmailPort {
   abstract getMessage(userId: string, messageId: string): Promise<GmailMessage | null>;
 
   abstract getSendAsAliases(userId: string): Promise<SendAsAlias[]>;
+
+  abstract sendCalendarInvite(params: CalendarInviteParams): Promise<void>;
 }

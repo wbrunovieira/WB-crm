@@ -1,4 +1,4 @@
-import { GmailPort, GmailMessage, SendAsAlias } from "@/domain/integrations/email/application/ports/gmail.port";
+import { GmailPort, GmailMessage, SendAsAlias, CalendarInviteParams } from "@/domain/integrations/email/application/ports/gmail.port";
 
 export class FakeGmailPort extends GmailPort {
   public sentMessages: Array<{
@@ -9,6 +9,8 @@ export class FakeGmailPort extends GmailPort {
     from?: string;
     threadId?: string;
   }> = [];
+
+  public sentCalendarInvites: CalendarInviteParams[] = [];
 
   public sendAsAliases: SendAsAlias[] = [
     { email: "owner@example.com", displayName: "Owner", isDefault: true, isPrimary: true },
@@ -67,6 +69,13 @@ export class FakeGmailPort extends GmailPort {
 
   async getSendAsAliases(_userId: string): Promise<SendAsAlias[]> {
     return this.sendAsAliases;
+  }
+
+  async sendCalendarInvite(params: CalendarInviteParams): Promise<void> {
+    if (this.shouldFailSend) {
+      throw new Error("Gmail send failed (simulated)");
+    }
+    this.sentCalendarInvites.push(params);
   }
 
   /** Helper: add a message to be returned by pollHistory */
