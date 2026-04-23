@@ -37,6 +37,7 @@ export interface LeadContact {
   whatsapp: string | null;
   role: string | null;
   isPrimary: boolean;
+  isActive: boolean;
   linkedin: string | null;
   instagram: string | null;
   convertedToContactId: string | null;

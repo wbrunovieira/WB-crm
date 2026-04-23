@@ -301,6 +301,28 @@ describe("Leads API (e2e)", () => {
       expect(res.body.secondaryCNAEs).toBeInstanceOf(Array);
     });
 
+    it("inclui isActive nos leadContacts da resposta", async () => {
+      const lead = await request(app.getHttpServer())
+        .post("/leads")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ businessName: "Lead com Contato" })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post(`/leads/${lead.body.id}/contacts`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Contato Ativo", isPrimary: true })
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get(`/leads/${lead.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.leadContacts).toHaveLength(1);
+      expect(res.body.leadContacts[0].isActive).toBe(true);
+    });
+
     it("retorna 404 para id inexistente", async () => {
       await request(app.getHttpServer())
         .get("/leads/id-que-nao-existe")
