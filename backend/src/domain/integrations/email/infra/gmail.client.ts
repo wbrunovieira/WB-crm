@@ -1,17 +1,17 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Inject } from "@nestjs/common";
 import { GmailPort, GmailMessage, GmailAttachment, SendAsAlias } from "../application/ports/gmail.port";
+import { GoogleOAuthPort } from "../application/ports/google-oauth.port";
 
-/**
- * Gmail API client.
- *
- * Uses the googleapis package if available.
- * Falls back to stub implementation that throws a descriptive error.
- *
- * To enable: npm install googleapis in the backend package.
- */
 @Injectable()
 export class GmailClient extends GmailPort {
   private readonly logger = new Logger(GmailClient.name);
+
+  constructor(
+    @Inject(GoogleOAuthPort)
+    private readonly googleOAuth: GoogleOAuthPort,
+  ) {
+    super();
+  }
 
   async send(params: {
     userId: string;
@@ -28,7 +28,7 @@ export class GmailClient extends GmailPort {
 
     const encodedEmail = this.buildMimeMessage({ to, subject, bodyHtml, from, threadId, attachments });
 
-    const apiUrl = `https://gmail.googleapis.com/gmail/v1/users/${userId}/messages/send`;
+    const apiUrl = `https://gmail.googleapis.com/gmail/v1/users/me/messages/send`;
     const token = await this.getAccessToken(userId);
 
     const body: Record<string, string> = { raw: encodedEmail };
@@ -56,7 +56,7 @@ export class GmailClient extends GmailPort {
     this.logger.log("GmailClient.pollHistory", { userId, historyId });
 
     const token = await this.getAccessToken(userId);
-    const url = `https://gmail.googleapis.com/gmail/v1/users/${userId}/history?startHistoryId=${historyId}&historyTypes=messageAdded`;
+    const url = `https://gmail.googleapis.com/gmail/v1/users/me/history?startHistoryId=${historyId}&historyTypes=messageAdded`;
 
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
@@ -99,7 +99,7 @@ export class GmailClient extends GmailPort {
 
   async getProfile(userId: string): Promise<{ emailAddress: string; historyId: string }> {
     const token = await this.getAccessToken(userId);
-    const url = `https://gmail.googleapis.com/gmail/v1/users/${userId}/profile`;
+    const url = `https://gmail.googleapis.com/gmail/v1/users/me/profile`;
 
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
@@ -116,7 +116,7 @@ export class GmailClient extends GmailPort {
 
   async getMessage(userId: string, messageId: string): Promise<GmailMessage | null> {
     const token = await this.getAccessToken(userId);
-    const url = `https://gmail.googleapis.com/gmail/v1/users/${userId}/messages/${messageId}?format=full`;
+    const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}?format=full`;
 
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
@@ -135,7 +135,7 @@ export class GmailClient extends GmailPort {
 
   async getSendAsAliases(userId: string): Promise<SendAsAlias[]> {
     const token = await this.getAccessToken(userId);
-    const url = `https://gmail.googleapis.com/gmail/v1/users/${userId}/settings/sendAs`;
+    const url = `https://gmail.googleapis.com/gmail/v1/users/me/settings/sendAs`;
 
     const response = await fetch(url, {
       headers: { Authorization: `Bearer ${token}` },
@@ -207,16 +207,8 @@ export class GmailClient extends GmailPort {
     return Buffer.from(body).toString("base64url");
   }
 
-  private async getAccessToken(_userId: string): Promise<string> {
-    // In production, inject GoogleOAuthPort and call getValidToken
-    // For now, throw descriptive error if no token configured
-    const token = process.env.GMAIL_ACCESS_TOKEN;
-    if (!token) {
-      throw new Error(
-        "Gmail access token not configured. Set GMAIL_ACCESS_TOKEN env var or configure GoogleOAuthPort.",
-      );
-    }
-    return token;
+  private async getAccessToken(userId: string): Promise<string> {
+    return this.googleOAuth.getValidToken(userId);
   }
 
   private parseMessage(data: GmailApiMessage): GmailMessage {
