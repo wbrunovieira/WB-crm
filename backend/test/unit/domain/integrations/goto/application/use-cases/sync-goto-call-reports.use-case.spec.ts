@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { SyncGotoCallReportsUseCase } from "@/domain/integrations/goto/application/use-cases/sync-goto-call-reports.use-case";
 import { CreateCallActivityUseCase } from "@/domain/integrations/goto/application/use-cases/create-call-activity.use-case";
 import { FakeGoToApiPort } from "../../fakes/fake-goto-api.port";
@@ -33,6 +33,7 @@ let goToToken: FakeGoToTokenPort;
 let activitiesRepo: FakeActivitiesRepository;
 let phoneMatcher: FakePhoneMatcherService;
 let createActivity: CreateCallActivityUseCase;
+let eventEmitter: { emit: ReturnType<typeof vi.fn> };
 let useCase: SyncGotoCallReportsUseCase;
 
 beforeEach(() => {
@@ -41,7 +42,8 @@ beforeEach(() => {
   activitiesRepo = new FakeActivitiesRepository();
   phoneMatcher = new FakePhoneMatcherService();
   createActivity = new CreateCallActivityUseCase(activitiesRepo, phoneMatcher as never);
-  useCase = new SyncGotoCallReportsUseCase(goToApi, goToToken, createActivity);
+  eventEmitter = { emit: vi.fn() };
+  useCase = new SyncGotoCallReportsUseCase(goToApi, goToToken, createActivity, eventEmitter as never);
 });
 
 describe("SyncGotoCallReportsUseCase", () => {
@@ -103,5 +105,27 @@ describe("SyncGotoCallReportsUseCase", () => {
     goToToken.shouldFail = true;
 
     await expect(useCase.execute({ ownerId: "owner-001" })).rejects.toThrow("Token unavailable");
+  });
+
+  it("emits goto.activity.created for each newly created activity", async () => {
+    goToApi.reportsSince = [makeReport("call-001"), makeReport("call-002")];
+
+    await useCase.execute({ ownerId: "owner-001" });
+
+    expect(eventEmitter.emit).toHaveBeenCalledTimes(2);
+    expect(eventEmitter.emit).toHaveBeenCalledWith(
+      "goto.activity.created",
+      expect.objectContaining({ activityId: expect.any(String) }),
+    );
+  });
+
+  it("does not emit event for already-existing (skipped) activities", async () => {
+    goToApi.reportsSince = [makeReport("call-dupe")];
+    await useCase.execute({ ownerId: "owner-001" }); // creates it
+    eventEmitter.emit.mockClear();
+
+    await useCase.execute({ ownerId: "owner-001" }); // skips it
+
+    expect(eventEmitter.emit).not.toHaveBeenCalled();
   });
 });

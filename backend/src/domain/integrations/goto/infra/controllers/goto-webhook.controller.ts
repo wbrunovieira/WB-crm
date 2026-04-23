@@ -71,6 +71,9 @@ export class GoToWebhookController {
 
     // 4. Extract conversationSpaceId from payload
     const eventType = body?.eventType ?? "";
+    this.logger.log(`GoTo webhook event: ${eventType || "(no type)"}`, {
+      conversationSpaceId: body?.reportSummary?.conversationSpaceId ?? body?.callEvent?.metadata?.conversationSpaceId,
+    });
     const conversationSpaceId =
       body?.reportSummary?.conversationSpaceId ??
       body?.callEvent?.metadata?.conversationSpaceId;
