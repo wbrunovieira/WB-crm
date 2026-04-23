@@ -40,6 +40,7 @@ services:
     networks:
       - default        # rede interna do compose (desenvolvimento)
       - crm-db         # rede externa onde vive crm_postgres em produção
+      - evolution      # rede da Evolution API (WhatsApp)
     profiles:
       - backend
     healthcheck:
@@ -58,3 +59,6 @@ networks:
   crm-db:
     external: true
     name: crm-db_default
+  evolution:
+    external: true
+    name: evolution_evolution_network
