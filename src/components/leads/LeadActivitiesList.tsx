@@ -318,7 +318,14 @@ function SortableActivityItem({
                 </span>
               )}
               {activity.gotoCallId ? (
-                <GoToOutcomeBadge outcome={activity.gotoCallOutcome} />
+                <>
+                  <GoToOutcomeBadge outcome={activity.gotoCallOutcome} />
+                  {activity.completedAt && (
+                    <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                      {formatDate(activity.completedAt)}
+                    </span>
+                  )}
+                </>
               ) : (
                 <>
                   {activity.completed && (

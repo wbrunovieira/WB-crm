@@ -49,8 +49,15 @@ export interface LeadActivity {
   type: string;
   subject: string;
   completed: boolean;
+  completedAt: Date | null;
   dueDate: Date | null;
   createdAt: Date;
+  gotoCallId: string | null;
+  gotoCallOutcome: string | null;
+  gotoDuration: number | null;
+  gotoRecordingUrl: string | null;
+  gotoRecordingUrl2: string | null;
+  gotoTranscriptText: string | null;
 }
 
 export interface LeadTechProfile {
