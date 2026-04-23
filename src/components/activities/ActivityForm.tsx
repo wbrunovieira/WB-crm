@@ -197,6 +197,9 @@ export default function ActivityForm({
     dueDate: activity?.dueDate
       ? new Date(activity.dueDate).toISOString().split("T")[0]
       : "",
+    dueTime: activity?.dueDate
+      ? (() => { const d = new Date(activity.dueDate!); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; })()
+      : "",
     completed: activity?.completed || false,
     dealId: activity?.dealId || searchParams.get("dealId") || "",
     leadId: activity?.leadId || searchParams.get("leadId") || "",
@@ -236,7 +239,7 @@ export default function ActivityForm({
       subject: formData.subject,
       description: formData.description || undefined,
       dueDate: formData.dueDate
-        ? new Date(formData.dueDate + "T12:00:00").toISOString()
+        ? new Date(formData.dueDate + "T" + (formData.dueTime || "12:00") + ":00").toISOString()
         : null,
       completed: formData.completed,
       contactIds: selectedContactIds.length > 0 ? selectedContactIds : null,
@@ -377,16 +380,26 @@ export default function ActivityForm({
         />
       </div>
 
-      {/* Data */}
+      {/* Data e Horário */}
       <div>
-        <label htmlFor="dueDate" className="block text-sm font-medium text-gray-700">Data de Vencimento</label>
-        <input
-          type="date"
-          id="dueDate"
-          value={formData.dueDate}
-          onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-          className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
-        />
+        <label className="block text-sm font-medium text-gray-700">Data de Vencimento</label>
+        <div className="mt-1 flex gap-2">
+          <input
+            type="date"
+            id="dueDate"
+            value={formData.dueDate}
+            onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
+          />
+          <input
+            type="time"
+            id="dueTime"
+            value={formData.dueTime}
+            onChange={(e) => setFormData({ ...formData, dueTime: e.target.value })}
+            disabled={!formData.dueDate}
+            className="w-32 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary disabled:opacity-40"
+          />
+        </div>
       </div>
 
       {/* Negócio */}
