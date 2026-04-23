@@ -389,9 +389,22 @@ TDD order: Value Objects → Entities → Use Cases (with fakes) → E2E (with t
 
 ### Integration Cron Jobs
 
-- GoTo recordings: `*/15 * * * *`
-- WhatsApp transcriptions: `*/5 * * * *`
-- Gmail polling: `*/5 * * * *`
+| Cron | Schedule | Type | Notes |
+|------|----------|------|-------|
+| GoTo recording + transcription | `*/15 * * * *` | Internal NestJS (`GoToRecordingCronService`) | Pass 1: S3→transcriber. Pass 2: poll→attach |
+| GoTo call sync | `*/15 * * * *` | External crontab → `POST /api/goto/sync?secret=` | Nginx routes to NestJS `/webhooks/goto/sync`. Catchup for missed webhooks |
+| WhatsApp transcriptions | `*/5 * * * *` | Internal NestJS | |
+| Gmail polling | `*/5 * * * *` | External crontab → `/api/google/gmail-poll` | |
+
+**GoTo call pipeline** (end-to-end):
+1. GoTo softphone call ends → `POST /webhooks/goto/calls` (webhook, secret-validated) → `HandleGotoWebhookUseCase` → `CreateCallActivityUseCase` → Activity saved with `gotoRecordingId`
+2. Internal cron Pass 1 → `ProcessCallRecordingUseCase` → find agent+client MP3 keys in S3 (`AWS_S3_GOTO_BUCKET`) → submit each separately to transcriber → save job IDs on activity
+3. Internal cron Pass 2 → `PollCallTranscriptionsUseCase` → poll both jobs → when done: interleave segments by `start` timestamp → resolve real owner name (User.name) and client name (Contact/Lead/Partner.name) → save JSON to `gotoTranscriptText`
+4. Playback: `GET /goto/recordings/:activityId?track=agent|client` → streams MP3 from S3 (JWT-protected)
+
+**Important**: GoTo saves recordings directly to S3 (configured in GoTo portal). The system reads from S3, never uploads. No Google Drive involved.
+
+**`ActivitiesRepository.findByIdForTranscription(id)`**: returns `{ activity, ownerName, clientName }` by JOINing User/Contact/Lead/Partner — used by `PollCallTranscriptionsUseCase` to resolve real speaker names.
 
 ### Backend Deploy (Ansible)
 
