@@ -52,10 +52,8 @@
       debug:
         msg: "{{ docker_build.stdout_lines | last }}"
 
-    - name: Remover containers parados com nome conflitante
-      raw: |
-        docker ps -a --filter "name=wb-crm-backend" --filter "status=exited" -q | xargs -r docker rm -f
-        docker ps -a --filter "name=wb-crm-backend" --filter "status=created" -q | xargs -r docker rm -f
+    - name: Remover container existente (qualquer estado)
+      raw: docker rm -f wb-crm-backend 2>/dev/null || true
       ignore_errors: yes
 
     - name: Subir container do backend
