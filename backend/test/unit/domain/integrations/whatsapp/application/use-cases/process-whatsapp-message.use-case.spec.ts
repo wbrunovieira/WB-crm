@@ -182,4 +182,29 @@ describe("ProcessWhatsAppMessageUseCase", () => {
     const activity = activitiesRepo.items[0];
     expect(activity.description).toContain("Você: Bom dia!");
   });
+
+  it("returns whatsAppMessageId (DB record id) in output", async () => {
+    const result = await useCase.execute(makeInput());
+
+    expect(result.isRight()).toBe(true);
+    expect(result.value.whatsAppMessageId).toBeDefined();
+    expect(result.value.whatsAppMessageId).toBe(whatsAppRepo.items[0].id);
+  });
+
+  it("does not return whatsAppMessageId when message already exists (idempotent)", async () => {
+    await whatsAppRepo.create({
+      messageId: "msg-001",
+      remoteJid: JID,
+      fromMe: false,
+      messageType: "conversation",
+      timestamp: new Date(),
+      ownerId: OWNER_ID,
+    });
+
+    const result = await useCase.execute(makeInput());
+
+    expect(result.isRight()).toBe(true);
+    expect(result.value).toMatchObject({ alreadyExists: true });
+    expect(result.value.whatsAppMessageId).toBeUndefined();
+  });
 });

@@ -114,6 +114,7 @@ export class WhatsAppWebhookController {
         messageType,
         pushName,
         text: text ?? mediaLabel,
+        messageRaw: body?.data?.message ?? null,
         messageTimestamp,
         ownerId,
       });

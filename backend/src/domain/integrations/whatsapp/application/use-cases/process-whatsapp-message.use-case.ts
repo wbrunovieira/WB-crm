@@ -27,6 +27,7 @@ export interface ProcessWhatsAppMessageInput {
 
 export interface ProcessWhatsAppMessageOutput {
   activityId?: string;
+  whatsAppMessageId?: string;
   isNewSession?: boolean;
   alreadyExists?: boolean;
   ignored?: boolean;
@@ -182,7 +183,7 @@ export class ProcessWhatsAppMessageUseCase {
     }
 
     // 6. Save WhatsApp message record
-    await this.whatsAppRepo.create({
+    const savedMessage = await this.whatsAppRepo.create({
       messageId,
       remoteJid,
       fromMe,
@@ -195,6 +196,6 @@ export class ProcessWhatsAppMessageUseCase {
       ownerId,
     });
 
-    return right({ activityId, isNewSession });
+    return right({ activityId, whatsAppMessageId: savedMessage.id, isNewSession });
   }
 }
