@@ -25,7 +25,6 @@ function serialize(n: any) {
   };
 }
 
-@UseGuards(JwtAuthGuard)
 @Controller("notifications")
 export class NotificationsController {
   constructor(
@@ -34,6 +33,7 @@ export class NotificationsController {
     private readonly eventBus: NotificationsEventBus,
   ) {}
 
+  @UseGuards(JwtAuthGuard)
   @Get()
   async list(
     @Request() req: any,
@@ -52,6 +52,7 @@ export class NotificationsController {
     return { notifications: notifications.map(serialize), unreadCount };
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch("read")
   async markAsRead(@Request() req: any, @Body() body: { ids?: string[]; all?: boolean }) {
     const result = await this.markRead.execute({
