@@ -101,6 +101,7 @@ function serializeActivity(a: Activity) {
     partnerId: a.partnerId ?? null,
     callContactType: a.callContactType ?? null,
     meetingNoShow: a.meetingNoShow,
+    gotoCallId: a.gotoCallId ?? null,
     gotoCallOutcome: a.gotoCallOutcome ?? null,
     createdAt: a.createdAt,
     updatedAt: a.updatedAt,

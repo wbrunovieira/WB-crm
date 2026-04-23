@@ -31,7 +31,7 @@ export default async function ActivityDetailPage({
     <div className="p-8">
       <div className="mb-8">
         <div className="flex items-center gap-2">
-          <BackButton label="← Voltar" />
+          <BackButton />
         </div>
         <div className="mt-4 flex items-start justify-between">
           <div className="flex items-start gap-4">

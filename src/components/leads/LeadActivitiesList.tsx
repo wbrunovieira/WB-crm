@@ -153,6 +153,7 @@ type Activity = {
   skippedAt?: Date | string | null;
   skipReason?: string | null;
   leadContactIds?: string | null;
+  callContactType?: string | null;
   gotoCallId?: string | null;
   gotoRecordingUrl?: string | null;
   gotoRecordingUrl2?: string | null;
@@ -184,6 +185,7 @@ function SortableActivityItem({
   openAssignModal,
   openReplyModal,
   onChangeOutcome,
+  onChangeContactType,
   getContactNames,
   leadContacts,
   typeConfig,
@@ -200,6 +202,7 @@ function SortableActivityItem({
   openAssignModal: (e: React.MouseEvent, activity: Activity) => void;
   openReplyModal: (activity: Activity) => void;
   onChangeOutcome: (activityId: string, outcome: string) => void;
+  onChangeContactType: (activityId: string, contactType: string) => void;
   getContactNames: (ids: string | null) => string[];
   leadContacts: LeadContact[];
   typeConfig: Record<string, { label: string; bg: string; text: string; border: string; dot: string }>;
@@ -217,6 +220,7 @@ function SortableActivityItem({
   } = useSortable({ id: activity.id });
 
   const [outcomePickerOpen, setOutcomePickerOpen] = useState(false);
+  const [contactTypePickerOpen, setContactTypePickerOpen] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -326,45 +330,7 @@ function SortableActivityItem({
                   Resposta enviada
                 </span>
               )}
-              {activity.gotoCallId ? (
-                <>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={(e) => { e.stopPropagation(); setOutcomePickerOpen((v) => !v); }}
-                      className="focus:outline-none"
-                      title="Clique para alterar resultado"
-                    >
-                      <GoToOutcomeBadge outcome={activity.gotoCallOutcome} />
-                    </button>
-                    {outcomePickerOpen && (
-                      <div
-                        className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-gray-200 bg-white shadow-lg"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {GOTO_OUTCOME_OPTIONS.map((opt) => (
-                          <button
-                            key={opt.value}
-                            type="button"
-                            className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${activity.gotoCallOutcome === opt.value ? "font-semibold text-purple-700" : "text-gray-700"}`}
-                            onClick={() => {
-                              onChangeOutcome(activity.id, opt.value);
-                              setOutcomePickerOpen(false);
-                            }}
-                          >
-                            {opt.label}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                  {activity.completedAt && (
-                    <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-                      {formatDate(activity.completedAt)}
-                    </span>
-                  )}
-                </>
-              ) : (
+              {!activity.gotoCallId && (
                 <>
                   {activity.completed && (
                     <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
@@ -436,6 +402,77 @@ function SortableActivityItem({
               );
             })()}
           </Link>
+
+          {/* GoTo badges — fora do Link para não navegar ao clicar */}
+          {activity.gotoCallId && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              {/* Outcome picker */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => { setOutcomePickerOpen((v) => !v); setContactTypePickerOpen(false); }}
+                  className="focus:outline-none"
+                  title="Clique para alterar resultado"
+                >
+                  <GoToOutcomeBadge outcome={activity.gotoCallOutcome} />
+                </button>
+                {outcomePickerOpen && (
+                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {GOTO_OUTCOME_OPTIONS.map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${activity.gotoCallOutcome === opt.value ? "font-semibold text-purple-700" : "text-gray-700"}`}
+                        onClick={() => { onChangeOutcome(activity.id, opt.value); setOutcomePickerOpen(false); }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Contact type picker: gatekeeper / decisor */}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => { setContactTypePickerOpen((v) => !v); setOutcomePickerOpen(false); }}
+                  className="focus:outline-none"
+                  title="Tipo de contato na ligação"
+                >
+                  {activity.callContactType === "decisor" ? (
+                    <span className="inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
+                      🎯 Decisor
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
+                      🚧 Gatekeeper
+                    </span>
+                  )}
+                </button>
+                {contactTypePickerOpen && (
+                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[150px] rounded-lg border border-gray-200 bg-white shadow-lg">
+                    {[{ value: "gatekeeper", label: "🚧 Gatekeeper" }, { value: "decisor", label: "🎯 Decisor" }].map((opt) => (
+                      <button
+                        key={opt.value}
+                        type="button"
+                        className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${activity.callContactType === opt.value ? "font-semibold text-purple-700" : "text-gray-700"}`}
+                        onClick={() => { onChangeContactType(activity.id, opt.value); setContactTypePickerOpen(false); }}
+                      >
+                        {opt.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {activity.completedAt && (
+                <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  {formatDate(activity.completedAt)}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* WhatsApp log — fora do Link para não navegar ao clicar em áudio/transcrição */}
           {activity.type === "whatsapp" && activity.description && !activity.gotoCallId && (
@@ -654,6 +691,16 @@ export function LeadActivitiesList({
       {
         onSuccess: () => { toast.success("Resultado atualizado"); router.refresh(); },
         onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao atualizar resultado"),
+      },
+    );
+  };
+
+  const handleChangeContactType = (activityId: string, contactType: string) => {
+    updateActivity.mutate(
+      { id: activityId, callContactType: contactType },
+      {
+        onSuccess: () => { toast.success("Tipo de contato atualizado"); router.refresh(); },
+        onError: (err) => toast.error(err instanceof Error ? err.message : "Erro ao atualizar tipo de contato"),
       },
     );
   };
@@ -1072,6 +1119,7 @@ export function LeadActivitiesList({
                     openAssignModal={openAssignModal}
                     openReplyModal={setReplyingToActivity}
                     onChangeOutcome={handleChangeOutcome}
+                    onChangeContactType={handleChangeContactType}
                     getContactNames={getContactNames}
                     leadContacts={leadContacts}
                     typeConfig={typeConfig}
