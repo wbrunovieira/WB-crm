@@ -12,6 +12,7 @@ import {
   GetProposalsUseCase, GetProposalByIdUseCase,
   CreateProposalUseCase, UpdateProposalUseCase, DeleteProposalUseCase,
 } from "../../application/use-cases/proposals.use-cases";
+import { UploadProposalUseCase } from "../../application/use-cases/upload-proposal.use-case";
 
 function serialize(p: Proposal) {
   return {
@@ -50,6 +51,7 @@ export class ProposalsController {
     private readonly createProposal: CreateProposalUseCase,
     private readonly updateProposal: UpdateProposalUseCase,
     private readonly deleteProposal: DeleteProposalUseCase,
+    private readonly uploadProposal: UploadProposalUseCase,
   ) {}
 
   @Get()
@@ -79,10 +81,27 @@ export class ProposalsController {
     driveFileId?: string;
     driveUrl?: string;
     fileName?: string;
+    fileMimeType?: string;
+    fileBase64?: string;
     fileSize?: number;
     leadId?: string;
     dealId?: string;
   }, @CurrentUser() user: AuthenticatedUser) {
+    if (body.fileBase64 && body.fileName && body.fileMimeType) {
+      const r = await this.uploadProposal.execute({
+        title: body.title,
+        description: body.description,
+        leadId: body.leadId,
+        dealId: body.dealId,
+        fileName: body.fileName,
+        fileMimeType: body.fileMimeType,
+        fileBase64: body.fileBase64,
+        ownerId: user.id,
+      });
+      if (r.isLeft()) handleError(r);
+      return serialize(r.unwrap());
+    }
+
     const r = await this.createProposal.execute({ ...body, ownerId: user.id });
     if (r.isLeft()) handleError(r);
     return serialize(r.unwrap());

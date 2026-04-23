@@ -5,6 +5,7 @@ import {
   GetProposalsUseCase, GetProposalByIdUseCase,
   CreateProposalUseCase, UpdateProposalUseCase, DeleteProposalUseCase,
 } from "./application/use-cases/proposals.use-cases";
+import { UploadProposalUseCase } from "./application/use-cases/upload-proposal.use-case";
 import { PrismaProposalsRepository } from "./infra/repositories/prisma-proposals.repository";
 import { ProposalsController } from "./infra/controllers/proposals.controller";
 import { ProposalsFileController } from "./infra/controllers/proposals-file.controller";
@@ -15,6 +16,7 @@ import { ProposalsFileController } from "./infra/controllers/proposals-file.cont
   providers: [
     GetProposalsUseCase, GetProposalByIdUseCase,
     CreateProposalUseCase, UpdateProposalUseCase, DeleteProposalUseCase,
+    UploadProposalUseCase,
     { provide: ProposalsRepository, useClass: PrismaProposalsRepository },
   ],
 })
