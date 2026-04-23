@@ -149,7 +149,7 @@
     - name: Remove dev dependencies after build
       raw: cd {{ app_dir }} && npm prune --production
 
-    - name: Restart PM2
+    - name: Restart PM2 (Next.js frontend)
       raw: pm2 restart {{ app_name }} && sleep 3 && pm2 status {{ app_name }}
       register: pm2_status
 
@@ -157,12 +157,28 @@
       debug:
         msg: "{{ pm2_status.stdout_lines }}"
 
-    - name: Health check
+    - name: Rebuild NestJS backend Docker image
+      raw: cd {{ app_dir }} && docker compose --profile backend build backend 2>&1 | tail -5
+
+    - name: Restart NestJS backend container
+      raw: cd {{ app_dir }} && docker compose --profile backend up -d backend 2>&1 | tail -3
+
+    - name: Wait for backend container startup
+      raw: sleep 20
+
+    - name: Health check (Next.js frontend)
       raw: curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000"
       register: health_check
       retries: 3
       delay: 5
       until: health_check.stdout | trim == "200" or health_check.stdout | trim == "307"
+
+    - name: Health check (NestJS backend)
+      raw: curl -s -o /dev/null -w "%{http_code}" http://localhost:3010/health || echo "000"
+      register: backend_health
+      retries: 5
+      delay: 5
+      until: backend_health.stdout | trim == "200"
 
     - name: Deploy result
       debug:
@@ -170,5 +186,7 @@
           ✅ QUICK DEPLOY COMPLETE
           ========================
           Commit: {{ git_pull.stdout_lines | last }}
-          Health: {{ 'OK' if health_check.stdout | trim in ['200', '307'] else 'FAILED' }}
-          URL: https://crm.wbdigitalsolutions.com
+          Frontend: {{ 'OK' if health_check.stdout | trim in ['200', '307'] else 'FAILED' }}
+          Backend:  {{ 'OK' if backend_health.stdout | trim == '200' else 'FAILED' }}
+          Frontend URL: https://crm.wbdigitalsolutions.com
+          Backend URL:  https://api.crm.wbdigitalsolutions.com
