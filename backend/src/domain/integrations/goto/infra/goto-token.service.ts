@@ -1,56 +1,43 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { GoToTokenPort } from "@/domain/integrations/goto/application/ports/goto-token.port";
 import { GoToApiPort } from "@/domain/integrations/goto/application/ports/goto-api.port";
-import { PrismaService } from "@/infra/database/prisma.service";
 
-const PROVIDER = "goto";
-const EXPIRY_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
+const EXPIRY_BUFFER_MS = 5 * 60 * 1000;
 
 @Injectable()
 export class GoToTokenService extends GoToTokenPort {
   private readonly logger = new Logger(GoToTokenService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly goToApi: GoToApiPort,
-  ) {
+  constructor(private readonly goToApi: GoToApiPort) {
     super();
   }
 
   async getValidAccessToken(): Promise<string> {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const db = this.prisma as any;
-    const token = await db.integrationToken.findUnique({
-      where: { provider: PROVIDER },
-    }) as { id: string; accessToken: string; refreshToken?: string | null; expiresAt: Date } | null;
+    const accessToken = process.env.GOTO_ACCESS_TOKEN;
+    const refreshToken = process.env.GOTO_REFRESH_TOKEN;
+    const expiresAt = parseInt(process.env.GOTO_TOKEN_EXPIRES_AT ?? "0", 10);
 
-    if (!token) {
-      throw new Error("GoTo token not found in database. Please re-authorize via OAuth.");
+    if (!accessToken && !refreshToken) {
+      throw new Error("GoTo token not configured. Please re-authorize via /auth/goto.");
     }
 
-    // Token still valid (with 5min buffer)
-    if (token.expiresAt.getTime() > Date.now() + EXPIRY_BUFFER_MS) {
-      return token.accessToken;
+    if (accessToken && expiresAt > Date.now() + EXPIRY_BUFFER_MS) {
+      return accessToken;
     }
 
-    if (!token.refreshToken) {
-      throw new Error("GoTo access token expired and no refresh token available. Please re-authorize.");
+    if (!refreshToken) {
+      throw new Error("GoTo access token expired and no refresh token available. Please re-authorize via /auth/goto.");
     }
 
     this.logger.log("GoTo access token expiring — refreshing via refresh token");
 
-    const newTokens = await this.goToApi.refreshToken(token.refreshToken);
+    const newTokens = await this.goToApi.refreshToken(refreshToken);
 
-    await db.integrationToken.update({
-      where: { provider: PROVIDER },
-      data: {
-        accessToken: newTokens.accessToken,
-        refreshToken: newTokens.refreshToken,
-        expiresAt: new Date(newTokens.expiresAt),
-      },
-    });
+    process.env.GOTO_ACCESS_TOKEN = newTokens.accessToken;
+    process.env.GOTO_REFRESH_TOKEN = newTokens.refreshToken;
+    process.env.GOTO_TOKEN_EXPIRES_AT = String(newTokens.expiresAt);
 
-    this.logger.log("GoTo tokens refreshed and persisted to database");
+    this.logger.log("GoTo tokens refreshed");
 
     return newTokens.accessToken;
   }
