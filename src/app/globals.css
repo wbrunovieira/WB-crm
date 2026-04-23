@@ -142,9 +142,9 @@ thead.bg-gray-50 {
   background-color: #e5e7eb;
 }
 
-/* PhoneLink hover — overrides gray !important overrides */
+/* PhoneLink hover — light purple for visibility on dark backgrounds */
 [data-phone-link]:hover {
-  color: var(--color-primary) !important;
+  color: #c084fc !important;
 }
 
 /* Custom scrollbar */
