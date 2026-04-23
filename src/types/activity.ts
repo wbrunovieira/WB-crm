@@ -61,6 +61,12 @@ export interface Activity {
   partner?: ActivityPartner | null;
   callContactType?: string | null;
   meetingNoShow?: boolean;
+  gotoCallId?: string | null;
+  gotoCallOutcome?: string | null;
+  gotoDuration?: number | null;
+  gotoRecordingUrl?: string | null;
+  gotoRecordingUrl2?: string | null;
+  gotoTranscriptText?: string | null;
   emailMessageId?: string | null;
   emailThreadId?: string | null;
   emailSubject?: string | null;
