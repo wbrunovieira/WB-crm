@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
 import { ActivitiesModule } from "@/domain/activities/activities.module";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
+import { AuthModule } from "@/infra/auth/auth.module";
 
 // Ports
 import { GoToApiPort } from "./application/ports/goto-api.port";
@@ -24,7 +25,7 @@ import { GoToRecordingsController } from "./infra/controllers/goto-recordings.co
 import { GoToRecordingCronService } from "./infra/scheduled/goto-recording-cron.service";
 
 @Module({
-  imports: [ScheduleModule.forRoot(), SharedInfraModule, ActivitiesModule],
+  imports: [ScheduleModule.forRoot(), SharedInfraModule, ActivitiesModule, AuthModule],
   controllers: [GoToWebhookController, GoToRecordingsController],
   providers: [
     // Use Cases
