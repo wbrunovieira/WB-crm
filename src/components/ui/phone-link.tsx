@@ -24,6 +24,7 @@ export function PhoneLink({
     <a
       href={toTelHref(phone)}
       title={`Ligar para ${phone}`}
+      data-phone-link
       className={`group inline-flex items-center gap-1.5 rounded-md px-1.5 py-0.5 -mx-1.5 transition-all duration-150 hover:bg-primary/8 ${className}`}
     >
       {showIcon && (

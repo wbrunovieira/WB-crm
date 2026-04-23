@@ -60,8 +60,8 @@ export function NotificationBell() {
       es.onmessage = (event) => {
         try {
           const notification: NotificationItem = JSON.parse(event.data);
+          if (!notification.id) return; // keepalive or malformed
           setNotifications((prev) => {
-            // avoid duplicates
             if (prev.some((n) => n.id === notification.id)) return prev;
             return [{ ...notification, read: false }, ...prev].slice(0, 20);
           });
@@ -150,6 +150,7 @@ export function NotificationBell() {
 
   function formatTime(iso: string) {
     const date = new Date(iso);
+    if (isNaN(date.getTime())) return "";
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffMin = Math.floor(diffMs / 60_000);
