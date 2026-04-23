@@ -48,6 +48,12 @@ interface Props {
   dealId?: string;
 }
 
+function isNotFound(err: unknown): boolean {
+  if (err instanceof Error && err.message.includes("404")) return true;
+  if (err instanceof Error && err.message.toLowerCase().includes("not found")) return true;
+  return false;
+}
+
 const STATUS_CONFIG: Record<
   string,
   { label: string; color: string; icon: React.ReactNode }
@@ -122,8 +128,13 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
         await apiFetch(`/proposals/${id}`, token, { method: "DELETE" });
         setProposals((prev) => prev.filter((p) => p.id !== id));
         toast.success("Proposta removida");
-      } catch {
-        toast.error("Erro ao remover proposta");
+      } catch (err) {
+        if (isNotFound(err)) {
+          setProposals((prev) => prev.filter((p) => p.id !== id));
+          toast.info("Proposta não encontrada no servidor — removida da lista");
+        } else {
+          toast.error(err instanceof Error ? err.message : "Erro ao remover proposta");
+        }
       } finally {
         setDeleting(null);
       }
@@ -136,7 +147,8 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
     });
   }
 
-  function handleCreated() {
+  function handleCreated(created: Proposal) {
+    setProposals((prev) => [created, ...prev]);
     router.refresh();
   }
 

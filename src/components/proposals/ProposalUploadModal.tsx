@@ -6,11 +6,26 @@ import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
+interface ProposalResult {
+  id: string;
+  title: string;
+  description: string | null;
+  status: string;
+  driveFileId: string | null;
+  driveUrl: string | null;
+  fileName: string | null;
+  fileSize: number | null;
+  sentAt: string | Date | null;
+  createdAt: string | Date;
+  leadId?: string | null;
+  dealId?: string | null;
+}
+
 interface Props {
   leadId?: string;
   dealId?: string;
   onClose: () => void;
-  onCreated: () => void;
+  onCreated: (proposal: ProposalResult) => void;
 }
 
 function formatBytes(bytes: number): string {
@@ -62,7 +77,7 @@ export default function ProposalUploadModal({ leadId, dealId, onClose, onCreated
         fileName = file.name;
       }
 
-      await apiFetch("/proposals", token, {
+      const created = await apiFetch<ProposalResult>("/proposals", token, {
         method: "POST",
         body: JSON.stringify({
           title: title.trim(),
@@ -76,7 +91,7 @@ export default function ProposalUploadModal({ leadId, dealId, onClose, onCreated
       });
 
       toast.success(file ? "Proposta criada e enviada ao Drive" : "Proposta criada");
-      onCreated();
+      onCreated(created);
       onClose();
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Erro ao criar proposta";
