@@ -9,9 +9,12 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { Request } from "express";
 import { HandleGotoWebhookUseCase } from "@/domain/integrations/goto/application/use-cases/handle-goto-webhook.use-case";
 import { SyncGotoCallReportsUseCase } from "@/domain/integrations/goto/application/use-cases/sync-goto-call-reports.use-case";
+import { GoToRecordingCronService } from "@/domain/integrations/goto/infra/scheduled/goto-recording-cron.service";
+import { GotoActivityCreatedEvent } from "@/domain/integrations/goto/enterprise/events/goto-activity-created.event";
 
 interface GoToWebhookPayload {
   eventType?: string;
@@ -36,6 +39,8 @@ export class GoToWebhookController {
   constructor(
     private readonly handleGotoWebhook: HandleGotoWebhookUseCase,
     private readonly syncCallReports: SyncGotoCallReportsUseCase,
+    private readonly recordingCron: GoToRecordingCronService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   @Post("calls")
@@ -80,6 +85,10 @@ export class GoToWebhookController {
       });
 
       if (result.isRight() && result.value.activityId) {
+        this.eventEmitter.emit(
+          "goto.activity.created",
+          new GotoActivityCreatedEvent(result.value.activityId),
+        );
         return { ok: true, activityId: result.value.activityId };
       }
     } catch (err) {
@@ -89,6 +98,20 @@ export class GoToWebhookController {
       });
     }
 
+    return { ok: true };
+  }
+
+  @Post("process-recordings")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Manually trigger recording processing cron (internal)" })
+  async triggerProcessRecordings(
+    @Query("secret") secret: string,
+  ): Promise<{ ok: boolean }> {
+    const expectedSecret = process.env.GOTO_WEBHOOK_SECRET;
+    if (!expectedSecret || secret !== expectedSecret) {
+      throw new UnauthorizedException("Invalid webhook secret");
+    }
+    await this.recordingCron.processRecordings();
     return { ok: true };
   }
 

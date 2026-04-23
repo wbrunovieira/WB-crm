@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { ScheduleModule } from "@nestjs/schedule";
+import { EventEmitterModule, EventEmitter2 } from "@nestjs/event-emitter";
 import { ActivitiesModule } from "@/domain/activities/activities.module";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
 import { AuthModule } from "@/infra/auth/auth.module";
@@ -23,9 +24,11 @@ import { S3RecordingClient } from "./infra/s3-recording.client";
 import { GoToWebhookController } from "./infra/controllers/goto-webhook.controller";
 import { GoToRecordingsController } from "./infra/controllers/goto-recordings.controller";
 import { GoToRecordingCronService } from "./infra/scheduled/goto-recording-cron.service";
+import { GotoActivityCreatedListener } from "./infra/listeners/goto-activity-created.listener";
+import { GotoTranscriptionPollerListener } from "./infra/listeners/goto-transcription-poller.listener";
 
 @Module({
-  imports: [ScheduleModule.forRoot(), SharedInfraModule, ActivitiesModule, AuthModule],
+  imports: [ScheduleModule.forRoot(), EventEmitterModule, SharedInfraModule, ActivitiesModule, AuthModule],
   controllers: [GoToWebhookController, GoToRecordingsController],
   providers: [
     // Use Cases
@@ -40,6 +43,19 @@ import { GoToRecordingCronService } from "./infra/scheduled/goto-recording-cron.
     { provide: S3StoragePort, useClass: S3RecordingClient },
     // Scheduled
     GoToRecordingCronService,
+    // Event listeners
+    {
+      provide: GotoActivityCreatedListener,
+      useFactory: (processRecording: ProcessCallRecordingUseCase, eventEmitter: EventEmitter2) =>
+        new GotoActivityCreatedListener(processRecording, eventEmitter, 2 * 60 * 1000),
+      inject: [ProcessCallRecordingUseCase, EventEmitter2],
+    },
+    {
+      provide: GotoTranscriptionPollerListener,
+      useFactory: (pollTranscriptions: PollCallTranscriptionsUseCase) =>
+        new GotoTranscriptionPollerListener(pollTranscriptions, 60 * 1000, 30),
+      inject: [PollCallTranscriptionsUseCase],
+    },
   ],
 })
 export class GoToModule {}

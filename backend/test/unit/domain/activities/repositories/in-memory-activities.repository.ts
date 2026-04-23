@@ -1,6 +1,7 @@
 import {
   ActivitiesRepository,
   type ActivityFilters,
+  type ActivityWithNames,
 } from "@/domain/activities/application/repositories/activities.repository";
 import type { Activity } from "@/domain/activities/enterprise/entities/activity";
 import type { ActivitySummary, ActivityDetail } from "@/domain/activities/enterprise/read-models/activity-read-models";
@@ -145,4 +146,10 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
   }
 
   async markThreadReplied(_threadId: string): Promise<void> {}
+
+  async findByIdForTranscription(id: string): Promise<ActivityWithNames | null> {
+    const activity = this.items.find((a) => a.id.toString() === id);
+    if (!activity) return null;
+    return { activity, ownerName: "Agente", clientName: "Cliente" };
+  }
 }

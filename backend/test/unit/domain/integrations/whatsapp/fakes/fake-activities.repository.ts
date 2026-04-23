@@ -1,4 +1,4 @@
-import { ActivitiesRepository, ActivityFilters } from "@/domain/activities/application/repositories/activities.repository";
+import { ActivitiesRepository, ActivityFilters, ActivityWithNames } from "@/domain/activities/application/repositories/activities.repository";
 import { Activity } from "@/domain/activities/enterprise/entities/activity";
 import type { ActivitySummary, ActivityDetail } from "@/domain/activities/enterprise/read-models/activity-read-models";
 import { UniqueEntityID } from "@/core/unique-entity-id";
@@ -47,6 +47,12 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
   }
 
   async markThreadReplied(_threadId: string): Promise<void> {}
+
+  async findByIdForTranscription(id: string): Promise<ActivityWithNames | null> {
+    const activity = this.items.find((a) => a.id.toString() === id);
+    if (!activity) return null;
+    return { activity, ownerName: "Agente", clientName: "Cliente" };
+  }
 
   createAndAdd(props: Parameters<typeof Activity.create>[0]): Activity {
     const activity = Activity.create(props, new UniqueEntityID());
