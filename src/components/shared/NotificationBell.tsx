@@ -21,7 +21,7 @@ export function NotificationBell() {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const token = session?.user?.accessToken ?? "";
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -65,8 +65,11 @@ export function NotificationBell() {
 
       es.onerror = () => {
         es?.close();
-        // retry after 5s
-        retryTimeout = setTimeout(connect, 5_000);
+        // Force session refresh so jwt callback regenerates expired accessToken,
+        // then reconnect with the fresh token after 5s.
+        updateSession().finally(() => {
+          retryTimeout = setTimeout(connect, 5_000);
+        });
       };
     }
 

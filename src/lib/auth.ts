@@ -4,6 +4,15 @@ import { UserRole } from "@/types/next-auth";
 
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:3010";
 
+function isAccessTokenExpiringSoon(jwtToken: string, bufferMs = 5 * 60 * 1000): boolean {
+  try {
+    const payload = JSON.parse(Buffer.from(jwtToken.split(".")[1], "base64url").toString()) as { exp?: number };
+    return !payload.exp || payload.exp * 1000 < Date.now() + bufferMs;
+  } catch {
+    return true;
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
@@ -56,9 +65,10 @@ export const authOptions: NextAuthOptions = {
         token.role = user.role;
         token.accessToken = user.accessToken;
       }
-      // Sessões antigas (antes da migração para NestJS auth) não têm accessToken.
-      // Geramos um token compatível com o NestJS usando o mesmo secret.
-      if (!token.accessToken && token.sub) {
+      // Gera/renova o accessToken compatível com o NestJS quando ausente ou expirado.
+      // Usa o mesmo NEXTAUTH_SECRET que o NestJS usa para verificar.
+      const needsRefresh = !token.accessToken || isAccessTokenExpiringSoon(token.accessToken as string);
+      if (needsRefresh && token.sub) {
         const { SignJWT } = await import("jose");
         const secret = new TextEncoder().encode(process.env.NEXTAUTH_SECRET!);
         token.accessToken = await new SignJWT({
