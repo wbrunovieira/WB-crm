@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import {
   ExternalLink,
   MapPin,
-  Phone,
   Globe,
   Star,
   CheckCircle,
@@ -14,6 +13,7 @@ import {
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
+import { PhoneLink } from "@/components/ui/phone-link";
 import { useDeleteLead } from "@/hooks/leads/use-leads";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
@@ -177,10 +177,7 @@ export function ProspectsTable({ prospects, currentUserId }: ProspectsTableProps
                 <td className="px-4 py-3">
                   <div className="space-y-1">
                     {p.phone ? (
-                      <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                        <Phone className="h-3.5 w-3.5 text-gray-400" />
-                        <span>{p.phone}</span>
-                      </div>
+                      <PhoneLink phone={p.phone} className="text-sm text-gray-600 hover:text-primary" />
                     ) : (
                       <span className="text-xs text-gray-400">Sem telefone</span>
                     )}
