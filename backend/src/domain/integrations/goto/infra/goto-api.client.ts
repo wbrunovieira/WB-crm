@@ -42,6 +42,8 @@ export class GoToApiClient extends GoToApiPort {
 
     do {
       const params = new URLSearchParams({ startDate: since });
+      const accountKey = process.env.GOTO_ACCOUNT_KEY;
+      if (accountKey) params.set("accountKey", accountKey);
       if (nextPageMarker) params.set("nextPageMarker", nextPageMarker);
 
       const res = await fetch(
