@@ -43,7 +43,7 @@ describe("RefreshMeetRsvpUseCase", () => {
       startAt: new Date(),
       status: "scheduled",
       googleEventId: "gcal-001",
-      attendeeEmails: JSON.stringify([{ email: "a@test.com", status: "accepted" }]),
+      attendeeEmails: JSON.stringify([{ email: "a@test.com", responseStatus: "accepted" }]),
     });
     calendar.addEvent({
       googleEventId: "gcal-001",
@@ -58,14 +58,14 @@ describe("RefreshMeetRsvpUseCase", () => {
     expect(meeting.attendeeEmails).toContain("accepted");
   });
 
-  it("updates attendeeEmails when RSVP status changes", async () => {
+  it("updates attendeeEmails with full {email, responseStatus} objects when RSVP changes", async () => {
     meetings.addMeeting({
       id: "meet-001",
       title: "Reunião A",
       startAt: new Date(),
       status: "scheduled",
       googleEventId: "gcal-001",
-      attendeeEmails: JSON.stringify([{ email: "a@test.com", status: "needsAction" }]),
+      attendeeEmails: JSON.stringify([{ email: "a@test.com", responseStatus: "needsAction" }]),
     });
     calendar.addEvent({
       googleEventId: "gcal-001",
@@ -75,9 +75,10 @@ describe("RefreshMeetRsvpUseCase", () => {
     const result = await useCase.execute();
 
     expect(result.value).toEqual({ checked: 1, updated: 1 });
-    // Use case calls repo.update with fresh.map(a => a.email), so only emails are stored
-    const meeting = meetings.items[0];
-    expect(meeting.attendeeEmails).toContain("a@test.com");
+    // Must persist the full status so the frontend can show "Aceitou"/"Recusou"
+    const stored = JSON.parse(meetings.items[0].attendeeEmails) as Array<{ email: string; responseStatus: string }>;
+    expect(stored[0].responseStatus).toBe("accepted");
+    expect(stored[0].email).toBe("a@test.com");
   });
 
   it("handles multiple meetings — updates only changed ones", async () => {
@@ -87,7 +88,7 @@ describe("RefreshMeetRsvpUseCase", () => {
       startAt: new Date(),
       status: "scheduled",
       googleEventId: "gcal-001",
-      attendeeEmails: JSON.stringify([{ email: "a@test.com", status: "needsAction" }]),
+      attendeeEmails: JSON.stringify([{ email: "a@test.com", responseStatus: "needsAction" }]),
     });
     meetings.addMeeting({
       id: "meet-002",
@@ -95,7 +96,7 @@ describe("RefreshMeetRsvpUseCase", () => {
       startAt: new Date(),
       status: "scheduled",
       googleEventId: "gcal-002",
-      attendeeEmails: JSON.stringify([{ email: "b@test.com", status: "declined" }]),
+      attendeeEmails: JSON.stringify([{ email: "b@test.com", responseStatus: "declined" }]),
     });
     calendar.addEvent({
       googleEventId: "gcal-001",
@@ -125,7 +126,7 @@ describe("RefreshMeetRsvpUseCase", () => {
       startAt: new Date(),
       status: "scheduled",
       googleEventId: "gcal-002",
-      attendeeEmails: JSON.stringify([{ email: "b@test.com", status: "needsAction" }]),
+      attendeeEmails: JSON.stringify([{ email: "b@test.com", responseStatus: "needsAction" }]),
     });
     calendar.addEvent({
       googleEventId: "gcal-002",

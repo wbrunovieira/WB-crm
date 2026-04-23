@@ -130,6 +130,11 @@ export class FakeMeetingsRepository extends MeetingsRepository {
     return item as MeetingRecord;
   }
 
+  async updateRsvp(id: string, attendees: Array<{ email: string; responseStatus: string }>): Promise<void> {
+    const item = this.items.find(m => m.id === id);
+    if (item) item.attendeeEmails = JSON.stringify(attendees);
+  }
+
   async delete(id: string): Promise<void> {
     this.items = this.items.filter(m => m.id !== id);
   }

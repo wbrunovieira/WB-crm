@@ -99,5 +99,6 @@ export abstract class MeetingsRepository {
   abstract updateSummary(id: string, summary: string | null): Promise<void>;
   abstract create(data: CreateMeetingData): Promise<MeetingRecord>;
   abstract update(id: string, data: UpdateMeetingData): Promise<MeetingRecord>;
+  abstract updateRsvp(id: string, attendees: Array<{ email: string; responseStatus: string }>): Promise<void>;
   abstract delete(id: string): Promise<void>;
 }

@@ -249,6 +249,13 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
     return this.toDomain(row as any);
   }
 
+  async updateRsvp(id: string, attendees: Array<{ email: string; responseStatus: string }>): Promise<void> {
+    await this.prisma.meeting.update({
+      where: { id },
+      data: { attendeeEmails: JSON.stringify(attendees) },
+    });
+  }
+
   async delete(id: string): Promise<void> {
     await this.prisma.meeting.delete({ where: { id } });
   }

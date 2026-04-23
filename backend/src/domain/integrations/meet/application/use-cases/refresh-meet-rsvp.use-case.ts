@@ -26,7 +26,7 @@ export class RefreshMeetRsvpUseCase {
         const event = await this.calendar.getMeetEvent(meeting.googleEventId);
         if (!event) continue;
 
-        const fresh = event.attendees.map((a) => ({ email: a.email, status: a.responseStatus }));
+        const fresh = event.attendees.map((a) => ({ email: a.email, responseStatus: a.responseStatus }));
         const freshJson = JSON.stringify(fresh);
 
         let currentJson: string;
@@ -37,7 +37,7 @@ export class RefreshMeetRsvpUseCase {
         }
 
         if (currentJson !== freshJson) {
-          await this.meetings.update(meeting.id, { attendeeEmails: fresh.map((a) => a.email) });
+          await this.meetings.updateRsvp(meeting.id, fresh);
           updated++;
         }
       } catch (err) {
