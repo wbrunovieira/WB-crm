@@ -43,8 +43,12 @@ export function phoneVariations(phone: string): string[] {
   return Array.from(variations).filter((v) => v.length >= 8);
 }
 
+export interface IPhoneMatcherService {
+  match(phone: string, ownerId: string): Promise<PhoneMatchResult | null>;
+}
+
 @Injectable()
-export class PhoneMatcherService {
+export class PhoneMatcherService implements IPhoneMatcherService {
   constructor(private readonly prisma: PrismaService) {}
 
   async match(phone: string, ownerId: string): Promise<PhoneMatchResult | null> {

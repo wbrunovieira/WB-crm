@@ -24,30 +24,37 @@ export function NotificationBell() {
   const { data: session, update: updateSession } = useSession();
   const token = session?.user?.accessToken ?? "";
 
+  // Always keep a ref to the latest token so reconnect closures use the fresh value
+  const tokenRef = useRef(token);
+  useEffect(() => { tokenRef.current = token; }, [token]);
+
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   // Fetch initial notifications
   const fetchNotifications = useCallback(async () => {
-    if (!token) return;
+    if (!tokenRef.current) return;
     try {
-      const data = await apiFetch<{ notifications: NotificationItem[] }>("/notifications?limit=20", token);
+      const data = await apiFetch<{ notifications: NotificationItem[] }>("/notifications?limit=20", tokenRef.current);
       setNotifications(data.notifications);
     } catch {
       // silently ignore
     }
-  }, [token]);
+  }, []);
 
   // SSE connection with auto-reconnect
   useEffect(() => {
     let es: EventSource | null = null;
     let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+    let destroyed = false;
 
     function connect() {
-      if (!token) return;
+      if (destroyed) return;
+      const currentToken = tokenRef.current;
+      if (!currentToken) return;
       const backendUrl =
         process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3010";
       es = new EventSource(
-        `${backendUrl}/notifications/stream?token=${encodeURIComponent(token)}`
+        `${backendUrl}/notifications/stream?token=${encodeURIComponent(currentToken)}`
       );
 
       es.onmessage = (event) => {
@@ -65,22 +72,25 @@ export function NotificationBell() {
 
       es.onerror = () => {
         es?.close();
+        es = null;
+        if (destroyed) return;
         // Force session refresh so jwt callback regenerates expired accessToken,
         // then reconnect with the fresh token after 5s.
         updateSession().finally(() => {
-          retryTimeout = setTimeout(connect, 5_000);
+          if (!destroyed) retryTimeout = setTimeout(connect, 5_000);
         });
       };
     }
 
     fetchNotifications();
-    if (token) connect();
+    connect();
 
     return () => {
+      destroyed = true;
       es?.close();
       if (retryTimeout) clearTimeout(retryTimeout);
     };
-  }, [fetchNotifications, token]);
+  }, [fetchNotifications, updateSession]);
 
   // Close dropdown on outside click
   useEffect(() => {

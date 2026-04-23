@@ -9,7 +9,7 @@ import {
   ForbiddenException,
   HttpCode,
 } from "@nestjs/common";
-import { Response } from "express";
+import type { Response } from "express";
 import { google } from "googleapis";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { SseJwtAuthGuard } from "@/infra/auth/guards/sse-jwt-auth.guard";
