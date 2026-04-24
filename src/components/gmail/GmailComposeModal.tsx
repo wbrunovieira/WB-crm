@@ -211,13 +211,13 @@ export default function GmailComposeModal({
         }).catch(() => {});
       }
 
-      // Create activity record
+      // Create activity record (await so router.refresh picks up the new activity)
       const bodyPreview = html
         .replace(/<[^>]+>/g, " ")
         .replace(/\s+/g, " ")
         .trim()
         .slice(0, 500);
-      apiFetch("/activities", token, {
+      await apiFetch("/activities", token, {
         method: "POST",
         body: JSON.stringify({
           type: "email",
@@ -234,7 +234,9 @@ export default function GmailComposeModal({
           organizationId,
           dealId,
         }),
-      }).catch(() => {});
+      }).catch((err) => {
+        console.error("Failed to create email activity:", err);
+      });
 
       setSent(true);
       router.refresh();
