@@ -72,7 +72,7 @@ export class EmailController {
     }
 
     const result = await this.sendEmail.execute({
-      userId: user.id,
+      userId: "google-token-singleton",
       to: body.to,
       subject: body.subject,
       bodyHtml: body.bodyHtml,
@@ -93,7 +93,7 @@ export class EmailController {
   @Get("aliases")
   @ApiOperation({ summary: "List Gmail sendAs aliases for the connected account" })
   async aliases(@CurrentUser() user: AuthenticatedUser) {
-    const result = await this.getSendAsAliases.execute(user.id);
+    const result = await this.getSendAsAliases.execute("google-token-singleton");
     if (result.isLeft()) {
       this.logger.error("Failed to get sendAs aliases", { error: result.value.message });
       return { aliases: [] };
@@ -113,7 +113,7 @@ export class EmailController {
   @HttpCode(200)
   @ApiOperation({ summary: "Trigger manual Gmail sync for current user" })
   async syncNow(@CurrentUser() user: AuthenticatedUser): Promise<{ processed: number }> {
-    const result = await this.pollGmail.execute({ userId: user.id, ownerId: user.id });
+    const result = await this.pollGmail.execute({ userId: "google-token-singleton", ownerId: user.id });
     if (result.isLeft()) throw new BadRequestException(result.value.message);
     return result.value;
   }
