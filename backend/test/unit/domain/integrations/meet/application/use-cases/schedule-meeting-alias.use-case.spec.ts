@@ -53,8 +53,8 @@ describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
 
     const msg = gmail.sentMessages[0];
     expect(msg.to).toBe(ATTENDEE);
-    // From is NOT the alias — sent from primary account so Yahoo/others don't block
-    expect(msg.from).toBeUndefined();
+    // From is the primary account email (not the alias) so Yahoo/others don't block
+    expect(msg.from).toBe(gmail.profileEmail);
     // Alias appears via Reply-To and Cc so client can see and reply to it
     expect(msg.replyTo).toBe(ALIAS);
     expect(msg.cc).toBe(ALIAS);

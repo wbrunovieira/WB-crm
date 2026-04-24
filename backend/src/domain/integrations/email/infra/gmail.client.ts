@@ -258,9 +258,13 @@ export class GmailClient extends GmailPort {
     const boundary = `wb_crm_${Date.now()}`;
     const hasAttachments = (opts.attachments ?? []).length > 0;
 
+    // RFC 2047 encoding required for non-ASCII subjects; raw UTF-8 causes garbled text
+    const encodeHeader = (s: string) =>
+      /[^\x00-\x7F]/.test(s) ? `=?UTF-8?B?${Buffer.from(s).toString("base64")}?=` : s;
+
     const headers = [
       `To: ${opts.to}`,
-      `Subject: ${opts.subject}`,
+      `Subject: ${encodeHeader(opts.subject)}`,
       "MIME-Version: 1.0",
     ];
 

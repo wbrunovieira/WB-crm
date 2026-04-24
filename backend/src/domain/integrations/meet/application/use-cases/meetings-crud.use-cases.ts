@@ -108,6 +108,15 @@ export class ScheduleMeetingUseCase {
     const sendAliasEmail = !!input.organizerEmail && !!this.gmailPort && !input.skipCalendar;
     if (sendAliasEmail) {
       const alias = input.organizerEmail!;
+
+      // Fetch primary email so we send explicitly from it (not Gmail's default send-as alias)
+      let primaryEmail: string | undefined;
+      try {
+        const profile = await this.gmailPort!.getProfile("google-token-singleton");
+        primaryEmail = profile.emailAddress;
+      } catch {
+        // Non-fatal: if profile fetch fails, Gmail uses account default
+      }
       const title = input.title.trim();
       const endAt = input.endAt ?? new Date(input.startAt.getTime() + 60 * 60 * 1000);
 
@@ -156,6 +165,7 @@ export class ScheduleMeetingUseCase {
           await this.gmailPort!.send({
             userId: "google-token-singleton",
             to,
+            from: primaryEmail,
             replyTo: alias,
             cc: alias,
             subject: `Reunião agendada: ${title}`,
