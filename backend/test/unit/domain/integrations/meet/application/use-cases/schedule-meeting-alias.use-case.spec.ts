@@ -20,8 +20,8 @@ beforeEach(() => {
   gmail = new FakeGmailPort();
 });
 
-describe("ScheduleMeetingUseCase — organizerEmail alias", () => {
-  it("uses sendUpdates=none when organizerEmail is set (Calendar won't auto-send)", async () => {
+describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
+  it("always uses sendUpdates=all so Google Calendar sends the native RSVP invite", async () => {
     const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
 
     await useCase.execute({
@@ -33,10 +33,10 @@ describe("ScheduleMeetingUseCase — organizerEmail alias", () => {
       requesterId: OWNER,
     });
 
-    expect(calendar.createdEvents[0].sendUpdates).toBe("none");
+    expect(calendar.createdEvents[0].sendUpdates).toBe("all");
   });
 
-  it("sends calendar invite via Gmail from the alias to each attendee", async () => {
+  it("sends an informational email via Gmail.send (not sendCalendarInvite) from the alias", async () => {
     const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
 
     await useCase.execute({
@@ -48,13 +48,31 @@ describe("ScheduleMeetingUseCase — organizerEmail alias", () => {
       requesterId: OWNER,
     });
 
-    expect(gmail.sentCalendarInvites).toHaveLength(1);
-    expect(gmail.sentCalendarInvites[0].to).toBe(ATTENDEE);
-    expect(gmail.sentCalendarInvites[0].from).toBe(ALIAS);
-    expect(gmail.sentCalendarInvites[0].organizerEmail).toBe(ALIAS);
+    expect(gmail.sentMessages).toHaveLength(1);
+    expect(gmail.sentCalendarInvites).toHaveLength(0);
+    expect(gmail.sentMessages[0].to).toBe(ATTENDEE);
+    expect(gmail.sentMessages[0].from).toBe(ALIAS);
   });
 
-  it("sends invite to all attendees (excluding the alias itself)", async () => {
+  it("informational email body contains meeting title and Meet link", async () => {
+    calendar.meetLink = "https://meet.google.com/abc-defg-hij";
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
+
+    await useCase.execute({
+      title: "Reunião Saltoup",
+      startAt: FUTURE,
+      endAt: END,
+      attendeeEmails: [ATTENDEE],
+      organizerEmail: ALIAS,
+      requesterId: OWNER,
+    });
+
+    const body = gmail.sentMessages[0].bodyHtml;
+    expect(body).toContain("Reunião Saltoup");
+    expect(body).toContain("meet.google.com/abc-defg-hij");
+  });
+
+  it("sends informational email to all attendees (not to the alias itself)", async () => {
     const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
     const SECOND = "outro@example.com";
 
@@ -67,13 +85,13 @@ describe("ScheduleMeetingUseCase — organizerEmail alias", () => {
       requesterId: OWNER,
     });
 
-    const tos = gmail.sentCalendarInvites.map((i) => i.to);
+    const tos = gmail.sentMessages.map((m) => m.to);
     expect(tos).toContain(ATTENDEE);
     expect(tos).toContain(SECOND);
     expect(tos).not.toContain(ALIAS);
   });
 
-  it("uses sendUpdates=all (default) when no organizerEmail is set", async () => {
+  it("uses sendUpdates=all (default) when no organizerEmail is set and sends no email", async () => {
     const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
 
     await useCase.execute({
@@ -85,10 +103,11 @@ describe("ScheduleMeetingUseCase — organizerEmail alias", () => {
     });
 
     expect(calendar.createdEvents[0].sendUpdates).toBe("all");
+    expect(gmail.sentMessages).toHaveLength(0);
     expect(gmail.sentCalendarInvites).toHaveLength(0);
   });
 
-  it("meeting is still created even if Gmail invite fails", async () => {
+  it("meeting is still created even if Gmail informational email fails", async () => {
     gmail.shouldFailSend = true;
     const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
 
@@ -105,7 +124,7 @@ describe("ScheduleMeetingUseCase — organizerEmail alias", () => {
     expect(meetings.items).toHaveLength(1);
   });
 
-  it("works without GmailPort (backward compat — uses sendUpdates=all)", async () => {
+  it("works without GmailPort — uses sendUpdates=all, no informational email", async () => {
     const useCase = new ScheduleMeetingUseCase(meetings, calendar);
 
     const result = await useCase.execute({

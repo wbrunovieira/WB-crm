@@ -11,6 +11,7 @@ export class FakeGoogleCalendarPort extends GoogleCalendarPort {
   public createdEvents: CreateCalendarEventOptions[] = [];
   public cancelledEventIds: string[] = [];
   public updatedEvents: Array<{ googleEventId: string; opts: object }> = [];
+  public meetLink: string | undefined;
 
   async getMeetEvent(googleEventId: string): Promise<CalendarEvent | null> {
     return this.events.get(googleEventId) ?? null;
@@ -23,7 +24,7 @@ export class FakeGoogleCalendarPort extends GoogleCalendarPort {
       email,
       responseStatus: "needsAction",
     }));
-    const result: CreateCalendarEventResult = { googleEventId, meetLink: `https://meet.google.com/fake-${googleEventId}`, attendees };
+    const result: CreateCalendarEventResult = { googleEventId, meetLink: this.meetLink ?? `https://meet.google.com/fake-${googleEventId}`, attendees };
     this.events.set(googleEventId, { googleEventId, attendees });
     return result;
   }

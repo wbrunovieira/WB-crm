@@ -78,9 +78,6 @@ export class ScheduleMeetingUseCase {
   }): Promise<Either<Error, MeetingRecord>> {
     if (!input.title.trim()) return left(new Error("title não pode ser vazio"));
 
-    const useAlias = !!input.organizerEmail && !!this.gmailPort;
-
-    // When an alias is chosen, don't add it to attendees (it's the organizer, not an attendee)
     const attendeeEmails = [...new Set(input.attendeeEmails)];
 
     let googleEventId: string | undefined;
@@ -95,8 +92,8 @@ export class ScheduleMeetingUseCase {
           attendeeEmails,
           description: input.description,
           organizerEmail: input.organizerEmail,
-          // When sending via Gmail alias, Calendar must NOT auto-send invites
-          sendUpdates: useAlias ? "none" : "all",
+          // Always "all" — Google Calendar sends the native RSVP invite; Gmail alias sends a courtesy notification
+          sendUpdates: "all",
         });
         googleEventId = calResult.googleEventId;
         meetLink = calResult.meetLink ?? undefined;
@@ -105,28 +102,27 @@ export class ScheduleMeetingUseCase {
       }
     }
 
-    // Send invites via Gmail from the alias so the organizer shows as the alias
-    if (useAlias && !input.skipCalendar) {
-      const endAt = input.endAt ?? new Date(input.startAt.getTime() + 60 * 60 * 1000);
+    // When an alias is selected, send a courtesy informational email from that alias.
+    // Google Calendar already sent the RSVP invite; this email just shows the alias as sender.
+    const sendAliasEmail = !!input.organizerEmail && !!this.gmailPort && !input.skipCalendar;
+    if (sendAliasEmail) {
+      const meetLinkHtml = meetLink
+        ? `<p><a href="${meetLink}">Entrar no Google Meet</a></p>`
+        : "";
+      const descHtml = input.description ? `<p>${input.description}</p>` : "";
+      const bodyHtml = `<p>Olá,</p><p>Agendei uma reunião com você: <strong>${input.title.trim()}</strong>.</p>${descHtml}${meetLinkHtml}`;
+
       for (const to of attendeeEmails) {
         try {
-          await this.gmailPort!.sendCalendarInvite({
+          await this.gmailPort!.send({
             userId: "google-token-singleton",
             to,
-            subject: `Convite: ${input.title.trim()}`,
-            bodyHtml: `<p>Você foi convidado para <strong>${input.title.trim()}</strong>.</p>${input.description ? `<p>${input.description}</p>` : ""}${meetLink ? `<p><a href="${meetLink}">Entrar no Google Meet</a></p>` : ""}`,
             from: input.organizerEmail!,
-            organizerEmail: input.organizerEmail!,
-            attendeeEmails,
-            startAt: input.startAt,
-            endAt,
-            title: input.title.trim(),
-            description: input.description,
-            googleEventId,
-            meetLink,
+            subject: `Reunião agendada: ${input.title.trim()}`,
+            bodyHtml,
           });
         } catch (err) {
-          this.logger.warn("Failed to send calendar invite via Gmail alias", {
+          this.logger.warn("Failed to send alias courtesy email", {
             to,
             organizerEmail: input.organizerEmail,
             error: err instanceof Error ? err.message : String(err),
