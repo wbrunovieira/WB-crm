@@ -973,58 +973,47 @@ export function LeadActivitiesList({
           { label: "Nº inválido",     count: byOutcome.invalid_number, color: "text-gray-600 bg-gray-50 border-gray-200" },
         ].filter((i) => i.count > 0);
 
+        const statChips: { type: string; label: string; count: number; base: string; active: string }[] = [
+          { type: "all",            label: "Total",    count: activities.length, base: "border-gray-200 bg-white text-gray-700",           active: "border-primary bg-primary text-white" },
+          { type: "call",           label: "Ligações", count: callActivities.length, base: "border-violet-200 bg-violet-50 text-violet-800", active: "border-violet-600 bg-violet-600 text-white" },
+          { type: "meeting",        label: "Reuniões", count: meetings,           base: "border-amber-200 bg-amber-50 text-amber-800",       active: "border-amber-600 bg-amber-600 text-white" },
+          { type: "whatsapp",       label: "WhatsApp", count: whatsapps,          base: "border-emerald-200 bg-emerald-50 text-emerald-800", active: "border-emerald-600 bg-emerald-600 text-white" },
+          { type: "email",          label: "E-mail",   count: emails,             base: "border-blue-200 bg-blue-50 text-blue-800",          active: "border-blue-600 bg-blue-600 text-white" },
+          { type: "task",           label: "Tarefas",  count: tasks,              base: "border-gray-200 bg-white text-gray-600",            active: "border-gray-600 bg-gray-600 text-white" },
+        ].filter((c) => c.count > 0 || c.type === "all");
+
         return (
-          <div className="mb-4 rounded-lg border border-gray-100 bg-gray-50 p-3">
-            <div className="flex flex-wrap gap-2">
-              {/* Total activities */}
-              <div className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5">
-                <span className="text-xs font-semibold text-gray-500">Total</span>
-                <span className="text-sm font-bold text-gray-900">{activities.length}</span>
-              </div>
-
-              {/* Calls */}
-              {callActivities.length > 0 && (
-                <div className="flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-2.5 py-1.5">
-                  <svg className="h-3.5 w-3.5 text-blue-600" fill="currentColor" viewBox="0 0 24 24"><path d="M6.62 10.79c1.44 2.83 3.76 5.14 6.59 6.59l2.2-2.2c.27-.27.67-.36 1.02-.24 1.12.37 2.33.57 3.57.57.55 0 1 .45 1 1V20c0 .55-.45 1-1 1-9.39 0-17-7.61-17-17 0-.55.45-1 1-1h3.5c.55 0 1 .45 1 1 0 1.25.2 2.45.57 3.57.11.35.03.74-.25 1.02l-2.2 2.2z"/></svg>
-                  <span className="text-xs font-semibold text-blue-700">Ligações</span>
-                  <span className="text-sm font-bold text-blue-900">{callActivities.length}</span>
-                </div>
-              )}
-
-              {/* Call outcome breakdown */}
-              {callOutcomeItems.map((item) => (
-                <div key={item.label} className={`flex items-center gap-1 rounded-md border px-2 py-1.5 ${item.color}`}>
-                  <span className="text-xs font-medium">{item.label}</span>
-                  <span className="text-sm font-bold">{item.count}</span>
-                </div>
+          <div className="mb-4 rounded-lg border border-gray-100 bg-gray-50 p-3 space-y-2">
+            {/* Clickable type filter chips */}
+            <div className="flex flex-wrap gap-1.5">
+              {statChips.map(({ type, label, count, base, active }) => (
+                <button
+                  key={type}
+                  onClick={() => setFilterType(type)}
+                  className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-all ${
+                    filterType === type ? active + " shadow-sm" : base + " hover:opacity-80"
+                  }`}
+                >
+                  <ActivityTypeIcon type={type} className="h-3 w-3" />
+                  {label}
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${filterType === type ? "bg-white/20" : "bg-black/10"}`}>
+                    {count}
+                  </span>
+                </button>
               ))}
-
-              {/* Other activity types */}
-              {meetings > 0 && (
-                <div className="flex items-center gap-1.5 rounded-md border border-indigo-200 bg-indigo-50 px-2.5 py-1.5">
-                  <span className="text-xs font-semibold text-indigo-700">Reuniões</span>
-                  <span className="text-sm font-bold text-indigo-900">{meetings}</span>
-                </div>
-              )}
-              {whatsapps > 0 && (
-                <div className="flex items-center gap-1.5 rounded-md border border-green-200 bg-green-50 px-2.5 py-1.5">
-                  <span className="text-xs font-semibold text-green-700">WhatsApp</span>
-                  <span className="text-sm font-bold text-green-900">{whatsapps}</span>
-                </div>
-              )}
-              {emails > 0 && (
-                <div className="flex items-center gap-1.5 rounded-md border border-sky-200 bg-sky-50 px-2.5 py-1.5">
-                  <span className="text-xs font-semibold text-sky-700">E-mail</span>
-                  <span className="text-sm font-bold text-sky-900">{emails}</span>
-                </div>
-              )}
-              {tasks > 0 && (
-                <div className="flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-2.5 py-1.5">
-                  <span className="text-xs font-semibold text-gray-600">Tarefas</span>
-                  <span className="text-sm font-bold text-gray-900">{tasks}</span>
-                </div>
-              )}
             </div>
+
+            {/* Call outcome breakdown (non-clickable, contextual) */}
+            {callOutcomeItems.length > 0 && (filterType === "all" || filterType === "call") && (
+              <div className="flex flex-wrap gap-1.5 border-t border-gray-200 pt-2">
+                {callOutcomeItems.map((item) => (
+                  <div key={item.label} className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs font-medium ${item.color}`}>
+                    <span>{item.label}</span>
+                    <span className="font-bold">{item.count}</span>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         );
       })()}
@@ -1043,21 +1032,6 @@ export function LeadActivitiesList({
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <select
-              value={filterType}
-              onChange={(e) => setFilterType(e.target.value)}
-              className="rounded-lg border border-gray-200 bg-white px-2 py-1.5 text-xs font-medium text-gray-600 focus:border-primary focus:outline-none"
-            >
-              <option value="all">Todos os tipos</option>
-              <option value="call">Ligação</option>
-              <option value="email">E-mail</option>
-              <option value="meeting">Reunião</option>
-              <option value="task">Tarefa</option>
-              <option value="whatsapp">WhatsApp</option>
-              <option value="linkedin">LinkedIn</option>
-              <option value="instagram_dm">Instagram DM</option>
-              <option value="physical_visit">Visita</option>
-            </select>
             {([
               { key: "all",       label: "Todas",      active: "bg-gray-700 text-white",         inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200" },
               { key: "pending",   label: "Pendentes",  active: "bg-blue-600 text-white",          inactive: "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100" },
