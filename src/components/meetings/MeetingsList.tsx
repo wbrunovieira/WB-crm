@@ -136,6 +136,7 @@ export default function MeetingsList({
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [expandedTranscript, setExpandedTranscript] = useState<string | null>(null);
   const [expandedSummary, setExpandedSummary] = useState<string | null>(null);
+  const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
 
   function handleSummaryUpdated(meetingId: string, newSummary: string | null) {
     setMeetings((prev) =>
@@ -211,8 +212,10 @@ export default function MeetingsList({
                     suggestedContacts={suggestedContacts}
                     expandedTranscript={expandedTranscript}
                     expandedSummary={expandedSummary}
+                    expandedPlayer={expandedPlayer}
                     onToggleTranscript={setExpandedTranscript}
                     onToggleSummary={setExpandedSummary}
+                    onTogglePlayer={setExpandedPlayer}
                     onSummaryUpdated={handleSummaryUpdated}
                     onCancel={handleCancel}
                     onEdit={setEditingMeeting}
@@ -236,8 +239,10 @@ export default function MeetingsList({
                     suggestedContacts={suggestedContacts}
                     expandedTranscript={expandedTranscript}
                     expandedSummary={expandedSummary}
+                    expandedPlayer={expandedPlayer}
                     onToggleTranscript={setExpandedTranscript}
                     onToggleSummary={setExpandedSummary}
+                    onTogglePlayer={setExpandedPlayer}
                     onSummaryUpdated={handleSummaryUpdated}
                     onCancel={handleCancel}
                     onEdit={setEditingMeeting}
@@ -309,8 +314,10 @@ function MeetingCard({
   suggestedContacts,
   expandedTranscript,
   expandedSummary,
+  expandedPlayer,
   onToggleTranscript,
   onToggleSummary,
+  onTogglePlayer,
   onSummaryUpdated,
   onCancel,
   onEdit,
@@ -319,8 +326,10 @@ function MeetingCard({
   suggestedContacts: SuggestedContact[];
   expandedTranscript: string | null;
   expandedSummary: string | null;
+  expandedPlayer: string | null;
   onToggleTranscript: (id: string | null) => void;
   onToggleSummary: (id: string | null) => void;
+  onTogglePlayer: (id: string | null) => void;
   onSummaryUpdated: (id: string, summary: string | null) => void;
   onCancel: (id: string) => Promise<void>;
   onEdit: (meeting: Meeting) => void;
@@ -342,6 +351,7 @@ function MeetingCard({
   const hasSummary = !!meeting.meetingSummary;
   const isTranscriptOpen = expandedTranscript === meeting.id;
   const isSummaryOpen = expandedSummary === meeting.id;
+  const isPlayerOpen = expandedPlayer === meeting.id;
   const attendees = parseAttendees(meeting.attendeeEmails);
   const externalAttendees = attendees.filter((a) => !a.self);
 
@@ -507,15 +517,28 @@ function MeetingCard({
       {isEnded && (hasRecording || hasTranscript || hasSummary || true) && (
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-200 pt-3">
           {hasRecording && (
-            <a
-              href={meeting.recordingUrl!}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-1.5 rounded-md border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100"
-            >
-              <Play size={13} />
-              Ver Gravação
-            </a>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => onTogglePlayer(isPlayerOpen ? null : meeting.id)}
+                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  isPlayerOpen
+                    ? "border-purple-400 bg-purple-100 text-purple-800"
+                    : "border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
+                }`}
+              >
+                <Play size={13} />
+                {isPlayerOpen ? "Fechar Player" : "Ver Gravação"}
+              </button>
+              <a
+                href={meeting.recordingUrl!}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Abrir no Drive"
+                className="rounded-md border border-gray-200 p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-600"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+              </a>
+            </div>
           )}
 
           {/* Summary button — always show for ended meetings so user can add manually */}
@@ -599,6 +622,18 @@ function MeetingCard({
               )}
             </p>
           )}
+        </div>
+      )}
+
+      {/* Video player (expanded) */}
+      {isPlayerOpen && meeting.recordingDriveId && (
+        <div className="mt-3 overflow-hidden rounded-lg border border-purple-200 bg-black">
+          <iframe
+            src={`https://drive.google.com/file/d/${meeting.recordingDriveId}/preview`}
+            allow="autoplay"
+            className="h-64 w-full sm:h-80 lg:h-96"
+            title={`Gravação: ${meeting.title}`}
+          />
         </div>
       )}
 
