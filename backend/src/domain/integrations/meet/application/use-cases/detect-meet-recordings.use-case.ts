@@ -35,15 +35,21 @@ export class DetectMeetRecordingsUseCase {
     // ── Pass 0: Drive-first detection (catches early/late meetings) ──────────
     try {
       const folderId = await this.drive.findMeetRecordingsFolder();
+      this.logger.log(`Pass 0: Drive folder ${folderId ? `found (${folderId})` : "NOT FOUND"}`);
       if (folderId) {
         const since6h = new Date(now.getTime() - 6 * 60 * 60 * 1000).toISOString();
         const recentFiles = await this.drive.listFilesInFolder(folderId, since6h);
+        this.logger.log(`Pass 0: ${recentFiles.length} file(s) in Drive folder since ${since6h}`);
+        if (recentFiles.length > 0) {
+          this.logger.log(`Pass 0: files = ${recentFiles.map((f) => f.name).join(", ")}`);
+        }
 
         const titlesInDrive = new Set<string>();
         for (const f of recentFiles) {
           const match = f.name.match(/^(.+?) - \d{4}\/\d{2}\/\d{2}/);
           if (match) titlesInDrive.add(match[1].toLowerCase());
         }
+        this.logger.log(`Pass 0: titles extracted = [${[...titlesInDrive].join(", ")}]`);
 
         if (titlesInDrive.size > 0) {
           const scheduled = await this.meetings.findScheduled();

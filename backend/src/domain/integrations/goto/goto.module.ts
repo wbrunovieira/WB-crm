@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { ScheduleModule } from "@nestjs/schedule";
 import { EventEmitterModule, EventEmitter2 } from "@nestjs/event-emitter";
 import { ActivitiesModule } from "@/domain/activities/activities.module";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
@@ -30,7 +29,7 @@ import { GotoActivityCreatedListener } from "./infra/listeners/goto-activity-cre
 import { GotoTranscriptionPollerListener } from "./infra/listeners/goto-transcription-poller.listener";
 
 @Module({
-  imports: [ScheduleModule.forRoot(), EventEmitterModule, SharedInfraModule, ActivitiesModule, AuthModule],
+  imports: [EventEmitterModule, SharedInfraModule, ActivitiesModule, AuthModule],
   controllers: [GoToWebhookController, GoToRecordingsController, TranscriptionWebhookController],
   providers: [
     // Use Cases

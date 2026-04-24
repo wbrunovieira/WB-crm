@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { ScheduleModule } from "@nestjs/schedule";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
 import { ActivitiesModule } from "@/domain/activities/activities.module";
 import { AuthModule } from "@/infra/auth/auth.module";
@@ -39,7 +38,7 @@ import { GmailPollCronService } from "./infra/scheduled/gmail-poll-cron.service"
 import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.repository";
 
 @Module({
-  imports: [ScheduleModule.forRoot(), SharedInfraModule, ActivitiesModule, AuthModule],
+  imports: [SharedInfraModule, ActivitiesModule, AuthModule],
   controllers: [EmailWebhookController, EmailController, GoogleOAuthController],
   providers: [
     // Use Cases
