@@ -62,71 +62,69 @@ export default async function LeadDetailPage({
     backendFetch<Meeting[]>(`/meetings?leadId=${params.id}`).catch((): Meeting[] => []),
   ]);
 
-  if (!lead) {
-    notFound();
-  }
+  if (!lead) notFound();
 
   const isAdmin = session?.user?.role?.toLowerCase() === "admin";
 
-  const statusLabels: Record<string, string> = {
-    new: "Novo",
-    contacted: "Contatado",
-    qualified: "Qualificado",
-    disqualified: "Desqualificado",
+  const statusMap: Record<string, { label: string; cls: string }> = {
+    new:           { label: "Novo",          cls: "bg-purple-900/40 text-purple-300 border border-purple-700" },
+    contacted:     { label: "Contatado",     cls: "bg-blue-900/40 text-blue-300 border border-blue-700" },
+    qualified:     { label: "Qualificado",   cls: "bg-green-900/40 text-green-300 border border-green-700" },
+    disqualified:  { label: "Desqualificado",cls: "bg-red-900/40 text-red-300 border border-red-700" },
   };
 
-  const qualityColors: Record<string, string> = {
-    hot: "bg-red-100 text-red-700 border border-red-200",
-    warm: "bg-orange-100 text-orange-700 border border-orange-200",
-    cold: "bg-blue-100 text-blue-700 border border-blue-200",
+  const qualityMap: Record<string, { label: string; cls: string }> = {
+    hot:  { label: "Quente", cls: "bg-red-900/40 text-red-300 border border-red-700" },
+    warm: { label: "Morno",  cls: "bg-orange-900/40 text-orange-300 border border-orange-700" },
+    cold: { label: "Frio",   cls: "bg-blue-900/40 text-blue-300 border border-blue-700" },
   };
-  const qualityLabels: Record<string, string> = { cold: "Frio", warm: "Morno", hot: "Quente" };
+
+  const statusCfg  = statusMap[lead.status]  ?? statusMap.new;
+  const qualityCfg = lead.quality ? qualityMap[lead.quality] : null;
 
   const hasCompanyInfo = !!(
     lead.companyOwner || lead.companySize || lead.revenue ||
     lead.employeesCount || lead.primaryActivity || lead.secondaryActivities ||
     lead.businessStatus || lead.equityCapital
   );
-  const hasSocials = !!(
-    lead.instagram || lead.linkedin || lead.facebook || lead.twitter || lead.tiktok
-  );
-  const hasGooglePlaces = !!(
-    lead.googleId || lead.categories || lead.rating || lead.userRatingsTotal || lead.priceLevel || lead.types
-  );
+  const hasSocials = !!(lead.instagram || lead.linkedin || lead.facebook || lead.twitter || lead.tiktok);
+  const hasGooglePlaces = !!(lead.googleId || lead.categories || lead.rating || lead.userRatingsTotal || lead.priceLevel || lead.types);
   const hasMeta = !!(lead.source || lead.searchTerm || lead.category || lead.radius);
 
+  /* ── label styles ────────────────────────────────────── */
+  const dtCls = "text-xs font-semibold uppercase tracking-wide text-purple-400 mb-0.5";
+  const ddCls = "text-sm font-medium text-gray-300";
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#792990] via-[#8b3fa3] to-[#6a1b7a] p-4 md:p-8">
-      {/* ── Header ─────────────────────────────────────────────────── */}
-      <div className="mb-6 rounded-2xl bg-white p-6 shadow-lg">
+    <div className="min-h-screen bg-[#350045] p-4 md:p-8">
+
+      {/* ── Header card ──────────────────────────────────────────────── */}
+      <div className="mb-6 rounded-2xl bg-white shadow-lg border border-purple-900/40 p-6">
+
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-          {/* Title + badges */}
+          {/* Title block */}
           <div className="flex-1 min-w-0">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
-                {lead.businessName}
-              </h1>
-              {lead.quality && (
-                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${qualityColors[lead.quality]}`}>
-                  {qualityLabels[lead.quality]}
+            {/* Name — primary hierarchy */}
+            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-2">
+              {lead.businessName}
+            </h1>
+
+            {/* Badges row — secondary hierarchy, all xs */}
+            <div className="flex flex-wrap items-center gap-1.5">
+              <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${statusCfg.cls}`}>
+                {statusCfg.label}
+              </span>
+              {qualityCfg && (
+                <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${qualityCfg.cls}`}>
+                  {qualityCfg.label}
                 </span>
               )}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              <span className={`inline-flex items-center rounded-lg px-3 py-1 text-sm font-semibold ${
-                lead.status === "qualified" ? "bg-green-100 text-green-800 border border-green-200"
-                  : lead.status === "contacted" ? "bg-blue-100 text-blue-800 border border-blue-200"
-                  : lead.status === "disqualified" ? "bg-red-100 text-red-800 border border-red-200"
-                  : "bg-gray-100 text-gray-700 border border-gray-200"
-              }`}>
-                {statusLabels[lead.status]}
-              </span>
               {lead.isArchived && (
-                <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-1 border border-amber-200 text-sm font-semibold text-amber-800">
+                <span className="inline-flex items-center gap-1 rounded-md bg-amber-900/40 text-amber-300 border border-amber-700 px-2 py-0.5 text-xs font-semibold">
                   Arquivado
                   {lead.archivedAt && (
-                    <span className="font-normal text-amber-600 text-xs">
-                      em {formatDate(lead.archivedAt)}
+                    <span className="font-normal opacity-80">
+                      · {formatDate(lead.archivedAt)}
                       {lead.archivedReason && ` · ${lead.archivedReason}`}
                     </span>
                   )}
@@ -135,8 +133,8 @@ export default async function LeadDetailPage({
               {lead.labels?.map((label) => (
                 <span
                   key={label.id}
-                  className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
-                  style={{ backgroundColor: `${label.color}18`, color: label.color, border: `1.5px solid ${label.color}40` }}
+                  className="inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold"
+                  style={{ backgroundColor: `${label.color}22`, color: label.color, border: `1px solid ${label.color}55` }}
                 >
                   {label.name}
                 </span>
@@ -144,7 +142,7 @@ export default async function LeadDetailPage({
             </div>
           </div>
 
-          {/* Action buttons */}
+          {/* Actions */}
           <div className="flex flex-wrap gap-2 flex-shrink-0">
             {!lead.convertedAt && (
               <>
@@ -152,7 +150,7 @@ export default async function LeadDetailPage({
                   <>
                     <Link
                       href={`/leads/${lead.id}/edit`}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-purple-800 transition-colors"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
                     >
                       <Pencil size={14} />
                       Editar
@@ -167,7 +165,7 @@ export default async function LeadDetailPage({
             {lead.convertedAt && lead.convertedOrganization && (
               <Link
                 href={`/organizations/${lead.convertedOrganization.id}`}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800 transition-colors"
               >
                 <Building2 size={14} />
                 Ver Organização
@@ -176,22 +174,22 @@ export default async function LeadDetailPage({
           </div>
         </div>
 
-        {/* Quick-nav anchors */}
-        <div className="mt-4 flex flex-wrap gap-1.5 border-t border-gray-100 pt-4">
+        {/* Quick-nav — dark-safe pills */}
+        <div className="mt-4 flex flex-wrap gap-1.5 border-t border-purple-900/40 pt-4">
           {[
-            { href: "#contatos", icon: <Users size={12} />, label: "Contatos" },
-            { href: "#atividades", icon: <Activity size={12} />, label: "Atividades" },
-            { href: "#reunioes", icon: <Video size={12} />, label: "Reuniões" },
-            { href: "#propostas", icon: <FileText size={12} />, label: "Propostas" },
-            { href: "#produtos", icon: <Package size={12} />, label: "Produtos" },
-            { href: "#tech", icon: <Cpu size={12} />, label: "Tech" },
-            { href: "#cadencia", icon: <CalendarClock size={12} />, label: "Cadência" },
-            { href: "#cnae", icon: <BarChart2 size={12} />, label: "CNAE" },
+            { href: "#contatos",  icon: <Users size={11} />,        label: "Contatos" },
+            { href: "#atividades",icon: <Activity size={11} />,     label: "Atividades" },
+            { href: "#reunioes",  icon: <Video size={11} />,        label: "Reuniões" },
+            { href: "#propostas", icon: <FileText size={11} />,     label: "Propostas" },
+            { href: "#produtos",  icon: <Package size={11} />,      label: "Produtos" },
+            { href: "#tech",      icon: <Cpu size={11} />,          label: "Tech" },
+            { href: "#cadencia",  icon: <CalendarClock size={11} />,label: "Cadência" },
+            { href: "#cnae",      icon: <BarChart2 size={11} />,    label: "CNAE" },
           ].map(({ href, icon, label }) => (
             <a
               key={href}
               href={href}
-              className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors"
+              className="inline-flex items-center gap-1 rounded-full border border-purple-700/60 bg-purple-900/30 px-2.5 py-1 text-xs font-medium text-purple-300 hover:bg-purple-800/40 hover:text-purple-200 transition-colors"
             >
               {icon}
               {label}
@@ -200,77 +198,77 @@ export default async function LeadDetailPage({
         </div>
       </div>
 
-      {/* Conversion / In-ops banners */}
+      {/* Banners */}
       {lead.convertedAt && (
-        <div className="mb-5 rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm">
-          <p className="flex items-center gap-2 text-sm font-semibold text-green-800">
-            <Building2 size={16} className="text-green-600" />
+        <div className="mb-5 rounded-xl border border-green-700/60 bg-green-900/20 p-4 shadow-sm">
+          <p className="flex items-center gap-2 text-sm font-semibold text-green-300">
+            <Building2 size={15} className="text-green-400" />
             Lead convertido em {formatDate(lead.convertedAt)}
           </p>
         </div>
       )}
       {lead.inOperationsAt && (
-        <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
-          <p className="flex items-center gap-2 text-sm font-semibold text-amber-800">
-            <Activity size={16} className="text-amber-600" />
+        <div className="mb-5 rounded-xl border border-amber-700/60 bg-amber-900/20 p-4 shadow-sm">
+          <p className="flex items-center gap-2 text-sm font-semibold text-amber-300">
+            <Activity size={15} className="text-amber-400" />
             In Operations desde {formatDate(lead.inOperationsAt)} — comunicações automáticas pausadas
           </p>
         </div>
       )}
 
-      {/* ── Top 3-column grid ───────────────────────────────────────── */}
+      {/* ── 3-column grid ────────────────────────────────────────────── */}
       <div className="grid gap-5 lg:grid-cols-3">
 
         {/* Informações Básicas */}
-        <div className="rounded-xl bg-white p-6 shadow-md">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-primary border-b border-purple-100 pb-3">
-            <Building2 size={16} />
+        <div className="rounded-xl bg-white shadow-md border border-purple-900/40 p-5">
+          <h2 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-400 border-b border-purple-900/40 pb-3">
+            <Building2 size={14} />
             Informações Básicas
           </h2>
           <dl className="space-y-4">
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Nome Comercial</dt>
-              <dd className="text-sm font-medium text-gray-900">{lead.businessName}</dd>
+              <dt className={dtCls}>Nome Comercial</dt>
+              <dd className={ddCls}>{lead.businessName}</dd>
             </div>
             {lead.registeredName && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Razão Social</dt>
-                <dd className="text-sm font-medium text-gray-900">{lead.registeredName}</dd>
+                <dt className={dtCls}>Razão Social</dt>
+                <dd className={ddCls}>{lead.registeredName}</dd>
               </div>
             )}
             {lead.companyRegistrationID && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">CNPJ</dt>
-                <dd className="text-sm font-mono text-gray-900">{lead.companyRegistrationID}</dd>
+                <dt className={dtCls}>CNPJ</dt>
+                <dd className="text-sm font-mono text-gray-300">{lead.companyRegistrationID}</dd>
               </div>
             )}
             {lead.foundationDate && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Fundação</dt>
-                <dd className="text-sm font-medium text-gray-900">{formatDate(lead.foundationDate)}</dd>
+                <dt className={dtCls}>Fundação</dt>
+                <dd className={ddCls}>{formatDate(lead.foundationDate)}</dd>
               </div>
             )}
             {lead.description && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Descrição</dt>
-                <dd className="text-sm leading-relaxed text-gray-700">{lead.description}</dd>
+                <dt className={dtCls}>Descrição</dt>
+                <dd className="text-sm leading-relaxed text-gray-400">{lead.description}</dd>
               </div>
             )}
           </dl>
         </div>
 
         {/* Contato */}
-        <div className="rounded-xl bg-white p-6 shadow-md">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-primary border-b border-purple-100 pb-3">
-            <Phone size={16} />
+        <div className="rounded-xl bg-white shadow-md border border-purple-900/40 p-5">
+          <h2 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-400 border-b border-purple-900/40 pb-3">
+            <Phone size={14} />
             Contato da Empresa
           </h2>
           <dl className="space-y-4">
             {lead.phone && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Telefone</dt>
-                <dd className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-900">
-                  <PhoneLink phone={lead.phone} className="text-gray-900 hover:text-primary" />
+                <dt className={dtCls}>Telefone</dt>
+                <dd className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-300">
+                  <PhoneLink phone={lead.phone} className="text-gray-300 hover:text-purple-300" />
                   <WhatsAppCheckButton
                     phone={lead.phone}
                     entityType="lead"
@@ -285,8 +283,8 @@ export default async function LeadDetailPage({
             )}
             {lead.whatsapp && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">WhatsApp</dt>
-                <dd className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-900">
+                <dt className={dtCls}>WhatsApp</dt>
+                <dd className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-300">
                   <span>{lead.whatsapp}</span>
                   <WhatsAppCheckButton
                     phone={lead.whatsapp}
@@ -302,9 +300,9 @@ export default async function LeadDetailPage({
             )}
             {lead.email && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Email</dt>
-                <dd className="flex items-center gap-2 text-sm text-gray-900">
-                  <a href={`mailto:${lead.email}`} className="font-medium hover:text-primary hover:underline">
+                <dt className={dtCls}>Email</dt>
+                <dd className="flex items-center gap-2 text-sm">
+                  <a href={`mailto:${lead.email}`} className="font-medium text-purple-300 hover:text-purple-200 hover:underline">
                     {lead.email}
                   </a>
                   <GmailButton to={lead.email} name={lead.businessName} leadId={lead.id} variant="icon" />
@@ -313,134 +311,79 @@ export default async function LeadDetailPage({
             )}
             {lead.website && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Website</dt>
+                <dt className={dtCls}>Website</dt>
                 <dd className="text-sm">
                   <a
                     href={lead.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 font-medium text-gray-900 hover:text-primary hover:underline"
+                    className="inline-flex items-center gap-1.5 font-medium text-purple-300 hover:text-purple-200 hover:underline"
                   >
-                    <Globe size={13} className="text-gray-400" />
+                    <Globe size={12} className="text-purple-500 flex-shrink-0" />
                     {lead.website}
                   </a>
                 </dd>
               </div>
             )}
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Idiomas</dt>
-              <dd><LanguageBadges languages={lead.languages ?? null} /></dd>
+              <dt className={dtCls}>Idiomas</dt>
+              <dd className="mt-1"><LanguageBadges languages={lead.languages ?? null} /></dd>
             </div>
           </dl>
         </div>
 
         {/* Localização */}
-        <div className="rounded-xl bg-white p-6 shadow-md">
-          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-primary border-b border-purple-100 pb-3">
-            <MapPin size={16} />
+        <div className="rounded-xl bg-white shadow-md border border-purple-900/40 p-5">
+          <h2 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-400 border-b border-purple-900/40 pb-3">
+            <MapPin size={14} />
             Localização
           </h2>
           <dl className="space-y-4">
-            {lead.address && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Endereço</dt>
-                <dd className="text-sm font-medium text-gray-900">{lead.address}</dd>
-              </div>
-            )}
-            {lead.vicinity && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Bairro/Região</dt>
-                <dd className="text-sm font-medium text-gray-900">{lead.vicinity}</dd>
-              </div>
-            )}
-            {lead.city && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Cidade</dt>
-                <dd className="text-sm font-medium text-gray-900">{lead.city}</dd>
-              </div>
-            )}
-            {lead.state && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Estado</dt>
-                <dd className="text-sm font-medium text-gray-900">{lead.state}</dd>
-              </div>
-            )}
-            {lead.country && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">País</dt>
-                <dd className="text-sm font-medium text-gray-900">{lead.country}</dd>
-              </div>
-            )}
-            {lead.zipCode && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">CEP</dt>
-                <dd className="text-sm font-mono text-gray-900">{lead.zipCode}</dd>
-              </div>
-            )}
+            {lead.address   && <div><dt className={dtCls}>Endereço</dt>     <dd className={ddCls}>{lead.address}</dd></div>}
+            {lead.vicinity  && <div><dt className={dtCls}>Bairro/Região</dt><dd className={ddCls}>{lead.vicinity}</dd></div>}
+            {lead.city      && <div><dt className={dtCls}>Cidade</dt>       <dd className={ddCls}>{lead.city}</dd></div>}
+            {lead.state     && <div><dt className={dtCls}>Estado</dt>       <dd className={ddCls}>{lead.state}</dd></div>}
+            {lead.country   && <div><dt className={dtCls}>País</dt>         <dd className={ddCls}>{lead.country}</dd></div>}
+            {lead.zipCode   && <div><dt className={dtCls}>CEP</dt>          <dd className="text-sm font-mono text-gray-300">{lead.zipCode}</dd></div>}
           </dl>
         </div>
       </div>
 
-      {/* ── Collapsible secondary sections ─────────────────────────── */}
+      {/* ── Collapsible sections ──────────────────────────────────────── */}
 
       {hasCompanyInfo && (
-        <CollapsibleSection
-          id="empresa"
-          icon={<Building2 size={16} />}
-          title="Informações da Empresa"
-          defaultOpen
-        >
+        <CollapsibleSection id="empresa" icon={<Building2 size={14} />} title="Informações da Empresa">
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {lead.companyOwner && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Proprietário/CEO</dt>
-                <dd className="text-sm font-medium text-gray-900">{lead.companyOwner}</dd>
-              </div>
-            )}
-            {lead.companySize && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Tamanho</dt>
-                <dd className="text-sm font-medium text-gray-900">{lead.companySize}</dd>
-              </div>
-            )}
-            {lead.employeesCount && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Funcionários</dt>
-                <dd className="text-sm font-semibold text-gray-900">{lead.employeesCount}</dd>
-              </div>
-            )}
+            {lead.companyOwner    && <div><dt className={dtCls}>Proprietário/CEO</dt><dd className={ddCls}>{lead.companyOwner}</dd></div>}
+            {lead.companySize     && <div><dt className={dtCls}>Tamanho</dt>         <dd className={ddCls}>{lead.companySize}</dd></div>}
+            {lead.employeesCount  && <div><dt className={dtCls}>Funcionários</dt>    <dd className={ddCls}>{lead.employeesCount}</dd></div>}
             {lead.revenue && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Receita Anual</dt>
-                <dd className="text-sm font-semibold text-gray-900">
+                <dt className={dtCls}>Receita Anual</dt>
+                <dd className="text-sm font-semibold text-green-300">
                   {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(lead.revenue)}
                 </dd>
               </div>
             )}
             {lead.equityCapital && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Capital Social</dt>
-                <dd className="text-sm font-semibold text-gray-900">
+                <dt className={dtCls}>Capital Social</dt>
+                <dd className="text-sm font-semibold text-green-300">
                   {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(lead.equityCapital)}
                 </dd>
               </div>
             )}
-            {lead.businessStatus && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Status do Negócio</dt>
-                <dd className="text-sm font-medium text-gray-900">{lead.businessStatus}</dd>
-              </div>
-            )}
+            {lead.businessStatus  && <div><dt className={dtCls}>Status</dt>           <dd className={ddCls}>{lead.businessStatus}</dd></div>}
             {lead.primaryActivity && (
               <div className="md:col-span-2 lg:col-span-3">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Atividade Primária</dt>
-                <dd className="text-sm font-medium text-gray-900">{lead.primaryActivity}</dd>
+                <dt className={dtCls}>Atividade Primária</dt>
+                <dd className={ddCls}>{lead.primaryActivity}</dd>
               </div>
             )}
             {lead.secondaryActivities && (
               <div className="md:col-span-2 lg:col-span-3">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Atividades Secundárias</dt>
-                <dd className="text-sm leading-relaxed text-gray-700">{lead.secondaryActivities}</dd>
+                <dt className={dtCls}>Atividades Secundárias</dt>
+                <dd className="text-sm leading-relaxed text-gray-400">{lead.secondaryActivities}</dd>
               </div>
             )}
           </div>
@@ -448,32 +391,27 @@ export default async function LeadDetailPage({
       )}
 
       {hasSocials && (
-        <CollapsibleSection
-          id="redes"
-          icon={<Share2 size={16} />}
-          title="Redes Sociais"
-          defaultOpen={false}
-        >
+        <CollapsibleSection id="redes" icon={<Share2 size={14} />} title="Redes Sociais" defaultOpen={false}>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {[
               { key: "instagram", label: "Instagram", url: lead.instagram, base: "https://instagram.com/" },
-              { key: "linkedin", label: "LinkedIn", url: lead.linkedin, base: "https://linkedin.com/company/" },
-              { key: "facebook", label: "Facebook", url: lead.facebook, base: "https://facebook.com/" },
-              { key: "twitter", label: "Twitter/X", url: lead.twitter, base: "https://twitter.com/" },
-              { key: "tiktok", label: "TikTok", url: lead.tiktok, base: "https://tiktok.com/@" },
+              { key: "linkedin",  label: "LinkedIn",  url: lead.linkedin,  base: "https://linkedin.com/company/" },
+              { key: "facebook",  label: "Facebook",  url: lead.facebook,  base: "https://facebook.com/" },
+              { key: "twitter",   label: "Twitter/X", url: lead.twitter,   base: "https://twitter.com/" },
+              { key: "tiktok",    label: "TikTok",    url: lead.tiktok,    base: "https://tiktok.com/@" },
             ]
               .filter((s) => s.url)
               .map((s) => (
                 <div key={s.key}>
-                  <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">{s.label}</dt>
+                  <dt className={dtCls}>{s.label}</dt>
                   <dd>
                     <a
                       href={s.url!.startsWith("http") ? s.url! : `${s.base}${s.url!.replace("@", "")}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-primary hover:underline"
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-purple-300 hover:text-purple-200 hover:underline"
                     >
-                      <Globe size={13} className="text-gray-400 flex-shrink-0" />
+                      <Globe size={12} className="text-purple-500 flex-shrink-0" />
                       {s.url}
                     </a>
                   </dd>
@@ -484,52 +422,46 @@ export default async function LeadDetailPage({
       )}
 
       {hasGooglePlaces && (
-        <CollapsibleSection
-          id="google-places"
-          icon={<Star size={16} />}
-          title="Google Places"
-          defaultOpen={false}
-          accentColor="gray"
-        >
+        <CollapsibleSection id="google-places" icon={<Star size={14} />} title="Google Places" defaultOpen={false}>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {lead.rating && (
-              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Avaliação</dt>
-                <dd className="text-xl font-bold text-gray-900 flex items-center gap-1.5">
-                  <Star size={18} className="text-amber-400 fill-amber-400" />
+              <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
+                <dt className={dtCls}>Avaliação</dt>
+                <dd className="flex items-center gap-1.5 text-xl font-bold text-gray-200 mt-1">
+                  <Star size={16} className="text-amber-400 fill-amber-400" />
                   {lead.rating.toFixed(1)}
-                  <span className="text-xs font-normal text-gray-400">/ 5.0</span>
+                  <span className="text-xs font-normal text-gray-500">/ 5.0</span>
                 </dd>
               </div>
             )}
             {lead.userRatingsTotal && (
-              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Avaliações</dt>
-                <dd className="text-xl font-bold text-primary">{lead.userRatingsTotal}</dd>
+              <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
+                <dt className={dtCls}>Avaliações</dt>
+                <dd className="text-xl font-bold text-purple-300 mt-1">{lead.userRatingsTotal}</dd>
               </div>
             )}
             {lead.priceLevel && (
-              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Nível de Preço</dt>
-                <dd className="text-sm font-bold text-gray-900">{"R$".repeat(lead.priceLevel)}</dd>
+              <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
+                <dt className={dtCls}>Nível de Preço</dt>
+                <dd className="text-sm font-bold text-green-300 mt-1">{"R$".repeat(lead.priceLevel)}</dd>
               </div>
             )}
             {lead.categories && (
-              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4 md:col-span-2 lg:col-span-4">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Categorias</dt>
-                <dd className="text-sm font-medium text-gray-900">{lead.categories}</dd>
+              <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4 md:col-span-2 lg:col-span-4">
+                <dt className={dtCls}>Categorias</dt>
+                <dd className={ddCls + " mt-1"}>{lead.categories}</dd>
               </div>
             )}
             {lead.types && (
-              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4 md:col-span-2 lg:col-span-4">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Tipos</dt>
-                <dd className="text-sm text-gray-700">{lead.types}</dd>
+              <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4 md:col-span-2 lg:col-span-4">
+                <dt className={dtCls}>Tipos</dt>
+                <dd className="text-sm text-gray-400 mt-1">{lead.types}</dd>
               </div>
             )}
             {lead.googleId && (
-              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4 md:col-span-2 lg:col-span-4">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Google Places ID</dt>
-                <dd className="text-xs font-mono text-gray-500 break-all">{lead.googleId}</dd>
+              <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4 md:col-span-2 lg:col-span-4">
+                <dt className={dtCls}>Google Places ID</dt>
+                <dd className="text-xs font-mono text-gray-500 mt-1 break-all">{lead.googleId}</dd>
               </div>
             )}
           </div>
@@ -537,36 +469,30 @@ export default async function LeadDetailPage({
       )}
 
       {hasMeta && (
-        <CollapsibleSection
-          id="metadados"
-          icon={<Search size={16} />}
-          title="Metadados de Busca"
-          defaultOpen={false}
-          accentColor="gray"
-        >
+        <CollapsibleSection id="metadados" icon={<Search size={14} />} title="Metadados de Busca" defaultOpen={false}>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {lead.source && (
-              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Fonte</dt>
-                <dd className="text-sm font-semibold text-gray-900">{lead.source}</dd>
+              <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
+                <dt className={dtCls}>Fonte</dt>
+                <dd className={ddCls + " mt-1"}>{lead.source}</dd>
               </div>
             )}
             {lead.searchTerm && (
-              <div className="rounded-lg bg-purple-50 border border-purple-100 p-4">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-purple-600 mb-1">Termo de Busca</dt>
-                <dd className="text-sm font-semibold text-purple-900">&quot;{lead.searchTerm}&quot;</dd>
+              <div className="rounded-lg bg-purple-800/20 border border-purple-600/40 p-4">
+                <dt className={dtCls}>Termo de Busca</dt>
+                <dd className="text-sm font-semibold text-purple-200 mt-1">&quot;{lead.searchTerm}&quot;</dd>
               </div>
             )}
             {lead.category && (
-              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Categoria</dt>
-                <dd className="text-sm font-semibold text-gray-900">{lead.category}</dd>
+              <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
+                <dt className={dtCls}>Categoria</dt>
+                <dd className={ddCls + " mt-1"}>{lead.category}</dd>
               </div>
             )}
             {lead.radius && (
-              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Raio de Busca</dt>
-                <dd className="text-sm font-semibold text-gray-900">{lead.radius} km</dd>
+              <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
+                <dt className={dtCls}>Raio de Busca</dt>
+                <dd className={ddCls + " mt-1"}>{lead.radius} km</dd>
               </div>
             )}
           </div>
@@ -574,13 +500,7 @@ export default async function LeadDetailPage({
       )}
 
       {isAdmin && lead.owner && (
-        <CollapsibleSection
-          id="acesso"
-          icon={<ShieldCheck size={16} />}
-          title="Gerenciamento de Acesso"
-          defaultOpen={false}
-          accentColor="gray"
-        >
+        <CollapsibleSection id="acesso" icon={<ShieldCheck size={14} />} title="Gerenciamento de Acesso" defaultOpen={false}>
           <EntityManagementPanel
             entityType="lead"
             entityId={lead.id}
@@ -593,7 +513,7 @@ export default async function LeadDetailPage({
         </CollapsibleSection>
       )}
 
-      {/* ── Client sections (own collapse internally or always visible) ── */}
+      {/* ── Client sections ───────────────────────────────────────────── */}
 
       <div id="produtos" className="mt-6">
         <LeadProductsSection leadId={lead.id} isConverted={!!lead.convertedAt} />
@@ -616,33 +536,24 @@ export default async function LeadDetailPage({
       </div>
 
       {!lead.convertedAt && (
-        <CollapsibleSection
-          id="cnae"
-          icon={<BarChart2 size={16} />}
-          title="Atividades Econômicas (CNAE)"
-          defaultOpen
-        >
+        <CollapsibleSection id="cnae" icon={<BarChart2 size={14} />} title="Atividades Econômicas (CNAE)">
           {lead.primaryCNAE && (
-            <div className="mb-5 rounded-lg bg-purple-50 border border-purple-200 p-4">
-              <dt className="text-xs font-semibold uppercase tracking-wide text-purple-700 mb-2">
-                Atividade Primária
-              </dt>
+            <div className="mb-5 rounded-lg bg-purple-900/30 border border-purple-700/60 p-4">
+              <dt className={dtCls + " mb-2"}>Atividade Primária</dt>
               <dd className="flex items-center gap-3">
-                <span className="font-mono text-xs font-bold text-purple-900 bg-white px-2.5 py-1 rounded-md shadow-sm border border-purple-100">
+                <span className="font-mono text-xs font-bold text-purple-200 bg-purple-900/60 border border-purple-600/50 px-2.5 py-1 rounded-md">
                   {lead.primaryCNAE.code}
                 </span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-300">
                   {lead.primaryCNAE.description}
                 </span>
               </dd>
             </div>
           )}
           {lead.internationalActivity && (
-            <div className="mb-5 rounded-lg bg-gray-50 border border-gray-200 p-4">
-              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                Atividade Internacional
-              </dt>
-              <dd className="text-sm font-medium text-gray-900">{lead.internationalActivity}</dd>
+            <div className="mb-5 rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
+              <dt className={dtCls + " mb-1"}>Atividade Internacional</dt>
+              <dd className={ddCls}>{lead.internationalActivity}</dd>
             </div>
           )}
           <SecondaryCNAEsManager entityId={lead.id} entityType="lead" />
