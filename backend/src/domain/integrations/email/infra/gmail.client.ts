@@ -20,14 +20,16 @@ export class GmailClient extends GmailPort {
     subject: string;
     bodyHtml: string;
     from?: string;
+    replyTo?: string;
+    cc?: string;
     threadId?: string;
     attachments?: GmailAttachment[];
   }): Promise<{ messageId: string; threadId: string }> {
-    const { userId, to, subject, bodyHtml, from, threadId, attachments } = params;
+    const { userId, to, subject, bodyHtml, from, replyTo, cc, threadId, attachments } = params;
 
     this.logger.log("GmailClient.send", { userId, to, subject, from });
 
-    const encodedEmail = this.buildMimeMessage({ to, subject, bodyHtml, from, threadId, attachments });
+    const encodedEmail = this.buildMimeMessage({ to, subject, bodyHtml, from, replyTo, cc, threadId, attachments });
 
     const apiUrl = "https://gmail.googleapis.com/gmail/v1/users/me/messages/send";
     const token = await this.getAccessToken(userId);
@@ -248,6 +250,8 @@ export class GmailClient extends GmailPort {
     subject: string;
     bodyHtml: string;
     from?: string;
+    replyTo?: string;
+    cc?: string;
     threadId?: string;
     attachments?: GmailAttachment[];
   }): string {
@@ -262,6 +266,12 @@ export class GmailClient extends GmailPort {
 
     if (opts.from) {
       headers.push(`From: ${opts.from}`);
+    }
+    if (opts.replyTo) {
+      headers.push(`Reply-To: ${opts.replyTo}`);
+    }
+    if (opts.cc) {
+      headers.push(`Cc: ${opts.cc}`);
     }
 
     let body: string;

@@ -7,6 +7,8 @@ export class FakeGmailPort extends GmailPort {
     subject: string;
     bodyHtml: string;
     from?: string;
+    replyTo?: string;
+    cc?: string;
     threadId?: string;
   }> = [];
 
@@ -30,6 +32,8 @@ export class FakeGmailPort extends GmailPort {
     subject: string;
     bodyHtml: string;
     from?: string;
+    replyTo?: string;
+    cc?: string;
     threadId?: string;
   }): Promise<{ messageId: string; threadId: string }> {
     if (this.shouldFailSend) {

@@ -36,7 +36,7 @@ describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
     expect(calendar.createdEvents[0].sendUpdates).toBe("all");
   });
 
-  it("sends an informational email via Gmail.send (not sendCalendarInvite) from the alias", async () => {
+  it("informational email uses Reply-To and Cc = alias (not From, to avoid Yahoo/SPF blocks)", async () => {
     const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
 
     await useCase.execute({
@@ -50,11 +50,17 @@ describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
 
     expect(gmail.sentMessages).toHaveLength(1);
     expect(gmail.sentCalendarInvites).toHaveLength(0);
-    expect(gmail.sentMessages[0].to).toBe(ATTENDEE);
-    expect(gmail.sentMessages[0].from).toBe(ALIAS);
+
+    const msg = gmail.sentMessages[0];
+    expect(msg.to).toBe(ATTENDEE);
+    // From is NOT the alias — sent from primary account so Yahoo/others don't block
+    expect(msg.from).toBeUndefined();
+    // Alias appears via Reply-To and Cc so client can see and reply to it
+    expect(msg.replyTo).toBe(ALIAS);
+    expect(msg.cc).toBe(ALIAS);
   });
 
-  it("informational email body contains meeting title and Meet link", async () => {
+  it("informational email body contains meeting title, date and Meet link", async () => {
     calendar.meetLink = "https://meet.google.com/abc-defg-hij";
     const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
 
@@ -70,6 +76,7 @@ describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
     const body = gmail.sentMessages[0].bodyHtml;
     expect(body).toContain("Reunião Saltoup");
     expect(body).toContain("meet.google.com/abc-defg-hij");
+    expect(body).toContain(ALIAS); // alias shown in signature
   });
 
   it("sends informational email to all attendees (not to the alias itself)", async () => {

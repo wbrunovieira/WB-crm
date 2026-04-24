@@ -102,29 +102,69 @@ export class ScheduleMeetingUseCase {
       }
     }
 
-    // When an alias is selected, send a courtesy informational email from that alias.
-    // Google Calendar already sent the RSVP invite; this email just shows the alias as sender.
+    // When an alias is selected, send a courtesy email from the primary Gmail account.
+    // Reply-To and Cc point to the alias so the client sees it and replies there.
+    // Sending from primary avoids SPF/DKIM failures that block strict providers (e.g. Yahoo).
     const sendAliasEmail = !!input.organizerEmail && !!this.gmailPort && !input.skipCalendar;
     if (sendAliasEmail) {
+      const alias = input.organizerEmail!;
+      const title = input.title.trim();
+      const endAt = input.endAt ?? new Date(input.startAt.getTime() + 60 * 60 * 1000);
+
+      const fmt = (d: Date) =>
+        d.toLocaleString("pt-BR", {
+          timeZone: "America/Sao_Paulo",
+          weekday: "long", day: "2-digit", month: "long", year: "numeric",
+          hour: "2-digit", minute: "2-digit",
+        });
+
       const meetLinkHtml = meetLink
-        ? `<p><a href="${meetLink}">Entrar no Google Meet</a></p>`
+        ? `<p style="margin:16px 0"><a href="${meetLink}" style="background:#1a73e8;color:#fff;padding:10px 20px;border-radius:4px;text-decoration:none;font-weight:bold">Entrar no Google Meet</a></p><p style="color:#666;font-size:13px">${meetLink}</p>`
         : "";
-      const descHtml = input.description ? `<p>${input.description}</p>` : "";
-      const bodyHtml = `<p>Olá,</p><p>Agendei uma reunião com você: <strong>${input.title.trim()}</strong>.</p>${descHtml}${meetLinkHtml}`;
+
+      const descHtml = input.description
+        ? `<p style="color:#444">${input.description}</p>`
+        : "";
+
+      const bodyHtml = `
+<div style="font-family:Arial,sans-serif;max-width:600px;color:#222">
+  <p>Olá,</p>
+  <p>Gostaria de confirmar nossa reunião:</p>
+  <table style="border-collapse:collapse;margin:16px 0">
+    <tr>
+      <td style="padding:6px 12px 6px 0;color:#666;white-space:nowrap">📅 Assunto</td>
+      <td style="padding:6px 0"><strong>${title}</strong></td>
+    </tr>
+    <tr>
+      <td style="padding:6px 12px 6px 0;color:#666;white-space:nowrap">🕐 Início</td>
+      <td style="padding:6px 0">${fmt(input.startAt)}</td>
+    </tr>
+    <tr>
+      <td style="padding:6px 12px 6px 0;color:#666;white-space:nowrap">🕐 Término</td>
+      <td style="padding:6px 0">${fmt(endAt)}</td>
+    </tr>
+  </table>
+  ${descHtml}
+  ${meetLinkHtml}
+  <p style="color:#555;font-size:13px">Você também recebeu um convite pelo Google Agenda para confirmar sua presença (Aceitar / Recusar).</p>
+  <br>
+  <p>Atenciosamente,<br><strong>${alias}</strong></p>
+</div>`.trim();
 
       for (const to of attendeeEmails) {
         try {
           await this.gmailPort!.send({
             userId: "google-token-singleton",
             to,
-            from: input.organizerEmail!,
-            subject: `Reunião agendada: ${input.title.trim()}`,
+            replyTo: alias,
+            cc: alias,
+            subject: `Reunião agendada: ${title}`,
             bodyHtml,
           });
         } catch (err) {
           this.logger.warn("Failed to send alias courtesy email", {
             to,
-            organizerEmail: input.organizerEmail,
+            alias,
             error: err instanceof Error ? err.message : String(err),
           });
         }

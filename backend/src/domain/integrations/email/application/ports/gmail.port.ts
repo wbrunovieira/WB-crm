@@ -47,6 +47,8 @@ export abstract class GmailPort {
     subject: string;
     bodyHtml: string;
     from?: string;
+    replyTo?: string;
+    cc?: string;
     threadId?: string;
     attachments?: GmailAttachment[];
   }): Promise<{ messageId: string; threadId: string }>;
