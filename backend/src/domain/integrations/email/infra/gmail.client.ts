@@ -204,7 +204,6 @@ export class GmailClient extends GmailPort {
     const boundary = `wbcrm_alt_${randomUUID().replace(/-/g, "")}`;
 
     const htmlB64 = Buffer.from(bodyHtml).toString("base64");
-    const icsB64 = Buffer.from(icsLines).toString("base64");
 
     const mime = [
       `To: ${to}`,
@@ -220,10 +219,11 @@ export class GmailClient extends GmailPort {
       htmlB64,
       "",
       `--${boundary}`,
+      // 7bit (plain text) required — Gmail does not parse base64-encoded iCal for RSVP buttons
       "Content-Type: text/calendar; charset=utf-8; method=REQUEST",
-      "Content-Transfer-Encoding: base64",
+      "Content-Transfer-Encoding: 7bit",
       "",
-      icsB64,
+      icsLines,
       "",
       `--${boundary}--`,
     ].join("\r\n");

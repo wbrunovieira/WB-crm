@@ -150,15 +150,20 @@ describe("GmailClient.sendCalendarInvite — MIME structure", () => {
     return Buffer.from(body.raw, "base64url").toString("utf-8");
   }
 
-  /** Extract and decode a base64 MIME part by searching for a content-type marker */
+  /** Extract a MIME part's body (handles both base64 and 7bit plain-text parts) */
   function decodePartAfter(mime: string, marker: string): string {
     const idx = mime.indexOf(marker);
     if (idx === -1) return "";
-    // Skip headers until blank line
     const afterHeaders = mime.indexOf("\r\n\r\n", idx);
     if (afterHeaders === -1) return "";
-    const b64 = mime.slice(afterHeaders + 4).split("\r\n")[0].trim();
-    return Buffer.from(b64, "base64").toString("utf-8");
+    const body = mime.slice(afterHeaders + 4);
+    // Detect encoding from headers between marker and blank line
+    const headers = mime.slice(idx, afterHeaders);
+    if (/Content-Transfer-Encoding:\s*base64/i.test(headers)) {
+      return Buffer.from(body.split("\r\n")[0].trim(), "base64").toString("utf-8");
+    }
+    // 7bit — read until next boundary (or end)
+    return body.split(/\r\n--/)[0].trim();
   }
 
   it("top-level Content-Type is multipart/alternative (no outer multipart/mixed)", async () => {
@@ -176,6 +181,14 @@ describe("GmailClient.sendCalendarInvite — MIME structure", () => {
   it("text/calendar Content-Type includes method=REQUEST", async () => {
     const mime = await sendAndGetMime();
     expect(mime).toMatch(/text\/calendar.*method=REQUEST/i);
+  });
+
+  it("text/calendar part uses 7bit encoding (not base64) so Gmail parses RSVP", async () => {
+    const mime = await sendAndGetMime();
+    const calIdx = mime.indexOf("text/calendar");
+    const calSection = mime.slice(calIdx, mime.indexOf("\r\n\r\n", calIdx));
+    expect(calSection).toMatch(/Content-Transfer-Encoding:\s*7bit/i);
+    expect(calSection).not.toMatch(/Content-Transfer-Encoding:\s*base64/i);
   });
 
   it("iCal DTSTART uses UTC format (ends with Z, no TZID prefix to avoid invalid iCal)", async () => {
