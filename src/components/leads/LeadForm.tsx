@@ -357,7 +357,106 @@ export function LeadForm({ lead }: LeadFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Label e ICP */}
+      {/* Informações Básicas */}
+      <div className="rounded-lg bg-[#1a0022] p-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-200">
+          Informações Básicas
+        </h2>
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Nome Comercial *
+            </label>
+            <input
+              type="text"
+              name="businessName"
+              required
+              defaultValue={lead?.businessName}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Razão Social
+            </label>
+            <input
+              type="text"
+              name="registeredName"
+              defaultValue={lead?.registeredName || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              CNPJ
+            </label>
+            <input
+              type="text"
+              name="companyRegistrationID"
+              defaultValue={lead?.companyRegistrationID || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Data de Fundação
+            </label>
+            <input
+              type="date"
+              name="foundationDate"
+              defaultValue={
+                lead?.foundationDate
+                  ? new Date(lead.foundationDate).toISOString().split("T")[0]
+                  : ""
+              }
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Status
+            </label>
+            <select
+              name="status"
+              defaultValue={lead?.status || "new"}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            >
+              <option value="new">Novo</option>
+              <option value="contacted">Contatado</option>
+              <option value="qualified">Qualificado</option>
+              <option value="disqualified">Desqualificado</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Qualidade
+            </label>
+            <select
+              name="quality"
+              defaultValue={lead?.quality || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            >
+              <option value="">Selecione...</option>
+              <option value="cold">Frio</option>
+              <option value="warm">Morno</option>
+              <option value="hot">Quente</option>
+            </select>
+          </div>
+        </div>
+        <div className="mt-4">
+          <label className="block text-sm font-medium text-gray-300">
+            Descrição
+          </label>
+          <textarea
+            name="description"
+            rows={3}
+            defaultValue={lead?.description || ""}
+            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+          />
+        </div>
+      </div>
+
+      {/* Classificação */}
       <div className="rounded-lg bg-[#1a0022] p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Classificação
@@ -462,105 +561,6 @@ export function LeadForm({ lead }: LeadFormProps) {
               onChange={setStarRating}
             />
           </div>
-        </div>
-      </div>
-
-      {/* Informações Básicas */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
-        <h2 className="mb-4 text-lg font-semibold text-gray-200">
-          Informações Básicas
-        </h2>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="block text-sm font-medium text-gray-300">
-              Nome Comercial *
-            </label>
-            <input
-              type="text"
-              name="businessName"
-              required
-              defaultValue={lead?.businessName}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300">
-              Razão Social
-            </label>
-            <input
-              type="text"
-              name="registeredName"
-              defaultValue={lead?.registeredName || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300">
-              CNPJ
-            </label>
-            <input
-              type="text"
-              name="companyRegistrationID"
-              defaultValue={lead?.companyRegistrationID || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300">
-              Data de Fundação
-            </label>
-            <input
-              type="date"
-              name="foundationDate"
-              defaultValue={
-                lead?.foundationDate
-                  ? new Date(lead.foundationDate).toISOString().split("T")[0]
-                  : ""
-              }
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300">
-              Status
-            </label>
-            <select
-              name="status"
-              defaultValue={lead?.status || "new"}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
-            >
-              <option value="new">Novo</option>
-              <option value="contacted">Contatado</option>
-              <option value="qualified">Qualificado</option>
-              <option value="disqualified">Desqualificado</option>
-            </select>
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-300">
-              Qualidade
-            </label>
-            <select
-              name="quality"
-              defaultValue={lead?.quality || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
-            >
-              <option value="">Selecione...</option>
-              <option value="cold">Frio</option>
-              <option value="warm">Morno</option>
-              <option value="hot">Quente</option>
-            </select>
-          </div>
-        </div>
-        <div className="mt-4">
-          <label className="block text-sm font-medium text-gray-300">
-            Descrição
-          </label>
-          <textarea
-            name="description"
-            rows={3}
-            defaultValue={lead?.description || ""}
-            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
-          />
         </div>
       </div>
 
