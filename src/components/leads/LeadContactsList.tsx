@@ -63,7 +63,7 @@ function ContactDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="w-full max-w-md rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-xl bg-[#1a0022] shadow-2xl border border-[#3d2b4d]" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between border-b bg-gradient-to-r from-purple-600 to-purple-800 p-4 text-white rounded-t-xl">
           <h2 className="flex items-center gap-2 text-lg font-bold">
@@ -82,8 +82,8 @@ function ContactDetailModal({
         <div className="p-6">
           {/* Name and Role */}
           <div className="mb-6 text-center">
-            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-purple-100">
-              <User className="h-8 w-8 text-purple-600" />
+            <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center rounded-full bg-purple-500/20">
+              <User className="h-8 w-8 text-purple-400" />
             </div>
             <div className="flex items-center justify-center gap-2">
               <h3 className="text-xl font-bold text-gray-900">{contact.name}</h3>
@@ -101,7 +101,7 @@ function ContactDetailModal({
               )}
             </p>
             {contact.isPrimary && (
-              <span className="mt-2 inline-flex rounded-full bg-purple-100 px-3 py-1 text-xs font-semibold text-purple-800">
+              <span className="mt-2 inline-flex rounded-full bg-purple-500/20 px-3 py-1 text-xs font-semibold text-purple-300">
                 Contato Principal
               </span>
             )}
@@ -110,8 +110,8 @@ function ContactDetailModal({
           {/* Contact Info - Always show all fields */}
           <div className="space-y-3">
             {/* Email */}
-            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
+            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/15">
                 <Mail className="h-5 w-5 text-blue-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -133,8 +133,8 @@ function ContactDetailModal({
             </div>
 
             {/* Phone */}
-            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
+            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/15">
                 <Phone className="h-5 w-5 text-green-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -149,8 +149,8 @@ function ContactDetailModal({
             </div>
 
             {/* WhatsApp */}
-            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-100">
+            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/15">
                 <MessageCircle className="h-5 w-5 text-green-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -172,8 +172,8 @@ function ContactDetailModal({
             </div>
 
             {/* LinkedIn */}
-            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-100">
+            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/15">
                 <Linkedin className="h-5 w-5 text-blue-700" />
               </div>
               <div className="flex-1 min-w-0">
@@ -195,8 +195,8 @@ function ContactDetailModal({
             </div>
 
             {/* Instagram */}
-            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-100">
+            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-500/15">
                 <Instagram className="h-5 w-5 text-pink-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -218,8 +218,8 @@ function ContactDetailModal({
             </div>
 
             {/* Languages */}
-            <div className="flex items-center gap-3 rounded-lg bg-gray-50 p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-100">
+            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-500/15">
                 <Globe className="h-5 w-5 text-indigo-600" />
               </div>
               <div className="flex-1 min-w-0">
@@ -233,7 +233,7 @@ function ContactDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="border-t bg-gray-50 px-6 py-4 rounded-b-xl">
+        <div className="border-t border-[#3d2b4d] bg-[#2d1b3d] px-6 py-4 rounded-b-xl">
           <button
             onClick={onClose}
             className="w-full rounded-lg bg-purple-600 px-4 py-3 text-base font-bold text-white hover:bg-purple-700 transition-colors shadow-md"
@@ -316,7 +316,7 @@ function EditContactModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-white shadow-2xl">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-[#1a0022] shadow-2xl border border-[#3d2b4d]">
         <div className="flex items-center justify-between border-b bg-gradient-to-r from-purple-600 to-purple-800 p-4 text-white rounded-t-xl">
           <h2 className="flex items-center gap-2 text-lg font-bold">
             <Pencil className="h-5 w-5" />
@@ -329,7 +329,7 @@ function EditContactModal({
 
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="rounded-md bg-red-50 border border-red-200 p-3 text-sm text-red-700">{error}</div>
+            <div className="rounded-md bg-red-500/10 border border-red-500/30 p-3 text-sm text-red-400">{error}</div>
           )}
 
           <div>
@@ -425,7 +425,7 @@ function EditContactModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-700 hover:bg-gray-50"
+              className="flex-1 rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-4 py-2 text-gray-300 hover:bg-[#3d2b4d]"
             >
               Cancelar
             </button>
@@ -515,8 +515,8 @@ export function LeadContactsList({
   }
 
   return (
-    <div className="rounded-xl bg-white p-6 shadow-md">
-      <div className="mb-5 flex items-center justify-between pb-3 border-b-2 border-gray-100">
+    <div className="rounded-xl bg-[#1a0022] p-6 shadow-md">
+      <div className="mb-5 flex items-center justify-between pb-3 border-b-2 border-[#3d2b4d]">
         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
           <span className="text-2xl">👥</span>
           Contatos ({leadContacts.length})
@@ -551,8 +551,8 @@ export function LeadContactsList({
               onClick={() => setViewingContact(contact)}
               className={`flex items-start justify-between rounded-lg border p-4 transition-colors cursor-pointer ${
                 contact.isActive
-                  ? "border-gray-200 hover:border-purple-200 hover:bg-purple-50/30"
-                  : "border-gray-100 bg-gray-50 opacity-50"
+                  ? "border-[#3d2b4d] hover:border-purple-400/40 hover:bg-purple-500/10"
+                  : "border-[#3d2b4d] bg-[#2d1b3d] opacity-50"
               }`}
             >
               <div className="flex-1">
@@ -577,27 +577,27 @@ export function LeadContactsList({
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
                   {contact.email && (
-                    <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1">
+                    <span className="inline-flex items-center gap-1 rounded bg-[#2d1b3d] px-2 py-1 text-gray-300">
                       <Mail className="h-3 w-3" /> Email
                     </span>
                   )}
                   {contact.phone && (
-                    <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-1">
+                    <span className="inline-flex items-center gap-1 rounded bg-[#2d1b3d] px-2 py-1 text-gray-300">
                       <Phone className="h-3 w-3" /> Telefone
                     </span>
                   )}
                   {contact.whatsapp && (
-                    <span className="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-1 text-green-700">
+                    <span className="inline-flex items-center gap-1 rounded bg-green-500/15 px-2 py-1 text-green-400">
                       <MessageCircle className="h-3 w-3" /> WhatsApp
                     </span>
                   )}
                   {contact.linkedin && (
-                    <span className="inline-flex items-center gap-1 rounded bg-blue-100 px-2 py-1 text-blue-700">
+                    <span className="inline-flex items-center gap-1 rounded bg-blue-500/15 px-2 py-1 text-blue-400">
                       <Linkedin className="h-3 w-3" /> LinkedIn
                     </span>
                   )}
                   {contact.instagram && (
-                    <span className="inline-flex items-center gap-1 rounded bg-pink-100 px-2 py-1 text-pink-700">
+                    <span className="inline-flex items-center gap-1 rounded bg-pink-500/15 px-2 py-1 text-pink-400">
                       <Instagram className="h-3 w-3" /> Instagram
                     </span>
                   )}

@@ -102,7 +102,7 @@ const RSVP_CONFIG: Record<
   accepted:    { label: "Aceitou",    color: "bg-green-100 text-green-700" },
   declined:    { label: "Recusou",    color: "bg-red-100 text-red-700" },
   tentative:   { label: "Talvez",     color: "bg-yellow-100 text-yellow-700" },
-  needsAction: { label: "Pendente",   color: "bg-gray-100 text-gray-500" },
+  needsAction: { label: "Pendente",   color: "bg-[#2d1b3d] text-gray-400" },
 };
 
 function parseAttendees(json: string): Attendee[] {
@@ -171,7 +171,7 @@ export default function MeetingsList({
   }
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
+    <div className="rounded-lg bg-[#1a0022] p-6 shadow border border-[#3d2b4d]">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
         <h2 className="text-lg font-bold text-gray-900">Reuniões ({meetings.length})</h2>
@@ -385,7 +385,7 @@ function MeetingCard({
   }
 
   return (
-    <li className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3">
+    <li className="rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-4 py-3">
       <div className="flex items-start gap-3">
         <Video size={18} className="mt-0.5 flex-shrink-0 text-purple-500" />
 
@@ -478,7 +478,7 @@ function MeetingCard({
           {isScheduled && !confirmingCancel && (
             <button
               onClick={() => setConfirmingCancel(true)}
-              className="rounded-md px-2 py-1.5 text-xs text-red-500 hover:bg-red-50"
+              className="rounded-md px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/15"
             >
               Cancelar
             </button>
@@ -486,7 +486,7 @@ function MeetingCard({
 
           {/* Inline cancel confirmation */}
           {isScheduled && confirmingCancel && (
-            <div className="flex items-center gap-1.5 rounded-lg border border-red-200 bg-red-50 px-3 py-1.5">
+            <div className="flex items-center gap-1.5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5">
               {cancelling ? (
                 <Loader2 size={13} className="animate-spin text-red-500" />
               ) : (
@@ -523,7 +523,7 @@ function MeetingCard({
                 className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
                   isPlayerOpen
                     ? "border-purple-400 bg-purple-100 text-purple-800"
-                    : "border-purple-200 bg-purple-50 text-purple-700 hover:bg-purple-100"
+                    : "border-purple-500/30 bg-purple-500/15 text-purple-300 hover:bg-purple-500/25"
                 }`}
               >
                 <Play size={13} />
@@ -546,8 +546,8 @@ function MeetingCard({
             onClick={() => onToggleSummary(isSummaryOpen ? null : meeting.id)}
             className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
               hasSummary
-                ? "border-amber-200 bg-amber-50 text-amber-700 hover:bg-amber-100"
-                : "border-dashed border-gray-300 bg-white text-gray-400 hover:border-amber-300 hover:text-amber-600"
+                ? "border-amber-500/30 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25"
+                : "border-dashed border-[#3d2b4d] bg-[#2d1b3d] text-gray-400 hover:border-amber-500/40 hover:text-amber-400"
             }`}
           >
             <NotebookPen size={13} />
@@ -557,7 +557,7 @@ function MeetingCard({
           {hasTranscript && (
             <button
               onClick={() => onToggleTranscript(isTranscriptOpen ? null : meeting.id)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+              className="inline-flex items-center gap-1.5 rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-[#3d2b4d]"
             >
               <FileText size={13} />
               {isTranscriptOpen ? "Ocultar Transcrição" : "Ver Transcrição"}
@@ -568,7 +568,7 @@ function MeetingCard({
 
       {/* Summary panel (expanded) */}
       {isSummaryOpen && (
-        <div className="mt-3 rounded-md border border-amber-200 bg-amber-50 p-3">
+        <div className="mt-3 rounded-md border border-amber-500/30 bg-amber-500/10 p-3">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-semibold text-amber-800">Resumo da Reunião</p>
             <div className="flex items-center gap-1">
@@ -593,7 +593,7 @@ function MeetingCard({
                 value={summaryDraft}
                 onChange={(e) => setSummaryDraft(e.target.value)}
                 rows={8}
-                className="w-full rounded-md border border-amber-300 bg-white px-3 py-2 text-xs text-gray-700 leading-relaxed focus:border-amber-500 focus:outline-none"
+                className="w-full rounded-md border border-amber-500/40 bg-[#2d1b3d] px-3 py-2 text-xs text-gray-200 leading-relaxed focus:border-amber-500 focus:outline-none"
                 placeholder="Escreva o resumo da reunião..."
               />
               <div className="flex items-center gap-2">
@@ -614,7 +614,7 @@ function MeetingCard({
               </div>
             </div>
           ) : (
-            <p className="whitespace-pre-wrap text-xs text-amber-900 leading-relaxed">
+            <p className="whitespace-pre-wrap text-xs text-amber-200 leading-relaxed">
               {meeting.meetingSummary || (
                 <span className="italic text-amber-500">
                   Nenhum resumo ainda. Clique no lápis para adicionar.
@@ -641,12 +641,12 @@ function MeetingCard({
 
       {/* Transcript panel (expanded) */}
       {isTranscriptOpen && meeting.transcriptText && (
-        <div className="mt-3 rounded-md border border-gray-200 bg-white p-3">
+        <div className="mt-3 rounded-md border border-[#3d2b4d] bg-[#2d1b3d] p-3">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-xs font-semibold text-gray-600">Transcrição</p>
+            <p className="text-xs font-semibold text-gray-300">Transcrição</p>
             <CopyButton text={meeting.transcriptText} />
           </div>
-          <p className="whitespace-pre-wrap text-xs text-gray-700 leading-relaxed">
+          <p className="whitespace-pre-wrap text-xs text-gray-300 leading-relaxed">
             {meeting.transcriptText}
           </p>
         </div>

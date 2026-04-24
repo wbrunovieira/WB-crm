@@ -237,10 +237,10 @@ function SortableActivityItem({
         isDragging ? "shadow-xl ring-2 ring-purple-300" : ""
       } ${
         activity.failedAt
-          ? "border-red-200 border-l-red-500 bg-red-50/50"
+          ? "border-red-500/30 border-l-red-500 bg-red-500/10"
           : activity.skippedAt
-            ? "border-amber-200 border-l-amber-500 bg-amber-50/50"
-            : `border-gray-200 ${typeConfig[activity.type]?.border ?? "border-l-gray-400"} hover:shadow-md bg-white`
+            ? "border-amber-500/30 border-l-amber-500 bg-amber-500/10"
+            : `border-[#3d2b4d] ${typeConfig[activity.type]?.border ?? "border-l-gray-400"} hover:shadow-md bg-[#2d1b3d]`
       }`}
     >
       {/* Thread connector lines */}
@@ -274,7 +274,7 @@ function SortableActivityItem({
           <button
             onClick={(e) => handleToggle(e, activity.id)}
             disabled={loadingId === activity.id}
-            className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-gray-300 bg-white hover:border-primary hover:bg-primary/10 transition-all disabled:opacity-50"
+            className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-[#3d2b4d] bg-[#2d1b3d] hover:border-primary hover:bg-primary/10 transition-all disabled:opacity-50"
             title="Marcar como concluída"
           >
             {loadingId === activity.id && (
@@ -325,7 +325,7 @@ function SortableActivityItem({
                 </span>
               )}
               {activity.type === "email" && !activity.emailFromAddress && activity.emailThreadId && receivedThreadIds.has(activity.emailThreadId) && (
-                <span className="inline-flex items-center gap-1 rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 border border-blue-200">
+                <span className="inline-flex items-center gap-1 rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-300 border border-blue-500/30">
                   <Reply className="h-3 w-3" />
                   Resposta enviada
                 </span>
@@ -417,12 +417,12 @@ function SortableActivityItem({
                   <GoToOutcomeBadge outcome={activity.gotoCallOutcome} />
                 </button>
                 {outcomePickerOpen && (
-                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-gray-200 bg-white shadow-lg">
+                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-[#3d2b4d] bg-[#1a0022] shadow-lg">
                     {GOTO_OUTCOME_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
                         type="button"
-                        className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${activity.gotoCallOutcome === opt.value ? "font-semibold text-purple-700" : "text-gray-700"}`}
+                        className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-[#2d1b3d] first:rounded-t-lg last:rounded-b-lg ${activity.gotoCallOutcome === opt.value ? "font-semibold text-purple-400" : "text-gray-300"}`}
                         onClick={() => { onChangeOutcome(activity.id, opt.value); setOutcomePickerOpen(false); }}
                       >
                         {opt.label}
@@ -451,12 +451,12 @@ function SortableActivityItem({
                   )}
                 </button>
                 {contactTypePickerOpen && (
-                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[150px] rounded-lg border border-gray-200 bg-white shadow-lg">
+                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[150px] rounded-lg border border-[#3d2b4d] bg-[#1a0022] shadow-lg">
                     {[{ value: "gatekeeper", label: "🚧 Gatekeeper" }, { value: "decisor", label: "🎯 Decisor" }].map((opt) => (
                       <button
                         key={opt.value}
                         type="button"
-                        className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg ${activity.callContactType === opt.value ? "font-semibold text-purple-700" : "text-gray-700"}`}
+                        className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-[#2d1b3d] first:rounded-t-lg last:rounded-b-lg ${activity.callContactType === opt.value ? "font-semibold text-purple-400" : "text-gray-300"}`}
                         onClick={() => { onChangeContactType(activity.id, opt.value); setContactTypePickerOpen(false); }}
                       >
                         {opt.label}
@@ -467,7 +467,7 @@ function SortableActivityItem({
               </div>
 
               {activity.completedAt && (
-                <span className="rounded bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                <span className="rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-300">
                   {formatDate(activity.completedAt)}
                 </span>
               )}
@@ -518,14 +518,14 @@ function SortableActivityItem({
             <>
               <button
                 onClick={(e) => openOutcomeModal(e, activity, "failed")}
-                className="rounded-lg p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 transition-colors"
+                className="rounded-lg p-2 text-gray-400 hover:bg-red-500/15 hover:text-red-400 transition-colors"
                 title="Marcar como falha"
               >
                 <XCircle className="h-4 w-4" />
               </button>
               <button
                 onClick={(e) => openOutcomeModal(e, activity, "skipped")}
-                className="rounded-lg p-2 text-gray-400 hover:bg-amber-50 hover:text-amber-600 transition-colors"
+                className="rounded-lg p-2 text-gray-400 hover:bg-amber-500/15 hover:text-amber-400 transition-colors"
                 title="Pular atividade"
               >
                 <SkipForward className="h-4 w-4" />
@@ -536,7 +536,7 @@ function SortableActivityItem({
           {activity.type === "email" && activity.emailFromAddress && !activity.emailReplied && (
             <button
               onClick={(e) => { e.preventDefault(); e.stopPropagation(); openReplyModal(activity); }}
-              className="rounded-lg p-2 text-blue-500 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+              className="rounded-lg p-2 text-blue-400 hover:bg-blue-500/15 hover:text-blue-300 transition-colors"
               title="Responder e-mail"
             >
               <Reply className="h-4 w-4" />
@@ -903,8 +903,8 @@ export function LeadActivitiesList({
   );
 
   return (
-    <div className="rounded-xl bg-white p-6 shadow-md">
-      <div className="mb-5 flex items-center justify-between pb-3 border-b-2 border-gray-100">
+    <div className="rounded-xl bg-[#1a0022] p-6 shadow-md">
+      <div className="mb-5 flex items-center justify-between pb-3 border-b-2 border-[#3d2b4d]">
         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
           <span className="text-2xl">📅</span>
           Atividades ({activities.length})
@@ -914,7 +914,7 @@ export function LeadActivitiesList({
             <button
               onClick={handleResetOrder}
               disabled={savingOrder}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-600 hover:bg-gray-50 hover:text-gray-800 transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-xs font-medium text-gray-400 hover:bg-[#3d2b4d] hover:text-gray-200 transition-all disabled:opacity-50"
               title="Voltar a ordenar por data"
             >
               <Calendar className="h-3.5 w-3.5" />
@@ -930,7 +930,7 @@ export function LeadActivitiesList({
           {hasPendingActivities && (
             <button
               onClick={() => setReplyModal(true)}
-              className="inline-flex items-center gap-2 rounded-lg border-2 border-green-500 bg-green-50 px-4 py-2 text-sm font-semibold text-green-700 hover:bg-green-100 hover:shadow-md transition-all duration-200"
+              className="inline-flex items-center gap-2 rounded-lg border-2 border-green-500/50 bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-400 hover:bg-green-500/20 hover:shadow-md transition-all duration-200"
             >
               <MessageCircleReply className="h-4 w-4" />
               Registrar Resposta
@@ -964,26 +964,26 @@ export function LeadActivitiesList({
         const tasks     = activities.filter((a) => a.type === "task").length;
 
         const callOutcomeItems: { label: string; count: number; color: string }[] = [
-          { label: "Atendidas",       count: byOutcome.answered,       color: "text-green-700 bg-green-50 border-green-200" },
-          { label: "Não atendeu",     count: byOutcome.no_answer,      color: "text-red-700 bg-red-50 border-red-200" },
-          { label: "Perdidas",        count: byOutcome.missed,         color: "text-yellow-800 bg-yellow-50 border-yellow-200" },
-          { label: "Caixa postal",    count: byOutcome.voicemail,      color: "text-purple-700 bg-purple-50 border-purple-200" },
-          { label: "Ocupado",         count: byOutcome.busy,           color: "text-orange-700 bg-orange-50 border-orange-200" },
-          { label: "Rejeitada",       count: byOutcome.rejected,       color: "text-red-800 bg-red-50 border-red-200" },
-          { label: "Nº inválido",     count: byOutcome.invalid_number, color: "text-gray-600 bg-gray-50 border-gray-200" },
+          { label: "Atendidas",       count: byOutcome.answered,       color: "text-green-400 bg-green-500/10 border-green-500/30" },
+          { label: "Não atendeu",     count: byOutcome.no_answer,      color: "text-red-400 bg-red-500/10 border-red-500/30" },
+          { label: "Perdidas",        count: byOutcome.missed,         color: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30" },
+          { label: "Caixa postal",    count: byOutcome.voicemail,      color: "text-purple-400 bg-purple-500/10 border-purple-500/30" },
+          { label: "Ocupado",         count: byOutcome.busy,           color: "text-orange-400 bg-orange-500/10 border-orange-500/30" },
+          { label: "Rejeitada",       count: byOutcome.rejected,       color: "text-red-400 bg-red-500/10 border-red-500/30" },
+          { label: "Nº inválido",     count: byOutcome.invalid_number, color: "text-gray-400 bg-[#2d1b3d] border-[#3d2b4d]" },
         ].filter((i) => i.count > 0);
 
         const statChips: { type: string; label: string; count: number; base: string; active: string }[] = [
-          { type: "all",            label: "Total",    count: activities.length, base: "border-gray-200 bg-white text-gray-700",           active: "border-primary bg-primary text-white" },
-          { type: "call",           label: "Ligações", count: callActivities.length, base: "border-violet-200 bg-violet-50 text-violet-800", active: "border-violet-600 bg-violet-600 text-white" },
-          { type: "meeting",        label: "Reuniões", count: meetings,           base: "border-amber-200 bg-amber-50 text-amber-800",       active: "border-amber-600 bg-amber-600 text-white" },
-          { type: "whatsapp",       label: "WhatsApp", count: whatsapps,          base: "border-emerald-200 bg-emerald-50 text-emerald-800", active: "border-emerald-600 bg-emerald-600 text-white" },
-          { type: "email",          label: "E-mail",   count: emails,             base: "border-blue-200 bg-blue-50 text-blue-800",          active: "border-blue-600 bg-blue-600 text-white" },
-          { type: "task",           label: "Tarefas",  count: tasks,              base: "border-gray-200 bg-white text-gray-600",            active: "border-gray-600 bg-gray-600 text-white" },
+          { type: "all",            label: "Total",    count: activities.length, base: "border-[#3d2b4d] bg-[#2d1b3d] text-gray-300",      active: "border-primary bg-primary text-white" },
+          { type: "call",           label: "Ligações", count: callActivities.length, base: "border-violet-500/30 bg-violet-500/10 text-violet-300", active: "border-violet-600 bg-violet-600 text-white" },
+          { type: "meeting",        label: "Reuniões", count: meetings,           base: "border-amber-500/30 bg-amber-500/10 text-amber-300",   active: "border-amber-600 bg-amber-600 text-white" },
+          { type: "whatsapp",       label: "WhatsApp", count: whatsapps,          base: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300", active: "border-emerald-600 bg-emerald-600 text-white" },
+          { type: "email",          label: "E-mail",   count: emails,             base: "border-blue-500/30 bg-blue-500/10 text-blue-300",      active: "border-blue-600 bg-blue-600 text-white" },
+          { type: "task",           label: "Tarefas",  count: tasks,              base: "border-[#3d2b4d] bg-[#2d1b3d] text-gray-400",         active: "border-gray-600 bg-gray-600 text-white" },
         ].filter((c) => c.count > 0 || c.type === "all");
 
         return (
-          <div className="mb-4 rounded-lg border border-gray-100 bg-gray-50 p-3 space-y-2">
+          <div className="mb-4 rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] p-3 space-y-2">
             {/* Clickable type filter chips */}
             <div className="flex flex-wrap gap-1.5">
               {statChips.map(({ type, label, count, base, active }) => (
@@ -1028,16 +1028,16 @@ export function LeadActivitiesList({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar atividades..."
-              className="w-full rounded-lg border border-gray-200 bg-gray-50 py-2 pl-9 pr-3 text-sm focus:border-primary focus:bg-white focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] py-2 pl-9 pr-3 text-sm text-gray-200 placeholder:text-gray-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {([
-              { key: "all",       label: "Todas",      active: "bg-gray-700 text-white",         inactive: "bg-gray-100 text-gray-600 hover:bg-gray-200" },
-              { key: "pending",   label: "Pendentes",  active: "bg-blue-600 text-white",          inactive: "bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100" },
-              { key: "completed", label: "Concluídas", active: "bg-green-600 text-white",         inactive: "bg-green-50 text-green-700 border border-green-200 hover:bg-green-100" },
-              { key: "failed",    label: "Falha",      active: "bg-red-600 text-white",           inactive: "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100" },
-              { key: "skipped",   label: "Puladas",    active: "bg-amber-500 text-white",         inactive: "bg-amber-50 text-amber-700 border border-amber-200 hover:bg-amber-100" },
+              { key: "all",       label: "Todas",      active: "bg-gray-600 text-white",         inactive: "bg-[#2d1b3d] text-gray-400 hover:bg-[#3d2b4d]" },
+              { key: "pending",   label: "Pendentes",  active: "bg-blue-600 text-white",          inactive: "bg-blue-500/10 text-blue-300 border border-blue-500/30 hover:bg-blue-500/20" },
+              { key: "completed", label: "Concluídas", active: "bg-green-600 text-white",         inactive: "bg-green-500/10 text-green-300 border border-green-500/30 hover:bg-green-500/20" },
+              { key: "failed",    label: "Falha",      active: "bg-red-600 text-white",           inactive: "bg-red-500/10 text-red-300 border border-red-500/30 hover:bg-red-500/20" },
+              { key: "skipped",   label: "Puladas",    active: "bg-amber-500 text-white",         inactive: "bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20" },
             ] as const).map(({ key, label, active, inactive }) => (
               <button
                 key={key}
@@ -1111,7 +1111,7 @@ export function LeadActivitiesList({
       {/* Outcome Modal (Failed / Skipped) */}
       {outcomeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setOutcomeModal(null)}>
-          <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-xl bg-[#1a0022] shadow-2xl border border-[#3d2b4d]" onClick={(e) => e.stopPropagation()}>
             <div className={`flex items-center justify-between border-b p-4 text-white rounded-t-xl ${
               outcomeModal.type === "failed"
                 ? "bg-gradient-to-r from-red-600 to-red-800"
@@ -1160,10 +1160,10 @@ export function LeadActivitiesList({
               />
             </div>
 
-            <div className="flex gap-3 border-t bg-gray-50 px-4 py-3 rounded-b-xl">
+            <div className="flex gap-3 border-t border-[#3d2b4d] bg-[#2d1b3d] px-4 py-3 rounded-b-xl">
               <button
                 onClick={() => setOutcomeModal(null)}
-                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="flex-1 rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm font-medium text-gray-300 hover:bg-[#3d2b4d]"
               >
                 Cancelar
               </button>
@@ -1195,7 +1195,7 @@ export function LeadActivitiesList({
       {/* Reply Modal */}
       {replyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setReplyModal(false)}>
-          <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-xl bg-[#1a0022] shadow-2xl border border-[#3d2b4d]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b p-4 text-white rounded-t-xl bg-gradient-to-r from-green-600 to-green-800">
               <h2 className="flex items-center gap-2 text-base font-bold">
                 <MessageCircleReply className="h-5 w-5" />
@@ -1240,10 +1240,10 @@ export function LeadActivitiesList({
               />
             </div>
 
-            <div className="flex gap-3 border-t bg-gray-50 px-4 py-3 rounded-b-xl">
+            <div className="flex gap-3 border-t border-[#3d2b4d] bg-[#2d1b3d] px-4 py-3 rounded-b-xl">
               <button
                 onClick={() => setReplyModal(false)}
-                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="flex-1 rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm font-medium text-gray-300 hover:bg-[#3d2b4d]"
               >
                 Cancelar
               </button>
@@ -1281,7 +1281,7 @@ export function LeadActivitiesList({
       {/* Assign Contacts Modal */}
       {assigningActivity && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setAssigningActivity(null)}>
-          <div className="w-full max-w-sm rounded-xl bg-white shadow-2xl" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-xl bg-[#1a0022] shadow-2xl border border-[#3d2b4d]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b bg-gradient-to-r from-purple-600 to-purple-800 p-4 text-white rounded-t-xl">
               <h2 className="flex items-center gap-2 text-base font-bold">
                 <UserPlus className="h-5 w-5" />
@@ -1329,10 +1329,10 @@ export function LeadActivitiesList({
               </div>
             </div>
 
-            <div className="flex gap-3 border-t bg-gray-50 px-4 py-3 rounded-b-xl">
+            <div className="flex gap-3 border-t border-[#3d2b4d] bg-[#2d1b3d] px-4 py-3 rounded-b-xl">
               <button
                 onClick={() => setAssigningActivity(null)}
-                className="flex-1 rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                className="flex-1 rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm font-medium text-gray-300 hover:bg-[#3d2b4d]"
               >
                 Cancelar
               </button>

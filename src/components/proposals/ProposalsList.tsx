@@ -157,7 +157,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
   }
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
+    <div className="rounded-lg bg-[#1a0022] p-6 shadow border border-[#3d2b4d]">
       <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
         <h2 className="text-lg font-bold text-gray-900">
           Propostas ({proposals.length})
@@ -194,7 +194,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
             return (
               <li
                 key={proposal.id}
-                className="rounded-lg border border-gray-100 bg-gray-50 px-4 py-3"
+                className="rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-4 py-3"
               >
                 {/* Linha principal */}
                 <div className="flex items-start gap-3">
@@ -237,7 +237,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
                       <select
                         value={proposal.status}
                         onChange={(e) => handleStatusChange(proposal.id, e.target.value as ProposalStatus)}
-                        className="rounded-md border border-gray-200 bg-white px-2 py-1 text-xs text-gray-700 focus:border-primary focus:outline-none"
+                        className="rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-2 py-1 text-xs text-gray-300 focus:border-primary focus:outline-none"
                       >
                         {STATUS_OPTIONS.map((opt) => (
                           <option key={opt.value} value={opt.value}>
@@ -250,7 +250,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
                     <button
                       onClick={() => setEditing(proposal)}
                       title="Editar proposta"
-                      className="rounded-md p-1.5 text-gray-400 hover:bg-purple-50 hover:text-purple-600"
+                      className="rounded-md p-1.5 text-gray-400 hover:bg-purple-500/15 hover:text-purple-400"
                     >
                       <Pencil size={15} />
                     </button>
@@ -261,7 +261,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
                       <button
                         onClick={() => handleDelete(proposal.id)}
                         title="Remover proposta"
-                        className="rounded-md p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                        className="rounded-md p-1.5 text-gray-400 hover:bg-red-500/15 hover:text-red-400"
                       >
                         <Trash2 size={15} />
                       </button>
@@ -275,7 +275,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
                     {/* 1. Visualizar no CRM */}
                     <button
                       onClick={() => setViewing(proposal)}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-purple-200 bg-purple-50 px-3 py-1.5 text-xs font-medium text-purple-700 hover:bg-purple-100"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-purple-500/30 bg-purple-500/15 px-3 py-1.5 text-xs font-medium text-purple-300 hover:bg-purple-500/25"
                     >
                       <Eye size={13} />
                       Visualizar
@@ -285,7 +285,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
                     <a
                       href={`${BACKEND_URL}/proposals/${proposal.id}/file?token=${encodeURIComponent(token)}`}
                       download={proposal.fileName ?? true}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-[#3d2b4d]"
                     >
                       <Download size={13} />
                       Download
@@ -296,7 +296,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
                       href={`${BACKEND_URL}/proposals/${proposal.id}/file?inline=true&token=${encodeURIComponent(token)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-white px-3 py-1.5 text-xs font-medium text-gray-700 hover:bg-gray-100"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-[#3d2b4d]"
                     >
                       <MonitorDown size={13} />
                       Abrir com app
@@ -308,7 +308,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
                         href={proposal.driveUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 rounded-md border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-100"
+                        className="inline-flex items-center gap-1.5 rounded-md border border-blue-500/30 bg-blue-500/15 px-3 py-1.5 text-xs font-medium text-blue-300 hover:bg-blue-500/25"
                       >
                         <ExternalLink size={13} />
                         Abrir no Drive
