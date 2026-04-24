@@ -161,9 +161,15 @@ describe("GmailClient.sendCalendarInvite — MIME structure", () => {
     return Buffer.from(b64, "base64").toString("utf-8");
   }
 
-  it("MIME has inline text/calendar part (not attachment) so Gmail shows RSVP buttons", async () => {
+  it("top-level Content-Type is multipart/alternative (no outer multipart/mixed)", async () => {
     const mime = await sendAndGetMime();
-    expect(mime).toContain("text/calendar");
+    // The very first Content-Type header must be multipart/alternative so Gmail shows RSVP
+    const firstContentType = mime.match(/Content-Type: ([^\r\n]+)/)?.[1] ?? "";
+    expect(firstContentType).toMatch(/multipart\/alternative/);
+  });
+
+  it("has NO Content-Disposition: attachment (calendar is inline)", async () => {
+    const mime = await sendAndGetMime();
     expect(mime).not.toContain("Content-Disposition: attachment");
   });
 
@@ -172,25 +178,26 @@ describe("GmailClient.sendCalendarInvite — MIME structure", () => {
     expect(mime).toMatch(/text\/calendar.*method=REQUEST/i);
   });
 
-  it("iCal body contains ORGANIZER with alias email", async () => {
+  it("iCal DTSTART uses UTC format (ends with Z, no TZID prefix to avoid invalid iCal)", async () => {
+    const mime = await sendAndGetMime();
+    const ics = decodePartAfter(mime, "text/calendar");
+    // Must be DTSTART:20260424T173100Z — no TZID=...: prefix
+    expect(ics).toMatch(/^DTSTART:\d{8}T\d{6}Z$/m);
+    expect(ics).not.toMatch(/DTSTART;TZID=/);
+  });
+
+  it("iCal ORGANIZER contains alias email", async () => {
     const mime = await sendAndGetMime();
     const ics = decodePartAfter(mime, "text/calendar");
     expect(ics).toContain("ORGANIZER");
     expect(ics).toContain("bruno@saltoup.com");
   });
 
-  it("iCal body contains ATTENDEE for the recipient", async () => {
+  it("iCal ATTENDEE contains recipient email", async () => {
     const mime = await sendAndGetMime();
     const ics = decodePartAfter(mime, "text/calendar");
     expect(ics).toContain("ATTENDEE");
     expect(ics).toContain("wbrunovieira77@gmail.com");
-  });
-
-  it("HTML body does NOT contain a duplicate Meet link (bodyHtml used as-is)", async () => {
-    const mime = await sendAndGetMime();
-    const html = decodePartAfter(mime, "text/html");
-    // The caller's bodyHtml has no Meet link → so the decoded HTML must not have it either
-    expect(html).not.toContain("meet.google.com");
   });
 
   it("iCal LOCATION contains the Meet link", async () => {
@@ -199,14 +206,22 @@ describe("GmailClient.sendCalendarInvite — MIME structure", () => {
     expect(ics).toContain("LOCATION:https://meet.google.com/abc-defg-hij");
   });
 
+  it("iCal has METHOD:REQUEST", async () => {
+    const mime = await sendAndGetMime();
+    const ics = decodePartAfter(mime, "text/calendar");
+    expect(ics).toContain("METHOD:REQUEST");
+  });
+
   it("From header uses the alias email", async () => {
     const mime = await sendAndGetMime();
     expect(mime).toContain("From: bruno@saltoup.com");
   });
 
-  it("iCal has METHOD:REQUEST", async () => {
-    const mime = await sendAndGetMime();
-    const ics = decodePartAfter(mime, "text/calendar");
-    expect(ics).toContain("METHOD:REQUEST");
+  it("HTML body contains the Meet link passed by caller", async () => {
+    const mime = await sendAndGetMime({
+      bodyHtml: "<p>Você foi convidado.</p><p><a href=\"https://meet.google.com/abc-defg-hij\">Entrar no Google Meet</a></p>",
+    });
+    const html = decodePartAfter(mime, "text/html");
+    expect(html).toContain("meet.google.com/abc-defg-hij");
   });
 });

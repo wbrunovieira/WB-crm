@@ -168,12 +168,12 @@ export class GmailClient extends GmailPort {
     const {
       userId, to, subject, bodyHtml, from, organizerEmail,
       attendeeEmails, startAt, endAt, title, description,
-      googleEventId, meetLink, timeZone,
+      googleEventId, meetLink,
     } = params;
 
-    const tz = timeZone ?? "America/Sao_Paulo";
     const uid = googleEventId ?? randomUUID();
-    const dtFormat = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+    // UTC format: DTSTART:20260424T173100Z — TZID prefix with Z suffix is invalid iCal
+    const dtFormat = (d: Date) => d.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
 
     const attendeeLines = attendeeEmails
       .map((e) => `ATTENDEE;ROLE=REQ-PARTICIPANT;RSVP=TRUE:mailto:${e}`)
@@ -185,8 +185,8 @@ export class GmailClient extends GmailPort {
       "PRODID:-//WB CRM//EN",
       "METHOD:REQUEST",
       "BEGIN:VEVENT",
-      `DTSTART;TZID=${tz}:${dtFormat(startAt)}`,
-      `DTEND;TZID=${tz}:${dtFormat(endAt)}`,
+      `DTSTART:${dtFormat(startAt)}`,
+      `DTEND:${dtFormat(endAt)}`,
       `SUMMARY:${title}`,
       description ? `DESCRIPTION:${description.replace(/\n/g, "\\n")}` : "",
       `ORGANIZER;CN=${from}:mailto:${organizerEmail}`,
@@ -199,10 +199,9 @@ export class GmailClient extends GmailPort {
       "END:VCALENDAR",
     ].filter(Boolean).join("\r\n");
 
-    // Build multipart/mixed → multipart/alternative MIME with inline text/calendar
-    // so Gmail shows Accept/Decline RSVP buttons (not as attachment).
-    const outerBoundary = `wbcrm_cal_${randomUUID().replace(/-/g, "")}`;
-    const innerBoundary = `wbcrm_alt_${randomUUID().replace(/-/g, "")}`;
+    // Top-level multipart/alternative so Gmail shows Accept/Decline RSVP buttons.
+    // Wrapping in multipart/mixed makes the calendar appear as attachment with no RSVP UI.
+    const boundary = `wbcrm_alt_${randomUUID().replace(/-/g, "")}`;
 
     const htmlB64 = Buffer.from(bodyHtml).toString("base64");
     const icsB64 = Buffer.from(icsLines).toString("base64");
@@ -212,26 +211,21 @@ export class GmailClient extends GmailPort {
       `From: ${from}`,
       `Subject: ${subject}`,
       "MIME-Version: 1.0",
-      `Content-Type: multipart/mixed; boundary="${outerBoundary}"`,
+      `Content-Type: multipart/alternative; boundary="${boundary}"`,
       "",
-      `--${outerBoundary}`,
-      `Content-Type: multipart/alternative; boundary="${innerBoundary}"`,
-      "",
-      `--${innerBoundary}`,
+      `--${boundary}`,
       "Content-Type: text/html; charset=utf-8",
       "Content-Transfer-Encoding: base64",
       "",
       htmlB64,
       "",
-      `--${innerBoundary}`,
+      `--${boundary}`,
       "Content-Type: text/calendar; charset=utf-8; method=REQUEST",
       "Content-Transfer-Encoding: base64",
       "",
       icsB64,
       "",
-      `--${innerBoundary}--`,
-      "",
-      `--${outerBoundary}--`,
+      `--${boundary}--`,
     ].join("\r\n");
 
     const raw = Buffer.from(mime).toString("base64url");
