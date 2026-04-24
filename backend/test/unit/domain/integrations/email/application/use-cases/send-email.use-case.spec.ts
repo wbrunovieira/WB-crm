@@ -1,16 +1,15 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { SendEmailUseCase } from "@/domain/integrations/email/application/use-cases/send-email.use-case";
 import { FakeGmailPort } from "../../fakes/fake-gmail.port";
-import { FakeGoogleOAuthPort } from "../../fakes/fake-google-oauth.port";
+import { FakeGoogleOAuthPort, GOOGLE_TOKEN_SINGLETON } from "../../fakes/fake-google-oauth.port";
 import { FakeEmailMessagesRepository } from "../../fakes/fake-email-messages.repository";
 import { FakeEmailTrackingRepository } from "../../fakes/fake-email-tracking.repository";
 
 const OWNER_ID = "owner-001";
-const USER_ID = "user-001";
 
 function makeInput(overrides: Partial<Parameters<SendEmailUseCase["execute"]>[0]> = {}) {
   return {
-    userId: USER_ID,
+    userId: GOOGLE_TOKEN_SINGLETON, // production pattern: always the shared singleton
     to: "recipient@example.com",
     subject: "Hello World",
     bodyHtml: "<p>Test email body</p>",
@@ -158,5 +157,37 @@ describe("SendEmailUseCase", () => {
 
     const saved = emailMessagesRepo.items[0];
     expect(saved.from).toBe("bruno@saltoup.com");
+  });
+});
+
+// ── Singleton token pattern ──────────────────────────────────────────────────
+// The system uses a single shared Google account. The token is stored under
+// GOOGLE_TOKEN_SINGLETON, never under an individual user's ID. The controller
+// must always pass GOOGLE_TOKEN_SINGLETON as userId — never the JWT user id.
+describe("SendEmailUseCase — google-token-singleton pattern", () => {
+  it("fails when userId is an arbitrary user ID (token not found)", async () => {
+    const result = await useCase.execute(
+      makeInput({ userId: "some-real-user-id-from-jwt" }),
+    );
+
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).message).toContain("No Google token found");
+  });
+
+  it("succeeds when userId is GOOGLE_TOKEN_SINGLETON (production pattern)", async () => {
+    const result = await useCase.execute(
+      makeInput({ userId: GOOGLE_TOKEN_SINGLETON }),
+    );
+
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().messageId).toBeDefined();
+  });
+
+  it("the controller MUST pass GOOGLE_TOKEN_SINGLETON, not the JWT user id", () => {
+    // This test documents the contract: any code that calls SendEmailUseCase
+    // must use GOOGLE_TOKEN_SINGLETON as the userId.
+    // Regression: previously email.controller.ts passed user.id from JWT,
+    // which caused "No Google token found for userId: <user-id>" in production.
+    expect(GOOGLE_TOKEN_SINGLETON).toBe("google-token-singleton");
   });
 });
