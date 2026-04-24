@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, Video, Plus, Trash2, Loader2, UserCheck, User } from "lucide-react";
+import { X, Video, Plus, Trash2, Loader2, UserCheck, User, CalendarDays, Clock } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -307,7 +307,8 @@ export default function ScheduleMeetingModal({
             {/* Date + Time */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                  <CalendarDays size={14} className="text-purple-500" />
                   Data <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -318,7 +319,8 @@ export default function ScheduleMeetingModal({
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-gray-700">
+                <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-gray-700">
+                  <Clock size={14} className="text-purple-500" />
                   Hora <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -394,9 +396,17 @@ export default function ScheduleMeetingModal({
 
               {/* Suggested contacts panel */}
               {suggestedContacts.length > 0 && (
-                <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-400">
-                    Contatos do lead
+                <div className={`mb-3 rounded-lg border p-3 transition-colors ${
+                  selectedContactIds.size === 0
+                    ? "border-amber-300 bg-amber-50"
+                    : "border-gray-200 bg-gray-50"
+                }`}>
+                  <p className={`mb-2 text-xs font-semibold uppercase tracking-wide ${
+                    selectedContactIds.size === 0 ? "text-amber-600" : "text-gray-400"
+                  }`}>
+                    {selectedContactIds.size === 0
+                      ? "👆 Selecione os contatos para convidar"
+                      : "Contatos do lead"}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {suggestedContacts.map((c) => {

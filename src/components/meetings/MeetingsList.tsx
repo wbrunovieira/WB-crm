@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import {
   Video,
   Plus,
@@ -71,12 +71,21 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.
 
 function formatDateTime(date: string | Date): string {
   return new Intl.DateTimeFormat("pt-BR", {
+    timeZone: "America/Sao_Paulo",
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
   }).format(new Date(date));
+}
+
+function fmtTime(date: Date): string {
+  return date.toLocaleTimeString("pt-BR", { timeZone: "America/Sao_Paulo", hour: "2-digit", minute: "2-digit" });
+}
+
+function fmtDate(date: Date): string {
+  return date.toLocaleDateString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit" });
 }
 
 interface Attendee {
@@ -134,7 +143,9 @@ export default function MeetingsList({
     );
   }
 
-  const now = new Date();
+  // useRef keeps `now` stable across renders so SSR and client hydration produce the same split
+  const nowRef = useRef(new Date());
+  const now = nowRef.current;
   const upcoming = meetings
     .filter((m) => m.status === "scheduled" && new Date(m.startAt) >= now)
     .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime()); // soonest first
@@ -386,18 +397,18 @@ function MeetingCard({
               <span className="font-medium text-gray-400">Agendado:</span>{" "}
               {formatDateTime(meeting.startAt)}
               {meeting.endAt && new Date(meeting.endAt) > new Date(meeting.startAt) && (
-                <> — {new Date(meeting.endAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</>
+                <> — {fmtTime(new Date(meeting.endAt))}</>
               )}
             </p>
             {meeting.status === "ended" && meeting.actualEndAt && (
               <p className="text-xs text-green-600">
                 <span className="font-medium">Encerrado:</span>{" "}
                 {meeting.actualStartAt
-                  ? `${new Date(meeting.actualStartAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })} — `
+                  ? `${fmtTime(new Date(meeting.actualStartAt))} — `
                   : ""}
-                {new Date(meeting.actualEndAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                {fmtTime(new Date(meeting.actualEndAt))}
                 {", "}
-                {new Date(meeting.actualEndAt).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })}
+                {fmtDate(new Date(meeting.actualEndAt))}
               </p>
             )}
           </div>
