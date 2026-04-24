@@ -21,12 +21,34 @@ import { LeadSectorSection } from "@/components/sectors/LeadSectorSection";
 import { LeadCadenceSection } from "@/components/leads/LeadCadenceSection";
 import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 import { LanguageBadges } from "@/components/shared/LanguageSelector";
+import {
+  Building2,
+  Phone,
+  MapPin,
+  Share2,
+  Star,
+  Search,
+  ShieldCheck,
+  Package,
+  Cpu,
+  Layers,
+  Target,
+  CalendarClock,
+  BarChart2,
+  Users,
+  FileText,
+  Video,
+  Activity,
+  Pencil,
+  Globe,
+} from "lucide-react";
 
 export default async function LeadDetailPage({
   params,
@@ -53,94 +75,89 @@ export default async function LeadDetailPage({
     disqualified: "Desqualificado",
   };
 
-  const qualityLabels: Record<string, string> = {
-    cold: "Frio",
-    warm: "Morno",
-    hot: "Quente",
+  const qualityColors: Record<string, string> = {
+    hot: "bg-red-100 text-red-700 border border-red-200",
+    warm: "bg-orange-100 text-orange-700 border border-orange-200",
+    cold: "bg-blue-100 text-blue-700 border border-blue-200",
   };
+  const qualityLabels: Record<string, string> = { cold: "Frio", warm: "Morno", hot: "Quente" };
+
+  const hasCompanyInfo = !!(
+    lead.companyOwner || lead.companySize || lead.revenue ||
+    lead.employeesCount || lead.primaryActivity || lead.secondaryActivities ||
+    lead.businessStatus || lead.equityCapital
+  );
+  const hasSocials = !!(
+    lead.instagram || lead.linkedin || lead.facebook || lead.twitter || lead.tiktok
+  );
+  const hasGooglePlaces = !!(
+    lead.googleId || lead.categories || lead.rating || lead.userRatingsTotal || lead.priceLevel || lead.types
+  );
+  const hasMeta = !!(lead.source || lead.searchTerm || lead.category || lead.radius);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#792990] via-[#8b3fa3] to-[#6a1b7a] p-6 md:p-8">
-      {/* Header */}
-      <div className="mb-8 rounded-2xl bg-white p-6 shadow-lg">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl md:text-4xl font-bold text-gray-900">{lead.businessName}</h1>
+    <div className="min-h-screen bg-gradient-to-br from-[#792990] via-[#8b3fa3] to-[#6a1b7a] p-4 md:p-8">
+      {/* ── Header ─────────────────────────────────────────────────── */}
+      <div className="mb-6 rounded-2xl bg-white p-6 shadow-lg">
+        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+          {/* Title + badges */}
+          <div className="flex-1 min-w-0">
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight">
+                {lead.businessName}
+              </h1>
               {lead.quality && (
-                <span
-                  className={`inline-flex items-center rounded-full px-3 py-1.5 text-xs font-bold tracking-wide uppercase ${
-                    lead.quality === "hot"
-                      ? "bg-gradient-to-r from-red-500 to-orange-500 text-white shadow-md"
-                      : lead.quality === "warm"
-                        ? "bg-gradient-to-r from-yellow-400 to-orange-400 text-white shadow-md"
-                        : "bg-gradient-to-r from-blue-400 to-cyan-400 text-white shadow-md"
-                  }`}
-                >
+                <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-bold uppercase tracking-wide ${qualityColors[lead.quality]}`}>
                   {qualityLabels[lead.quality]}
                 </span>
               )}
             </div>
-            <div className="flex items-center gap-3 mt-3">
-              <span
-                className={`inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold ${
-                  lead.status === "qualified"
-                    ? "bg-green-100 text-green-800 border border-green-200"
-                    : lead.status === "contacted"
-                      ? "bg-blue-100 text-blue-800 border border-blue-200"
-                      : lead.status === "disqualified"
-                        ? "bg-red-100 text-red-800 border border-red-200"
-                        : "bg-gray-100 text-gray-800 border border-gray-200"
-                }`}
-              >
+            <div className="flex flex-wrap items-center gap-2">
+              <span className={`inline-flex items-center rounded-lg px-3 py-1 text-sm font-semibold ${
+                lead.status === "qualified" ? "bg-green-100 text-green-800 border border-green-200"
+                  : lead.status === "contacted" ? "bg-blue-100 text-blue-800 border border-blue-200"
+                  : lead.status === "disqualified" ? "bg-red-100 text-red-800 border border-red-200"
+                  : "bg-gray-100 text-gray-700 border border-gray-200"
+              }`}>
                 {statusLabels[lead.status]}
               </span>
               {lead.isArchived && (
-                <span className="inline-flex flex-col rounded-lg bg-amber-100 px-3 py-1.5 border border-amber-200">
-                  <span className="text-sm font-semibold text-amber-800">Arquivado</span>
+                <span className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50 px-3 py-1 border border-amber-200 text-sm font-semibold text-amber-800">
+                  Arquivado
                   {lead.archivedAt && (
-                    <span className="text-xs text-amber-700">
+                    <span className="font-normal text-amber-600 text-xs">
                       em {formatDate(lead.archivedAt)}
                       {lead.archivedReason && ` · ${lead.archivedReason}`}
                     </span>
                   )}
                 </span>
               )}
-              {lead.labels && lead.labels.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {lead.labels.map((label) => (
-                    <span
-                      key={label.id}
-                      className="inline-flex items-center rounded-lg px-3 py-1.5 text-sm font-semibold"
-                      style={{
-                        backgroundColor: `${label.color}15`,
-                        color: label.color,
-                        border: `1.5px solid ${label.color}40`,
-                      }}
-                    >
-                      {label.name}
-                    </span>
-                  ))}
-                </div>
-              )}
+              {lead.labels?.map((label) => (
+                <span
+                  key={label.id}
+                  className="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                  style={{ backgroundColor: `${label.color}18`, color: label.color, border: `1.5px solid ${label.color}40` }}
+                >
+                  {label.name}
+                </span>
+              ))}
             </div>
           </div>
-          <div className="flex gap-3">
+
+          {/* Action buttons */}
+          <div className="flex flex-wrap gap-2 flex-shrink-0">
             {!lead.convertedAt && (
               <>
                 {!lead.isArchived && (
                   <>
                     <Link
                       href={`/leads/${lead.id}/edit`}
-                      className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#792990] px-4 py-2.5 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-purple-800 transition-colors"
                     >
-                      <span className="text-lg">✏️</span>
+                      <Pencil size={14} />
                       Editar
                     </Link>
-                    <ConvertLeadButton
-                      leadId={lead.id}
-                      hasContacts={(lead.leadContacts?.length ?? 0) > 0}
-                    />
+                    <ConvertLeadButton leadId={lead.id} hasContacts={(lead.leadContacts?.length ?? 0) > 0} />
                   </>
                 )}
                 <ArchiveLeadButton leadId={lead.id} isArchived={lead.isArchived} />
@@ -150,104 +167,109 @@ export default async function LeadDetailPage({
             {lead.convertedAt && lead.convertedOrganization && (
               <Link
                 href={`/organizations/${lead.convertedOrganization.id}`}
-                className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-green-600 to-green-700 px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:shadow-lg transition-all duration-200"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700 transition-colors"
               >
-                🏢 Ver Organização
+                <Building2 size={14} />
+                Ver Organização
               </Link>
             )}
           </div>
         </div>
+
+        {/* Quick-nav anchors */}
+        <div className="mt-4 flex flex-wrap gap-1.5 border-t border-gray-100 pt-4">
+          {[
+            { href: "#contatos", icon: <Users size={12} />, label: "Contatos" },
+            { href: "#atividades", icon: <Activity size={12} />, label: "Atividades" },
+            { href: "#reunioes", icon: <Video size={12} />, label: "Reuniões" },
+            { href: "#propostas", icon: <FileText size={12} />, label: "Propostas" },
+            { href: "#produtos", icon: <Package size={12} />, label: "Produtos" },
+            { href: "#tech", icon: <Cpu size={12} />, label: "Tech" },
+            { href: "#cadencia", icon: <CalendarClock size={12} />, label: "Cadência" },
+            { href: "#cnae", icon: <BarChart2 size={12} />, label: "CNAE" },
+          ].map(({ href, icon, label }) => (
+            <a
+              key={href}
+              href={href}
+              className="inline-flex items-center gap-1 rounded-full border border-purple-200 bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700 hover:bg-purple-100 transition-colors"
+            >
+              {icon}
+              {label}
+            </a>
+          ))}
+        </div>
       </div>
 
+      {/* Conversion / In-ops banners */}
       {lead.convertedAt && (
-        <div className="mb-6 rounded-xl bg-gradient-to-r from-green-50 to-emerald-50 p-5 shadow-sm">
-          <p className="text-base font-semibold text-green-900 flex items-center gap-2">
-            <span className="text-2xl">✅</span>
+        <div className="mb-5 rounded-xl border border-green-200 bg-green-50 p-4 shadow-sm">
+          <p className="flex items-center gap-2 text-sm font-semibold text-green-800">
+            <Building2 size={16} className="text-green-600" />
             Lead convertido em {formatDate(lead.convertedAt)}
           </p>
         </div>
       )}
-
       {lead.inOperationsAt && (
-        <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-amber-800">In Operations</span>
-            <span className="text-amber-700">since {formatDate(lead.inOperationsAt)}</span>
-            <span className="text-amber-600 text-sm">
-              — automated communication activities are paused
-            </span>
-          </div>
+        <div className="mb-5 rounded-xl border border-amber-200 bg-amber-50 p-4 shadow-sm">
+          <p className="flex items-center gap-2 text-sm font-semibold text-amber-800">
+            <Activity size={16} className="text-amber-600" />
+            In Operations desde {formatDate(lead.inOperationsAt)} — comunicações automáticas pausadas
+          </p>
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      {/* ── Top 3-column grid ───────────────────────────────────────── */}
+      <div className="grid gap-5 lg:grid-cols-3">
+
         {/* Informações Básicas */}
-        <div className="rounded-xl bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-gray-100">
-            <span className="text-2xl">📋</span>
+        <div className="rounded-xl bg-white p-6 shadow-md">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-primary border-b border-purple-100 pb-3">
+            <Building2 size={16} />
             Informações Básicas
           </h2>
-          <dl className="space-y-5">
+          <dl className="space-y-4">
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                Nome Comercial
-              </dt>
-              <dd className="text-base font-medium text-gray-900">
-                {lead.businessName}
-              </dd>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Nome Comercial</dt>
+              <dd className="text-sm font-medium text-gray-900">{lead.businessName}</dd>
             </div>
             {lead.registeredName && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                  Razão Social
-                </dt>
-                <dd className="text-base font-medium text-gray-900">
-                  {lead.registeredName}
-                </dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Razão Social</dt>
+                <dd className="text-sm font-medium text-gray-900">{lead.registeredName}</dd>
               </div>
             )}
             {lead.companyRegistrationID && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">CNPJ</dt>
-                <dd className="text-base font-mono text-gray-900">
-                  {lead.companyRegistrationID}
-                </dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">CNPJ</dt>
+                <dd className="text-sm font-mono text-gray-900">{lead.companyRegistrationID}</dd>
               </div>
             )}
             {lead.foundationDate && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                  Data de Fundação
-                </dt>
-                <dd className="text-base font-medium text-gray-900">
-                  {formatDate(lead.foundationDate)}
-                </dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Fundação</dt>
+                <dd className="text-sm font-medium text-gray-900">{formatDate(lead.foundationDate)}</dd>
               </div>
             )}
             {lead.description && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
-                  Descrição
-                </dt>
-                <dd className="text-sm leading-relaxed text-gray-700">
-                  {lead.description}
-                </dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Descrição</dt>
+                <dd className="text-sm leading-relaxed text-gray-700">{lead.description}</dd>
               </div>
             )}
           </dl>
         </div>
 
         {/* Contato */}
-        <div className="rounded-xl bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-gray-100">
-            <span className="text-2xl">📞</span>
+        <div className="rounded-xl bg-white p-6 shadow-md">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-primary border-b border-purple-100 pb-3">
+            <Phone size={16} />
             Contato da Empresa
           </h2>
-          <dl className="space-y-5">
+          <dl className="space-y-4">
             {lead.phone && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Telefone</dt>
-                <dd className="text-base font-mono text-gray-900 flex items-center gap-2 flex-wrap">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Telefone</dt>
+                <dd className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-900">
                   <PhoneLink phone={lead.phone} className="text-gray-900 hover:text-primary" />
                   <WhatsAppCheckButton
                     phone={lead.phone}
@@ -263,8 +285,8 @@ export default async function LeadDetailPage({
             )}
             {lead.whatsapp && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">WhatsApp</dt>
-                <dd className="text-base font-mono text-gray-900 flex items-center gap-2 flex-wrap">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">WhatsApp</dt>
+                <dd className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-900">
                   <span>{lead.whatsapp}</span>
                   <WhatsAppCheckButton
                     phone={lead.whatsapp}
@@ -280,9 +302,9 @@ export default async function LeadDetailPage({
             )}
             {lead.email && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Email</dt>
-                <dd className="flex items-center gap-2 text-base text-gray-700 font-medium">
-                  <a href={`mailto:${lead.email}`} className="hover:text-purple-600 hover:underline">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Email</dt>
+                <dd className="flex items-center gap-2 text-sm text-gray-900">
+                  <a href={`mailto:${lead.email}`} className="font-medium hover:text-primary hover:underline">
                     {lead.email}
                   </a>
                   <GmailButton to={lead.email} name={lead.businessName} leadId={lead.id} variant="icon" />
@@ -291,323 +313,274 @@ export default async function LeadDetailPage({
             )}
             {lead.website && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Website</dt>
-                <dd className="text-base text-gray-700 hover:text-purple-600 hover:underline font-medium">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Website</dt>
+                <dd className="text-sm">
                   <a
                     href={lead.website}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex items-center gap-2"
+                    className="inline-flex items-center gap-1.5 font-medium text-gray-900 hover:text-primary hover:underline"
                   >
-                    🌐 {lead.website}
+                    <Globe size={13} className="text-gray-400" />
+                    {lead.website}
                   </a>
                 </dd>
               </div>
             )}
             <div>
-              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Idiomas</dt>
-              <dd className="mt-1">
-                <LanguageBadges languages={lead.languages ?? null} />
-              </dd>
+              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Idiomas</dt>
+              <dd><LanguageBadges languages={lead.languages ?? null} /></dd>
             </div>
           </dl>
         </div>
 
         {/* Localização */}
-        <div className="rounded-xl bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-gray-100">
-            <span className="text-2xl">📍</span>
+        <div className="rounded-xl bg-white p-6 shadow-md">
+          <h2 className="mb-4 flex items-center gap-2 text-sm font-bold uppercase tracking-wider text-primary border-b border-purple-100 pb-3">
+            <MapPin size={16} />
             Localização
           </h2>
-          <dl className="space-y-5">
+          <dl className="space-y-4">
             {lead.address && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Endereço</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.address}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Endereço</dt>
+                <dd className="text-sm font-medium text-gray-900">{lead.address}</dd>
               </div>
             )}
             {lead.vicinity && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Bairro/Região</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.vicinity}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Bairro/Região</dt>
+                <dd className="text-sm font-medium text-gray-900">{lead.vicinity}</dd>
               </div>
             )}
             {lead.city && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Cidade</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.city}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Cidade</dt>
+                <dd className="text-sm font-medium text-gray-900">{lead.city}</dd>
               </div>
             )}
             {lead.state && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Estado</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.state}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Estado</dt>
+                <dd className="text-sm font-medium text-gray-900">{lead.state}</dd>
               </div>
             )}
             {lead.country && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">País</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.country}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">País</dt>
+                <dd className="text-sm font-medium text-gray-900">{lead.country}</dd>
               </div>
             )}
             {lead.zipCode && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">CEP</dt>
-                <dd className="text-base font-mono text-gray-900">{lead.zipCode}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">CEP</dt>
+                <dd className="text-sm font-mono text-gray-900">{lead.zipCode}</dd>
               </div>
             )}
           </dl>
         </div>
       </div>
 
-      {/* Redes Sociais */}
-      {(lead.instagram || lead.linkedin || lead.facebook || lead.twitter || lead.tiktok) && (
-        <div className="mt-6 rounded-xl bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-gray-100">
-            <span className="text-2xl">🌐</span>
-            Redes Sociais
-          </h2>
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-            {lead.instagram && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Instagram</dt>
-                <dd className="text-base">
-                  <a
-                    href={lead.instagram.startsWith('http') ? lead.instagram : `https://instagram.com/${lead.instagram.replace('@', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-gray-700 hover:text-purple-600 hover:underline font-medium"
-                  >
-                    📸 {lead.instagram}
-                  </a>
-                </dd>
-              </div>
-            )}
-            {lead.linkedin && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">LinkedIn</dt>
-                <dd className="text-base">
-                  <a
-                    href={lead.linkedin.startsWith('http') ? lead.linkedin : `https://linkedin.com/company/${lead.linkedin}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-gray-700 hover:text-purple-600 hover:underline font-medium"
-                  >
-                    💼 {lead.linkedin}
-                  </a>
-                </dd>
-              </div>
-            )}
-            {lead.facebook && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Facebook</dt>
-                <dd className="text-base">
-                  <a
-                    href={lead.facebook.startsWith('http') ? lead.facebook : `https://facebook.com/${lead.facebook}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-gray-700 hover:text-purple-600 hover:underline font-medium"
-                  >
-                    👥 {lead.facebook}
-                  </a>
-                </dd>
-              </div>
-            )}
-            {lead.twitter && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Twitter/X</dt>
-                <dd className="text-base">
-                  <a
-                    href={lead.twitter.startsWith('http') ? lead.twitter : `https://twitter.com/${lead.twitter.replace('@', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-gray-700 hover:text-purple-600 hover:underline font-medium"
-                  >
-                    🐦 {lead.twitter}
-                  </a>
-                </dd>
-              </div>
-            )}
-            {lead.tiktok && (
-              <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">TikTok</dt>
-                <dd className="text-base">
-                  <a
-                    href={lead.tiktok.startsWith('http') ? lead.tiktok : `https://tiktok.com/@${lead.tiktok.replace('@', '')}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-gray-700 hover:text-purple-600 hover:underline font-medium"
-                  >
-                    🎵 {lead.tiktok}
-                  </a>
-                </dd>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* ── Collapsible secondary sections ─────────────────────────── */}
 
-      {/* Informações da Empresa */}
-      {(lead.companyOwner || lead.companySize || lead.revenue || lead.employeesCount || lead.primaryActivity || lead.secondaryActivities || lead.businessStatus || lead.equityCapital) && (
-        <div className="mt-6 rounded-xl bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-gray-100">
-            <span className="text-2xl">🏢</span>
-            Informações da Empresa
-          </h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      {hasCompanyInfo && (
+        <CollapsibleSection
+          id="empresa"
+          icon={<Building2 size={16} />}
+          title="Informações da Empresa"
+          defaultOpen
+        >
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {lead.companyOwner && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Proprietário/CEO</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.companyOwner}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Proprietário/CEO</dt>
+                <dd className="text-sm font-medium text-gray-900">{lead.companyOwner}</dd>
               </div>
             )}
             {lead.companySize && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Tamanho</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.companySize}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Tamanho</dt>
+                <dd className="text-sm font-medium text-gray-900">{lead.companySize}</dd>
               </div>
             )}
             {lead.employeesCount && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Funcionários</dt>
-                <dd className="text-base font-semibold text-gray-900">👥 {lead.employeesCount}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Funcionários</dt>
+                <dd className="text-sm font-semibold text-gray-900">{lead.employeesCount}</dd>
               </div>
             )}
             {lead.revenue && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Receita Anual</dt>
-                <dd className="text-base font-semibold text-gray-900">
-                  💰 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.revenue)}
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Receita Anual</dt>
+                <dd className="text-sm font-semibold text-gray-900">
+                  {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(lead.revenue)}
                 </dd>
               </div>
             )}
             {lead.equityCapital && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Capital Social</dt>
-                <dd className="text-base font-semibold text-gray-900">
-                  💰 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(lead.equityCapital)}
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Capital Social</dt>
+                <dd className="text-sm font-semibold text-gray-900">
+                  {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(lead.equityCapital)}
                 </dd>
               </div>
             )}
             {lead.businessStatus && (
               <div>
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Status do Negócio</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.businessStatus}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Status do Negócio</dt>
+                <dd className="text-sm font-medium text-gray-900">{lead.businessStatus}</dd>
               </div>
             )}
             {lead.primaryActivity && (
               <div className="md:col-span-2 lg:col-span-3">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Atividade Primária</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.primaryActivity}</dd>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Atividade Primária</dt>
+                <dd className="text-sm font-medium text-gray-900">{lead.primaryActivity}</dd>
               </div>
             )}
             {lead.secondaryActivities && (
               <div className="md:col-span-2 lg:col-span-3">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Atividades Secundárias</dt>
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Atividades Secundárias</dt>
                 <dd className="text-sm leading-relaxed text-gray-700">{lead.secondaryActivities}</dd>
               </div>
             )}
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
-      {/* Google Places */}
-      {(lead.googleId || lead.categories || lead.rating || lead.userRatingsTotal || lead.priceLevel || lead.types) && (
-        <div className="mt-6 rounded-xl bg-gradient-to-br from-white to-blue-50 p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-blue-100">
-            <span className="text-2xl">🗺️</span>
-            Informações do Google Places
-          </h2>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+      {hasSocials && (
+        <CollapsibleSection
+          id="redes"
+          icon={<Share2 size={16} />}
+          title="Redes Sociais"
+          defaultOpen={false}
+        >
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {[
+              { key: "instagram", label: "Instagram", url: lead.instagram, base: "https://instagram.com/" },
+              { key: "linkedin", label: "LinkedIn", url: lead.linkedin, base: "https://linkedin.com/company/" },
+              { key: "facebook", label: "Facebook", url: lead.facebook, base: "https://facebook.com/" },
+              { key: "twitter", label: "Twitter/X", url: lead.twitter, base: "https://twitter.com/" },
+              { key: "tiktok", label: "TikTok", url: lead.tiktok, base: "https://tiktok.com/@" },
+            ]
+              .filter((s) => s.url)
+              .map((s) => (
+                <div key={s.key}>
+                  <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">{s.label}</dt>
+                  <dd>
+                    <a
+                      href={s.url!.startsWith("http") ? s.url! : `${s.base}${s.url!.replace("@", "")}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-primary hover:underline"
+                    >
+                      <Globe size={13} className="text-gray-400 flex-shrink-0" />
+                      {s.url}
+                    </a>
+                  </dd>
+                </div>
+              ))}
+          </div>
+        </CollapsibleSection>
+      )}
+
+      {hasGooglePlaces && (
+        <CollapsibleSection
+          id="google-places"
+          icon={<Star size={16} />}
+          title="Google Places"
+          defaultOpen={false}
+          accentColor="gray"
+        >
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {lead.rating && (
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Avaliação</dt>
-                <dd className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-                  <span className="text-3xl">⭐</span>
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Avaliação</dt>
+                <dd className="text-xl font-bold text-gray-900 flex items-center gap-1.5">
+                  <Star size={18} className="text-amber-400 fill-amber-400" />
                   {lead.rating.toFixed(1)}
-                  <span className="text-sm font-normal text-gray-500">/ 5.0</span>
+                  <span className="text-xs font-normal text-gray-400">/ 5.0</span>
                 </dd>
               </div>
             )}
             {lead.userRatingsTotal && (
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Total de Avaliações</dt>
-                <dd className="text-2xl font-bold text-blue-600">{lead.userRatingsTotal}</dd>
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Avaliações</dt>
+                <dd className="text-xl font-bold text-primary">{lead.userRatingsTotal}</dd>
               </div>
             )}
             {lead.priceLevel && (
-              <div className="bg-white rounded-lg p-4 shadow-sm">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Nível de Preço</dt>
-                <dd className="text-2xl font-bold text-gray-900">
-                  {'💰'.repeat(lead.priceLevel)}
-                </dd>
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-2">Nível de Preço</dt>
+                <dd className="text-sm font-bold text-gray-900">{"R$".repeat(lead.priceLevel)}</dd>
               </div>
             )}
             {lead.categories && (
-              <div className="md:col-span-2 lg:col-span-4 bg-white rounded-lg p-4 shadow-sm">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Categorias</dt>
-                <dd className="text-base font-medium text-gray-900">{lead.categories}</dd>
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4 md:col-span-2 lg:col-span-4">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Categorias</dt>
+                <dd className="text-sm font-medium text-gray-900">{lead.categories}</dd>
               </div>
             )}
             {lead.types && (
-              <div className="md:col-span-2 lg:col-span-4 bg-white rounded-lg p-4 shadow-sm">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Tipos</dt>
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4 md:col-span-2 lg:col-span-4">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Tipos</dt>
                 <dd className="text-sm text-gray-700">{lead.types}</dd>
               </div>
             )}
             {lead.googleId && (
-              <div className="md:col-span-2 lg:col-span-4 bg-white rounded-lg p-4 shadow-sm">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Google Places ID</dt>
-                <dd className="text-xs text-gray-600 font-mono break-all">{lead.googleId}</dd>
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4 md:col-span-2 lg:col-span-4">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Google Places ID</dt>
+                <dd className="text-xs font-mono text-gray-500 break-all">{lead.googleId}</dd>
               </div>
             )}
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
-      {/* Metadados */}
-      {(lead.source || lead.searchTerm || lead.category || lead.radius) && (
-        <div className="mt-6 rounded-xl bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-gray-100">
-            <span className="text-2xl">🔍</span>
-            Metadados de Busca
-          </h2>
-          <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
+      {hasMeta && (
+        <CollapsibleSection
+          id="metadados"
+          icon={<Search size={16} />}
+          title="Metadados de Busca"
+          defaultOpen={false}
+          accentColor="gray"
+        >
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {lead.source && (
-              <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Fonte</dt>
-                <dd className="text-base font-semibold text-gray-900">{lead.source}</dd>
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Fonte</dt>
+                <dd className="text-sm font-semibold text-gray-900">{lead.source}</dd>
               </div>
             )}
             {lead.searchTerm && (
-              <div className="rounded-lg bg-purple-50 p-4 border border-purple-200">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-purple-600 mb-2">Termo de Busca</dt>
-                <dd className="text-base font-semibold text-purple-900">&quot;{lead.searchTerm}&quot;</dd>
+              <div className="rounded-lg bg-purple-50 border border-purple-100 p-4">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-purple-600 mb-1">Termo de Busca</dt>
+                <dd className="text-sm font-semibold text-purple-900">&quot;{lead.searchTerm}&quot;</dd>
               </div>
             )}
             {lead.category && (
-              <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Categoria</dt>
-                <dd className="text-base font-semibold text-gray-900">{lead.category}</dd>
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Categoria</dt>
+                <dd className="text-sm font-semibold text-gray-900">{lead.category}</dd>
               </div>
             )}
             {lead.radius && (
-              <div className="rounded-lg bg-gray-50 p-4 border border-gray-200">
-                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">Raio de Busca</dt>
-                <dd className="text-base font-semibold text-gray-900">📏 {lead.radius} km</dd>
+              <div className="rounded-lg bg-gray-50 border border-gray-100 p-4">
+                <dt className="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">Raio de Busca</dt>
+                <dd className="text-sm font-semibold text-gray-900">{lead.radius} km</dd>
               </div>
             )}
           </div>
-        </div>
+        </CollapsibleSection>
       )}
 
-      {/* Entity Management Panel (Admin Only) */}
       {isAdmin && lead.owner && (
-        <div className="mt-6 rounded-xl bg-white p-6 shadow-md">
-          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-gray-100">
-            <span className="text-2xl">👥</span>
-            Gerenciamento de Acesso
-          </h2>
+        <CollapsibleSection
+          id="acesso"
+          icon={<ShieldCheck size={16} />}
+          title="Gerenciamento de Acesso"
+          defaultOpen={false}
+          accentColor="gray"
+        >
           <EntityManagementPanel
             entityType="lead"
             entityId={lead.id}
@@ -617,64 +590,66 @@ export default async function LeadDetailPage({
             ownerEmail={lead.owner.email ?? undefined}
             isAdmin={isAdmin}
           />
-        </div>
+        </CollapsibleSection>
       )}
 
-      {/* Lead Products */}
-      <LeadProductsSection leadId={lead.id} isConverted={!!lead.convertedAt} />
+      {/* ── Client sections (own collapse internally or always visible) ── */}
 
-      {/* Tech Profile */}
-      <LeadTechProfileSection leadId={lead.id} />
+      <div id="produtos" className="mt-6">
+        <LeadProductsSection leadId={lead.id} isConverted={!!lead.convertedAt} />
+      </div>
 
-      {/* Sector Section */}
-      <LeadSectorSection leadId={lead.id} isConverted={!!lead.convertedAt} />
+      <div id="tech" className="mt-6">
+        <LeadTechProfileSection leadId={lead.id} />
+      </div>
 
-      {/* ICP Section */}
-      <LeadICPSection leadId={lead.id} isConverted={!!lead.convertedAt} />
+      <div id="setor" className="mt-6">
+        <LeadSectorSection leadId={lead.id} isConverted={!!lead.convertedAt} />
+      </div>
 
-      {/* Cadence Section */}
-      <LeadCadenceSection leadId={lead.id} isConverted={!!lead.convertedAt} />
+      <div id="icp" className="mt-6">
+        <LeadICPSection leadId={lead.id} isConverted={!!lead.convertedAt} />
+      </div>
 
-      {/* CNAE Management */}
+      <div id="cadencia" className="mt-6">
+        <LeadCadenceSection leadId={lead.id} isConverted={!!lead.convertedAt} />
+      </div>
+
       {!lead.convertedAt && (
-        <div className="mt-6 rounded-xl bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-          <h2 className="mb-5 flex items-center gap-2 text-xl font-bold text-gray-900 pb-3 border-b-2 border-gray-100">
-            <span className="text-2xl">📊</span>
-            Atividades Econômicas (CNAE)
-          </h2>
+        <CollapsibleSection
+          id="cnae"
+          icon={<BarChart2 size={16} />}
+          title="Atividades Econômicas (CNAE)"
+          defaultOpen
+        >
           {lead.primaryCNAE && (
-            <div className="mb-6 p-4 rounded-lg bg-purple-50 border-2 border-purple-200">
+            <div className="mb-5 rounded-lg bg-purple-50 border border-purple-200 p-4">
               <dt className="text-xs font-semibold uppercase tracking-wide text-purple-700 mb-2">
                 Atividade Primária
               </dt>
               <dd className="flex items-center gap-3">
-                <span className="font-mono text-sm font-bold text-purple-900 bg-white px-3 py-1 rounded-md shadow-sm">
+                <span className="font-mono text-xs font-bold text-purple-900 bg-white px-2.5 py-1 rounded-md shadow-sm border border-purple-100">
                   {lead.primaryCNAE.code}
                 </span>
-                <span className="text-base font-medium text-gray-900">
+                <span className="text-sm font-medium text-gray-900">
                   {lead.primaryCNAE.description}
                 </span>
               </dd>
             </div>
           )}
           {lead.internationalActivity && (
-            <div className="mb-6 p-4 rounded-lg bg-blue-50 border-2 border-blue-200">
-              <dt className="text-xs font-semibold uppercase tracking-wide text-blue-700 mb-2">
+            <div className="mb-5 rounded-lg bg-gray-50 border border-gray-200 p-4">
+              <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">
                 Atividade Internacional
               </dt>
-              <dd className="text-base font-medium text-gray-900">
-                {lead.internationalActivity}
-              </dd>
+              <dd className="text-sm font-medium text-gray-900">{lead.internationalActivity}</dd>
             </div>
           )}
-          <div className="mt-6">
-            <SecondaryCNAEsManager entityId={lead.id} entityType="lead" />
-          </div>
-        </div>
+          <SecondaryCNAEsManager entityId={lead.id} entityType="lead" />
+        </CollapsibleSection>
       )}
 
-      {/* Lead Contacts */}
-      <div className="mt-6">
+      <div id="contatos" className="mt-6">
         <LeadContactsList
           leadId={lead.id}
           leadContacts={lead.leadContacts ?? []}
@@ -682,36 +657,26 @@ export default async function LeadDetailPage({
         />
       </div>
 
-      {/* Proposals */}
-      <div className="mt-6">
+      <div id="propostas" className="mt-6">
         <ProposalsList proposals={proposals ?? []} leadId={lead.id} />
       </div>
 
-      {/* Meetings */}
-      <div className="mt-6">
+      <div id="reunioes" className="mt-6">
         <MeetingsList
           meetings={meetings ?? []}
           leadId={lead.id}
           suggestedContacts={[
-            // Lead's own email (if any)
             ...(lead.email
               ? [{ id: `lead-${lead.id}`, name: lead.businessName, email: lead.email, role: "Empresa" }]
               : []),
-            // Individual lead contacts with email
             ...(lead.leadContacts ?? [])
               .filter((c) => c.email && c.isActive !== false)
-              .map((c) => ({
-                id: c.id,
-                name: c.name,
-                email: c.email!,
-                role: c.role,
-              })),
+              .map((c) => ({ id: c.id, name: c.name, email: c.email!, role: c.role })),
           ]}
         />
       </div>
 
-      {/* Lead Activities */}
-      <div className="mt-6 mb-8">
+      <div id="atividades" className="mt-6 mb-8">
         <div className="mb-3 flex justify-end">
           <GmailSyncButton revalidateUrl={`/leads/${lead.id}`} />
         </div>
