@@ -627,13 +627,15 @@ function MeetingCard({
 
       {/* Video player (expanded) */}
       {isPlayerOpen && meeting.recordingDriveId && (
-        <div className="mt-3 overflow-hidden rounded-lg border border-purple-200 bg-black">
-          <iframe
-            src={`https://drive.google.com/file/d/${meeting.recordingDriveId}/preview`}
-            allow="autoplay"
-            className="h-64 w-full sm:h-80 lg:h-96"
-            title={`Gravação: ${meeting.title}`}
-          />
+        <div className="mt-3 overflow-hidden rounded-lg border border-purple-200">
+          <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+            <iframe
+              src={`https://drive.google.com/file/d/${meeting.recordingDriveId}/preview`}
+              allow="autoplay"
+              className="absolute inset-0 h-full w-full"
+              title={`Gravação: ${meeting.title}`}
+            />
+          </div>
         </div>
       )}
 
