@@ -16,6 +16,8 @@ RUN npx prisma generate
 
 # Copia o código do backend e compila TypeScript
 COPY backend/ .
+# Restaura o schema.prisma da raiz (COPY backend/ sobrescreve prisma/)
+COPY prisma/schema.prisma ./prisma/schema.prisma
 RUN npm run build
 
 # Remove devDependencies para o próximo stage
