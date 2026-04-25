@@ -10,6 +10,7 @@ export class MeetingForbiddenError extends Error { name = "MeetingForbiddenError
 interface BrandConfig {
   companyName: string;
   primaryColor: string;
+  headerBackground: string; // solid color or CSS gradient
   bgColor: string;
   surfaceColor: string;
   borderColor: string;
@@ -26,6 +27,7 @@ const BRAND_CONFIGS: { domain: string; config: BrandConfig }[] = [
     config: {
       companyName: "Salto",
       primaryColor: "#ff5c00",
+      headerBackground: "linear-gradient(to right, #0e0e0e 0%, #1a0800 40%, #ff5c00 100%)",
       bgColor: "#0e0e0e",
       surfaceColor: "#141414",
       borderColor: "#252525",
@@ -41,6 +43,7 @@ const BRAND_CONFIGS: { domain: string; config: BrandConfig }[] = [
     config: {
       companyName: "WB Digital Solutions",
       primaryColor: "#792990",
+      headerBackground: "#792990",
       bgColor: "#350545",
       surfaceColor: "#4a1060",
       borderColor: "#5a2070",
@@ -56,6 +59,7 @@ const BRAND_CONFIGS: { domain: string; config: BrandConfig }[] = [
 const DEFAULT_BRAND: BrandConfig = {
   companyName: "",
   primaryColor: "#1a73e8",
+  headerBackground: "#1a73e8",
   bgColor: "#ffffff",
   surfaceColor: "#f8f9fa",
   borderColor: "#e0e0e0",
@@ -120,7 +124,7 @@ function buildBrandedEmail(params: {
 
         <!-- Header -->
         <tr>
-          <td style="background:${brand.primaryColor};padding:24px 32px;">
+          <td style="background:${brand.headerBackground};padding:24px 32px;">
             ${logoHtml}
           </td>
         </tr>
