@@ -19,6 +19,7 @@ interface BrandConfig {
   logoUrl: string | null;
   logoAlt: string;
   font: string;
+  fallbackPurpose: string;
 }
 
 const BRAND_CONFIGS: { domain: string; config: BrandConfig }[] = [
@@ -36,6 +37,7 @@ const BRAND_CONFIGS: { domain: string; config: BrandConfig }[] = [
       logoUrl: "https://saltoup.com/logo.svg",
       logoAlt: "Salto",
       font: "Montserrat, Arial, sans-serif",
+      fallbackPurpose: "Estamos animados para apresentar como a Salto pode ajudar a sua empresa a crescer com mais eficiência.",
     },
   },
   {
@@ -52,6 +54,7 @@ const BRAND_CONFIGS: { domain: string; config: BrandConfig }[] = [
       logoUrl: "https://www.wbdigitalsolutions.com/svg/logo-white.svg",
       logoAlt: "WB Digital Solutions",
       font: "'Plus Jakarta Sans', Arial, sans-serif",
+      fallbackPurpose: "Estamos animados para entender os seus desafios tecnológicos e, a partir disso, apresentar como podemos ajudar — seja com desenvolvimento, automação, integrações ou IA.",
     },
   },
 ];
@@ -68,6 +71,7 @@ const DEFAULT_BRAND: BrandConfig = {
   logoUrl: null,
   logoAlt: "",
   font: "Arial, sans-serif",
+  fallbackPurpose: "Estamos animados para a nossa conversa!",
 };
 
 function getBrandConfig(email: string): BrandConfig {
@@ -104,11 +108,8 @@ function buildBrandedEmail(params: {
     ? `Obrigado pelo interesse na ${brand.companyName || "nossa empresa"}. Estamos animados em conversar com você e a equipe da <strong>${companyName}</strong>.`
     : `Obrigado pelo seu tempo. Estamos animados para nossa conversa!`;
 
-  const purposeHtml = description
-    ? `<p style="color:${brand.textColor};font-size:15px;margin:0 0 24px;padding:16px;background:${brand.surfaceColor};border-left:3px solid ${brand.primaryColor};border-radius:0 6px 6px 0;">
-        ${description}
-       </p>`
-    : "";
+  const purposeText = description || brand.fallbackPurpose;
+  const purposeHtml = `<p style="color:${brand.textColor};font-size:15px;margin:0 0 24px;padding:16px;background:${brand.surfaceColor};border-left:3px solid ${brand.primaryColor};border-radius:0 6px 6px 0;">${purposeText}</p>`;
 
   const logoHtml = brand.logoUrl
     ? `<img src="${brand.logoUrl}" alt="${brand.logoAlt}" style="height:40px;max-width:200px;object-fit:contain;" />`
