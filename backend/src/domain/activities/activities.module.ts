@@ -1,9 +1,12 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "@/infra/auth/auth.module";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
-import { EmailModule } from "@/domain/integrations/email/email.module";
 import { S3StoragePort } from "@/domain/integrations/goto/application/ports/s3-storage.port";
 import { S3RecordingClient } from "@/domain/integrations/goto/infra/s3-recording.client";
+import { GmailPort } from "@/domain/integrations/email/application/ports/gmail.port";
+import { GmailClient } from "@/domain/integrations/email/infra/gmail.client";
+import { GoogleOAuthPort } from "@/domain/integrations/email/application/ports/google-oauth.port";
+import { GoogleOAuthService } from "@/domain/integrations/email/infra/google-oauth.service";
 import { ActivitiesRepository } from "./application/repositories/activities.repository";
 import { PrismaActivitiesRepository } from "@/infra/database/prisma/repositories/activities/prisma-activities.repository";
 import { GetActivitiesUseCase } from "./application/use-cases/get-activities.use-case";
@@ -22,7 +25,7 @@ import { PurgeActivityUseCase } from "./application/use-cases/purge-activity.use
 import { ActivitiesController } from "@/infra/controllers/activities.controller";
 
 @Module({
-  imports: [AuthModule, SharedInfraModule, EmailModule],
+  imports: [AuthModule, SharedInfraModule],
   controllers: [ActivitiesController],
   providers: [
     { provide: ActivitiesRepository, useClass: PrismaActivitiesRepository },
@@ -40,6 +43,8 @@ import { ActivitiesController } from "@/infra/controllers/activities.controller"
     MarkThreadRepliedUseCase,
     PurgeActivityUseCase,
     { provide: S3StoragePort, useClass: S3RecordingClient },
+    { provide: GmailPort, useClass: GmailClient },
+    { provide: GoogleOAuthPort, useClass: GoogleOAuthService },
   ],
   exports: [ActivitiesRepository],
 })
