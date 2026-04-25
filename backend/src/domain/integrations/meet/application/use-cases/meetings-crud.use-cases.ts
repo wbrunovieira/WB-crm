@@ -31,7 +31,7 @@ const BRAND_CONFIGS: { domain: string; config: BrandConfig }[] = [
       borderColor: "#252525",
       textColor: "#f5f5f5",
       mutedColor: "#888888",
-      logoUrl: null, // TODO: substituir pela URL pública do logo Salto
+      logoUrl: "https://saltoup.com/logo.svg",
       logoAlt: "Salto",
       font: "Montserrat, Arial, sans-serif",
     },
