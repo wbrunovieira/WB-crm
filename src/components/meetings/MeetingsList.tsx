@@ -14,6 +14,7 @@ import {
   Copy,
   Check,
   NotebookPen,
+  Trash2,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
@@ -131,6 +132,7 @@ export default function MeetingsList({
 }: Props) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
+  const isAdmin = session?.user?.role === "admin";
   const [meetings, setMeetings] = useState<typeof initial>(initial ?? []);
   const [showModal, setShowModal] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
@@ -163,6 +165,16 @@ export default function MeetingsList({
       toast.success("Reunião cancelada. Os convidados foram notificados.");
     } catch {
       toast.error("Erro ao cancelar reunião");
+    }
+  }
+
+  async function handlePurge(id: string) {
+    try {
+      await apiFetch(`/meetings/${id}/purge`, token, { method: "DELETE" });
+      setMeetings((prev) => prev.filter((m) => m.id !== id));
+      toast.success("Reunião excluída permanentemente.");
+    } catch {
+      toast.error("Erro ao excluir reunião");
     }
   }
 
@@ -219,6 +231,8 @@ export default function MeetingsList({
                     onSummaryUpdated={handleSummaryUpdated}
                     onCancel={handleCancel}
                     onEdit={setEditingMeeting}
+                    isAdmin={isAdmin}
+                    onPurge={handlePurge}
                   />
                 ))}
               </ul>
@@ -246,6 +260,8 @@ export default function MeetingsList({
                     onSummaryUpdated={handleSummaryUpdated}
                     onCancel={handleCancel}
                     onEdit={setEditingMeeting}
+                    isAdmin={isAdmin}
+                    onPurge={handlePurge}
                   />
                 ))}
               </ul>
@@ -321,6 +337,8 @@ function MeetingCard({
   onSummaryUpdated,
   onCancel,
   onEdit,
+  isAdmin,
+  onPurge,
 }: {
   meeting: Meeting;
   suggestedContacts: SuggestedContact[];
@@ -333,12 +351,16 @@ function MeetingCard({
   onSummaryUpdated: (id: string, summary: string | null) => void;
   onCancel: (id: string) => Promise<void>;
   onEdit: (meeting: Meeting) => void;
+  isAdmin?: boolean;
+  onPurge?: (id: string) => Promise<void>;
 }) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const contactByEmail = new Map(suggestedContacts.map((c) => [c.email, c]));
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [editingSummary, setEditingSummary] = useState(false);
   const [summaryDraft, setSummaryDraft] = useState(meeting.meetingSummary ?? "");
   const [savingSummary, setSavingSummary] = useState(false);
@@ -362,6 +384,17 @@ function MeetingCard({
     } finally {
       setCancelling(false);
       setConfirmingCancel(false);
+    }
+  }
+
+  async function handleConfirmDelete() {
+    if (!onPurge) return;
+    setDeleting(true);
+    try {
+      await onPurge(meeting.id);
+    } finally {
+      setDeleting(false);
+      setConfirmingDelete(false);
     }
   }
 
@@ -502,6 +535,44 @@ function MeetingCard({
                   </button>
                   <button
                     onClick={() => setConfirmingCancel(false)}
+                    className="rounded px-2 py-0.5 text-xs font-medium text-red-500 hover:bg-red-100"
+                  >
+                    Não
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* Admin: delete button */}
+          {isAdmin && !confirmingCancel && !confirmingDelete && (
+            <button
+              onClick={() => setConfirmingDelete(true)}
+              className="rounded-md p-1.5 text-red-400/60 hover:bg-red-500/15 hover:text-red-500"
+              title="Excluir reunião permanentemente"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
+
+          {/* Inline delete confirmation */}
+          {confirmingDelete && (
+            <div className="flex items-center gap-1.5 rounded-lg border border-red-700/40 bg-red-700/10 px-3 py-1.5">
+              {deleting ? (
+                <Loader2 size={13} className="animate-spin text-red-600" />
+              ) : (
+                <>
+                  <span className="text-xs font-medium text-red-600">
+                    Excluir permanentemente?
+                  </span>
+                  <button
+                    onClick={handleConfirmDelete}
+                    className="rounded bg-red-600 px-2 py-0.5 text-xs font-semibold text-white hover:bg-red-700"
+                  >
+                    Sim
+                  </button>
+                  <button
+                    onClick={() => setConfirmingDelete(false)}
                     className="rounded px-2 py-0.5 text-xs font-medium text-red-500 hover:bg-red-100"
                   >
                     Não
