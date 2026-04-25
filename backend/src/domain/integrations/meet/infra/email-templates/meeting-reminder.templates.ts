@@ -105,12 +105,12 @@ export function buildMorningReminderEmail(params: ReminderEmailParams): { subjec
   const body = `
     <p style="margin:0 0 8px;font-size:18px;font-weight:bold;">${greeting} ☀️</p>
     <p style="margin:0 0 24px;font-size:15px;color:${brand.mutedColor};">
-      Hoje é dia de reunião${company}! Aqui estão os detalhes para você se preparar:
+      Só passando para lembrar que hoje${company ? ` a gente tem uma reunião com a <strong>${params.companyName}</strong>` : " temos uma reunião agendada"}. Estamos animados! 😊
     </p>
     ${detailsTable(brand, params.meetingTitle, params.meetingStartAt, params.meetingEndAt)}
     ${params.meetLink ? meetButtonHtml(brand, params.meetLink, "Acessar link da reunião") : ""}
     <p style="color:${brand.mutedColor};font-size:13px;margin:0 0 24px;">
-      O link também estará disponível no convite do Google Agenda. Até mais tarde!
+      Até mais tarde!
     </p>
     <p style="margin:0;color:${brand.textColor};font-size:14px;">Até logo,<br><strong>${params.organizerEmail}</strong></p>
   `;
