@@ -1,8 +1,11 @@
 import { Injectable, Logger, Optional } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Either, left, right } from "@/core/either";
 import { MeetingsRepository, MeetingRecord, MeetingFilters } from "../repositories/meetings.repository";
 import { GoogleCalendarPort } from "../ports/google-calendar.port";
 import { GmailPort } from "@/domain/integrations/email/application/ports/gmail.port";
+import { MeetingScheduledEvent } from "../../enterprise/events/meeting-scheduled.event";
+import { MeetingCancelledEvent } from "../../enterprise/events/meeting-cancelled.event";
 
 export class MeetingNotFoundError extends Error { name = "MeetingNotFoundError"; }
 export class MeetingForbiddenError extends Error { name = "MeetingForbiddenError"; }
@@ -250,6 +253,7 @@ export class ScheduleMeetingUseCase {
   constructor(
     private readonly repo: MeetingsRepository,
     private readonly calendarPort: GoogleCalendarPort,
+    private readonly eventEmitter: EventEmitter2,
     @Optional() private readonly gmailPort?: GmailPort,
   ) {}
 
@@ -364,6 +368,20 @@ export class ScheduleMeetingUseCase {
       ownerId: input.requesterId,
       createActivity: input.createActivity,
     });
+
+    this.eventEmitter.emit("meeting.scheduled", new MeetingScheduledEvent({
+      meetingId: meeting.id,
+      title: meeting.title,
+      startAt: meeting.startAt,
+      endAt: meeting.endAt ?? undefined,
+      attendeeEmails: JSON.parse(meeting.attendeeEmails as string),
+      organizerEmail: meeting.organizerEmail ?? undefined,
+      meetLink: meeting.meetLink ?? undefined,
+      description: input.description,
+      contactName: input.contactName,
+      companyName: input.companyName,
+    }));
+
     return right(meeting);
   }
 }
@@ -423,6 +441,7 @@ export class CancelMeetingUseCase {
   constructor(
     private readonly repo: MeetingsRepository,
     private readonly calendarPort: GoogleCalendarPort,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(input: { id: string; requesterId: string }): Promise<Either<Error, void>> {
@@ -442,6 +461,7 @@ export class CancelMeetingUseCase {
     if (meeting.activityId) {
       await this.repo.skipActivity(meeting.activityId, "Reunião cancelada");
     }
+    this.eventEmitter.emit("meeting.cancelled", new MeetingCancelledEvent(input.id));
     return right(undefined);
   }
 }

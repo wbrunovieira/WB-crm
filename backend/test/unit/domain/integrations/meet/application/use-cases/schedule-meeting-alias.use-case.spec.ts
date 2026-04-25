@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { ScheduleMeetingUseCase } from "@/domain/integrations/meet/application/use-cases/meetings-crud.use-cases";
 import { FakeMeetingsRepository } from "../../fakes/fake-meetings.repository";
 import { FakeGoogleCalendarPort } from "../../fakes/fake-google-calendar.port";
@@ -13,6 +14,7 @@ const END = new Date(FUTURE.getTime() + 60 * 60 * 1000);
 let meetings: FakeMeetingsRepository;
 let calendar: FakeGoogleCalendarPort;
 let gmail: FakeGmailPort;
+const fakeEmitter = { emit: vi.fn() } as unknown as EventEmitter2;
 
 beforeEach(() => {
   meetings = new FakeMeetingsRepository();
@@ -22,7 +24,7 @@ beforeEach(() => {
 
 describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
   it("always uses sendUpdates=all so Google Calendar sends the native RSVP invite", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter, gmail);
 
     await useCase.execute({
       title: "Reunião Saltoup",
@@ -37,7 +39,7 @@ describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
   });
 
   it("informational email uses Reply-To and Cc = alias (not From, to avoid Yahoo/SPF blocks)", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter, gmail);
 
     await useCase.execute({
       title: "Reunião Saltoup",
@@ -62,7 +64,7 @@ describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
 
   it("informational email body contains meeting title, date and Meet link", async () => {
     calendar.meetLink = "https://meet.google.com/abc-defg-hij";
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter, gmail);
 
     await useCase.execute({
       title: "Reunião Saltoup",
@@ -80,7 +82,7 @@ describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
   });
 
   it("sends informational email to all attendees (not to the alias itself)", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter, gmail);
     const SECOND = "outro@example.com";
 
     await useCase.execute({
@@ -99,7 +101,7 @@ describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
   });
 
   it("uses sendUpdates=all (default) when no organizerEmail is set and sends no email", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter, gmail);
 
     await useCase.execute({
       title: "Reunião Normal",
@@ -116,7 +118,7 @@ describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
 
   it("meeting is still created even if Gmail informational email fails", async () => {
     gmail.shouldFailSend = true;
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar, gmail);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter, gmail);
 
     const result = await useCase.execute({
       title: "Reunião Saltoup Falha",
@@ -132,7 +134,7 @@ describe("ScheduleMeetingUseCase — organizerEmail alias (Option B)", () => {
   });
 
   it("works without GmailPort — uses sendUpdates=all, no informational email", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
 
     const result = await useCase.execute({
       title: "Sem Gmail",

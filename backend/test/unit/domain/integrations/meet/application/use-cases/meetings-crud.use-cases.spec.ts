@@ -1,4 +1,5 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   GetMeetingsUseCase,
   GetMeetingByIdUseCase,
@@ -16,6 +17,8 @@ import { FakeGoogleCalendarPort } from "../../fakes/fake-google-calendar.port";
 const OWNER = "user-001";
 const OTHER = "user-002";
 const FUTURE = new Date(Date.now() + 60 * 60 * 1000);
+
+const fakeEmitter = { emit: vi.fn() } as unknown as EventEmitter2;
 
 let meetings: FakeMeetingsRepository;
 let calendar: FakeGoogleCalendarPort;
@@ -158,7 +161,7 @@ describe("UpdateMeetingSummaryUseCase", () => {
 // ---------------------------------------------------------------------------
 describe("ScheduleMeetingUseCase", () => {
   it("creates a meeting and syncs with Google Calendar", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
 
     const result = await useCase.execute({
       title: "Nova Reunião",
@@ -175,7 +178,7 @@ describe("ScheduleMeetingUseCase", () => {
   });
 
   it("creates meeting without Calendar when skipCalendar=true", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
 
     const result = await useCase.execute({
       title: "Reunião Offline",
@@ -191,7 +194,7 @@ describe("ScheduleMeetingUseCase", () => {
   });
 
   it("creates meeting even when Calendar throws (non-fatal)", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
     calendar.createMeetEvent = async () => { throw new Error("Calendar unavailable"); };
 
     const result = await useCase.execute({
@@ -207,7 +210,7 @@ describe("ScheduleMeetingUseCase", () => {
   });
 
   it("returns error when title is empty", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
 
     const result = await useCase.execute({
       title: "   ",
@@ -221,7 +224,7 @@ describe("ScheduleMeetingUseCase", () => {
   });
 
   it("defaults endAt to startAt + 1 hour when not provided", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
 
     await useCase.execute({
       title: "Reunião Curta",
@@ -235,7 +238,7 @@ describe("ScheduleMeetingUseCase", () => {
   });
 
   it("trims whitespace from title", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
 
     const result = await useCase.execute({
       title: "  Reunião Espaçada  ",
@@ -249,7 +252,7 @@ describe("ScheduleMeetingUseCase", () => {
   });
 
   it("stores organizerEmail separately (not duplicated in attendees)", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
 
     const result = await useCase.execute({
       title: "Reunião Salto",
@@ -269,7 +272,7 @@ describe("ScheduleMeetingUseCase", () => {
   });
 
   it("does not duplicate organizerEmail when already in attendees", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
 
     const result = await useCase.execute({
       title: "Reunião Sem Duplicata",
@@ -286,7 +289,7 @@ describe("ScheduleMeetingUseCase", () => {
   });
 
   it("saves organizerEmail as null when not provided", async () => {
-    const useCase = new ScheduleMeetingUseCase(meetings, calendar);
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
 
     const result = await useCase.execute({
       title: "Reunião WB",
@@ -364,7 +367,7 @@ describe("UpdateMeetingUseCase", () => {
 // ---------------------------------------------------------------------------
 describe("CancelMeetingUseCase", () => {
   it("cancels meeting and deletes Google Calendar event", async () => {
-    const useCase = new CancelMeetingUseCase(meetings, calendar);
+    const useCase = new CancelMeetingUseCase(meetings, calendar, fakeEmitter);
     meetings.addMeeting({ id: "m1", title: "Reunião A", startAt: FUTURE, status: "scheduled", ownerId: OWNER, googleEventId: "gcal-001" });
     calendar.addEvent({ googleEventId: "gcal-001", attendees: [] });
 
@@ -376,7 +379,7 @@ describe("CancelMeetingUseCase", () => {
   });
 
   it("cancels meeting without Calendar call when no googleEventId", async () => {
-    const useCase = new CancelMeetingUseCase(meetings, calendar);
+    const useCase = new CancelMeetingUseCase(meetings, calendar, fakeEmitter);
     meetings.addMeeting({ id: "m1", title: "Reunião Local", startAt: FUTURE, status: "scheduled", ownerId: OWNER, googleEventId: null });
 
     const result = await useCase.execute({ id: "m1", requesterId: OWNER });
@@ -387,7 +390,7 @@ describe("CancelMeetingUseCase", () => {
   });
 
   it("proceeds with DB cancellation even when Calendar throws", async () => {
-    const useCase = new CancelMeetingUseCase(meetings, calendar);
+    const useCase = new CancelMeetingUseCase(meetings, calendar, fakeEmitter);
     meetings.addMeeting({ id: "m1", title: "Reunião A", startAt: FUTURE, status: "scheduled", ownerId: OWNER, googleEventId: "gcal-001" });
     calendar.cancelEvent = async () => { throw new Error("Calendar down"); };
 
@@ -398,7 +401,7 @@ describe("CancelMeetingUseCase", () => {
   });
 
   it("skips linked activity when activityId is set", async () => {
-    const useCase = new CancelMeetingUseCase(meetings, calendar);
+    const useCase = new CancelMeetingUseCase(meetings, calendar, fakeEmitter);
     const skipped: string[] = [];
     meetings.skipActivity = async (id) => { skipped.push(id); };
     meetings.addMeeting({ id: "m1", title: "Reunião A", startAt: FUTURE, status: "scheduled", ownerId: OWNER, activityId: "act-001" });
@@ -409,7 +412,7 @@ describe("CancelMeetingUseCase", () => {
   });
 
   it("returns MeetingNotFoundError when meeting does not exist", async () => {
-    const useCase = new CancelMeetingUseCase(meetings, calendar);
+    const useCase = new CancelMeetingUseCase(meetings, calendar, fakeEmitter);
 
     const result = await useCase.execute({ id: "nonexistent", requesterId: OWNER });
 
@@ -418,7 +421,7 @@ describe("CancelMeetingUseCase", () => {
   });
 
   it("returns MeetingForbiddenError when meeting belongs to another user", async () => {
-    const useCase = new CancelMeetingUseCase(meetings, calendar);
+    const useCase = new CancelMeetingUseCase(meetings, calendar, fakeEmitter);
     meetings.addMeeting({ id: "m1", title: "Reunião Alheia", startAt: FUTURE, status: "scheduled", ownerId: OTHER });
 
     const result = await useCase.execute({ id: "m1", requesterId: OWNER });

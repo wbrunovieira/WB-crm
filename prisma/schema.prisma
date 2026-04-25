@@ -2018,6 +2018,37 @@ model Meeting {
   @@index([status])
   @@index([startAt])
   @@map("meetings")
+
+  scheduledEmails ScheduledEmail[]
+}
+
+model ScheduledEmail {
+  id               String    @id @default(cuid())
+  meetingId        String
+  type             String    // morning_reminder | one_hour_reminder | on_time_reminder
+  scheduledFor     DateTime
+  status           String    @default("pending") // pending | sent | cancelled | failed
+  attempts         Int       @default(0)
+  sentAt           DateTime?
+  failReason       String?
+
+  recipientEmail      String
+  organizerEmail      String?
+  meetingTitle        String
+  meetingStartAt      DateTime
+  meetingEndAt        DateTime?
+  meetingDescription  String?
+  meetLink            String?
+  contactName         String?
+  companyName         String?
+
+  createdAt DateTime @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledFor, status])
+  @@index([meetingId])
+  @@map("scheduled_emails")
 }
 
 model GoogleToken {
