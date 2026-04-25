@@ -85,6 +85,8 @@ export class MeetingsCrudController {
     attendeeEmails?: string[];
     organizerEmail?: string;
     description?: string;
+    contactName?: string;
+    companyName?: string;
     leadId?: string; contactId?: string; organizationId?: string; dealId?: string;
     createActivity?: boolean; skipCalendar?: boolean;
   }) {
@@ -95,6 +97,8 @@ export class MeetingsCrudController {
       attendeeEmails: body.attendeeEmails ?? [],
       organizerEmail: body.organizerEmail,
       description: body.description,
+      contactName: body.contactName,
+      companyName: body.companyName,
       leadId: body.leadId,
       contactId: body.contactId,
       organizationId: body.organizationId,
