@@ -89,4 +89,9 @@ export class GoogleDriveClient extends GoogleDrivePort {
     );
     return Buffer.from(res.data as ArrayBuffer);
   }
+
+  async deleteFile(fileId: string): Promise<void> {
+    const drive = await this.getDriveClient();
+    await drive.files.delete({ fileId });
+  }
 }

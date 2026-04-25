@@ -9,6 +9,7 @@ import { MeetingCancelledEvent } from "../../enterprise/events/meeting-cancelled
 
 export class MeetingNotFoundError extends Error { name = "MeetingNotFoundError"; }
 export class MeetingForbiddenError extends Error { name = "MeetingForbiddenError"; }
+export class MeetingNotCompletedError extends Error { name = "MeetingNotCompletedError"; }
 
 interface BrandConfig {
   companyName: string;

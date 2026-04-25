@@ -22,6 +22,7 @@ import {
 import { CreateMeetingRemindersUseCase } from "./application/use-cases/create-meeting-reminders.use-case";
 import { CancelMeetingRemindersUseCase } from "./application/use-cases/cancel-meeting-reminders.use-case";
 import { SendScheduledEmailsUseCase } from "./application/use-cases/send-scheduled-emails.use-case";
+import { PurgeCompletedMeetingUseCase } from "./application/use-cases/purge-completed-meeting.use-case";
 
 // Infrastructure
 import { GoogleDriveClient } from "./infra/google-drive.client";
@@ -57,6 +58,9 @@ import { AuthModule } from "@/infra/auth/auth.module";
     CreateMeetingRemindersUseCase,
     CancelMeetingRemindersUseCase,
     SendScheduledEmailsUseCase,
+
+    // Use Cases — admin
+    PurgeCompletedMeetingUseCase,
 
     // Port implementations
     { provide: GoogleDrivePort, useClass: GoogleDriveClient },

@@ -15,6 +15,7 @@ export class FakeMeetingsRepository extends MeetingsRepository {
   })[] = [];
 
   public completedActivities: { activityId: string; at: Date }[] = [];
+  public deletedActivityIds: string[] = [];
 
   async findScheduled(): Promise<MeetingRecord[]> {
     return this.items.filter((m) => m.status === "scheduled");
@@ -137,6 +138,10 @@ export class FakeMeetingsRepository extends MeetingsRepository {
 
   async delete(id: string): Promise<void> {
     this.items = this.items.filter(m => m.id !== id);
+  }
+
+  async deleteActivity(activityId: string): Promise<void> {
+    this.deletedActivityIds.push(activityId);
   }
 
   addMeeting(meeting: Partial<MeetingRecord> & { id: string; title: string; startAt: Date; status: string }): void {

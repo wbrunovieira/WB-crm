@@ -101,4 +101,5 @@ export abstract class MeetingsRepository {
   abstract update(id: string, data: UpdateMeetingData): Promise<MeetingRecord>;
   abstract updateRsvp(id: string, attendees: Array<{ email: string; responseStatus: string }>): Promise<void>;
   abstract delete(id: string): Promise<void>;
+  abstract deleteActivity(activityId: string): Promise<void>;
 }

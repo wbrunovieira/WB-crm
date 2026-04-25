@@ -11,6 +11,7 @@ import {
   MeetingNotFoundError,
   MeetingForbiddenError,
 } from "../application/use-cases/meetings-crud.use-cases";
+import { PurgeCompletedMeetingUseCase } from "../application/use-cases/purge-completed-meeting.use-case";
 import { NotFoundException, ForbiddenException } from "@nestjs/common";
 
 function serialize(m: any) {
@@ -46,6 +47,7 @@ export class MeetingsCrudController {
     private readonly cancel: CancelMeetingUseCase,
     private readonly checkTitle: CheckMeetingTitleUseCase,
     private readonly updateSummary: UpdateMeetingSummaryUseCase,
+    private readonly purge: PurgeCompletedMeetingUseCase,
   ) {}
 
   @Get()
@@ -145,6 +147,17 @@ export class MeetingsCrudController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async cancelOne(@Request() req: any, @Param("id") id: string) {
     const r = await this.cancel.execute({ id, requesterId: req.user.id });
+    if (r.isLeft()) throwIfError(r.value);
+  }
+
+  @Delete(":id/purge")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async purgeOne(@Request() req: any, @Param("id") id: string) {
+    const r = await this.purge.execute({
+      id,
+      requesterId: req.user.id,
+      isAdmin: req.user.role === "admin",
+    });
     if (r.isLeft()) throwIfError(r.value);
   }
 }

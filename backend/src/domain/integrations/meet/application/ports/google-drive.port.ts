@@ -18,4 +18,7 @@ export abstract class GoogleDrivePort {
 
   /** Downloads a file and returns its Buffer. */
   abstract downloadFile(fileId: string): Promise<Buffer>;
+
+  /** Permanently deletes a file from Drive. */
+  abstract deleteFile(fileId: string): Promise<void>;
 }

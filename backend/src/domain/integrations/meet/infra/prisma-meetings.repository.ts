@@ -260,6 +260,10 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
     await this.prisma.meeting.delete({ where: { id } });
   }
 
+  async deleteActivity(activityId: string): Promise<void> {
+    await this.prisma.activity.delete({ where: { id: activityId } });
+  }
+
   private toDomain(row: any): MeetingRecord {
     return {
       id: row.id, title: row.title, googleEventId: row.googleEventId ?? null,

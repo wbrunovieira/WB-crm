@@ -5,6 +5,8 @@ export class FakeGoogleDrivePort extends GoogleDrivePort {
   public files: DriveFile[] = [];
   public docTexts: Map<string, string> = new Map();
   public fileBuffers: Map<string, Buffer> = new Map();
+  public deletedFileIds: string[] = [];
+  public shouldFailDelete = false;
 
   async findMeetRecordingsFolder(): Promise<string | null> {
     return this.meetFolderId;
@@ -24,6 +26,11 @@ export class FakeGoogleDrivePort extends GoogleDrivePort {
 
   addFile(file: DriveFile): void {
     this.files.push(file);
+  }
+
+  async deleteFile(fileId: string): Promise<void> {
+    if (this.shouldFailDelete) throw new Error("Drive delete failed (simulated)");
+    this.deletedFileIds.push(fileId);
   }
 
   addDocText(fileId: string, text: string): void {
