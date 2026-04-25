@@ -308,7 +308,7 @@ export default function ScheduleMeetingModal({
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-gray-700">
-                  <CalendarDays size={14} className="text-purple-500" />
+                  <CalendarDays size={14} className="text-white" />
                   Data <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -320,7 +320,7 @@ export default function ScheduleMeetingModal({
               </div>
               <div>
                 <label className="mb-1 flex items-center gap-1.5 text-sm font-medium text-gray-700">
-                  <Clock size={14} className="text-purple-500" />
+                  <Clock size={14} className="text-white" />
                   Hora <span className="text-red-500">*</span>
                 </label>
                 <input
