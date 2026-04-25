@@ -132,9 +132,6 @@ export function buildOneHourReminderEmail(params: ReminderEmailParams): { subjec
     </p>
     ${detailsTable(brand, params.meetingTitle, params.meetingStartAt, params.meetingEndAt)}
     ${params.meetLink ? meetButtonHtml(brand, params.meetLink, "Entrar no Google Meet") : ""}
-    <p style="color:${brand.mutedColor};font-size:13px;margin:0 0 24px;">
-      Recomendamos entrar no link alguns minutos antes para evitar problemas de conexão.
-    </p>
     <p style="margin:0;color:${brand.textColor};font-size:14px;">Até já,<br><strong>${params.organizerEmail}</strong></p>
   `;
 
