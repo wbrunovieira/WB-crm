@@ -32,4 +32,8 @@ export class FakeGoogleDrivePort extends GoogleDrivePort {
     }
     return this.folders.get(name)!;
   }
+
+  async deleteFile(fileId: string): Promise<void> {
+    this.uploadedFiles = this.uploadedFiles.filter((f) => f.id !== fileId);
+  }
 }

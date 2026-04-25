@@ -54,6 +54,10 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
     return { activity, ownerName: "Agente", clientName: "Cliente" };
   }
 
+  async findByTranscriptionJobId(jobId: string): Promise<Activity | null> {
+    return this.items.find((a) => a.gotoTranscriptionJobId === jobId || a.gotoTranscriptionJobId2 === jobId) ?? null;
+  }
+
   createAndAdd(props: Parameters<typeof Activity.create>[0]): Activity {
     const activity = Activity.create(props, new UniqueEntityID());
     this.items.push(activity);

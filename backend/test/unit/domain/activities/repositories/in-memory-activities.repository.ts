@@ -152,4 +152,8 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
     if (!activity) return null;
     return { activity, ownerName: "Agente", clientName: "Cliente" };
   }
+
+  async findByTranscriptionJobId(jobId: string): Promise<Activity | null> {
+    return this.items.find((a) => a.gotoTranscriptionJobId === jobId || a.gotoTranscriptionJobId2 === jobId) ?? null;
+  }
 }

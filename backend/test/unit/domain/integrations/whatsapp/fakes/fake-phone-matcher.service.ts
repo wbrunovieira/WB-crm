@@ -1,6 +1,6 @@
 import { IPhoneMatcherService, PhoneMatchResult } from "@/infra/shared/phone-matcher/phone-matcher.service";
 
-export class FakePhoneMatcherService implements IPhoneMatcherService {
+export class FakePhoneMatcherService extends IPhoneMatcherService {
   public matches: Map<string, PhoneMatchResult> = new Map();
 
   addMatch(phone: string, result: PhoneMatchResult): void {
