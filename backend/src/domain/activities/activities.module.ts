@@ -1,5 +1,9 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "@/infra/auth/auth.module";
+import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
+import { EmailModule } from "@/domain/integrations/email/email.module";
+import { S3StoragePort } from "@/domain/integrations/goto/application/ports/s3-storage.port";
+import { S3RecordingClient } from "@/domain/integrations/goto/infra/s3-recording.client";
 import { ActivitiesRepository } from "./application/repositories/activities.repository";
 import { PrismaActivitiesRepository } from "@/infra/database/prisma/repositories/activities/prisma-activities.repository";
 import { GetActivitiesUseCase } from "./application/use-cases/get-activities.use-case";
@@ -14,10 +18,11 @@ import { RevertActivityOutcomeUseCase } from "./application/use-cases/revert-act
 import { LinkActivityToDealUseCase } from "./application/use-cases/link-activity-to-deal.use-case";
 import { UnlinkActivityFromDealUseCase } from "./application/use-cases/unlink-activity-from-deal.use-case";
 import { MarkThreadRepliedUseCase } from "./application/use-cases/mark-thread-replied.use-case";
+import { PurgeActivityUseCase } from "./application/use-cases/purge-activity.use-case";
 import { ActivitiesController } from "@/infra/controllers/activities.controller";
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, SharedInfraModule, EmailModule],
   controllers: [ActivitiesController],
   providers: [
     { provide: ActivitiesRepository, useClass: PrismaActivitiesRepository },
@@ -33,6 +38,8 @@ import { ActivitiesController } from "@/infra/controllers/activities.controller"
     LinkActivityToDealUseCase,
     UnlinkActivityFromDealUseCase,
     MarkThreadRepliedUseCase,
+    PurgeActivityUseCase,
+    { provide: S3StoragePort, useClass: S3RecordingClient },
   ],
   exports: [ActivitiesRepository],
 })

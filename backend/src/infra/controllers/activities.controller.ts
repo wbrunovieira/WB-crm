@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Delete, Get, HttpCode, NotFoundException,
+  Body, Controller, Delete, ForbiddenException, Get, HttpCode, NotFoundException,
   Param, Patch, Post, Query, UnauthorizedException, UseGuards,
 } from "@nestjs/common";
 import {
@@ -15,6 +15,7 @@ import { GetActivityByIdUseCase } from "@/domain/activities/application/use-case
 import { CreateActivityUseCase } from "@/domain/activities/application/use-cases/create-activity.use-case";
 import { UpdateActivityUseCase } from "@/domain/activities/application/use-cases/update-activity.use-case";
 import { DeleteActivityUseCase } from "@/domain/activities/application/use-cases/delete-activity.use-case";
+import { PurgeActivityUseCase, ActivityNotFoundError, ActivityForbiddenError } from "@/domain/activities/application/use-cases/purge-activity.use-case";
 import { ToggleActivityCompletedUseCase } from "@/domain/activities/application/use-cases/toggle-activity-completed.use-case";
 import { MarkActivityFailedUseCase } from "@/domain/activities/application/use-cases/mark-activity-failed.use-case";
 import { MarkActivitySkippedUseCase } from "@/domain/activities/application/use-cases/mark-activity-skipped.use-case";
@@ -128,6 +129,7 @@ export class ActivitiesController {
     private readonly linkToDeal: LinkActivityToDealUseCase,
     private readonly unlinkFromDeal: UnlinkActivityFromDealUseCase,
     private readonly markThreadReplied: MarkThreadRepliedUseCase,
+    private readonly purgeActivity: PurgeActivityUseCase,
   ) {}
 
   @Get()
@@ -224,6 +226,21 @@ export class ActivitiesController {
     });
     if (result.isLeft()) handleError(result);
     return serializeActivity(result.value.activity);
+  }
+
+  @Delete(":id/purge")
+  @HttpCode(204)
+  @ApiOperation({ summary: "Excluir atividade permanentemente (admin) — apaga S3/Drive/Gmail conforme tipo" })
+  @ApiParam({ name: "id" })
+  async purge(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.purgeActivity.execute({
+      id, requesterId: user.id, isAdmin: user.role === "admin",
+    });
+    if (result.isLeft()) {
+      if (result.value instanceof ActivityNotFoundError) throw new NotFoundException(result.value.message);
+      if (result.value instanceof ActivityForbiddenError) throw new ForbiddenException(result.value.message);
+      throw result.value;
+    }
   }
 
   @Delete(":id")

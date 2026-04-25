@@ -5,6 +5,7 @@ import Link from "next/link";
 import { formatDate } from "@/lib/utils";
 import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
 import DeleteActivityButton from "@/components/activities/DeleteActivityButton";
+import PurgeActivityButton from "@/components/activities/PurgeActivityButton";
 import CopyButton from "@/components/CopyButton";
 import BackButton from "@/components/ui/BackButton";
 import WhatsAppMessageLog from "@/components/whatsapp/WhatsAppMessageLog";
@@ -14,6 +15,11 @@ export default async function ActivityDetailPage({
 }: {
   params: { id: string };
 }) {
+  const { getServerSession } = await import("next-auth");
+  const { authOptions } = await import("@/lib/auth");
+  const session = await getServerSession(authOptions);
+  const isAdmin = session?.user?.role === "admin";
+
   const activity = await backendFetch<Activity>(`/activities/${params.id}`).catch(() => null);
 
   if (!activity) {
@@ -62,6 +68,7 @@ export default async function ActivityDetailPage({
               Editar
             </Link>
             <DeleteActivityButton activityId={activity.id} />
+            {isAdmin && <PurgeActivityButton activityId={activity.id} />}
           </div>
         </div>
       </div>

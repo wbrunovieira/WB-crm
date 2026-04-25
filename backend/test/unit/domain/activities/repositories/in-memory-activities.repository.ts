@@ -8,6 +8,7 @@ import type { ActivitySummary, ActivityDetail } from "@/domain/activities/enterp
 
 export class InMemoryActivitiesRepository extends ActivitiesRepository {
   public items: Activity[] = [];
+  public whatsAppDriveIds: Map<string, string[]> = new Map();
 
   async findMany(requesterId: string, requesterRole: string, filters: ActivityFilters = {}): Promise<ActivitySummary[]> {
     let results = this.items;
@@ -155,5 +156,9 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
 
   async findByTranscriptionJobId(jobId: string): Promise<Activity | null> {
     return this.items.find((a) => a.gotoTranscriptionJobId === jobId || a.gotoTranscriptionJobId2 === jobId) ?? null;
+  }
+
+  async findWhatsAppDriveIds(activityId: string): Promise<string[]> {
+    return this.whatsAppDriveIds.get(activityId) ?? [];
   }
 }

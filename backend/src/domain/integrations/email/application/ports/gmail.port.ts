@@ -62,4 +62,6 @@ export abstract class GmailPort {
   abstract getSendAsAliases(userId: string): Promise<SendAsAlias[]>;
 
   abstract sendCalendarInvite(params: CalendarInviteParams): Promise<void>;
+
+  abstract trashMessage(userId: string, messageId: string): Promise<void>;
 }

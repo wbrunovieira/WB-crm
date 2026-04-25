@@ -319,6 +319,14 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     await this.prisma.activity.delete({ where: { id } });
   }
 
+  async findWhatsAppDriveIds(activityId: string): Promise<string[]> {
+    const messages = await this.prisma.whatsAppMessage.findMany({
+      where: { activityId, mediaDriveId: { not: null } },
+      select: { mediaDriveId: true },
+    });
+    return messages.map((m) => m.mediaDriveId!);
+  }
+
   async markThreadReplied(threadId: string): Promise<void> {
     await this.prisma.activity.updateMany({
       where: { emailThreadId: threadId, emailReplied: false, emailFromAddress: { not: null } },

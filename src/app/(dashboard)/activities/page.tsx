@@ -7,6 +7,7 @@ import { formatDate } from "@/lib/utils";
 import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
 import ToggleCompletedButton from "@/components/activities/ToggleCompletedButton";
 import DeleteActivityButton from "@/components/activities/DeleteActivityButton";
+import PurgeActivityButton from "@/components/activities/PurgeActivityButton";
 import { ActivitiesSortSelect } from "@/components/activities/ActivitiesSortSelect";
 import { ActivitiesDateFilter } from "@/components/activities/ActivitiesDateFilter";
 import { ShowArchivedToggle } from "@/components/activities/ShowArchivedToggle";
@@ -551,6 +552,7 @@ export default async function ActivitiesPage({
                     </svg>
                   </Link>
                   <DeleteActivityButton activityId={activity.id} />
+                  {isAdmin && <PurgeActivityButton activityId={activity.id} />}
                 </div>
               </div>
             </div>

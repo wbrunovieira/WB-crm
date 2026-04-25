@@ -300,6 +300,19 @@ export class GmailClient extends GmailPort {
     return Buffer.from(body).toString("base64url");
   }
 
+  async trashMessage(_userId: string, messageId: string): Promise<void> {
+    const token = await this.getAccessToken(_userId);
+    const url = `https://gmail.googleapis.com/gmail/v1/users/me/messages/${messageId}/trash`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Gmail trash error: ${response.status} ${text}`);
+    }
+  }
+
   private async getAccessToken(_userId: string): Promise<string> {
     return this.googleOAuth.getValidToken("google-token-singleton");
   }

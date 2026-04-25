@@ -86,6 +86,14 @@ export class S3RecordingClient extends S3StoragePort {
     return { key: sibling.Key, offsetMs };
   }
 
+  async deleteObject(key: string): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { DeleteObjectCommand } = require("@aws-sdk/client-s3") as typeof import("@aws-sdk/client-s3");
+    const client = getS3Client();
+    await client.send(new DeleteObjectCommand({ Bucket: getBucket(), Key: key }));
+    this.logger.log(`Deleted S3 object: ${key}`);
+  }
+
   async download(key: string): Promise<Buffer> {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { GetObjectCommand } = require("@aws-sdk/client-s3") as typeof import("@aws-sdk/client-s3");

@@ -31,4 +31,5 @@ export abstract class ActivitiesRepository {
   abstract save(activity: Activity): Promise<void>;
   abstract delete(id: string): Promise<void>;
   abstract markThreadReplied(threadId: string): Promise<void>;
+  abstract findWhatsAppDriveIds(activityId: string): Promise<string[]>;
 }
