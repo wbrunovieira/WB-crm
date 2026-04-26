@@ -766,10 +766,10 @@ export function LeadActivitiesList({
     meeting:        { label: "Reunião",      bg: "bg-amber-100",  text: "text-amber-800",  border: "border-l-amber-500",   dot: "bg-amber-500" },
     email:          { label: "E-mail",       bg: "bg-blue-100",   text: "text-blue-800",   border: "border-l-blue-500",    dot: "bg-blue-500" },
     task:           { label: "Tarefa",       bg: "bg-slate-100",  text: "text-slate-700",  border: "border-l-slate-400",   dot: "bg-slate-400" },
-    whatsapp:       { label: "WhatsApp",     bg: "bg-emerald-100",text: "text-emerald-800",border: "border-l-emerald-500", dot: "bg-emerald-500" },
-    linkedin:       { label: "LinkedIn",     bg: "bg-sky-100",    text: "text-sky-800",    border: "border-l-sky-600",     dot: "bg-sky-600" },
-    instagram_dm:   { label: "Instagram DM",bg: "bg-pink-100",   text: "text-pink-800",   border: "border-l-pink-500",    dot: "bg-pink-500" },
-    instagram:      { label: "Instagram",    bg: "bg-pink-100",   text: "text-pink-800",   border: "border-l-pink-500",    dot: "bg-pink-500" },
+    whatsapp:       { label: "WhatsApp",     bg: "bg-[#25D366]",  text: "text-white",      border: "border-l-emerald-500", dot: "bg-emerald-500" },
+    linkedin:       { label: "LinkedIn",     bg: "bg-sky-600",    text: "text-white",      border: "border-l-sky-600",     dot: "bg-sky-600" },
+    instagram_dm:   { label: "Instagram DM",bg: "bg-pink-500",   text: "text-white",      border: "border-l-pink-500",    dot: "bg-pink-500" },
+    instagram:      { label: "Instagram",    bg: "bg-pink-500",   text: "text-white",      border: "border-l-pink-500",    dot: "bg-pink-500" },
     physical_visit: { label: "Visita",       bg: "bg-teal-100",   text: "text-teal-800",   border: "border-l-teal-500",    dot: "bg-teal-500" },
   };
 
