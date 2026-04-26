@@ -166,7 +166,7 @@ export class ProcessWhatsAppMessageUseCase {
       try {
         await this.prisma.notification.create({
           data: {
-            type: "whatsapp_message",
+            type: "WHATSAPP_MESSAGE",
             status: "pending",
             title: `Nova mensagem WhatsApp — ${pushName ?? phone}`,
             summary: text ?? mediaLabel ?? "(mídia)",

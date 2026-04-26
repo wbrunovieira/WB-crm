@@ -12,10 +12,15 @@ import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { HandleWhatsAppTranscriptionCallbackUseCase } from "@/domain/integrations/whatsapp/application/use-cases/handle-whatsapp-transcription-callback.use-case";
 import { TranscriptionResult } from "@/infra/shared/transcriber/transcriber.port";
 
+/** Flat payload sent by the transcription service (snake_case, no nested result) */
 interface TranscriptionCallbackPayload {
-  jobId: string;
+  job_id: string;
   status: "done" | "failed";
-  result?: TranscriptionResult;
+  text?: string;
+  language?: string;
+  duration_seconds?: number;
+  segments?: { start: number; end: number; text: string }[];
+  error?: string;
   secret?: string;
 }
 
@@ -39,31 +44,40 @@ export class WhatsAppTranscriptionCallbackController {
     const receivedSecret = body.secret ?? headerSecret;
 
     if (expectedSecret && receivedSecret !== expectedSecret) {
-      this.logger.warn("Transcription callback: invalid secret", { jobId: body.jobId });
+      this.logger.warn("Transcription callback: invalid secret", { jobId: body.job_id });
       throw new UnauthorizedException("Invalid callback secret");
     }
 
-    if (body.status === "failed" || !body.result) {
-      this.logger.warn("Transcription callback: job failed", { jobId: body.jobId });
-      // Let the fallback cron handle or just log — no action needed for now
+    const jobId = body.job_id;
+
+    if (body.status === "failed" || !body.text) {
+      this.logger.warn("Transcription callback: job failed", { jobId, error: body.error });
       return { ok: true, status: "failed" };
     }
 
+    const transcriptionResult: TranscriptionResult = {
+      jobId,
+      text: body.text,
+      language: body.language ?? "pt",
+      durationSeconds: body.duration_seconds ?? 0,
+      segments: body.segments ?? [],
+    };
+
     const result = await this.handleCallback.execute({
-      jobId: body.jobId,
-      result: body.result,
+      jobId,
+      result: transcriptionResult,
     });
 
     if (result.isLeft()) {
       this.logger.warn("Transcription callback: message not found", {
-        jobId: body.jobId,
+        jobId,
         error: result.value.message,
       });
       throw new NotFoundException(result.value.message);
     }
 
     this.logger.log("Transcription callback processed", {
-      jobId: body.jobId,
+      jobId,
       messageId: result.value.messageId,
     });
 
