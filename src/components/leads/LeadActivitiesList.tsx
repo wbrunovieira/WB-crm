@@ -11,6 +11,7 @@ import WhatsAppMessageLog from "@/components/whatsapp/WhatsAppMessageLog";
 import type { WhatsAppMediaMessage } from "@/components/whatsapp/WhatsAppMessageLog";
 import { formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
 import { useToggleActivityCompleted, useMarkActivityFailed, useMarkActivitySkipped, useRevertActivityOutcome, useUpdateActivity } from "@/hooks/activities/use-activities";
+import PurgeActivityButton from "@/components/activities/PurgeActivityButton";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -192,6 +193,8 @@ function SortableActivityItem({
   receivedThreadIds,
   hasPrev,
   hasNext,
+  isAdmin,
+  onPurged,
 }: {
   activity: Activity;
   isPending: (a: Activity) => boolean;
@@ -209,6 +212,8 @@ function SortableActivityItem({
   receivedThreadIds: Set<string>;
   hasPrev: boolean;
   hasNext: boolean;
+  isAdmin: boolean;
+  onPurged: () => void;
 }) {
   const {
     attributes,
@@ -557,6 +562,9 @@ function SortableActivityItem({
             </button>
           )}
 
+          {isAdmin && (
+            <PurgeActivityButton activityId={activity.id} onPurged={onPurged} />
+          )}
           <Link href={`/activities/${activity.id}`} className="flex-shrink-0">
             <svg
               className="h-5 w-5 text-gray-400 group-hover:text-primary"
@@ -591,6 +599,7 @@ export function LeadActivitiesList({
 }) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
+  const isAdmin = session?.user?.role === "admin";
   const router = useRouter();
   const toggleCompleted = useToggleActivityCompleted();
   const markFailed = useMarkActivityFailed();
@@ -1100,6 +1109,8 @@ export function LeadActivitiesList({
                     receivedThreadIds={receivedThreadIds}
                     hasPrev={conn?.hasPrev ?? false}
                     hasNext={conn?.hasNext ?? false}
+                    isAdmin={isAdmin}
+                    onPurged={() => router.refresh()}
                   />
                 );
               })}

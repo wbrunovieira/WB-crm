@@ -3,6 +3,9 @@
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import Link from "next/link";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import PurgeActivityButton from "@/components/activities/PurgeActivityButton";
 
 type Activity = {
   id: string;
@@ -71,6 +74,9 @@ export function OrganizationActivities({
   activities,
   organizationId,
 }: OrganizationActivitiesProps) {
+  const { data: session } = useSession();
+  const isAdmin = session?.user?.role === "admin";
+  const router = useRouter();
   const daysSinceLastActivity = calculateDaysSinceLastActivity(activities);
 
   return (
@@ -176,6 +182,9 @@ export function OrganizationActivities({
                     </span>
                   </div>
                 </div>
+                {isAdmin && (
+                  <PurgeActivityButton activityId={activity.id} onPurged={() => router.refresh()} />
+                )}
               </div>
             </div>
           ))}
