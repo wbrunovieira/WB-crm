@@ -16,7 +16,7 @@ import { OwnerBadge } from "@/components/shared/OwnerBadge";
 import { ActivityOutcomeButtons } from "@/components/activities/ActivityOutcomeButtons";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import WhatsAppMessageLog from "@/components/whatsapp/WhatsAppMessageLog";
+import WhatsAppActivityLog from "@/components/whatsapp/WhatsAppActivityLog";
 
 // Generate consistent color for cadence name
 const CADENCE_COLORS = [
@@ -333,7 +333,8 @@ export default async function ActivitiesPage({
                   {activity.description && (
                     activity.type === "whatsapp" ? (
                       <div className="mt-2 rounded-xl border border-[#25D366]/20 bg-[#f0fdf4] p-3">
-                        <WhatsAppMessageLog
+                        <WhatsAppActivityLog
+                          activityId={activity.id}
                           description={activity.description}
                           previewCount={3}
                         />

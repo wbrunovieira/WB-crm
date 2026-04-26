@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import PurgeActivityButton from "@/components/activities/PurgeActivityButton";
+import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
 
 type Activity = {
   id: string;
@@ -24,39 +25,17 @@ interface OrganizationActivitiesProps {
   organizationId: string;
 }
 
-function getActivityIcon(type: string) {
-  switch (type) {
-    case "call":
-      return "📞";
-    case "meeting":
-      return "👥";
-    case "email":
-      return "📧";
-    case "task":
-      return "✓";
-    case "whatsapp":
-      return "💬";
-    case "physical_visit":
-      return "🏢";
-    case "instagram_dm":
-      return "📸";
-    default:
-      return "📋";
-  }
-}
-
-function getActivityTypeLabel(type: string) {
-  const labels: Record<string, string> = {
-    call: "Ligação",
-    meeting: "Reunião",
-    email: "Email",
-    task: "Tarefa",
-    whatsapp: "WhatsApp",
-    physical_visit: "Visita Presencial",
-    instagram_dm: "DM Instagram",
-  };
-  return labels[type] || type;
-}
+const typeConfig: Record<string, { label: string; bg: string; text: string }> = {
+  call: { label: "Ligação", bg: "bg-blue-100", text: "text-blue-800" },
+  meeting: { label: "Reunião", bg: "bg-purple-100", text: "text-purple-800" },
+  email: { label: "Email", bg: "bg-green-100", text: "text-green-800" },
+  task: { label: "Tarefa", bg: "bg-orange-100", text: "text-orange-800" },
+  whatsapp: { label: "WhatsApp", bg: "bg-green-100", text: "text-green-700" },
+  physical_visit: { label: "Visita Presencial", bg: "bg-red-100", text: "text-red-800" },
+  visit: { label: "Visita", bg: "bg-red-100", text: "text-red-800" },
+  instagram_dm: { label: "DM Instagram", bg: "bg-pink-100", text: "text-pink-800" },
+  instagram: { label: "Instagram", bg: "bg-pink-100", text: "text-pink-800" },
+};
 
 function calculateDaysSinceLastActivity(activities: Activity[]): number | null {
   if (activities.length === 0) return null;
@@ -143,9 +122,9 @@ export function OrganizationActivities({
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
-                    <span className="text-xl">{getActivityIcon(activity.type)}</span>
-                    <span className="text-xs font-medium text-gray-500 uppercase">
-                      {getActivityTypeLabel(activity.type)}
+                    <span className={`inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-semibold ${typeConfig[activity.type]?.bg ?? "bg-gray-100"} ${typeConfig[activity.type]?.text ?? "text-gray-800"}`}>
+                      <ActivityTypeIcon type={activity.type} className="h-3.5 w-3.5" />
+                      {typeConfig[activity.type]?.label ?? activity.type}
                     </span>
                     {activity.completed && (
                       <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">

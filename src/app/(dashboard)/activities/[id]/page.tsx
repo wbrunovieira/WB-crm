@@ -8,7 +8,7 @@ import DeleteActivityButton from "@/components/activities/DeleteActivityButton";
 import PurgeActivityButton from "@/components/activities/PurgeActivityButton";
 import CopyButton from "@/components/CopyButton";
 import BackButton from "@/components/ui/BackButton";
-import WhatsAppMessageLog from "@/components/whatsapp/WhatsAppMessageLog";
+import WhatsAppActivityLog from "@/components/whatsapp/WhatsAppActivityLog";
 
 export default async function ActivityDetailPage({
   params,
@@ -83,7 +83,8 @@ export default async function ActivityDetailPage({
                 <dd className="mt-1 text-sm text-gray-900">
                   {activity.type === "whatsapp" ? (
                     <div className="rounded-xl border border-[#25D366]/20 bg-[#f0fdf4] p-3">
-                      <WhatsAppMessageLog
+                      <WhatsAppActivityLog
+                        activityId={activity.id}
                         description={activity.description}
                         previewCount={100}
                       />
