@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
 import { ActivitiesModule } from "@/domain/activities/activities.module";
 import { AuthModule } from "@/infra/auth/auth.module";
+import { NotificationsModule } from "@/domain/notifications/notifications.module";
 
 // Ports
 import { EvolutionApiPort } from "./application/ports/evolution-api.port";
@@ -22,6 +23,7 @@ import { SaveWhatsAppVerificationUseCase } from "./application/use-cases/save-wh
 import { SaveWhatsAppNumberUseCase } from "./application/use-cases/save-whatsapp-number.use-case";
 import { GetWhatsAppTemplatesUseCase, CreateWhatsAppTemplateUseCase, UpdateWhatsAppTemplateUseCase, DeleteWhatsAppTemplateUseCase } from "./application/use-cases/whatsapp-templates.use-cases";
 import { GetWhatsAppMessageByIdUseCase } from "./application/use-cases/get-whatsapp-message-by-id.use-case";
+import { HandleWhatsAppTranscriptionCallbackUseCase } from "./application/use-cases/handle-whatsapp-transcription-callback.use-case";
 
 // Repository abstracts
 import { WhatsAppTemplatesRepository } from "./application/repositories/whatsapp-templates.repository";
@@ -34,11 +36,12 @@ import { PrismaWhatsAppEntityRepository } from "./infra/prisma-whatsapp-entity.r
 import { WhatsAppWebhookController } from "./infra/controllers/whatsapp-webhook.controller";
 import { WhatsAppController } from "./infra/controllers/whatsapp.controller";
 import { WhatsAppMediaController } from "./infra/controllers/whatsapp-media.controller";
+import { WhatsAppTranscriptionCallbackController } from "./infra/controllers/whatsapp-transcription-callback.controller";
 import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-transcription-cron.service";
 
 @Module({
-  imports: [SharedInfraModule, ActivitiesModule, AuthModule],
-  controllers: [WhatsAppWebhookController, WhatsAppController, WhatsAppMediaController],
+  imports: [SharedInfraModule, ActivitiesModule, AuthModule, NotificationsModule],
+  controllers: [WhatsAppWebhookController, WhatsAppController, WhatsAppMediaController, WhatsAppTranscriptionCallbackController],
   providers: [
     // Use Cases
     HandleWhatsAppWebhookUseCase,
@@ -55,6 +58,7 @@ import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-tra
     UpdateWhatsAppTemplateUseCase,
     DeleteWhatsAppTemplateUseCase,
     GetWhatsAppMessageByIdUseCase,
+    HandleWhatsAppTranscriptionCallbackUseCase,
     // Port implementations
     { provide: EvolutionApiPort, useClass: EvolutionApiClient },
     // Repositories

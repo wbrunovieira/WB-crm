@@ -10,7 +10,7 @@ export class WhatsAppTranscriptionCronService {
     private readonly pollTranscriptions: PollWhatsAppTranscriptionsUseCase,
   ) {}
 
-  @Cron("*/5 * * * *")
+  @Cron("*/30 * * * *")
   async pollPendingTranscriptions(): Promise<void> {
     this.logger.log("WhatsApp transcription cron: starting");
 

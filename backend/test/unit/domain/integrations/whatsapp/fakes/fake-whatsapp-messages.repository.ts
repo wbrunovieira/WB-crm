@@ -74,4 +74,8 @@ export class FakeWhatsAppMessagesRepository extends WhatsAppMessagesRepository {
   async findMediaByActivityId(activityId: string): Promise<WhatsAppMessageData[]> {
     return this.items.filter((m) => m.activityId === activityId && m.mediaDriveId != null);
   }
+
+  async findByTranscriptionJobId(jobId: string): Promise<WhatsAppMessageData | null> {
+    return this.items.find((m) => m.mediaTranscriptionJobId === jobId) ?? null;
+  }
 }

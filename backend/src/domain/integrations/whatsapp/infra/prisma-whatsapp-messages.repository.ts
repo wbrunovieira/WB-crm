@@ -115,4 +115,11 @@ export class PrismaWhatsAppMessagesRepository extends WhatsAppMessagesRepository
       orderBy: { timestamp: "asc" },
     });
   }
+
+  async findByTranscriptionJobId(jobId: string): Promise<WhatsAppMessageData | null> {
+    const msg = await this.prisma.whatsAppMessage.findFirst({
+      where: { mediaTranscriptionJobId: jobId },
+    });
+    return msg ?? null;
+  }
 }

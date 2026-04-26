@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { NotificationsRepository } from "../repositories/notifications.repository";
 import { Notification } from "../../enterprise/entities/notification";
+import { NotificationsEventBus } from "../ports/notifications-event-bus";
 
 export class NotificationNotFoundError extends Error { name = "NotificationNotFoundError"; }
 
@@ -23,7 +24,10 @@ export class GetNotificationsUseCase {
 
 @Injectable()
 export class CreateNotificationUseCase {
-  constructor(private readonly repo: NotificationsRepository) {}
+  constructor(
+    private readonly repo: NotificationsRepository,
+    private readonly eventBus: NotificationsEventBus,
+  ) {}
 
   async execute(input: {
     type: string;
@@ -39,6 +43,7 @@ export class CreateNotificationUseCase {
 
     const notification = result.value as Notification;
     await this.repo.save(notification);
+    this.eventBus.emit(notification);
     return right(notification);
   }
 }

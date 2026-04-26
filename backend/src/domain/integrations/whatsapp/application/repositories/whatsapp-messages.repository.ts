@@ -40,4 +40,5 @@ export abstract class WhatsAppMessagesRepository {
   ): Promise<Array<WhatsAppMessageData & { activityOwnerId: string }>>;
   abstract saveTranscript(id: string, text: string): Promise<void>;
   abstract findMediaByActivityId(activityId: string): Promise<WhatsAppMessageData[]>;
+  abstract findByTranscriptionJobId(jobId: string): Promise<WhatsAppMessageData | null>;
 }

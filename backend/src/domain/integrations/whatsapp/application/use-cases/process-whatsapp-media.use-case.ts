@@ -83,15 +83,26 @@ export class ProcessWhatsAppMediaUseCase {
         const isVideo = messageData.messageType === "videoMessage";
         let jobResult: { jobId: string };
 
+        const backendUrl = process.env.BACKEND_PUBLIC_URL ?? "";
+        const callbackSecret = process.env.TRANSCRIBER_CALLBACK_SECRET;
+        const callbackOptions = backendUrl
+          ? {
+              callbackUrl: `${backendUrl}/webhooks/transcription/complete`,
+              ...(callbackSecret ? { callbackSecret } : {}),
+            }
+          : undefined;
+
         if (isVideo) {
           jobResult = await this.transcriber.submitVideo(
             downloadResult.buffer,
             driveFileName,
+            callbackOptions,
           );
         } else {
           jobResult = await this.transcriber.submitAudio(
             downloadResult.buffer,
             driveFileName,
+            callbackOptions,
           );
         }
 
