@@ -982,30 +982,33 @@ export function LeadActivitiesList({
           { label: "Nº inválido",     count: byOutcome.invalid_number, color: "text-gray-400 bg-[#2d1b3d] border-[#3d2b4d]" },
         ].filter((i) => i.count > 0);
 
-        const statChips: { type: string; label: string; count: number; base: string; active: string }[] = [
-          { type: "all",            label: "Total",    count: activities.length, base: "border-[#3d2b4d] bg-[#2d1b3d] text-gray-300",      active: "border-primary bg-primary text-white" },
-          { type: "call",           label: "Ligações", count: callActivities.length, base: "border-violet-500/30 bg-violet-500/10 text-violet-300", active: "border-violet-600 bg-violet-600 text-white" },
-          { type: "meeting",        label: "Reuniões", count: meetings,           base: "border-amber-500/30 bg-amber-500/10 text-amber-300",   active: "border-amber-600 bg-amber-600 text-white" },
-          { type: "whatsapp",       label: "WhatsApp", count: whatsapps,          base: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300", active: "border-emerald-600 bg-emerald-600 text-white" },
-          { type: "email",          label: "E-mail",   count: emails,             base: "border-blue-500/30 bg-blue-500/10 text-blue-300",      active: "border-blue-600 bg-blue-600 text-white" },
-          { type: "task",           label: "Tarefas",  count: tasks,              base: "border-[#3d2b4d] bg-[#2d1b3d] text-gray-400",         active: "border-gray-600 bg-gray-600 text-white" },
+        const statChips: { type: string; label: string; count: number; base: string; active: string; ring: string }[] = [
+          { type: "all",            label: "Total",    count: activities.length,     base: "border-[#4a3060] bg-[#2d1b3d] text-gray-400",               active: "border-[#a855f7] bg-[#792990]/40 text-purple-200",  ring: "ring-[#792990]/60" },
+          { type: "call",           label: "Ligações", count: callActivities.length, base: "border-violet-500/30 bg-violet-500/10 text-violet-400",       active: "border-violet-400 bg-violet-500/30 text-violet-200", ring: "ring-violet-500/50" },
+          { type: "meeting",        label: "Reuniões", count: meetings,              base: "border-amber-500/30 bg-amber-500/10 text-amber-400",           active: "border-amber-400 bg-amber-500/30 text-amber-200",   ring: "ring-amber-500/50" },
+          { type: "whatsapp",       label: "WhatsApp", count: whatsapps,             base: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",     active: "border-emerald-400 bg-emerald-500/30 text-emerald-200", ring: "ring-emerald-500/50" },
+          { type: "email",          label: "E-mail",   count: emails,                base: "border-blue-500/30 bg-blue-500/10 text-blue-400",              active: "border-blue-400 bg-blue-500/30 text-blue-200",      ring: "ring-blue-500/50" },
+          { type: "task",           label: "Tarefas",  count: tasks,                 base: "border-[#4a3060] bg-[#2d1b3d] text-gray-400",                 active: "border-slate-400 bg-slate-500/25 text-slate-200",   ring: "ring-slate-500/50" },
         ].filter((c) => c.count > 0 || c.type === "all");
 
         return (
           <div className="mb-4 rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] p-3 space-y-2">
             {/* Clickable type filter chips */}
             <div className="flex flex-wrap gap-1.5">
-              {statChips.map(({ type, label, count, base, active }) => (
+              {statChips.map(({ type, label, count, base, active, ring }) => (
                 <button
                   key={type}
                   onClick={() => setFilterType(type)}
                   className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-all ${
-                    filterType === type ? active + " shadow-sm" : base + " hover:opacity-80"
+                    filterType === type
+                      ? `${active} shadow-sm ring-2 ring-offset-1 ring-offset-[#1a0022] ${ring}`
+                      : `${base} hover:border-opacity-60 hover:brightness-125`
                   }`}
                 >
+                  {filterType === type && <Check className="h-3 w-3 flex-shrink-0 opacity-80" />}
                   <ActivityTypeIcon type={type} className="h-3 w-3" />
                   {label}
-                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${filterType === type ? "bg-white/20" : "bg-black/10"}`}>
+                  <span className={`rounded-full px-1.5 py-0.5 text-[10px] font-bold ${filterType === type ? "bg-current/20" : "bg-current/10"}`}>
                     {count}
                   </span>
                 </button>
@@ -1042,17 +1045,22 @@ export function LeadActivitiesList({
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {([
-              { key: "all",       label: "Todas",      active: "bg-gray-600 text-white",         inactive: "bg-[#2d1b3d] text-gray-400 hover:bg-[#3d2b4d]" },
-              { key: "pending",   label: "Pendentes",  active: "bg-blue-600 text-white",          inactive: "bg-blue-500/10 text-blue-300 border border-blue-500/30 hover:bg-blue-500/20" },
-              { key: "completed", label: "Concluídas", active: "bg-green-600 text-white",         inactive: "bg-green-500/10 text-green-300 border border-green-500/30 hover:bg-green-500/20" },
-              { key: "failed",    label: "Falha",      active: "bg-red-600 text-white",           inactive: "bg-red-500/10 text-red-300 border border-red-500/30 hover:bg-red-500/20" },
-              { key: "skipped",   label: "Puladas",    active: "bg-amber-500 text-white",         inactive: "bg-amber-500/10 text-amber-300 border border-amber-500/30 hover:bg-amber-500/20" },
+              { key: "all",       label: "Todas",      active: "border-[#a855f7] bg-[#792990]/35 text-purple-200 ring-[#792990]/50",  inactive: "border-[#4a3060] bg-[#2d1b3d] text-gray-400 hover:border-[#5a3a70] hover:text-gray-300" },
+              { key: "pending",   label: "Pendentes",  active: "border-blue-400 bg-blue-500/25 text-blue-200 ring-blue-500/50",       inactive: "border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:border-blue-400" },
+              { key: "completed", label: "Concluídas", active: "border-green-400 bg-green-500/25 text-green-200 ring-green-500/50",   inactive: "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:border-green-400" },
+              { key: "failed",    label: "Falha",      active: "border-red-400 bg-red-500/25 text-red-200 ring-red-500/50",           inactive: "border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:border-red-400" },
+              { key: "skipped",   label: "Puladas",    active: "border-amber-400 bg-amber-500/25 text-amber-200 ring-amber-500/50",   inactive: "border-amber-500/30 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 hover:border-amber-400" },
             ] as const).map(({ key, label, active, inactive }) => (
               <button
                 key={key}
                 onClick={() => setFilterStatus(key)}
-                className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${filterStatus === key ? active : inactive}`}
+                className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
+                  filterStatus === key
+                    ? `${active} shadow-sm ring-2 ring-offset-1 ring-offset-[#1a0022]`
+                    : inactive
+                }`}
               >
+                {filterStatus === key && <Check className="h-3 w-3 flex-shrink-0 opacity-80" />}
                 {label}
               </button>
             ))}

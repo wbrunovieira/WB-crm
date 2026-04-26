@@ -115,81 +115,47 @@ export default async function ActivitiesPage({
 
       <div className="mb-6 space-y-4">
         {/* Status Filters */}
-        <div className="flex gap-4">
-          <Link
-            href="/activities?completed=all"
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
-              searchParams.completed === "all"
-                ? "bg-primary text-white"
-                : "bg-white text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            Todas
-          </Link>
-          <Link
-            href="/activities?completed=false"
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
-              searchParams.completed === "false" || (!searchParams.completed && !searchParams.outcome)
-                ? "bg-primary text-white"
-                : "bg-white text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            Pendentes
-          </Link>
-          <Link
-            href="/activities?completed=true"
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
-              searchParams.completed === "true"
-                ? "bg-primary text-white"
-                : "bg-white text-gray-700 hover:bg-gray-50"
-            }`}
-          >
-            Concluídas
-          </Link>
-          <Link
-            href="/activities?outcome=failed"
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
-              searchParams.outcome === "failed"
-                ? "bg-red-600 text-white"
-                : "bg-white text-red-600 border border-red-200 hover:bg-red-50"
-            }`}
-          >
-            Falhadas
-          </Link>
-          <Link
-            href="/activities?outcome=skipped"
-            className={`rounded-md px-4 py-2 text-sm font-medium ${
-              searchParams.outcome === "skipped"
-                ? "bg-amber-600 text-white"
-                : "bg-white text-amber-600 border border-amber-200 hover:bg-amber-50"
-            }`}
-          >
-            Puladas
-          </Link>
+        <div className="flex flex-wrap gap-2">
+          {([
+            { href: "/activities?completed=all",    label: "Todas",      isActive: searchParams.completed === "all",                                              active: "border-primary bg-primary/10 text-primary ring-2 ring-primary/30 ring-offset-1",    inactive: "border-gray-200 bg-white text-gray-600 hover:border-gray-300 hover:bg-gray-50" },
+            { href: "/activities?completed=false",  label: "Pendentes",  isActive: searchParams.completed === "false" || (!searchParams.completed && !searchParams.outcome), active: "border-blue-500 bg-blue-50 text-blue-700 ring-2 ring-blue-200 ring-offset-1",      inactive: "border-gray-200 bg-white text-gray-600 hover:border-blue-200 hover:bg-blue-50/50" },
+            { href: "/activities?completed=true",   label: "Concluídas", isActive: searchParams.completed === "true",                                             active: "border-green-500 bg-green-50 text-green-700 ring-2 ring-green-200 ring-offset-1",    inactive: "border-gray-200 bg-white text-gray-600 hover:border-green-200 hover:bg-green-50/50" },
+            { href: "/activities?outcome=failed",   label: "Falhadas",   isActive: searchParams.outcome === "failed",                                             active: "border-red-500 bg-red-50 text-red-700 ring-2 ring-red-200 ring-offset-1",          inactive: "border-gray-200 bg-white text-gray-600 hover:border-red-200 hover:bg-red-50/50" },
+            { href: "/activities?outcome=skipped",  label: "Puladas",    isActive: searchParams.outcome === "skipped",                                            active: "border-amber-500 bg-amber-50 text-amber-700 ring-2 ring-amber-200 ring-offset-1",   inactive: "border-gray-200 bg-white text-gray-600 hover:border-amber-200 hover:bg-amber-50/50" },
+          ] as const).map(({ href, label, isActive, active, inactive }) => (
+            <Link
+              key={href}
+              href={href}
+              className={`inline-flex items-center gap-1.5 rounded-md border px-4 py-2 text-sm font-medium transition-all ${isActive ? active : inactive}`}
+            >
+              {isActive && (
+                <svg className="h-3.5 w-3.5 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                </svg>
+              )}
+              {label}
+            </Link>
+          ))}
         </div>
 
         {/* Type Filters and Sort */}
         <div className="flex items-center justify-between">
           <div className="flex flex-wrap gap-2">
-            {[
-              { type: "call", label: "Ligações", icon: "📞" },
-              { type: "meeting", label: "Reuniões", icon: "📅" },
-              { type: "email", label: "E-mails", icon: "✉️" },
-              { type: "task", label: "Tarefas", icon: "📋" },
-              { type: "whatsapp", label: "WhatsApp", icon: "💬" },
-              { type: "visit", label: "Visitas", icon: "📍" },
-              { type: "instagram", label: "Instagram", icon: "📷" },
-            ].map(({ type, label, icon }) => (
+            {([
+              { type: "call",      label: "Ligações",  active: "border-violet-500 bg-violet-50 text-violet-700 ring-2 ring-violet-200 ring-offset-1",    inactive: "border-gray-200 bg-white text-gray-600 hover:border-violet-200 hover:bg-violet-50/50" },
+              { type: "meeting",   label: "Reuniões",  active: "border-purple-500 bg-purple-50 text-purple-700 ring-2 ring-purple-200 ring-offset-1",     inactive: "border-gray-200 bg-white text-gray-600 hover:border-purple-200 hover:bg-purple-50/50" },
+              { type: "email",     label: "E-mails",   active: "border-green-500 bg-green-50 text-green-700 ring-2 ring-green-200 ring-offset-1",         inactive: "border-gray-200 bg-white text-gray-600 hover:border-green-200 hover:bg-green-50/50" },
+              { type: "task",      label: "Tarefas",   active: "border-orange-500 bg-orange-50 text-orange-700 ring-2 ring-orange-200 ring-offset-1",     inactive: "border-gray-200 bg-white text-gray-600 hover:border-orange-200 hover:bg-orange-50/50" },
+              { type: "whatsapp",  label: "WhatsApp",  active: "border-emerald-500 bg-emerald-50 text-emerald-700 ring-2 ring-emerald-200 ring-offset-1", inactive: "border-gray-200 bg-white text-gray-600 hover:border-emerald-200 hover:bg-emerald-50/50" },
+              { type: "visit",     label: "Visitas",   active: "border-red-500 bg-red-50 text-red-700 ring-2 ring-red-200 ring-offset-1",                 inactive: "border-gray-200 bg-white text-gray-600 hover:border-red-200 hover:bg-red-50/50" },
+              { type: "instagram", label: "Instagram", active: "border-pink-500 bg-pink-50 text-pink-700 ring-2 ring-pink-200 ring-offset-1",             inactive: "border-gray-200 bg-white text-gray-600 hover:border-pink-200 hover:bg-pink-50/50" },
+            ] as const).map(({ type, label, active, inactive }) => (
               <Link
                 key={type}
                 href={`/activities?type=${type}`}
-                className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm font-medium ${
-                  searchParams.type === type
-                    ? "bg-primary text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-50"
-                }`}
+                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-2 text-sm font-medium transition-all ${searchParams.type === type ? active : inactive}`}
               >
-                <span>{icon}</span>
+                <ActivityTypeIcon type={type} className="h-4 w-4" />
                 <span>{label}</span>
               </Link>
             ))}
