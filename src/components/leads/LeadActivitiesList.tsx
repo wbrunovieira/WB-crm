@@ -7,7 +7,7 @@ import { AlertTriangle, ArrowDownUp, Calendar, Check, GripVertical, Loader2, Mes
 import dynamic from "next/dynamic";
 const GmailComposeModal = dynamic(() => import("@/components/gmail/GmailComposeModal"), { ssr: false });
 const GoToCallPlayer = dynamic(() => import("@/components/activities/GoToCallPlayer"), { ssr: false });
-import WhatsAppMessageLog from "@/components/whatsapp/WhatsAppMessageLog";
+import WhatsAppActivityLog from "@/components/whatsapp/WhatsAppActivityLog";
 import type { WhatsAppMediaMessage } from "@/components/whatsapp/WhatsAppMessageLog";
 import { formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
 import { useToggleActivityCompleted, useMarkActivityFailed, useMarkActivitySkipped, useRevertActivityOutcome, useUpdateActivity } from "@/hooks/activities/use-activities";
@@ -481,9 +481,9 @@ function SortableActivityItem({
 
           {/* WhatsApp log — fora do Link para não navegar ao clicar em áudio/transcrição */}
           {activity.type === "whatsapp" && activity.description && !activity.gotoCallId && (
-            <WhatsAppMessageLog
+            <WhatsAppActivityLog
+              activityId={activity.id}
               description={activity.description}
-              mediaMessages={activity.whatsappMessages}
               previewCount={3}
             />
           )}
