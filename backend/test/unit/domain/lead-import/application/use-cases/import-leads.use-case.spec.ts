@@ -163,6 +163,37 @@ describe("ImportLeadsUseCase", () => {
     expect(r.skippedDetails).toHaveLength(0);
   });
 
+  it("uses registeredName as businessName when businessName is empty", async () => {
+    const r = (await uc.execute({
+      rows: [{ businessName: "", registeredName: "EMPRESA LTDA" }],
+      ...base,
+    })).unwrap();
+    expect(r.imported).toBe(1);
+    expect(r.errors).toHaveLength(0);
+    expect(repo.leads[0].businessName).toBe("EMPRESA LTDA");
+    expect(repo.leads[0].registeredName).toBe("EMPRESA LTDA");
+  });
+
+  it("deduplicates by registeredName fallback when businessName is empty", async () => {
+    await uc.execute({ rows: [{ businessName: "", registeredName: "EMPRESA LTDA" }], ...base });
+
+    const r = (await uc.execute({
+      rows: [{ businessName: "", registeredName: "EMPRESA LTDA" }],
+      ...base,
+    })).unwrap();
+    expect(r.skipped).toBe(1);
+    expect(r.imported).toBe(0);
+  });
+
+  it("errors when both businessName and registeredName are empty", async () => {
+    const r = (await uc.execute({
+      rows: [{ businessName: "", registeredName: "" }],
+      ...base,
+    })).unwrap();
+    expect(r.imported).toBe(0);
+    expect(r.errors).toHaveLength(1);
+  });
+
   it("skippedDetails rowIndex is 0-based index in input rows array", async () => {
     await uc.execute({ rows: [{ businessName: "Ja Existe" }], ...base });
 

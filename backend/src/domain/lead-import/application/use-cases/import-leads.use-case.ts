@@ -18,7 +18,10 @@ export class ImportLeadsUseCase {
     if (rows.length === 0) return right(result);
 
     // Collect lookup data for bulk duplicate check
-    const names = rows.map(r => r.businessName.trim().toLowerCase()).filter(Boolean);
+    // Fallback: use registeredName when businessName is empty (common in Brazilian company data)
+    const resolvedName = (r: ImportLeadRowData) =>
+      r.businessName?.trim() || r.registeredName?.trim() || "";
+    const names = rows.map(r => resolvedName(r).toLowerCase()).filter(Boolean);
     const cnpjs = rows.map(r => r.companyRegistrationID).filter((id): id is string => !!id);
 
     const [existingNames, existingCnpjs] = skipDuplicates
@@ -32,28 +35,28 @@ export class ImportLeadsUseCase {
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
-      const normalizedName = row.businessName.trim().toLowerCase();
+      const effectiveName = resolvedName(row);
+      const normalizedName = effectiveName.toLowerCase();
 
       // Deduplication: CNPJ takes priority, then name
       if (!skipDuplicates && row.companyRegistrationID && existingCnpjs.has(row.companyRegistrationID)) {
         result.skipped++;
-        result.skippedDetails.push({ rowIndex: i, businessName: row.businessName, reason: "cnpj" });
+        result.skippedDetails.push({ rowIndex: i, businessName: effectiveName, reason: "cnpj" });
         continue;
       }
       if (!skipDuplicates && existingNames.has(normalizedName)) {
         result.skipped++;
-        result.skippedDetails.push({ rowIndex: i, businessName: row.businessName, reason: "name" });
+        result.skippedDetails.push({ rowIndex: i, businessName: effectiveName, reason: "name" });
         continue;
       }
 
-      const trimmedName = row.businessName.trim();
-      if (!trimmedName) {
+      if (!effectiveName) {
         result.errors.push({ row: i + 1, reason: "businessName não pode ser vazio" });
         continue;
       }
 
       const lead = Lead.create({
-        businessName: trimmedName,
+        businessName: effectiveName,
         registeredName: row.registeredName,
         companyRegistrationID: row.companyRegistrationID,
         foundationDate: row.foundationDate ? new Date(row.foundationDate) : undefined,
@@ -93,7 +96,6 @@ export class ImportLeadsUseCase {
       });
 
       toCreate.push(lead);
-      // Mark name as seen to avoid intra-batch duplicates
       existingNames.add(normalizedName);
     }
 
