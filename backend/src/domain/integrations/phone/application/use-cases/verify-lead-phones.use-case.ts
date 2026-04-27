@@ -34,6 +34,7 @@ export class VerifyLeadPhonesUseCase {
       phoneValid?: boolean; phoneType?: string;
       phone2Valid?: boolean; phone2Type?: string;
       whatsappPhoneValid?: boolean; whatsappPhoneType?: string;
+      whatsapp?: string;
     } = {};
 
     const result: VerifyLeadPhonesResult = { leadId: lead.id.toString() };
@@ -45,6 +46,9 @@ export class VerifyLeadPhonesUseCase {
       result.phone = r;
       saveData.phoneValid = r.valid;
       saveData.phoneType = r.type;
+      if (r.valid && !lead.whatsapp) {
+        saveData.whatsapp = lead.phone;
+      }
     }
 
     if (lead.phone2) {
@@ -52,6 +56,9 @@ export class VerifyLeadPhonesUseCase {
       result.phone2 = r;
       saveData.phone2Valid = r.valid;
       saveData.phone2Type = r.type;
+      if (r.valid && !lead.whatsapp && !saveData.whatsapp) {
+        saveData.whatsapp = lead.phone2;
+      }
     }
 
     if (lead.whatsapp) {

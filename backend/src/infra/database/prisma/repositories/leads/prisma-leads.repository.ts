@@ -546,7 +546,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
 
   async savePhoneVerification(
     leadId: string,
-    data: { phoneValid?: boolean; phoneType?: string; phone2Valid?: boolean; phone2Type?: string; whatsappPhoneValid?: boolean; whatsappPhoneType?: string },
+    data: { phoneValid?: boolean; phoneType?: string; phone2Valid?: boolean; phone2Type?: string; whatsappPhoneValid?: boolean; whatsappPhoneType?: string; whatsapp?: string },
   ): Promise<void> {
     await this.prisma.lead.update({
       where: { id: leadId },
@@ -557,6 +557,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
         ...(data.phone2Type !== undefined && { phone2Type: data.phone2Type }),
         ...(data.whatsappPhoneValid !== undefined && { whatsappPhoneValid: data.whatsappPhoneValid }),
         ...(data.whatsappPhoneType !== undefined && { whatsappPhoneType: data.whatsappPhoneType }),
+        ...(data.whatsapp !== undefined && { whatsapp: data.whatsapp }),
       },
     });
   }

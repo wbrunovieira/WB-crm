@@ -79,6 +79,7 @@ export class BatchVerifyLeadPhonesUseCase {
           phoneValid?: boolean; phoneType?: string;
           phone2Valid?: boolean; phone2Type?: string;
           whatsappPhoneValid?: boolean; whatsappPhoneType?: string;
+          whatsapp?: string;
         } = {};
 
         const progressData: BatchVerifyLeadPhonesProgress = {
@@ -92,23 +93,29 @@ export class BatchVerifyLeadPhonesUseCase {
         let anyInvalid = false;
 
         if (lead.phone) {
-          const r = this.phoneValidator.validate(lead.phone);
+          const r = this.phoneValidator.validate(lead.phone, lead.country ?? undefined);
           saveData.phoneValid = r.valid;
           saveData.phoneType = r.type;
           progressData.phone = { valid: r.valid, type: r.type };
           if (r.valid) anyValid = true; else anyInvalid = true;
+          if (r.valid && !lead.whatsapp) {
+            saveData.whatsapp = lead.phone;
+          }
         }
 
         if (lead.phone2) {
-          const r = this.phoneValidator.validate(lead.phone2);
+          const r = this.phoneValidator.validate(lead.phone2, lead.country ?? undefined);
           saveData.phone2Valid = r.valid;
           saveData.phone2Type = r.type;
           progressData.phone2 = { valid: r.valid, type: r.type };
           if (r.valid) anyValid = true; else anyInvalid = true;
+          if (r.valid && !lead.whatsapp && !saveData.whatsapp) {
+            saveData.whatsapp = lead.phone2;
+          }
         }
 
         if (lead.whatsapp) {
-          const r = this.phoneValidator.validate(lead.whatsapp);
+          const r = this.phoneValidator.validate(lead.whatsapp, lead.country ?? undefined);
           saveData.whatsappPhoneValid = r.valid;
           saveData.whatsappPhoneType = r.type;
           progressData.whatsapp = { valid: r.valid, type: r.type };
