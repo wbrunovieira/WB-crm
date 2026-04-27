@@ -55,5 +55,6 @@ export abstract class LeadsRepository {
   abstract delete(id: string): Promise<void>;
   abstract findForSelect(requesterId: string, requesterRole: string): Promise<LeadSelectItem[]>;
   abstract findBySourceGroup(sourceGroup: string): Promise<Lead[]>;
+  abstract findDistinctSourceGroups(requesterId: string, requesterRole: string): Promise<string[]>;
   abstract saveWhatsAppVerification(leadId: string, data: { whatsappVerified: boolean; whatsappVerifiedAt: Date; whatsappVerifiedNumber: string }): Promise<void>;
 }

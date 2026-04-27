@@ -14,7 +14,9 @@ import {
   ForbiddenException,
   NotFoundException,
   UnauthorizedException,
+  Res,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
@@ -28,6 +30,7 @@ import { EvolutionApiPort } from "@/domain/integrations/whatsapp/application/por
 import { GetWhatsAppTemplatesUseCase, CreateWhatsAppTemplateUseCase, UpdateWhatsAppTemplateUseCase, DeleteWhatsAppTemplateUseCase } from "@/domain/integrations/whatsapp/application/use-cases/whatsapp-templates.use-cases";
 import { GetWhatsAppMessageByIdUseCase } from "@/domain/integrations/whatsapp/application/use-cases/get-whatsapp-message-by-id.use-case";
 import { BatchCheckWhatsAppUseCase, BatchCheckWhatsAppResult } from "@/domain/integrations/whatsapp/application/use-cases/batch-check-whatsapp.use-case";
+import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
 
 interface SendMessageBody {
   to: string;
@@ -86,6 +89,7 @@ export class WhatsAppController {
     private readonly deleteTemplate: DeleteWhatsAppTemplateUseCase,
     private readonly getMessageById: GetWhatsAppMessageByIdUseCase,
     private readonly batchCheck: BatchCheckWhatsAppUseCase,
+    private readonly leadsRepo: LeadsRepository,
   ) {}
 
   @Post("send")
@@ -260,17 +264,43 @@ export class WhatsAppController {
     if (result.isLeft()) throw new UnauthorizedException(result.value.message);
   }
 
+  @Get("source-groups")
+  @ApiOperation({ summary: "Lista sourceGroups distintos dos leads do usuário" })
+  async listSourceGroups(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ sourceGroups: string[] }> {
+    const groups = await this.leadsRepo.findDistinctSourceGroups(user.sub, user.role ?? "sdr");
+    return { sourceGroups: groups };
+  }
+
   @Post("batch-check")
   @HttpCode(200)
   @ApiOperation({ summary: "Verifica WhatsApp em lote para um sourceGroup de leads" })
   async batchCheckNumbers(
     @Body() body: { sourceGroup: string },
-  ): Promise<BatchCheckWhatsAppResult> {
+    @Res() res: Response,
+  ): Promise<void> {
     if (!body.sourceGroup) {
       throw new BadRequestException("Missing required field: sourceGroup");
     }
-    const result = await this.batchCheck.execute({ sourceGroup: body.sourceGroup });
-    if (result.isLeft()) throw new BadRequestException(result.value.message);
-    return result.value;
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const result = await this.batchCheck.execute({
+      sourceGroup: body.sourceGroup,
+      onProgress: (progress) => {
+        res.write(`data: ${JSON.stringify({ type: "progress", ...progress })}\n\n`);
+      },
+    });
+
+    if (result.isLeft()) {
+      res.write(`data: ${JSON.stringify({ type: "error", message: result.value.message })}\n\n`);
+    } else {
+      res.write(`data: ${JSON.stringify({ type: "done", ...result.value })}\n\n`);
+    }
+    res.end();
   }
 }

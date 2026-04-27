@@ -478,6 +478,17 @@ export class PrismaLeadsRepository extends LeadsRepository {
     return rows;
   }
 
+  async findDistinctSourceGroups(requesterId: string, requesterRole: string): Promise<string[]> {
+    const ownerFilter = requesterRole === "admin" ? {} : { ownerId: requesterId };
+    const rows = await this.prisma.lead.findMany({
+      where: { ...ownerFilter, sourceGroup: { not: null } },
+      select: { sourceGroup: true },
+      distinct: ["sourceGroup"],
+      orderBy: { sourceGroup: "asc" },
+    });
+    return rows.map(r => r.sourceGroup!).filter(Boolean);
+  }
+
   async findBySourceGroup(sourceGroup: string): Promise<Lead[]> {
     const rows = await this.prisma.lead.findMany({
       where: { sourceGroup },
