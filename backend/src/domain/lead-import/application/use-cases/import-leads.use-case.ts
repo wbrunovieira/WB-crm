@@ -20,7 +20,7 @@ export class ImportLeadsUseCase {
     skipDuplicates?: boolean;
   }): Promise<Either<never, ImportResult>> {
     const { rows, ownerId, skipDuplicates = false } = input;
-    const result: ImportResult = { total: rows.length, imported: 0, skipped: 0, errors: [], skippedDetails: [] };
+    const result: ImportResult = { total: rows.length, imported: 0, skipped: 0, cnaeUpdated: 0, errors: [], skippedDetails: [] };
 
     if (rows.length === 0) return right(result);
 
@@ -109,9 +109,9 @@ export class ImportLeadsUseCase {
         simplesNacional: row.simplesNacional,
         isMei: row.isMei,
         email: row.email,
-        phone: normalizePhoneE164(row.phone),
-        phone2: normalizePhoneE164(row.phone2),
-        whatsapp: normalizePhoneE164(row.whatsapp),
+        phone: normalizePhoneE164(row.phone) ?? undefined,
+        phone2: normalizePhoneE164(row.phone2) ?? undefined,
+        whatsapp: normalizePhoneE164(row.whatsapp) ?? undefined,
         website: row.website,
         address: row.address,
         vicinity: row.vicinity,

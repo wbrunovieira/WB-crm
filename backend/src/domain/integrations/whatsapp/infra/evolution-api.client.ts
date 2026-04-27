@@ -132,7 +132,7 @@ export class EvolutionApiClient extends EvolutionApiPort {
     return {
       exists: result?.exists ?? false,
       jid: result?.jid,
-      number: result?.number ?? digits,
+      number: result?.number ?? digits ?? undefined,
       name: result?.name || undefined,
     };
   }

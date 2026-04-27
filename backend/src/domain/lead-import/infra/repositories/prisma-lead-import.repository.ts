@@ -43,6 +43,20 @@ export class PrismaLeadImportRepository extends LeadImportRepository {
     });
   }
 
+  async updateLeadCnaes(leadId: string, primaryCnaeId: string | undefined, secondaryCnaeIds: string[]): Promise<void> {
+    await this.prisma.lead.update({
+      where: { id: leadId },
+      data: { primaryCNAEId: primaryCnaeId ?? null },
+    });
+    if (secondaryCnaeIds.length > 0) {
+      await this.prisma.leadSecondaryCNAE.deleteMany({ where: { leadId } });
+      await this.prisma.leadSecondaryCNAE.createMany({
+        data: secondaryCnaeIds.map(cnaeId => ({ leadId, cnaeId })),
+        skipDuplicates: true,
+      });
+    }
+  }
+
   async batchCreate(leads: Lead[]): Promise<void> {
     await this.prisma.lead.createMany({
       data: leads.map(lead => ({

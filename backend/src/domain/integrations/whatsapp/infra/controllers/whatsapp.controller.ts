@@ -269,7 +269,7 @@ export class WhatsAppController {
   async listSourceGroups(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<{ sourceGroups: string[] }> {
-    const groups = await this.leadsRepo.findDistinctSourceGroups(user.sub, user.role ?? "sdr");
+    const groups = await this.leadsRepo.findDistinctSourceGroups(user.id, user.role ?? "sdr");
     return { sourceGroups: groups };
   }
 
