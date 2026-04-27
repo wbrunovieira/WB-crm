@@ -73,6 +73,13 @@ export interface Lead {
   primaryCNAE?: { id: string; code: string; description: string } | null;
   internationalActivity?: string | null;
   languages?: string | null;
+  phone2?: string | null;
+  segment?: string | null;
+  legalNature?: string | null;
+  branchType?: string | null;
+  simplesNacional?: boolean | null;
+  isMei?: boolean | null;
+  revenueRange?: string | null;
   socialMedia?: string | null;
   metaAds?: string | null;
   googleAds?: string | null;
