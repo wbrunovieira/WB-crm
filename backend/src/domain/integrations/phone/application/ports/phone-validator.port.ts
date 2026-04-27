@@ -5,5 +5,5 @@ export interface PhoneValidationResult {
 }
 
 export abstract class PhoneValidatorPort {
-  abstract validate(phone: string): PhoneValidationResult;
+  abstract validate(phone: string, countryHint?: string): PhoneValidationResult;
 }

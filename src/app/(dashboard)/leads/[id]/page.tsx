@@ -8,6 +8,8 @@ import { PhoneLink } from "@/components/ui/phone-link";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import { WhatsAppCheckButton } from "@/components/whatsapp/WhatsAppCheckButton";
 import GmailButton from "@/components/gmail/GmailButton";
+import { LeadEmailVerifyButton } from "@/components/leads/LeadEmailVerifyButton";
+import { LeadPhoneVerifyButton } from "@/components/leads/LeadPhoneVerifyButton";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
@@ -247,6 +249,7 @@ export default async function LeadDetailPage({
                       verified={lead.whatsappVerifiedAt && lead.whatsappVerifiedNumber === lead.phone
                         ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified ?? false }
                         : undefined} />
+                    <LeadPhoneVerifyButton leadId={lead.id} field="phone" phoneValid={lead.phoneValid ?? null} phoneType={lead.phoneType ?? null} />
                   </>
                 ) : dash}
               </dd>
@@ -272,11 +275,12 @@ export default async function LeadDetailPage({
             </div>
             <div>
               <dt className={dtCls}>Email</dt>
-              <dd className="flex items-center gap-2 text-sm">
+              <dd className="flex flex-wrap items-center gap-2 text-sm">
                 {lead.email ? (
                   <>
                     <a href={`mailto:${lead.email}`} className="font-medium text-purple-300 hover:text-purple-200 hover:underline">{lead.email}</a>
                     <GmailButton to={lead.email} name={lead.businessName} leadId={lead.id} variant="icon" />
+                    <LeadEmailVerifyButton leadId={lead.id} email={lead.email} verified={lead.emailVerified ?? null} status={lead.emailVerificationStatus ?? null} verifiedAt={lead.emailVerifiedAt ?? null} />
                   </>
                 ) : dash}
               </dd>

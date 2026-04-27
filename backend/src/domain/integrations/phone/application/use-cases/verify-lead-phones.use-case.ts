@@ -38,22 +38,24 @@ export class VerifyLeadPhonesUseCase {
 
     const result: VerifyLeadPhonesResult = { leadId: lead.id.toString() };
 
+    const country = lead.country ?? undefined;
+
     if (lead.phone) {
-      const r = this.phoneValidator.validate(lead.phone);
+      const r = this.phoneValidator.validate(lead.phone, country);
       result.phone = r;
       saveData.phoneValid = r.valid;
       saveData.phoneType = r.type;
     }
 
     if (lead.phone2) {
-      const r = this.phoneValidator.validate(lead.phone2);
+      const r = this.phoneValidator.validate(lead.phone2, country);
       result.phone2 = r;
       saveData.phone2Valid = r.valid;
       saveData.phone2Type = r.type;
     }
 
     if (lead.whatsapp) {
-      const r = this.phoneValidator.validate(lead.whatsapp);
+      const r = this.phoneValidator.validate(lead.whatsapp, country);
       result.whatsapp = r;
       saveData.whatsappPhoneValid = r.valid;
       saveData.whatsappPhoneType = r.type;
