@@ -115,4 +115,35 @@ describe("POST /lead-import (e2e)", () => {
     expect(res.body.imported).toBe(1);
     expect(res.body.skipped).toBe(1);
   });
+
+  it("retorna skippedDetails com reason quando há duplicatas", async () => {
+    await prisma.lead.create({ data: { businessName: "Lead Existente", ownerId, status: "new" } });
+
+    const res = await request(app.getHttpServer())
+      .post("/lead-import")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ rows: [{ businessName: "Lead Existente" }, { businessName: "Lead Nova" }] })
+      .expect(201);
+
+    expect(res.body.skipped).toBe(1);
+    expect(res.body.skippedDetails).toHaveLength(1);
+    expect(res.body.skippedDetails[0].reason).toBe("name");
+    expect(res.body.skippedDetails[0].businessName).toBe("Lead Existente");
+    expect(res.body.skippedDetails[0].rowIndex).toBe(0);
+    expect(res.body.imported).toBe(1);
+  });
+
+  it("importa duplicatas quando skipDuplicates=true", async () => {
+    await prisma.lead.create({ data: { businessName: "Lead Dup E2E", ownerId, status: "new" } });
+
+    const res = await request(app.getHttpServer())
+      .post("/lead-import")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ rows: [{ businessName: "Lead Dup E2E" }], skipDuplicates: true })
+      .expect(201);
+
+    expect(res.body.imported).toBe(1);
+    expect(res.body.skipped).toBe(0);
+    expect(res.body.skippedDetails).toHaveLength(0);
+  });
 });

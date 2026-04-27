@@ -15,40 +15,13 @@ import { parseCSV, parseXLSX, type ParsedImportFile, type ParsedRow } from "@/li
 
 type Step = 1 | 2 | 3;
 
-interface DuplicateMatchItem {
-  id: string;
-  businessName: string;
-}
-
-interface LeadDuplicates {
-  cnpj: DuplicateMatchItem[];
-  name: DuplicateMatchItem[];
-  phone: DuplicateMatchItem[];
-  email: DuplicateMatchItem[];
-  address: DuplicateMatchItem[];
-}
-
-export interface DuplicateDetail {
-  rowIndex: number;
-  row: ParsedRow;
-  matches: LeadDuplicates;
-}
-
-interface ErrorDetail {
-  rowIndex: number;
-  row: ParsedRow;
-  message: string;
-}
-
 export interface ImportResult {
   total: number;
-  created: number;
-  duplicates: number;
-  errors: number;
+  imported: number;
   skipped: number;
-  duplicateDetails: DuplicateDetail[];
-  errorDetails: ErrorDetail[];
-  error?: string;
+  errors: number;
+  skippedDetails: Array<{ rowIndex: number; businessName: string; reason: "cnpj" | "name" }>;
+  errorDetails: Array<{ row: number; reason: string }>;
 }
 
 // ---------------------------------------------------------------------------
@@ -473,25 +446,21 @@ function MappingStep({
 
 function ResultsStep({
   result,
-  duplicateRows,
-  mapping,
-  onReimportDuplicates,
+  onReimportSkipped,
   isReimporting,
 }: {
   result: ImportResult;
-  duplicateRows: ParsedRow[];
-  mapping: ColumnMapping;
-  onReimportDuplicates: () => void;
+  onReimportSkipped: () => void;
   isReimporting: boolean;
 }) {
   const router = useRouter();
-  const [showDuplicates, setShowDuplicates] = useState(false);
+  const [showSkipped, setShowSkipped] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
 
   const summaryCards = [
     {
-      label: "Criados",
-      value: result.created,
+      label: "Importados",
+      value: result.imported,
       color: "text-green-400",
       bgColor: "bg-green-950/40 border-green-800",
       icon: (
@@ -502,7 +471,7 @@ function ResultsStep({
     },
     {
       label: "Duplicatas",
-      value: result.duplicates,
+      value: result.skipped,
       color: "text-yellow-400",
       bgColor: "bg-yellow-950/40 border-yellow-800",
       icon: (
@@ -523,8 +492,8 @@ function ResultsStep({
       ),
     },
     {
-      label: "Ignorados",
-      value: result.skipped,
+      label: "Total",
+      value: result.total,
       color: "text-gray-400",
       bgColor: "bg-[#2d1b3d] border-[#4a1660]",
       icon: (
@@ -534,38 +503,6 @@ function ResultsStep({
       ),
     },
   ];
-
-  // Helper: format duplicate match categories
-  function formatMatchCategories(matches: DuplicateDetail["matches"]): string {
-    const cats: string[] = [];
-    if (matches.cnpj?.length) cats.push("CNPJ");
-    if (matches.name?.length) cats.push("Nome");
-    if (matches.phone?.length) cats.push("Telefone");
-    if (matches.email?.length) cats.push("E-mail");
-    if (matches.address?.length) cats.push("Endereço");
-    return cats.join(", ");
-  }
-
-  // Get all unique existing leads from matches
-  function getMatchedLeads(matches: DuplicateDetail["matches"]) {
-    const seen = new Set<string>();
-    const leads: { id: string; businessName: string }[] = [];
-    for (const arr of [matches.cnpj, matches.name, matches.phone, matches.email, matches.address]) {
-      for (const lead of arr ?? []) {
-        if (!seen.has(lead.id)) {
-          seen.add(lead.id);
-          leads.push({ id: lead.id, businessName: lead.businessName });
-        }
-      }
-    }
-    return leads;
-  }
-
-  // Get display value from row using mapping
-  function getDisplayValue(row: ParsedRow, field: string): string {
-    const col = Object.entries(mapping).find(([, v]) => v === field)?.[0];
-    return col ? row[col] ?? "" : "";
-  }
 
   return (
     <div className="rounded-lg bg-[#1a0022] p-8">
@@ -592,12 +529,12 @@ function ResultsStep({
         ))}
       </div>
 
-      {/* Duplicates section */}
-      {result.duplicates > 0 && (
+      {/* Skipped (duplicates) section */}
+      {result.skipped > 0 && (
         <div className="mb-4 overflow-hidden rounded-lg border border-yellow-800">
           <button
             type="button"
-            onClick={() => setShowDuplicates((v) => !v)}
+            onClick={() => setShowSkipped((v) => !v)}
             className="flex w-full items-center justify-between bg-yellow-950/30 px-5 py-3 text-left transition-colors hover:bg-yellow-950/50"
           >
             <div className="flex items-center gap-2">
@@ -605,11 +542,11 @@ function ResultsStep({
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
               </svg>
               <span className="text-sm font-medium text-yellow-400">
-                {result.duplicates} {result.duplicates === 1 ? "duplicata encontrada" : "duplicatas encontradas"}
+                {result.skipped} {result.skipped === 1 ? "duplicata encontrada" : "duplicatas encontradas"}
               </span>
             </div>
             <svg
-              className={`h-4 w-4 text-yellow-400 transition-transform ${showDuplicates ? "rotate-180" : ""}`}
+              className={`h-4 w-4 text-yellow-400 transition-transform ${showSkipped ? "rotate-180" : ""}`}
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -619,46 +556,18 @@ function ResultsStep({
             </svg>
           </button>
 
-          {showDuplicates && (
+          {showSkipped && (
             <div className="divide-y divide-[#2d1b3d] bg-[#1a0022]">
-              {result.duplicateDetails.map((dup, idx) => {
-                const name = getDisplayValue(dup.row, "businessName");
-                const matchedLeads = getMatchedLeads(dup.matches);
-                const categories = formatMatchCategories(dup.matches);
-
-                return (
-                  <div key={idx} className="px-5 py-4">
-                    <div className="flex flex-wrap items-start justify-between gap-2">
-                      <div>
-                        <p className="text-sm font-medium text-gray-200">
-                          Linha {dup.rowIndex + 2}: {name || <span className="text-gray-500 italic">sem nome</span>}
-                        </p>
-                        {categories && (
-                          <p className="mt-0.5 text-xs text-yellow-500">
-                            Coincidência por: <span className="font-medium">{categories}</span>
-                          </p>
-                        )}
-                      </div>
-                      <div className="flex flex-wrap gap-2">
-                        {matchedLeads.map((lead) => (
-                          <a
-                            key={lead.id}
-                            href={`/leads/${lead.id}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1 rounded-md border border-[#4a1660] bg-[#2d1b3d] px-2.5 py-1 text-xs text-purple-300 transition-colors hover:bg-[#3d2a50]"
-                          >
-                            <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25" />
-                            </svg>
-                            {lead.businessName}
-                          </a>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
+              {result.skippedDetails.map((s, idx) => (
+                <div key={idx} className="px-5 py-4">
+                  <p className="text-sm font-medium text-gray-200">
+                    Linha {s.rowIndex + 2}: {s.businessName || <span className="text-gray-500 italic">sem nome</span>}
+                  </p>
+                  <p className="mt-0.5 text-xs text-yellow-500">
+                    {s.reason === "cnpj" ? "CNPJ já existe" : "Nome já existe"}
+                  </p>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -693,17 +602,13 @@ function ResultsStep({
 
           {showErrors && (
             <div className="divide-y divide-[#2d1b3d] bg-[#1a0022]">
-              {result.errorDetails.map((err, idx) => {
-                const name = getDisplayValue(err.row, "businessName");
-                return (
-                  <div key={idx} className="px-5 py-3">
-                    <p className="text-sm font-medium text-gray-200">
-                      Linha {err.rowIndex + 2}: {name || <span className="text-gray-500 italic">sem nome</span>}
-                    </p>
-                    <p className="mt-0.5 text-xs text-red-400">{err.message}</p>
-                  </div>
-                );
-              })}
+              {result.errorDetails.map((err, idx) => (
+                <div key={idx} className="px-5 py-3">
+                  <p className="text-sm font-medium text-gray-200">
+                    Linha {err.row}: <span className="text-red-400">{err.reason}</span>
+                  </p>
+                </div>
+              ))}
             </div>
           )}
         </div>
@@ -719,11 +624,11 @@ function ResultsStep({
           Ver todos os leads
         </button>
 
-        {result.duplicates > 0 && (
+        {result.skipped > 0 && (
           <button
             type="button"
-            onClick={onReimportDuplicates}
-            disabled={isReimporting || duplicateRows.length === 0}
+            onClick={onReimportSkipped}
+            disabled={isReimporting}
             className="inline-flex items-center gap-2 rounded-md border border-yellow-700 bg-yellow-950/30 px-5 py-2.5 text-sm font-semibold text-yellow-400 transition-colors hover:bg-yellow-950/60 disabled:cursor-not-allowed disabled:opacity-40"
           >
             {isReimporting ? (
@@ -735,7 +640,7 @@ function ResultsStep({
                 Importando duplicatas...
               </>
             ) : (
-              `Importar ${result.duplicates} ${result.duplicates === 1 ? "duplicata" : "duplicatas"} mesmo assim`
+              `Importar ${result.skipped} ${result.skipped === 1 ? "duplicata" : "duplicatas"} mesmo assim`
             )}
           </button>
         )}
@@ -757,79 +662,34 @@ export function ImportWizard() {
   const [importResult, setImportResult] = useState<ImportResult | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [isReimporting, setIsReimporting] = useState(false);
-  // Keep duplicate rows around for re-import
-  const [duplicateRows, setDuplicateRows] = useState<ParsedRow[]>([]);
 
-  // Inline import orchestration (replaces importLeads server action)
-  const runImport = useCallback(async (rows: ParsedRow[], currentMapping: ColumnMapping, skipDuplicateCheck = false): Promise<ImportResult> => {
-    const result: ImportResult = {
-      total: rows.length,
-      created: 0,
-      duplicates: 0,
-      errors: 0,
-      skipped: 0,
-      duplicateDetails: [],
-      errorDetails: [],
-    };
-
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      const leadData = mapRowToLeadData(row, currentMapping);
-
-      const hasContent = Object.values(leadData).some(
-        (v) => v !== undefined && v !== null && String(v).trim() !== ""
+  // Single-call import via POST /lead-import
+  const runImport = useCallback(async (rows: ParsedRow[], currentMapping: ColumnMapping, skipDuplicates = false): Promise<ImportResult> => {
+    const mappedRows = rows
+      .map((row) => mapRowToLeadData(row, currentMapping))
+      .filter((leadData) =>
+        Object.values(leadData).some((v) => v !== undefined && v !== null && String(v).trim() !== "")
       );
-      if (!hasContent) {
-        result.skipped++;
-        continue;
-      }
 
-      if (!leadData.businessName) {
-        result.errors++;
-        result.errorDetails.push({ rowIndex: i, row, message: "Nome comercial (businessName) é obrigatório" });
-        continue;
-      }
+    const backendResult = await apiFetch<{
+      total: number;
+      imported: number;
+      skipped: number;
+      errors: Array<{ row: number; reason: string }>;
+      skippedDetails: Array<{ rowIndex: number; businessName: string; reason: "cnpj" | "name" }>;
+    }>("/lead-import", token, {
+      method: "POST",
+      body: JSON.stringify({ rows: mappedRows, skipDuplicates }),
+    });
 
-      try {
-        if (!skipDuplicateCheck) {
-          const { hasDuplicates, duplicates } = await apiFetch<{ hasDuplicates: boolean; duplicates: Array<{ leadId: string; businessName: string; matchedFields: string[] }> }>(
-            "/leads/check-duplicates",
-            token,
-            {
-              method: "POST",
-              body: JSON.stringify({ name: leadData.businessName, cnpj: leadData.companyRegistrationID, phone: leadData.phone, email: leadData.email }),
-            },
-          );
-          if (hasDuplicates) {
-            const matches: LeadDuplicates = { cnpj: [], name: [], phone: [], email: [], address: [] };
-            for (const match of duplicates) {
-              const item = { id: match.leadId, businessName: match.businessName };
-              for (const field of match.matchedFields) {
-                if (field in matches) matches[field as keyof LeadDuplicates].push(item);
-              }
-            }
-            result.duplicates++;
-            result.duplicateDetails.push({ rowIndex: i, row, matches });
-            continue;
-          }
-        }
-
-        await apiFetch("/leads", token, {
-          method: "POST",
-          body: JSON.stringify(leadData),
-        });
-        result.created++;
-      } catch (err) {
-        result.errors++;
-        result.errorDetails.push({
-          rowIndex: i,
-          row,
-          message: err instanceof Error ? err.message : "Erro desconhecido",
-        });
-      }
-    }
-
-    return result;
+    return {
+      total: backendResult.total,
+      imported: backendResult.imported,
+      skipped: backendResult.skipped,
+      errors: backendResult.errors.length,
+      skippedDetails: backendResult.skippedDetails,
+      errorDetails: backendResult.errors,
+    };
   }, [token]);
 
   // Step 1 → 2
@@ -846,20 +706,12 @@ export function ImportWizard() {
 
     try {
       const result = await runImport(parsedFile.rows, mapping);
-
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-
-      // Save duplicate rows for potential re-import
-      setDuplicateRows(result.duplicateDetails.map((d) => d.row));
       setImportResult(result);
       setStep(3);
 
-      if (result.created > 0) {
+      if (result.imported > 0) {
         toast.success(
-          `${result.created} ${result.created === 1 ? "lead importado" : "leads importados"} com sucesso`
+          `${result.imported} ${result.imported === 1 ? "lead importado" : "leads importados"} com sucesso`
         );
       }
     } catch (err) {
@@ -871,39 +723,30 @@ export function ImportWizard() {
     }
   }, [parsedFile, mapping, runImport]);
 
-  // Step 3: Re-import duplicates
-  const handleReimportDuplicates = useCallback(async () => {
-    if (duplicateRows.length === 0) return;
+  // Step 3: Re-import skipped (duplicates) with skipDuplicates=true
+  const handleReimportSkipped = useCallback(async () => {
+    if (!parsedFile || !importResult) return;
     setIsReimporting(true);
 
     try {
-      const result = await runImport(duplicateRows, mapping, true);
+      const skippedRows = importResult.skippedDetails.map((s) => parsedFile.rows[s.rowIndex]).filter(Boolean);
+      const result = await runImport(skippedRows, mapping, true);
 
-      if (result.error) {
-        toast.error(result.error);
-        return;
-      }
-
-      // Merge results with previous import
       setImportResult((prev) => {
         if (!prev) return result;
         return {
           total: prev.total,
-          created: prev.created + result.created,
-          duplicates: result.duplicates,
+          imported: prev.imported + result.imported,
+          skipped: result.skipped,
           errors: prev.errors + result.errors,
-          skipped: prev.skipped + result.skipped,
-          duplicateDetails: result.duplicateDetails,
+          skippedDetails: result.skippedDetails,
           errorDetails: [...prev.errorDetails, ...result.errorDetails],
         };
       });
 
-      // Update remaining duplicates for another potential re-import
-      setDuplicateRows(result.duplicateDetails.map((d) => d.row));
-
-      if (result.created > 0) {
+      if (result.imported > 0) {
         toast.success(
-          `${result.created} ${result.created === 1 ? "duplicata importada" : "duplicatas importadas"} com sucesso`
+          `${result.imported} ${result.imported === 1 ? "duplicata importada" : "duplicatas importadas"} com sucesso`
         );
       }
     } catch (err) {
@@ -913,7 +756,7 @@ export function ImportWizard() {
     } finally {
       setIsReimporting(false);
     }
-  }, [duplicateRows, mapping, runImport]);
+  }, [parsedFile, importResult, mapping, runImport]);
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -937,9 +780,7 @@ export function ImportWizard() {
       {step === 3 && importResult && (
         <ResultsStep
           result={importResult}
-          duplicateRows={duplicateRows}
-          mapping={mapping}
-          onReimportDuplicates={handleReimportDuplicates}
+          onReimportSkipped={handleReimportSkipped}
           isReimporting={isReimporting}
         />
       )}

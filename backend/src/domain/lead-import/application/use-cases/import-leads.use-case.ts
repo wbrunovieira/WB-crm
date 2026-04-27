@@ -10,9 +10,10 @@ export class ImportLeadsUseCase {
   async execute(input: {
     rows: ImportLeadRowData[];
     ownerId: string;
+    skipDuplicates?: boolean;
   }): Promise<Either<never, ImportResult>> {
-    const { rows, ownerId } = input;
-    const result: ImportResult = { total: rows.length, imported: 0, skipped: 0, errors: [] };
+    const { rows, ownerId, skipDuplicates = false } = input;
+    const result: ImportResult = { total: rows.length, imported: 0, skipped: 0, errors: [], skippedDetails: [] };
 
     if (rows.length === 0) return right(result);
 
@@ -20,10 +21,12 @@ export class ImportLeadsUseCase {
     const names = rows.map(r => r.businessName.trim().toLowerCase()).filter(Boolean);
     const cnpjs = rows.map(r => r.companyRegistrationID).filter((id): id is string => !!id);
 
-    const [existingNames, existingCnpjs] = await Promise.all([
-      this.repo.findExistingByNames(names, ownerId),
-      cnpjs.length > 0 ? this.repo.findExistingByRegistrationIds(cnpjs, ownerId) : Promise.resolve(new Set<string>()),
-    ]);
+    const [existingNames, existingCnpjs] = skipDuplicates
+      ? [new Set<string>(), new Set<string>()]
+      : await Promise.all([
+          this.repo.findExistingByNames(names, ownerId),
+          cnpjs.length > 0 ? this.repo.findExistingByRegistrationIds(cnpjs, ownerId) : Promise.resolve(new Set<string>()),
+        ]);
 
     const toCreate: Lead[] = [];
 
@@ -32,12 +35,14 @@ export class ImportLeadsUseCase {
       const normalizedName = row.businessName.trim().toLowerCase();
 
       // Deduplication: CNPJ takes priority, then name
-      if (row.companyRegistrationID && existingCnpjs.has(row.companyRegistrationID)) {
+      if (!skipDuplicates && row.companyRegistrationID && existingCnpjs.has(row.companyRegistrationID)) {
         result.skipped++;
+        result.skippedDetails.push({ rowIndex: i, businessName: row.businessName, reason: "cnpj" });
         continue;
       }
-      if (existingNames.has(normalizedName)) {
+      if (!skipDuplicates && existingNames.has(normalizedName)) {
         result.skipped++;
+        result.skippedDetails.push({ rowIndex: i, businessName: row.businessName, reason: "name" });
         continue;
       }
 

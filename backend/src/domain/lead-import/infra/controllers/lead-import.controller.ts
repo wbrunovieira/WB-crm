@@ -14,9 +14,12 @@ export class LeadImportController {
   constructor(private readonly importLeads: ImportLeadsUseCase) {}
 
   @Post()
-  async import(@Body() body: { rows: ImportLeadRowData[] }, @CurrentUser() user: AuthenticatedUser) {
+  async import(
+    @Body() body: { rows: ImportLeadRowData[]; skipDuplicates?: boolean },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
     if (!Array.isArray(body.rows)) throw new UnprocessableEntityException("rows deve ser um array");
-    const r = await this.importLeads.execute({ rows: body.rows, ownerId: user.id });
+    const r = await this.importLeads.execute({ rows: body.rows, ownerId: user.id, skipDuplicates: body.skipDuplicates });
     return r.unwrap();
   }
 }

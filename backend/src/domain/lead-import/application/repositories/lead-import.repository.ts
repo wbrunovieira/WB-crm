@@ -44,6 +44,7 @@ export interface ImportResult {
   imported: number;
   skipped: number;
   errors: Array<{ row: number; reason: string }>;
+  skippedDetails: Array<{ rowIndex: number; businessName: string; reason: "cnpj" | "name" }>;
 }
 
 export abstract class LeadImportRepository {

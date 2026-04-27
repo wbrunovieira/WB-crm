@@ -122,4 +122,59 @@ describe("ImportLeadsUseCase", () => {
     expect(r.skipped).toBe(1);
     expect(r.errors).toHaveLength(1);
   });
+
+  it("populates skippedDetails with reason 'name' when name already exists", async () => {
+    await uc.execute({ rows: [{ businessName: "Empresa Existente" }], ...base });
+
+    const r = (await uc.execute({
+      rows: [{ businessName: "Empresa Existente" }],
+      ...base,
+    })).unwrap();
+    expect(r.skippedDetails).toHaveLength(1);
+    expect(r.skippedDetails[0].reason).toBe("name");
+    expect(r.skippedDetails[0].businessName).toBe("Empresa Existente");
+  });
+
+  it("populates skippedDetails with reason 'cnpj' when cnpj already exists", async () => {
+    await uc.execute({
+      rows: [{ businessName: "Original", companyRegistrationID: "99999" }],
+      ...base,
+    });
+
+    const r = (await uc.execute({
+      rows: [{ businessName: "Outro Nome", companyRegistrationID: "99999" }],
+      ...base,
+    })).unwrap();
+    expect(r.skippedDetails).toHaveLength(1);
+    expect(r.skippedDetails[0].reason).toBe("cnpj");
+    expect(r.skippedDetails[0].businessName).toBe("Outro Nome");
+  });
+
+  it("does not skip when skipDuplicates is true", async () => {
+    await uc.execute({ rows: [{ businessName: "Duplicada" }], ...base });
+
+    const r = (await uc.execute({
+      rows: [{ businessName: "Duplicada" }],
+      ...base,
+      skipDuplicates: true,
+    })).unwrap();
+    expect(r.imported).toBe(1);
+    expect(r.skipped).toBe(0);
+    expect(r.skippedDetails).toHaveLength(0);
+  });
+
+  it("skippedDetails rowIndex is 0-based index in input rows array", async () => {
+    await uc.execute({ rows: [{ businessName: "Ja Existe" }], ...base });
+
+    const r = (await uc.execute({
+      rows: [
+        { businessName: "Nova A" },
+        { businessName: "Nova B" },
+        { businessName: "Ja Existe" },
+      ],
+      ...base,
+    })).unwrap();
+    expect(r.skippedDetails).toHaveLength(1);
+    expect(r.skippedDetails[0].rowIndex).toBe(2);
+  });
 });
