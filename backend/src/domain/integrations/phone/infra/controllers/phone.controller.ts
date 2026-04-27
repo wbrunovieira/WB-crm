@@ -52,25 +52,6 @@ export class PhoneController {
     return { sourceGroups: groups };
   }
 
-  @Post("verify/lead/:id")
-  @HttpCode(200)
-  @ApiOperation({ summary: "Verificar telefones de um lead específico" })
-  async verifyLeadPhonesHandler(
-    @Param("id") id: string,
-    @CurrentUser() user: AuthenticatedUser,
-  ) {
-    const result = await this.verifyLeadPhones.execute({
-      leadId: id,
-      requesterId: user.id,
-    });
-
-    if (result.isLeft()) {
-      throw new NotFoundException(result.value.message);
-    }
-
-    return { ok: true, ...result.value };
-  }
-
   @Post("verify/lead/batch")
   @HttpCode(200)
   @ApiOperation({ summary: "Verifica telefones em lote para um sourceGroup de leads (SSE)" })
@@ -100,6 +81,25 @@ export class PhoneController {
       res.write(`data: ${JSON.stringify({ type: "done", ...result.value })}\n\n`);
     }
     res.end();
+  }
+
+  @Post("verify/lead/:id")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Verificar telefones de um lead específico" })
+  async verifyLeadPhonesHandler(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.verifyLeadPhones.execute({
+      leadId: id,
+      requesterId: user.id,
+    });
+
+    if (result.isLeft()) {
+      throw new NotFoundException(result.value.message);
+    }
+
+    return { ok: true, ...result.value };
   }
 
   @Post("verify/contact/:id")

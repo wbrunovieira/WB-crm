@@ -132,6 +132,9 @@ export class BatchVerifyLeadPhonesUseCase {
           error: err instanceof Error ? err.message : "Erro desconhecido",
         });
       }
+
+      // yield to event loop so SSE chunks are flushed to the client
+      await new Promise<void>(resolve => setImmediate(resolve));
     }
 
     return right(result);
