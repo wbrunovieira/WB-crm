@@ -387,6 +387,17 @@ model LeadContact {
   // Conversão
   convertedToContactId String?  @unique // LeadContact vira 1 Contact
 
+  // Verification
+  whatsappVerified       Boolean   @default(false)
+  whatsappVerifiedAt     DateTime?
+  whatsappVerifiedNumber String?
+  emailVerified          Boolean?  @default(false)
+  emailVerifiedAt        DateTime?
+  emailVerificationStatus String?
+  emailVerificationReason String?
+  phoneValid             Boolean?
+  phoneType              String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

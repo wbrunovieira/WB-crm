@@ -26,6 +26,7 @@ import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTempla
 import { GetGoogleTokenUseCase, SaveGoogleTokenUseCase, DeleteGoogleTokenUseCase, UpdateTokenHistoryIdUseCase } from "../../application/use-cases/google-token.use-cases";
 import { GetSendAsAliasesUseCase } from "../../application/use-cases/get-send-as-aliases.use-case";
 import { VerifyLeadEmailUseCase } from "../../application/use-cases/verify-lead-email.use-case";
+import { VerifyLeadContactEmailUseCase } from "../../application/use-cases/verify-lead-contact-email.use-case";
 import { BatchVerifyEmailsUseCase } from "../../application/use-cases/batch-verify-emails.use-case";
 import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
 
@@ -65,6 +66,7 @@ export class EmailController {
     private readonly updateHistoryId: UpdateTokenHistoryIdUseCase,
     private readonly getSendAsAliases: GetSendAsAliasesUseCase,
     private readonly verifyLeadEmail: VerifyLeadEmailUseCase,
+    private readonly verifyLeadContactEmail: VerifyLeadContactEmailUseCase,
     private readonly batchVerifyEmails: BatchVerifyEmailsUseCase,
     private readonly leadsRepo: LeadsRepository,
   ) {}
@@ -225,6 +227,25 @@ export class EmailController {
       leadId: id,
       requesterId: user.id,
       requesterRole: user.role ?? "sdr",
+    });
+
+    if (result.isLeft()) {
+      throw new NotFoundException(result.value.message);
+    }
+
+    return { ok: true, ...result.value };
+  }
+
+  @Post("verify/lead-contact/:id")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Verificar email de um LeadContact específico" })
+  async verifyLeadContactEmailHandler(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ ok: boolean; leadContactId?: string; email?: string; valid?: boolean; status?: string; reason?: string; error?: string }> {
+    const result = await this.verifyLeadContactEmail.execute({
+      leadContactId: id,
+      requesterId: user.id,
     });
 
     if (result.isLeft()) {

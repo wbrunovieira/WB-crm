@@ -18,6 +18,7 @@ import { VerifyContactPhonesUseCase } from "./application/use-cases/verify-conta
 import { BatchVerifyContactPhonesUseCase } from "./application/use-cases/batch-verify-contact-phones.use-case";
 import { VerifyContactEmailUseCase } from "./application/use-cases/verify-contact-email.use-case";
 import { BatchVerifyContactEmailsUseCase } from "./application/use-cases/batch-verify-contact-emails.use-case";
+import { VerifyLeadContactPhonesUseCase } from "./application/use-cases/verify-lead-contact-phones.use-case";
 
 // Controller
 import { PhoneController } from "./infra/controllers/phone.controller";
@@ -33,12 +34,13 @@ import { PhoneController } from "./infra/controllers/phone.controller";
     BatchVerifyContactPhonesUseCase,
     VerifyContactEmailUseCase,
     BatchVerifyContactEmailsUseCase,
+    VerifyLeadContactPhonesUseCase,
 
     // Port implementations
     { provide: PhoneValidatorPort, useClass: LibphonenumberAdapter },
     DeepEmailValidatorAdapter,
     { provide: EmailVerifierPort, useClass: DeepEmailValidatorAdapter },
   ],
-  exports: [PhoneValidatorPort, VerifyLeadPhonesUseCase, BatchVerifyLeadPhonesUseCase, VerifyContactPhonesUseCase, BatchVerifyContactPhonesUseCase, VerifyContactEmailUseCase, BatchVerifyContactEmailsUseCase],
+  exports: [PhoneValidatorPort, VerifyLeadPhonesUseCase, BatchVerifyLeadPhonesUseCase, VerifyContactPhonesUseCase, BatchVerifyContactPhonesUseCase, VerifyContactEmailUseCase, BatchVerifyContactEmailsUseCase, VerifyLeadContactPhonesUseCase],
 })
 export class PhoneModule {}

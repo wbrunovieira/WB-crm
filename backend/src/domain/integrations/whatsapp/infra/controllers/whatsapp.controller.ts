@@ -57,14 +57,14 @@ interface CheckNumberBody {
 }
 
 interface SaveVerificationBody {
-  entityType: "lead" | "contact";
+  entityType: "lead" | "contact" | "lead_contact";
   entityId: string;
   verifiedNumber: string;
   exists?: boolean;
 }
 
 interface SaveNumberBody {
-  entityType: "lead" | "contact";
+  entityType: "lead" | "contact" | "lead_contact";
   entityId: string;
   whatsapp: string;
 }

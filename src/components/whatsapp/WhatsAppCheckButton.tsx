@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 interface WhatsAppCheckButtonProps {
   phone: string;
-  entityType: "lead" | "contact";
+  entityType: "lead" | "contact" | "lead_contact";
   entityId: string;
   /** País do lead/contato — usado para normalizar o código de país no número */
   country?: string | null;

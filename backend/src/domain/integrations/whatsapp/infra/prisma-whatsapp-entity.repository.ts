@@ -38,4 +38,18 @@ export class PrismaWhatsAppEntityRepository extends WhatsAppEntityRepository {
     await this.prisma.contact.update({ where: { id: contactId }, data: { whatsapp } });
     return true;
   }
+
+  async updateLeadContactVerification(leadContactId: string, data: WhatsAppVerificationData): Promise<boolean> {
+    const lc = await this.prisma.leadContact.findFirst({ where: { id: leadContactId }, select: { id: true } });
+    if (!lc) return false;
+    await this.prisma.leadContact.update({ where: { id: leadContactId }, data });
+    return true;
+  }
+
+  async updateLeadContactNumber(leadContactId: string, whatsapp: string): Promise<boolean> {
+    const lc = await this.prisma.leadContact.findFirst({ where: { id: leadContactId }, select: { id: true } });
+    if (!lc) return false;
+    await this.prisma.leadContact.update({ where: { id: leadContactId }, data: { whatsapp } });
+    return true;
+  }
 }

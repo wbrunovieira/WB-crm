@@ -23,6 +23,7 @@ import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTempla
 import { GetGoogleTokenUseCase, SaveGoogleTokenUseCase, DeleteGoogleTokenUseCase, UpdateTokenHistoryIdUseCase } from "./application/use-cases/google-token.use-cases";
 import { GetSendAsAliasesUseCase } from "./application/use-cases/get-send-as-aliases.use-case";
 import { VerifyLeadEmailUseCase } from "./application/use-cases/verify-lead-email.use-case";
+import { VerifyLeadContactEmailUseCase } from "./application/use-cases/verify-lead-contact-email.use-case";
 import { BatchVerifyEmailsUseCase } from "./application/use-cases/batch-verify-emails.use-case";
 import { GoogleTokenRepository } from "./application/repositories/google-token.repository";
 import { PrismaGoogleTokenRepository } from "./infra/prisma-google-token.repository";
@@ -62,6 +63,7 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     UpdateTokenHistoryIdUseCase,
     GetSendAsAliasesUseCase,
     VerifyLeadEmailUseCase,
+    VerifyLeadContactEmailUseCase,
     BatchVerifyEmailsUseCase,
 
     // Port implementations
@@ -85,6 +87,6 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     // Scheduled
     GmailPollCronService,
   ],
-  exports: [EmailMessagesRepository, EmailTrackingRepository, GmailPort, GoogleOAuthPort, VerifyLeadEmailUseCase, BatchVerifyEmailsUseCase],
+  exports: [EmailMessagesRepository, EmailTrackingRepository, GmailPort, GoogleOAuthPort, VerifyLeadEmailUseCase, VerifyLeadContactEmailUseCase, BatchVerifyEmailsUseCase],
 })
 export class EmailModule {}

@@ -13,6 +13,16 @@ export interface LeadContact {
   linkedin: string | null;
   instagram: string | null;
   languages: string | null;
+  // Verification
+  whatsappVerified?: boolean;
+  whatsappVerifiedAt?: string | null;
+  whatsappVerifiedNumber?: string | null;
+  emailVerified?: boolean | null;
+  emailVerifiedAt?: string | null;
+  emailVerificationStatus?: string | null;
+  emailVerificationReason?: string | null;
+  phoneValid?: boolean | null;
+  phoneType?: string | null;
 }
 
 export interface Lead {

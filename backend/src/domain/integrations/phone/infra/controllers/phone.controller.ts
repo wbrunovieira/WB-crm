@@ -22,6 +22,7 @@ import { VerifyContactPhonesUseCase } from "../../application/use-cases/verify-c
 import { BatchVerifyContactPhonesUseCase } from "../../application/use-cases/batch-verify-contact-phones.use-case";
 import { VerifyContactEmailUseCase } from "../../application/use-cases/verify-contact-email.use-case";
 import { BatchVerifyContactEmailsUseCase } from "../../application/use-cases/batch-verify-contact-emails.use-case";
+import { VerifyLeadContactPhonesUseCase } from "../../application/use-cases/verify-lead-contact-phones.use-case";
 import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
 
 @ApiTags("Phone Verification")
@@ -38,6 +39,7 @@ export class PhoneController {
     private readonly batchVerifyContactPhones: BatchVerifyContactPhonesUseCase,
     private readonly verifyContactEmail: VerifyContactEmailUseCase,
     private readonly batchVerifyContactEmails: BatchVerifyContactEmailsUseCase,
+    private readonly verifyLeadContactPhones: VerifyLeadContactPhonesUseCase,
     private readonly leadsRepo: LeadsRepository,
   ) {}
 
@@ -155,6 +157,25 @@ export class PhoneController {
   ) {
     const result = await this.verifyContactEmail.execute({
       contactId: id,
+      requesterId: user.id,
+    });
+
+    if (result.isLeft()) {
+      throw new NotFoundException(result.value.message);
+    }
+
+    return { ok: true, ...result.value };
+  }
+
+  @Post("verify/lead-contact/:id")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Verificar telefone de um LeadContact específico" })
+  async verifyLeadContactPhonesHandler(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.verifyLeadContactPhones.execute({
+      leadContactId: id,
       requesterId: user.id,
     });
 

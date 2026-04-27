@@ -7,7 +7,7 @@ export class EntityNotFoundError extends Error {
 }
 
 export interface SaveWhatsAppVerificationInput {
-  entityType: "lead" | "contact";
+  entityType: "lead" | "contact" | "lead_contact";
   entityId: string;
   ownerId: string;
   verifiedNumber: string;
@@ -25,9 +25,14 @@ export class SaveWhatsAppVerificationUseCase {
       whatsappVerifiedNumber: input.verifiedNumber,
     };
 
-    const found = input.entityType === "lead"
-      ? await this.repo.updateLeadVerification(input.entityId, input.ownerId, data)
-      : await this.repo.updateContactVerification(input.entityId, input.ownerId, data);
+    let found: boolean;
+    if (input.entityType === "lead") {
+      found = await this.repo.updateLeadVerification(input.entityId, input.ownerId, data);
+    } else if (input.entityType === "contact") {
+      found = await this.repo.updateContactVerification(input.entityId, input.ownerId, data);
+    } else {
+      found = await this.repo.updateLeadContactVerification(input.entityId, data);
+    }
 
     if (!found) return left(new EntityNotFoundError());
     return right(undefined);

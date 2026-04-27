@@ -10,6 +10,9 @@ import { Pencil, Trash2, X, Loader2, Linkedin, Instagram, Mail, Phone, MessageCi
 import { PhoneLink } from "@/components/ui/phone-link";
 import { LanguageBadges, LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 import GmailButton from "@/components/gmail/GmailButton";
+import { WhatsAppCheckButton } from "@/components/whatsapp/WhatsAppCheckButton";
+import { LeadContactEmailVerifyButton } from "./LeadContactEmailVerifyButton";
+import { LeadContactPhoneVerifyButton } from "./LeadContactPhoneVerifyButton";
 
 type LeadContact = {
   id: string;
@@ -23,6 +26,16 @@ type LeadContact = {
   isPrimary: boolean;
   isActive: boolean;
   languages: string | null;
+  // Verification fields
+  whatsappVerified?: boolean;
+  whatsappVerifiedAt?: string | null;
+  whatsappVerifiedNumber?: string | null;
+  emailVerified?: boolean | null;
+  emailVerifiedAt?: string | null;
+  emailVerificationStatus?: string | null;
+  emailVerificationReason?: string | null;
+  phoneValid?: boolean | null;
+  phoneType?: string | null;
 };
 
 function CopyButton({ value }: { value: string }) {
@@ -123,6 +136,20 @@ function ContactDetailModal({
                 ) : (
                   <span className="text-sm text-gray-400 italic">Não informado</span>
                 )}
+                {contact.email && (
+                  <div className="mt-1">
+                    <LeadContactEmailVerifyButton
+                      leadContactId={contact.id}
+                      email={contact.email}
+                      verified={contact.emailVerifiedAt ? {
+                        at: contact.emailVerifiedAt,
+                        status: contact.emailVerificationStatus ?? "unknown",
+                        reason: contact.emailVerificationReason ?? "",
+                        valid: contact.emailVerified ?? false,
+                      } : undefined}
+                    />
+                  </div>
+                )}
               </div>
               {contact.email && (
                 <div className="flex items-center gap-1">
@@ -143,6 +170,18 @@ function ContactDetailModal({
                   <PhoneLink phone={contact.phone} className="text-sm font-medium text-gray-900 hover:text-purple-600" />
                 ) : (
                   <span className="text-sm text-gray-400 italic">Não informado</span>
+                )}
+                {contact.phone && (
+                  <div className="mt-1">
+                    <LeadContactPhoneVerifyButton
+                      leadContactId={contact.id}
+                      phone={contact.phone}
+                      existing={contact.phoneValid !== null && contact.phoneValid !== undefined ? {
+                        phoneValid: contact.phoneValid,
+                        phoneType: contact.phoneType,
+                      } : undefined}
+                    />
+                  </div>
                 )}
               </div>
               {contact.phone && <CopyButton value={contact.phone} />}
@@ -166,6 +205,21 @@ function ContactDetailModal({
                   </a>
                 ) : (
                   <span className="text-sm text-gray-400 italic">Não informado</span>
+                )}
+                {(contact.whatsapp || contact.phone) && (
+                  <div className="mt-1">
+                    <WhatsAppCheckButton
+                      phone={contact.whatsapp || contact.phone!}
+                      entityType="lead_contact"
+                      entityId={contact.id}
+                      country={undefined}
+                      verified={contact.whatsappVerifiedAt ? {
+                        at: contact.whatsappVerifiedAt,
+                        number: contact.whatsappVerifiedNumber ?? "",
+                        exists: contact.whatsappVerified ?? false,
+                      } : undefined}
+                    />
+                  </div>
                 )}
               </div>
               {contact.whatsapp && <CopyButton value={contact.whatsapp} />}

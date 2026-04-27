@@ -42,6 +42,16 @@ export interface LeadContact {
   instagram: string | null;
   convertedToContactId: string | null;
   languages: string | null;
+  // Verification
+  whatsappVerified: boolean;
+  whatsappVerifiedAt: Date | null;
+  whatsappVerifiedNumber: string | null;
+  emailVerified: boolean | null;
+  emailVerifiedAt: Date | null;
+  emailVerificationStatus: string | null;
+  emailVerificationReason: string | null;
+  phoneValid: boolean | null;
+  phoneType: string | null;
 }
 
 export interface LeadActivity {
