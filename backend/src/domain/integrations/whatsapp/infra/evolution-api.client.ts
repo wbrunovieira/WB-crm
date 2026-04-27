@@ -6,6 +6,7 @@ import {
   DownloadMediaResult,
   CheckWhatsAppResult,
 } from "../application/ports/evolution-api.port";
+import { normalizePhoneForWhatsApp } from "@/infra/shared/phone/phone-normalizer";
 
 @Injectable()
 export class EvolutionApiClient extends EvolutionApiPort {
@@ -119,7 +120,7 @@ export class EvolutionApiClient extends EvolutionApiPort {
   }
 
   async checkNumber(phone: string): Promise<CheckWhatsAppResult> {
-    const digits = phone.replace(/\D/g, "");
+    const digits = normalizePhoneForWhatsApp(phone);
     const data = await this.post<Array<{
       exists: boolean;
       jid?: string;

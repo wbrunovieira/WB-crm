@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { LeadContactsRepository, LeadContactRecord } from "../repositories/lead-contacts.repository";
+import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
 
 export class LeadContactNotFoundError extends Error { name = "LeadContactNotFoundError"; }
 
@@ -31,7 +32,12 @@ export class CreateLeadContactUseCase {
   }): Promise<Either<Error, LeadContactRecord>> {
     const trimmed = input.name.trim();
     if (!trimmed) return left(new Error("name não pode ser vazio"));
-    return right(await this.repo.create({ ...input, name: trimmed }));
+    return right(await this.repo.create({
+      ...input,
+      name: trimmed,
+      phone: normalizePhoneE164(input.phone) ?? undefined,
+      whatsapp: normalizePhoneE164(input.whatsapp) ?? undefined,
+    }));
   }
 }
 
@@ -55,6 +61,8 @@ export class UpdateLeadContactUseCase {
     if (!existing) return left(new LeadContactNotFoundError("Contato não encontrado"));
     if (input.name !== undefined && !input.name.trim()) return left(new Error("name não pode ser vazio"));
     const { id, ...data } = input;
+    if (data.phone !== undefined) data.phone = normalizePhoneE164(data.phone) ?? undefined;
+    if (data.whatsapp !== undefined) data.whatsapp = normalizePhoneE164(data.whatsapp) ?? undefined;
     return right(await this.repo.update(id, data));
   }
 }

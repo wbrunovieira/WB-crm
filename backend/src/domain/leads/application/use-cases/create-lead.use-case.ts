@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { LeadsRepository, type LeadContactInput } from "../repositories/leads.repository";
 import { Lead } from "../../enterprise/entities/lead";
+import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
 
 export interface CreateLeadInput {
   ownerId: string;
@@ -16,6 +17,7 @@ export interface CreateLeadInput {
   zipCode?: string;
   vicinity?: string;
   phone?: string;
+  phone2?: string;
   whatsapp?: string;
   whatsappVerified?: boolean;
   whatsappVerifiedAt?: Date;
@@ -97,8 +99,9 @@ export class CreateLeadUseCase {
       country: input.country,
       zipCode: input.zipCode,
       vicinity: input.vicinity,
-      phone: input.phone,
-      whatsapp: input.whatsapp,
+      phone: normalizePhoneE164(input.phone),
+      phone2: normalizePhoneE164(input.phone2),
+      whatsapp: normalizePhoneE164(input.whatsapp),
       whatsappVerified: input.whatsappVerified ?? false,
       whatsappVerifiedAt: input.whatsappVerifiedAt,
       whatsappVerifiedNumber: input.whatsappVerifiedNumber,

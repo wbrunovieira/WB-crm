@@ -3,6 +3,7 @@ import { left, right, type Either } from "@/core/either";
 import { OrganizationsRepository } from "../repositories/organizations.repository";
 import { Organization } from "../../enterprise/entities/organization";
 import { OrganizationName } from "../../enterprise/value-objects/organization-name.vo";
+import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
 
 export interface CreateOrganizationInput {
   ownerId: string;
@@ -62,8 +63,8 @@ export class CreateOrganizationUseCase {
       legalName: input.legalName,
       foundationDate: input.foundationDate,
       website: input.website,
-      phone: input.phone,
-      whatsapp: input.whatsapp,
+      phone: normalizePhoneE164(input.phone),
+      whatsapp: normalizePhoneE164(input.whatsapp),
       email: input.email,
       country: input.country,
       state: input.state,

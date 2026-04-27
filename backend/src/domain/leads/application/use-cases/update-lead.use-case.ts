@@ -3,6 +3,7 @@ import { left, right, type Either } from "@/core/either";
 import { LeadsRepository } from "../repositories/leads.repository";
 import type { Lead } from "../../enterprise/entities/lead";
 import type { LeadProps } from "../../enterprise/entities/lead";
+import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
 
 export interface UpdateLeadInput {
   id: string;
@@ -19,6 +20,7 @@ export interface UpdateLeadInput {
   zipCode?: string;
   vicinity?: string;
   phone?: string;
+  phone2?: string;
   whatsapp?: string;
   whatsappVerified?: boolean;
   whatsappVerifiedAt?: Date;
@@ -91,6 +93,10 @@ export class UpdateLeadUseCase {
     }
 
     const { id, requesterId, requesterRole, labelIds, icpId, ...fields } = input;
+
+    if (fields.phone !== undefined) fields.phone = normalizePhoneE164(fields.phone) ?? undefined;
+    if (fields.phone2 !== undefined) fields.phone2 = normalizePhoneE164(fields.phone2) ?? undefined;
+    if (fields.whatsapp !== undefined) fields.whatsapp = normalizePhoneE164(fields.whatsapp) ?? undefined;
 
     lead.update(fields as Partial<Omit<LeadProps, "ownerId" | "createdAt" | "updatedAt">>);
 

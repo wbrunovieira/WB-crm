@@ -49,6 +49,7 @@ interface SendMediaBody {
 
 interface CheckNumberBody {
   phone: string;
+  country?: string;
 }
 
 interface SaveVerificationBody {

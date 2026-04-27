@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Either, right } from "@/core/either";
 import { Lead } from "@/domain/leads/enterprise/entities/lead";
 import { LeadImportRepository, ImportLeadRowData, ImportResult } from "../repositories/lead-import.repository";
+import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
 
 function parseCnaeEntry(raw: string): { code: string; description: string } | null {
   const match = raw.trim().match(/^(\d{4,7})\s*[-–]\s*(.+)$/);
@@ -108,9 +109,9 @@ export class ImportLeadsUseCase {
         simplesNacional: row.simplesNacional,
         isMei: row.isMei,
         email: row.email,
-        phone: row.phone,
-        phone2: row.phone2,
-        whatsapp: row.whatsapp,
+        phone: normalizePhoneE164(row.phone),
+        phone2: normalizePhoneE164(row.phone2),
+        whatsapp: normalizePhoneE164(row.whatsapp),
         website: row.website,
         address: row.address,
         vicinity: row.vicinity,

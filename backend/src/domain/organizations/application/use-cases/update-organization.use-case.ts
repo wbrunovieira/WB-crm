@@ -3,6 +3,7 @@ import { left, right, type Either } from "@/core/either";
 import { OrganizationsRepository } from "../repositories/organizations.repository";
 import type { Organization } from "../../enterprise/entities/organization";
 import type { OrganizationProps } from "../../enterprise/entities/organization";
+import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
 
 export interface UpdateOrganizationInput {
   id: string;
@@ -63,6 +64,9 @@ export class UpdateOrganizationUseCase {
     }
 
     const { id, requesterId, requesterRole, labelIds, ...fields } = input;
+
+    if (fields.phone !== undefined) fields.phone = normalizePhoneE164(fields.phone) ?? undefined;
+    if (fields.whatsapp !== undefined) fields.whatsapp = normalizePhoneE164(fields.whatsapp) ?? undefined;
 
     organization.update(fields as Partial<Omit<OrganizationProps, "ownerId" | "createdAt" | "updatedAt">>);
 
