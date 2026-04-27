@@ -76,7 +76,14 @@ type Lead = {
   businessStatus?: string | null;
   primaryCNAEId?: string | null;
   internationalActivity?: string | null;
+  phone2?: string | null;
   source?: string | null;
+  segment?: string | null;
+  legalNature?: string | null;
+  branchType?: string | null;
+  simplesNacional?: boolean | null;
+  isMei?: boolean | null;
+  revenueRange?: string | null;
   quality?: string | null;
   searchTerm?: string | null;
   sourceGroup?: string | null;
@@ -184,6 +191,7 @@ export function LeadForm({ lead }: LeadFormProps) {
       zipCode: getString("zipCode"),
       vicinity: getString("vicinity"),
       phone: getString("phone"),
+      phone2: getString("phone2"),
       whatsapp: getString("whatsapp"),
       website: getString("website"),
       email: getString("email"),
@@ -220,6 +228,12 @@ export function LeadForm({ lead }: LeadFormProps) {
       primaryCNAEId: primaryCNAE?.id || undefined,
       internationalActivity: getString("internationalActivity"),
       source: getString("source"),
+      segment: getString("segment"),
+      legalNature: getString("legalNature"),
+      branchType: getString("branchType"),
+      simplesNacional: formData.get("simplesNacional") === "true",
+      isMei: formData.get("isMei") === "true",
+      revenueRange: getString("revenueRange"),
       quality: getString("quality") as "cold" | "warm" | "hot" | undefined,
       searchTerm: getString("searchTerm"),
       sourceGroup: getString("sourceGroup"),
@@ -694,6 +708,17 @@ export function LeadForm({ lead }: LeadFormProps) {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">
+              Telefone 2
+            </label>
+            <input
+              type="tel"
+              name="phone2"
+              defaultValue={lead?.phone2 || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
               WhatsApp
             </label>
             <input
@@ -1067,6 +1092,78 @@ export function LeadForm({ lead }: LeadFormProps) {
               defaultValue={lead?.businessStatus || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Segmento Comercial
+            </label>
+            <input
+              type="text"
+              name="segment"
+              placeholder="Ex: Materiais de Construção, Saúde..."
+              defaultValue={lead?.segment || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Natureza Jurídica
+            </label>
+            <input
+              type="text"
+              name="legalNature"
+              placeholder="Ex: Sociedade Limitada, EIRELI..."
+              defaultValue={lead?.legalNature || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Tipo de Filial
+            </label>
+            <select
+              name="branchType"
+              defaultValue={lead?.branchType || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            >
+              <option value="">Não informado</option>
+              <option value="Matriz">Matriz</option>
+              <option value="Filial">Filial</option>
+            </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Faixa de Faturamento
+            </label>
+            <input
+              type="text"
+              name="revenueRange"
+              placeholder="Ex: R$ 360 mil a R$ 4,8 milhões"
+              defaultValue={lead?.revenueRange || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+              <input
+                type="checkbox"
+                name="simplesNacional"
+                value="true"
+                defaultChecked={lead?.simplesNacional ?? false}
+                className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990]"
+              />
+              Simples Nacional
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+              <input
+                type="checkbox"
+                name="isMei"
+                value="true"
+                defaultChecked={lead?.isMei ?? false}
+                className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990]"
+              />
+              MEI
+            </label>
           </div>
           <div className="md:col-span-2">
             <CNAEAutocomplete

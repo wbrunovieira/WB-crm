@@ -49,6 +49,12 @@ export interface CreateLeadInput {
   primaryCNAEId?: string;
   internationalActivity?: string;
   source?: string;
+  segment?: string;
+  legalNature?: string;
+  branchType?: string;
+  simplesNacional?: boolean;
+  isMei?: boolean;
+  revenueRange?: string;
   quality?: string;
   searchTerm?: string;
   fieldsFilled?: number;
@@ -133,6 +139,12 @@ export class CreateLeadUseCase {
       primaryCNAEId: input.primaryCNAEId,
       internationalActivity: input.internationalActivity,
       source: input.source,
+      segment: input.segment,
+      legalNature: input.legalNature,
+      branchType: input.branchType,
+      simplesNacional: input.simplesNacional,
+      isMei: input.isMei,
+      revenueRange: input.revenueRange,
       quality: input.quality,
       searchTerm: input.searchTerm,
       fieldsFilled: input.fieldsFilled,

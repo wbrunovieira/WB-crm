@@ -52,6 +52,12 @@ export interface UpdateLeadInput {
   primaryCNAEId?: string;
   internationalActivity?: string;
   source?: string;
+  segment?: string;
+  legalNature?: string;
+  branchType?: string;
+  simplesNacional?: boolean;
+  isMei?: boolean;
+  revenueRange?: string;
   quality?: string;
   searchTerm?: string;
   fieldsFilled?: number;

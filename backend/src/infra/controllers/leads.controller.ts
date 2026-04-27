@@ -97,6 +97,9 @@ class CreateLeadDto {
   @ApiPropertyOptional({ example: "+5511999999999" })
   phone?: string;
 
+  @ApiPropertyOptional({ example: "+5511999999998", description: "Segundo telefone" })
+  phone2?: string;
+
   @ApiPropertyOptional({ example: "+5511999999999" })
   whatsapp?: string;
 
@@ -220,6 +223,27 @@ class CreateLeadDto {
   @ApiPropertyOptional()
   source?: string;
 
+  @ApiPropertyOptional({ example: "Materiais de Construção", description: "Segmento comercial" })
+  segment?: string;
+
+  @ApiPropertyOptional({ example: "Sociedade Limitada", description: "Natureza jurídica" })
+  legalNature?: string;
+
+  @ApiPropertyOptional({ example: "Matriz", enum: ["Matriz", "Filial"], description: "Tipo de filial" })
+  branchType?: string;
+
+  @ApiPropertyOptional({ example: false, description: "Optante pelo Simples Nacional" })
+  simplesNacional?: boolean;
+
+  @ApiPropertyOptional({ example: false, description: "Microempreendedor Individual" })
+  isMei?: boolean;
+
+  @ApiPropertyOptional({ example: "R$ 360 mil a R$ 4,8 milhões", description: "Faixa de faturamento" })
+  revenueRange?: string;
+
+  @ApiPropertyOptional({ example: "MatConstrPetropolis270426", description: "Grupo/lote de importação" })
+  sourceGroup?: string;
+
   @ApiPropertyOptional()
   referredByPartnerId?: string;
 
@@ -289,6 +313,9 @@ class UpdateLeadDto {
 
   @ApiPropertyOptional()
   phone?: string;
+
+  @ApiPropertyOptional()
+  phone2?: string;
 
   @ApiPropertyOptional()
   whatsapp?: string;
@@ -364,6 +391,27 @@ class UpdateLeadDto {
 
   @ApiPropertyOptional()
   source?: string;
+
+  @ApiPropertyOptional()
+  segment?: string;
+
+  @ApiPropertyOptional()
+  legalNature?: string;
+
+  @ApiPropertyOptional()
+  branchType?: string;
+
+  @ApiPropertyOptional()
+  simplesNacional?: boolean;
+
+  @ApiPropertyOptional()
+  isMei?: boolean;
+
+  @ApiPropertyOptional()
+  revenueRange?: string;
+
+  @ApiPropertyOptional()
+  sourceGroup?: string;
 
   @ApiPropertyOptional()
   primaryCNAEId?: string;
@@ -488,6 +536,7 @@ function serialize(lead: Lead) {
     zipCode: lead.zipCode,
     vicinity: lead.vicinity,
     phone: lead.phone,
+    phone2: lead.phone2,
     whatsapp: lead.whatsapp,
     whatsappVerified: lead.whatsappVerified,
     whatsappVerifiedAt: lead.whatsappVerifiedAt,
@@ -519,6 +568,13 @@ function serialize(lead: Lead) {
     primaryCNAEId: lead.primaryCNAEId,
     internationalActivity: lead.internationalActivity,
     source: lead.source,
+    segment: lead.segment,
+    legalNature: lead.legalNature,
+    branchType: lead.branchType,
+    simplesNacional: lead.simplesNacional,
+    isMei: lead.isMei,
+    revenueRange: lead.revenueRange,
+    sourceGroup: lead.sourceGroup,
     quality: lead.quality,
     searchTerm: lead.searchTerm,
     fieldsFilled: lead.fieldsFilled,

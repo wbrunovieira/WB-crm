@@ -38,6 +38,7 @@ export interface CreateLeadPayload {
   zipCode?: string;
   vicinity?: string;
   phone?: string;
+  phone2?: string;
   whatsapp?: string;
   website?: string;
   email?: string;
@@ -62,6 +63,12 @@ export interface CreateLeadPayload {
   isArchived?: boolean;
   isProspect?: boolean;
   source?: string;
+  segment?: string;
+  legalNature?: string;
+  branchType?: string;
+  simplesNacional?: boolean;
+  isMei?: boolean;
+  revenueRange?: string;
   sourceGroup?: string;
   primaryCNAEId?: string;
   internationalActivity?: string;
