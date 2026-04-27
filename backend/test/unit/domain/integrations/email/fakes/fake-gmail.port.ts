@@ -82,6 +82,8 @@ export class FakeGmailPort extends GmailPort {
     this.sentCalendarInvites.push(params);
   }
 
+  async trashMessage(_userId: string, _messageId: string): Promise<void> {}
+
   /** Helper: add a message to be returned by pollHistory */
   addHistoryMessage(msg: GmailMessage): void {
     this.historyMessages.push(msg);

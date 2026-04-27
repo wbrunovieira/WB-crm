@@ -28,4 +28,6 @@ export class FakeS3StoragePort extends S3StoragePort {
     if (!buf) throw new Error(`S3 key not found: ${key}`);
     return buf;
   }
+
+  async deleteObject(_key: string): Promise<void> {}
 }

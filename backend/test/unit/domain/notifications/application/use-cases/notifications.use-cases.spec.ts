@@ -8,6 +8,7 @@ import {
 import { Notification } from "@/domain/notifications/enterprise/entities/notification";
 
 let repo: InMemoryNotificationsRepository;
+const fakeEventBus = { emit: (_n: unknown) => {} };
 const seed = (overrides: Partial<Parameters<typeof Notification.create>[0]> = {}) =>
   Notification.create({ type: "GENERIC", title: "T", summary: "s", userId: "u1", ...overrides }).unwrap();
 
@@ -40,7 +41,7 @@ describe("GetNotificationsUseCase", () => {
 
 describe("CreateNotificationUseCase", () => {
   it("cria e persiste notificação", async () => {
-    const r = await new CreateNotificationUseCase(repo).execute({
+    const r = await new CreateNotificationUseCase(repo, fakeEventBus as any).execute({
       type: "LEAD_RESEARCH_COMPLETE",
       title: "Pesquisa concluída",
       summary: "Lead X pesquisado com sucesso",
@@ -52,7 +53,7 @@ describe("CreateNotificationUseCase", () => {
   });
 
   it("retorna erro com tipo inválido", async () => {
-    const r = await new CreateNotificationUseCase(repo).execute({
+    const r = await new CreateNotificationUseCase(repo, fakeEventBus as any).execute({
       type: "INVALIDO",
       title: "T",
       summary: "s",

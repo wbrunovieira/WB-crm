@@ -48,6 +48,8 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
 
   async markThreadReplied(_threadId: string): Promise<void> {}
 
+  async findWhatsAppDriveIds(_activityId: string): Promise<string[]> { return []; }
+
   async findByIdForTranscription(id: string): Promise<ActivityWithNames | null> {
     const activity = this.items.find((a) => a.id.toString() === id);
     if (!activity) return null;

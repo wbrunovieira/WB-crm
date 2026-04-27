@@ -83,6 +83,8 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
 
   async markThreadReplied(_threadId: string): Promise<void> {}
 
+  async findWhatsAppDriveIds(_activityId: string): Promise<string[]> { return []; }
+
   // Helper for tests
   createAndAdd(props: Parameters<typeof Activity.create>[0]): Activity {
     const activity = Activity.create(props, new UniqueEntityID());

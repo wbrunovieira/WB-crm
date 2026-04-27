@@ -4,6 +4,7 @@ import { FakeWhatsAppMessagesRepository } from "@test/unit/domain/integrations/w
 import { WhatsAppMessageData } from "@/domain/integrations/whatsapp/application/repositories/whatsapp-messages.repository";
 import { TranscriptionResult } from "@/infra/shared/transcriber/transcriber.port";
 import { randomUUID } from "crypto";
+import { right } from "@/core/either";
 
 // Fake CreateNotificationUseCase
 class FakeCreateNotificationUseCase {
@@ -17,7 +18,6 @@ class FakeCreateNotificationUseCase {
     payload?: string;
   }) {
     this.calls.push([input]);
-    const { right } = await import("@/core/either");
     return right({ id: { toString: () => randomUUID() } });
   }
 }
