@@ -90,6 +90,12 @@ export default async function LeadsPage({
         <div className="flex items-center gap-3">
           <AgentLeadGenerationButton icps={icps} />
           <Link
+            href="/leads/import"
+            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Importar CSV
+          </Link>
+          <Link
             href="/leads/new"
             className="rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700"
           >
