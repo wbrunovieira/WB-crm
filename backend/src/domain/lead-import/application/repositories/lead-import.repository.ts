@@ -4,11 +4,19 @@ export interface ImportLeadRowData {
   businessName: string;
   registeredName?: string;
   companyRegistrationID?: string;
+  foundationDate?: string;
+  businessStatus?: string;
+  legalNature?: string;
+  branchType?: string;
+  simplesNacional?: boolean;
+  isMei?: boolean;
   email?: string;
   phone?: string;
+  phone2?: string;
   whatsapp?: string;
   website?: string;
   address?: string;
+  vicinity?: string;
   city?: string;
   state?: string;
   country?: string;
@@ -16,9 +24,19 @@ export interface ImportLeadRowData {
   instagram?: string;
   linkedin?: string;
   facebook?: string;
+  twitter?: string;
+  tiktok?: string;
+  companyOwner?: string;
+  companySize?: string;
+  revenue?: number;
+  revenueRange?: string;
+  equityCapital?: number;
+  employeesCount?: number;
   description?: string;
+  segment?: string;
   source?: string;
   quality?: string;
+  searchTerm?: string;
 }
 
 export interface ImportResult {

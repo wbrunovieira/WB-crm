@@ -7,7 +7,7 @@ export const leadSchema = z.object({
   // Informações Básicas da Empresa
   businessName: z.string().min(2, "Nome comercial deve ter no mínimo 2 caracteres"),
   registeredName: z.string().optional(),
-  foundationDate: z.date().optional(),
+  foundationDate: z.union([z.date(), z.string()]).optional(),
   companyRegistrationID: z
     .string()
     .transform((v) => (v ? normalizeCNPJ(v) : v))   // normaliza para 14 dígitos
@@ -47,10 +47,19 @@ export const leadSchema = z.object({
   companyOwner: z.string().optional(),
   companySize: z.string().optional(),
   revenue: z.number().positive().optional(),
+  revenueRange: z.string().optional(),
   employeesCount: z.number().int().positive().optional(),
   description: z.string().optional(),
   equityCapital: z.number().positive().optional(),
   businessStatus: z.string().optional(),
+
+  // Dados fiscais e jurídicos (importação)
+  segment: z.string().optional(),
+  legalNature: z.string().optional(),
+  branchType: z.string().optional(),
+  simplesNacional: z.boolean().optional(),
+  isMei: z.boolean().optional(),
+  phone2: z.string().optional(),
 
   // Atividades
   primaryActivity: z.string().optional(),

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
-import { IMPORTABLE_FIELDS, type ColumnMapping } from "@/lib/import/lead-mapping";
+import { IMPORTABLE_FIELDS, buildInitialMapping, type ColumnMapping } from "@/lib/import/lead-mapping";
 import { mapRowToLeadData } from "@/lib/import/lead-mapping";
 import { parseCSV, parseXLSX, type ParsedImportFile, type ParsedRow } from "@/lib/import/parse-file";
 
@@ -49,108 +49,6 @@ export interface ImportResult {
   duplicateDetails: DuplicateDetail[];
   errorDetails: ErrorDetail[];
   error?: string;
-}
-
-// ---------------------------------------------------------------------------
-// Auto-suggest: map common column names to CRM fields
-// ---------------------------------------------------------------------------
-
-const AUTO_SUGGEST_MAP: Record<string, string> = {
-  // businessName
-  nome: "businessName",
-  "nome da empresa": "businessName",
-  "nome comercial": "businessName",
-  empresa: "businessName",
-  company: "businessName",
-  // registeredName
-  "razao social": "registeredName",
-  "razão social": "registeredName",
-  "registered name": "registeredName",
-  // companyRegistrationID
-  cnpj: "companyRegistrationID",
-  "cpf/cnpj": "companyRegistrationID",
-  "registro": "companyRegistrationID",
-  // phone
-  telefone: "phone",
-  fone: "phone",
-  tel: "phone",
-  phone: "phone",
-  // whatsapp
-  whatsapp: "whatsapp",
-  zap: "whatsapp",
-  // email
-  email: "email",
-  "e-mail": "email",
-  "endereço de email": "email",
-  // website
-  site: "website",
-  website: "website",
-  url: "website",
-  "página": "website",
-  // address
-  endereço: "address",
-  endereco: "address",
-  logradouro: "address",
-  address: "address",
-  rua: "address",
-  // city
-  cidade: "city",
-  municipio: "city",
-  município: "city",
-  city: "city",
-  // state
-  estado: "state",
-  uf: "state",
-  state: "state",
-  // country
-  país: "country",
-  pais: "country",
-  country: "country",
-  // zipCode
-  cep: "zipCode",
-  "código postal": "zipCode",
-  "codigo postal": "zipCode",
-  zip: "zipCode",
-  // source
-  fonte: "source",
-  source: "source",
-  origem: "source",
-  // searchTerm
-  "termo de busca": "searchTerm",
-  "termo": "searchTerm",
-  "palavra-chave": "searchTerm",
-  // instagram
-  instagram: "instagram",
-  // linkedin
-  linkedin: "linkedin",
-  // facebook
-  facebook: "facebook",
-  // companyOwner
-  responsavel: "companyOwner",
-  responsável: "companyOwner",
-  "sócio": "companyOwner",
-  socio: "companyOwner",
-  // description
-  descricao: "description",
-  descrição: "description",
-  description: "description",
-  observacao: "description",
-  observação: "description",
-  obs: "description",
-};
-
-function autoSuggestField(header: string): string {
-  const normalized = header.toLowerCase().trim();
-  return AUTO_SUGGEST_MAP[normalized] ?? "ignore";
-}
-
-function buildInitialMapping(headers: string[]): ColumnMapping {
-  const mapping: ColumnMapping = {};
-  for (const h of headers) {
-    const suggested = autoSuggestField(h);
-    mapping[h] = suggested as ColumnMapping[string];
-  }
-  return mapping;
 }
 
 // ---------------------------------------------------------------------------

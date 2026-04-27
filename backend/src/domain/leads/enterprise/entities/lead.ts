@@ -47,10 +47,19 @@ export interface LeadProps {
   companyOwner?: string;
   companySize?: string;
   revenue?: number;
+  revenueRange?: string;
   employeesCount?: number;
   description?: string;
   equityCapital?: number;
   businessStatus?: string;
+
+  // Dados fiscais e jurídicos
+  segment?: string;
+  legalNature?: string;
+  branchType?: string;
+  simplesNacional?: boolean;
+  isMei?: boolean;
+  phone2?: string;
 
   // Languages (JSON)
   languages?: string;
@@ -151,6 +160,13 @@ export class Lead extends AggregateRoot<LeadProps> {
   get description()                 { return this.props.description; }
   get equityCapital()               { return this.props.equityCapital; }
   get businessStatus()              { return this.props.businessStatus; }
+  get revenueRange()                { return this.props.revenueRange; }
+  get segment()                     { return this.props.segment; }
+  get legalNature()                 { return this.props.legalNature; }
+  get branchType()                  { return this.props.branchType; }
+  get simplesNacional()             { return this.props.simplesNacional; }
+  get isMei()                       { return this.props.isMei; }
+  get phone2()                      { return this.props.phone2; }
   get languages()                   { return this.props.languages; }
   get primaryActivity()             { return this.props.primaryActivity; }
   get secondaryActivities()         { return this.props.secondaryActivities; }

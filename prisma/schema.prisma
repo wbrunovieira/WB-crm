@@ -186,10 +186,19 @@ model Lead {
   companyOwner    String?
   companySize     String?
   revenue         Float?
+  revenueRange    String?   // Faixa de faturamento em texto (ex: "De R$ 81k a R$ 360k")
   employeesCount  Int?
   description     String?
   equityCapital   Float?
   businessStatus  String?
+
+  // Dados fiscais e jurídicos
+  segment         String?   // Segmento comercial (ex: "Loja de Materiais de Construção")
+  legalNature     String?   // Natureza jurídica (ex: "Sociedade Empresária Limitada")
+  branchType      String?   // "Matriz" ou "Filial"
+  simplesNacional Boolean?  // Optante pelo Simples Nacional
+  isMei           Boolean?  // Optante MEI
+  phone2          String?   // Segundo telefone
 
   // Idiomas da empresa (JSON: [{code, isPrimary}])
   languages String?
