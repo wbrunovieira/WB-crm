@@ -1,5 +1,5 @@
 -- AlterTable
-ALTER TABLE "Lead" ADD COLUMN "emailVerified" BOOLEAN DEFAULT false;
-ALTER TABLE "Lead" ADD COLUMN "emailVerifiedAt" TIMESTAMP(3);
-ALTER TABLE "Lead" ADD COLUMN "emailVerificationStatus" TEXT;
-ALTER TABLE "Lead" ADD COLUMN "emailVerificationReason" TEXT;
+ALTER TABLE "leads" ADD COLUMN IF NOT EXISTS "emailVerified" BOOLEAN DEFAULT false;
+ALTER TABLE "leads" ADD COLUMN IF NOT EXISTS "emailVerifiedAt" TIMESTAMP(3);
+ALTER TABLE "leads" ADD COLUMN IF NOT EXISTS "emailVerificationStatus" TEXT;
+ALTER TABLE "leads" ADD COLUMN IF NOT EXISTS "emailVerificationReason" TEXT;
