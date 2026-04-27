@@ -139,16 +139,6 @@
           ✅ Migrations applied successfully
           {{ migrations.stdout_lines | last }}
 
-    # ============ BACKEND MIGRATIONS ============
-    - name: Run backend database migrations (NestJS/backend/prisma via Docker container)
-      raw: docker exec wb-crm-backend npx prisma migrate deploy 2>&1
-      register: backend_migrations
-      ignore_errors: yes
-
-    - name: Display backend migration result
-      debug:
-        msg: "{{ backend_migrations.stdout_lines }}"
-
     # ============ BUILD & RESTART ============
     - name: Build Next.js
       raw: cd {{ app_dir }} && NODE_OPTIONS="--max-old-space-size=4096" NODE_ENV=production npm run build
