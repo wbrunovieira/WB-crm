@@ -160,4 +160,13 @@ export class InMemoryLeadsRepository extends LeadsRepository {
       leadContacts: [],
     }));
   }
+
+  async findBySourceGroup(sourceGroup: string): Promise<Lead[]> {
+    return this.items.filter(l => l.sourceGroup === sourceGroup);
+  }
+
+  async saveWhatsAppVerification(leadId: string, data: { whatsappVerified: boolean; whatsappVerifiedAt: Date; whatsappVerifiedNumber: string }): Promise<void> {
+    const lead = this.items.find(l => l.id.toString() === leadId);
+    if (lead) lead.update(data);
+  }
 }

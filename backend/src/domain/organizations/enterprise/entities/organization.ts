@@ -65,6 +65,18 @@ export interface OrganizationProps {
   hostingReminderDays: number;
   hostingNotes?: string;
 
+  // Dados fiscais e jurídicos (espelhados do Lead)
+  segment?: string;
+  legalNature?: string;
+  branchType?: string;
+  simplesNacional?: boolean;
+  isMei?: boolean;
+  revenueRange?: string;
+  phone2?: string;
+
+  // Grouping / import tag
+  sourceGroup?: string;
+
   // Operations transfer
   inOperationsAt?: Date;
 
@@ -111,6 +123,14 @@ export class Organization extends AggregateRoot<OrganizationProps> {
   get hostingValue()          { return this.props.hostingValue; }
   get hostingReminderDays()   { return this.props.hostingReminderDays; }
   get hostingNotes()          { return this.props.hostingNotes; }
+  get segment()               { return this.props.segment; }
+  get legalNature()           { return this.props.legalNature; }
+  get branchType()            { return this.props.branchType; }
+  get simplesNacional()       { return this.props.simplesNacional; }
+  get isMei()                 { return this.props.isMei; }
+  get revenueRange()          { return this.props.revenueRange; }
+  get phone2()                { return this.props.phone2; }
+  get sourceGroup()           { return this.props.sourceGroup; }
   get inOperationsAt()        { return this.props.inOperationsAt; }
   get createdAt()             { return this.props.createdAt; }
   get updatedAt()             { return this.props.updatedAt; }

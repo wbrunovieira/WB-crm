@@ -79,6 +79,7 @@ type Lead = {
   source?: string | null;
   quality?: string | null;
   searchTerm?: string | null;
+  sourceGroup?: string | null;
   fieldsFilled?: number | null;
   category?: string | null;
   radius?: number | null;
@@ -221,6 +222,7 @@ export function LeadForm({ lead }: LeadFormProps) {
       source: getString("source"),
       quality: getString("quality") as "cold" | "warm" | "hot" | undefined,
       searchTerm: getString("searchTerm"),
+      sourceGroup: getString("sourceGroup"),
       fieldsFilled: formData.get("fieldsFilled")
         ? parseInt(formData.get("fieldsFilled") as string)
         : undefined,
@@ -1191,6 +1193,18 @@ export function LeadForm({ lead }: LeadFormProps) {
           Metadados de Busca
         </h2>
         <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Lote / Grupo
+            </label>
+            <input
+              type="text"
+              name="sourceGroup"
+              placeholder="ex: MatConstrPetropolis270426"
+              defaultValue={lead?.sourceGroup || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            />
+          </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">
               Fonte

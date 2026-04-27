@@ -136,6 +136,7 @@ export class ImportLeadsUseCase {
         quality: row.quality,
         searchTerm: row.searchTerm,
         primaryCNAEId: primaryCnaeMap.get(i),
+        sourceGroup: row.sourceGroup,
         ownerId,
       });
 

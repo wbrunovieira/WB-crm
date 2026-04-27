@@ -3,6 +3,7 @@ import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
 import { ActivitiesModule } from "@/domain/activities/activities.module";
 import { AuthModule } from "@/infra/auth/auth.module";
 import { NotificationsModule } from "@/domain/notifications/notifications.module";
+import { LeadsModule } from "@/domain/leads/leads.module";
 
 // Ports
 import { EvolutionApiPort } from "./application/ports/evolution-api.port";
@@ -24,6 +25,7 @@ import { SaveWhatsAppNumberUseCase } from "./application/use-cases/save-whatsapp
 import { GetWhatsAppTemplatesUseCase, CreateWhatsAppTemplateUseCase, UpdateWhatsAppTemplateUseCase, DeleteWhatsAppTemplateUseCase } from "./application/use-cases/whatsapp-templates.use-cases";
 import { GetWhatsAppMessageByIdUseCase } from "./application/use-cases/get-whatsapp-message-by-id.use-case";
 import { HandleWhatsAppTranscriptionCallbackUseCase } from "./application/use-cases/handle-whatsapp-transcription-callback.use-case";
+import { BatchCheckWhatsAppUseCase } from "./application/use-cases/batch-check-whatsapp.use-case";
 
 // Repository abstracts
 import { WhatsAppTemplatesRepository } from "./application/repositories/whatsapp-templates.repository";
@@ -40,7 +42,7 @@ import { WhatsAppTranscriptionCallbackController } from "./infra/controllers/wha
 import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-transcription-cron.service";
 
 @Module({
-  imports: [SharedInfraModule, ActivitiesModule, AuthModule, NotificationsModule],
+  imports: [SharedInfraModule, ActivitiesModule, AuthModule, NotificationsModule, LeadsModule],
   controllers: [WhatsAppWebhookController, WhatsAppController, WhatsAppMediaController, WhatsAppTranscriptionCallbackController],
   providers: [
     // Use Cases
@@ -59,6 +61,7 @@ import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-tra
     DeleteWhatsAppTemplateUseCase,
     GetWhatsAppMessageByIdUseCase,
     HandleWhatsAppTranscriptionCallbackUseCase,
+    BatchCheckWhatsAppUseCase,
     // Port implementations
     { provide: EvolutionApiPort, useClass: EvolutionApiClient },
     // Repositories

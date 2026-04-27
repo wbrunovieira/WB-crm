@@ -84,6 +84,7 @@ export interface Lead {
   metaAds?: string | null;
   googleAds?: string | null;
   searchTerm?: string | null;
+  sourceGroup?: string | null;
   activities?: Activity[];
   activityOrder?: string | null;
 }

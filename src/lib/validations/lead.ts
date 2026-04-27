@@ -70,6 +70,9 @@ export const leadSchema = z.object({
   cnaePrincipal: z.string().optional(),
   cnaesSecundarios: z.string().optional(),
 
+  // Grouping tag for batch operations (ex: "MatConstrPetropolis270426")
+  sourceGroup: z.string().max(100).optional(),
+
   // Coordenadas e Maps
   latitude: z.number().optional(),
   longitude: z.number().optional(),

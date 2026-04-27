@@ -17,6 +17,7 @@ export class FakeEvolutionApiPort extends EvolutionApiPort {
     fileName: "audio.ogg",
   };
   public nextMessageId = "msg-001";
+  public checkNumberResult: CheckWhatsAppResult = { exists: true, number: "552422226134" };
 
   async sendText(to: string, text: string): Promise<SendTextResult> {
     if (this.shouldFailSend) throw new Error("sendText failed");
@@ -45,6 +46,6 @@ export class FakeEvolutionApiPort extends EvolutionApiPort {
   }
 
   async checkNumber(_phone: string): Promise<CheckWhatsAppResult> {
-    return { exists: true, jid: `${_phone}@s.whatsapp.net`, number: _phone };
+    return { ...this.checkNumberResult, jid: `${_phone}@s.whatsapp.net` };
   }
 }

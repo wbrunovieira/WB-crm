@@ -44,6 +44,14 @@ export interface CreateOrganizationInput {
   hostingReminderDays?: number;
   hostingNotes?: string;
   inOperationsAt?: Date;
+  segment?: string;
+  legalNature?: string;
+  branchType?: string;
+  simplesNacional?: boolean;
+  isMei?: boolean;
+  revenueRange?: string;
+  phone2?: string;
+  sourceGroup?: string;
   labelIds?: string[];
 }
 
@@ -64,6 +72,7 @@ export class CreateOrganizationUseCase {
       foundationDate: input.foundationDate,
       website: input.website,
       phone: normalizePhoneE164(input.phone),
+      phone2: normalizePhoneE164(input.phone2),
       whatsapp: normalizePhoneE164(input.whatsapp),
       email: input.email,
       country: input.country,
@@ -96,6 +105,13 @@ export class CreateOrganizationUseCase {
       hostingReminderDays: input.hostingReminderDays ?? 30,
       hostingNotes: input.hostingNotes,
       inOperationsAt: input.inOperationsAt,
+      segment: input.segment,
+      legalNature: input.legalNature,
+      branchType: input.branchType,
+      simplesNacional: input.simplesNacional,
+      isMei: input.isMei,
+      revenueRange: input.revenueRange,
+      sourceGroup: input.sourceGroup,
     });
 
     if (input.labelIds !== undefined) {

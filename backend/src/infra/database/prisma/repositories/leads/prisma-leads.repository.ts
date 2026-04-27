@@ -477,4 +477,26 @@ export class PrismaLeadsRepository extends LeadsRepository {
 
     return rows;
   }
+
+  async findBySourceGroup(sourceGroup: string): Promise<Lead[]> {
+    const rows = await this.prisma.lead.findMany({
+      where: { sourceGroup },
+      orderBy: { businessName: "asc" },
+    });
+    return rows.map(LeadMapper.toDomain);
+  }
+
+  async saveWhatsAppVerification(
+    leadId: string,
+    data: { whatsappVerified: boolean; whatsappVerifiedAt: Date; whatsappVerifiedNumber: string },
+  ): Promise<void> {
+    await this.prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        whatsappVerified: data.whatsappVerified,
+        whatsappVerifiedAt: data.whatsappVerifiedAt,
+        whatsappVerifiedNumber: data.whatsappVerifiedNumber,
+      },
+    });
+  }
 }

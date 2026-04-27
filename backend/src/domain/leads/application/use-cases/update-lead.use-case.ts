@@ -73,6 +73,7 @@ export interface UpdateLeadInput {
   activityOrder?: string;
   driveFolderId?: string;
   inOperationsAt?: Date;
+  sourceGroup?: string;
   // Relations
   labelIds?: string[];
   icpId?: string | null; // null = remove ICP

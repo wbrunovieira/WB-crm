@@ -46,6 +46,14 @@ export interface UpdateOrganizationInput {
   hostingReminderDays?: number;
   hostingNotes?: string;
   inOperationsAt?: Date;
+  segment?: string;
+  legalNature?: string;
+  branchType?: string;
+  simplesNacional?: boolean;
+  isMei?: boolean;
+  revenueRange?: string;
+  phone2?: string;
+  sourceGroup?: string;
   labelIds?: string[];
 }
 
@@ -66,6 +74,7 @@ export class UpdateOrganizationUseCase {
     const { id, requesterId, requesterRole, labelIds, ...fields } = input;
 
     if (fields.phone !== undefined) fields.phone = normalizePhoneE164(fields.phone) ?? undefined;
+    if (fields.phone2 !== undefined) fields.phone2 = normalizePhoneE164(fields.phone2) ?? undefined;
     if (fields.whatsapp !== undefined) fields.whatsapp = normalizePhoneE164(fields.whatsapp) ?? undefined;
 
     organization.update(fields as Partial<Omit<OrganizationProps, "ownerId" | "createdAt" | "updatedAt">>);

@@ -27,6 +27,7 @@ import { SaveWhatsAppNumberUseCase } from "@/domain/integrations/whatsapp/applic
 import { EvolutionApiPort } from "@/domain/integrations/whatsapp/application/ports/evolution-api.port";
 import { GetWhatsAppTemplatesUseCase, CreateWhatsAppTemplateUseCase, UpdateWhatsAppTemplateUseCase, DeleteWhatsAppTemplateUseCase } from "@/domain/integrations/whatsapp/application/use-cases/whatsapp-templates.use-cases";
 import { GetWhatsAppMessageByIdUseCase } from "@/domain/integrations/whatsapp/application/use-cases/get-whatsapp-message-by-id.use-case";
+import { BatchCheckWhatsAppUseCase, BatchCheckWhatsAppResult } from "@/domain/integrations/whatsapp/application/use-cases/batch-check-whatsapp.use-case";
 
 interface SendMessageBody {
   to: string;
@@ -84,6 +85,7 @@ export class WhatsAppController {
     private readonly updateTemplate: UpdateWhatsAppTemplateUseCase,
     private readonly deleteTemplate: DeleteWhatsAppTemplateUseCase,
     private readonly getMessageById: GetWhatsAppMessageByIdUseCase,
+    private readonly batchCheck: BatchCheckWhatsAppUseCase,
   ) {}
 
   @Post("send")
@@ -256,5 +258,19 @@ export class WhatsAppController {
   ) {
     const result = await this.deleteTemplate.execute({ id, requesterRole: user.role ?? "sdr" });
     if (result.isLeft()) throw new UnauthorizedException(result.value.message);
+  }
+
+  @Post("batch-check")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Verifica WhatsApp em lote para um sourceGroup de leads" })
+  async batchCheckNumbers(
+    @Body() body: { sourceGroup: string },
+  ): Promise<BatchCheckWhatsAppResult> {
+    if (!body.sourceGroup) {
+      throw new BadRequestException("Missing required field: sourceGroup");
+    }
+    const result = await this.batchCheck.execute({ sourceGroup: body.sourceGroup });
+    if (result.isLeft()) throw new BadRequestException(result.value.message);
+    return result.value;
   }
 }

@@ -101,6 +101,27 @@ describe("CreateLeadUseCase", () => {
     }
   });
 
+  it("salva sourceGroup quando informado", async () => {
+    const result = await sut.execute({
+      ownerId: "user-1",
+      businessName: "Empresa Lote",
+      sourceGroup: "MatConstrPetropolis270426",
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.lead.sourceGroup).toBe("MatConstrPetropolis270426");
+    }
+  });
+
+  it("sourceGroup é undefined por padrão", async () => {
+    const result = await sut.execute({ ownerId: "user-1", businessName: "Empresa Sem Lote" });
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.lead.sourceGroup).toBeUndefined();
+    }
+  });
+
   it("retorna erro quando businessName está vazio", async () => {
     const result = await sut.execute({
       ownerId: "user-1",

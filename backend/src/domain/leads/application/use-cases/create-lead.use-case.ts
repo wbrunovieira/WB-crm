@@ -70,6 +70,7 @@ export interface CreateLeadInput {
   activityOrder?: string;
   driveFolderId?: string;
   inOperationsAt?: Date;
+  sourceGroup?: string;
   // Relations
   labelIds?: string[];
   icpId?: string;
@@ -153,6 +154,7 @@ export class CreateLeadUseCase {
       activityOrder: input.activityOrder,
       driveFolderId: input.driveFolderId,
       inOperationsAt: input.inOperationsAt,
+      sourceGroup: input.sourceGroup,
     });
 
     const hasRelations = input.labelIds !== undefined || input.icpId !== undefined || (input.contacts && input.contacts.length > 0);

@@ -264,6 +264,9 @@ model Lead {
   // Operations transfer — null = active in CRM, set = transferred to operations (automations paused)
   inOperationsAt DateTime?
 
+  // Grouping / import tag (ex: "MatConstrPetropolis270426")
+  sourceGroup String? @db.VarChar(100)
+
   // Owner e timestamps
   ownerId   String
   createdAt DateTime @default(now())
@@ -325,6 +328,7 @@ model Lead {
   @@index([primaryCNAEId])
   @@index([googlePlacesSearchId])
   @@index([inOperationsAt])
+  @@index([sourceGroup])
   @@map("leads")
 }
 
@@ -452,6 +456,18 @@ model Organization {
   hostingReminderDays Int       @default(30) // Dias antes para lembrar
   hostingNotes        String?
 
+  // Dados fiscais e jurídicos (espelhados do Lead)
+  segment        String?   // Segmento comercial
+  legalNature    String?   // Natureza jurídica
+  branchType     String?   // "Matriz" ou "Filial"
+  simplesNacional Boolean? // Optante pelo Simples Nacional
+  isMei          Boolean?  // Optante MEI
+  revenueRange   String?   // Faixa de faturamento (texto)
+  phone2         String?   // Segundo telefone
+
+  // Grouping / import tag
+  sourceGroup String? @db.VarChar(100)
+
   // Operations transfer — null = active in CRM, set = transferred to operations (automations paused)
   inOperationsAt DateTime?
 
@@ -499,6 +515,7 @@ model Organization {
   @@index([hostingRenewalDate])
   @@index([inOperationsAt])
   @@index([referredByPartnerId])
+  @@index([sourceGroup])
   @@map("organizations")
 }
 

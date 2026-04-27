@@ -65,6 +65,7 @@ export const IMPORTABLE_FIELDS: ImportableField[] = [
   { value: "source",                label: "Fonte (ex: B2BLeads)",             group: "Importação" },
   { value: "searchTerm",            label: "Termo de busca",                   group: "Importação" },
   { value: "quality",               label: "Qualidade (cold/warm/hot)",        group: "Importação" },
+  { value: "sourceGroup",           label: "Lote / grupo (ex: MatConstrPetropolis270426)", group: "Importação" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -267,6 +268,14 @@ const AUTO_SUGGEST_MAP: Record<string, string> = {
   "cnaes secundarios": "cnaesSecundarios",
   "cnaessecundarios": "cnaesSecundarios",
   "atividades secundarias": "cnaesSecundarios",
+  // sourceGroup
+  "lote": "sourceGroup",
+  "grupo": "sourceGroup",
+  "source group": "sourceGroup",
+  "sourcegroup": "sourceGroup",
+  "grupo importacao": "sourceGroup",
+  "lote importacao": "sourceGroup",
+  "tag": "sourceGroup",
 };
 
 export function autoSuggestField(header: string): string {

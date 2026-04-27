@@ -118,6 +118,9 @@ export interface LeadProps {
   // Operations transfer
   inOperationsAt?: Date;
 
+  // Grouping / import tag (ex: "MatConstrPetropolis270426")
+  sourceGroup?: string;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -198,6 +201,7 @@ export class Lead extends AggregateRoot<LeadProps> {
   get activityOrder()               { return this.props.activityOrder; }
   get driveFolderId()               { return this.props.driveFolderId; }
   get inOperationsAt()              { return this.props.inOperationsAt; }
+  get sourceGroup()                 { return this.props.sourceGroup; }
   get createdAt()                   { return this.props.createdAt; }
   get updatedAt()                   { return this.props.updatedAt; }
 

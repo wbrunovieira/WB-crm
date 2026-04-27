@@ -83,7 +83,7 @@ export default async function LeadDetailPage({
   const qualityCfg = lead.quality ? qualityMap[lead.quality] : null;
 
   const hasGooglePlaces = !!(lead.googleId || lead.categories || lead.rating || lead.userRatingsTotal || lead.priceLevel || lead.types);
-  const hasMeta = !!(lead.source || lead.searchTerm || lead.category || lead.radius);
+  const hasMeta = !!(lead.source || lead.searchTerm || lead.category || lead.radius || lead.sourceGroup);
   const dash = <span className="text-gray-600">—</span>;
 
   /* ── label styles ────────────────────────────────────── */
@@ -243,7 +243,7 @@ export default async function LeadDetailPage({
                 {lead.phone ? (
                   <>
                     <PhoneLink phone={lead.phone} className="text-gray-300 hover:text-purple-300" />
-                    <WhatsAppCheckButton phone={lead.phone} entityType="lead" entityId={lead.id} canSave={!lead.whatsapp}
+                    <WhatsAppCheckButton phone={lead.phone} entityType="lead" entityId={lead.id} canSave={!lead.whatsapp} country={lead.country}
                       verified={lead.whatsappVerifiedAt && lead.whatsappVerifiedNumber === lead.phone
                         ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified ?? false }
                         : undefined} />
@@ -261,7 +261,7 @@ export default async function LeadDetailPage({
                 {lead.whatsapp ? (
                   <>
                     <span>{lead.whatsapp}</span>
-                    <WhatsAppCheckButton phone={lead.whatsapp} entityType="lead" entityId={lead.id}
+                    <WhatsAppCheckButton phone={lead.whatsapp} entityType="lead" entityId={lead.id} country={lead.country}
                       verified={lead.whatsappVerifiedAt && lead.whatsappVerifiedNumber === lead.whatsapp
                         ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified ?? false }
                         : undefined} />
@@ -447,6 +447,12 @@ export default async function LeadDetailPage({
       {hasMeta && (
         <CollapsibleSection id="metadados" icon={<Search size={14} />} title="Metadados de Busca" defaultOpen={false}>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+            {lead.sourceGroup && (
+              <div className="rounded-lg bg-indigo-900/30 border border-indigo-600/50 p-4">
+                <dt className={dtCls}>Lote / Grupo</dt>
+                <dd className="text-sm font-mono font-semibold text-indigo-300 mt-1">{lead.sourceGroup}</dd>
+              </div>
+            )}
             {lead.source && (
               <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
                 <dt className={dtCls}>Fonte</dt>

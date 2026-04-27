@@ -62,6 +62,7 @@ export interface CreateLeadPayload {
   isArchived?: boolean;
   isProspect?: boolean;
   source?: string;
+  sourceGroup?: string;
   primaryCNAEId?: string;
   internationalActivity?: string;
   referredByPartnerId?: string;

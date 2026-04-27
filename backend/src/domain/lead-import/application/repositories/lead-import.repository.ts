@@ -39,12 +39,14 @@ export interface ImportLeadRowData {
   searchTerm?: string;
   cnaePrincipal?: string;
   cnaesSecundarios?: string;
+  sourceGroup?: string;
 }
 
 export interface ImportResult {
   total: number;
   imported: number;
   skipped: number;
+  cnaeUpdated: number;
   errors: Array<{ row: number; reason: string }>;
   skippedDetails: Array<{ rowIndex: number; businessName: string; reason: "cnpj" | "name"; existingLeadId?: string }>;
 }
@@ -55,4 +57,5 @@ export abstract class LeadImportRepository {
   abstract batchCreate(leads: Lead[]): Promise<void>;
   abstract findOrCreateCnaeByCode(code: string, description: string): Promise<string>;
   abstract batchCreateSecondaryCNAEs(items: Array<{ leadId: string; cnaeId: string }>): Promise<void>;
+  abstract updateLeadCnaes(leadId: string, primaryCnaeId: string | undefined, secondaryCnaeIds: string[]): Promise<void>;
 }

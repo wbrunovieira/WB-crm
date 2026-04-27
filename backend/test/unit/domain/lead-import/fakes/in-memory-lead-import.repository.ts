@@ -5,6 +5,7 @@ export class InMemoryLeadImportRepository extends LeadImportRepository {
   leads: Lead[] = [];
   cnaes: Array<{ id: string; code: string; description: string }> = [];
   secondaryCnaes: Array<{ leadId: string; cnaeId: string }> = [];
+  cnaeUpdates: Map<string, { primaryCnaeId?: string; secondaryCnaeIds: string[] }> = new Map();
 
   async findExistingByNames(businessNames: string[], ownerId: string): Promise<Map<string, string>> {
     const existing = new Map<string, string>();
@@ -41,5 +42,9 @@ export class InMemoryLeadImportRepository extends LeadImportRepository {
 
   async batchCreateSecondaryCNAEs(items: Array<{ leadId: string; cnaeId: string }>): Promise<void> {
     this.secondaryCnaes.push(...items);
+  }
+
+  async updateLeadCnaes(leadId: string, primaryCnaeId: string | undefined, secondaryCnaeIds: string[]): Promise<void> {
+    this.cnaeUpdates.set(leadId, { primaryCnaeId, secondaryCnaeIds });
   }
 }

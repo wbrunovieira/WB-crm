@@ -9,6 +9,8 @@ interface WhatsAppCheckButtonProps {
   phone: string;
   entityType: "lead" | "contact";
   entityId: string;
+  /** País do lead/contato — usado para normalizar o código de país no número */
+  country?: string | null;
   /** Se true, ao encontrar WhatsApp no campo telefone, oferece salvar no campo whatsapp */
   canSave?: boolean;
   /** Dados de verificação já existentes (vindos do banco) */
@@ -36,6 +38,7 @@ export function WhatsAppCheckButton({
   phone,
   entityType,
   entityId,
+  country,
   canSave = false,
   verified,
 }: WhatsAppCheckButtonProps) {
@@ -92,7 +95,7 @@ export function WhatsAppCheckButton({
       result = await apiFetch<{ exists: boolean; jid?: string; number?: string; name?: string }>(
         "/whatsapp/check",
         token,
-        { method: "POST", body: JSON.stringify({ phone }) },
+        { method: "POST", body: JSON.stringify({ phone, country: country ?? undefined }) },
       );
     } catch (err) {
       setStatus("error");
