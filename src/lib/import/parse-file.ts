@@ -34,13 +34,16 @@ export function parseCSV(buffer: ArrayBuffer): ParsedImportFile {
     return { headers: [], rows: [], totalRows: 0 };
   }
 
-  // Detecta separador pela primeira linha
-  const sep = detectSeparator(lines[0]);
+  // Detecta separador pelas primeiras linhas não-vazias
+  const sep = detectSeparator(lines);
 
-  const headers = parseCSVLine(lines[0], sep).map((h) => h.trim());
+  // Detecta linha de cabeçalho: pula linhas que parecem título (só 1 coluna quando sep != ',')
+  const headerIndex = detectHeaderLine(lines, sep);
+
+  const headers = parseCSVLine(lines[headerIndex], sep).map((h) => h.trim());
   const rows: ParsedRow[] = [];
 
-  for (let i = 1; i < lines.length; i++) {
+  for (let i = headerIndex + 1; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue; // ignora linhas vazias
 
@@ -114,10 +117,32 @@ function splitLines(text: string): string[] {
   return text.split(/\r?\n/);
 }
 
-function detectSeparator(firstLine: string): string {
-  const commaCount = (firstLine.match(/,/g) ?? []).length;
-  const semicolonCount = (firstLine.match(/;/g) ?? []).length;
-  return semicolonCount > commaCount ? ";" : ",";
+function detectSeparator(lines: string[]): string {
+  // Scan first 5 non-empty lines to find the one with most separators
+  let maxComma = 0;
+  let maxSemicolon = 0;
+  let checked = 0;
+  for (const line of lines) {
+    if (!line.trim()) continue;
+    maxComma = Math.max(maxComma, (line.match(/,/g) ?? []).length);
+    maxSemicolon = Math.max(maxSemicolon, (line.match(/;/g) ?? []).length);
+    if (++checked >= 5) break;
+  }
+  return maxSemicolon > maxComma ? ";" : ",";
+}
+
+/**
+ * Finds the first line that has multiple columns (i.e. the actual header row).
+ * Some exports prepend a title row with just the filename or a single value.
+ */
+function detectHeaderLine(lines: string[], sep: string): number {
+  for (let i = 0; i < Math.min(lines.length, 5); i++) {
+    const trimmed = lines[i].trim();
+    if (!trimmed) continue;
+    const cols = parseCSVLine(trimmed, sep);
+    if (cols.length > 1) return i;
+  }
+  return 0;
 }
 
 /**
