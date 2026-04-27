@@ -25,6 +25,24 @@ export class PrismaLeadImportRepository extends LeadImportRepository {
     return new Map(rows.filter(r => r.companyRegistrationID).map(r => [r.companyRegistrationID!, r.id]));
   }
 
+  async findOrCreateCnaeByCode(code: string, description: string): Promise<string> {
+    const record = await this.prisma.cNAE.upsert({
+      where: { code },
+      create: { code, description },
+      update: {},
+      select: { id: true },
+    });
+    return record.id;
+  }
+
+  async batchCreateSecondaryCNAEs(items: Array<{ leadId: string; cnaeId: string }>): Promise<void> {
+    if (items.length === 0) return;
+    await this.prisma.leadSecondaryCNAE.createMany({
+      data: items,
+      skipDuplicates: true,
+    });
+  }
+
   async batchCreate(leads: Lead[]): Promise<void> {
     await this.prisma.lead.createMany({
       data: leads.map(lead => ({
@@ -65,6 +83,7 @@ export class PrismaLeadImportRepository extends LeadImportRepository {
         source: lead.source ?? null,
         quality: lead.quality ?? null,
         searchTerm: lead.searchTerm ?? null,
+        primaryCNAEId: lead.primaryCNAEId ?? null,
         status: lead.status,
         ownerId: lead.ownerId,
         whatsappVerified: false,

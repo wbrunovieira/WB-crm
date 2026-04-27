@@ -3,6 +3,12 @@ import { Either, right } from "@/core/either";
 import { Lead } from "@/domain/leads/enterprise/entities/lead";
 import { LeadImportRepository, ImportLeadRowData, ImportResult } from "../repositories/lead-import.repository";
 
+function parseCnaeEntry(raw: string): { code: string; description: string } | null {
+  const match = raw.trim().match(/^(\d{4,7})\s*[-–]\s*(.+)$/);
+  if (!match) return null;
+  return { code: match[1].trim(), description: match[2].trim() };
+}
+
 @Injectable()
 export class ImportLeadsUseCase {
   constructor(private readonly repo: LeadImportRepository) {}
@@ -31,7 +37,43 @@ export class ImportLeadsUseCase {
           cnpjs.length > 0 ? this.repo.findExistingByRegistrationIds(cnpjs, ownerId) : Promise.resolve(new Map<string, string>()),
         ]);
 
+    // Pre-resolve primary CNAE IDs in parallel (only for rows that will be imported)
+    const primaryCnaeMap = new Map<number, string>(); // rowIndex → cnaeId
+    const secondaryCnaeMap = new Map<number, string[]>(); // rowIndex → cnaeId[]
+
+    const cnaeResolutionTasks: Promise<void>[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+
+      if (row.cnaePrincipal?.trim()) {
+        const parsed = parseCnaeEntry(row.cnaePrincipal);
+        if (parsed) {
+          const idx = i;
+          cnaeResolutionTasks.push(
+            this.repo.findOrCreateCnaeByCode(parsed.code, parsed.description).then(id => {
+              primaryCnaeMap.set(idx, id);
+            }),
+          );
+        }
+      }
+
+      if (row.cnaesSecundarios?.trim()) {
+        const parts = row.cnaesSecundarios.split("|").map(s => s.trim()).filter(Boolean);
+        const parsedParts = parts.map(parseCnaeEntry).filter((p): p is { code: string; description: string } => p !== null);
+        if (parsedParts.length > 0) {
+          const idx = i;
+          cnaeResolutionTasks.push(
+            Promise.all(parsedParts.map(p => this.repo.findOrCreateCnaeByCode(p.code, p.description))).then(ids => {
+              secondaryCnaeMap.set(idx, ids);
+            }),
+          );
+        }
+      }
+    }
+    await Promise.all(cnaeResolutionTasks);
+
     const toCreate: Lead[] = [];
+    const toCreateRowIndices: number[] = []; // tracks original row index for each lead in toCreate
 
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -92,16 +134,34 @@ export class ImportLeadsUseCase {
         source: row.source ?? "import",
         quality: row.quality,
         searchTerm: row.searchTerm,
+        primaryCNAEId: primaryCnaeMap.get(i),
         ownerId,
       });
 
       toCreate.push(lead);
+      toCreateRowIndices.push(i);
       existingNames.set(normalizedName, "");
     }
 
     if (toCreate.length > 0) {
       await this.repo.batchCreate(toCreate);
       result.imported = toCreate.length;
+
+      // Build secondary CNAE items using the created lead IDs
+      const secondaryItems: Array<{ leadId: string; cnaeId: string }> = [];
+      for (let j = 0; j < toCreate.length; j++) {
+        const rowIdx = toCreateRowIndices[j];
+        const cnaeIds = secondaryCnaeMap.get(rowIdx);
+        if (cnaeIds && cnaeIds.length > 0) {
+          const leadId = toCreate[j].id.toString();
+          for (const cnaeId of cnaeIds) {
+            secondaryItems.push({ leadId, cnaeId });
+          }
+        }
+      }
+      if (secondaryItems.length > 0) {
+        await this.repo.batchCreateSecondaryCNAEs(secondaryItems);
+      }
     }
 
     return right(result);

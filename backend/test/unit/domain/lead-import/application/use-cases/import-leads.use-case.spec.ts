@@ -234,4 +234,54 @@ describe("ImportLeadsUseCase", () => {
     expect(r.skipped).toBe(1);
     expect(r.skippedDetails[0].existingLeadId).toBe("");
   });
+
+  // CNAE tests
+  it("sets primaryCNAEId when cnaePrincipal is provided", async () => {
+    const r = (await uc.execute({
+      rows: [{ businessName: "Empresa CNAE", cnaePrincipal: "4744005 - Comércio varejista de materiais de construção" }],
+      ...base,
+    })).unwrap();
+    expect(r.imported).toBe(1);
+    expect(repo.leads[0].primaryCNAEId).toBe("cnae-4744005");
+  });
+
+  it("creates CNAE record via findOrCreateCnaeByCode when code is new", async () => {
+    await uc.execute({
+      rows: [{ businessName: "Empresa CNAE Nova", cnaePrincipal: "9999901 - Atividade nova" }],
+      ...base,
+    });
+    const created = repo.cnaes.find(c => c.code === "9999901");
+    expect(created).toBeDefined();
+    expect(created?.description).toBe("Atividade nova");
+  });
+
+  it("creates secondary CNAEs when cnaesSecundarios is provided", async () => {
+    const r = (await uc.execute({
+      rows: [{ businessName: "Empresa Sec CNAE", cnaesSecundarios: "4742300 - Comércio varejista|4744001 - Outro ramo" }],
+      ...base,
+    })).unwrap();
+    expect(r.imported).toBe(1);
+    expect(repo.secondaryCnaes).toHaveLength(2);
+    expect(repo.secondaryCnaes.map(s => s.cnaeId)).toContain("cnae-4742300");
+    expect(repo.secondaryCnaes.map(s => s.cnaeId)).toContain("cnae-4744001");
+  });
+
+  it("parses CNAE code from 'CODE - description' format", async () => {
+    await uc.execute({
+      rows: [{ businessName: "Parse Test", cnaePrincipal: "1234567 - Descrição do CNAE" }],
+      ...base,
+    });
+    expect(repo.cnaes.find(c => c.code === "1234567")).toBeDefined();
+    expect(repo.cnaes.find(c => c.code === "1234567")?.description).toBe("Descrição do CNAE");
+  });
+
+  it("handles empty cnaePrincipal gracefully", async () => {
+    const r = (await uc.execute({
+      rows: [{ businessName: "Empresa Sem CNAE", cnaePrincipal: "" }],
+      ...base,
+    })).unwrap();
+    expect(r.imported).toBe(1);
+    expect(repo.leads[0].primaryCNAEId).toBeUndefined();
+    expect(repo.cnaes).toHaveLength(0);
+  });
 });

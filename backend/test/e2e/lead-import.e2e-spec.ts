@@ -29,6 +29,9 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
+  await prisma.leadSecondaryCNAE.deleteMany({
+    where: { lead: { ownerId } },
+  });
   await prisma.lead.deleteMany({ where: { ownerId } });
 });
 
@@ -161,5 +164,53 @@ describe("POST /lead-import (e2e)", () => {
     expect(res.body.skipped).toBe(1);
     expect(res.body.skippedDetails).toHaveLength(1);
     expect(res.body.skippedDetails[0].existingLeadId).toBe(existingLead.id);
+  });
+
+  it("creates CNAE record and assigns primaryCNAEId during import", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/lead-import")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        rows: [{ businessName: "Empresa CNAE E2E", cnaePrincipal: "4744005 - Comércio varejista de materiais de construção" }],
+      })
+      .expect(201);
+
+    expect(res.body.imported).toBe(1);
+
+    const lead = await prisma.lead.findFirst({ where: { businessName: "Empresa CNAE E2E", ownerId } });
+    expect(lead).toBeDefined();
+    expect(lead!.primaryCNAEId).toBeTruthy();
+
+    const cnae = await prisma.cNAE.findUnique({ where: { id: lead!.primaryCNAEId! } });
+    expect(cnae).toBeDefined();
+    expect(cnae!.code).toBe("4744005");
+    expect(cnae!.description).toBe("Comércio varejista de materiais de construção");
+  });
+
+  it("creates secondary CNAEs during import", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/lead-import")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        rows: [{
+          businessName: "Empresa Sec CNAE E2E",
+          cnaesSecundarios: "4742300 - Comércio varejista de material elétrico|4744001 - Outro ramo",
+        }],
+      })
+      .expect(201);
+
+    expect(res.body.imported).toBe(1);
+
+    const lead = await prisma.lead.findFirst({ where: { businessName: "Empresa Sec CNAE E2E", ownerId } });
+    expect(lead).toBeDefined();
+
+    const secondaries = await prisma.leadSecondaryCNAE.findMany({
+      where: { leadId: lead!.id },
+      include: { cnae: true },
+    });
+    expect(secondaries).toHaveLength(2);
+    const codes = secondaries.map(s => s.cnae.code);
+    expect(codes).toContain("4742300");
+    expect(codes).toContain("4744001");
   });
 });

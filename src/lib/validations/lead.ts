@@ -66,6 +66,9 @@ export const leadSchema = z.object({
   secondaryActivities: z.string().optional(),
   primaryCNAEId: z.string().optional(),
   internationalActivity: z.string().optional(),
+  // CNAE import-time fields (resolved to primaryCNAEId server-side)
+  cnaePrincipal: z.string().optional(),
+  cnaesSecundarios: z.string().optional(),
 
   // Coordenadas e Maps
   latitude: z.number().optional(),

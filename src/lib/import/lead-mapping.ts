@@ -40,6 +40,8 @@ export const IMPORTABLE_FIELDS: ImportableField[] = [
   { value: "segment",               label: "Segmento comercial",               group: "Empresa" },
   { value: "companyOwner",          label: "Responsável / sócio",              group: "Empresa" },
   { value: "description",           label: "Descrição / observação",           group: "Empresa" },
+  { value: "cnaePrincipal",         label: "CNAE Principal",                   group: "Empresa" },
+  { value: "cnaesSecundarios",      label: "CNAEs Secundários",                group: "Empresa" },
   // Contato
   { value: "phone",                 label: "Telefone principal",               group: "Contato" },
   { value: "phone2",                label: "Telefone 2 / adicional",           group: "Contato" },
@@ -256,6 +258,15 @@ const AUTO_SUGGEST_MAP: Record<string, string> = {
   "observacao": "description",
   "obs": "description",
   "observacoes": "description",
+  // cnaePrincipal
+  "cnae principal": "cnaePrincipal",
+  "cnae primario": "cnaePrincipal",
+  "cnaeprincipal": "cnaePrincipal",
+  "atividade principal": "cnaePrincipal",
+  // cnaesSecundarios
+  "cnaes secundarios": "cnaesSecundarios",
+  "cnaessecundarios": "cnaesSecundarios",
+  "atividades secundarias": "cnaesSecundarios",
 };
 
 export function autoSuggestField(header: string): string {

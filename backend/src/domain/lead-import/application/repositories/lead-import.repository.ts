@@ -37,6 +37,8 @@ export interface ImportLeadRowData {
   source?: string;
   quality?: string;
   searchTerm?: string;
+  cnaePrincipal?: string;
+  cnaesSecundarios?: string;
 }
 
 export interface ImportResult {
@@ -51,4 +53,6 @@ export abstract class LeadImportRepository {
   abstract findExistingByNames(businessNames: string[], ownerId: string): Promise<Map<string, string>>;
   abstract findExistingByRegistrationIds(ids: string[], ownerId: string): Promise<Map<string, string>>;
   abstract batchCreate(leads: Lead[]): Promise<void>;
+  abstract findOrCreateCnaeByCode(code: string, description: string): Promise<string>;
+  abstract batchCreateSecondaryCNAEs(items: Array<{ leadId: string; cnaeId: string }>): Promise<void>;
 }
