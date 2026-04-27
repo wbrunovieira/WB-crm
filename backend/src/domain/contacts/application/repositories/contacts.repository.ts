@@ -22,4 +22,7 @@ export abstract class ContactsRepository {
   abstract findByIdWithRelations(id: string, requesterId: string, requesterRole: string): Promise<ContactDetail | null>;
   abstract save(contact: Contact): Promise<void>;
   abstract delete(id: string): Promise<void>;
+  abstract findByOwnerId(ownerId: string): Promise<Contact[]>;
+  abstract savePhoneVerification(contactId: string, data: { phoneValid?: boolean; phoneType?: string; whatsappPhoneValid?: boolean; whatsappPhoneType?: string }): Promise<void>;
+  abstract saveEmailVerification(contactId: string, data: { emailVerified: boolean; emailVerifiedAt: Date; emailVerificationStatus: string; emailVerificationReason: string }): Promise<void>;
 }

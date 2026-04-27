@@ -10,6 +10,14 @@ export interface ContactProps {
   phone?: string;
   whatsapp?: string;
   whatsappVerified: boolean;
+  phoneValid?: boolean;
+  phoneType?: string;
+  whatsappPhoneValid?: boolean;
+  whatsappPhoneType?: string;
+  emailVerified?: boolean;
+  emailVerifiedAt?: Date;
+  emailVerificationStatus?: string;
+  emailVerificationReason?: string;
   role?: string;
   department?: string;
   leadId?: string;
@@ -36,6 +44,14 @@ export class Contact extends AggregateRoot<ContactProps> {
   get phone()                 { return this.props.phone; }
   get whatsapp()              { return this.props.whatsapp; }
   get whatsappVerified()      { return this.props.whatsappVerified; }
+  get phoneValid()            { return this.props.phoneValid; }
+  get phoneType()             { return this.props.phoneType; }
+  get whatsappPhoneValid()    { return this.props.whatsappPhoneValid; }
+  get whatsappPhoneType()     { return this.props.whatsappPhoneType; }
+  get emailVerified()         { return this.props.emailVerified; }
+  get emailVerifiedAt()       { return this.props.emailVerifiedAt; }
+  get emailVerificationStatus() { return this.props.emailVerificationStatus; }
+  get emailVerificationReason() { return this.props.emailVerificationReason; }
   get role()                  { return this.props.role; }
   get department()            { return this.props.department; }
   get leadId()                { return this.props.leadId; }

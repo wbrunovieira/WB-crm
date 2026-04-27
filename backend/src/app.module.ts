@@ -17,6 +17,7 @@ import { SharedEntitiesModule } from "./domain/shared-entities/shared-entities.m
 import { GoToModule } from "./domain/integrations/goto/goto.module";
 import { WhatsAppModule } from "./domain/integrations/whatsapp/whatsapp.module";
 import { EmailModule } from "./domain/integrations/email/email.module";
+import { PhoneModule } from "./domain/integrations/phone/phone.module";
 import { MeetModule } from "./domain/integrations/meet/meet.module";
 import { LeadResearchModule } from "./domain/integrations/lead-research/lead-research.module";
 import { LabelsModule } from "./domain/labels/labels.module";
@@ -38,7 +39,7 @@ import { DashboardModule } from "./domain/dashboard/dashboard.module";
 import { FunnelModule } from "./domain/funnel/funnel.module";
 
 @Module({
-  imports: [EventEmitterModule.forRoot(), ScheduleModule.forRoot(), DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, MeetModule, LeadResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule, NotificationsModule, DashboardModule, FunnelModule],
+  imports: [EventEmitterModule.forRoot(), ScheduleModule.forRoot(), DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, PhoneModule, MeetModule, LeadResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule, NotificationsModule, DashboardModule, FunnelModule],
   controllers: [HealthController],
   providers: [],
 })

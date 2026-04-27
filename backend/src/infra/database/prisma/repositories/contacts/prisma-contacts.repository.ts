@@ -257,4 +257,42 @@ export class PrismaContactsRepository extends ContactsRepository {
   async delete(id: string): Promise<void> {
     await this.prisma.contact.delete({ where: { id } });
   }
+
+  async findByOwnerId(ownerId: string): Promise<Contact[]> {
+    const rows = await this.prisma.contact.findMany({
+      where: { ownerId },
+      orderBy: { name: "asc" },
+    });
+    return rows.map(ContactMapper.toDomain);
+  }
+
+  async savePhoneVerification(
+    contactId: string,
+    data: { phoneValid?: boolean; phoneType?: string; whatsappPhoneValid?: boolean; whatsappPhoneType?: string },
+  ): Promise<void> {
+    await this.prisma.contact.update({
+      where: { id: contactId },
+      data: {
+        ...(data.phoneValid !== undefined && { phoneValid: data.phoneValid }),
+        ...(data.phoneType !== undefined && { phoneType: data.phoneType }),
+        ...(data.whatsappPhoneValid !== undefined && { whatsappPhoneValid: data.whatsappPhoneValid }),
+        ...(data.whatsappPhoneType !== undefined && { whatsappPhoneType: data.whatsappPhoneType }),
+      },
+    });
+  }
+
+  async saveEmailVerification(
+    contactId: string,
+    data: { emailVerified: boolean; emailVerifiedAt: Date; emailVerificationStatus: string; emailVerificationReason: string },
+  ): Promise<void> {
+    await this.prisma.contact.update({
+      where: { id: contactId },
+      data: {
+        emailVerified: data.emailVerified,
+        emailVerifiedAt: data.emailVerifiedAt,
+        emailVerificationStatus: data.emailVerificationStatus,
+        emailVerificationReason: data.emailVerificationReason,
+      },
+    });
+  }
 }

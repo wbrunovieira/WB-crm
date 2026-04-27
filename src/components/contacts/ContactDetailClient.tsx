@@ -7,6 +7,8 @@ import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import { WhatsAppCheckButton } from "@/components/whatsapp/WhatsAppCheckButton";
 import GmailButton from "@/components/gmail/GmailButton";
 import { DeleteContactButton } from "@/components/contacts/DeleteContactButton";
+import { ContactPhoneVerifyButton } from "@/components/contacts/ContactPhoneVerifyButton";
+import { ContactEmailVerifyButton } from "@/components/contacts/ContactEmailVerifyButton";
 import { LanguageBadges } from "@/components/shared/LanguageSelector";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
@@ -67,6 +69,20 @@ export function ContactDetailClient({ id, isAdmin }: Props) {
                       {contact.email}
                     </a>
                     <GmailButton to={contact.email} name={contact.name} contactId={contact.id} variant="icon" />
+                    <ContactEmailVerifyButton
+                      email={contact.email}
+                      contactId={contact.id}
+                      verified={
+                        (contact as { emailVerificationStatus?: string | null; emailVerified?: boolean | null; emailVerifiedAt?: string | null; emailVerificationReason?: string | null }).emailVerificationStatus
+                          ? {
+                              status: (contact as { emailVerificationStatus?: string | null }).emailVerificationStatus,
+                              valid: (contact as { emailVerified?: boolean | null }).emailVerified,
+                              at: (contact as { emailVerifiedAt?: string | null }).emailVerifiedAt,
+                              reason: (contact as { emailVerificationReason?: string | null }).emailVerificationReason,
+                            }
+                          : undefined
+                      }
+                    />
                   </>
                 ) : "-"}
               </dd>
@@ -89,6 +105,11 @@ export function ContactDetailClient({ id, isAdmin }: Props) {
                     }
                   />
                 )}
+                <ContactPhoneVerifyButton
+                  contactId={contact.id}
+                  phone={contact.phone}
+                  whatsapp={contact.whatsapp}
+                />
               </dd>
             </div>
             {contact.whatsapp && (

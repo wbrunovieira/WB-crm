@@ -150,4 +150,18 @@ export class InMemoryContactsRepository extends ContactsRepository {
   async delete(id: string): Promise<void> {
     this.items = this.items.filter((c) => c.id.toString() !== id);
   }
+
+  async findByOwnerId(ownerId: string): Promise<Contact[]> {
+    return this.items.filter(c => c.ownerId === ownerId);
+  }
+
+  async savePhoneVerification(contactId: string, data: { phoneValid?: boolean; phoneType?: string; whatsappPhoneValid?: boolean; whatsappPhoneType?: string }): Promise<void> {
+    const contact = this.items.find(c => c.id.toString() === contactId);
+    if (contact) contact.update(data);
+  }
+
+  async saveEmailVerification(contactId: string, data: { emailVerified: boolean; emailVerifiedAt: Date; emailVerificationStatus: string; emailVerificationReason: string }): Promise<void> {
+    const contact = this.items.find(c => c.id.toString() === contactId);
+    if (contact) contact.update(data);
+  }
 }

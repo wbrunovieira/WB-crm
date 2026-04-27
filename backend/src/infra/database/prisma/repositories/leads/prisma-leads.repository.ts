@@ -525,4 +525,21 @@ export class PrismaLeadsRepository extends LeadsRepository {
       },
     });
   }
+
+  async savePhoneVerification(
+    leadId: string,
+    data: { phoneValid?: boolean; phoneType?: string; phone2Valid?: boolean; phone2Type?: string; whatsappPhoneValid?: boolean; whatsappPhoneType?: string },
+  ): Promise<void> {
+    await this.prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        ...(data.phoneValid !== undefined && { phoneValid: data.phoneValid }),
+        ...(data.phoneType !== undefined && { phoneType: data.phoneType }),
+        ...(data.phone2Valid !== undefined && { phone2Valid: data.phone2Valid }),
+        ...(data.phone2Type !== undefined && { phone2Type: data.phone2Type }),
+        ...(data.whatsappPhoneValid !== undefined && { whatsappPhoneValid: data.whatsappPhoneValid }),
+        ...(data.whatsappPhoneType !== undefined && { whatsappPhoneType: data.whatsappPhoneType }),
+      },
+    });
+  }
 }

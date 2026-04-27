@@ -36,6 +36,7 @@
     "bcryptjs": "^3.0.3",
     "deep-email-validator": "^0.1.27",
     "googleapis": "^171.4.0",
+    "libphonenumber-js": "^1.12.42",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
     "prisma": "^6.0.0",

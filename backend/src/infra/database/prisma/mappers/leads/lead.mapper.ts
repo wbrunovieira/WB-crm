@@ -35,6 +35,12 @@ export class LeadMapper {
         whatsappVerified: raw.whatsappVerified,
         whatsappVerifiedAt: raw.whatsappVerifiedAt ?? undefined,
         whatsappVerifiedNumber: raw.whatsappVerifiedNumber ?? undefined,
+        phoneValid: raw.phoneValid ?? undefined,
+        phoneType: raw.phoneType ?? undefined,
+        phone2Valid: raw.phone2Valid ?? undefined,
+        phone2Type: raw.phone2Type ?? undefined,
+        whatsappPhoneValid: raw.whatsappPhoneValid ?? undefined,
+        whatsappPhoneType: raw.whatsappPhoneType ?? undefined,
         emailVerified: raw.emailVerified ?? false,
         emailVerifiedAt: raw.emailVerifiedAt ?? undefined,
         emailVerificationStatus: raw.emailVerificationStatus ?? undefined,
@@ -133,6 +139,12 @@ export class LeadMapper {
           ? new Date(lead.whatsappVerifiedAt as string)
           : null,
       whatsappVerifiedNumber: lead.whatsappVerifiedNumber ?? null,
+      phoneValid: lead.phoneValid ?? null,
+      phoneType: lead.phoneType ?? null,
+      phone2Valid: lead.phone2Valid ?? null,
+      phone2Type: lead.phone2Type ?? null,
+      whatsappPhoneValid: lead.whatsappPhoneValid ?? null,
+      whatsappPhoneType: lead.whatsappPhoneType ?? null,
       emailVerified: lead.emailVerified ?? false,
       emailVerifiedAt: lead.emailVerifiedAt instanceof Date
         ? lead.emailVerifiedAt

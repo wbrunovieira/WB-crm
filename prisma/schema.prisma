@@ -164,6 +164,12 @@ model Lead {
   whatsappVerified       Boolean   @default(false)
   whatsappVerifiedAt     DateTime?
   whatsappVerifiedNumber String?   // Número exato que foi verificado (pode ser phone ou whatsapp)
+  phoneValid             Boolean?  // Format validation via libphonenumber-js
+  phoneType              String?   // MOBILE, FIXED_LINE, FIXED_LINE_OR_MOBILE, VOIP, UNKNOWN
+  phone2Valid            Boolean?
+  phone2Type             String?
+  whatsappPhoneValid     Boolean?  // Format valid (different from whatsappVerified which is API check)
+  whatsappPhoneType      String?
   emailVerified          Boolean?  @default(false)
   emailVerifiedAt        DateTime?
   emailVerificationStatus String?  // "valid" | "invalid" | "risky" | "unknown"
@@ -550,6 +556,14 @@ model Contact {
   whatsappVerified       Boolean   @default(false)
   whatsappVerifiedAt     DateTime?
   whatsappVerifiedNumber String?   // Número exato que foi verificado (pode ser phone ou whatsapp)
+  phoneValid             Boolean?  // Format validation via libphonenumber-js
+  phoneType              String?   // MOBILE, FIXED_LINE, FIXED_LINE_OR_MOBILE, VOIP, UNKNOWN
+  whatsappPhoneValid     Boolean?
+  whatsappPhoneType      String?
+  emailVerified          Boolean?  @default(false)
+  emailVerifiedAt        DateTime?
+  emailVerificationStatus String?
+  emailVerificationReason String?
   role                   String?   // Cargo da pessoa
   department     String?       // Departamento: Vendas, TI, Financeiro, etc
 
