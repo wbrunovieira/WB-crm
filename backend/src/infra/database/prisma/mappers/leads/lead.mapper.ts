@@ -35,6 +35,10 @@ export class LeadMapper {
         whatsappVerified: raw.whatsappVerified,
         whatsappVerifiedAt: raw.whatsappVerifiedAt ?? undefined,
         whatsappVerifiedNumber: raw.whatsappVerifiedNumber ?? undefined,
+        emailVerified: raw.emailVerified ?? false,
+        emailVerifiedAt: raw.emailVerifiedAt ?? undefined,
+        emailVerificationStatus: raw.emailVerificationStatus ?? undefined,
+        emailVerificationReason: raw.emailVerificationReason ?? undefined,
         website: raw.website ?? undefined,
         email: raw.email ?? undefined,
         instagram: raw.instagram ?? undefined,
@@ -129,6 +133,14 @@ export class LeadMapper {
           ? new Date(lead.whatsappVerifiedAt as string)
           : null,
       whatsappVerifiedNumber: lead.whatsappVerifiedNumber ?? null,
+      emailVerified: lead.emailVerified ?? false,
+      emailVerifiedAt: lead.emailVerifiedAt instanceof Date
+        ? lead.emailVerifiedAt
+        : lead.emailVerifiedAt
+          ? new Date(lead.emailVerifiedAt as string)
+          : null,
+      emailVerificationStatus: lead.emailVerificationStatus ?? null,
+      emailVerificationReason: lead.emailVerificationReason ?? null,
       website: lead.website ?? null,
       email: lead.email ?? null,
       instagram: lead.instagram ?? null,

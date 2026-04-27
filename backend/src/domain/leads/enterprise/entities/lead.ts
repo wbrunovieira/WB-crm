@@ -24,6 +24,10 @@ export interface LeadProps {
   whatsappVerified: boolean;
   whatsappVerifiedAt?: Date;
   whatsappVerifiedNumber?: string;
+  emailVerified?: boolean;
+  emailVerifiedAt?: Date;
+  emailVerificationStatus?: string;
+  emailVerificationReason?: string;
   website?: string;
   email?: string;
 
@@ -142,6 +146,10 @@ export class Lead extends AggregateRoot<LeadProps> {
   get whatsappVerified()            { return this.props.whatsappVerified; }
   get whatsappVerifiedAt()          { return this.props.whatsappVerifiedAt; }
   get whatsappVerifiedNumber()      { return this.props.whatsappVerifiedNumber; }
+  get emailVerified()               { return this.props.emailVerified; }
+  get emailVerifiedAt()             { return this.props.emailVerifiedAt; }
+  get emailVerificationStatus()     { return this.props.emailVerificationStatus; }
+  get emailVerificationReason()     { return this.props.emailVerificationReason; }
   get website()                     { return this.props.website; }
   get email()                       { return this.props.email; }
   get instagram()                   { return this.props.instagram; }

@@ -57,4 +57,5 @@ export abstract class LeadsRepository {
   abstract findBySourceGroup(sourceGroup: string): Promise<Lead[]>;
   abstract findDistinctSourceGroups(requesterId: string, requesterRole: string): Promise<string[]>;
   abstract saveWhatsAppVerification(leadId: string, data: { whatsappVerified: boolean; whatsappVerifiedAt: Date; whatsappVerifiedNumber: string }): Promise<void>;
+  abstract saveEmailVerification(leadId: string, data: { emailVerified: boolean; emailVerifiedAt: Date; emailVerificationStatus: string; emailVerificationReason: string }): Promise<void>;
 }

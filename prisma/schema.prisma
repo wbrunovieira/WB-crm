@@ -164,6 +164,10 @@ model Lead {
   whatsappVerified       Boolean   @default(false)
   whatsappVerifiedAt     DateTime?
   whatsappVerifiedNumber String?   // Número exato que foi verificado (pode ser phone ou whatsapp)
+  emailVerified          Boolean?  @default(false)
+  emailVerifiedAt        DateTime?
+  emailVerificationStatus String?  // "valid" | "invalid" | "risky" | "unknown"
+  emailVerificationReason String?  // human-readable reason
   website                String?
   email                  String?
 

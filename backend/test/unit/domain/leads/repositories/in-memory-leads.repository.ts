@@ -174,4 +174,9 @@ export class InMemoryLeadsRepository extends LeadsRepository {
     const lead = this.items.find(l => l.id.toString() === leadId);
     if (lead) lead.update(data);
   }
+
+  async saveEmailVerification(leadId: string, data: { emailVerified: boolean; emailVerifiedAt: Date; emailVerificationStatus: string; emailVerificationReason: string }): Promise<void> {
+    const lead = this.items.find(l => l.id.toString() === leadId);
+    if (lead) lead.update(data);
+  }
 }

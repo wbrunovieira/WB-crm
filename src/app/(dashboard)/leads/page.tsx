@@ -9,6 +9,7 @@ import { LeadResearchNotifications } from "@/components/leads/LeadResearchNotifi
 import { LeadsTable } from "@/components/leads/LeadsTable";
 import { Pagination } from "@/components/shared/Pagination";
 import { BatchWhatsAppCheckModal } from "@/components/whatsapp/BatchWhatsAppCheckModal";
+import { BatchEmailCheckModal } from "@/components/leads/BatchEmailCheckModal";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
@@ -91,6 +92,7 @@ export default async function LeadsPage({
         <div className="flex items-center gap-3">
           <AgentLeadGenerationButton icps={icps} />
           <BatchWhatsAppCheckModal />
+          <BatchEmailCheckModal />
           <Link
             href="/leads/import"
             className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"

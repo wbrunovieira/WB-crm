@@ -11,7 +11,10 @@ import {
   Logger,
   HttpCode,
   BadRequestException,
+  NotFoundException,
+  Res,
 } from "@nestjs/common";
+import type { Response } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
@@ -22,6 +25,9 @@ import { EmailMessagesRepository } from "../../application/repositories/email-me
 import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTemplateUseCase, DeleteGmailTemplateUseCase } from "../../application/use-cases/gmail-templates.use-cases";
 import { GetGoogleTokenUseCase, SaveGoogleTokenUseCase, DeleteGoogleTokenUseCase, UpdateTokenHistoryIdUseCase } from "../../application/use-cases/google-token.use-cases";
 import { GetSendAsAliasesUseCase } from "../../application/use-cases/get-send-as-aliases.use-case";
+import { VerifyLeadEmailUseCase } from "../../application/use-cases/verify-lead-email.use-case";
+import { BatchVerifyEmailsUseCase } from "../../application/use-cases/batch-verify-emails.use-case";
+import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
 
 interface SendEmailAttachment {
   filename: string;
@@ -58,6 +64,9 @@ export class EmailController {
     private readonly deleteToken: DeleteGoogleTokenUseCase,
     private readonly updateHistoryId: UpdateTokenHistoryIdUseCase,
     private readonly getSendAsAliases: GetSendAsAliasesUseCase,
+    private readonly verifyLeadEmail: VerifyLeadEmailUseCase,
+    private readonly batchVerifyEmails: BatchVerifyEmailsUseCase,
+    private readonly leadsRepo: LeadsRepository,
   ) {}
 
   @Post("send")
@@ -192,5 +201,67 @@ export class EmailController {
   @ApiOperation({ summary: "Update Gmail history ID" })
   async updateGmailHistoryId(@Body() body: { historyId: string }) {
     await this.updateHistoryId.execute(body.historyId);
+  }
+
+  // ─── Email Verification ───────────────────────────────────────────────────
+
+  @Get("verify/source-groups")
+  @ApiOperation({ summary: "Lista sourceGroups distintos dos leads para verificação de email" })
+  async listEmailSourceGroups(
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ sourceGroups: string[] }> {
+    const groups = await this.leadsRepo.findDistinctSourceGroups(user.id, user.role ?? "sdr");
+    return { sourceGroups: groups };
+  }
+
+  @Post("verify/lead/:id")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Verificar email de um lead específico" })
+  async verifyLeadEmailHandler(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ ok: boolean; leadId?: string; email?: string; valid?: boolean; status?: string; reason?: string; error?: string }> {
+    const result = await this.verifyLeadEmail.execute({
+      leadId: id,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+
+    if (result.isLeft()) {
+      throw new NotFoundException(result.value.message);
+    }
+
+    return { ok: true, ...result.value };
+  }
+
+  @Post("verify/batch")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Verifica emails em lote para um sourceGroup de leads (SSE)" })
+  async batchVerifyEmailsHandler(
+    @Body() body: { sourceGroup: string },
+    @Res() res: Response,
+  ): Promise<void> {
+    if (!body.sourceGroup) {
+      throw new BadRequestException("Missing required field: sourceGroup");
+    }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const result = await this.batchVerifyEmails.execute({
+      sourceGroup: body.sourceGroup,
+      onProgress: (progress) => {
+        res.write(`data: ${JSON.stringify({ type: "progress", ...progress })}\n\n`);
+      },
+    });
+
+    if (result.isLeft()) {
+      res.write(`data: ${JSON.stringify({ type: "error", message: result.value.message })}\n\n`);
+    } else {
+      res.write(`data: ${JSON.stringify({ type: "done", ...result.value })}\n\n`);
+    }
+    res.end();
   }
 }

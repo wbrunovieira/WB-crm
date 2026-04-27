@@ -510,4 +510,19 @@ export class PrismaLeadsRepository extends LeadsRepository {
       },
     });
   }
+
+  async saveEmailVerification(
+    leadId: string,
+    data: { emailVerified: boolean; emailVerifiedAt: Date; emailVerificationStatus: string; emailVerificationReason: string },
+  ): Promise<void> {
+    await this.prisma.lead.update({
+      where: { id: leadId },
+      data: {
+        emailVerified: data.emailVerified,
+        emailVerifiedAt: data.emailVerifiedAt,
+        emailVerificationStatus: data.emailVerificationStatus,
+        emailVerificationReason: data.emailVerificationReason,
+      },
+    });
+  }
 }

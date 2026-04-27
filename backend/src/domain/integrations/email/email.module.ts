@@ -2,10 +2,12 @@ import { Module } from "@nestjs/common";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
 import { ActivitiesModule } from "@/domain/activities/activities.module";
 import { AuthModule } from "@/infra/auth/auth.module";
+import { LeadsModule } from "@/domain/leads/leads.module";
 
 // Ports
 import { GmailPort } from "./application/ports/gmail.port";
 import { GoogleOAuthPort } from "./application/ports/google-oauth.port";
+import { EmailVerifierPort } from "./application/ports/email-verifier.port";
 
 // Repositories (abstract)
 import { EmailMessagesRepository } from "./application/repositories/email-messages.repository";
@@ -20,6 +22,8 @@ import { TrackEmailClickUseCase } from "./application/use-cases/track-email-clic
 import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTemplateUseCase, DeleteGmailTemplateUseCase } from "./application/use-cases/gmail-templates.use-cases";
 import { GetGoogleTokenUseCase, SaveGoogleTokenUseCase, DeleteGoogleTokenUseCase, UpdateTokenHistoryIdUseCase } from "./application/use-cases/google-token.use-cases";
 import { GetSendAsAliasesUseCase } from "./application/use-cases/get-send-as-aliases.use-case";
+import { VerifyLeadEmailUseCase } from "./application/use-cases/verify-lead-email.use-case";
+import { BatchVerifyEmailsUseCase } from "./application/use-cases/batch-verify-emails.use-case";
 import { GoogleTokenRepository } from "./application/repositories/google-token.repository";
 import { PrismaGoogleTokenRepository } from "./infra/prisma-google-token.repository";
 
@@ -28,6 +32,7 @@ import { GmailTemplatesRepository } from "./application/repositories/gmail-templ
 
 // Infrastructure
 import { GmailClient } from "./infra/gmail.client";
+import { DeepEmailValidatorAdapter } from "./infra/deep-email-validator.adapter";
 import { GoogleOAuthService } from "./infra/google-oauth.service";
 import { PrismaEmailMessagesRepository } from "./infra/prisma-email-messages.repository";
 import { PrismaEmailTrackingRepository } from "./infra/prisma-email-tracking.repository";
@@ -38,7 +43,7 @@ import { GmailPollCronService } from "./infra/scheduled/gmail-poll-cron.service"
 import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.repository";
 
 @Module({
-  imports: [SharedInfraModule, ActivitiesModule, AuthModule],
+  imports: [SharedInfraModule, ActivitiesModule, AuthModule, LeadsModule],
   controllers: [EmailWebhookController, EmailController, GoogleOAuthController],
   providers: [
     // Use Cases
@@ -56,10 +61,13 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     DeleteGoogleTokenUseCase,
     UpdateTokenHistoryIdUseCase,
     GetSendAsAliasesUseCase,
+    VerifyLeadEmailUseCase,
+    BatchVerifyEmailsUseCase,
 
     // Port implementations
     { provide: GmailPort, useClass: GmailClient },
     { provide: GoogleOAuthPort, useClass: GoogleOAuthService },
+    { provide: EmailVerifierPort, useClass: DeepEmailValidatorAdapter },
 
     // Repository implementations
     PrismaEmailMessagesRepository,
@@ -77,6 +85,6 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     // Scheduled
     GmailPollCronService,
   ],
-  exports: [EmailMessagesRepository, EmailTrackingRepository, GmailPort, GoogleOAuthPort],
+  exports: [EmailMessagesRepository, EmailTrackingRepository, GmailPort, GoogleOAuthPort, VerifyLeadEmailUseCase, BatchVerifyEmailsUseCase],
 })
 export class EmailModule {}
