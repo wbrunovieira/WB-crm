@@ -146,4 +146,20 @@ describe("POST /lead-import (e2e)", () => {
     expect(res.body.skipped).toBe(0);
     expect(res.body.skippedDetails).toHaveLength(0);
   });
+
+  it("skippedDetails includes existingLeadId for DB duplicates", async () => {
+    const existingLead = await prisma.lead.create({
+      data: { businessName: "Lead Com Id", ownerId, status: "new" },
+    });
+
+    const res = await request(app.getHttpServer())
+      .post("/lead-import")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ rows: [{ businessName: "Lead Com Id" }] })
+      .expect(201);
+
+    expect(res.body.skipped).toBe(1);
+    expect(res.body.skippedDetails).toHaveLength(1);
+    expect(res.body.skippedDetails[0].existingLeadId).toBe(existingLead.id);
+  });
 });

@@ -7,22 +7,22 @@ import { Lead } from "@/domain/leads/enterprise/entities/lead";
 export class PrismaLeadImportRepository extends LeadImportRepository {
   constructor(private readonly prisma: PrismaService) { super(); }
 
-  async findExistingByNames(businessNames: string[], ownerId: string): Promise<Set<string>> {
-    if (businessNames.length === 0) return new Set();
+  async findExistingByNames(businessNames: string[], ownerId: string): Promise<Map<string, string>> {
+    if (businessNames.length === 0) return new Map();
     const rows = await this.prisma.lead.findMany({
       where: { ownerId, businessName: { in: businessNames, mode: "insensitive" } },
-      select: { businessName: true },
+      select: { id: true, businessName: true },
     });
-    return new Set(rows.map(r => r.businessName.toLowerCase()));
+    return new Map(rows.map(r => [r.businessName.toLowerCase(), r.id]));
   }
 
-  async findExistingByRegistrationIds(ids: string[], ownerId: string): Promise<Set<string>> {
-    if (ids.length === 0) return new Set();
+  async findExistingByRegistrationIds(ids: string[], ownerId: string): Promise<Map<string, string>> {
+    if (ids.length === 0) return new Map();
     const rows = await this.prisma.lead.findMany({
       where: { ownerId, companyRegistrationID: { in: ids } },
-      select: { companyRegistrationID: true },
+      select: { id: true, companyRegistrationID: true },
     });
-    return new Set(rows.map(r => r.companyRegistrationID).filter((id): id is string => !!id));
+    return new Map(rows.filter(r => r.companyRegistrationID).map(r => [r.companyRegistrationID!, r.id]));
   }
 
   async batchCreate(leads: Lead[]): Promise<void> {

@@ -25,10 +25,10 @@ export class ImportLeadsUseCase {
     const cnpjs = rows.map(r => r.companyRegistrationID).filter((id): id is string => !!id);
 
     const [existingNames, existingCnpjs] = skipDuplicates
-      ? [new Set<string>(), new Set<string>()]
+      ? [new Map<string, string>(), new Map<string, string>()]
       : await Promise.all([
           this.repo.findExistingByNames(names, ownerId),
-          cnpjs.length > 0 ? this.repo.findExistingByRegistrationIds(cnpjs, ownerId) : Promise.resolve(new Set<string>()),
+          cnpjs.length > 0 ? this.repo.findExistingByRegistrationIds(cnpjs, ownerId) : Promise.resolve(new Map<string, string>()),
         ]);
 
     const toCreate: Lead[] = [];
@@ -41,12 +41,12 @@ export class ImportLeadsUseCase {
       // Deduplication: CNPJ takes priority, then name
       if (!skipDuplicates && row.companyRegistrationID && existingCnpjs.has(row.companyRegistrationID)) {
         result.skipped++;
-        result.skippedDetails.push({ rowIndex: i, businessName: effectiveName, reason: "cnpj" });
+        result.skippedDetails.push({ rowIndex: i, businessName: effectiveName, reason: "cnpj", existingLeadId: existingCnpjs.get(row.companyRegistrationID) });
         continue;
       }
       if (!skipDuplicates && existingNames.has(normalizedName)) {
         result.skipped++;
-        result.skippedDetails.push({ rowIndex: i, businessName: effectiveName, reason: "name" });
+        result.skippedDetails.push({ rowIndex: i, businessName: effectiveName, reason: "name", existingLeadId: existingNames.get(normalizedName) });
         continue;
       }
 
@@ -96,7 +96,7 @@ export class ImportLeadsUseCase {
       });
 
       toCreate.push(lead);
-      existingNames.add(normalizedName);
+      existingNames.set(normalizedName, "");
     }
 
     if (toCreate.length > 0) {

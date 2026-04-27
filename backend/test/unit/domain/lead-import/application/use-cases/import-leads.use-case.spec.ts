@@ -208,4 +208,30 @@ describe("ImportLeadsUseCase", () => {
     expect(r.skippedDetails).toHaveLength(1);
     expect(r.skippedDetails[0].rowIndex).toBe(2);
   });
+
+  it("skippedDetails includes existingLeadId when lead already exists in DB", async () => {
+    // First import creates a lead with a known ID
+    await uc.execute({ rows: [{ businessName: "Empresa DB" }], ...base });
+    const existingLead = repo.leads.find(l => l.businessName === "Empresa DB")!;
+    expect(existingLead).toBeDefined();
+
+    // Second import should skip with existingLeadId populated
+    const r = (await uc.execute({
+      rows: [{ businessName: "Empresa DB" }],
+      ...base,
+    })).unwrap();
+    expect(r.skippedDetails).toHaveLength(1);
+    expect(r.skippedDetails[0].existingLeadId).toBe(existingLead.id.toString());
+  });
+
+  it("skippedDetails existingLeadId is empty string for intra-batch duplicates", async () => {
+    // No pre-existing leads — both rows are new in this batch
+    const r = (await uc.execute({
+      rows: [{ businessName: "Intra Batch" }, { businessName: "Intra Batch" }],
+      ...base,
+    })).unwrap();
+    expect(r.imported).toBe(1);
+    expect(r.skipped).toBe(1);
+    expect(r.skippedDetails[0].existingLeadId).toBe("");
+  });
 });

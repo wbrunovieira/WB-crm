@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
@@ -20,7 +19,7 @@ export interface ImportResult {
   imported: number;
   skipped: number;
   errors: number;
-  skippedDetails: Array<{ rowIndex: number; businessName: string; reason: "cnpj" | "name" }>;
+  skippedDetails: Array<{ rowIndex: number; businessName: string; reason: "cnpj" | "name"; existingLeadId?: string }>;
   errorDetails: Array<{ row: number; reason: string }>;
 }
 
@@ -441,21 +440,48 @@ function MappingStep({
 }
 
 // ---------------------------------------------------------------------------
+// Helper: extract a field value from a parsed row using the column mapping
+// ---------------------------------------------------------------------------
+
+function getFieldValue(row: ParsedRow, mapping: ColumnMapping, field: string): string {
+  const col = Object.entries(mapping).find(([, v]) => v === field)?.[0];
+  return col ? (row[col] ?? "") : "";
+}
+
+// ---------------------------------------------------------------------------
 // Step 3 — Results
 // ---------------------------------------------------------------------------
 
 function ResultsStep({
   result,
-  onReimportSkipped,
+  parsedFile,
+  mapping,
+  onReimportSelected,
   isReimporting,
 }: {
   result: ImportResult;
-  onReimportSkipped: () => void;
+  parsedFile: ParsedImportFile;
+  mapping: ColumnMapping;
+  onReimportSelected: (rowIndexes: number[]) => void;
   isReimporting: boolean;
 }) {
-  const router = useRouter();
   const [showSkipped, setShowSkipped] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
+  const [selectedIndexes, setSelectedIndexes] = useState<Set<number>>(new Set());
+
+  const toggleSelect = (rowIndex: number) => {
+    setSelectedIndexes((prev) => {
+      const next = new Set(prev);
+      if (next.has(rowIndex)) {
+        next.delete(rowIndex);
+      } else {
+        next.add(rowIndex);
+      }
+      return next;
+    });
+  };
+
+  const selectedCount = selectedIndexes.size;
 
   const summaryCards = [
     {
@@ -558,16 +584,102 @@ function ResultsStep({
 
           {showSkipped && (
             <div className="divide-y divide-[#2d1b3d] bg-[#1a0022]">
-              {result.skippedDetails.map((s, idx) => (
-                <div key={idx} className="px-5 py-4">
-                  <p className="text-sm font-medium text-gray-200">
-                    Linha {s.rowIndex + 2}: {s.businessName || <span className="text-gray-500 italic">sem nome</span>}
-                  </p>
-                  <p className="mt-0.5 text-xs text-yellow-500">
-                    {s.reason === "cnpj" ? "CNPJ já existe" : "Nome já existe"}
-                  </p>
-                </div>
-              ))}
+              {result.skippedDetails.map((s) => {
+                const row = parsedFile.rows[s.rowIndex] ?? {};
+                const fileBusinessName =
+                  getFieldValue(row, mapping, "businessName") ||
+                  getFieldValue(row, mapping, "registeredName") ||
+                  s.businessName;
+                const fileCnpj = getFieldValue(row, mapping, "companyRegistrationID");
+                const fileCity = getFieldValue(row, mapping, "city");
+                const fileState = getFieldValue(row, mapping, "state");
+                const filePhone = getFieldValue(row, mapping, "phone");
+
+                return (
+                  <div key={s.rowIndex} className="flex items-start gap-4 px-5 py-4">
+                    {/* Checkbox */}
+                    <div className="pt-0.5">
+                      <input
+                        type="checkbox"
+                        id={`dup-${s.rowIndex}`}
+                        checked={selectedIndexes.has(s.rowIndex)}
+                        onChange={() => toggleSelect(s.rowIndex)}
+                        className="h-4 w-4 cursor-pointer rounded border-yellow-700 bg-[#2d1b3d] accent-[#792990]"
+                        aria-label={`Importar mesmo assim: ${s.businessName}`}
+                      />
+                    </div>
+
+                    {/* Left: dados do arquivo */}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Dados do arquivo</p>
+                      <p className="text-sm font-medium text-gray-200 truncate">
+                        {fileBusinessName || <span className="text-gray-500 italic">sem nome</span>}
+                      </p>
+                      {fileCnpj && <p className="text-xs text-gray-400">CNPJ: {fileCnpj}</p>}
+                      {(fileCity || fileState) && (
+                        <p className="text-xs text-gray-400">
+                          {[fileCity, fileState].filter(Boolean).join(" / ")}
+                        </p>
+                      )}
+                      {filePhone && <p className="text-xs text-gray-400">{filePhone}</p>}
+                    </div>
+
+                    {/* Right: lead existente */}
+                    <div className="flex-1 min-w-0 border-l border-[#2d1b3d] pl-4">
+                      <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Lead existente</p>
+                      {s.existingLeadId ? (
+                        <a
+                          href={`/leads/${s.existingLeadId}`}
+                          className="text-sm font-medium text-[#a855f7] hover:underline truncate block"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          {s.businessName}
+                        </a>
+                      ) : (
+                        <p className="text-sm text-gray-400 italic">duplicata intra-batch</p>
+                      )}
+                      <span
+                        className={[
+                          "mt-1 inline-block rounded px-2 py-0.5 text-xs font-medium",
+                          s.reason === "cnpj"
+                            ? "bg-orange-950/50 text-orange-400"
+                            : "bg-yellow-950/50 text-yellow-400",
+                        ].join(" ")}
+                      >
+                        {s.reason === "cnpj" ? "CNPJ já existe" : "Nome já existe"}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+
+              {/* Import selected button inside the collapsible */}
+              <div className="px-5 py-3 bg-yellow-950/10 flex items-center justify-between gap-3">
+                <p className="text-xs text-gray-500">
+                  {selectedCount === 0
+                    ? "Selecione as duplicatas que deseja importar mesmo assim"
+                    : `${selectedCount} ${selectedCount === 1 ? "selecionada" : "selecionadas"}`}
+                </p>
+                <button
+                  type="button"
+                  onClick={() => onReimportSelected(Array.from(selectedIndexes))}
+                  disabled={selectedCount === 0 || isReimporting}
+                  className="inline-flex items-center gap-2 rounded-md border border-yellow-700 bg-yellow-950/30 px-4 py-2 text-sm font-semibold text-yellow-400 transition-colors hover:bg-yellow-950/60 disabled:cursor-not-allowed disabled:opacity-40"
+                >
+                  {isReimporting ? (
+                    <>
+                      <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      Importando...
+                    </>
+                  ) : (
+                    `Importar ${selectedCount > 0 ? selectedCount : ""} ${selectedCount === 1 ? "selecionado" : "selecionados"}`
+                  )}
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -616,34 +728,12 @@ function ResultsStep({
 
       {/* Action buttons */}
       <div className="mt-6 flex flex-wrap items-center gap-3">
-        <button
-          type="button"
-          onClick={() => router.push("/leads")}
-          className="rounded-md bg-[#792990] px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#9333b8]"
+        <a
+          href="/leads"
+          className="text-sm text-gray-400 hover:text-gray-200 underline underline-offset-2 transition-colors"
         >
           Ver todos os leads
-        </button>
-
-        {result.skipped > 0 && (
-          <button
-            type="button"
-            onClick={onReimportSkipped}
-            disabled={isReimporting}
-            className="inline-flex items-center gap-2 rounded-md border border-yellow-700 bg-yellow-950/30 px-5 py-2.5 text-sm font-semibold text-yellow-400 transition-colors hover:bg-yellow-950/60 disabled:cursor-not-allowed disabled:opacity-40"
-          >
-            {isReimporting ? (
-              <>
-                <svg className="h-4 w-4 animate-spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Importando duplicatas...
-              </>
-            ) : (
-              `Importar ${result.skipped} ${result.skipped === 1 ? "duplicata" : "duplicatas"} mesmo assim`
-            )}
-          </button>
-        )}
+        </a>
       </div>
     </div>
   );
@@ -676,7 +766,7 @@ export function ImportWizard() {
       imported: number;
       skipped: number;
       errors: Array<{ row: number; reason: string }>;
-      skippedDetails: Array<{ rowIndex: number; businessName: string; reason: "cnpj" | "name" }>;
+      skippedDetails: Array<{ rowIndex: number; businessName: string; reason: "cnpj" | "name"; existingLeadId?: string }>;
     }>("/lead-import", token, {
       method: "POST",
       body: JSON.stringify({ rows: mappedRows, skipDuplicates }),
@@ -691,6 +781,17 @@ export function ImportWizard() {
       errorDetails: backendResult.errors,
     };
   }, [token]);
+
+  // Warn user if they try to close/navigate away during import
+  useEffect(() => {
+    if (!isImporting && !isReimporting) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [isImporting, isReimporting]);
 
   // Step 1 → 2
   const handleParsed = useCallback((file: ParsedImportFile) => {
@@ -723,23 +824,26 @@ export function ImportWizard() {
     }
   }, [parsedFile, mapping, runImport]);
 
-  // Step 3: Re-import skipped (duplicates) with skipDuplicates=true
-  const handleReimportSkipped = useCallback(async () => {
-    if (!parsedFile || !importResult) return;
+  // Step 3: Re-import only selected skipped rows (duplicates) with skipDuplicates=true
+  const handleReimportSelected = useCallback(async (rowIndexes: number[]) => {
+    if (!parsedFile || !importResult || rowIndexes.length === 0) return;
     setIsReimporting(true);
 
     try {
-      const skippedRows = importResult.skippedDetails.map((s) => parsedFile.rows[s.rowIndex]).filter(Boolean);
-      const result = await runImport(skippedRows, mapping, true);
+      const selectedRows = rowIndexes.map((idx) => parsedFile.rows[idx]).filter(Boolean);
+      const result = await runImport(selectedRows, mapping, true);
 
       setImportResult((prev) => {
         if (!prev) return result;
+        // Remove the reimported rows from skippedDetails
+        const reimportedSet = new Set(rowIndexes);
+        const remainingSkipped = prev.skippedDetails.filter((s) => !reimportedSet.has(s.rowIndex));
         return {
           total: prev.total,
           imported: prev.imported + result.imported,
-          skipped: result.skipped,
+          skipped: remainingSkipped.length,
           errors: prev.errors + result.errors,
-          skippedDetails: result.skippedDetails,
+          skippedDetails: remainingSkipped,
           errorDetails: [...prev.errorDetails, ...result.errorDetails],
         };
       });
@@ -777,10 +881,12 @@ export function ImportWizard() {
         />
       )}
 
-      {step === 3 && importResult && (
+      {step === 3 && importResult && parsedFile && (
         <ResultsStep
           result={importResult}
-          onReimportSkipped={handleReimportSkipped}
+          parsedFile={parsedFile}
+          mapping={mapping}
+          onReimportSelected={handleReimportSelected}
           isReimporting={isReimporting}
         />
       )}

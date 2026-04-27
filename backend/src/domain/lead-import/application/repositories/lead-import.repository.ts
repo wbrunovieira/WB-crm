@@ -44,11 +44,11 @@ export interface ImportResult {
   imported: number;
   skipped: number;
   errors: Array<{ row: number; reason: string }>;
-  skippedDetails: Array<{ rowIndex: number; businessName: string; reason: "cnpj" | "name" }>;
+  skippedDetails: Array<{ rowIndex: number; businessName: string; reason: "cnpj" | "name"; existingLeadId?: string }>;
 }
 
 export abstract class LeadImportRepository {
-  abstract findExistingByNames(businessNames: string[], ownerId: string): Promise<Set<string>>;
-  abstract findExistingByRegistrationIds(ids: string[], ownerId: string): Promise<Set<string>>;
+  abstract findExistingByNames(businessNames: string[], ownerId: string): Promise<Map<string, string>>;
+  abstract findExistingByRegistrationIds(ids: string[], ownerId: string): Promise<Map<string, string>>;
   abstract batchCreate(leads: Lead[]): Promise<void>;
 }
