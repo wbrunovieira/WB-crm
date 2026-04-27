@@ -249,7 +249,7 @@ export default async function LeadDetailPage({
                       verified={lead.whatsappVerifiedAt && lead.whatsappVerifiedNumber === lead.phone
                         ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified ?? false }
                         : undefined} />
-                    <LeadPhoneVerifyButton leadId={lead.id} field="phone" phoneValid={lead.phoneValid ?? null} phoneType={lead.phoneType ?? null} />
+                    <LeadPhoneVerifyButton leadId={lead.id} phone={lead.phone} existing={{ phoneValid: lead.phoneValid ?? null, phoneType: lead.phoneType ?? null }} />
                   </>
                 ) : dash}
               </dd>
@@ -280,7 +280,14 @@ export default async function LeadDetailPage({
                   <>
                     <a href={`mailto:${lead.email}`} className="font-medium text-purple-300 hover:text-purple-200 hover:underline">{lead.email}</a>
                     <GmailButton to={lead.email} name={lead.businessName} leadId={lead.id} variant="icon" />
-                    <LeadEmailVerifyButton leadId={lead.id} email={lead.email} verified={lead.emailVerified ?? null} status={lead.emailVerificationStatus ?? null} verifiedAt={lead.emailVerifiedAt ?? null} />
+                    <LeadEmailVerifyButton leadId={lead.id} email={lead.email}
+                      verified={lead.emailVerified && lead.emailVerifiedAt ? {
+                        at: lead.emailVerifiedAt,
+                        status: lead.emailVerificationStatus ?? "",
+                        reason: lead.emailVerificationReason ?? "",
+                        valid: lead.emailVerified,
+                      } : undefined}
+                    />
                   </>
                 ) : dash}
               </dd>

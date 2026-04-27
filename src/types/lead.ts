@@ -97,4 +97,16 @@ export interface Lead {
   sourceGroup?: string | null;
   activities?: Activity[];
   activityOrder?: string | null;
+  // Phone verification
+  phoneValid?: boolean | null;
+  phoneType?: string | null;
+  phone2Valid?: boolean | null;
+  phone2Type?: string | null;
+  whatsappPhoneValid?: boolean | null;
+  whatsappPhoneType?: string | null;
+  // Email verification
+  emailVerified?: boolean | null;
+  emailVerifiedAt?: string | null;
+  emailVerificationStatus?: string | null;
+  emailVerificationReason?: string | null;
 }
