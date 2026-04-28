@@ -10,12 +10,11 @@ export class MetaGraphApiAdapter extends MetaAdsCheckerPort {
 
   constructor(private readonly config: ConfigService) {
     super();
-    const appId = config.get<string>("META_APP_ID");
-    const appSecret = config.get<string>("META_APP_SECRET");
-    if (!appId || !appSecret) {
-      throw new Error("META_APP_ID and META_APP_SECRET must be set");
+    const userToken = config.get<string>("META_USER_TOKEN");
+    if (!userToken) {
+      throw new Error("META_USER_TOKEN must be set");
     }
-    this.appToken = `${appId}|${appSecret}`;
+    this.appToken = userToken;
   }
 
   async check(instagramHandle: string): Promise<MetaAdsResult> {
