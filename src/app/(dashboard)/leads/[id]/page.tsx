@@ -11,6 +11,8 @@ import GmailButton from "@/components/gmail/GmailButton";
 import { LeadEmailVerifyButton } from "@/components/leads/LeadEmailVerifyButton";
 import { LeadPhoneVerifyButton } from "@/components/leads/LeadPhoneVerifyButton";
 import { LeadMetaAdsButton } from "@/components/leads/LeadMetaAdsButton";
+import { LeadMetaAdsInline } from "@/components/leads/LeadMetaAdsInline";
+import { LeadGoogleAdsInline } from "@/components/leads/LeadGoogleAdsInline";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
@@ -419,26 +421,19 @@ export default async function LeadDetailPage({
           <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
             <dt className={dtCls}>Meta Ads</dt>
             <dd className="mt-1">
-              {lead.metaAds ? (() => {
-                try {
-                  const d = JSON.parse(lead.metaAds) as { hasAds: boolean; activeCount: number; checkedAt: string };
-                  return (
-                    <span className={`text-sm font-medium ${d.hasAds ? "text-green-400" : "text-gray-400"}`}>
-                      {d.hasAds ? `✓ ${d.activeCount} anúncio${d.activeCount !== 1 ? "s" : ""} ativo${d.activeCount !== 1 ? "s" : ""}` : "Sem anúncios ativos"}
-                      <span className="ml-1 text-xs text-gray-500">· {new Date(d.checkedAt).toLocaleDateString("pt-BR")}</span>
-                    </span>
-                  );
-                } catch { return <span className="text-sm text-gray-300">{lead.metaAds}</span>; }
-              })() : (
-                lead.instagram
-                  ? <LeadMetaAdsButton instagram={lead.instagram} businessName={lead.businessName} />
-                  : <span className="text-sm text-gray-600">—</span>
-              )}
+              <LeadMetaAdsInline
+                leadId={lead.id}
+                instagram={lead.instagram}
+                businessName={lead.businessName}
+                existing={lead.metaAds ? (() => { try { return JSON.parse(lead.metaAds) as { hasAds: boolean; activeCount: number; checkedAt: string }; } catch { return null; } })() : null}
+              />
             </dd>
           </div>
           <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
             <dt className={dtCls}>Google Ads</dt>
-            <dd className={`mt-1 ${lead.googleAds ? ddCls : "text-sm text-gray-600"}`}>{lead.googleAds || "—"}</dd>
+            <dd className="mt-1">
+              <LeadGoogleAdsInline leadId={lead.id} existing={lead.googleAds} />
+            </dd>
           </div>
         </div>
       </CollapsibleSection>
