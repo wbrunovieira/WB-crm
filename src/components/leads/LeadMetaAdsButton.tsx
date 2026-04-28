@@ -2,11 +2,12 @@
 
 interface LeadMetaAdsButtonProps {
   instagram: string;
+  businessName?: string;
 }
 
-export function LeadMetaAdsButton({ instagram }: LeadMetaAdsButtonProps) {
-  const handle = instagram.replace(/^@/, "");
-  const url = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=${encodeURIComponent(handle)}`;
+export function LeadMetaAdsButton({ instagram, businessName }: LeadMetaAdsButtonProps) {
+  const searchTerm = businessName ?? instagram.replace(/^@/, "");
+  const url = `https://www.facebook.com/ads/library/?active_status=active&ad_type=all&country=ALL&q=${encodeURIComponent(searchTerm)}`;
 
   return (
     <a

@@ -379,7 +379,7 @@ export default async function LeadDetailPage({
                     <Globe size={12} className="text-purple-500 flex-shrink-0" />
                     {lead.instagram}
                   </a>
-                  <LeadMetaAdsButton instagram={lead.instagram} />
+                  <LeadMetaAdsButton instagram={lead.instagram} businessName={lead.businessName} />
                 </>
               ) : dash}
             </dd>
@@ -431,7 +431,7 @@ export default async function LeadDetailPage({
                 } catch { return <span className="text-sm text-gray-300">{lead.metaAds}</span>; }
               })() : (
                 lead.instagram
-                  ? <LeadMetaAdsButton instagram={lead.instagram} />
+                  ? <LeadMetaAdsButton instagram={lead.instagram} businessName={lead.businessName} />
                   : <span className="text-sm text-gray-600">—</span>
               )}
             </dd>
