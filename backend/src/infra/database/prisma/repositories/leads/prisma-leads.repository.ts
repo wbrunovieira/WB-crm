@@ -561,4 +561,11 @@ export class PrismaLeadsRepository extends LeadsRepository {
       },
     });
   }
+
+  async saveMetaAds(leadId: string, metaAdsJson: string): Promise<void> {
+    await this.prisma.lead.update({
+      where: { id: leadId },
+      data: { metaAds: metaAdsJson },
+    });
+  }
 }

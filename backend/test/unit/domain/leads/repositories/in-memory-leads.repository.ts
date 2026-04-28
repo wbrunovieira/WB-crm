@@ -180,8 +180,13 @@ export class InMemoryLeadsRepository extends LeadsRepository {
     if (lead) lead.update(data);
   }
 
-  async savePhoneVerification(leadId: string, data: { phoneValid?: boolean; phoneType?: string; phone2Valid?: boolean; phone2Type?: string; whatsappPhoneValid?: boolean; whatsappPhoneType?: string }): Promise<void> {
+  async savePhoneVerification(leadId: string, data: { phoneValid?: boolean; phoneType?: string; phone2Valid?: boolean; phone2Type?: string; whatsappPhoneValid?: boolean; whatsappPhoneType?: string; whatsapp?: string }): Promise<void> {
     const lead = this.items.find(l => l.id.toString() === leadId);
     if (lead) lead.update(data);
+  }
+
+  async saveMetaAds(leadId: string, metaAdsJson: string): Promise<void> {
+    const lead = this.items.find(l => l.id.toString() === leadId);
+    if (lead) lead.update({ metaAds: metaAdsJson });
   }
 }
