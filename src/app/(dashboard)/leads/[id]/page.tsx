@@ -13,6 +13,7 @@ import { LeadPhoneVerifyButton } from "@/components/leads/LeadPhoneVerifyButton"
 import { LeadMetaAdsButton } from "@/components/leads/LeadMetaAdsButton";
 import { LeadMetaAdsInline } from "@/components/leads/LeadMetaAdsInline";
 import { LeadGoogleAdsInline } from "@/components/leads/LeadGoogleAdsInline";
+import { LeadDeepResearchButton } from "@/components/leads/LeadDeepResearchButton";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
@@ -53,6 +54,8 @@ import {
   Activity,
   Pencil,
   Globe,
+  BrainCircuit,
+  Sparkles,
 } from "lucide-react";
 
 export default async function LeadDetailPage({
@@ -89,11 +92,18 @@ export default async function LeadDetailPage({
 
   const hasGooglePlaces = !!(lead.googleId || lead.categories || lead.rating || lead.userRatingsTotal || lead.priceLevel || lead.types);
   const hasMeta = !!(lead.source || lead.searchTerm || lead.category || lead.radius || lead.sourceGroup);
+  const agentFields: string[] = (() => { try { return JSON.parse(lead.agentUpdatedFields ?? "[]") as string[]; } catch { return []; } })();
   const dash = <span className="text-gray-600">—</span>;
 
   /* ── label styles ────────────────────────────────────── */
   const dtCls = "text-xs font-semibold uppercase tracking-wide text-purple-400 mb-0.5";
   const ddCls = "text-sm font-medium text-gray-300";
+  const IaBadge = ({ field }: { field: string }) =>
+    agentFields.includes(field) ? (
+      <span className="ml-1 inline-flex items-center gap-0.5 rounded-full bg-purple-800/60 border border-purple-600/50 px-1.5 py-0 text-[10px] font-semibold text-purple-300" title="Preenchido pelo agente IA">
+        <Sparkles size={8} />IA
+      </span>
+    ) : null;
 
   return (
     <div className="min-h-screen bg-[#350045] p-4 md:p-8">
@@ -144,6 +154,7 @@ export default async function LeadDetailPage({
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2 flex-shrink-0">
+            <LeadDeepResearchButton leadId={lead.id} hasResearch={!!lead.agentResearchAt} />
             {!lead.convertedAt && (
               <>
                 {!lead.isArchived && (
@@ -243,7 +254,7 @@ export default async function LeadDetailPage({
           </h2>
           <dl className="space-y-4">
             <div>
-              <dt className={dtCls}>Telefone</dt>
+              <dt className={dtCls}>Telefone<IaBadge field="phone" /></dt>
               <dd className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-300">
                 {lead.phone ? (
                   <>
@@ -262,7 +273,7 @@ export default async function LeadDetailPage({
               <dd className="text-sm font-medium text-gray-300">{lead.phone2 ? <PhoneLink phone={lead.phone2} className="text-gray-300 hover:text-purple-300" /> : dash}</dd>
             </div>
             <div>
-              <dt className={dtCls}>WhatsApp</dt>
+              <dt className={dtCls}>WhatsApp<IaBadge field="whatsapp" /></dt>
               <dd className="flex flex-wrap items-center gap-2 text-sm font-medium text-gray-300">
                 {lead.whatsapp ? (
                   <>
@@ -277,7 +288,7 @@ export default async function LeadDetailPage({
               </dd>
             </div>
             <div>
-              <dt className={dtCls}>Email</dt>
+              <dt className={dtCls}>Email<IaBadge field="email" /></dt>
               <dd className="flex flex-wrap items-center gap-2 text-sm">
                 {lead.email ? (
                   <>
@@ -296,7 +307,7 @@ export default async function LeadDetailPage({
               </dd>
             </div>
             <div>
-              <dt className={dtCls}>Website</dt>
+              <dt className={dtCls}>Website<IaBadge field="website" /></dt>
               <dd className="text-sm">
                 {lead.website ? (
                   <a href={lead.website} target="_blank" rel="noopener noreferrer"
@@ -368,7 +379,7 @@ export default async function LeadDetailPage({
       <CollapsibleSection id="redes" icon={<Share2 size={14} />} title="Redes Sociais" defaultOpen={false}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div>
-            <dt className={dtCls}>Instagram</dt>
+            <dt className={dtCls}>Instagram<IaBadge field="instagram" /></dt>
             <dd className="flex flex-wrap items-center gap-2">
               {lead.instagram ? (
                 <>
@@ -393,7 +404,7 @@ export default async function LeadDetailPage({
             { key: "tiktok",    label: "TikTok",    url: lead.tiktok,    base: "https://tiktok.com/@" },
           ].map((s) => (
             <div key={s.key}>
-              <dt className={dtCls}>{s.label}</dt>
+              <dt className={dtCls}>{s.label}<IaBadge field={s.key} /></dt>
               <dd>
                 {s.url ? (
                   <a
@@ -437,6 +448,41 @@ export default async function LeadDetailPage({
           </div>
         </div>
       </CollapsibleSection>
+
+      {lead.agentResearchAt && (
+        <CollapsibleSection id="agente-ia" icon={<BrainCircuit size={14} />} title="Pesquisa do Agente IA" defaultOpen>
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-xs text-purple-400">
+              <Sparkles size={12} />
+              Última pesquisa: {formatDate(lead.agentResearchAt)}
+              {agentFields.length > 0 && (
+                <span className="ml-2 rounded-full bg-purple-900/60 border border-purple-600/50 px-2 py-0.5">
+                  {agentFields.length} campo{agentFields.length !== 1 ? "s" : ""} preenchido{agentFields.length !== 1 ? "s" : ""}
+                </span>
+              )}
+            </div>
+            {lead.agentSummary && (
+              <div className="rounded-lg bg-purple-900/20 border border-purple-700/40 p-4">
+                <dt className={dtCls + " mb-2"}>Resumo</dt>
+                <dd className="text-sm leading-relaxed text-gray-300 whitespace-pre-wrap">{lead.agentSummary}</dd>
+              </div>
+            )}
+            {agentFields.length > 0 && (
+              <div className="rounded-lg bg-purple-950/40 border border-purple-700/30 p-4">
+                <dt className={dtCls + " mb-2"}>Campos preenchidos pelo agente</dt>
+                <dd className="flex flex-wrap gap-1.5">
+                  {agentFields.map((f) => (
+                    <span key={f} className="inline-flex items-center gap-1 rounded-full bg-purple-800/50 border border-purple-600/50 px-2.5 py-0.5 text-xs font-medium text-purple-200">
+                      <Sparkles size={10} />
+                      {f}
+                    </span>
+                  ))}
+                </dd>
+              </div>
+            )}
+          </div>
+        </CollapsibleSection>
+      )}
 
       {hasGooglePlaces && (
         <CollapsibleSection id="google-places" icon={<Star size={14} />} title="Google Places" defaultOpen={false}>

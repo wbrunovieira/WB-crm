@@ -95,6 +95,11 @@ export interface LeadProps {
   metaAds?: string;
   googleAds?: string;
 
+  // Agent AI research
+  agentSummary?: string;
+  agentUpdatedFields?: string;
+  agentResearchAt?: Date;
+
   // Priority
   starRating?: number;
 
@@ -204,6 +209,9 @@ export class Lead extends AggregateRoot<LeadProps> {
   get socialMedia()                 { return this.props.socialMedia; }
   get metaAds()                     { return this.props.metaAds; }
   get googleAds()                   { return this.props.googleAds; }
+  get agentSummary()                { return this.props.agentSummary; }
+  get agentUpdatedFields()          { return this.props.agentUpdatedFields; }
+  get agentResearchAt()             { return this.props.agentResearchAt; }
   get starRating()                  { return this.props.starRating; }
   get latitude()                    { return this.props.latitude; }
   get longitude()                   { return this.props.longitude; }

@@ -109,4 +109,8 @@ export interface Lead {
   emailVerifiedAt?: string | null;
   emailVerificationStatus?: string | null;
   emailVerificationReason?: string | null;
+  // Agent research
+  agentSummary?: string | null;
+  agentUpdatedFields?: string | null; // JSON: string[]
+  agentResearchAt?: string | null;
 }

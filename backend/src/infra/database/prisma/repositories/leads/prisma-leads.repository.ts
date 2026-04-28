@@ -318,6 +318,13 @@ export class PrismaLeadsRepository extends LeadsRepository {
       searchTerm: row.searchTerm,
       category: row.category,
       radius: row.radius,
+      revenueRange: row.revenueRange,
+      segment: row.segment,
+      legalNature: row.legalNature,
+      branchType: row.branchType,
+      simplesNacional: row.simplesNacional,
+      isMei: row.isMei,
+      phone2: row.phone2,
       socialMedia: row.socialMedia,
       metaAds: row.metaAds,
       googleAds: row.googleAds,
@@ -329,6 +336,9 @@ export class PrismaLeadsRepository extends LeadsRepository {
       archivedAt: row.archivedAt,
       archivedReason: row.archivedReason,
       activityOrder: row.activityOrder,
+      agentSummary: row.agentSummary,
+      agentUpdatedFields: row.agentUpdatedFields,
+      agentResearchAt: row.agentResearchAt,
 
       // LeadDetail relations
       leadContacts: row.leadContacts.map((lc) => ({

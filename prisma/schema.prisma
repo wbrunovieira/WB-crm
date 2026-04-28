@@ -236,6 +236,14 @@ model Lead {
   metaAds       String?
   googleAds     String?
 
+  // Pesquisa por Agente IA
+  agentSummary      String?
+  agentUpdatedFields String?  // JSON: string[] — campos preenchidos pelo agente (mais recente)
+  agentResearchAt   DateTime?
+
+  // Relações de log
+  agentResearchLogs LeadAgentResearchLog[]
+
   // Prioridade (1-5 estrelas — desempate em ordenação de atividades)
   starRating    Int?
 
@@ -2346,4 +2354,21 @@ model EmailTracking {
   @@index([token])
   @@index([emailMessageId])
   @@map("email_tracking")
+}
+
+model LeadAgentResearchLog {
+  id             String   @id @default(cuid())
+  leadId         String
+  jobId          String
+  updatedFields  String?  // JSON: string[] — campos que foram preenchidos automaticamente
+  proposedFields String?  // JSON: { field: string, foundValue: string, skippedReason: string }[]
+  summary        String?  // Relatório completo do agente
+  status         String   @default("completed") // completed | error
+  error          String?
+  createdAt      DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("lead_agent_research_logs")
 }

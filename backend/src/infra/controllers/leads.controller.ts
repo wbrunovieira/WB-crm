@@ -610,6 +610,9 @@ function serialize(lead: Lead) {
     activityOrder: lead.activityOrder,
     driveFolderId: lead.driveFolderId,
     inOperationsAt: lead.inOperationsAt,
+    agentSummary: lead.agentSummary,
+    agentUpdatedFields: lead.agentUpdatedFields,
+    agentResearchAt: lead.agentResearchAt,
     createdAt: lead.createdAt,
     updatedAt: lead.updatedAt,
   };

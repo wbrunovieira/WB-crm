@@ -119,6 +119,13 @@ export interface LeadDetail extends LeadSummary {
   searchTerm: string | null;
   category: string | null;
   radius: number | null;
+  revenueRange: string | null;
+  segment: string | null;
+  legalNature: string | null;
+  branchType: string | null;
+  simplesNacional: boolean | null;
+  isMei: boolean | null;
+  phone2: string | null;
   socialMedia: string | null;
   metaAds: string | null;
   googleAds: string | null;
@@ -130,6 +137,9 @@ export interface LeadDetail extends LeadSummary {
   archivedAt: Date | null;
   archivedReason: string | null;
   activityOrder: string | null;
+  agentSummary: string | null;
+  agentUpdatedFields: string | null;
+  agentResearchAt: Date | null;
 
   // Relations
   leadContacts: LeadContact[];
