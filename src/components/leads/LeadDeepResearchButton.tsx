@@ -3,16 +3,18 @@
 import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { apiFetch } from "@/lib/api-client";
 
 interface Props {
   leadId: string;
   hasResearch: boolean;
+  agentResearchAt?: string | null;
 }
 
 type Status = "idle" | "loading" | "accepted" | "error";
 
-export function LeadDeepResearchButton({ leadId, hasResearch }: Props) {
+export function LeadDeepResearchButton({ leadId, hasResearch, agentResearchAt }: Props) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const router = useRouter();
@@ -21,6 +23,25 @@ export function LeadDeepResearchButton({ leadId, hasResearch }: Props) {
   const [error, setError] = useState("");
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const attemptsRef = useRef(0);
+  // Capture the agentResearchAt at the moment the user triggers research
+  const baselineRef = useRef<string | null | undefined>(undefined);
+
+  // Detect when agentResearchAt changes during polling (research completed)
+  useEffect(() => {
+    if (status !== "accepted") return;
+    if (baselineRef.current === undefined) return;
+
+    const changed = agentResearchAt !== baselineRef.current;
+    if (changed) {
+      clearInterval(pollRef.current!);
+      pollRef.current = null;
+      setStatus("idle");
+      toast.success("Pesquisa do agente IA concluída!", {
+        description: "Os campos do lead foram atualizados com as informações encontradas.",
+        duration: 6000,
+      });
+    }
+  }, [agentResearchAt, status]);
 
   // Poll router.refresh() every 8s for up to ~2min after request accepted
   useEffect(() => {
@@ -47,6 +68,8 @@ export function LeadDeepResearchButton({ leadId, hasResearch }: Props) {
   async function handleClick() {
     setStatus("loading");
     setError("");
+    // Capture baseline before research starts
+    baselineRef.current = agentResearchAt;
     try {
       await apiFetch<{ status: string; jobId: string }>(
         `/leads/${leadId}/deep-research`,

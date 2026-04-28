@@ -154,7 +154,7 @@ export default async function LeadDetailPage({
 
           {/* Actions */}
           <div className="flex flex-wrap gap-2 flex-shrink-0">
-            <LeadDeepResearchButton leadId={lead.id} hasResearch={!!lead.agentResearchAt} />
+            <LeadDeepResearchButton leadId={lead.id} hasResearch={!!lead.agentResearchAt} agentResearchAt={lead.agentResearchAt ? String(lead.agentResearchAt) : null} />
             {!lead.convertedAt && (
               <>
                 {!lead.isArchived && (
