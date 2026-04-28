@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
 import { LeadsModule } from "@/domain/leads/leads.module";
 import { RequestLeadDeepResearchUseCase } from "./application/use-cases/request-lead-deep-research.use-case";
@@ -10,7 +11,7 @@ import { PrismaLeadAgentResearchLogRepository } from "./infra/prisma-lead-agent-
 import { LeadDeepResearchController } from "./infra/controllers/lead-deep-research.controller";
 
 @Module({
-  imports: [SharedInfraModule, LeadsModule],
+  imports: [ConfigModule, SharedInfraModule, LeadsModule],
   controllers: [LeadDeepResearchController],
   providers: [
     RequestLeadDeepResearchUseCase,
