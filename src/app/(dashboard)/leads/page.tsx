@@ -27,6 +27,7 @@ export default async function LeadsPage({
     icpId?: string;
     hasCadence?: string;
     archived?: string;
+    hasDeepResearch?: string;
     page?: string;
   };
 }) {
@@ -58,6 +59,7 @@ export default async function LeadsPage({
   if (searchParams.owner) leadsQs.set("owner", searchParams.owner);
   if (searchParams.icpId) leadsQs.set("icpId", searchParams.icpId);
   if (searchParams.hasCadence) leadsQs.set("hasCadence", searchParams.hasCadence);
+  if (searchParams.hasDeepResearch) leadsQs.set("hasDeepResearch", searchParams.hasDeepResearch);
   if (searchParams.page) leadsQs.set("page", searchParams.page);
   // Map archived → isArchived
   if (searchParams.archived === "yes") leadsQs.set("isArchived", "true");
@@ -124,7 +126,7 @@ export default async function LeadsPage({
           <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
             {total} {total === 1 ? "lead" : "leads"}
           </span>
-          {(searchParams.search || searchParams.contactSearch || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner || searchParams.hasCadence || searchParams.archived) && (
+          {(searchParams.search || searchParams.contactSearch || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner || searchParams.hasCadence || searchParams.archived || searchParams.hasDeepResearch) && (
             <span className="text-sm text-gray-500">com os filtros aplicados</span>
           )}
         </div>
