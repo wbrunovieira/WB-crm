@@ -696,6 +696,7 @@ export class LeadsController {
   @ApiQuery({ name: "owner", required: false, description: "Filtrar por dono (admin only: 'all', 'mine', ou userId)" })
   @ApiQuery({ name: "icpId", required: false, description: "Filtrar leads vinculados ao ICP informado" })
   @ApiQuery({ name: "hasCadence", required: false, enum: ["yes", "no"], description: "Filtrar leads com (yes) ou sem (no) cadência" })
+  @ApiQuery({ name: "hasDeepResearch", required: false, enum: ["yes", "no"], description: "Filtrar leads com (yes) ou sem (no) pesquisa do agente IA" })
   @ApiQuery({ name: "page", required: false, type: Number, description: "Página (default: 1)" })
   @ApiQuery({ name: "pageSize", required: false, type: Number, description: "Itens por página (default: 50, max: 200)" })
   @ApiResponse({ status: 200, description: "Lista de leads com relações e paginação" })
@@ -710,6 +711,7 @@ export class LeadsController {
     @Query("owner") owner?: string,
     @Query("icpId") icpId?: string,
     @Query("hasCadence") hasCadence?: string,
+    @Query("hasDeepResearch") hasDeepResearch?: string,
     @Query("page") pageStr?: string,
     @Query("pageSize") pageSizeStr?: string,
     @CurrentUser() user?: AuthenticatedUser,
@@ -722,6 +724,8 @@ export class LeadsController {
     const pageSize = pageSizeStr ? parseInt(pageSizeStr, 10) : undefined;
     const hasCadenceFilter =
       hasCadence === "yes" ? "yes" : hasCadence === "no" ? "no" : undefined;
+    const hasDeepResearchFilter =
+      hasDeepResearch === "yes" ? "yes" : hasDeepResearch === "no" ? "no" : undefined;
 
     const result = await this.getLeads.execute({
       requesterId: user!.id,
@@ -736,6 +740,7 @@ export class LeadsController {
         ownerIdFilter: owner,
         icpId,
         hasCadence: hasCadenceFilter,
+        hasDeepResearch: hasDeepResearchFilter,
         page,
         pageSize,
       },

@@ -11,6 +11,7 @@ export interface LeadFilters {
   ownerIdFilter?: string; // "all", "mine", or userId
   icpId?: string;
   hasCadence?: "yes" | "no";
+  hasDeepResearch?: "yes" | "no";
   page?: number;
   pageSize?: number;
 }

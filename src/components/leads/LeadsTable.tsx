@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Zap, Archive } from "lucide-react";
+import { Zap, Archive, BrainCircuit } from "lucide-react";
 import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
 import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
@@ -27,6 +27,7 @@ type Lead = {
   status: string;
   quality: string | null;
   isArchived: boolean;
+  agentResearchAt?: string | Date | null;
   owner: { id: string; name: string } | null;
   icps?: { icp: { id: string; name: string } }[];
   leadContacts?: LeadContact[];
@@ -211,6 +212,15 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
                       businessName={lead.businessName}
                       registeredName={lead.registeredName}
                     />
+                    {lead.agentResearchAt && (
+                      <span
+                        className="inline-flex items-center gap-1 rounded-full bg-purple-100 px-2 text-xs font-semibold leading-5 text-purple-700"
+                        title="Pesquisa aprofundada com IA realizada"
+                      >
+                        <BrainCircuit className="h-3 w-3" />
+                        IA
+                      </span>
+                    )}
                     {lead.isArchived && (
                       <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 text-xs font-semibold leading-5 text-amber-800">
                         <Archive className="h-3 w-3" />

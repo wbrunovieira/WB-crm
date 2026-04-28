@@ -76,28 +76,31 @@ export class HandleLeadDeepResearchWebhookUseCase {
         }
       }
 
-      if (updatedFields.length > 0) {
-        lead.update({
-          ...updates,
-          agentSummary: payload.summary,
-          agentUpdatedFields: JSON.stringify(updatedFields),
-          agentResearchAt: new Date(),
-        } as Parameters<typeof lead.update>[0]);
-      } else {
-        lead.update({
-          agentSummary: payload.summary,
-          agentResearchAt: new Date(),
-        } as Parameters<typeof lead.update>[0]);
-      }
+      // Accumulate agent-filled fields across re-research runs so badges persist
+      const previousFields: string[] = (() => {
+        try { return JSON.parse(lead.agentUpdatedFields ?? "[]") as string[]; } catch { return []; }
+      })();
+      const mergedFields = Array.from(new Set([...previousFields, ...updatedFields]));
+
+      lead.update({
+        ...updates,
+        agentSummary: payload.summary,
+        agentUpdatedFields: JSON.stringify(mergedFields),
+        agentResearchAt: new Date(),
+      } as Parameters<typeof lead.update>[0]);
 
       await this.leadsRepo.save(lead);
     }
 
-    // Create new contacts found by agent
+    // Create new contacts found by agent — skip if name already exists for this lead
     let newContactsCount = 0;
     if (payload.newContacts?.length) {
+      const existing = await this.contactsRepo.findByLead(payload.leadId);
+      const existingNames = new Set(existing.map((c) => c.name.toLowerCase().trim()));
+
       for (const contact of payload.newContacts) {
         if (!contact.name) continue;
+        if (existingNames.has(contact.name.toLowerCase().trim())) continue;
         await this.contactsRepo.create({
           leadId: payload.leadId,
           name: contact.name,

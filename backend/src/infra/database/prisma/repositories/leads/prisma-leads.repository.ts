@@ -101,6 +101,13 @@ export class PrismaLeadsRepository extends LeadsRepository {
       where.leadCadences = { none: {} };
     }
 
+    // hasDeepResearch — leads with/without agent deep research
+    if (filters.hasDeepResearch === "yes") {
+      where.agentResearchAt = { not: null };
+    } else if (filters.hasDeepResearch === "no") {
+      where.agentResearchAt = null;
+    }
+
     return where;
   }
 
@@ -151,6 +158,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
       inOperationsAt: row.inOperationsAt,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
+      agentResearchAt: row.agentResearchAt,
       owner: row.owner ? { id: row.owner.id, name: row.owner.name, email: row.owner.email } : null,
       referredByPartner: row.referredByPartner ? { id: row.referredByPartner.id, name: row.referredByPartner.name } : null,
       labels: row.labels.map((l) => ({ id: l.id, name: l.name, color: l.color })),

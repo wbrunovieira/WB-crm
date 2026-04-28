@@ -133,6 +133,15 @@ export function LeadsFilters({ icps = [] }: LeadsFiltersProps) {
         <option value="yes">Arquivados</option>
         <option value="all">Todos</option>
       </select>
+      <select
+        value={searchParams.get("hasDeepResearch")?.toString() || ""}
+        onChange={(e) => handleFilterChange("hasDeepResearch", e.target.value)}
+        className="rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+      >
+        <option value="">Pesquisa IA (todos)</option>
+        <option value="yes">Com pesquisa IA</option>
+        <option value="no">Sem pesquisa IA</option>
+      </select>
     </div>
   );
 }
