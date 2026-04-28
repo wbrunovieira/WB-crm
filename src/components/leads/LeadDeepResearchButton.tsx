@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { apiFetch } from "@/lib/api-client";
@@ -19,6 +19,30 @@ export function LeadDeepResearchButton({ leadId, hasResearch }: Props) {
 
   const [status, setStatus] = useState<Status>("idle");
   const [error, setError] = useState("");
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const attemptsRef = useRef(0);
+
+  // Poll router.refresh() every 8s for up to ~2min after request accepted
+  useEffect(() => {
+    if (status === "accepted") {
+      attemptsRef.current = 0;
+      pollRef.current = setInterval(() => {
+        router.refresh();
+        attemptsRef.current += 1;
+        if (attemptsRef.current >= 15) {
+          clearInterval(pollRef.current!);
+          pollRef.current = null;
+          setStatus("idle");
+        }
+      }, 8000);
+    }
+    return () => {
+      if (pollRef.current) {
+        clearInterval(pollRef.current);
+        pollRef.current = null;
+      }
+    };
+  }, [status, router]);
 
   async function handleClick() {
     setStatus("loading");
@@ -30,10 +54,6 @@ export function LeadDeepResearchButton({ leadId, hasResearch }: Props) {
         { method: "POST" },
       );
       setStatus("accepted");
-      setTimeout(() => {
-        router.refresh();
-        setStatus("idle");
-      }, 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao iniciar pesquisa");
       setStatus("error");
