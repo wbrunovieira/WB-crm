@@ -73,17 +73,21 @@ export class LeadDeepResearchController {
 
     this.logger.log(`Webhook received: leadId=${body.leadId} jobId=${body.jobId} status=${body.status}`);
 
-    const result = await this.handleWebhook.execute(body);
+    // Acknowledge immediately so the agent doesn't time out waiting for DB processing
+    setImmediate(() => {
+      this.handleWebhook.execute(body).then((result) => {
+        if (result.isLeft()) {
+          this.logger.error(`Webhook processing error: ${result.value.message}`);
+        } else {
+          const { updatedFields, newContactsCount } = result.value;
+          this.logger.log(`Lead ${body.leadId} updated: fields=${updatedFields.join(",") || "none"} contacts=${newContactsCount}`);
+        }
+      }).catch((err: unknown) => {
+        this.logger.error(`Webhook processing exception: ${String(err)}`);
+      });
+    });
 
-    if (result.isLeft()) {
-      this.logger.error(`Webhook processing error: ${result.value.message}`);
-      return { ok: false, error: result.value.message };
-    }
-
-    const { updatedFields, newContactsCount } = result.value;
-    this.logger.log(`Lead ${body.leadId} updated: fields=${updatedFields.join(",") || "none"} contacts=${newContactsCount}`);
-
-    return { ok: true, updatedFields, newContactsCount };
+    return { ok: true, queued: true };
   }
 
   private isAuthorized(headers: Record<string, string | undefined>): boolean {
