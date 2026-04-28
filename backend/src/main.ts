@@ -13,7 +13,7 @@ async function bootstrap() {
   // ── Request logger ───────────────────────────────────────────────────────
   app.use((req: { method: string; url: string }, _res: unknown, next: () => void) => {
     const method = req.method;
-    if (["POST", "PATCH", "PUT", "DELETE"].includes(method)) {
+    if (["POST", "PATCH", "PUT", "DELETE"].includes(method) || req.url.includes("bulk-deep-research")) {
       console.log(`[${new Date().toISOString()}] ${method} ${req.url}`);
     }
     next();
