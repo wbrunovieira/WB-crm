@@ -26,12 +26,13 @@ export function BulkResearchProgressBanner() {
       const data = await apiFetch<ActiveSession | { active: false }>("/leads/bulk-deep-research/active", token);
       if ("active" in data && data.active === false) {
         setActiveSession(null);
-        if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+        // keep polling — user may start a bulk session at any time
         return;
       }
       const s = data as ActiveSession;
       setActiveSession(s);
       if (s.status !== "running") {
+        // session completed or cancelled — stop polling and refresh
         if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
         router.refresh();
       }
