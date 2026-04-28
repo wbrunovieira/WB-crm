@@ -8,6 +8,7 @@ import {
   HttpCode,
   NotFoundException,
   BadRequestException,
+  BadGatewayException,
   Res,
 } from "@nestjs/common";
 import type { Response } from "express";
@@ -83,7 +84,10 @@ export class MetaAdsController {
     });
 
     if (result.isLeft()) {
-      throw new NotFoundException(result.value.message);
+      const msg = result.value.message;
+      if (msg.includes("não encontrado")) throw new NotFoundException(msg);
+      if (msg.includes("não possui Instagram") || msg.includes("inválido")) throw new BadRequestException(msg);
+      throw new BadGatewayException(msg);
     }
 
     return { ok: true, ...result.value };
