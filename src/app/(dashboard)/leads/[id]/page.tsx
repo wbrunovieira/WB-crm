@@ -10,6 +10,7 @@ import { WhatsAppCheckButton } from "@/components/whatsapp/WhatsAppCheckButton";
 import GmailButton from "@/components/gmail/GmailButton";
 import { LeadEmailVerifyButton } from "@/components/leads/LeadEmailVerifyButton";
 import { LeadPhoneVerifyButton } from "@/components/leads/LeadPhoneVerifyButton";
+import { LeadMetaAdsButton } from "@/components/leads/LeadMetaAdsButton";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
@@ -364,8 +365,30 @@ export default async function LeadDetailPage({
 
       <CollapsibleSection id="redes" icon={<Share2 size={14} />} title="Redes Sociais" defaultOpen={false}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <dt className={dtCls}>Instagram</dt>
+            <dd className="flex flex-wrap items-center gap-2">
+              {lead.instagram ? (
+                <>
+                  <a
+                    href={lead.instagram.startsWith("http") ? lead.instagram : `https://instagram.com/${lead.instagram.replace("@", "")}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-purple-300 hover:text-purple-200 hover:underline"
+                  >
+                    <Globe size={12} className="text-purple-500 flex-shrink-0" />
+                    {lead.instagram}
+                  </a>
+                  <LeadMetaAdsButton
+                    leadId={lead.id}
+                    instagram={lead.instagram}
+                    existing={lead.metaAds ? (() => { try { return JSON.parse(lead.metaAds!); } catch { return null; } })() : null}
+                  />
+                </>
+              ) : dash}
+            </dd>
+          </div>
           {[
-            { key: "instagram", label: "Instagram", url: lead.instagram, base: "https://instagram.com/" },
             { key: "linkedin",  label: "LinkedIn",  url: lead.linkedin,  base: "https://linkedin.com/company/" },
             { key: "facebook",  label: "Facebook",  url: lead.facebook,  base: "https://facebook.com/" },
             { key: "twitter",   label: "Twitter/X", url: lead.twitter,   base: "https://twitter.com/" },
@@ -399,7 +422,23 @@ export default async function LeadDetailPage({
           </div>
           <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
             <dt className={dtCls}>Meta Ads</dt>
-            <dd className={`mt-1 ${lead.metaAds ? ddCls : "text-sm text-gray-600"}`}>{lead.metaAds || "—"}</dd>
+            <dd className="mt-1">
+              {lead.metaAds ? (() => {
+                try {
+                  const d = JSON.parse(lead.metaAds) as { hasAds: boolean; activeCount: number; checkedAt: string };
+                  return (
+                    <span className={`text-sm font-medium ${d.hasAds ? "text-green-400" : "text-gray-400"}`}>
+                      {d.hasAds ? `✓ ${d.activeCount} anúncio${d.activeCount !== 1 ? "s" : ""} ativo${d.activeCount !== 1 ? "s" : ""}` : "Sem anúncios ativos"}
+                      <span className="ml-1 text-xs text-gray-500">· {new Date(d.checkedAt).toLocaleDateString("pt-BR")}</span>
+                    </span>
+                  );
+                } catch { return <span className="text-sm text-gray-300">{lead.metaAds}</span>; }
+              })() : (
+                lead.instagram
+                  ? <LeadMetaAdsButton leadId={lead.id} instagram={lead.instagram} />
+                  : <span className="text-sm text-gray-600">—</span>
+              )}
+            </dd>
           </div>
           <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
             <dt className={dtCls}>Google Ads</dt>
