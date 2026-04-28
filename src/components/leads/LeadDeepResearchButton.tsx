@@ -38,7 +38,8 @@ export function LeadDeepResearchButton({ leadId, hasResearch, agentResearchAt }:
       setStatus("idle");
       toast.success("Pesquisa do agente IA concluída!", {
         description: "Os campos do lead foram atualizados com as informações encontradas.",
-        duration: 6000,
+        duration: Infinity,
+        action: { label: "OK", onClick: () => {} },
       });
     }
   }, [agentResearchAt, status]);
