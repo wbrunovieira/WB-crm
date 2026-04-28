@@ -42,6 +42,8 @@ export interface LeadDeepResearchPayload {
     phone?: string | null;
     role?: string | null;
   }>;
+  previousSummary?: string;
+  previousResearchAt?: string;
 }
 
 export interface LeadDeepResearchJobResponse {

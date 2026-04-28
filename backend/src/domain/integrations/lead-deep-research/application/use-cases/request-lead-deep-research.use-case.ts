@@ -70,6 +70,12 @@ export class RequestLeadDeepResearchUseCase {
         phone: c.phone,
         role: c.role,
       })),
+      ...(lead.agentSummary && {
+        previousSummary: lead.agentSummary,
+        previousResearchAt: lead.agentResearchAt
+          ? new Date(lead.agentResearchAt).toISOString()
+          : undefined,
+      }),
     });
 
     return right({ jobId: result.jobId });
