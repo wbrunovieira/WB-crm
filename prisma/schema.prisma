@@ -76,6 +76,9 @@ model User {
   // WhatsApp Campaigns
   campaigns          Campaign[]
 
+  // Bulk AI Research sessions
+  bulkResearchSessions BulkResearchSession[]
+
   @@map("users")
 }
 
@@ -2371,4 +2374,20 @@ model LeadAgentResearchLog {
 
   @@index([leadId])
   @@map("lead_agent_research_logs")
+}
+
+model BulkResearchSession {
+  id           String   @id @default(uuid())
+  userId       String
+  leadIds      String   // JSON: string[]
+  completedIds String   @default("[]") // JSON: string[]
+  total        Int
+  status       String   @default("running") // running | completed | cancelled
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@map("bulk_research_sessions")
 }

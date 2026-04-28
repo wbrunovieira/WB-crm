@@ -1,1 +1,2393 @@
-../../prisma/schema.prisma
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model for authentication and ownership
+model User {
+  id            String         @id @default(cuid())
+  name          String
+  email         String         @unique
+  emailVerified DateTime?
+  image         String?
+  password      String?
+  role          String         @default("sdr") // admin, sdr, closer
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  // Relations
+  accounts      Account[]
+  sessions      Session[]
+  leads              Lead[]
+  organizations      Organization[]
+  contacts           Contact[]
+  deals              Deal[]
+  activities         Activity[]
+  labels             Label[]
+  partners           Partner[]
+  dealStageChanges   DealStageHistory[]
+
+  // Shared entities relations
+  sharedWithMe       SharedEntity[] @relation("SharedWithUser")
+  sharedByMe         SharedEntity[] @relation("SharedByUser")
+
+  // ICP relations
+  icps               ICP[]
+  icpVersions        ICPVersion[]
+
+  // Cadence relations
+  cadences           Cadence[]
+  leadCadences       LeadCadence[]
+
+  // Notifications
+  notifications      Notification[]
+
+  // Funnel goals
+  weeklyGoals        WeeklyGoal[]
+
+  // Sectors
+  sectors            Sector[]
+
+  // WhatsApp
+  whatsappMessages   WhatsAppMessage[]
+
+  // Proposals
+  proposals          Proposal[]
+
+  // Meetings
+  meetings           Meeting[]
+
+  // Google Places Searches
+  googlePlacesSearches GooglePlacesSearch[]
+
+  // Disqualification reasons (custom)
+  disqualificationReasons DisqualificationReason[]
+
+  // Lead dropdown options (custom)
+  leadDropdownOptions LeadDropdownOption[]
+
+  // WhatsApp Campaigns
+  campaigns          Campaign[]
+
+  // Bulk AI Research sessions
+  bulkResearchSessions BulkResearchSession[]
+
+  @@map("users")
+}
+
+// Entity sharing - allows sharing entities between users without transferring ownership
+model SharedEntity {
+  id               String   @id @default(cuid())
+  entityType       String   // lead, contact, organization, partner, deal
+  entityId         String   // ID of the entity being shared
+  sharedWithUserId String   // User who receives access
+  sharedByUserId   String   // Admin who created the share
+  createdAt        DateTime @default(now())
+
+  // Relations
+  sharedWithUser   User     @relation("SharedWithUser", fields: [sharedWithUserId], references: [id], onDelete: Cascade)
+  sharedByUser     User     @relation("SharedByUser", fields: [sharedByUserId], references: [id], onDelete: Cascade)
+
+  @@unique([entityType, entityId, sharedWithUserId])
+  @@index([entityType, entityId])
+  @@index([sharedWithUserId])
+  @@map("shared_entities")
+}
+
+// NextAuth.js models
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// CRM Models
+
+model Lead {
+  id        String   @id @default(cuid())
+  googleId  String?  @unique
+
+  // Informações Básicas da Empresa
+  businessName            String
+  registeredName          String?
+  foundationDate          DateTime?
+  companyRegistrationID   String?  @unique
+
+  // Localização
+  address   String?
+  city      String?
+  state     String?
+  country   String?
+  zipCode   String?
+  vicinity  String?
+
+  // Contato da Empresa (geral)
+  phone                  String?
+  whatsapp               String?
+  whatsappVerified       Boolean   @default(false)
+  whatsappVerifiedAt     DateTime?
+  whatsappVerifiedNumber String?   // Número exato que foi verificado (pode ser phone ou whatsapp)
+  phoneValid             Boolean?  // Format validation via libphonenumber-js
+  phoneType              String?   // MOBILE, FIXED_LINE, FIXED_LINE_OR_MOBILE, VOIP, UNKNOWN
+  phone2Valid            Boolean?
+  phone2Type             String?
+  whatsappPhoneValid     Boolean?  // Format valid (different from whatsappVerified which is API check)
+  whatsappPhoneType      String?
+  emailVerified          Boolean?  @default(false)
+  emailVerifiedAt        DateTime?
+  emailVerificationStatus String?  // "valid" | "invalid" | "risky" | "unknown"
+  emailVerificationReason String?  // human-readable reason
+  website                String?
+  email                  String?
+
+  // Redes Sociais
+  instagram String?
+  linkedin  String?
+  facebook  String?
+  twitter   String?
+  tiktok    String?
+
+  // Informações do Google Places
+  categories          String?
+  rating              Float?
+  priceLevel          Int?
+  userRatingsTotal    Int?
+  permanentlyClosed   Boolean  @default(false)
+  types               String?
+
+  // Informações da Empresa
+  companyOwner    String?
+  companySize     String?
+  revenue         Float?
+  revenueRange    String?   // Faixa de faturamento em texto (ex: "De R$ 81k a R$ 360k")
+  employeesCount  Int?
+  description     String?
+  equityCapital   Float?
+  businessStatus  String?
+
+  // Dados fiscais e jurídicos
+  segment         String?   // Segmento comercial (ex: "Loja de Materiais de Construção")
+  legalNature     String?   // Natureza jurídica (ex: "Sociedade Empresária Limitada")
+  branchType      String?   // "Matriz" ou "Filial"
+  simplesNacional Boolean?  // Optante pelo Simples Nacional
+  isMei           Boolean?  // Optante MEI
+  phone2          String?   // Segundo telefone
+
+  // Idiomas da empresa (JSON: [{code, isPrimary}])
+  languages String?
+
+  // Atividades (deprecated - usar CNAEs)
+  primaryActivity     String?
+  secondaryActivities String?
+
+  // Atividades CNAE (empresas brasileiras)
+  primaryCNAEId       String? // CNAE primário
+
+  // Atividade para empresas internacionais (texto livre)
+  internationalActivity String?
+
+  // Metadados da Busca
+  source        String?
+  quality       String?  // cold, warm, hot
+  searchTerm    String?
+  fieldsFilled  Int?
+  category      String?
+  radius        Int?
+
+  // Presença Digital
+  socialMedia   String?   // parado_inexistente, sem_frequencia, artes_frequentes, artes_videos_frequentes, or custom
+  metaAds       String?
+  googleAds     String?
+
+  // Pesquisa por Agente IA
+  agentSummary      String?
+  agentUpdatedFields String?  // JSON: string[] — campos preenchidos pelo agente (mais recente)
+  agentResearchAt   DateTime?
+
+  // Relações de log
+  agentResearchLogs LeadAgentResearchLog[]
+
+  // Prioridade (1-5 estrelas — desempate em ordenação de atividades)
+  starRating    Int?
+
+  // Coordenadas geográficas (Google Places)
+  latitude      Float?
+  longitude     Float?
+  googleMapsUrl String?
+  openingHours  String?  // JSON: string[] with weekday descriptions from Google Places
+
+  // Sessão de busca do Google Places
+  googlePlacesSearchId String?
+
+  // Status e Conversão
+  status        String   @default("new") // new, contacted, qualified, disqualified
+  isArchived     Boolean   @default(false)
+  archivedAt     DateTime?
+  archivedReason String?
+
+  // Prospect flag: true = imported from Google, awaiting manual qualification
+  isProspect     Boolean   @default(false)
+  convertedAt    DateTime?
+  convertedToOrganizationId  String?  @unique // Lead vira 1 Organization
+
+  // Labels (many-to-many)
+  labels Label[]
+
+  // Referral tracking
+  referredByPartnerId String?
+
+  // Custom activity order (JSON: array of activity IDs)
+  activityOrder String?
+
+  // Google Drive
+  driveFolderId String? // ID da pasta no Google Drive: WB-CRM/Propostas/[Lead]/
+
+  // Operations transfer — null = active in CRM, set = transferred to operations (automations paused)
+  inOperationsAt DateTime?
+
+  // Grouping / import tag (ex: "MatConstrPetropolis270426")
+  sourceGroup String? @db.VarChar(100)
+
+  // Owner e timestamps
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  owner                 User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  leadContacts          LeadContact[] // Lead tem múltiplos contatos
+  contacts              Contact[]     // Contatos diretamente vinculados ao Lead
+  activities            Activity[]    // Lead tem múltiplas atividades
+  convertedOrganization Organization? @relation("LeadConversion", fields: [convertedToOrganizationId], references: [id])
+  referredByPartner     Partner?      @relation("PartnerReferrals", fields: [referredByPartnerId], references: [id], onDelete: SetNull)
+  leadProducts          LeadProduct[] // Produtos de interesse do Lead
+
+  // Tech Profile (current tech stack)
+  leadLanguages   LeadLanguage[]
+  leadFrameworks  LeadFramework[]
+  leadHosting     LeadHosting[]
+  leadDatabases   LeadDatabase[]
+  leadERPs        LeadERP[]
+  leadCRMs        LeadCRM[]
+  leadEcommerces  LeadEcommerce[]
+
+  // CNAEs
+  primaryCNAE         CNAE?                @relation("LeadPrimaryCNAE", fields: [primaryCNAEId], references: [id], onDelete: SetNull)
+  secondaryCNAEs      LeadSecondaryCNAE[] // Múltiplas atividades secundárias
+
+  // ICPs
+  icps                LeadICP[]
+
+  // Sectors
+  sectors             LeadSector[]
+
+  // Cadences
+  leadCadences        LeadCadence[]
+
+  // Proposals
+  proposals           Proposal[]
+
+  // Meetings
+  meetings            Meeting[]
+
+  // Google Places Search session
+  googlePlacesSearch  GooglePlacesSearch? @relation(fields: [googlePlacesSearchId], references: [id], onDelete: SetNull)
+
+  // Deals vinculados ao lead
+  deals               Deal[]
+
+  // Campaign sends
+  campaignSends       CampaignSend[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@index([quality])
+  @@index([isArchived])
+  @@index([isProspect])
+  @@index([convertedAt])
+  @@index([referredByPartnerId])
+  @@index([primaryCNAEId])
+  @@index([googlePlacesSearchId])
+  @@index([inOperationsAt])
+  @@index([sourceGroup])
+  @@map("leads")
+}
+
+model GooglePlacesSearch {
+  id              String    @id @default(cuid())
+  ownerId         String
+  country         String    @default("BR")
+  city            String?
+  zipCode         String?
+  typeKeyword     String    // Tipo de negócio (ex: "restaurante", "hospital")
+  searchQuery     String    // Query completa enviada ao Google
+  fetchedPlaceIds String    @default("[]") // JSON: place_ids já vistos nesta busca
+  totalFetched    Int       @default(0)   // Total de place_ids já vistos
+  totalImported   Int       @default(0)   // Total de Leads criados por esta busca
+  status          String    @default("active") // active | exhausted | rate_limited
+  lastFetchedAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  owner  User   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  leads  Lead[]
+
+  @@unique([ownerId, country, city, zipCode, typeKeyword])
+  @@index([ownerId])
+  @@map("google_places_searches")
+}
+
+model LeadContact {
+  id       String  @id @default(cuid())
+  leadId   String
+
+  // Informações do Contato
+  name     String
+  role     String?  // Cargo: Gerente, Diretor, etc
+  email    String?
+  phone    String?
+  whatsapp String?
+  linkedin  String?  // URL do perfil LinkedIn
+  instagram String?  // @ do Instagram
+  isPrimary Boolean @default(false) // Contato principal
+  isActive  Boolean @default(true)  // Desativar ao invés de excluir
+
+  // Idiomas do contato (JSON: [{code, isPrimary}])
+  languages String?
+
+  // Conversão
+  convertedToContactId String?  @unique // LeadContact vira 1 Contact
+
+  // Verification
+  whatsappVerified       Boolean   @default(false)
+  whatsappVerifiedAt     DateTime?
+  whatsappVerifiedNumber String?
+  emailVerified          Boolean?  @default(false)
+  emailVerifiedAt        DateTime?
+  emailVerificationStatus String?
+  emailVerificationReason String?
+  phoneValid             Boolean?
+  phoneType              String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  lead             Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  convertedContact Contact? @relation("LeadContactConversion", fields: [convertedToContactId], references: [id])
+
+  @@index([leadId])
+  @@index([isPrimary])
+  @@map("lead_contacts")
+}
+
+model Organization {
+  id           String   @id @default(cuid())
+  name         String   // Nome Fantasia (obrigatório)
+  legalName    String?  // Razão Social
+  foundationDate DateTime?
+
+  // Contact Info
+  website   String?
+  phone     String?
+  whatsapp  String?
+  email     String?
+
+  // Location
+  country        String?
+  state          String?
+  city           String?
+  zipCode        String?
+  streetAddress  String?
+
+  // Business Info
+  industry       String?
+  employeeCount  Int?
+  annualRevenue  Float?
+  taxId          String?  // CNPJ, Tax ID, etc
+  description    String?
+  companyOwner   String?
+  companySize    String?
+
+  // Idiomas da empresa (JSON: [{code, isPrimary}])
+  languages String?
+
+  // Atividades CNAE (empresas brasileiras)
+  primaryCNAEId       String? // CNAE primário
+
+  // Atividade para empresas internacionais (texto livre)
+  internationalActivity String?
+
+  // Social Media
+  instagram String?
+  linkedin  String?
+  facebook  String?
+  twitter   String?
+  tiktok    String?
+
+  // Lead tracking
+  sourceLeadId String?
+
+  // Referral tracking — parceiro que indicou esta organização
+  referredByPartnerId String?
+
+  // Labels (many-to-many)
+  labels Label[]
+
+  // External Projects (JSON array of project IDs from external API)
+  externalProjectIds String? // JSON string: ["projectId1", "projectId2"]
+
+  // Google Drive
+  driveFolderId String? // ID da pasta no Google Drive: WB-CRM/Propostas/[Organization]/
+
+  // Hosting
+  hasHosting          Boolean   @default(false)
+  hostingRenewalDate  DateTime?
+  hostingPlan         String?   // "Básico", "Profissional", "Enterprise"
+  hostingValue        Float?    // Valor anual
+  hostingReminderDays Int       @default(30) // Dias antes para lembrar
+  hostingNotes        String?
+
+  // Dados fiscais e jurídicos (espelhados do Lead)
+  segment        String?   // Segmento comercial
+  legalNature    String?   // Natureza jurídica
+  branchType     String?   // "Matriz" ou "Filial"
+  simplesNacional Boolean? // Optante pelo Simples Nacional
+  isMei          Boolean?  // Optante MEI
+  revenueRange   String?   // Faixa de faturamento (texto)
+  phone2         String?   // Segundo telefone
+
+  // Grouping / import tag
+  sourceGroup String? @db.VarChar(100)
+
+  // Operations transfer — null = active in CRM, set = transferred to operations (automations paused)
+  inOperationsAt DateTime?
+
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  owner                User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  contacts             Contact[]
+  deals                Deal[]
+  sourceLead           Lead?                  @relation("LeadConversion") // Organization veio de qual Lead
+  referredByPartner    Partner?               @relation("OrganizationReferrals", fields: [referredByPartnerId], references: [id], onDelete: SetNull)
+  organizationProducts OrganizationProduct[]  // Produtos da Organization
+
+  // Tech Profile (current tech stack)
+  organizationLanguages   OrganizationLanguage[]
+  organizationFrameworks  OrganizationFramework[]
+  organizationHosting     OrganizationHosting[]
+  organizationDatabases   OrganizationDatabase[]
+  organizationERPs        OrganizationERP[]
+  organizationCRMs        OrganizationCRM[]
+  organizationEcommerces  OrganizationEcommerce[]
+
+  // CNAEs
+  primaryCNAE                CNAE?                        @relation("OrganizationPrimaryCNAE", fields: [primaryCNAEId], references: [id], onDelete: SetNull)
+  secondaryCNAEs             OrganizationSecondaryCNAE[] // Múltiplas atividades secundárias
+
+  // ICPs
+  icps                       OrganizationICP[]
+
+  // Sectors
+  sectors                    OrganizationSector[]
+
+  // Meetings
+  meetings                   Meeting[]
+
+  // Activities
+  activities                 Activity[]
+
+  @@index([ownerId])
+  @@index([sourceLeadId])
+  @@index([primaryCNAEId])
+  @@index([hasHosting])
+  @@index([hostingRenewalDate])
+  @@index([inOperationsAt])
+  @@index([referredByPartnerId])
+  @@index([sourceGroup])
+  @@map("organizations")
+}
+
+model Label {
+  id        String   @id @default(cuid())
+  name      String
+  color     String   // Hex color code (e.g., #FF5733)
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  leads         Lead[]
+  organizations Organization[]
+
+  @@unique([name, ownerId]) // Each user can't have duplicate label names
+  @@index([ownerId])
+  @@map("labels")
+}
+
+model Contact {
+  id                     String    @id @default(cuid())
+  name                   String
+  email                  String?
+  phone                  String?
+  whatsapp               String?
+  whatsappVerified       Boolean   @default(false)
+  whatsappVerifiedAt     DateTime?
+  whatsappVerifiedNumber String?   // Número exato que foi verificado (pode ser phone ou whatsapp)
+  phoneValid             Boolean?  // Format validation via libphonenumber-js
+  phoneType              String?   // MOBILE, FIXED_LINE, FIXED_LINE_OR_MOBILE, VOIP, UNKNOWN
+  whatsappPhoneValid     Boolean?
+  whatsappPhoneType      String?
+  emailVerified          Boolean?  @default(false)
+  emailVerifiedAt        DateTime?
+  emailVerificationStatus String?
+  emailVerificationReason String?
+  role                   String?   // Cargo da pessoa
+  department     String?       // Departamento: Vendas, TI, Financeiro, etc
+
+  // Company linking - can be linked to Lead, Organization, or Partner
+  leadId         String?       // Linked to a Lead (before conversion)
+  organizationId String?       // Linked to an Organization (after conversion or direct)
+  partnerId      String?       // Linked to a Partner company
+
+  // Professional Info
+  linkedin       String?
+  instagram      String?
+
+  // Contact Status & Priority
+  status         String        @default("active") // active, inactive, bounced
+  isPrimary      Boolean       @default(false)    // Contato principal da organização/lead
+
+  // Additional Info
+  birthDate          DateTime?
+  notes              String?
+  preferredLanguage  String?   @default("pt-BR")
+  languages          String?   // JSON: [{code, isPrimary}] - multiple languages
+  source             String?   // referral, website, event, cold_call, etc
+
+  // Lead tracking - veio de qual LeadContact
+  sourceLeadContactId String?
+
+  ownerId        String
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  // Relations
+  owner            User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  lead             Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  organization     Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  partner          Partner?      @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  deals            Deal[]
+  activities       Activity[]
+  meetings         Meeting[]
+  sourceLeadContact LeadContact? @relation("LeadContactConversion") // Contact veio de qual LeadContact
+
+  @@index([ownerId])
+  @@index([leadId])
+  @@index([organizationId])
+  @@index([partnerId])
+  @@index([sourceLeadContactId])
+  @@index([status])
+  @@index([isPrimary])
+  @@map("contacts")
+}
+
+model Pipeline {
+  id        String   @id @default(cuid())
+  name      String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  stages Stage[]
+
+  @@map("pipelines")
+}
+
+model Stage {
+  id          String   @id @default(cuid())
+  name        String
+  order       Int
+  pipelineId  String
+  probability Int      @default(0) // 0-100
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  pipeline         Pipeline @relation(fields: [pipelineId], references: [id], onDelete: Cascade)
+  deals            Deal[]
+  historyFromStage DealStageHistory[] @relation("FromStage")
+  historyToStage   DealStageHistory[] @relation("ToStage")
+
+  @@index([pipelineId])
+  @@map("stages")
+}
+
+model Deal {
+  id                String        @id @default(cuid())
+  title             String
+  description       String?
+  value             Float         @default(0)
+  currency          String        @default("BRL")
+  status            String        @default("open") // open, won, lost
+  closedAt          DateTime?     // When the deal was won/lost
+  stageId           String
+  contactId         String?
+  organizationId    String?
+  leadId            String?
+
+  ownerId           String
+  expectedCloseDate DateTime?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+
+  // Relations
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  stage        Stage         @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  lead         Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  activities     Activity[]
+  dealProducts   DealProduct[] // Produtos do Deal
+  dealTechStacks DealTechStack[] // Categorias técnicas (Frontend, Backend, etc)
+  dealLanguages  DealLanguage[]  // Linguagens de programação
+  dealFrameworks DealFramework[] // Frameworks utilizados
+  stageHistory   DealStageHistory[] // Histórico de mudanças de etapa
+  proposals      Proposal[] // Propostas vinculadas ao deal
+  meetings       Meeting[]  // Reuniões vinculadas ao deal
+
+  @@index([ownerId])
+  @@index([stageId])
+  @@index([contactId])
+  @@index([organizationId])
+  @@index([leadId])
+  @@map("deals")
+}
+
+// Histórico de mudanças de etapa dos deals
+model DealStageHistory {
+  id          String   @id @default(cuid())
+  dealId      String
+  fromStageId String?  // null quando é criação inicial
+  toStageId   String
+  changedById String
+  changedAt   DateTime @default(now())
+
+  // Relations
+  deal      Deal   @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  fromStage Stage? @relation("FromStage", fields: [fromStageId], references: [id], onDelete: SetNull)
+  toStage   Stage  @relation("ToStage", fields: [toStageId], references: [id], onDelete: Cascade)
+  changedBy User   @relation(fields: [changedById], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+  @@index([changedAt])
+  @@index([changedById])
+  @@map("deal_stage_history")
+}
+
+model Activity {
+  id          String    @id @default(cuid())
+  type        String    // call, meeting, email, task, whatsapp, physical_visit, instagram_dm
+  subject     String
+  description String?
+  dueDate     DateTime?
+  completed   Boolean   @default(false)
+  completedAt DateTime?
+
+  // Outcome tracking: failed or skipped
+  failedAt    DateTime?
+  failReason  String?
+  skippedAt   DateTime?
+  skipReason  String?
+
+  dealId             String?
+  additionalDealIds  String?   // JSON array of secondary deal IDs (same pattern as contactIds)
+  contactId       String?   // Primary contact (for backwards compatibility)
+  contactIds      String?   // JSON array of contact IDs for multiple contacts
+  leadContactIds  String?   // JSON array of LeadContact IDs linked to this activity
+  leadId          String?   // Activities can be linked to Leads
+  organizationId  String?   // Activities can be linked to Organizations
+  partnerId   String?   // Activities can be linked to Partners
+  ownerId     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  deal         Deal?         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  lead         Lead?         @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  partner      Partner?      @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+
+  // Meeting relation (one-to-one via activityId)
+  meeting         Meeting?
+
+  // Cadence relation (if activity was generated by a cadence)
+  cadenceActivity LeadCadenceActivity?
+
+  @@index([ownerId])
+  @@index([dealId])
+  @@index([contactId])
+  @@index([leadId])
+  @@index([organizationId])
+  @@index([partnerId])
+  gotoCallId             String?  @unique // GoTo conversationSpaceId — previne Activity duplicada
+  gotoRecordingId         String?           // GoTo recording ID (agent track)
+  gotoRecordingDriveId    String?           // (deprecated) Google Drive file ID
+  gotoRecordingUrl        String?           // S3 key — agent track MP3
+  gotoRecordingUrl2       String?           // S3 key — client track MP3
+  gotoTranscriptionJobId  String?           // Transcription job ID — agent track
+  gotoTranscriptionJobId2 String?           // Transcription job ID — client track
+  gotoTranscriptText      String?           // JSON: TranscriptSegment[] com speaker + timestamps
+  gotoCallOutcome         String?           // answered | voicemail | no_answer | busy | rejected | invalid_number | missed | unknown
+  gotoDuration            Int?              // Call duration in seconds (from GoTo webhook)
+  callContactType         String?           // "gatekeeper" | "decisor" — only for type="call"
+  meetingNoShow           Boolean @default(false) // only for type="meeting"
+  emailMessageId   String?  @unique // Gmail Message-ID — previne Activity duplicada
+  emailThreadId    String?           // Gmail Thread-ID — para agrupar e responder na mesma thread
+  emailSubject     String?           // Assunto do e-mail (para busca e exibição)
+  emailFromAddress String?           // E-mail do remetente (para reply em e-mails recebidos)
+  emailFromName    String?           // Nome do remetente
+  emailReplied     Boolean  @default(false) // false = aguardando resposta; true = já respondido
+
+  // Email tracking — abertura (pixel) e clique em links
+  emailTrackingToken     String?   @unique      // Token único por e-mail enviado
+  emailOpenCount         Int       @default(0)  // Total de aberturas confirmadas (sem MPP/proxy)
+  emailOpenedAt          DateTime?              // Primeira abertura confirmada
+  emailLastOpenedAt      DateTime?              // Última abertura confirmada
+  emailLinkClickCount    Int       @default(0)  // Total de cliques em links rastreados
+  emailLinkClickedAt     DateTime?              // Primeiro clique em link
+  emailLastLinkClickedAt DateTime?              // Último clique em link
+
+  whatsappMessages WhatsAppMessage[]
+
+  @@index([dueDate])
+  @@index([gotoCallId])
+  @@map("activities")
+}
+
+model Partner {
+  id        String   @id @default(cuid())
+
+  // Informações da Empresa Parceira
+  name             String  // Nome da empresa parceira
+  legalName        String? // Razão Social
+  foundationDate   DateTime?
+
+  // Tipo de parceria
+  partnerType  String  // consultoria, universidade, fornecedor, indicador, investidor, etc
+
+  // Contato da Empresa (geral)
+  website   String?
+  email     String?
+  phone     String?
+  whatsapp  String?
+
+  // Localização
+  country        String?
+  state          String?
+  city           String?
+  zipCode        String?
+  streetAddress  String?
+
+  // Redes Sociais
+  linkedin  String?
+  instagram String?
+  facebook  String?
+  twitter   String?
+
+  // Informações da Parceria
+  industry       String? // Setor de atuação
+  employeeCount  Int?
+  companySize    String? // Porte da empresa
+  description    String?
+  expertise      String? // Área de expertise/especialização
+  notes          String?
+
+  lastContactDate DateTime? // Última vez que houve contato
+
+  ownerId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  owner           User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  contacts        Contact[]        // Contatos da empresa parceira
+  activities      Activity[]
+  referredLeads         Lead[]         @relation("PartnerReferrals")
+  referredOrganizations Organization[] @relation("OrganizationReferrals")
+  partnerProducts PartnerProduct[] // Produtos/serviços do parceiro
+
+  @@index([ownerId])
+  @@index([partnerType])
+  @@map("partners")
+}
+
+// ============ BUSINESS LINES & PRODUCTS ============
+
+model BusinessLine {
+  id          String   @id @default(cuid())
+  name        String   // "Desenvolvimento Web", "Automação", "IA"
+  slug        String   @unique // "dev-web", "automation", "ai"
+  description String?
+  color       String?  // Hex color for UI (#792990)
+  icon        String?  // Lucide icon name
+  isActive    Boolean  @default(true)
+  order       Int      @default(0) // Display order
+
+  // Relations
+  products    Product[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("business_lines")
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  name            String   // "E-commerce", "Chatbot WhatsApp"
+  slug            String   @unique // "ecommerce", "chatbot-whatsapp"
+  description     String?
+  businessLineId  String
+
+  // Pricing Info (reference only)
+  basePrice       Float?   // Base reference price
+  currency        String   @default("BRL")
+  pricingType     String?  // "fixed", "hourly", "monthly", "custom"
+
+  isActive        Boolean  @default(true)
+  order           Int      @default(0)
+
+  // Relations
+  businessLine    BusinessLine @relation(fields: [businessLineId], references: [id], onDelete: Cascade)
+
+  leadProducts         LeadProduct[]
+  organizationProducts OrganizationProduct[]
+  dealProducts         DealProduct[]
+  partnerProducts      PartnerProduct[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([businessLineId])
+  @@index([isActive])
+  @@map("products")
+}
+
+// ============ MANY-TO-MANY RELATIONS ============
+
+model LeadProduct {
+  id             String   @id @default(cuid())
+  leadId         String
+  productId      String
+
+  // Interest context
+  interestLevel  String?  // "high", "medium", "low"
+  estimatedValue Float?   // Estimated deal value for this product
+  notes          String?  // Specific notes about interest
+
+  // Relations
+  lead      Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, productId])
+  @@index([leadId])
+  @@index([productId])
+  @@index([interestLevel])
+  @@map("lead_products")
+}
+
+model OrganizationProduct {
+  id              String   @id @default(cuid())
+  organizationId  String
+  productId       String
+
+  // Purchase history
+  status          String   @default("interested") // interested, purchased, declined
+  firstPurchaseAt DateTime?
+  lastPurchaseAt  DateTime?
+  totalPurchases  Int      @default(0)
+  totalRevenue    Float    @default(0)
+
+  notes           String?
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  product      Product      @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([organizationId, productId])
+  @@index([organizationId])
+  @@index([productId])
+  @@index([status])
+  @@map("organization_products")
+}
+
+model DealProduct {
+  id          String   @id @default(cuid())
+  dealId      String
+  productId   String
+
+  // Product details in this deal
+  quantity    Int      @default(1)
+  unitPrice   Float    // Negotiated price
+  discount    Float    @default(0) // Discount in currency
+  totalValue  Float    // (quantity * unitPrice) - discount
+
+  // Soft-delete status: active, removed (cut during negotiation), cancelled (cancelled by client)
+  status      String   @default("active")
+  removedAt   DateTime? // When the product was removed/cancelled
+
+  // Additional info
+  description String?  // Customizations, specifications
+  deliveryTime Int?    // Estimated delivery in days
+
+  // Relations
+  deal      Deal     @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([dealId, productId])
+  @@index([dealId])
+  @@index([productId])
+  @@index([status])
+  @@map("deal_products")
+}
+
+model PartnerProduct {
+  id             String   @id @default(cuid())
+  partnerId      String
+  productId      String
+
+  // Partner expertise
+  expertiseLevel String?  // "basic", "intermediate", "expert"
+  canRefer       Boolean  @default(true)  // Can refer clients for this product?
+  canDeliver     Boolean  @default(false) // Can deliver this product?
+
+  // Commission (if applicable)
+  commissionType  String?  // "percentage", "fixed"
+  commissionValue Float?   // Percentage or fixed value
+
+  notes          String?
+
+  // Relations
+  partner   Partner  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partnerId, productId])
+  @@index([partnerId])
+  @@index([productId])
+  @@index([canRefer])
+  @@map("partner_products")
+}
+
+// ============ TECH STACK ============
+
+model TechCategory {
+  id          String   @id @default(cuid())
+  name        String   // "Frontend", "Backend", "Fullstack", "DevOps", "Data Science", "Mobile"
+  slug        String   @unique // "frontend", "backend", "fullstack"
+  description String?
+  color       String?  // Hex color for UI
+  icon        String?  // Lucide icon name
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  // Relations
+  dealTechStacks DealTechStack[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_categories")
+}
+
+model TechLanguage {
+  id          String   @id @default(cuid())
+  name        String   // "JavaScript", "Python", "PHP", "Java", "Go", "Ruby"
+  slug        String   @unique // "javascript", "python"
+  color       String?  // Hex color for badges
+  icon        String?  // URL or icon name for logo
+  isActive    Boolean  @default(true)
+
+  // Relations
+  dealLanguages DealLanguage[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_languages")
+}
+
+model TechFramework {
+  id           String   @id @default(cuid())
+  name         String   // "React", "Next.js", "Django", "Laravel", "Vue.js"
+  slug         String   @unique // "react", "nextjs", "django"
+  languageSlug String?  // Optional relation to language (e.g., "javascript", "python")
+  color        String?  // Hex color for badges
+  icon         String?  // URL or icon name for logo
+  isActive     Boolean  @default(true)
+
+  // Relations
+  dealFrameworks DealFramework[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([languageSlug])
+  @@map("tech_frameworks")
+}
+
+// ============ DEAL TECH STACK JUNCTIONS ============
+
+model DealTechStack {
+  id             String   @id @default(cuid())
+  dealId         String
+  techCategoryId String
+
+  // Relations
+  deal         Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  techCategory TechCategory @relation(fields: [techCategoryId], references: [id], onDelete: Cascade)
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@unique([dealId, techCategoryId])
+  @@index([dealId])
+  @@index([techCategoryId])
+  @@map("deal_tech_stacks")
+}
+
+model DealLanguage {
+  id         String   @id @default(cuid())
+  dealId     String
+  languageId String
+  isPrimary  Boolean  @default(false) // Main language of the project
+
+  // Relations
+  deal     Deal         @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  language TechLanguage @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  @@unique([dealId, languageId])
+  @@index([dealId])
+  @@index([languageId])
+  @@index([isPrimary])
+  @@map("deal_languages")
+}
+
+model DealFramework {
+  id          String   @id @default(cuid())
+  dealId      String
+  frameworkId String
+
+  // Relations
+  deal      Deal          @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  framework TechFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([dealId, frameworkId])
+  @@index([dealId])
+  @@index([frameworkId])
+  @@map("deal_frameworks")
+}
+
+// ============ TECH PROFILE (Current Tech Stack of Leads/Organizations) ============
+
+// Profile options (what technologies are available to track)
+model TechProfileLanguage {
+  id       String   @id @default(cuid())
+  name     String   // "JavaScript", "Python", "PHP", "Java"
+  slug     String   @unique
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadLanguages         LeadLanguage[]
+  organizationLanguages OrganizationLanguage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_profile_languages")
+}
+
+model TechProfileFramework {
+  id       String   @id @default(cuid())
+  name     String   // "React", "Django", "Laravel"
+  slug     String   @unique
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadFrameworks         LeadFramework[]
+  organizationFrameworks OrganizationFramework[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_profile_frameworks")
+}
+
+model TechProfileHosting {
+  id       String   @id @default(cuid())
+  name     String   // "AWS", "Azure", "GCP", "DigitalOcean", "Vercel"
+  slug     String   @unique
+  type     String   // "cloud", "vps", "shared", "dedicated", "serverless"
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadHosting         LeadHosting[]
+  organizationHosting OrganizationHosting[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([type])
+  @@map("tech_profile_hosting")
+}
+
+model TechProfileDatabase {
+  id       String   @id @default(cuid())
+  name     String   // "PostgreSQL", "MySQL", "MongoDB", "Redis"
+  slug     String   @unique
+  type     String   // "relational", "nosql", "cache", "search"
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadDatabases         LeadDatabase[]
+  organizationDatabases OrganizationDatabase[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([type])
+  @@map("tech_profile_databases")
+}
+
+model TechProfileERP {
+  id       String   @id @default(cuid())
+  name     String   // "SAP", "Oracle", "Totvs", "Odoo"
+  slug     String   @unique
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadERPs         LeadERP[]
+  organizationERPs OrganizationERP[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_profile_erps")
+}
+
+model TechProfileCRM {
+  id       String   @id @default(cuid())
+  name     String   // "Salesforce", "HubSpot", "Pipedrive", "Zoho"
+  slug     String   @unique
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadCRMs         LeadCRM[]
+  organizationCRMs OrganizationCRM[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_profile_crms")
+}
+
+model TechProfileEcommerce {
+  id       String   @id @default(cuid())
+  name     String   // "Shopify", "WooCommerce", "Magento", "VTEX"
+  slug     String   @unique
+  color    String?
+  icon     String?
+  isActive Boolean  @default(true)
+  order    Int      @default(0)
+
+  // Relations
+  leadEcommerces         LeadEcommerce[]
+  organizationEcommerces OrganizationEcommerce[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive])
+  @@map("tech_profile_ecommerce")
+}
+
+// ============ LEAD TECH PROFILE JUNCTIONS ============
+
+model LeadLanguage {
+  id         String   @id @default(cuid())
+  leadId     String
+  languageId String
+
+  // Relations
+  lead     Lead                  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  language TechProfileLanguage   @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, languageId])
+  @@index([leadId])
+  @@index([languageId])
+  @@map("lead_languages")
+}
+
+model LeadFramework {
+  id          String   @id @default(cuid())
+  leadId      String
+  frameworkId String
+
+  // Relations
+  lead      Lead                  @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  framework TechProfileFramework  @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, frameworkId])
+  @@index([leadId])
+  @@index([frameworkId])
+  @@map("lead_frameworks")
+}
+
+model LeadHosting {
+  id        String   @id @default(cuid())
+  leadId    String
+  hostingId String
+
+  // Relations
+  lead    Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  hosting TechProfileHosting   @relation(fields: [hostingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, hostingId])
+  @@index([leadId])
+  @@index([hostingId])
+  @@map("lead_hosting")
+}
+
+model LeadDatabase {
+  id         String   @id @default(cuid())
+  leadId     String
+  databaseId String
+
+  // Relations
+  lead     Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  database TechProfileDatabase  @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, databaseId])
+  @@index([leadId])
+  @@index([databaseId])
+  @@map("lead_databases")
+}
+
+model LeadERP {
+  id     String   @id @default(cuid())
+  leadId String
+  erpId  String
+
+  // Relations
+  lead Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  erp  TechProfileERP  @relation(fields: [erpId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, erpId])
+  @@index([leadId])
+  @@index([erpId])
+  @@map("lead_erps")
+}
+
+model LeadCRM {
+  id     String   @id @default(cuid())
+  leadId String
+  crmId  String
+
+  // Relations
+  lead Lead            @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  crm  TechProfileCRM  @relation(fields: [crmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, crmId])
+  @@index([leadId])
+  @@index([crmId])
+  @@map("lead_crms")
+}
+
+model LeadEcommerce {
+  id          String   @id @default(cuid())
+  leadId      String
+  ecommerceId String
+
+  // Relations
+  lead      Lead                   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  ecommerce TechProfileEcommerce   @relation(fields: [ecommerceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, ecommerceId])
+  @@index([leadId])
+  @@index([ecommerceId])
+  @@map("lead_ecommerce")
+}
+
+// ============ ORGANIZATION TECH PROFILE JUNCTIONS ============
+
+model OrganizationLanguage {
+  id             String   @id @default(cuid())
+  organizationId String
+  languageId     String
+
+  // Relations
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  language     TechProfileLanguage  @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, languageId])
+  @@index([organizationId])
+  @@index([languageId])
+  @@map("organization_languages")
+}
+
+model OrganizationFramework {
+  id             String   @id @default(cuid())
+  organizationId String
+  frameworkId    String
+
+  // Relations
+  organization Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  framework    TechProfileFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, frameworkId])
+  @@index([organizationId])
+  @@index([frameworkId])
+  @@map("organization_frameworks")
+}
+
+model OrganizationHosting {
+  id             String   @id @default(cuid())
+  organizationId String
+  hostingId      String
+
+  // Relations
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  hosting      TechProfileHosting  @relation(fields: [hostingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, hostingId])
+  @@index([organizationId])
+  @@index([hostingId])
+  @@map("organization_hosting")
+}
+
+model OrganizationDatabase {
+  id             String   @id @default(cuid())
+  organizationId String
+  databaseId     String
+
+  // Relations
+  organization Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  database     TechProfileDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, databaseId])
+  @@index([organizationId])
+  @@index([databaseId])
+  @@map("organization_databases")
+}
+
+model OrganizationERP {
+  id             String   @id @default(cuid())
+  organizationId String
+  erpId          String
+
+  // Relations
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  erp          TechProfileERP @relation(fields: [erpId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, erpId])
+  @@index([organizationId])
+  @@index([erpId])
+  @@map("organization_erps")
+}
+
+model OrganizationCRM {
+  id             String   @id @default(cuid())
+  organizationId String
+  crmId          String
+
+  // Relations
+  organization Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  crm          TechProfileCRM @relation(fields: [crmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, crmId])
+  @@index([organizationId])
+  @@index([crmId])
+  @@map("organization_crms")
+}
+
+model OrganizationEcommerce {
+  id             String   @id @default(cuid())
+  organizationId String
+  ecommerceId    String
+
+  // Relations
+  organization Organization          @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  ecommerce    TechProfileEcommerce  @relation(fields: [ecommerceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, ecommerceId])
+  @@index([organizationId])
+  @@index([ecommerceId])
+  @@map("organization_ecommerce")
+}
+
+// ============ CNAE (Classificação Nacional de Atividades Econômicas) ============
+
+model CNAE {
+  id       String   @id @default(cuid())
+  code     String   @unique // Código CNAE (ex: "0111-3/01")
+  description String            // Descrição da atividade (ex: "Cultivo de arroz")
+
+  // Relations
+  leadsPrimary            Lead[]                     @relation("LeadPrimaryCNAE")
+  leadsSecondary          LeadSecondaryCNAE[]
+  organizationsPrimary    Organization[]             @relation("OrganizationPrimaryCNAE")
+  organizationsSecondary  OrganizationSecondaryCNAE[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([code])
+  @@map("cnaes")
+}
+
+// ============ LEAD CNAE JUNCTION (Secondary Activities) ============
+
+model LeadSecondaryCNAE {
+  id      String   @id @default(cuid())
+  leadId  String
+  cnaeId  String
+
+  // Relations
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  cnae CNAE @relation(fields: [cnaeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([leadId, cnaeId])
+  @@index([leadId])
+  @@index([cnaeId])
+  @@map("lead_secondary_cnaes")
+}
+
+// ============ ORGANIZATION CNAE JUNCTION (Secondary Activities) ============
+
+model OrganizationSecondaryCNAE {
+  id             String   @id @default(cuid())
+  organizationId String
+  cnaeId         String
+
+  // Relations
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  cnae         CNAE         @relation(fields: [cnaeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([organizationId, cnaeId])
+  @@index([organizationId])
+  @@index([cnaeId])
+  @@map("organization_secondary_cnaes")
+}
+
+// ============ SECTOR ============
+
+model Sector {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String?
+
+  // Market intelligence
+  marketSize         String? @map("market_size")
+  marketSizeNotes    String? @map("market_size_notes")
+  averageTicket      String? @map("average_ticket")
+  budgetSeason       String? @map("budget_season")
+
+  // Sales cycle
+  salesCycleDays  Int?    @map("sales_cycle_days")
+  salesCycleNotes String? @map("sales_cycle_notes")
+
+  // Buyer profile
+  decisionMakers  String? @map("decision_makers")
+  buyingProcess   String? @map("buying_process")
+  mainObjections  String? @map("main_objections")
+
+  // Market knowledge
+  mainPains             String? @map("main_pains")
+  referenceCompanies    String? @map("reference_companies")
+  competitorsLandscape  String? @map("competitors_landscape")
+  jargons               String?
+  regulatoryNotes       String? @map("regulatory_notes")
+
+  isActive  Boolean  @default(true) @map("is_active")
+  ownerId   String   @map("owner_id")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  owner         User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  leads         LeadSector[]
+  organizations OrganizationSector[]
+
+  @@index([ownerId])
+  @@index([isActive])
+  @@map("sectors")
+}
+
+model LeadSector {
+  id       String @id @default(cuid())
+  leadId   String @map("lead_id")
+  sectorId String @map("sector_id")
+
+  lead     Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  sector   Sector @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([leadId, sectorId])
+  @@index([leadId])
+  @@index([sectorId])
+  @@map("lead_sectors")
+}
+
+model OrganizationSector {
+  id             String @id @default(cuid())
+  organizationId String @map("organization_id")
+  sectorId       String @map("sector_id")
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  sector       Sector       @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([organizationId, sectorId])
+  @@index([organizationId])
+  @@index([sectorId])
+  @@map("organization_sectors")
+}
+
+// ============ ICP (Ideal Customer Profile) ============
+
+model ICP {
+  id          String   @id @default(cuid())
+  name        String   // "Startup de Tech", "E-commerce Médio"
+  slug        String   @unique
+  content     String   // Texto rico do ICP (descrição completa)
+  status      String   @default("draft") // draft, active, archived
+
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  owner         User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  versions      ICPVersion[]
+  leads         LeadICP[]
+  organizations OrganizationICP[]
+  cadences      Cadence[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@map("icps")
+}
+
+model ICPVersion {
+  id            String   @id @default(cuid())
+  icpId         String
+  versionNumber Int
+  name          String   // Snapshot do nome
+  content       String   // Snapshot do conteúdo
+  status        String   // Snapshot do status
+  changedBy     String
+  changeReason  String?
+  createdAt     DateTime @default(now())
+
+  // Relations
+  icp           ICP  @relation(fields: [icpId], references: [id], onDelete: Cascade)
+  user          User @relation(fields: [changedBy], references: [id], onDelete: Cascade)
+
+  @@unique([icpId, versionNumber])
+  @@index([icpId])
+  @@index([changedBy])
+  @@map("icp_versions")
+}
+
+// ============ ICP JUNCTIONS ============
+
+model LeadICP {
+  id        String   @id @default(cuid())
+  leadId    String
+  icpId     String
+  matchScore Int?    // Score de fit (0-100)
+  notes     String?  // Observações do link
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Essential Fields
+  icpFitStatus           String?  // ideal, partial, out_of_icp
+  realDecisionMaker      String?  // founder_ceo, tech_partner, commercial_partner, other
+  realDecisionMakerOther String?  // Text when realDecisionMaker = other
+  perceivedUrgency       String?  // JSON array: ["curiosity", "interest", "future_need", "current_need", "active_pain"]
+  businessMoment         String?  // JSON array: ["validation", "growth", "scale", "consolidation"]
+
+  // Specific Fields
+  currentPlatforms              String?  // JSON array: ["hotmart", "cademi", ...]
+  fragmentationLevel            Int?     // 0-10 (based on IFEE diagnostic)
+  mainDeclaredPain              String?  // student_experience, operational_fragmentation, etc
+  strategicDesire               String?  // total_control, own_identity, etc
+  perceivedTechnicalComplexity  Int?     // 1-5
+
+  // Strategic Fields
+  purchaseTrigger        String?  // Short text (max 500)
+  nonClosingReason       String?  // priority_changed, budget, timing, etc
+  estimatedDecisionTime  String?  // less_than_2_weeks, 2_to_4_weeks, etc
+  expansionPotential     Int?     // 1-5
+
+  // Relations
+  lead      Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  icp       ICP  @relation(fields: [icpId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, icpId])
+  @@index([leadId])
+  @@index([icpId])
+  @@index([icpFitStatus])
+  @@index([businessMoment])
+  @@map("lead_icps")
+}
+
+model OrganizationICP {
+  id             String   @id @default(cuid())
+  organizationId String
+  icpId          String
+  matchScore     Int?     // Score de fit (0-100)
+  notes          String?  // Observações do link
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Essential Fields
+  icpFitStatus           String?  // ideal, partial, out_of_icp
+  realDecisionMaker      String?  // founder_ceo, tech_partner, commercial_partner, other
+  realDecisionMakerOther String?  // Text when realDecisionMaker = other
+  perceivedUrgency       String?  // JSON array: ["curiosity", "interest", "future_need", "current_need", "active_pain"]
+  businessMoment         String?  // JSON array: ["validation", "growth", "scale", "consolidation"]
+
+  // Specific Fields
+  currentPlatforms              String?  // JSON array: ["hotmart", "cademi", ...]
+  fragmentationLevel            Int?     // 0-10 (based on IFEE diagnostic)
+  mainDeclaredPain              String?  // student_experience, operational_fragmentation, etc
+  strategicDesire               String?  // total_control, own_identity, etc
+  perceivedTechnicalComplexity  Int?     // 1-5
+
+  // Strategic Fields
+  purchaseTrigger        String?  // Short text (max 500)
+  nonClosingReason       String?  // priority_changed, budget, timing, etc
+  estimatedDecisionTime  String?  // less_than_2_weeks, 2_to_4_weeks, etc
+  expansionPotential     Int?     // 1-5
+
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  icp            ICP          @relation(fields: [icpId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, icpId])
+  @@index([organizationId])
+  @@index([icpId])
+  @@index([icpFitStatus])
+  @@index([businessMoment])
+  @@map("organization_icps")
+}
+
+// ============ SALES CADENCE SYSTEM ============
+
+// Cadence - a template for a sequence of outreach activities (touches)
+model Cadence {
+  id           String   @id @default(cuid())
+  name         String   // "Cadência IFEE 14 dias"
+  slug         String   @unique
+  description  String?  // Detailed description
+  objective    String?  // Goal: "Agendar reunião de diagnóstico"
+  durationDays Int      @default(14) // Total duration
+
+  // Optional ICP link - cadences can be ICP-specific
+  icpId        String?
+
+  // Status
+  status       String   @default("draft") // draft, active, archived
+
+  // Owner and timestamps
+  ownerId      String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  owner        User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  icp          ICP?     @relation(fields: [icpId], references: [id], onDelete: SetNull)
+  steps        CadenceStep[]
+  leadCadences LeadCadence[]
+
+  @@index([ownerId])
+  @@index([icpId])
+  @@index([status])
+  @@map("cadences")
+}
+
+// CadenceStep - individual touch points in a cadence
+model CadenceStep {
+  id          String   @id @default(cuid())
+  cadenceId   String
+
+  // Step details
+  dayNumber   Int      // Day 1, 3, 5, 7, etc.
+  channel     String   // email, linkedin, whatsapp, call, meeting, instagram
+  subject     String   // Activity subject template
+  description String?  // Activity description/script template
+  order       Int      @default(0) // For ordering steps on same day
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  cadence     Cadence  @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
+  activities  LeadCadenceActivity[]
+
+  @@index([cadenceId])
+  @@index([dayNumber])
+  @@map("cadence_steps")
+}
+
+// LeadCadence - tracks a cadence applied to a specific lead
+model LeadCadence {
+  id          String    @id @default(cuid())
+  leadId      String
+  cadenceId   String
+
+  // Execution tracking
+  status      String    @default("active") // active, paused, completed, cancelled
+  startDate   DateTime  @default(now())
+  pausedAt    DateTime?
+  completedAt DateTime?
+  cancelledAt DateTime?
+
+  // Progress tracking
+  currentStep Int       @default(0) // Current step index
+
+  // Notes
+  notes       String?
+
+  // Completion reason (when cadence ends without conversion)
+  disqualificationReason String?
+
+  ownerId     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  // Relations
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  lead        Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  cadence     Cadence   @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
+  activities  LeadCadenceActivity[]
+
+  @@unique([leadId, cadenceId])
+  @@index([leadId])
+  @@index([cadenceId])
+  @@index([ownerId])
+  @@index([status])
+  @@map("lead_cadences")
+}
+
+// DisqualificationReason - custom reasons users can register for lead loss
+model DisqualificationReason {
+  id        String   @id @default(cuid())
+  name      String
+  ownerId   String
+  createdAt DateTime @default(now())
+
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([name, ownerId])
+  @@index([ownerId])
+  @@map("disqualification_reasons")
+}
+
+// LeadDropdownOption - custom options for social media, meta ads, google ads fields
+model LeadDropdownOption {
+  id        String   @id @default(cuid())
+  name      String
+  category  String   // social_media | meta_ads | google_ads
+  ownerId   String
+  createdAt DateTime @default(now())
+
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([name, category, ownerId])
+  @@index([category, ownerId])
+  @@map("lead_dropdown_options")
+}
+
+// LeadCadenceActivity - links generated activities to cadence steps
+model LeadCadenceActivity {
+  id              String   @id @default(cuid())
+  leadCadenceId   String
+  cadenceStepId   String
+  activityId      String   @unique
+
+  // Tracking
+  scheduledDate   DateTime // The calculated due date
+
+  createdAt       DateTime @default(now())
+
+  // Relations
+  leadCadence     LeadCadence  @relation(fields: [leadCadenceId], references: [id], onDelete: Cascade)
+  cadenceStep     CadenceStep  @relation(fields: [cadenceStepId], references: [id], onDelete: Cascade)
+  activity        Activity     @relation(fields: [activityId], references: [id], onDelete: Cascade)
+
+  @@index([leadCadenceId])
+  @@index([cadenceStepId])
+  @@index([activityId])
+  @@map("lead_cadence_activities")
+}
+
+// Notification model for async job results and alerts
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   // LEAD_RESEARCH_COMPLETE, LEAD_RESEARCH_ERROR, etc.
+  jobId     String?  // External job ID (from Agent)
+  status    String   // pending, completed, error
+  title     String
+  summary   String
+  payload   String?  // JSON stringified full payload
+  read      Boolean  @default(false)
+
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([read])
+  @@index([jobId])
+  @@map("notifications")
+}
+
+// Propostas comerciais vinculadas a Leads e/ou Deals
+model Proposal {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  status      String    @default("draft") // draft | sent | accepted | rejected
+  driveFileId String?                      // ID do arquivo no Google Drive
+  driveUrl    String?                      // URL de visualização no Drive
+  fileName    String?                      // Nome original do arquivo
+  fileSize    Int?                         // Tamanho em bytes
+  sentAt      DateTime?                    // Quando foi enviada ao cliente
+  leadId      String?
+  dealId      String?
+  ownerId     String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  lead    Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([dealId])
+  @@index([ownerId])
+  @@map("proposals")
+}
+
+// ============ MEETINGS (Google Meet) ============
+
+model Meeting {
+  id              String    @id @default(cuid())
+  title           String
+  googleEventId   String?   @unique // Google Calendar event ID
+  meetLink        String?            // meet.google.com/xxx-xxxx-xxx
+  startAt         DateTime           // Scheduled start time
+  endAt           DateTime?          // Scheduled end time
+  actualStartAt   DateTime?          // Actual start time (when meeting really began)
+  actualEndAt     DateTime?          // Actual end time (when meeting really ended)
+  attendeeEmails  String             // JSON array of attendee emails
+  organizerEmail  String?            // alias used as organizer (e.g. bruno@saltoup.com)
+  status          String    @default("scheduled") // scheduled | ended | cancelled
+
+  // Recording (Google Drive)
+  recordingDriveId  String?  // Drive file ID of recording
+  recordingUrl      String?  // URL to access recording
+  recordingMovedAt  DateTime? // When recording was moved to CRM folder
+
+  // Transcription
+  transcriptionJobId  String?   // Job ID from transcriptor API (pending)
+  transcriptText      String?   // Full transcription text (from our transcriptor API)
+  transcribedAt       DateTime? // When transcription was completed
+  nativeTranscriptUrl String?   // Google Meet's own transcript doc URL (if user enabled it)
+  meetingSummary      String?   // AI notes from Google Meet (Gemini): summary, topics, action items
+
+  // Relations to CRM entities
+  leadId         String?
+  contactId      String?
+  organizationId String?
+  dealId         String?
+
+  // One-to-one with Activity (pending when scheduled, completed when ended)
+  activityId  String?  @unique
+
+  ownerId    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  // Relations
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  lead         Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  deal         Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  activity     Activity?     @relation(fields: [activityId], references: [id], onDelete: SetNull)
+
+  @@index([ownerId])
+  @@index([leadId])
+  @@index([contactId])
+  @@index([organizationId])
+  @@index([dealId])
+  @@index([status])
+  @@index([startAt])
+  @@map("meetings")
+
+  scheduledEmails ScheduledEmail[]
+}
+
+model ScheduledEmail {
+  id               String    @id @default(cuid())
+  meetingId        String
+  type             String    // morning_reminder | one_hour_reminder | on_time_reminder
+  scheduledFor     DateTime
+  status           String    @default("pending") // pending | sent | cancelled | failed
+  attempts         Int       @default(0)
+  sentAt           DateTime?
+  failReason       String?
+
+  recipientEmail      String
+  organizerEmail      String?
+  meetingTitle        String
+  meetingStartAt      DateTime
+  meetingEndAt        DateTime?
+  meetingDescription  String?
+  meetLink            String?
+  contactName         String?
+  companyName         String?
+
+  createdAt DateTime @default(now())
+
+  meeting Meeting @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([scheduledFor, status])
+  @@index([meetingId])
+  @@map("scheduled_emails")
+}
+
+model GoogleToken {
+  id           String   @id @default(cuid())
+  accessToken  String
+  refreshToken String
+  expiresAt    DateTime
+  scope        String
+  email           String   // email da conta Google conectada
+  gmailHistoryId  String?  // último historyId processado pelo polling (Fase 2)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("google_tokens")
+}
+
+model WhatsAppTemplate {
+  id        String   @id @default(cuid())
+  name      String                        // ex: "Boas-vindas", "Follow-up"
+  text      String                        // corpo da mensagem (suporta \n)
+  category  String?                       // ex: "vendas", "suporte", "cobrança"
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@map("whatsapp_templates")
+}
+
+model WhatsAppMessage {
+  id            String   @id @default(cuid())
+  messageId     String   @unique  // key.id do WhatsApp — idempotência
+  remoteJid     String            // "5511999998888@s.whatsapp.net"
+  fromMe        Boolean           // true = enviado por nós, false = recebido
+  messageType   String            // "conversation" | "audioMessage" | "imageMessage" | ...
+  pushName      String?           // nome exibido do contato no WhatsApp (para speaker attribution)
+  text          String?           // texto puro extraído (null para mídia sem legenda)
+  mediaLabel              String?  // "🎤 Áudio (45s)", "📷 Imagem", "📄 arquivo.pdf"
+  mediaUrl                String?  // URL de visualização no Google Drive
+  mediaMimeType           String?  // mime type do arquivo de mídia
+  mediaDriveId            String?  // Google Drive file ID (para servir via API)
+  mediaTranscriptionJobId String?  // WB Transcritor job ID (áudio/vídeo)
+  mediaTranscriptText     String?  // Transcrição final com atribuição de speaker
+  timestamp     DateTime          // horário real da mensagem
+  activityId    String?           // Activity que agrupa esta sessão
+  ownerId       String
+
+  activity  Activity? @relation(fields: [activityId], references: [id], onDelete: SetNull)
+  owner     User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([remoteJid])
+  @@index([activityId])
+  @@index([ownerId])
+  @@index([timestamp])
+  @@map("whatsapp_messages")
+}
+
+model GmailTemplate {
+  id        String   @id @default(cuid())
+  name      String                        // ex: "Boas-vindas", "Follow-up comercial"
+  subject   String                        // assunto do e-mail (pode conter variáveis)
+  body      String                        // HTML do corpo (pode conter variáveis)
+  category  String?                       // ex: "vendas", "suporte", "cobrança"
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+  @@map("gmail_templates")
+}
+
+model WeeklyGoal {
+  id          String   @id @default(cuid())
+  weekStart   DateTime // Monday of the week (UTC midnight)
+  targetSales Int
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@unique([weekStart, ownerId])
+  @@index([ownerId])
+  @@map("weekly_goals")
+}
+
+// ─── WhatsApp Campaign Automation ────────────────────────────────────────────
+
+enum CampaignStatus {
+  DRAFT
+  ACTIVE
+  PAUSED
+  FINISHED
+}
+
+enum StepType {
+  TEXT     // mensagem de texto simples
+  MEDIA    // imagem, vídeo, documento com legenda opcional
+  AUDIO    // áudio PTT (push-to-talk)
+  DELAY    // espera N segundos antes do próximo step
+  TYPING   // simula "digitando..." por N segundos
+}
+
+enum SendStatus {
+  PENDING   // aguardando execução
+  RUNNING   // em progresso (executando steps)
+  DONE      // concluído com sucesso
+  FAILED    // erro irrecuperável
+  OPTED_OUT // destinatário pediu para sair
+}
+
+/// Campanha de envio em massa de WhatsApp.
+/// Contém uma sequência de steps e uma lista de destinatários (CampaignSend).
+model Campaign {
+  id           String         @id @default(cuid())
+  ownerId      String
+  name         String
+  description  String?
+  status       CampaignStatus @default(DRAFT)
+  instanceName String         // nome da instância Evolution API (número dedicado)
+  /// Config anti-bloqueio (JSON): { minDelayMs, maxDelayMs, maxPerHour, maxPerDay }
+  antiBlockConfig String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  owner  User           @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  steps  CampaignStep[]
+  sends  CampaignSend[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@map("campaigns")
+}
+
+/// Um step dentro de uma campanha (mensagem, delay ou simulação de digitação).
+/// A ordem de execução é definida pelo campo `order`.
+model CampaignStep {
+  id           String   @id @default(cuid())
+  campaignId   String
+  order        Int      // posição na sequência (0-based)
+  type         StepType
+
+  // Campos de conteúdo — preenchidos conforme o tipo:
+  text         String?  // TEXT: corpo da mensagem
+  mediaUrl     String?  // MEDIA/AUDIO: URL do arquivo
+  mediaCaption String?  // MEDIA: legenda opcional
+  mediaType    String?  // MEDIA: "image" | "video" | "document"
+
+  // Timing:
+  delaySeconds  Int?    // DELAY: quantos segundos esperar
+  typingSeconds Int?    // TYPING: quanto tempo mostrar "digitando..."
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, order])
+  @@map("campaign_steps")
+}
+
+/// Representa um destinatário dentro de uma campanha.
+/// Cada CampaignSend rastreia em qual step está e qual o status de envio.
+model CampaignSend {
+  id          String     @id @default(cuid())
+  campaignId  String
+  leadId      String?    // lead do CRM (opcional — pode ser número avulso)
+  phone       String     // número E.164 (ex: "5511999998888")
+  status      SendStatus @default(PENDING)
+  currentStep Int        @default(0)  // índice do próximo step a executar
+  scheduledAt DateTime?  // quando executar o próximo step (null = imediato)
+  startedAt   DateTime?
+  finishedAt  DateTime?
+  errorMessage String?
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  lead     Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([status, scheduledAt]) // índice usado pelo worker de polling
+  @@index([leadId])
+  @@map("campaign_sends")
+}
+
+
+model IntegrationToken {
+  id           String   @id @default(cuid())
+  provider     String   @unique // "goto"
+  accessToken  String
+  refreshToken String?
+  expiresAt    DateTime
+  updatedAt    DateTime @updatedAt
+
+  @@map("integration_tokens")
+}
+
+model EmailMessage {
+  id             String    @id @default(cuid())
+  gmailMessageId String    @unique
+  threadId       String
+  from           String
+  to             String
+  subject        String
+  bodyText       String?
+  activityId     String?
+  ownerId        String
+  sentAt         DateTime
+  trackingToken  String?   @unique
+  openedAt       DateTime?
+  openCount      Int       @default(0)
+  lastClickedAt  DateTime?
+  clickCount     Int       @default(0)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  tracking EmailTracking[]
+
+  @@index([ownerId])
+  @@index([trackingToken])
+  @@map("email_messages")
+}
+
+model EmailTracking {
+  id             String    @id @default(cuid())
+  token          String    @unique
+  type           String    // "open" | "click"
+  emailMessageId String
+  targetUrl      String?
+  ownerId        String
+  openCount      Int       @default(0)
+  clickCount     Int       @default(0)
+  firstOpenAt    DateTime?
+  lastOpenAt     DateTime?
+  firstClickAt   DateTime?
+  lastClickAt    DateTime?
+  userAgent      String?
+  ip             String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  message EmailMessage @relation(fields: [emailMessageId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([emailMessageId])
+  @@map("email_tracking")
+}
+
+model LeadAgentResearchLog {
+  id             String   @id @default(cuid())
+  leadId         String
+  jobId          String
+  updatedFields  String?  // JSON: string[] — campos que foram preenchidos automaticamente
+  proposedFields String?  // JSON: { field: string, foundValue: string, skippedReason: string }[]
+  summary        String?  // Relatório completo do agente
+  status         String   @default("completed") // completed | error
+  error          String?
+  createdAt      DateTime @default(now())
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("lead_agent_research_logs")
+}
+
+model BulkResearchSession {
+  id           String   @id @default(uuid())
+  userId       String
+  leadIds      String   // JSON: string[]
+  completedIds String   @default("[]") // JSON: string[]
+  total        Int
+  status       String   @default("running") // running | completed | cancelled
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@index([userId, status])
+  @@map("bulk_research_sessions")
+}

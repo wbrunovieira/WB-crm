@@ -1,6 +1,8 @@
 import {
   Controller,
   Post,
+  Get,
+  Delete,
   Body,
   Param,
   Headers,
@@ -10,6 +12,7 @@ import {
   ForbiddenException,
   NotFoundException,
   BadGatewayException,
+  BadRequestException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
@@ -17,6 +20,9 @@ import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { RequestLeadDeepResearchUseCase } from "../../application/use-cases/request-lead-deep-research.use-case";
 import { HandleLeadDeepResearchWebhookUseCase, type LeadDeepResearchWebhookPayload } from "../../application/use-cases/handle-lead-deep-research-webhook.use-case";
+import { StartBulkLeadResearchUseCase } from "../../application/use-cases/start-bulk-lead-research.use-case";
+import { GetActiveBulkResearchUseCase } from "../../application/use-cases/get-active-bulk-research.use-case";
+import { BulkResearchSessionRepository } from "../../application/repositories/bulk-research-session.repository";
 
 function isLocalIp(ip: string): boolean {
   return (
@@ -36,6 +42,9 @@ export class LeadDeepResearchController {
   constructor(
     private readonly requestResearch: RequestLeadDeepResearchUseCase,
     private readonly handleWebhook: HandleLeadDeepResearchWebhookUseCase,
+    private readonly startBulk: StartBulkLeadResearchUseCase,
+    private readonly getActiveBulk: GetActiveBulkResearchUseCase,
+    private readonly sessionRepo: BulkResearchSessionRepository,
   ) {}
 
   @Post("leads/:id/deep-research")
@@ -88,6 +97,46 @@ export class LeadDeepResearchController {
     });
 
     return { ok: true, queued: true };
+  }
+
+  @Post("leads/bulk-deep-research")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(202)
+  @ApiOperation({ summary: "Inicia pesquisa IA em lote sequencial" })
+  async startBulkResearch(
+    @Body() body: { leadIds: string[]; skipResearched?: boolean },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (!body.leadIds?.length) throw new BadRequestException("leadIds é obrigatório");
+
+    const result = await this.startBulk.execute({
+      leadIds: body.leadIds,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+      skipResearched: body.skipResearched ?? true,
+    });
+
+    if (result.isLeft()) throw new BadRequestException(result.value.message);
+    return { status: "accepted", ...result.value };
+  }
+
+  @Get("leads/bulk-deep-research/active")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Retorna sessão de pesquisa em lote ativa do usuário" })
+  async getActiveBulkSession(@CurrentUser() user: AuthenticatedUser) {
+    const session = await this.getActiveBulk.execute(user.id);
+    return session ?? { active: false };
+  }
+
+  @Delete("leads/bulk-deep-research/active")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(204)
+  @ApiOperation({ summary: "Cancela sessão de pesquisa em lote ativa" })
+  async cancelBulkSession(@CurrentUser() user: AuthenticatedUser) {
+    await this.sessionRepo.cancelAllActiveForUser(user.id);
   }
 
   private isAuthorized(headers: Record<string, string | undefined>): boolean {

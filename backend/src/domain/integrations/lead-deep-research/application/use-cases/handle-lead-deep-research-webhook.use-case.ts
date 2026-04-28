@@ -1,8 +1,10 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
 import { LeadContactsRepository } from "@/domain/leads/application/repositories/lead-contacts.repository";
 import { LeadAgentResearchLogRepository } from "../repositories/lead-agent-research-log.repository";
+import { BulkResearchSessionRepository } from "../repositories/bulk-research-session.repository";
+import { StartBulkLeadResearchUseCase } from "./start-bulk-lead-research.use-case";
 
 export interface LeadDeepResearchWebhookPayload {
   jobId: string;
@@ -45,10 +47,14 @@ type Output = Either<Error, { updatedFields: string[]; newContactsCount: number 
 
 @Injectable()
 export class HandleLeadDeepResearchWebhookUseCase {
+  private readonly logger = new Logger(HandleLeadDeepResearchWebhookUseCase.name);
+
   constructor(
     private readonly leadsRepo: LeadsRepository,
     private readonly contactsRepo: LeadContactsRepository,
     private readonly logRepo: LeadAgentResearchLogRepository,
+    private readonly sessionRepo: BulkResearchSessionRepository,
+    private readonly startBulkUseCase: StartBulkLeadResearchUseCase,
   ) {}
 
   async execute(payload: LeadDeepResearchWebhookPayload): Promise<Output> {
@@ -132,6 +138,27 @@ export class HandleLeadDeepResearchWebhookUseCase {
       error: payload.error,
     });
 
+    // Advance bulk research queue if this lead was part of a session
+    setImmediate(() => void this.advanceBulkQueue(payload.leadId));
+
     return right({ updatedFields, newContactsCount });
+  }
+
+  private async advanceBulkQueue(completedLeadId: string): Promise<void> {
+    const session = await this.sessionRepo.findActiveContainingLead(completedLeadId);
+    if (!session) return;
+
+    const updated = await this.sessionRepo.markLeadCompleted(session.id, completedLeadId);
+    const remaining = updated.leadIds.filter((id) => !updated.completedIds.includes(id));
+
+    if (remaining.length === 0) {
+      await this.sessionRepo.markCompleted(session.id);
+      this.logger.log(`Bulk session ${session.id} completed: ${updated.total} leads`);
+      return;
+    }
+
+    const nextLeadId = remaining[0];
+    this.logger.log(`Bulk session ${session.id}: advancing to lead ${nextLeadId} (${updated.completedIds.length}/${updated.total})`);
+    await this.startBulkUseCase.triggerLead(nextLeadId, session.userId, "sdr");
   }
 }

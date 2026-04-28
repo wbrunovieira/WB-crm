@@ -3,6 +3,7 @@ import type { UserListItem } from "@/hooks/users/use-users";
 import type { ICP as ICPType } from "@/hooks/icps/use-icps";
 
 import { LeadsFilters } from "@/components/leads/LeadsFilters";
+import { BulkResearchProgressBanner } from "@/components/leads/BulkResearchProgressBanner";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { AgentLeadGenerationButton } from "@/components/leads/AgentLeadGenerationButton";
 import { LeadResearchNotifications } from "@/components/leads/LeadResearchNotifications";
@@ -40,6 +41,7 @@ export default async function LeadsPage({
     quality: string | null; isArchived: boolean; isProspect: boolean;
     email: string | null; phone: string | null; whatsapp: string | null;
     city: string | null; state: string | null; country: string | null;
+    agentResearchAt: string | null;
     starRating: number | null; fieldsFilled: number | null;
     convertedToOrganizationId: string | null; convertedAt: string | null;
     referredByPartnerId: string | null; driveFolderId: string | null;
@@ -84,6 +86,7 @@ export default async function LeadsPage({
     <div className="p-8">
       {/* Notification polling for lead research results */}
       <LeadResearchNotifications />
+      <BulkResearchProgressBanner />
 
       <div className="mb-8 flex items-center justify-between">
         <div>

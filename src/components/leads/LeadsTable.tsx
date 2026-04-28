@@ -9,6 +9,7 @@ import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 import { BulkApplyCadenceModal } from "@/components/leads/BulkApplyCadenceModal";
 import { BulkArchiveModal } from "@/components/leads/BulkArchiveModal";
+import { BulkDeepResearchModal } from "@/components/leads/BulkDeepResearchModal";
 
 type LeadContact = {
   id: string;
@@ -65,6 +66,7 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showBulkArchiveModal, setShowBulkArchiveModal] = useState(false);
+  const [showBulkResearchModal, setShowBulkResearchModal] = useState(false);
   const lastSelectedIndex = useRef<number | null>(null);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
 
@@ -135,6 +137,13 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
           >
             <Archive className="h-4 w-4" />
             Arquivar
+          </button>
+          <button
+            onClick={() => setShowBulkResearchModal(true)}
+            className="inline-flex items-center gap-2 rounded-md bg-purple-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-700"
+          >
+            <BrainCircuit className="h-4 w-4" />
+            Pesquisa IA
           </button>
           <button
             onClick={() => setSelectedIds(new Set())}
@@ -383,6 +392,19 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
             setShowBulkArchiveModal(false);
             setSelectedIds(new Set());
             router.refresh();
+          }}
+        />
+      )}
+
+      {/* Bulk Deep Research Modal */}
+      {showBulkResearchModal && (
+        <BulkDeepResearchModal
+          leadIds={Array.from(selectedIds)}
+          researchedCount={leads.filter((l) => selectedIds.has(l.id) && !!l.agentResearchAt).length}
+          onClose={() => setShowBulkResearchModal(false)}
+          onSuccess={() => {
+            setShowBulkResearchModal(false);
+            setSelectedIds(new Set());
           }}
         />
       )}
