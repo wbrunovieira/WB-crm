@@ -35,14 +35,15 @@ export function BulkResearchProgressBanner() {
         if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
         router.refresh();
       }
-    } catch {
-      // silently ignore
+    } catch (err) {
+      console.error("[BulkResearchBanner] fetch error:", err);
     }
   }
 
   useEffect(() => {
+    if (!token) return;
     void fetchSession();
-    pollRef.current = setInterval(() => void fetchSession(), 6000);
+    pollRef.current = setInterval(() => void fetchSession(), 3000);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
