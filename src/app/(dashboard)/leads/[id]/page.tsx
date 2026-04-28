@@ -379,11 +379,7 @@ export default async function LeadDetailPage({
                     <Globe size={12} className="text-purple-500 flex-shrink-0" />
                     {lead.instagram}
                   </a>
-                  <LeadMetaAdsButton
-                    leadId={lead.id}
-                    instagram={lead.instagram}
-                    existing={lead.metaAds ? (() => { try { return JSON.parse(lead.metaAds!); } catch { return null; } })() : null}
-                  />
+                  <LeadMetaAdsButton instagram={lead.instagram} />
                 </>
               ) : dash}
             </dd>
@@ -435,7 +431,7 @@ export default async function LeadDetailPage({
                 } catch { return <span className="text-sm text-gray-300">{lead.metaAds}</span>; }
               })() : (
                 lead.instagram
-                  ? <LeadMetaAdsButton leadId={lead.id} instagram={lead.instagram} />
+                  ? <LeadMetaAdsButton instagram={lead.instagram} />
                   : <span className="text-sm text-gray-600">—</span>
               )}
             </dd>

@@ -20,7 +20,7 @@ export class MetaGraphApiAdapter extends MetaAdsCheckerPort {
   async check(instagramHandle: string): Promise<MetaAdsResult> {
     const params = new URLSearchParams({
       search_terms: instagramHandle,
-      ad_reached_countries: '["BR"]',
+      ad_reached_countries: '["ALL"]',
       ad_type: "ALL",
       ad_active_status: "ACTIVE",
       limit: "25",
