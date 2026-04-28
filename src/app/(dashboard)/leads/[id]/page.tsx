@@ -242,7 +242,7 @@ export default async function LeadDetailPage({
             <div><dt className={dtCls}>CNPJ</dt><dd className="text-sm font-mono text-gray-300">{lead.companyRegistrationID || dash}</dd></div>
             <div><dt className={dtCls}>Fundação</dt><dd className={ddCls}>{lead.foundationDate ? formatDate(lead.foundationDate) : dash}</dd></div>
             <div><dt className={dtCls}>Segmento</dt><dd className={ddCls}>{lead.segment || dash}</dd></div>
-            <div><dt className={dtCls}>Descrição</dt><dd className="text-sm leading-relaxed text-gray-400">{lead.description || dash}</dd></div>
+            <div><dt className={dtCls}>Descrição<IaBadge field="description" /></dt><dd className="text-sm leading-relaxed text-gray-400">{lead.description || dash}</dd></div>
           </dl>
         </div>
 
