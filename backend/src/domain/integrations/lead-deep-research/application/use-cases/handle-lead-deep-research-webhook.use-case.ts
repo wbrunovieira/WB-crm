@@ -22,11 +22,14 @@ export interface LeadDeepResearchWebhookPayload {
     email: string;
     phone: string;
     phone2: string;
+    whatsapp: string;
     instagram: string;
     linkedin: string;
     facebook: string;
     twitter: string;
     tiktok: string;
+    metaAds: string | Record<string, unknown>;
+    googleAds: string;
   }>;
   newContacts?: Array<{
     name: string;
@@ -63,8 +66,14 @@ export class HandleLeadDeepResearchWebhookUseCase {
 
         const currentValue = (lead as unknown as Record<string, unknown>)[field];
         if (!currentValue) {
-          // Field is empty — auto-fill
-          updates[field] = field === "foundationDate" ? new Date(value as string) : value;
+          // Field is empty — auto-fill; serialize objects to JSON string for Prisma
+          let finalValue: unknown = value;
+          if (field === "foundationDate") {
+            finalValue = new Date(value as string);
+          } else if (value !== null && typeof value === "object") {
+            finalValue = JSON.stringify(value);
+          }
+          updates[field] = finalValue;
           updatedFields.push(field);
         } else {
           // Field already has value — log as proposed but skip
