@@ -15,6 +15,7 @@ import { LeadMetaAdsInline } from "@/components/leads/LeadMetaAdsInline";
 import { LeadGoogleAdsInline } from "@/components/leads/LeadGoogleAdsInline";
 import { LeadDeepResearchButton } from "@/components/leads/LeadDeepResearchButton";
 import { LeadFocusedResearchButton } from "@/components/leads/LeadFocusedResearchButton";
+import { LeadGooglePlacesLinkButton } from "@/components/leads/LeadGooglePlacesLinkButton";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
@@ -91,10 +92,19 @@ export default async function LeadDetailPage({
   const statusCfg  = statusMap[lead.status]  ?? statusMap.new;
   const qualityCfg = lead.quality ? qualityMap[lead.quality] : null;
 
-  const hasGooglePlaces = !!(lead.googleId || lead.categories || lead.rating || lead.userRatingsTotal || lead.priceLevel || lead.types);
   const hasMeta = !!(lead.source || lead.searchTerm || lead.category || lead.radius || lead.sourceGroup);
   const agentFields: string[] = (() => { try { return JSON.parse(lead.agentUpdatedFields ?? "[]") as string[]; } catch { return []; } })();
   const dash = <span className="text-gray-600">—</span>;
+
+  // Parses a field that may be a plain string or a JSON-serialized string[]
+  function parseStringOrArray(value: string | null | undefined): string[] {
+    if (!value) return [];
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) return parsed.map(String);
+    } catch { /* plain string */ }
+    return [value];
+  }
 
   /* ── label styles ────────────────────────────────────── */
   const dtCls = "text-xs font-semibold uppercase tracking-wide text-purple-400 mb-0.5";
@@ -503,8 +513,16 @@ export default async function LeadDetailPage({
         </CollapsibleSection>
       )}
 
-      {hasGooglePlaces && (
-        <CollapsibleSection id="google-places" icon={<Star size={14} />} title="Google Places" defaultOpen={false}>
+      <CollapsibleSection
+        id="google-places"
+        icon={<Star size={14} />}
+        title="Google Places"
+        defaultOpen={false}
+        action={<LeadGooglePlacesLinkButton lead={lead} />}
+      >
+        {!lead.googleId && !lead.rating && !lead.categories && !lead.userRatingsTotal && !lead.priceLevel && !lead.types ? (
+          <p className="text-sm text-gray-500 italic">Nenhum dado do Google Places vinculado ainda.</p>
+        ) : (
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             {lead.rating && (
               <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4">
@@ -528,18 +546,32 @@ export default async function LeadDetailPage({
                 <dd className="text-sm font-bold text-green-300 mt-1">{"R$".repeat(lead.priceLevel)}</dd>
               </div>
             )}
-            {lead.categories && (
-              <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4 md:col-span-2 lg:col-span-4">
-                <dt className={dtCls}>Categorias</dt>
-                <dd className={ddCls + " mt-1"}>{lead.categories}</dd>
-              </div>
-            )}
-            {lead.types && (
-              <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4 md:col-span-2 lg:col-span-4">
-                <dt className={dtCls}>Tipos</dt>
-                <dd className="text-sm text-gray-400 mt-1">{lead.types}</dd>
-              </div>
-            )}
+            {lead.categories && (() => {
+              const cats = parseStringOrArray(lead.categories);
+              return (
+                <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4 md:col-span-2 lg:col-span-4">
+                  <dt className={dtCls}>Categorias</dt>
+                  <dd className="mt-2 flex flex-wrap gap-1.5">
+                    {cats.map((c) => (
+                      <span key={c} className="inline-block rounded-full bg-purple-800/50 border border-purple-600/50 px-2.5 py-0.5 text-xs font-medium text-purple-200">{c}</span>
+                    ))}
+                  </dd>
+                </div>
+              );
+            })()}
+            {lead.types && (() => {
+              const types = parseStringOrArray(lead.types);
+              return (
+                <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4 md:col-span-2 lg:col-span-4">
+                  <dt className={dtCls}>Tipos</dt>
+                  <dd className="mt-2 flex flex-wrap gap-1.5">
+                    {types.map((t) => (
+                      <span key={t} className="inline-block rounded-full bg-gray-800/60 border border-gray-600/40 px-2.5 py-0.5 text-xs text-gray-400">{t}</span>
+                    ))}
+                  </dd>
+                </div>
+              );
+            })()}
             {lead.googleId && (
               <div className="rounded-lg bg-purple-900/20 border border-purple-800/40 p-4 md:col-span-2 lg:col-span-4">
                 <dt className={dtCls}>Google Places ID</dt>
@@ -547,8 +579,8 @@ export default async function LeadDetailPage({
               </div>
             )}
           </div>
-        </CollapsibleSection>
-      )}
+        )}
+      </CollapsibleSection>
 
       {hasMeta && (
         <CollapsibleSection id="metadados" icon={<Search size={14} />} title="Metadados de Busca" defaultOpen={false}>

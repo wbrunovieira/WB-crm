@@ -62,7 +62,13 @@ const FIELD_META: Array<{ key: FieldKey; label: string; format?: (v: unknown) =>
 function fmt(v: unknown, format?: (v: unknown) => string): string {
   if (v == null) return "—";
   if (format) return format(v);
-  return String(v);
+  const s = String(v);
+  // Display JSON arrays as comma-separated list
+  try {
+    const parsed = JSON.parse(s);
+    if (Array.isArray(parsed)) return parsed.join(", ");
+  } catch { /* plain string */ }
+  return s;
 }
 
 export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName, onDone, onCancel }: Props) {

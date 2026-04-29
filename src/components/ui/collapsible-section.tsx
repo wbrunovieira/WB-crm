@@ -10,6 +10,7 @@ interface Props {
   title: string;
   defaultOpen?: boolean;
   children: ReactNode;
+  action?: ReactNode;
 }
 
 export function CollapsibleSection({
@@ -18,24 +19,28 @@ export function CollapsibleSection({
   title,
   defaultOpen = true,
   children,
+  action,
 }: Props) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
     <div id={id} className="mt-6 overflow-hidden rounded-xl bg-white shadow-md border border-purple-900/40">
-      <button
-        type="button"
-        onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
-      >
-        <span className="flex items-center gap-2.5 text-sm font-bold uppercase tracking-wider text-purple-400">
+      <div className="flex w-full items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex flex-1 items-center gap-2.5 text-sm font-bold uppercase tracking-wider text-purple-400 text-left"
+        >
           {icon}
           {title}
-        </span>
-        <span className="text-purple-600">
-          {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-        </span>
-      </button>
+        </button>
+        <div className="flex items-center gap-2">
+          {action && <span onClick={(e) => e.stopPropagation()}>{action}</span>}
+          <button type="button" onClick={() => setOpen((v) => !v)} className="text-purple-600">
+            {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+          </button>
+        </div>
+      </div>
       {open && (
         <div className="border-t border-purple-900/40 px-6 py-5">
           {children}

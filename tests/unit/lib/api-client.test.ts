@@ -1,10 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { apiFetch } from "@/lib/api-client";
 
-// apiFetch reads NEXT_PUBLIC_BACKEND_URL at import time, stub it first
 vi.stubGlobal("fetch", vi.fn());
-
-// Re-import after stubbing env
-const { apiFetch } = await import("@/lib/api-client");
 
 function makeFetchResponse(status: number, body: string, contentType = "application/json") {
   return {

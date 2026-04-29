@@ -73,6 +73,10 @@ export interface Lead {
   userRatingsTotal?: number | null;
   permanentlyClosed?: boolean;
   types?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+  googleMapsUrl?: string | null;
+  openingHours?: string | null;
   companyOwner?: string | null;
   companySize?: string | null;
   revenue?: number | null;
