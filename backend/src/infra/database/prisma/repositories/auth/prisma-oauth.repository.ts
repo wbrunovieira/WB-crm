@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { execSync } from "child_process";
+import { readFileSync, writeFileSync } from "fs";
 import { PrismaService } from "@/infra/database/prisma.service";
 import { OAuthRepository, type GoogleTokenInput } from "@/domain/auth/application/repositories/oauth.repository";
 
@@ -33,19 +33,24 @@ export class PrismaOAuthRepository extends OAuthRepository {
   }
 
   async storeGoToTokens(tokens: { accessToken: string; refreshToken?: string; expiresAt: number }): Promise<void> {
-    // Persist to .env file for process restart persistence (same approach as Next.js layer)
-    try {
-      const envPath = process.env.ENV_FILE_PATH ?? "/opt/wb-crm/.env";
-      const esc = (s: string) => s.replace(/[&/\\]/g, "\\$&").replace(/"/g, '\\"');
-      const cmds = [
-        `sed -i 's|^GOTO_ACCESS_TOKEN=.*|GOTO_ACCESS_TOKEN="${esc(tokens.accessToken)}"|' ${envPath}`,
-        tokens.refreshToken ? `sed -i 's|^GOTO_REFRESH_TOKEN=.*|GOTO_REFRESH_TOKEN="${esc(tokens.refreshToken)}"|' ${envPath}` : null,
-        `sed -i 's|^GOTO_TOKEN_EXPIRES_AT=.*|GOTO_TOKEN_EXPIRES_AT="${tokens.expiresAt}"|' ${envPath}`,
-      ].filter(Boolean).join(" && ");
-      execSync(cmds);
-    } catch { /* non-fatal */ }
     process.env.GOTO_ACCESS_TOKEN = tokens.accessToken;
     if (tokens.refreshToken) process.env.GOTO_REFRESH_TOKEN = tokens.refreshToken;
     process.env.GOTO_TOKEN_EXPIRES_AT = String(tokens.expiresAt);
+
+    // Persist to mounted .env file so tokens survive container restarts
+    try {
+      const envPath = process.env.ENV_FILE_PATH ?? "/opt/wb-crm/.env";
+      let content = readFileSync(envPath, "utf8");
+      const replace = (key: string, value: string) => {
+        const regex = new RegExp(`^${key}=.*`, "m");
+        return regex.test(content)
+          ? content.replace(regex, `${key}=${value}`)
+          : content + `\n${key}=${value}`;
+      };
+      content = replace("GOTO_ACCESS_TOKEN", tokens.accessToken);
+      if (tokens.refreshToken) content = replace("GOTO_REFRESH_TOKEN", tokens.refreshToken);
+      content = replace("GOTO_TOKEN_EXPIRES_AT", String(tokens.expiresAt));
+      writeFileSync(envPath, content, "utf8");
+    } catch { /* non-fatal — process.env already updated above */ }
   }
 }
