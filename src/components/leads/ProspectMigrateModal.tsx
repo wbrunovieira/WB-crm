@@ -158,8 +158,9 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
   const availableFields = FIELD_META.filter((f) => prospect?.[f.key] != null);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-3xl max-h-[92vh] rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden">
+    <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/60">
+      <div className="flex min-h-full items-start justify-center p-4 py-8">
+      <div className="w-full max-w-3xl rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: "calc(100vh - 4rem)" }}>
 
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
@@ -309,6 +310,7 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
               : "Apenas atualizar labels"}
           </button>
         </div>
+      </div>
       </div>
     </div>
   );
