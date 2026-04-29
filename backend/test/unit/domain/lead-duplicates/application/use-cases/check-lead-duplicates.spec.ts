@@ -80,4 +80,19 @@ describe("CheckLeadDuplicatesUseCase", () => {
     expect(duplicates).toHaveLength(1);
     expect(duplicates[0].matchedFields).toContain("name");
   });
+
+  it("detecta filiais da mesma rede por palavras significativas compartilhadas", async () => {
+    // Cenário real: "Tem Tudo Petrópolis - Centro" já qualificado,
+    // qualificando "Tem Tudo Petrópolis - Bingen" deve detectar como duplicata
+    repo.leads = [
+      { id: "centro", businessName: "Tem Tudo Petrópolis - Centro", ownerId: "user-001" },
+    ];
+    const { duplicates, hasDuplicates } = (await useCase.execute({
+      ownerId: "user-001",
+      name: "Tem Tudo Petrópolis - Bingen",
+    })).unwrap();
+    expect(hasDuplicates).toBe(true);
+    expect(duplicates[0].leadId).toBe("centro");
+    expect(duplicates[0].matchedFields).toContain("name");
+  });
 });

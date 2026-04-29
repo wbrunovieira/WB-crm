@@ -39,7 +39,10 @@ export class PrismaLeadDuplicatesRepository extends LeadDuplicatesRepository {
       if (input.name) {
         const existingLower = r.businessName.toLowerCase();
         const inputLower = input.name.toLowerCase();
-        if (existingLower.includes(inputLower) || inputLower.includes(existingLower)) matched.push("name");
+        const fullMatch = existingLower.includes(inputLower) || inputLower.includes(existingLower);
+        const words = input.name.split(/\s+/).filter((w) => w.length >= 4);
+        const wordMatch = words.some((w) => existingLower.includes(w.toLowerCase()));
+        if (fullMatch || wordMatch) matched.push("name");
       }
       if (input.address && r.address?.toLowerCase().includes(input.address.toLowerCase())) matched.push("address");
       return {
