@@ -748,6 +748,14 @@ export class LeadsController {
     return result.unwrap();
   }
 
+  @Get("check-google-id")
+  @ApiOperation({ summary: "Verificar se já existe lead com este googleId" })
+  @ApiQuery({ name: "googleId", required: true })
+  async checkGoogleIdExists(@Query("googleId") googleId: string) {
+    const result = await this.checkGoogleId.execute(googleId);
+    return result.value;
+  }
+
   @Get(":id")
   @ApiOperation({ summary: "Buscar lead por ID com relações completas" })
   @ApiParam({ name: "id", description: "ID do lead" })
@@ -1008,14 +1016,6 @@ export class LeadsController {
     @Body() body: { fetchedPlaceIds: string; newlySeenCount: number; importedCount: number },
   ) {
     await this.updateGoogleSearch.execute({ id, ...body });
-  }
-
-  @Get("check-google-id")
-  @ApiOperation({ summary: "Verificar se já existe lead com este googleId" })
-  @ApiQuery({ name: "googleId", required: true })
-  async checkGoogleIdExists(@Query("googleId") googleId: string) {
-    const result = await this.checkGoogleId.execute(googleId);
-    return result.value;
   }
 
   @Post("google-places/search")
