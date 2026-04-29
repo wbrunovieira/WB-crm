@@ -145,11 +145,8 @@ export class AuthController {
 
   @Get("goto")
   @Redirect()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
   @ApiOperation({ summary: "Iniciar fluxo OAuth GoTo — redireciona para consentimento" })
-  gotoAuth(@CurrentUser() user: AuthenticatedUser) {
-    if (user.role !== "admin") throw new ForbiddenException("Apenas admins podem conectar conta GoTo");
+  gotoAuth() {
     const backendUrl = process.env.BACKEND_URL ?? "http://localhost:3010";
     const params = new URLSearchParams({
       response_type: "code",
