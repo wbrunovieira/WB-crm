@@ -988,12 +988,15 @@ export class LeadsController {
   }
 
   @Post("google-places-searches/find-or-create")
+  @ApiBearerAuth("JWT")
+  @UseGuards(JwtAuthGuard)
   @HttpCode(200)
   @ApiOperation({ summary: "Encontrar ou criar perfil de busca Google Places" })
   async findOrCreateSearch(
-    @Body() body: { ownerId: string; country: string; city?: string; zipCode?: string; typeKeyword: string; searchQuery: string },
+    @Body() body: { ownerId?: string; country: string; city?: string; zipCode?: string; typeKeyword: string; searchQuery: string },
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    const result = await this.findOrCreateGoogleSearch.execute(body);
+    const result = await this.findOrCreateGoogleSearch.execute({ ...body, ownerId: user.id });
     return result.value.profile;
   }
 
