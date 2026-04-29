@@ -66,6 +66,8 @@ export interface LeadDeepResearchWebhookPayload {
     role?: string | null;
     linkedin?: string | null;
   }>;
+  // Agent-sent proposed fields; _websiteAlert triggers a banner alert on the CRM
+  proposedFields?: Record<string, string>;
   summary?: string;
   error?: string;
 }
@@ -89,12 +91,18 @@ export class HandleLeadDeepResearchWebhookUseCase {
     if (!lead) return left(new Error("Lead não encontrado"));
 
     const updatedFields: string[] = [];
-    const proposedFields: Array<{ field: string; foundValue: string; skippedReason: string }> = [];
+    const skippedFields: Array<{ field: string; foundValue: string; skippedReason: string }> = [];
 
-    if (payload.status === "completed" && payload.updates) {
+    // _websiteAlert comes from proposedFields sent by the agent; prefix it into agentSummary
+    const websiteAlert = payload.proposedFields?.["_websiteAlert"];
+    const composedSummary = websiteAlert
+      ? `[ALERTA] ${websiteAlert}${payload.summary ? `\n\n${payload.summary}` : ""}`
+      : payload.summary;
+
+    if (payload.status === "completed" && (payload.updates ?? websiteAlert)) {
       const updates: Record<string, unknown> = {};
 
-      for (const [field, value] of Object.entries(payload.updates)) {
+      for (const [field, value] of Object.entries(payload.updates ?? {})) {
         if (value === null || value === undefined || value === "") continue;
 
         const currentValue = (lead as unknown as Record<string, unknown>)[field];
@@ -110,7 +118,7 @@ export class HandleLeadDeepResearchWebhookUseCase {
           updatedFields.push(field);
         } else {
           // Field already has value — log as proposed but skip
-          proposedFields.push({
+          skippedFields.push({
             field,
             foundValue: String(value),
             skippedReason: "Campo já possuía valor",
@@ -141,7 +149,7 @@ export class HandleLeadDeepResearchWebhookUseCase {
 
       lead.update({
         ...updates,
-        agentSummary: payload.summary,
+        agentSummary: composedSummary,
         agentUpdatedFields: JSON.stringify(mergedFields),
         agentResearchAt: new Date(),
       } as Parameters<typeof lead.update>[0]);
@@ -193,8 +201,8 @@ export class HandleLeadDeepResearchWebhookUseCase {
       leadId: payload.leadId,
       jobId: payload.jobId,
       updatedFields,
-      proposedFields,
-      summary: payload.summary,
+      proposedFields: skippedFields,
+      summary: composedSummary,
       status: payload.status,
       error: payload.error,
     });

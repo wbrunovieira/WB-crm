@@ -16,6 +16,7 @@ import { LeadGoogleAdsInline } from "@/components/leads/LeadGoogleAdsInline";
 import { LeadDeepResearchButton } from "@/components/leads/LeadDeepResearchButton";
 import { LeadFocusedResearchButton } from "@/components/leads/LeadFocusedResearchButton";
 import { LeadGooglePlacesLinkButton } from "@/components/leads/LeadGooglePlacesLinkButton";
+import { LeadWebsiteAlertToast } from "@/components/leads/LeadWebsiteAlertToast";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
@@ -96,6 +97,12 @@ export default async function LeadDetailPage({
   const agentFields: string[] = (() => { try { return JSON.parse(lead.agentUpdatedFields ?? "[]") as string[]; } catch { return []; } })();
   const dash = <span className="text-gray-600">—</span>;
 
+  // Extract _websiteAlert embedded in agentSummary as "[ALERTA] <text>\n\n<summary>"
+  const rawSummary = lead.agentSummary ?? "";
+  const websiteAlertMatch = rawSummary.match(/^\[ALERTA\] ([\s\S]+?)(?:\n\n|$)/);
+  const websiteAlert = websiteAlertMatch?.[1]?.trim() ?? null;
+  const cleanSummary = websiteAlert ? rawSummary.replace(/^\[ALERTA\] [\s\S]+?(\n\n|$)/, "").trim() || null : rawSummary || null;
+
   // Parses a field that may be a plain string or a JSON-serialized string[]
   function parseStringOrArray(value: string | null | undefined): string[] {
     if (!value) return [];
@@ -118,6 +125,7 @@ export default async function LeadDetailPage({
 
   return (
     <div className="min-h-screen bg-[#350045] p-4 md:p-8">
+      {websiteAlert && <LeadWebsiteAlertToast leadId={lead.id} message={websiteAlert} />}
 
       {/* ── Header card ──────────────────────────────────────────────── */}
       <div className="mb-6 rounded-2xl bg-white shadow-lg border border-purple-900/40 p-6">
@@ -490,10 +498,10 @@ export default async function LeadDetailPage({
                 </span>
               )}
             </div>
-            {lead.agentSummary && (
+            {cleanSummary && (
               <div className="rounded-lg bg-purple-900/20 border border-purple-700/40 p-4">
                 <dt className={dtCls + " mb-2"}>Resumo</dt>
-                <dd className="text-sm leading-relaxed text-gray-300 whitespace-pre-wrap">{lead.agentSummary}</dd>
+                <dd className="text-sm leading-relaxed text-gray-300 whitespace-pre-wrap">{cleanSummary}</dd>
               </div>
             )}
             {agentFields.length > 0 && (
