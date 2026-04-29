@@ -19,6 +19,7 @@ import { useDeleteLead } from "@/hooks/leads/use-leads";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
 import { ProspectDetailModal } from "./ProspectDetailModal";
+import { ProspectMigrateModal } from "./ProspectMigrateModal";
 
 type Prospect = {
   id: string;
@@ -81,16 +82,36 @@ const BUSINESS_STATUS_LABELS: Record<string, string> = {
   CLOSED_PERMANENTLY: "Fechado permanentemente",
 };
 
-export function ProspectsTable({ prospects }: ProspectsTableProps) {
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function ProspectsTable({ prospects, currentUserId: _ }: ProspectsTableProps) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const router = useRouter();
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [duplicates, setDuplicates] = useState<LeadDuplicates | null>(null);
   const [pendingQualifyId, setPendingQualifyId] = useState<string | null>(null);
+  const [migrateTarget, setMigrateTarget] = useState<{ leadId: string; leadName: string } | null>(null);
   const [detailId, setDetailId] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
   const deleteMutation = useDeleteLead();
+
+  async function doDiscard(id: string) {
+    setLoadingId(id);
+    setDuplicates(null);
+    setPendingQualifyId(null);
+    try {
+      await apiFetch(`/leads/${id}/archive`, token, {
+        method: "PATCH",
+        body: JSON.stringify({ reason: "descartado" }),
+      });
+      toast.success("Prospecto descartado");
+      router.refresh();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao descartar");
+    } finally {
+      setLoadingId(null);
+    }
+  }
 
   async function doQualify(id: string) {
     setLoadingId(id);
@@ -370,72 +391,112 @@ export function ProspectsTable({ prospects }: ProspectsTableProps) {
         />
       )}
 
-      {duplicates && pendingQualifyId && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
-          <div className="w-full max-w-lg rounded-xl bg-[#1a0a2e] border border-yellow-500/40 p-5 space-y-4 shadow-2xl">
-            <div className="flex items-start gap-3">
-              <span className="text-yellow-400 text-xl leading-none mt-0.5">⚠</span>
-              <div>
-                <p className="font-semibold text-yellow-300">Possíveis leads duplicados encontrados</p>
-                <p className="text-sm text-yellow-200/70 mt-0.5">
-                  Revise os leads abaixo antes de qualificar. Você pode abrir cada um para conferir ou
-                  qualificar mesmo assim.
-                </p>
+      {duplicates && pendingQualifyId && (() => {
+        // Collect unique duplicate leads across all categories
+        const seen = new Set<string>();
+        const uniqueLeads: LeadSummary[] = [];
+        for (const cat of Object.values(duplicates)) {
+          for (const lead of cat) {
+            if (!seen.has(lead.leadId)) { seen.add(lead.leadId); uniqueLeads.push(lead); }
+          }
+        }
+        const firstDup = uniqueLeads[0];
+        return (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
+            <div className="w-full max-w-lg rounded-xl bg-[#1a0a2e] border border-yellow-500/40 p-5 space-y-4 shadow-2xl">
+              <div className="flex items-start gap-3">
+                <span className="text-yellow-400 text-xl leading-none mt-0.5">⚠</span>
+                <div>
+                  <p className="font-semibold text-yellow-300">Possíveis leads duplicados encontrados</p>
+                  <p className="text-sm text-yellow-200/70 mt-0.5">
+                    Escolha uma ação abaixo. <strong>Cancelar</strong> mantém o prospecto na lista sem fazer nada.
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                {(Object.keys(duplicates) as (keyof LeadDuplicates)[])
+                  .filter((k) => duplicates[k].length > 0)
+                  .map((category) => (
+                    <div key={category}>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-yellow-400/80 mb-1.5">
+                        {DUPLICATE_LABELS[category]}
+                      </p>
+                      <ul className="space-y-1">
+                        {duplicates[category].map((lead) => (
+                          <li key={lead.leadId} className="flex items-center gap-2 text-sm">
+                            <span className={`inline-block h-2 w-2 rounded-full flex-shrink-0 ${lead.isArchived ? "bg-gray-400" : "bg-green-400"}`} />
+                            <Link
+                              href={`/leads/${lead.leadId}`}
+                              target="_blank"
+                              className="text-yellow-200 hover:underline font-medium"
+                            >
+                              {lead.businessName}
+                            </Link>
+                            {lead.city && (
+                              <span className="text-yellow-200/50 text-xs">{lead.city}{lead.state ? ` / ${lead.state}` : ""}</span>
+                            )}
+                            {lead.isArchived && (
+                              <span className="text-xs text-gray-400 italic">(arquivado)</span>
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+              </div>
+
+              <div className="grid grid-cols-1 gap-2 pt-1">
+                {firstDup && (
+                  <button
+                    onClick={() => {
+                      setMigrateTarget({ leadId: firstDup.leadId, leadName: firstDup.businessName });
+                      setDuplicates(null);
+                    }}
+                    className="w-full rounded-md bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-500"
+                  >
+                    Migrar dados do Google para o lead existente
+                  </button>
+                )}
+                <button
+                  onClick={() => doDiscard(pendingQualifyId)}
+                  disabled={!!loadingId}
+                  className="w-full rounded-md bg-red-900/60 border border-red-500/40 px-4 py-2 text-sm font-medium text-red-300 hover:bg-red-900 disabled:opacity-50"
+                >
+                  {loadingId ? "Descartando..." : "Descartar prospecto (não mostrar mais)"}
+                </button>
+                <button
+                  onClick={() => doQualify(pendingQualifyId)}
+                  disabled={!!loadingId}
+                  className="w-full rounded-md bg-yellow-500 px-4 py-2 text-sm font-medium text-black hover:bg-yellow-400 disabled:opacity-50"
+                >
+                  {loadingId ? "Qualificando..." : "Qualificar mesmo assim"}
+                </button>
+                <button
+                  onClick={() => { setDuplicates(null); setPendingQualifyId(null); }}
+                  className="w-full rounded-md border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-[#2d1b3d]"
+                >
+                  Cancelar (manter na lista)
+                </button>
               </div>
             </div>
-
-            <div className="space-y-3">
-              {(Object.keys(duplicates) as (keyof LeadDuplicates)[])
-                .filter((k) => duplicates[k].length > 0)
-                .map((category) => (
-                  <div key={category}>
-                    <p className="text-xs font-semibold uppercase tracking-wide text-yellow-400/80 mb-1.5">
-                      {DUPLICATE_LABELS[category]}
-                    </p>
-                    <ul className="space-y-1">
-                      {duplicates[category].map((lead) => (
-                        <li key={lead.leadId} className="flex items-center gap-2 text-sm">
-                          <span className={`inline-block h-2 w-2 rounded-full flex-shrink-0 ${lead.isArchived ? "bg-gray-400" : "bg-green-400"}`} />
-                          <Link
-                            href={`/leads/${lead.leadId}`}
-                            target="_blank"
-                            className="text-yellow-200 hover:underline font-medium"
-                          >
-                            {lead.businessName}
-                          </Link>
-                          {lead.companyRegistrationID && (
-                            <span className="text-yellow-200/50 font-mono text-xs">{lead.companyRegistrationID}</span>
-                          )}
-                          {lead.city && (
-                            <span className="text-yellow-200/50 text-xs">{lead.city}{lead.state ? ` / ${lead.state}` : ""}</span>
-                          )}
-                          {lead.isArchived && (
-                            <span className="text-xs text-gray-400 italic">(arquivado)</span>
-                          )}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-            </div>
-
-            <div className="flex gap-3 pt-1">
-              <button
-                onClick={() => doQualify(pendingQualifyId)}
-                disabled={!!loadingId}
-                className="rounded-md bg-yellow-500 px-4 py-2 text-sm font-medium text-black hover:bg-yellow-400 disabled:opacity-50"
-              >
-                {loadingId ? "Qualificando..." : "Qualificar mesmo assim"}
-              </button>
-              <button
-                onClick={() => { setDuplicates(null); setPendingQualifyId(null); }}
-                className="rounded-md border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-[#2d1b3d]"
-              >
-                Cancelar
-              </button>
-            </div>
           </div>
-        </div>
+        );
+      })()}
+
+      {migrateTarget && pendingQualifyId && (
+        <ProspectMigrateModal
+          prospectId={pendingQualifyId}
+          targetLeadId={migrateTarget.leadId}
+          targetLeadName={migrateTarget.leadName}
+          onDone={() => {
+            setMigrateTarget(null);
+            setPendingQualifyId(null);
+            toast.success("Dados migrados e prospecto descartado");
+            router.refresh();
+          }}
+          onCancel={() => setMigrateTarget(null)}
+        />
       )}
     </>
   );

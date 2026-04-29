@@ -6,6 +6,7 @@ import { GoogleLeadsButton } from "@/components/leads/GoogleLeadsButton";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import Link from "next/link";
 
 export default async function ProspectsPage({
   searchParams,
@@ -13,13 +14,16 @@ export default async function ProspectsPage({
   searchParams: {
     search?: string;
     owner?: string;
+    showDiscarded?: string;
   };
 }) {
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
   const currentUserId = session?.user?.id || "";
+  const showDiscarded = searchParams.showDiscarded === "1";
 
   const prospectsQs = new URLSearchParams({ isProspect: "true" });
+  if (!showDiscarded) prospectsQs.set("isArchived", "false");
   if (searchParams.search) prospectsQs.set("search", searchParams.search);
   if (searchParams.owner) prospectsQs.set("owner", searchParams.owner);
 
@@ -29,6 +33,13 @@ export default async function ProspectsPage({
     backendFetch<UserListItem[]>('/users').catch(() => [] as UserListItem[]),
   ]);
   const prospects = prospectsResult.leads;
+
+  // Build toggle URL preserving other params
+  const toggleQs = new URLSearchParams();
+  if (searchParams.search) toggleQs.set("search", searchParams.search);
+  if (searchParams.owner) toggleQs.set("owner", searchParams.owner);
+  if (!showDiscarded) toggleQs.set("showDiscarded", "1");
+  const toggleHref = `/leads/prospects?${toggleQs}`;
 
   return (
     <div className="p-8">
@@ -44,7 +55,19 @@ export default async function ProspectsPage({
 
       {/* Filtros */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <ProspectsSearchInput defaultValue={searchParams.search} />
+        <div className="flex items-center gap-3 flex-wrap">
+          <ProspectsSearchInput defaultValue={searchParams.search} />
+          <Link
+            href={toggleHref}
+            className={`inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
+              showDiscarded
+                ? "border-red-400 bg-red-50 text-red-700 hover:bg-red-100"
+                : "border-gray-300 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-800"
+            }`}
+          >
+            {showDiscarded ? "Ocultando descartados ✕" : "Mostrar descartados"}
+          </Link>
+        </div>
         {isAdmin && users.length > 0 && (
           <OwnerFilter users={users} currentUserId={currentUserId} />
         )}
@@ -55,6 +78,9 @@ export default async function ProspectsPage({
         <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
           {prospects.length} {prospects.length === 1 ? "prospecto" : "prospectos"}
         </span>
+        {showDiscarded && (
+          <span className="text-xs text-red-500 italic">incluindo descartados</span>
+        )}
         {searchParams.search && (
           <span className="text-sm text-gray-500">com os filtros aplicados</span>
         )}
