@@ -38,6 +38,18 @@ describe("QualifyLeadUseCase", () => {
     expect(result.isRight()).toBe(true);
   });
 
+  it("seta isProspect=false ao qualificar um prospecto", async () => {
+    const lead = Lead.create({ ownerId: "user-1", businessName: "Prospecto", isProspect: true });
+    await repo.save(lead);
+
+    const result = await sut.execute({ id: lead.id.toString(), requesterId: "user-1", requesterRole: "sdr" });
+
+    expect(result.isRight()).toBe(true);
+    const saved = await repo.findByIdRaw(lead.id.toString());
+    expect(saved?.status).toBe("qualified");
+    expect(saved?.isProspect).toBe(false);
+  });
+
   it("retorna QualifyLeadNotFoundError para lead inexistente", async () => {
     const result = await sut.execute({ id: "nao-existe", requesterId: "user-1", requesterRole: "sdr" });
 

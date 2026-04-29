@@ -256,6 +256,7 @@ export class Lead extends AggregateRoot<LeadProps> {
 
   qualify() {
     this.props.status = "qualified";
+    this.props.isProspect = false;
     this.touch();
   }
 
