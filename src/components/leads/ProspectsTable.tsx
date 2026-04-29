@@ -81,7 +81,7 @@ const BUSINESS_STATUS_LABELS: Record<string, string> = {
   CLOSED_PERMANENTLY: "Fechado permanentemente",
 };
 
-export function ProspectsTable({ prospects, currentUserId }: ProspectsTableProps) {
+export function ProspectsTable({ prospects }: ProspectsTableProps) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const router = useRouter();
