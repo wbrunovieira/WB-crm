@@ -32,6 +32,32 @@ export interface LeadDeepResearchWebhookPayload {
     tiktok: string;
     metaAds: string | Record<string, unknown>;
     googleAds: string;
+    companyRegistrationID: string;
+  }>;
+  // Fields that always overwrite (even when existing value present) — used by focused research
+  forcedUpdates?: Partial<{
+    registeredName: string;
+    companyOwner: string;
+    foundationDate: string;
+    legalNature: string;
+    segment: string;
+    companySize: string;
+    employeesCount: number;
+    revenueRange: string;
+    description: string;
+    website: string;
+    email: string;
+    phone: string;
+    phone2: string;
+    whatsapp: string;
+    instagram: string;
+    linkedin: string;
+    facebook: string;
+    twitter: string;
+    tiktok: string;
+    metaAds: string | Record<string, unknown>;
+    googleAds: string;
+    companyRegistrationID: string;
   }>;
   newContacts?: Array<{
     name: string;
@@ -88,6 +114,21 @@ export class HandleLeadDeepResearchWebhookUseCase {
             foundValue: String(value),
             skippedReason: "Campo já possuía valor",
           });
+        }
+      }
+
+      // forcedUpdates — always overwrite (focused research)
+      if (payload.forcedUpdates) {
+        for (const [field, value] of Object.entries(payload.forcedUpdates)) {
+          if (value === null || value === undefined || value === "") continue;
+          let finalValue: unknown = value;
+          if (field === "foundationDate") {
+            finalValue = new Date(value as string);
+          } else if (value !== null && typeof value === "object") {
+            finalValue = JSON.stringify(value);
+          }
+          updates[field] = finalValue;
+          if (!updatedFields.includes(field)) updatedFields.push(field);
         }
       }
 

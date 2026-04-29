@@ -14,6 +14,7 @@ import { LeadMetaAdsButton } from "@/components/leads/LeadMetaAdsButton";
 import { LeadMetaAdsInline } from "@/components/leads/LeadMetaAdsInline";
 import { LeadGoogleAdsInline } from "@/components/leads/LeadGoogleAdsInline";
 import { LeadDeepResearchButton } from "@/components/leads/LeadDeepResearchButton";
+import { LeadFocusedResearchButton } from "@/components/leads/LeadFocusedResearchButton";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
@@ -155,6 +156,24 @@ export default async function LeadDetailPage({
           {/* Actions */}
           <div className="flex flex-wrap gap-2 flex-shrink-0">
             <LeadDeepResearchButton leadId={lead.id} hasResearch={!!lead.agentResearchAt} agentResearchAt={lead.agentResearchAt ? String(lead.agentResearchAt) : null} />
+            <LeadFocusedResearchButton
+              leadId={lead.id}
+              agentResearchAt={lead.agentResearchAt ? String(lead.agentResearchAt) : null}
+              lead={{
+                instagram: lead.instagram,
+                facebook: lead.facebook,
+                linkedin: lead.linkedin,
+                website: lead.website,
+                email: lead.email,
+                phone: lead.phone,
+                phone2: lead.phone2,
+                whatsapp: lead.whatsapp,
+                companyRegistrationID: lead.companyRegistrationID,
+                description: lead.description,
+                companyOwner: lead.companyOwner,
+                metaAds: lead.metaAds,
+              }}
+            />
             {!lead.convertedAt && (
               <>
                 {!lead.isArchived && (

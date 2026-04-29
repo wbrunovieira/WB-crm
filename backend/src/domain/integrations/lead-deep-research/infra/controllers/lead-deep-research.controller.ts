@@ -68,6 +68,35 @@ export class LeadDeepResearchController {
     return { status: "accepted", jobId: result.value.jobId };
   }
 
+  @Post("leads/:id/focused-research")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(202)
+  @ApiOperation({ summary: "Pesquisa focada em um campo específico via agente IA" })
+  async focusedResearch(
+    @Param("id") id: string,
+    @Body() body: { field: string; customInstruction?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (!body.field) throw new BadRequestException("field é obrigatório");
+
+    const result = await this.requestResearch.execute({
+      leadId: id,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+      focusField: body.field,
+      customInstruction: body.customInstruction,
+    });
+
+    if (result.isLeft()) {
+      const msg = result.value.message;
+      if (msg.includes("não encontrado")) throw new NotFoundException(msg);
+      throw new BadGatewayException(msg);
+    }
+
+    return { status: "accepted", jobId: result.value.jobId };
+  }
+
   @Post("webhooks/lead-deep-research")
   @HttpCode(200)
   @ApiOperation({ summary: "Callback do agente IA com resultado da pesquisa" })

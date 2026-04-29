@@ -44,6 +44,9 @@ export interface LeadDeepResearchPayload {
   }>;
   previousSummary?: string;
   previousResearchAt?: string;
+  // Focused research
+  focusField?: string;
+  customInstruction?: string;
 }
 
 export interface LeadDeepResearchJobResponse {

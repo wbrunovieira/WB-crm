@@ -8,6 +8,8 @@ type Input = {
   leadId: string;
   requesterId: string;
   requesterRole: string;
+  focusField?: string;
+  customInstruction?: string;
 };
 
 type Output = Either<Error, { jobId: string }>;
@@ -20,7 +22,7 @@ export class RequestLeadDeepResearchUseCase {
     private readonly agentPort: AgentDeepResearchPort,
   ) {}
 
-  async execute({ leadId, requesterId, requesterRole }: Input): Promise<Output> {
+  async execute({ leadId, requesterId, requesterRole, focusField, customInstruction }: Input): Promise<Output> {
     const lead = await this.leadsRepo.findById(leadId, requesterId, requesterRole);
     if (!lead) return left(new Error("Lead não encontrado"));
 
@@ -76,6 +78,8 @@ export class RequestLeadDeepResearchUseCase {
           ? new Date(lead.agentResearchAt).toISOString()
           : undefined,
       }),
+      ...(focusField && { focusField }),
+      ...(customInstruction && { customInstruction }),
     });
 
     return right({ jobId: result.jobId });
