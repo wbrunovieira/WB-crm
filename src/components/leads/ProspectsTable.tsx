@@ -18,6 +18,7 @@ import { PhoneLink } from "@/components/ui/phone-link";
 import { useDeleteLead } from "@/hooks/leads/use-leads";
 import { toast } from "sonner";
 import { useConfirmDialog, ConfirmDialog } from "@/components/shared/ConfirmDialog";
+import { ProspectDetailModal } from "./ProspectDetailModal";
 
 type Prospect = {
   id: string;
@@ -87,6 +88,7 @@ export function ProspectsTable({ prospects, currentUserId }: ProspectsTableProps
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const [duplicates, setDuplicates] = useState<LeadDuplicates | null>(null);
   const [pendingQualifyId, setPendingQualifyId] = useState<string | null>(null);
+  const [detailId, setDetailId] = useState<string | null>(null);
   const { confirm, dialogProps } = useConfirmDialog();
   const deleteMutation = useDeleteLead();
 
@@ -219,7 +221,11 @@ export function ProspectsTable({ prospects, currentUserId }: ProspectsTableProps
           </thead>
           <tbody className="divide-y divide-gray-100">
             {prospects.map((p) => (
-              <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+              <tr
+                key={p.id}
+                className="hover:bg-purple-50/40 transition-colors cursor-pointer"
+                onClick={() => setDetailId(p.id)}
+              >
                 {/* Empresa */}
                 <td className="px-4 py-3">
                   <div>
@@ -324,7 +330,7 @@ export function ProspectsTable({ prospects, currentUserId }: ProspectsTableProps
                 </td>
 
                 {/* Ações */}
-                <td className="px-4 py-3 text-right">
+                <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
                   <div className="flex items-center justify-end gap-2">
                     <button
                       onClick={() => handleQualify(p)}
@@ -356,6 +362,13 @@ export function ProspectsTable({ prospects, currentUserId }: ProspectsTableProps
       </div>
 
       <ConfirmDialog {...dialogProps} />
+
+      {detailId && (
+        <ProspectDetailModal
+          prospectId={detailId}
+          onClose={() => setDetailId(null)}
+        />
+      )}
 
       {duplicates && pendingQualifyId && (
         <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
