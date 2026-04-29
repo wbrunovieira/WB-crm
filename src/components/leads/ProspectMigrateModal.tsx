@@ -159,7 +159,7 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
 
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-2xl max-h-[92vh] rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden">
+      <div className="w-full max-w-3xl max-h-[92vh] rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden">
 
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
@@ -189,11 +189,15 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
               </p>
 
               {/* Column headers */}
-              <div className="grid grid-cols-[auto_1fr_auto_1fr] gap-x-3 items-center mb-1 px-1">
-                <div className="w-5" />
-                <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Google (prospecto)</p>
-                <ArrowRight className="h-3.5 w-3.5 text-gray-300" />
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Lead atual</p>
+              <div className="flex items-center gap-2 mb-1 px-1">
+                <div className="w-5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Google (prospecto)</p>
+                </div>
+                <div className="w-5 shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Lead atual</p>
+                </div>
               </div>
 
               {/* Field rows */}
@@ -207,7 +211,7 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
                   return (
                     <label
                       key={key}
-                      className={`grid grid-cols-[auto_1fr_auto_1fr] gap-x-3 items-start px-3 py-2.5 cursor-pointer transition-colors ${
+                      className={`flex items-start gap-2 px-3 py-2.5 cursor-pointer transition-colors ${
                         selected.has(key) ? "bg-purple-50" : "hover:bg-gray-50"
                       }`}
                     >
@@ -215,9 +219,9 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
                         type="checkbox"
                         checked={selected.has(key)}
                         onChange={() => toggle(key)}
-                        className="mt-1 h-4 w-4 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
+                        className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300 text-purple-600 focus:ring-purple-500 cursor-pointer"
                       />
-                      <div className="min-w-0">
+                      <div className="flex-1 min-w-0">
                         <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">{label}</p>
                         <p className={`text-sm break-words ${selected.has(key) ? "text-purple-800 font-medium" : "text-gray-700"}`}>
                           {prospectVal}
@@ -227,7 +231,7 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
                         </p>
                       </div>
                       <ArrowRight className={`h-3.5 w-3.5 mt-1 shrink-0 ${selected.has(key) ? "text-purple-400" : "text-gray-200"}`} />
-                      <div className="min-w-0">
+                      <div className="flex-1 min-w-0">
                         <p className="text-sm break-words text-gray-400">
                           {isEmpty ? <span className="italic text-gray-300">vazio</span> : leadVal}
                         </p>
