@@ -25,21 +25,21 @@ export function CollapsibleSection({
 
   return (
     <div id={id} className="mt-6 overflow-hidden rounded-xl bg-white shadow-md border border-purple-900/40">
-      <div className="flex w-full items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors">
+      <div className="flex items-center">
         <button
           type="button"
           onClick={() => setOpen((v) => !v)}
-          className="flex flex-1 items-center gap-2.5 text-sm font-bold uppercase tracking-wider text-purple-400 text-left"
+          className="flex flex-1 items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
         >
-          {icon}
-          {title}
-        </button>
-        <div className="flex items-center gap-2">
-          {action && <span onClick={(e) => e.stopPropagation()}>{action}</span>}
-          <button type="button" onClick={() => setOpen((v) => !v)} className="text-purple-600">
+          <span className="flex items-center gap-2.5 text-sm font-bold uppercase tracking-wider text-purple-400">
+            {icon}
+            {title}
+          </span>
+          <span className="text-purple-600">
             {open ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-          </button>
-        </div>
+          </span>
+        </button>
+        {action && <div className="shrink-0 pr-4">{action}</div>}
       </div>
       {open && (
         <div className="border-t border-purple-900/40 px-6 py-5">

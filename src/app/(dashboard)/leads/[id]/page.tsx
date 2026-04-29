@@ -518,7 +518,30 @@ export default async function LeadDetailPage({
         icon={<Star size={14} />}
         title="Google Places"
         defaultOpen={false}
-        action={<LeadGooglePlacesLinkButton lead={lead} />}
+        action={<LeadGooglePlacesLinkButton lead={{
+          id: lead.id,
+          businessName: lead.businessName,
+          registeredName: lead.registeredName ?? null,
+          city: lead.city ?? null,
+          address: lead.address ?? null,
+          state: lead.state ?? null,
+          zipCode: lead.zipCode ?? null,
+          country: lead.country ?? null,
+          phone: lead.phone ?? null,
+          website: lead.website ?? null,
+          rating: lead.rating ?? null,
+          userRatingsTotal: lead.userRatingsTotal ?? null,
+          priceLevel: lead.priceLevel ?? null,
+          businessStatus: lead.businessStatus ?? null,
+          categories: lead.categories ?? null,
+          types: lead.types ?? null,
+          latitude: lead.latitude ?? null,
+          longitude: lead.longitude ?? null,
+          googleMapsUrl: lead.googleMapsUrl ?? null,
+          googleId: lead.googleId ?? null,
+          description: lead.description ?? null,
+          openingHours: lead.openingHours ?? null,
+        }} />}
       >
         {!lead.googleId && !lead.rating && !lead.categories && !lead.userRatingsTotal && !lead.priceLevel && !lead.types ? (
           <p className="text-sm text-gray-500 italic">Nenhum dado do Google Places vinculado ainda.</p>
