@@ -263,7 +263,7 @@ export default async function LeadDetailPage({
                       verified={lead.whatsappVerifiedAt && lead.whatsappVerifiedNumber === lead.phone
                         ? { at: lead.whatsappVerifiedAt, number: lead.whatsappVerifiedNumber, exists: lead.whatsappVerified ?? false }
                         : undefined} />
-                    <LeadPhoneVerifyButton leadId={lead.id} phone={lead.phone} existing={{ phoneValid: lead.phoneValid ?? null, phoneType: lead.phoneType ?? null }} />
+                    <LeadPhoneVerifyButton leadId={lead.id} phone={lead.phone} phone2={lead.phone2} whatsapp={lead.whatsapp} existing={{ phoneValid: lead.phoneValid ?? null, phoneType: lead.phoneType ?? null, phone2Valid: lead.phone2Valid ?? null, phone2Type: lead.phone2Type ?? null, whatsappPhoneValid: lead.whatsappPhoneValid ?? null, whatsappPhoneType: lead.whatsappPhoneType ?? null }} />
                   </>
                 ) : dash}
               </dd>

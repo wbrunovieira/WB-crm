@@ -91,6 +91,16 @@ export interface LeadDetail extends LeadSummary {
   whatsappVerified: boolean;
   whatsappVerifiedAt: Date | null;
   whatsappVerifiedNumber: string | null;
+  emailVerified: boolean | null;
+  emailVerifiedAt: Date | null;
+  emailVerificationStatus: string | null;
+  emailVerificationReason: string | null;
+  phoneValid: boolean | null;
+  phoneType: string | null;
+  phone2Valid: boolean | null;
+  phone2Type: string | null;
+  whatsappPhoneValid: boolean | null;
+  whatsappPhoneType: string | null;
   website: string | null;
   instagram: string | null;
   linkedin: string | null;
