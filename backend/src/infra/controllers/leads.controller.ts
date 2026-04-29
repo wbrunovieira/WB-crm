@@ -380,6 +380,33 @@ class UpdateLeadDto {
   @ApiPropertyOptional()
   starRating?: number;
 
+  @ApiPropertyOptional()
+  rating?: number;
+
+  @ApiPropertyOptional()
+  userRatingsTotal?: number;
+
+  @ApiPropertyOptional()
+  googleId?: string;
+
+  @ApiPropertyOptional()
+  categories?: string;
+
+  @ApiPropertyOptional()
+  types?: string;
+
+  @ApiPropertyOptional()
+  googleMapsUrl?: string;
+
+  @ApiPropertyOptional()
+  latitude?: number;
+
+  @ApiPropertyOptional()
+  longitude?: number;
+
+  @ApiPropertyOptional()
+  searchTerm?: string;
+
   @ApiPropertyOptional({ enum: ["new", "contacted", "qualified", "disqualified"] })
   status?: string;
 
