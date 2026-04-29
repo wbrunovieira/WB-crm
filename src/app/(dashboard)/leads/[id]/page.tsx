@@ -295,11 +295,11 @@ export default async function LeadDetailPage({
                     <a href={`mailto:${lead.email}`} className="font-medium text-purple-300 hover:text-purple-200 hover:underline">{lead.email}</a>
                     <GmailButton to={lead.email} name={lead.businessName} leadId={lead.id} variant="icon" />
                     <LeadEmailVerifyButton leadId={lead.id} email={lead.email}
-                      verified={lead.emailVerified && lead.emailVerifiedAt ? {
+                      verified={lead.emailVerifiedAt ? {
                         at: lead.emailVerifiedAt,
                         status: lead.emailVerificationStatus ?? "",
                         reason: lead.emailVerificationReason ?? "",
-                        valid: lead.emailVerified,
+                        valid: lead.emailVerified ?? false,
                       } : undefined}
                     />
                   </>
