@@ -159,8 +159,8 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
   const availableFields = FIELD_META.filter((f) => prospect?.[f.key] != null);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-hidden bg-black/60 px-4 pt-20 pb-8">
-      <div className="w-full max-w-3xl rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden h-[calc(100vh-7rem)]">
+    <div className="fixed inset-0 z-[60] bg-black/60 flex items-center justify-center p-6">
+      <div className="w-full max-w-3xl rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden" style={{ height: "calc(100vh - 3rem)" }}>
 
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
