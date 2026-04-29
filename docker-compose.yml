@@ -33,10 +33,13 @@ services:
     environment:
       NODE_ENV: production
       PORT: 3010
+      ENV_FILE_PATH: /app/backend.env
       # Em desenvolvimento local o postgres sobe junto (service "postgres" acima).
       # Em produção o DATABASE_URL vem do backend/.env apontando para crm_postgres.
     env_file:
       - ./backend/.env
+    volumes:
+      - ./backend/.env:/app/backend.env   # persiste tokens OAuth (GoTo etc.) entre reinicializações
     networks:
       - default        # rede interna do compose (desenvolvimento)
       - crm-db         # rede externa onde vive crm_postgres em produção
