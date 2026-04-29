@@ -1,5 +1,6 @@
 import { backendFetch } from "@/lib/backend/client";
 import type { Activity } from "@/types/activity";
+import type { CallAnalysis } from "@/types/call-analysis";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { formatDate } from "@/lib/utils";
@@ -20,7 +21,10 @@ export default async function ActivityDetailPage({
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
 
-  const activity = await backendFetch<Activity>(`/activities/${params.id}`).catch(() => null);
+  const [activity, callAnalysis] = await Promise.all([
+    backendFetch<Activity>(`/activities/${params.id}`).catch(() => null),
+    backendFetch<CallAnalysis>(`/call-analysis/by-activity/${params.id}`).catch(() => null),
+  ]);
 
   if (!activity) {
     notFound();
@@ -55,6 +59,24 @@ export default async function ActivityDetailPage({
                 ) : (
                   <span className="rounded-full bg-yellow-100 px-2 py-1 text-xs font-semibold text-yellow-800">
                     Pendente
+                  </span>
+                )}
+                {callAnalysis && callAnalysis.status === "completed" && (
+                  <Link
+                    href={`/call-analyses/${callAnalysis.id}`}
+                    className="rounded-full bg-purple-100 px-2 py-1 text-xs font-semibold text-purple-800 hover:bg-purple-200"
+                  >
+                    Ver Análise SPICED{callAnalysis.score !== null ? ` · ${callAnalysis.score}/100` : ""}
+                  </Link>
+                )}
+                {callAnalysis && callAnalysis.status === "pending" && (
+                  <span className="rounded-full bg-gray-100 px-2 py-1 text-xs font-semibold text-gray-600">
+                    Análise SPICED pendente
+                  </span>
+                )}
+                {callAnalysis && callAnalysis.status === "processing" && (
+                  <span className="rounded-full bg-blue-100 px-2 py-1 text-xs font-semibold text-blue-700">
+                    Análise SPICED em processamento
                   </span>
                 )}
               </div>

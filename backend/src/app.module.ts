@@ -22,6 +22,7 @@ import { MetaAdsModule } from "./domain/integrations/meta-ads/meta-ads.module";
 import { MeetModule } from "./domain/integrations/meet/meet.module";
 import { LeadResearchModule } from "./domain/integrations/lead-research/lead-research.module";
 import { LeadDeepResearchModule } from "./domain/integrations/lead-deep-research/lead-deep-research.module";
+import { CallAnalysisModule } from "./domain/integrations/call-analysis/call-analysis.module";
 import { LabelsModule } from "./domain/labels/labels.module";
 import { CnaeModule } from "./domain/cnae/cnae.module";
 import { SectorsModule } from "./domain/sectors/sectors.module";
@@ -41,7 +42,7 @@ import { DashboardModule } from "./domain/dashboard/dashboard.module";
 import { FunnelModule } from "./domain/funnel/funnel.module";
 
 @Module({
-  imports: [EventEmitterModule.forRoot(), ScheduleModule.forRoot(), DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, PhoneModule, MetaAdsModule, MeetModule, LeadResearchModule, LeadDeepResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule, NotificationsModule, DashboardModule, FunnelModule],
+  imports: [EventEmitterModule.forRoot(), ScheduleModule.forRoot(), DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, PhoneModule, MetaAdsModule, MeetModule, LeadResearchModule, LeadDeepResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule, NotificationsModule, DashboardModule, FunnelModule, CallAnalysisModule],
   controllers: [HealthController],
   providers: [],
 })

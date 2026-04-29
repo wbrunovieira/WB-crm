@@ -1,6 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { ActivitiesRepository } from "../repositories/activities.repository";
+import { TriggerCallAnalysisUseCase } from "@/domain/integrations/call-analysis/application/use-cases/trigger-call-analysis.use-case";
 import type { Activity } from "../../enterprise/entities/activity";
 
 export interface UpdateActivityInput {
@@ -26,7 +27,12 @@ type Output = Either<Error, { activity: Activity }>;
 
 @Injectable()
 export class UpdateActivityUseCase {
-  constructor(private readonly activities: ActivitiesRepository) {}
+  private readonly logger = new Logger(UpdateActivityUseCase.name);
+
+  constructor(
+    private readonly activities: ActivitiesRepository,
+    private readonly triggerCallAnalysis: TriggerCallAnalysisUseCase,
+  ) {}
 
   async execute(input: UpdateActivityInput): Promise<Output> {
     const activity = await this.activities.findByIdRaw(input.id);
@@ -63,6 +69,39 @@ export class UpdateActivityUseCase {
 
     activity.update(updates);
     await this.activities.save(activity);
+
+    if (
+      input.callContactType === "decisor" &&
+      activity.gotoTranscriptText
+    ) {
+      const backendUrl = process.env.BACKEND_URL ?? "http://localhost:3010";
+      const webhookUrl = `${backendUrl}/webhooks/call-analysis`;
+
+      setImmediate(() => {
+        this.triggerCallAnalysis
+          .execute({
+            activityId: activity.id.toString(),
+            activitySubject: activity.subject,
+            activityNotes: activity.description,
+            transcript: activity.gotoTranscriptText!,
+            callDate: activity.dueDate,
+            leadId: activity.leadId,
+            ownerId: activity.ownerId,
+            webhookUrl,
+          })
+          .then((result) => {
+            if (result.isLeft()) {
+              this.logger.error(`Failed to trigger call analysis: ${result.value.message}`);
+            } else {
+              this.logger.log(`Call analysis triggered: ${result.value.analysisId}`);
+            }
+          })
+          .catch((err: unknown) => {
+            this.logger.error(`Exception triggering call analysis: ${String(err)}`);
+          });
+      });
+    }
+
     return right({ activity });
   }
 }

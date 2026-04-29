@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { right } from "@/core/either";
 import { InMemoryActivitiesRepository } from "../../repositories/in-memory-activities.repository";
 import { GetActivitiesUseCase } from "@/domain/activities/application/use-cases/get-activities.use-case";
 import { GetActivityByIdUseCase } from "@/domain/activities/application/use-cases/get-activity-by-id.use-case";
@@ -11,6 +12,11 @@ import { MarkActivitySkippedUseCase } from "@/domain/activities/application/use-
 import { RevertActivityOutcomeUseCase } from "@/domain/activities/application/use-cases/revert-activity-outcome.use-case";
 import { LinkActivityToDealUseCase } from "@/domain/activities/application/use-cases/link-activity-to-deal.use-case";
 import { UnlinkActivityFromDealUseCase } from "@/domain/activities/application/use-cases/unlink-activity-from-deal.use-case";
+import type { TriggerCallAnalysisUseCase } from "@/domain/integrations/call-analysis/application/use-cases/trigger-call-analysis.use-case";
+
+const fakeTriggerCallAnalysis = {
+  execute: async () => right({ analysisId: "fake-analysis-id" }),
+} as unknown as TriggerCallAnalysisUseCase;
 
 const OWNER_ID = "user-1";
 const OTHER_ID = "user-2";
@@ -34,7 +40,7 @@ describe("Activities Use Cases", () => {
     getList = new GetActivitiesUseCase(repo);
     getById = new GetActivityByIdUseCase(repo);
     create = new CreateActivityUseCase(repo);
-    update = new UpdateActivityUseCase(repo);
+    update = new UpdateActivityUseCase(repo, fakeTriggerCallAnalysis);
     deleteActivity = new DeleteActivityUseCase(repo);
     toggleCompleted = new ToggleActivityCompletedUseCase(repo);
     markFailed = new MarkActivityFailedUseCase(repo);

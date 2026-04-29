@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "@/infra/auth/auth.module";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
+import { CallAnalysisModule } from "@/domain/integrations/call-analysis/call-analysis.module";
 import { S3StoragePort } from "@/domain/integrations/goto/application/ports/s3-storage.port";
 import { S3RecordingClient } from "@/domain/integrations/goto/infra/s3-recording.client";
 import { GmailPort } from "@/domain/integrations/email/application/ports/gmail.port";
@@ -25,7 +26,7 @@ import { PurgeActivityUseCase } from "./application/use-cases/purge-activity.use
 import { ActivitiesController } from "@/infra/controllers/activities.controller";
 
 @Module({
-  imports: [AuthModule, SharedInfraModule],
+  imports: [AuthModule, SharedInfraModule, CallAnalysisModule],
   controllers: [ActivitiesController],
   providers: [
     { provide: ActivitiesRepository, useClass: PrismaActivitiesRepository },

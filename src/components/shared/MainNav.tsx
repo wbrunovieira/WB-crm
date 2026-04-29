@@ -23,6 +23,7 @@ import {
   TrendingUp,
   ScanSearch,
   MessageCircle,
+  BrainCircuit,
 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 
@@ -94,6 +95,11 @@ const navItems = [
     name: "Funil",
     href: "/calls",
     icon: TrendingUp,
+  },
+  {
+    name: "SPICED",
+    href: "/call-analyses",
+    icon: BrainCircuit,
   },
   {
     name: "Manager",
