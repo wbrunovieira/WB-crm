@@ -1,15 +1,29 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { GoToTokenService } from "@/domain/integrations/goto/infra/goto-token.service";
 import { FakeGoToApiPort } from "../fakes/fake-goto-api.port";
+import { OAuthRepository } from "@/domain/auth/application/repositories/oauth.repository";
+
+class FakeOAuthRepository extends OAuthRepository {
+  public storeGoToTokensCalls: Array<{ accessToken: string; refreshToken?: string; expiresAt: number }> = [];
+
+  async storeGoToTokens(tokens: { accessToken: string; refreshToken?: string; expiresAt: number }): Promise<void> {
+    this.storeGoToTokensCalls.push(tokens);
+  }
+
+  async storeGoogleTokens(): Promise<void> {}
+  async deleteAllGoogleTokens(): Promise<void> {}
+}
 
 let goToApi: FakeGoToApiPort;
+let fakeOAuth: FakeOAuthRepository;
 let service: GoToTokenService;
 
 const originalEnv = { ...process.env };
 
 beforeEach(() => {
   goToApi = new FakeGoToApiPort();
-  service = new GoToTokenService(goToApi);
+  fakeOAuth = new FakeOAuthRepository();
+  service = new GoToTokenService(goToApi, fakeOAuth);
 
   // Reset env vars before each test
   delete process.env.GOTO_ACCESS_TOKEN;
@@ -81,5 +95,26 @@ describe("GoToTokenService", () => {
     expect(process.env.GOTO_ACCESS_TOKEN).toBe("new-access-token");
     expect(process.env.GOTO_REFRESH_TOKEN).toBe("new-refresh-token");
     expect(Number(process.env.GOTO_TOKEN_EXPIRES_AT)).toBeGreaterThan(Date.now());
+  });
+
+  it("persists refreshed tokens to OAuthRepository so they survive container restarts", async () => {
+    process.env.GOTO_REFRESH_TOKEN = "old-refresh";
+    process.env.GOTO_TOKEN_EXPIRES_AT = String(Date.now() - 1000);
+
+    await service.getValidAccessToken();
+
+    expect(fakeOAuth.storeGoToTokensCalls).toHaveLength(1);
+    expect(fakeOAuth.storeGoToTokensCalls[0].accessToken).toBe("new-access-token");
+    expect(fakeOAuth.storeGoToTokensCalls[0].refreshToken).toBe("new-refresh-token");
+    expect(fakeOAuth.storeGoToTokensCalls[0].expiresAt).toBeGreaterThan(Date.now());
+  });
+
+  it("does NOT call OAuthRepository when token is still valid", async () => {
+    process.env.GOTO_ACCESS_TOKEN = "valid-token";
+    process.env.GOTO_TOKEN_EXPIRES_AT = String(Date.now() + 60 * 60 * 1000);
+
+    await service.getValidAccessToken();
+
+    expect(fakeOAuth.storeGoToTokensCalls).toHaveLength(0);
   });
 });

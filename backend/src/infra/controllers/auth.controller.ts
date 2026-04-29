@@ -162,8 +162,8 @@ export class AuthController {
   @ApiOperation({ summary: "Callback OAuth GoTo — troca code por tokens e persiste" })
   async gotoCallback(@Query("code") code: string, @Query("error") error: string) {
     const base = frontendUrl();
-    if (error) return { url: `${base}/dashboard/admin?goto_error=${encodeURIComponent(error)}`, statusCode: 302 };
-    if (!code) return { url: `${base}/dashboard/admin?goto_error=no_code`, statusCode: 302 };
+    if (error) return { url: `${base}/admin?goto_error=${encodeURIComponent(error)}`, statusCode: 302 };
+    if (!code) return { url: `${base}/admin?goto_error=no_code`, statusCode: 302 };
     try {
       const backendUrl = process.env.BACKEND_URL ?? "http://localhost:3010";
       const clientId = process.env.GOTO_CLIENT_ID ?? "";
@@ -184,9 +184,9 @@ export class AuthController {
         refreshToken: data.refresh_token,
         expiresAt: Date.now() + data.expires_in * 1000,
       });
-      return { url: `${base}/dashboard/admin?goto_connected=1`, statusCode: 302 };
+      return { url: `${base}/admin?goto_connected=1`, statusCode: 302 };
     } catch {
-      return { url: `${base}/dashboard/admin?goto_error=token_exchange_failed`, statusCode: 302 };
+      return { url: `${base}/admin?goto_error=token_exchange_failed`, statusCode: 302 };
     }
   }
 }

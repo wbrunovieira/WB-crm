@@ -108,22 +108,26 @@ describe("AuthController.gotoCallback()", () => {
     vi.restoreAllMocks();
   });
 
-  it("redirects to frontend with goto_error when GoTo returns an error param", async () => {
+  it("redirects to /admin (not /dashboard/admin) with goto_error on GoTo error param", async () => {
     const result = await controller.gotoCallback("", "access_denied");
 
     expect(result.statusCode).toBe(302);
     expect(result.url).toContain("goto_error=access_denied");
     expect(result.url).toContain("crm.example.com");
+    expect(result.url).not.toContain("/dashboard/admin");
+    expect(result.url).toContain("/admin");
   });
 
-  it("redirects to frontend with goto_error=no_code when code is absent", async () => {
+  it("redirects to /admin with goto_error=no_code when code is absent", async () => {
     const result = await controller.gotoCallback("", "");
 
     expect(result.statusCode).toBe(302);
     expect(result.url).toContain("goto_error=no_code");
+    expect(result.url).not.toContain("/dashboard/admin");
+    expect(result.url).toContain("/admin");
   });
 
-  it("calls storeGoToTokens and redirects to admin with goto_connected=1 on success", async () => {
+  it("calls storeGoToTokens and redirects to /admin with goto_connected=1 on success", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -143,9 +147,11 @@ describe("AuthController.gotoCallback()", () => {
     );
     expect(result.statusCode).toBe(302);
     expect(result.url).toContain("goto_connected=1");
+    expect(result.url).not.toContain("/dashboard/admin");
+    expect(result.url).toContain("/admin");
   });
 
-  it("redirects with goto_error=token_exchange_failed when token exchange HTTP call fails", async () => {
+  it("redirects to /admin with goto_error=token_exchange_failed when exchange fails", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 400,
@@ -155,5 +161,7 @@ describe("AuthController.gotoCallback()", () => {
 
     expect(result.statusCode).toBe(302);
     expect(result.url).toContain("goto_error=token_exchange_failed");
+    expect(result.url).not.toContain("/dashboard/admin");
+    expect(result.url).toContain("/admin");
   });
 });

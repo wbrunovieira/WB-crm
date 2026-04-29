@@ -37,6 +37,6 @@ import { GetUsersUseCase } from "@/domain/auth/application/use-cases/get-users.u
     { provide: UsersRepository, useClass: PrismaUsersRepository },
     { provide: OAuthRepository, useClass: PrismaOAuthRepository },
   ],
-  exports: [JwtModule, JwtAuthGuard, SseJwtAuthGuard, UsersRepository],
+  exports: [JwtModule, JwtAuthGuard, SseJwtAuthGuard, UsersRepository, OAuthRepository],
 })
 export class AuthModule {}

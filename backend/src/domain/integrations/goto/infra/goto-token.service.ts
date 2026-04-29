@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { GoToTokenPort } from "@/domain/integrations/goto/application/ports/goto-token.port";
 import { GoToApiPort } from "@/domain/integrations/goto/application/ports/goto-api.port";
+import { OAuthRepository } from "@/domain/auth/application/repositories/oauth.repository";
 
 const EXPIRY_BUFFER_MS = 5 * 60 * 1000;
 
@@ -8,7 +9,10 @@ const EXPIRY_BUFFER_MS = 5 * 60 * 1000;
 export class GoToTokenService extends GoToTokenPort {
   private readonly logger = new Logger(GoToTokenService.name);
 
-  constructor(private readonly goToApi: GoToApiPort) {
+  constructor(
+    private readonly goToApi: GoToApiPort,
+    private readonly oauthRepo: OAuthRepository,
+  ) {
     super();
   }
 
@@ -33,11 +37,15 @@ export class GoToTokenService extends GoToTokenPort {
 
     const newTokens = await this.goToApi.refreshToken(refreshToken);
 
+    // Update process.env for immediate in-process use
     process.env.GOTO_ACCESS_TOKEN = newTokens.accessToken;
     process.env.GOTO_REFRESH_TOKEN = newTokens.refreshToken;
     process.env.GOTO_TOKEN_EXPIRES_AT = String(newTokens.expiresAt);
 
-    this.logger.log("GoTo tokens refreshed");
+    // Persist to file so the rotating refresh token survives container restarts
+    await this.oauthRepo.storeGoToTokens(newTokens);
+
+    this.logger.log("GoTo tokens refreshed and persisted");
 
     return newTokens.accessToken;
   }
