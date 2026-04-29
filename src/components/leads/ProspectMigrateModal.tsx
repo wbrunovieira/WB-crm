@@ -158,8 +158,7 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
   const availableFields = FIELD_META.filter((f) => prospect?.[f.key] != null);
 
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto bg-black/60">
-      <div className="flex min-h-full items-start justify-center p-4 py-8">
+    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/60 p-4 py-8">
       <div className="w-full max-w-3xl rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: "calc(100vh - 4rem)" }}>
 
         {/* Header */}
@@ -175,7 +174,7 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
           </button>
         </div>
 
-        <div className="flex-1 overflow-y-auto px-6 py-4 space-y-5">
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-4 space-y-5">
           {loading && (
             <div className="py-10 flex items-center justify-center gap-2 text-sm text-gray-400">
               <Loader2 className="h-4 w-4 animate-spin" /> Carregando dados...
@@ -310,7 +309,6 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
               : "Apenas atualizar labels"}
           </button>
         </div>
-      </div>
       </div>
     </div>
   );
