@@ -52,7 +52,8 @@ function mapPlace(raw: Record<string, unknown>): PlaceResult {
     placeId: raw.id as string,
     businessName: (raw.displayName as { text: string })?.text ?? "",
     address: (raw.formattedAddress as string) ?? "",
-    city: extractAddressComponent(addressComponents, "locality"),
+    city: extractAddressComponent(addressComponents, "locality") ??
+      extractAddressComponent(addressComponents, "administrative_area_level_2"),
     state: extractAddressComponent(addressComponents, "administrative_area_level_1"),
     zipCode: extractAddressComponent(addressComponents, "postal_code"),
     country: extractAddressComponent(addressComponents, "country"),
