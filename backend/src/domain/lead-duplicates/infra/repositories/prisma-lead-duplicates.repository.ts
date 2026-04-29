@@ -27,7 +27,7 @@ export class PrismaLeadDuplicatesRepository extends LeadDuplicatesRepository {
     if (orConditions.length === 0) return [];
 
     const rows = await this.prisma.lead.findMany({
-      where: { ownerId: input.ownerId, OR: orConditions },
+      where: { ownerId: input.ownerId, isProspect: false, OR: orConditions },
       select: { id: true, businessName: true, companyRegistrationID: true, phone: true, email: true, address: true, city: true, state: true, isArchived: true, status: true },
     });
 
