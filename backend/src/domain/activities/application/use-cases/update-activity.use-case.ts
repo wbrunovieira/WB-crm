@@ -84,6 +84,7 @@ export class UpdateActivityUseCase {
             activitySubject: activity.subject,
             activityNotes: activity.description,
             transcript: activity.gotoTranscriptText!,
+            callDurationSeconds: activity.gotoDuration ?? 0,
             callDate: activity.dueDate,
             leadId: activity.leadId,
             ownerId: activity.ownerId,
