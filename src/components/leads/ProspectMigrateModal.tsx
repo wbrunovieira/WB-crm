@@ -74,6 +74,7 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [confirmStep, setConfirmStep] = useState(false);
   const [selected, setSelected] = useState<Set<FieldKey>>(new Set());
   const [labelIds, setLabelIds] = useState<string[]>([]);
   const [sourceGroup, setSourceGroup] = useState("");
@@ -158,8 +159,8 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
   const availableFields = FIELD_META.filter((f) => prospect?.[f.key] != null);
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-y-auto bg-black/60 p-4 py-8">
-      <div className="w-full max-w-3xl rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden" style={{ maxHeight: "calc(100vh - 4rem)" }}>
+    <div className="fixed inset-0 z-[60] flex items-start justify-center overflow-hidden bg-black/60 px-4 pt-20 pb-8">
+      <div className="w-full max-w-3xl rounded-xl bg-white shadow-2xl flex flex-col overflow-hidden max-h-full">
 
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between border-b border-gray-100 bg-white px-6 py-4">
@@ -289,25 +290,54 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 flex gap-3 border-t border-gray-100 bg-white px-6 py-4">
-          <button
-            onClick={onCancel}
-            className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Cancelar
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={saving || !prospect}
-            className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {saving && <Loader2 className="h-4 w-4 animate-spin" />}
-            {saving
-              ? "Migrando..."
-              : selected.size > 0
-              ? `Migrar ${selected.size} campo${selected.size !== 1 ? "s" : ""} + labels`
-              : "Apenas atualizar labels"}
-          </button>
+        <div className="shrink-0 border-t border-gray-100 bg-white px-6 py-4">
+          {confirmStep ? (
+            <div className="space-y-3">
+              <p className="text-sm font-semibold text-gray-800">Confirmar migração?</p>
+              <ul className="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                {selected.size > 0 && (
+                  <li>Copiar {selected.size} campo{selected.size !== 1 ? "s" : ""} do Google para o lead</li>
+                )}
+                <li>Atualizar labels do lead</li>
+                {sourceGroup.trim() && <li>Definir lote &ldquo;{sourceGroup.trim()}&rdquo;</li>}
+                <li className="text-red-600 font-medium">Descartar o prospecto permanentemente</li>
+              </ul>
+              <div className="flex gap-3 pt-1">
+                <button
+                  onClick={() => setConfirmStep(false)}
+                  className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Voltar
+                </button>
+                <button
+                  onClick={handleConfirm}
+                  disabled={saving || !prospect}
+                  className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {saving && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {saving ? "Migrando..." : "Sim, migrar e descartar"}
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex gap-3">
+              <button
+                onClick={onCancel}
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={() => setConfirmStep(true)}
+                disabled={!prospect}
+                className="flex-1 inline-flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {selected.size > 0
+                  ? `Migrar ${selected.size} campo${selected.size !== 1 ? "s" : ""} + labels`
+                  : "Apenas atualizar labels"}
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>

@@ -64,12 +64,13 @@ export interface LeadDeepResearchWebhookPayload {
     email?: string | null;
     phone?: string | null;
     role?: string | null;
+    linkedin?: string | null;
   }>;
   summary?: string;
   error?: string;
 }
 
-type Output = Either<Error, { updatedFields: string[]; newContactsCount: number }>;
+type Output = Either<Error, { updatedFields: string[]; newContactsCount: number; updatedContactsCount: number }>;
 
 @Injectable()
 export class HandleLeadDeepResearchWebhookUseCase {
@@ -148,23 +149,42 @@ export class HandleLeadDeepResearchWebhookUseCase {
       await this.leadsRepo.save(lead);
     }
 
-    // Create new contacts found by agent — skip if name already exists for this lead
+    // Upsert contacts found by agent:
+    // - new name → create (with all available fields including linkedin)
+    // - existing name → fill only empty fields (never overwrite populated data)
     let newContactsCount = 0;
+    let updatedContactsCount = 0;
     if (payload.newContacts?.length) {
       const existing = await this.contactsRepo.findByLead(payload.leadId);
-      const existingNames = new Set(existing.map((c) => c.name.toLowerCase().trim()));
+      const existingByName = new Map(existing.map((c) => [c.name.toLowerCase().trim(), c]));
 
       for (const contact of payload.newContacts) {
         if (!contact.name) continue;
-        if (existingNames.has(contact.name.toLowerCase().trim())) continue;
-        await this.contactsRepo.create({
-          leadId: payload.leadId,
-          name: contact.name,
-          email: contact.email ?? undefined,
-          phone: contact.phone ?? undefined,
-          role: contact.role ?? undefined,
-        });
-        newContactsCount++;
+        const nameLower = contact.name.toLowerCase().trim();
+        const found = existingByName.get(nameLower);
+
+        if (found) {
+          // Fill only fields that are currently empty
+          const patch: Record<string, string> = {};
+          if (!found.phone && contact.phone) patch.phone = contact.phone;
+          if (!found.email && contact.email) patch.email = contact.email;
+          if (!found.role && contact.role) patch.role = contact.role;
+          if (!found.linkedin && contact.linkedin) patch.linkedin = contact.linkedin;
+          if (Object.keys(patch).length > 0) {
+            await this.contactsRepo.update(found.id, patch);
+            updatedContactsCount++;
+          }
+        } else {
+          await this.contactsRepo.create({
+            leadId: payload.leadId,
+            name: contact.name,
+            email: contact.email ?? undefined,
+            phone: contact.phone ?? undefined,
+            role: contact.role ?? undefined,
+            linkedin: contact.linkedin ?? undefined,
+          });
+          newContactsCount++;
+        }
       }
     }
 
@@ -182,7 +202,7 @@ export class HandleLeadDeepResearchWebhookUseCase {
     // Advance bulk research queue if this lead was part of a session
     setImmediate(() => void this.advanceBulkQueue(payload.leadId));
 
-    return right({ updatedFields, newContactsCount });
+    return right({ updatedFields, newContactsCount, updatedContactsCount });
   }
 
   private async advanceBulkQueue(completedLeadId: string): Promise<void> {

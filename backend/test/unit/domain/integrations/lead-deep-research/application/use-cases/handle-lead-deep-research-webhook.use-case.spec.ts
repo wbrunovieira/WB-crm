@@ -3,7 +3,9 @@ import { Lead } from "@/domain/leads/enterprise/entities/lead";
 import { InMemoryLeadsRepository } from "@test/unit/domain/leads/repositories/in-memory-leads.repository";
 import { InMemoryLeadContactsRepository } from "@test/unit/domain/leads/fakes/in-memory-lead-contacts.repository";
 import { FakeLeadAgentResearchLogRepository } from "../../fakes/fake-lead-agent-research-log.repository";
+import { FakeBulkResearchSessionRepository } from "../../fakes/fake-bulk-research-session.repository";
 import { HandleLeadDeepResearchWebhookUseCase } from "@/domain/integrations/lead-deep-research/application/use-cases/handle-lead-deep-research-webhook.use-case";
+import { StartBulkLeadResearchUseCase } from "@/domain/integrations/lead-deep-research/application/use-cases/start-bulk-lead-research.use-case";
 
 const makeLead = (ownerId = "user-1", extra: Partial<Parameters<typeof Lead.create>[0]> = {}) =>
   Lead.create({ ownerId, businessName: "Empresa Teste", ...extra });
@@ -18,7 +20,9 @@ describe("HandleLeadDeepResearchWebhookUseCase", () => {
     leadsRepo = new InMemoryLeadsRepository();
     contactsRepo = new InMemoryLeadContactsRepository();
     logRepo = new FakeLeadAgentResearchLogRepository();
-    sut = new HandleLeadDeepResearchWebhookUseCase(leadsRepo, contactsRepo, logRepo);
+    const sessionRepo = new FakeBulkResearchSessionRepository();
+    const startBulkUseCase = { triggerLead: async () => {} } as unknown as StartBulkLeadResearchUseCase;
+    sut = new HandleLeadDeepResearchWebhookUseCase(leadsRepo, contactsRepo, logRepo, sessionRepo, startBulkUseCase);
   });
 
   it("fills empty fields and records updated fields", async () => {
@@ -88,7 +92,7 @@ describe("HandleLeadDeepResearchWebhookUseCase", () => {
     expect(proposed[0].foundValue).toBe("@outro_encontrado");
   });
 
-  it("creates new contacts found by agent", async () => {
+  it("creates new contacts found by agent including linkedin", async () => {
     const lead = makeLead();
     await leadsRepo.save(lead);
 
@@ -98,14 +102,85 @@ describe("HandleLeadDeepResearchWebhookUseCase", () => {
       status: "completed",
       newContacts: [
         { name: "Maria Silva", email: "maria@empresa.com", role: "CEO" },
-        { name: "Carlos Lima", phone: "+5511999999999", role: "CTO" },
+        { name: "Carlos Lima", phone: "+5511999999999", role: "CTO", linkedin: "https://linkedin.com/in/carlos" },
       ],
       summary: "Dois contatos encontrados.",
     });
 
     expect(result.isRight()).toBe(true);
-    if (result.isRight()) expect(result.value.newContactsCount).toBe(2);
+    if (result.isRight()) {
+      expect(result.value.newContactsCount).toBe(2);
+      expect(result.value.updatedContactsCount).toBe(0);
+    }
     expect(contactsRepo.items).toHaveLength(2);
+    const carlos = contactsRepo.items.find((c) => c.name === "Carlos Lima");
+    expect(carlos?.linkedin).toBe("https://linkedin.com/in/carlos");
+  });
+
+  it("upserts existing contact — fills empty fields, never overwrites populated", async () => {
+    const lead = makeLead();
+    await leadsRepo.save(lead);
+
+    // Pre-create Fabiano without phone/linkedin
+    await contactsRepo.create({
+      leadId: lead.id.toString(),
+      name: "Fabiano Lopes",
+      role: "gerente financeiro e administrativo",
+    });
+
+    const result = await sut.execute({
+      jobId: "job-004b",
+      leadId: lead.id.toString(),
+      status: "completed",
+      newContacts: [
+        {
+          name: "Fabiano Lopes",
+          role: "outro cargo",                         // should NOT overwrite existing
+          phone: "(24) 99903-0123",                    // should fill (was empty)
+          linkedin: "https://linkedin.com/in/fabiano", // should fill (was empty)
+        },
+      ],
+      summary: "Contato reenviado com dados adicionais.",
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.newContactsCount).toBe(0);
+      expect(result.value.updatedContactsCount).toBe(1);
+    }
+
+    const fabiano = contactsRepo.items.find((c) => c.name === "Fabiano Lopes");
+    expect(fabiano?.role).toBe("gerente financeiro e administrativo"); // preserved
+    expect(fabiano?.phone).toBe("(24) 99903-0123");                   // filled
+    expect(fabiano?.linkedin).toBe("https://linkedin.com/in/fabiano"); // filled
+  });
+
+  it("upsert with no new data makes no update call", async () => {
+    const lead = makeLead();
+    await leadsRepo.save(lead);
+
+    await contactsRepo.create({
+      leadId: lead.id.toString(),
+      name: "Rodrigo Brand Lopes",
+      role: "Sócio-Administrador",
+      linkedin: "https://linkedin.com/in/rodrigo",
+    });
+
+    const result = await sut.execute({
+      jobId: "job-004c",
+      leadId: lead.id.toString(),
+      status: "completed",
+      newContacts: [
+        { name: "Rodrigo Brand Lopes", linkedin: "https://linkedin.com/in/rodrigo" },
+      ],
+      summary: "Contato já completo.",
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.newContactsCount).toBe(0);
+      expect(result.value.updatedContactsCount).toBe(0); // nothing to fill
+    }
   });
 
   it("persists audit log with all details", async () => {
