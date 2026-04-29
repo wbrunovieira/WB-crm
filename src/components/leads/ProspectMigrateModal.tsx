@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { X, Loader2, ArrowRight } from "lucide-react";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, BACKEND_URL } from "@/lib/api-client";
 import { MultiLabelSelect } from "@/components/shared/MultiLabelSelect";
 
 // Fields fetchable from both prospect and lead
@@ -24,6 +24,7 @@ interface LeadData {
   googleMapsUrl: string | null;
   searchTerm: string | null;
   categories: string | null;
+  sourceGroup: string | null;
   // Labels on the existing lead
   labels?: Array<{ id: string; name: string; color: string }>;
 }
@@ -55,6 +56,7 @@ const FIELD_META: Array<{ key: FieldKey; label: string; format?: (v: unknown) =>
   { key: "googleMapsUrl",    label: "URL Google Maps" },
   { key: "searchTerm",       label: "Termo de busca" },
   { key: "categories",       label: "Categorias" },
+  { key: "sourceGroup",      label: "Lote (sourceGroup)" },
 ];
 
 function fmt(v: unknown, format?: (v: unknown) => string): string {
@@ -74,6 +76,27 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
   const [error, setError] = useState("");
   const [selected, setSelected] = useState<Set<FieldKey>>(new Set());
   const [labelIds, setLabelIds] = useState<string[]>([]);
+  const [sourceGroup, setSourceGroup] = useState("");
+  const [sourceGroups, setSourceGroups] = useState<string[]>([]);
+  const [sgOpen, setSgOpen] = useState(false);
+  const sgRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/email/verify/source-groups`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setSourceGroups(d.sourceGroups ?? []))
+      .catch(() => {});
+  }, [token]);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (sgRef.current && !sgRef.current.contains(e.target as Node)) setSgOpen(false);
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, []);
 
   useEffect(() => {
     Promise.all([
@@ -83,6 +106,7 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
       .then(([p, l]) => {
         setProspect(p);
         setCurrentLead(l);
+        setSourceGroup(l.sourceGroup ?? "");
         // Pre-select fields where prospect has a value and lead doesn't (or prospect is clearly better)
         const pre = new Set<FieldKey>();
         for (const { key } of FIELD_META) {
@@ -111,6 +135,7 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
     setError("");
     try {
       const payload: Record<string, unknown> = { labelIds };
+      if (sourceGroup.trim()) payload.sourceGroup = sourceGroup.trim();
       for (const { key } of FIELD_META) {
         if (selected.has(key) && prospect[key] != null) payload[key] = prospect[key];
       }
@@ -210,6 +235,39 @@ export function ProspectMigrateModal({ prospectId, targetLeadId, targetLeadName,
                     </label>
                   );
                 })}
+              </div>
+
+              {/* Source Group */}
+              <div>
+                <p className="mb-1.5 text-sm font-medium text-gray-700">Lote (sourceGroup)</p>
+                <p className="mb-2 text-xs text-gray-400">Selecione um lote existente ou digite um novo. Será aplicado ao lead após a migração.</p>
+                <div ref={sgRef} className="relative">
+                  <input
+                    type="text"
+                    value={sourceGroup}
+                    onChange={(e) => { setSourceGroup(e.target.value); setSgOpen(true); }}
+                    onFocus={() => setSgOpen(true)}
+                    placeholder="Ex: MatConstrPetropolis270426"
+                    className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-purple-500 focus:outline-none focus:ring-1 focus:ring-purple-500"
+                  />
+                  {sgOpen && sourceGroups.length > 0 && (
+                    <ul className="absolute z-20 mt-1 w-full rounded-md border border-gray-200 bg-white shadow-lg max-h-48 overflow-y-auto">
+                      {sourceGroups
+                        .filter((g) => g.toLowerCase().includes(sourceGroup.toLowerCase()))
+                        .map((g) => (
+                          <li key={g}>
+                            <button
+                              type="button"
+                              onClick={() => { setSourceGroup(g); setSgOpen(false); }}
+                              className="w-full px-3 py-2 text-left text-sm hover:bg-purple-50 text-gray-700 font-mono"
+                            >
+                              {g}
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  )}
+                </div>
               </div>
 
               {/* Labels */}
