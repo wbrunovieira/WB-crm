@@ -16,7 +16,7 @@ interface LeadsFiltersProps {
 
 function FilterLabel({ children }: { children: React.ReactNode }) {
   return (
-    <span className="mb-1 block text-xs font-medium text-gray-500 uppercase tracking-wide">
+    <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wider text-purple-300">
       {children}
     </span>
   );

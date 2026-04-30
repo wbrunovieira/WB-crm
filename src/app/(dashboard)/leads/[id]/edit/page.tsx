@@ -10,7 +10,10 @@ export default async function EditLeadPage({
 }: {
   params: { id: string };
 }) {
-  const lead = await backendFetch<Lead>(`/leads/${params.id}`).catch(() => null);
+  const [lead, sourceGroups] = await Promise.all([
+    backendFetch<Lead>(`/leads/${params.id}`).catch(() => null),
+    backendFetch<string[]>("/leads/source-groups").catch(() => [] as string[]),
+  ]);
 
   if (!lead) {
     notFound();
@@ -38,7 +41,7 @@ export default async function EditLeadPage({
         <p className="mt-2 text-gray-400">{lead.businessName}</p>
       </div>
 
-      <LeadForm lead={lead} />
+      <LeadForm lead={lead} sourceGroups={sourceGroups} />
 
       {/* Secondary CNAEs */}
       <div className="mt-6 rounded-lg bg-[#1a0022] p-6">

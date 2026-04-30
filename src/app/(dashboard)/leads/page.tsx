@@ -92,38 +92,47 @@ export default async function LeadsPage({
       <LeadResearchNotifications />
       <BulkResearchProgressBanner />
 
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold">Leads</h1>
-          <p className="mt-2 text-gray-600">
+          <p className="mt-1 text-sm text-gray-500">
             Gerencie seus leads e converta em clientes
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <AgentLeadGenerationButton icps={icps} />
-          <BatchWhatsAppCheckModal />
-          <BatchEmailCheckModal />
-          <BatchPhoneCheckModal />
-          <Link
-            href="/leads/import"
-            className="rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
-          >
-            Importar CSV
-          </Link>
-          <Link
-            href="/leads/new"
-            className="rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700"
-          >
-            Novo Lead
-          </Link>
+        <div className="flex shrink-0 flex-col items-end gap-2">
+          {/* Ações principais */}
+          <div className="flex items-center gap-2">
+            <AgentLeadGenerationButton icps={icps} />
+            <Link
+              href="/leads/import"
+              className="rounded-md border border-gray-600 px-3 py-2 text-sm font-medium text-gray-300 hover:border-gray-400 hover:text-gray-100"
+            >
+              Importar CSV
+            </Link>
+            <Link
+              href="/leads/new"
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
+            >
+              + Novo Lead
+            </Link>
+          </div>
+          {/* Verificações em lote */}
+          <div className="flex items-center gap-1.5">
+            <span className="text-xs text-gray-500">Verificar em lote:</span>
+            <BatchWhatsAppCheckModal />
+            <BatchEmailCheckModal />
+            <BatchPhoneCheckModal />
+          </div>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+      <div className="mb-4">
         <LeadsFilters icps={icps} sourceGroups={sourceGroups} />
         {isAdmin && users.length > 0 && (
-          <OwnerFilter users={users} currentUserId={currentUserId} />
+          <div className="mt-2">
+            <OwnerFilter users={users} currentUserId={currentUserId} />
+          </div>
         )}
       </div>
 

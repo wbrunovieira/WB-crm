@@ -102,6 +102,7 @@ type Lead = {
 
 type LeadFormProps = {
   lead?: Lead;
+  sourceGroups?: string[];
 };
 
 type ContactFormData = {
@@ -126,7 +127,7 @@ const emptyContact: ContactFormData = {
   isPrimary: false,
 };
 
-export function LeadForm({ lead }: LeadFormProps) {
+export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
@@ -1296,11 +1297,22 @@ export function LeadForm({ lead }: LeadFormProps) {
             </label>
             <input
               type="text"
+              list="source-groups-list"
               name="sourceGroup"
-              placeholder="ex: MatConstrPetropolis270426"
+              placeholder="Selecione ou digite um novo grupo..."
               defaultValue={lead?.sourceGroup || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
+            <datalist id="source-groups-list">
+              {sourceGroups.map((g) => (
+                <option key={g} value={g} />
+              ))}
+            </datalist>
+            {sourceGroups.length > 0 && (
+              <p className="mt-1 text-xs text-gray-500">
+                {sourceGroups.length} grupo{sourceGroups.length !== 1 ? "s" : ""} existente{sourceGroups.length !== 1 ? "s" : ""}
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-300">
