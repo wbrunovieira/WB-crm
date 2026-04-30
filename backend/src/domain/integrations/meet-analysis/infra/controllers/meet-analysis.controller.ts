@@ -10,11 +10,14 @@ import {
   NotFoundException,
   ForbiddenException,
   Headers,
+  BadRequestException,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
+import { PrismaService } from "@/infra/database/prisma.service";
+import { TriggerMeetAnalysisUseCase } from "../../application/use-cases/trigger-meet-analysis.use-case";
 import {
   HandleMeetAnalysisWebhookUseCase,
   type MeetAnalysisWebhookPayload,
@@ -88,7 +91,54 @@ export class MeetAnalysisController {
     private readonly handleWebhook: HandleMeetAnalysisWebhookUseCase,
     private readonly getAnalysis: GetMeetAnalysisUseCase,
     private readonly listAnalyses: ListMeetAnalysesUseCase,
+    private readonly triggerAnalysis: TriggerMeetAnalysisUseCase,
+    private readonly prisma: PrismaService,
   ) {}
+
+  @Post("meet-analysis/trigger-by-activity/:activityId")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: "Dispara análise DIAG de uma reunião Meet pelo ID da atividade" })
+  async triggerByActivity(
+    @Param("activityId") activityId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const meeting = await this.prisma.meeting.findUnique({
+      where: { activityId },
+      include: {
+        lead: { select: { id: true, businessName: true, description: true, segment: true, city: true } },
+        contact: { select: { name: true, role: true } },
+      },
+    });
+
+    if (!meeting) throw new NotFoundException("Reunião não encontrada para esta atividade");
+    if (!meeting.transcriptText) throw new BadRequestException("Reunião ainda não possui transcrição");
+
+    const webhookUrl = `${process.env.BACKEND_PUBLIC_URL ?? "https://crm.wbdigitalsolutions.com"}/webhooks/meet-analysis`;
+
+    const result = await this.triggerAnalysis.execute({
+      activityId,
+      activitySubject: meeting.title,
+      transcript: meeting.transcriptText,
+      meetingDurationSeconds: meeting.actualStartAt && meeting.actualEndAt
+        ? Math.round((meeting.actualEndAt.getTime() - meeting.actualStartAt.getTime()) / 1000)
+        : undefined,
+      meetingDate: meeting.actualStartAt ?? meeting.startAt ?? undefined,
+      meetingTitle: meeting.title,
+      leadId: meeting.lead?.id,
+      leadBusinessName: meeting.lead?.businessName,
+      leadDescription: meeting.lead?.description ?? undefined,
+      leadSegment: meeting.lead?.segment ?? undefined,
+      leadCity: meeting.lead?.city ?? undefined,
+      contactName: meeting.contact?.name ?? undefined,
+      contactRole: meeting.contact?.role ?? undefined,
+      ownerId: user.id,
+      webhookUrl,
+    });
+
+    if (result.isLeft()) throw new BadRequestException(result.value.message);
+    return { analysisId: result.value.analysisId };
+  }
 
   @Post("webhooks/meet-analysis")
   @HttpCode(200)

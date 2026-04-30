@@ -66,16 +66,26 @@ export default async function LeadDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [lead, session, proposals, meetings, callAnalyses] = await Promise.all([
+  const [lead, session, proposals, meetings, callAnalyses, meetAnalyses] = await Promise.all([
     backendFetch<Lead>(`/leads/${params.id}`).catch(() => null),
     getServerSession(authOptions),
     backendFetch<Proposal[]>(`/proposals?leadId=${params.id}`).catch((): Proposal[] => []),
     backendFetch<Meeting[]>(`/meetings?leadId=${params.id}`).catch((): Meeting[] => []),
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/call-analysis").catch(() => []),
+    backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/meet-analysis").catch(() => []),
   ]);
 
   const callAnalysesMap = Object.fromEntries(
     callAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
+  );
+
+  const meetAnalysesMap = Object.fromEntries(
+    meetAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
+  );
+
+  // Activity IDs whose linked Meeting has a transcript (toggle trigger visible)
+  const meetTranscriptActivityIds = new Set(
+    (meetings ?? []).filter((m) => m.transcriptText && m.activityId).map((m) => m.activityId!)
   );
 
   if (!lead) notFound();
@@ -757,6 +767,8 @@ export default async function LeadDetailPage({
           activities={lead.activities ?? []}
           activityOrder={lead.activityOrder ?? null}
           callAnalysesMap={callAnalysesMap}
+          meetAnalysesMap={meetAnalysesMap}
+          meetTranscriptActivityIds={meetTranscriptActivityIds}
           leadContacts={(lead.leadContacts ?? []).map((c) => ({
             id: c.id,
             name: c.name,
