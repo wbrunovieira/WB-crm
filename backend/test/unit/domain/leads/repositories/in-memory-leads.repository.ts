@@ -54,6 +54,10 @@ export class InMemoryLeadsRepository extends LeadsRepository {
       results = results.filter((l) => this.leadHasCadence.get(l.id.toString()) !== true);
     }
 
+    if (filters.sourceGroup) {
+      results = results.filter((l) => l.sourceGroup === filters.sourceGroup);
+    }
+
     const total = results.length;
     const page = filters.page && filters.page > 0 ? filters.page : 1;
     const pageSize = filters.pageSize && filters.pageSize > 0 ? filters.pageSize : 50;
@@ -80,6 +84,7 @@ export class InMemoryLeadsRepository extends LeadsRepository {
       referredByPartnerId: l.referredByPartnerId ?? null,
       driveFolderId: l.driveFolderId ?? null,
       inOperationsAt: l.inOperationsAt ?? null,
+      sourceGroup: l.sourceGroup ?? null,
       owner: null,
       referredByPartner: null,
       labels: [],

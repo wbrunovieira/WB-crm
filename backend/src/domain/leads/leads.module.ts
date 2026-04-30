@@ -23,6 +23,7 @@ import {
   ResetLeadActivityOrderUseCase,
 } from "./application/use-cases/update-lead-activity-order.use-case";
 import { GetLeadsForSelectUseCase } from "./application/use-cases/get-leads-for-select.use-case";
+import { GetLeadSourceGroupsUseCase } from "./application/use-cases/get-lead-source-groups.use-case";
 import {
   GetLeadDropdownOptionsUseCase,
   CreateLeadDropdownOptionUseCase,
@@ -67,6 +68,7 @@ import { GooglePlacesClient } from "./infra/google-places.client";
     UpdateLeadActivityOrderUseCase,
     ResetLeadActivityOrderUseCase,
     GetLeadsForSelectUseCase,
+    GetLeadSourceGroupsUseCase,
     GetLeadDropdownOptionsUseCase,
     CreateLeadDropdownOptionUseCase,
     FindOrCreateGooglePlacesSearchUseCase,

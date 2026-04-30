@@ -55,6 +55,7 @@ import {
   ResetLeadActivityOrderUseCase,
 } from "@/domain/leads/application/use-cases/update-lead-activity-order.use-case";
 import { GetLeadsForSelectUseCase } from "@/domain/leads/application/use-cases/get-leads-for-select.use-case";
+import { GetLeadSourceGroupsUseCase } from "@/domain/leads/application/use-cases/get-lead-source-groups.use-case";
 import {
   GetLeadDropdownOptionsUseCase,
   CreateLeadDropdownOptionUseCase,
@@ -670,6 +671,7 @@ export class LeadsController {
     private readonly updateActivityOrder: UpdateLeadActivityOrderUseCase,
     private readonly resetActivityOrder: ResetLeadActivityOrderUseCase,
     private readonly getLeadsForSelect: GetLeadsForSelectUseCase,
+    private readonly getLeadSourceGroups: GetLeadSourceGroupsUseCase,
     private readonly getLeadDropdownOptions: GetLeadDropdownOptionsUseCase,
     private readonly createLeadDropdownOption: CreateLeadDropdownOptionUseCase,
     private readonly findOrCreateGoogleSearch: FindOrCreateGooglePlacesSearchUseCase,
@@ -724,6 +726,7 @@ export class LeadsController {
   @ApiQuery({ name: "icpId", required: false, description: "Filtrar leads vinculados ao ICP informado" })
   @ApiQuery({ name: "hasCadence", required: false, enum: ["yes", "no"], description: "Filtrar leads com (yes) ou sem (no) cadência" })
   @ApiQuery({ name: "hasDeepResearch", required: false, enum: ["yes", "no"], description: "Filtrar leads com (yes) ou sem (no) pesquisa do agente IA" })
+  @ApiQuery({ name: "sourceGroup", required: false, description: "Filtrar leads pelo grupo/lote de importação" })
   @ApiQuery({ name: "page", required: false, type: Number, description: "Página (default: 1)" })
   @ApiQuery({ name: "pageSize", required: false, type: Number, description: "Itens por página (default: 50, max: 200)" })
   @ApiResponse({ status: 200, description: "Lista de leads com relações e paginação" })
@@ -739,6 +742,7 @@ export class LeadsController {
     @Query("icpId") icpId?: string,
     @Query("hasCadence") hasCadence?: string,
     @Query("hasDeepResearch") hasDeepResearch?: string,
+    @Query("sourceGroup") sourceGroup?: string,
     @Query("page") pageStr?: string,
     @Query("pageSize") pageSizeStr?: string,
     @CurrentUser() user?: AuthenticatedUser,
@@ -768,11 +772,19 @@ export class LeadsController {
         icpId,
         hasCadence: hasCadenceFilter,
         hasDeepResearch: hasDeepResearchFilter,
+        sourceGroup,
         page,
         pageSize,
       },
     });
     return result.unwrap();
+  }
+
+  @Get("source-groups")
+  @ApiOperation({ summary: "Listar grupos de importação distintos", description: "Retorna os valores únicos de sourceGroup dos leads acessíveis pelo usuário." })
+  @ApiResponse({ status: 200, description: "Array de strings com os grupos disponíveis" })
+  async listSourceGroups(@CurrentUser() user: AuthenticatedUser) {
+    return this.getLeadSourceGroups.execute(user.id, user.role ?? "sdr");
   }
 
   @Get("check-google-id")

@@ -11,9 +11,10 @@ interface ICP {
 
 interface LeadsFiltersProps {
   icps?: ICP[];
+  sourceGroups?: string[];
 }
 
-export function LeadsFilters({ icps = [] }: LeadsFiltersProps) {
+export function LeadsFilters({ icps = [], sourceGroups = [] }: LeadsFiltersProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -142,6 +143,18 @@ export function LeadsFilters({ icps = [] }: LeadsFiltersProps) {
         <option value="yes">Com pesquisa IA</option>
         <option value="no">Sem pesquisa IA</option>
       </select>
+      {sourceGroups.length > 0 && (
+        <select
+          value={searchParams.get("sourceGroup")?.toString() || ""}
+          onChange={(e) => handleFilterChange("sourceGroup", e.target.value)}
+          className="rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+        >
+          <option value="">Todos os grupos</option>
+          {sourceGroups.map((g) => (
+            <option key={g} value={g}>{g}</option>
+          ))}
+        </select>
+      )}
     </div>
   );
 }

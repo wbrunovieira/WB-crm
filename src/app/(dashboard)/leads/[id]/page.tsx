@@ -164,6 +164,11 @@ export default async function LeadDetailPage({
                   )}
                 </span>
               )}
+              {lead.sourceGroup && (
+                <span className="inline-flex items-center rounded-md bg-indigo-900/40 border border-indigo-600/50 px-2 py-0.5 text-xs font-semibold text-indigo-300">
+                  🏷 {lead.sourceGroup}
+                </span>
+              )}
               {lead.labels?.map((label) => (
                 <span
                   key={label.id}

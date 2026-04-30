@@ -108,6 +108,11 @@ export class PrismaLeadsRepository extends LeadsRepository {
       where.agentResearchAt = null;
     }
 
+    // sourceGroup — leads from the given import batch
+    if (filters.sourceGroup) {
+      where.sourceGroup = filters.sourceGroup;
+    }
+
     return where;
   }
 
@@ -156,6 +161,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
       referredByPartnerId: row.referredByPartnerId,
       driveFolderId: row.driveFolderId,
       inOperationsAt: row.inOperationsAt,
+      sourceGroup: row.sourceGroup,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       agentResearchAt: row.agentResearchAt,
@@ -279,6 +285,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
       referredByPartnerId: row.referredByPartnerId,
       driveFolderId: row.driveFolderId,
       inOperationsAt: row.inOperationsAt,
+      sourceGroup: row.sourceGroup,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
 

@@ -12,6 +12,7 @@ export interface LeadFilters {
   icpId?: string;
   hasCadence?: "yes" | "no";
   hasDeepResearch?: "yes" | "no";
+  sourceGroup?: string;
   page?: number;
   pageSize?: number;
 }

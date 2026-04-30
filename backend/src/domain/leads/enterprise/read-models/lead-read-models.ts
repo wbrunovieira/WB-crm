@@ -19,6 +19,7 @@ export interface LeadSummary {
   referredByPartnerId: string | null;
   driveFolderId: string | null;
   inOperationsAt: Date | null;
+  sourceGroup: string | null;
   createdAt: Date;
   updatedAt: Date;
 

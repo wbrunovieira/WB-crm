@@ -337,6 +337,88 @@ describe("GetLeadsUseCase", () => {
     });
   });
 
+  // ─── Filtro sourceGroup ───────────────────────────────────────────────────────
+
+  describe("filtro sourceGroup", () => {
+    it("retorna apenas leads com o sourceGroup informado", async () => {
+      repo.items = [
+        makeLead("l1", { businessName: "Alpha" }),
+        makeLead("l2", { businessName: "Beta" }),
+        makeLead("l3", { businessName: "Gamma" }),
+      ];
+      repo.items[0].update({ sourceGroup: "GrupoA" });
+      repo.items[1].update({ sourceGroup: "GrupoA" });
+      repo.items[2].update({ sourceGroup: "GrupoB" });
+
+      const result = await sut.execute({
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        filters: { sourceGroup: "GrupoA" },
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.leads).toHaveLength(2);
+        expect(result.value.leads.map((l) => l.id)).toContain("l1");
+        expect(result.value.leads.map((l) => l.id)).toContain("l2");
+      }
+    });
+
+    it("retorna vazio quando nenhum lead tem o sourceGroup informado", async () => {
+      repo.items = [makeLead("l1")];
+      repo.items[0].update({ sourceGroup: "GrupoX" });
+
+      const result = await sut.execute({
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        filters: { sourceGroup: "GrupoZ" },
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.leads).toHaveLength(0);
+      }
+    });
+
+    it("sourceGroup aparece no LeadSummary retornado", async () => {
+      repo.items = [makeLead("l1", { businessName: "Alpha" })];
+      repo.items[0].update({ sourceGroup: "MatConstPetropolis" });
+
+      const result = await sut.execute({
+        requesterId: "user-1",
+        requesterRole: "sdr",
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.leads[0].sourceGroup).toBe("MatConstPetropolis");
+      }
+    });
+
+    it("combina sourceGroup e status", async () => {
+      repo.items = [
+        makeLead("l1", { status: "qualified" }),
+        makeLead("l2", { status: "new" }),
+        makeLead("l3", { status: "qualified" }),
+      ];
+      repo.items[0].update({ sourceGroup: "GrupoA" });
+      repo.items[1].update({ sourceGroup: "GrupoA" });
+      repo.items[2].update({ sourceGroup: "GrupoB" });
+
+      const result = await sut.execute({
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        filters: { sourceGroup: "GrupoA", status: "qualified" },
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.leads).toHaveLength(1);
+        expect(result.value.leads[0].id).toBe("l1");
+      }
+    });
+  });
+
   // ─── Combinação de filtros ────────────────────────────────────────────────────
 
   describe("combinação de filtros", () => {

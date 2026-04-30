@@ -29,6 +29,7 @@ export default async function LeadsPage({
     hasCadence?: string;
     archived?: string;
     hasDeepResearch?: string;
+    sourceGroup?: string;
     page?: string;
   };
 }) {
@@ -50,6 +51,7 @@ export default async function LeadsPage({
     referredByPartner: { id: string; name: string } | null;
     labels: Array<{ id: string; name: string; color: string }>;
     primaryCNAE: { id: string; code: string; description: string } | null;
+    sourceGroup: string | null;
   };
   type LeadsResult = { leads: LeadSummary[]; total: number; page: number; pageSize: number };
 
@@ -62,6 +64,7 @@ export default async function LeadsPage({
   if (searchParams.icpId) leadsQs.set("icpId", searchParams.icpId);
   if (searchParams.hasCadence) leadsQs.set("hasCadence", searchParams.hasCadence);
   if (searchParams.hasDeepResearch) leadsQs.set("hasDeepResearch", searchParams.hasDeepResearch);
+  if (searchParams.sourceGroup) leadsQs.set("sourceGroup", searchParams.sourceGroup);
   if (searchParams.page) leadsQs.set("page", searchParams.page);
   // Map archived → isArchived
   if (searchParams.archived === "yes") leadsQs.set("isArchived", "true");
@@ -69,10 +72,11 @@ export default async function LeadsPage({
   else leadsQs.set("isArchived", "false");
   leadsQs.set("isProspect", "false");
 
-  const [leadsResult, users, icps] = await Promise.all([
+  const [leadsResult, users, icps, sourceGroups] = await Promise.all([
     backendFetch<LeadsResult>(`/leads?${leadsQs}`).catch(() => ({ leads: [], total: 0, page: 1, pageSize: 50 })),
     backendFetch<UserListItem[]>('/users').catch(() => [] as UserListItem[]),
     backendFetch<ICPType[]>('/icps?status=active').catch(() => [] as ICPType[]),
+    backendFetch<string[]>('/leads/source-groups').catch(() => [] as string[]),
   ]);
 
   const { leads, total, page, pageSize } = leadsResult;
@@ -117,7 +121,7 @@ export default async function LeadsPage({
 
       {/* Filters */}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <LeadsFilters icps={icps} />
+        <LeadsFilters icps={icps} sourceGroups={sourceGroups} />
         {isAdmin && users.length > 0 && (
           <OwnerFilter users={users} currentUserId={currentUserId} />
         )}
@@ -129,7 +133,7 @@ export default async function LeadsPage({
           <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
             {total} {total === 1 ? "lead" : "leads"}
           </span>
-          {(searchParams.search || searchParams.contactSearch || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner || searchParams.hasCadence || searchParams.archived || searchParams.hasDeepResearch) && (
+          {(searchParams.search || searchParams.contactSearch || searchParams.status || searchParams.quality || searchParams.icpId || searchParams.owner || searchParams.hasCadence || searchParams.archived || searchParams.hasDeepResearch || searchParams.sourceGroup) && (
             <span className="text-sm text-gray-500">com os filtros aplicados</span>
           )}
         </div>
