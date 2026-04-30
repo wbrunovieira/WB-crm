@@ -54,7 +54,9 @@ export class InMemoryLeadsRepository extends LeadsRepository {
       results = results.filter((l) => this.leadHasCadence.get(l.id.toString()) !== true);
     }
 
-    if (filters.sourceGroup) {
+    if (filters.sourceGroup === "__none__") {
+      results = results.filter((l) => !l.sourceGroup);
+    } else if (filters.sourceGroup) {
       results = results.filter((l) => l.sourceGroup === filters.sourceGroup);
     }
 

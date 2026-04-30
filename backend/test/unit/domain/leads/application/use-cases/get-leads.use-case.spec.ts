@@ -395,6 +395,69 @@ describe("GetLeadsUseCase", () => {
       }
     });
 
+    it("sourceGroup=__none__ retorna apenas leads SEM grupo", async () => {
+      repo.items = [
+        makeLead("l1", { businessName: "Sem Grupo 1" }),
+        makeLead("l2", { businessName: "Sem Grupo 2" }),
+        makeLead("l3", { businessName: "Com Grupo" }),
+      ];
+      repo.items[2].update({ sourceGroup: "GrupoA" });
+
+      const result = await sut.execute({
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        filters: { sourceGroup: "__none__" },
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.leads).toHaveLength(2);
+        expect(result.value.leads.map((l) => l.id)).toContain("l1");
+        expect(result.value.leads.map((l) => l.id)).toContain("l2");
+      }
+    });
+
+    it("sourceGroup=__none__ não retorna leads com grupo definido", async () => {
+      repo.items = [
+        makeLead("l1", { businessName: "Alpha" }),
+        makeLead("l2", { businessName: "Beta" }),
+      ];
+      repo.items[0].update({ sourceGroup: "GrupoA" });
+      repo.items[1].update({ sourceGroup: "GrupoB" });
+
+      const result = await sut.execute({
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        filters: { sourceGroup: "__none__" },
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.leads).toHaveLength(0);
+      }
+    });
+
+    it("combina sourceGroup=__none__ e status", async () => {
+      repo.items = [
+        makeLead("l1", { status: "new" }),
+        makeLead("l2", { status: "qualified" }),
+        makeLead("l3", { status: "new" }),
+      ];
+      repo.items[2].update({ sourceGroup: "GrupoA" });
+
+      const result = await sut.execute({
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        filters: { sourceGroup: "__none__", status: "new" },
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.leads).toHaveLength(1);
+        expect(result.value.leads[0].id).toBe("l1");
+      }
+    });
+
     it("combina sourceGroup e status", async () => {
       repo.items = [
         makeLead("l1", { status: "qualified" }),
