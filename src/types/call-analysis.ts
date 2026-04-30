@@ -5,17 +5,19 @@ export interface SpicedDimension {
 }
 
 export interface MicroPacto {
-  id: string;
-  dimension: string;
-  description: string;
+  id: number;
+  label: string;
+  spicedDimension: string;
   achieved: boolean;
+  notes: string;
 }
 
-export interface SchedulingTechnique {
-  technique: string;
-  applied: boolean;
-  description?: string;
+export interface SchedulingTechniqueEntry {
+  used: boolean;
+  notes: string;
 }
+
+export type SchedulingTechniques = Record<string, SchedulingTechniqueEntry>;
 
 export interface MicroAnalysisEntry {
   moment: string;
@@ -41,7 +43,7 @@ export interface CallAnalysis {
   spicedCritical: SpicedDimension | null;
   spicedEvidence: SpicedDimension | null;
   microPactos: MicroPacto[] | null;
-  schedulingTechniques: SchedulingTechnique[] | null;
+  schedulingTechniques: SchedulingTechniques | null;
   microAnalysis: MicroAnalysisEntry[] | null;
   positivePoints: string[] | null;
   improvementPoints: string[] | null;

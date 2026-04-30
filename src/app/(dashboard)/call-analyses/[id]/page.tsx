@@ -1,5 +1,5 @@
 import { backendFetch } from "@/lib/backend/client";
-import type { CallAnalysis, SpicedDimension, MicroPacto, SchedulingTechnique } from "@/types/call-analysis";
+import type { CallAnalysis, SpicedDimension, MicroPacto, SchedulingTechniques } from "@/types/call-analysis";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import BackButton from "@/components/ui/BackButton";
@@ -47,6 +47,13 @@ function SpicedCard({ label, dimension }: { label: string; dimension: SpicedDime
   );
 }
 
+const TECHNIQUE_LABELS: Record<string, string> = {
+  gatilhoDor: "Gatilho da Dor",
+  escolhaAlternativa: "Escolha Alternativa",
+  compromissoVerbalShow: "Compromisso Verbal (Show)",
+  compromissoEmergencia: "Compromisso de Emergência",
+};
+
 function MicroPactosList({ pactos }: { pactos: MicroPacto[] | null }) {
   if (!pactos || pactos.length === 0) return null;
   const achieved = pactos.filter((p) => p.achieved).length;
@@ -70,9 +77,9 @@ function MicroPactosList({ pactos }: { pactos: MicroPacto[] | null }) {
             </span>
             <div>
               <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                {p.dimension}
+                {p.spicedDimension} — {p.label}
               </p>
-              <p className="text-sm text-gray-700">{p.description}</p>
+              <p className="text-sm text-gray-700">{p.notes}</p>
             </div>
           </div>
         ))}
@@ -81,31 +88,35 @@ function MicroPactosList({ pactos }: { pactos: MicroPacto[] | null }) {
   );
 }
 
-function SchedulingTechniquesList({ techniques }: { techniques: SchedulingTechnique[] | null }) {
-  if (!techniques || techniques.length === 0) return null;
-  const applied = techniques.filter((t) => t.applied).length;
+function SchedulingTechniquesList({ techniques }: { techniques: SchedulingTechniques | null }) {
+  if (!techniques) return null;
+  const entries = Object.entries(techniques);
+  if (entries.length === 0) return null;
+  const applied = entries.filter(([, v]) => v.used).length;
 
   return (
     <div className="rounded-lg bg-white p-5 shadow">
       <div className="flex items-center justify-between">
         <h3 className="font-semibold text-gray-800">Técnicas de Agendamento</h3>
         <span className="text-sm font-semibold text-gray-600">
-          {applied}/{techniques.length} aplicadas
+          {applied}/{entries.length} aplicadas
         </span>
       </div>
       <div className="mt-4 space-y-2">
-        {techniques.map((t, i) => (
+        {entries.map(([key, val]) => (
           <div
-            key={i}
-            className={`flex items-start gap-3 rounded-lg p-3 ${t.applied ? "bg-green-50" : "bg-gray-50"}`}
+            key={key}
+            className={`flex items-start gap-3 rounded-lg p-3 ${val.used ? "bg-green-50" : "bg-gray-50"}`}
           >
-            <span className={`mt-0.5 text-lg ${t.applied ? "text-green-600" : "text-gray-400"}`}>
-              {t.applied ? "✓" : "○"}
+            <span className={`mt-0.5 text-lg ${val.used ? "text-green-600" : "text-gray-400"}`}>
+              {val.used ? "✓" : "○"}
             </span>
             <div>
-              <p className="text-sm font-medium text-gray-700">{t.technique}</p>
-              {t.description && (
-                <p className="text-xs text-gray-500">{t.description}</p>
+              <p className="text-sm font-medium text-gray-700">
+                {TECHNIQUE_LABELS[key] ?? key}
+              </p>
+              {val.notes && (
+                <p className="text-xs text-gray-500">{val.notes}</p>
               )}
             </div>
           </div>
