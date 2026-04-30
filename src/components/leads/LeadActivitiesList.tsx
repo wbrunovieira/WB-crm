@@ -169,6 +169,8 @@ type Activity = {
   emailReplied?: boolean | null;
 };
 
+type CallAnalysisSummary = { id: string; score: number | null; status: string };
+
 const GOTO_OUTCOME_OPTIONS = [
   { value: "answered",  label: "Atendida" },
   { value: "no_answer", label: "Não atendeu" },
@@ -195,6 +197,7 @@ function SortableActivityItem({
   hasNext,
   isAdmin,
   onPurged,
+  callAnalysis,
 }: {
   activity: Activity;
   isPending: (a: Activity) => boolean;
@@ -214,6 +217,7 @@ function SortableActivityItem({
   hasNext: boolean;
   isAdmin: boolean;
   onPurged: () => void;
+  callAnalysis?: CallAnalysisSummary;
 }) {
   const {
     attributes,
@@ -479,6 +483,26 @@ function SortableActivityItem({
             </div>
           )}
 
+          {/* SPICED analysis badge — fora do Link */}
+          {callAnalysis && callAnalysis.status === "completed" && (
+            <Link
+              href={`/call-analyses/${callAnalysis.id}`}
+              className="mt-1.5 inline-flex items-center gap-1.5 rounded bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700 hover:bg-purple-200 transition-colors"
+            >
+              🧠 SPICED{callAnalysis.score !== null ? ` · ${callAnalysis.score}/100` : ""}
+            </Link>
+          )}
+          {callAnalysis && callAnalysis.status === "pending" && (
+            <span className="mt-1.5 inline-flex items-center gap-1.5 rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+              🧠 Análise pendente
+            </span>
+          )}
+          {callAnalysis && callAnalysis.status === "processing" && (
+            <span className="mt-1.5 inline-flex items-center gap-1.5 rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-600">
+              🧠 Analisando…
+            </span>
+          )}
+
           {/* WhatsApp log — fora do Link para não navegar ao clicar em áudio/transcrição */}
           {activity.type === "whatsapp" && activity.description && !activity.gotoCallId && (
             <WhatsAppActivityLog
@@ -591,11 +615,13 @@ export function LeadActivitiesList({
   activities,
   activityOrder,
   leadContacts = [],
+  callAnalysesMap = {},
 }: {
   leadId: string;
   activities: Activity[];
   activityOrder?: string | null;
   leadContacts?: LeadContact[];
+  callAnalysesMap?: Record<string, CallAnalysisSummary>;
 }) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
@@ -1119,6 +1145,7 @@ export function LeadActivitiesList({
                     hasNext={conn?.hasNext ?? false}
                     isAdmin={isAdmin}
                     onPurged={() => router.refresh()}
+                    callAnalysis={callAnalysesMap?.[activity.id]}
                   />
                 );
               })}

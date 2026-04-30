@@ -66,12 +66,17 @@ export default async function LeadDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [lead, session, proposals, meetings] = await Promise.all([
+  const [lead, session, proposals, meetings, callAnalyses] = await Promise.all([
     backendFetch<Lead>(`/leads/${params.id}`).catch(() => null),
     getServerSession(authOptions),
     backendFetch<Proposal[]>(`/proposals?leadId=${params.id}`).catch((): Proposal[] => []),
     backendFetch<Meeting[]>(`/meetings?leadId=${params.id}`).catch((): Meeting[] => []),
+    backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/call-analysis").catch(() => []),
   ]);
+
+  const callAnalysesMap = Object.fromEntries(
+    callAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
+  );
 
   if (!lead) notFound();
 
@@ -746,6 +751,7 @@ export default async function LeadDetailPage({
           leadId={lead.id}
           activities={lead.activities ?? []}
           activityOrder={lead.activityOrder ?? null}
+          callAnalysesMap={callAnalysesMap}
           leadContacts={(lead.leadContacts ?? []).map((c) => ({
             id: c.id,
             name: c.name,
