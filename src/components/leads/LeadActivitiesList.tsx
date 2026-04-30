@@ -651,20 +651,37 @@ export function LeadActivitiesList({
 
   const hasCustomOrder = !!activityOrder;
 
-  // Sort activities based on custom order or default (server order by date)
+  // Sort activities based on custom order or default (pending by dueDate asc, done by completion desc)
   const sortedActivities = useMemo(() => {
-    if (!activityOrder) return activities;
-    try {
-      const order = JSON.parse(activityOrder) as string[];
-      const orderMap = new Map(order.map((id, idx) => [id, idx]));
-      return [...activities].sort((a, b) => {
-        const aIdx = orderMap.get(a.id) ?? Infinity;
-        const bIdx = orderMap.get(b.id) ?? Infinity;
-        return aIdx - bIdx;
-      });
-    } catch {
-      return activities;
+    const pending = (a: Activity) => !a.completed && !a.failedAt && !a.skippedAt;
+
+    if (activityOrder) {
+      try {
+        const order = JSON.parse(activityOrder) as string[];
+        const orderMap = new Map(order.map((id, idx) => [id, idx]));
+        return [...activities].sort((a, b) => {
+          const aIdx = orderMap.get(a.id) ?? Infinity;
+          const bIdx = orderMap.get(b.id) ?? Infinity;
+          return aIdx - bIdx;
+        });
+      } catch {
+        return activities;
+      }
     }
+
+    // Default: pending sorted by dueDate asc, done stays at end
+    return [...activities].sort((a, b) => {
+      const aPending = pending(a);
+      const bPending = pending(b);
+      if (aPending && bPending) {
+        const aDate = a.dueDate ? new Date(a.dueDate).getTime() : Infinity;
+        const bDate = b.dueDate ? new Date(b.dueDate).getTime() : Infinity;
+        return aDate - bDate;
+      }
+      if (aPending) return -1;
+      if (bPending) return 1;
+      return 0;
+    });
   }, [activities, activityOrder]);
 
   const [orderedActivities, setOrderedActivities] = useState(sortedActivities);
@@ -983,7 +1000,7 @@ export function LeadActivitiesList({
 
       {/* Activity stats summary */}
       {activities.length > 0 && (() => {
-        const callActivities = activities.filter((a) => a.gotoCallId);
+        const callActivities = activities.filter((a) => a.type === "call");
         const byOutcome = {
           answered:       callActivities.filter((a) => a.gotoCallOutcome === "answered").length,
           voicemail:      callActivities.filter((a) => a.gotoCallOutcome === "voicemail").length,
