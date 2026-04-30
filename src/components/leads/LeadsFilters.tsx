@@ -143,18 +143,17 @@ export function LeadsFilters({ icps = [], sourceGroups = [] }: LeadsFiltersProps
         <option value="yes">Com pesquisa IA</option>
         <option value="no">Sem pesquisa IA</option>
       </select>
-      {sourceGroups.length > 0 && (
-        <select
-          value={searchParams.get("sourceGroup")?.toString() || ""}
-          onChange={(e) => handleFilterChange("sourceGroup", e.target.value)}
-          className="rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
-        >
-          <option value="">Todos os grupos</option>
-          {sourceGroups.map((g) => (
-            <option key={g} value={g}>{g}</option>
-          ))}
-        </select>
-      )}
+      <select
+        value={searchParams.get("sourceGroup")?.toString() || ""}
+        onChange={(e) => handleFilterChange("sourceGroup", e.target.value)}
+        className="rounded-md border border-gray-300 px-4 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+      >
+        <option value="">Todos os grupos</option>
+        <option value="__none__">Sem grupo</option>
+        {sourceGroups.map((g) => (
+          <option key={g} value={g}>{g}</option>
+        ))}
+      </select>
     </div>
   );
 }

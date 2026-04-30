@@ -108,8 +108,10 @@ export class PrismaLeadsRepository extends LeadsRepository {
       where.agentResearchAt = null;
     }
 
-    // sourceGroup — leads from the given import batch
-    if (filters.sourceGroup) {
+    // sourceGroup — leads from the given import batch; "__none__" matches leads with no group
+    if (filters.sourceGroup === "__none__") {
+      where.sourceGroup = null;
+    } else if (filters.sourceGroup) {
       where.sourceGroup = filters.sourceGroup;
     }
 
