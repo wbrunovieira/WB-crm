@@ -808,6 +808,7 @@ model Activity {
   whatsappMessages WhatsAppMessage[]
 
   callAnalysis   CallAnalysis?
+  meetAnalysis   MeetAnalysis?
 
   @@index([dueDate])
   @@index([gotoCallId])
@@ -847,6 +848,38 @@ model CallAnalysis {
   @@index([ownerId])
   @@index([leadId])
   @@map("call_analyses")
+}
+
+model MeetAnalysis {
+  id         String   @id @default(cuid())
+  activityId String   @unique
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  leadId     String?
+  ownerId    String
+
+  score   Float?
+  summary String?
+  nextStep String?
+  status  String  @default("pending")
+  errorMsg String?
+  jobId   String? @unique
+
+  diagBusiness      String?
+  diagGaps          String?
+  diagUrgency       String?
+  diagDecisionPower String?
+  diagEngagement    String?
+  diagClosing       String?
+
+  positivePoints    String?
+  improvementPoints String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([leadId])
+  @@map("meet_analyses")
 }
 
 model Partner {
