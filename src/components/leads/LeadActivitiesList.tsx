@@ -172,6 +172,7 @@ type Activity = {
 type CallAnalysisSummary = { id: string; score: number | null; status: string };
 type MeetAnalysisSummary = { id: string; score: number | null; status: string };
 type GkAnalysisSummary = { id: string; score: number | null; status: string };
+type TransferAnalysisSummary = { gkId: string; gkScore: number | null; gkStatus: string; spicedId: string; spicedScore: number | null; spicedStatus: string };
 
 const GOTO_OUTCOME_OPTIONS = [
   { value: "answered",  label: "Atendida" },
@@ -242,6 +243,7 @@ function SortableActivityItem({
   const [contactTypePickerOpen, setContactTypePickerOpen] = useState(false);
   const [meetAnalysisTriggering, setMeetAnalysisTriggering] = useState(false);
   const [gkAnalysisTriggering, setGkAnalysisTriggering] = useState(false);
+  const [transferAnalysisTriggering, setTransferAnalysisTriggering] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -465,6 +467,10 @@ function SortableActivityItem({
                     <span className="inline-flex items-center gap-1 rounded bg-emerald-100 px-2 py-0.5 text-xs font-medium text-emerald-700">
                       🎯 Decisor
                     </span>
+                  ) : activity.callContactType === "transfer" ? (
+                    <span className="inline-flex items-center gap-1 rounded bg-cyan-100 px-2 py-0.5 text-xs font-medium text-cyan-700">
+                      🔄 Transferência
+                    </span>
                   ) : (
                     <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
                       🚧 Gatekeeper
@@ -473,7 +479,7 @@ function SortableActivityItem({
                 </button>
                 {contactTypePickerOpen && (
                   <div className="absolute left-0 top-full z-50 mt-1 min-w-[150px] rounded-lg border border-[#3d2b4d] bg-[#1a0022] shadow-lg">
-                    {[{ value: "gatekeeper", label: "🚧 Gatekeeper" }, { value: "decisor", label: "🎯 Decisor" }].map((opt) => (
+                    {[{ value: "gatekeeper", label: "🚧 Gatekeeper" }, { value: "decisor", label: "🎯 Decisor" }, { value: "transfer", label: "🔄 Transferência (GK → Decisor)" }].map((opt) => (
                       <button
                         key={opt.value}
                         type="button"
@@ -495,8 +501,8 @@ function SortableActivityItem({
             </div>
           )}
 
-          {/* SPICED analysis badge — fora do Link */}
-          {callAnalysis && callAnalysis.status === "completed" && (
+          {/* SPICED analysis badge — fora do Link (not shown for transfer; handled in combined block) */}
+          {callAnalysis && activity.callContactType !== "transfer" && callAnalysis.status === "completed" && (
             <Link
               href={`/call-analyses/${callAnalysis.id}`}
               className="mt-1.5 inline-flex items-center gap-1.5 rounded bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700 hover:bg-purple-200 transition-colors"
@@ -504,12 +510,12 @@ function SortableActivityItem({
               🧠 SPICED{callAnalysis.score !== null ? ` · ${callAnalysis.score}/100` : ""}
             </Link>
           )}
-          {callAnalysis && callAnalysis.status === "pending" && (
+          {callAnalysis && activity.callContactType !== "transfer" && callAnalysis.status === "pending" && (
             <span className="mt-1.5 inline-flex items-center gap-1.5 rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
               🧠 Análise pendente
             </span>
           )}
-          {callAnalysis && callAnalysis.status === "processing" && (
+          {callAnalysis && activity.callContactType !== "transfer" && callAnalysis.status === "processing" && (
             <span className="mt-1.5 inline-flex items-center gap-1.5 rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-600">
               🧠 Analisando…
             </span>
@@ -620,6 +626,81 @@ function SortableActivityItem({
                 </div>
               );
             }
+            return null;
+          })()}
+
+          {/* Transfer Analysis — GK + SPICED combo (para ligações com transferência GK → Decisor) */}
+          {activity.gotoCallId && activity.callContactType === "transfer" && (() => {
+            const gkDone = gkAnalysis?.status === "completed";
+            const spicedDone = callAnalysis?.status === "completed";
+            const anyRunning =
+              (gkAnalysis?.status === "pending" || gkAnalysis?.status === "processing") ||
+              (callAnalysis?.status === "pending" || callAnalysis?.status === "processing");
+
+            if (gkDone || spicedDone) {
+              return (
+                <div className="mt-1.5 flex flex-wrap items-center gap-1.5">
+                  {gkDone && (
+                    <Link
+                      href={`/gk-analyses/${gkAnalysis!.id}`}
+                      className="inline-flex items-center gap-1.5 rounded bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-800 hover:bg-orange-200 transition-colors"
+                    >
+                      🚧 RAPORT{gkAnalysis!.score !== null ? ` · ${gkAnalysis!.score}/5` : ""}
+                    </Link>
+                  )}
+                  {spicedDone && (
+                    <Link
+                      href={`/call-analyses/${callAnalysis!.id}`}
+                      className="inline-flex items-center gap-1.5 rounded bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-700 hover:bg-purple-200 transition-colors"
+                    >
+                      🧠 SPICED{callAnalysis!.score !== null ? ` · ${callAnalysis!.score}/100` : ""}
+                    </Link>
+                  )}
+                </div>
+              );
+            }
+
+            if (anyRunning || transferAnalysisTriggering) {
+              return (
+                <span className="mt-1.5 inline-flex items-center gap-1.5 rounded bg-cyan-50 px-2 py-0.5 text-xs font-medium text-cyan-700">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Analisando transferência…
+                </span>
+              );
+            }
+
+            if (activity.gotoTranscriptText && !gkAnalysis && !callAnalysis) {
+              return (
+                <div
+                  className="mt-1.5 inline-flex items-center gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="text-xs text-gray-400">Analisar transferência</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={transferAnalysisTriggering}
+                    disabled={transferAnalysisTriggering}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!token) return;
+                      setTransferAnalysisTriggering(true);
+                      try {
+                        await apiFetch(`/transfer-analysis/trigger-by-activity/${activity.id}`, token, { method: "POST" });
+                        toast.success("Análise de transferência iniciada");
+                      } catch {
+                        toast.error("Erro ao iniciar análise de transferência");
+                        setTransferAnalysisTriggering(false);
+                      }
+                    }}
+                    className="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-300 transition-colors duration-200 ease-in-out focus:outline-none hover:bg-cyan-300 disabled:opacity-50"
+                  >
+                    <span className="pointer-events-none inline-block h-4 w-4 translate-x-0 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
+                  </button>
+                </div>
+              );
+            }
+
             return null;
           })()}
 
