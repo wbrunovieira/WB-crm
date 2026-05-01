@@ -171,6 +171,7 @@ type Activity = {
 
 type CallAnalysisSummary = { id: string; score: number | null; status: string };
 type MeetAnalysisSummary = { id: string; score: number | null; status: string };
+type GkAnalysisSummary = { id: string; score: number | null; status: string };
 
 const GOTO_OUTCOME_OPTIONS = [
   { value: "answered",  label: "Atendida" },
@@ -201,6 +202,7 @@ function SortableActivityItem({
   callAnalysis,
   meetAnalysis,
   hasMeetTranscript,
+  gkAnalysis,
   token,
 }: {
   activity: Activity;
@@ -224,6 +226,7 @@ function SortableActivityItem({
   callAnalysis?: CallAnalysisSummary;
   meetAnalysis?: MeetAnalysisSummary;
   hasMeetTranscript?: boolean;
+  gkAnalysis?: GkAnalysisSummary;
   token?: string;
 }) {
   const {
@@ -238,6 +241,7 @@ function SortableActivityItem({
   const [outcomePickerOpen, setOutcomePickerOpen] = useState(false);
   const [contactTypePickerOpen, setContactTypePickerOpen] = useState(false);
   const [meetAnalysisTriggering, setMeetAnalysisTriggering] = useState(false);
+  const [gkAnalysisTriggering, setGkAnalysisTriggering] = useState(false);
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -565,6 +569,60 @@ function SortableActivityItem({
             return null;
           })()}
 
+          {/* RAPORT gatekeeper analysis — toggle (somente com transcrição) ou badge (quando pronto) */}
+          {activity.gotoCallId && activity.callContactType === "gatekeeper" && (() => {
+            if (gkAnalysis?.status === "completed") {
+              return (
+                <Link
+                  href={`/gk-analyses/${gkAnalysis.id}`}
+                  className="mt-1.5 inline-flex items-center gap-1.5 rounded bg-orange-100 px-2 py-0.5 text-xs font-semibold text-orange-800 hover:bg-orange-200 transition-colors"
+                >
+                  🚧 RAPORT{gkAnalysis.score !== null ? ` · ${gkAnalysis.score}/5` : ""}
+                </Link>
+              );
+            }
+            if (gkAnalysis?.status === "pending" || gkAnalysis?.status === "processing" || gkAnalysisTriggering) {
+              return (
+                <span className="mt-1.5 inline-flex items-center gap-1.5 rounded bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-600">
+                  <Loader2 className="h-3 w-3 animate-spin" /> Analisando GK…
+                </span>
+              );
+            }
+            if (activity.gotoTranscriptText && !gkAnalysis) {
+              return (
+                <div
+                  className="mt-1.5 inline-flex items-center gap-2"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="text-xs text-gray-400">Analisar com RAPORT</span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={gkAnalysisTriggering}
+                    disabled={gkAnalysisTriggering}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!token) return;
+                      setGkAnalysisTriggering(true);
+                      try {
+                        await apiFetch(`/gatekeeper-analysis/trigger-by-activity/${activity.id}`, token, { method: "POST" });
+                        toast.success("Análise RAPORT iniciada");
+                      } catch {
+                        toast.error("Erro ao iniciar análise RAPORT");
+                        setGkAnalysisTriggering(false);
+                      }
+                    }}
+                    className="relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent bg-gray-300 transition-colors duration-200 ease-in-out focus:outline-none hover:bg-orange-300 disabled:opacity-50"
+                  >
+                    <span className="pointer-events-none inline-block h-4 w-4 translate-x-0 rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out" />
+                  </button>
+                </div>
+              );
+            }
+            return null;
+          })()}
+
           {/* WhatsApp log — fora do Link para não navegar ao clicar em áudio/transcrição */}
           {activity.type === "whatsapp" && activity.description && !activity.gotoCallId && (
             <WhatsAppActivityLog
@@ -680,6 +738,7 @@ export function LeadActivitiesList({
   callAnalysesMap = {},
   meetAnalysesMap = {},
   meetTranscriptActivityIds,
+  gkAnalysesMap = {},
 }: {
   leadId: string;
   activities: Activity[];
@@ -688,6 +747,7 @@ export function LeadActivitiesList({
   callAnalysesMap?: Record<string, CallAnalysisSummary>;
   meetAnalysesMap?: Record<string, MeetAnalysisSummary>;
   meetTranscriptActivityIds?: Set<string>;
+  gkAnalysesMap?: Record<string, GkAnalysisSummary>;
 }) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
@@ -1231,6 +1291,7 @@ export function LeadActivitiesList({
                     callAnalysis={callAnalysesMap?.[activity.id]}
                     meetAnalysis={meetAnalysesMap?.[activity.id]}
                     hasMeetTranscript={meetTranscriptActivityIds?.has(activity.id)}
+                    gkAnalysis={gkAnalysesMap?.[activity.id]}
                     token={token}
                   />
                 );

@@ -66,13 +66,14 @@ export default async function LeadDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [lead, session, proposals, meetings, callAnalyses, meetAnalyses] = await Promise.all([
+  const [lead, session, proposals, meetings, callAnalyses, meetAnalyses, gkAnalyses] = await Promise.all([
     backendFetch<Lead>(`/leads/${params.id}`).catch(() => null),
     getServerSession(authOptions),
     backendFetch<Proposal[]>(`/proposals?leadId=${params.id}`).catch((): Proposal[] => []),
     backendFetch<Meeting[]>(`/meetings?leadId=${params.id}`).catch((): Meeting[] => []),
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/call-analysis").catch(() => []),
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/meet-analysis").catch(() => []),
+    backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/gatekeeper-analysis").catch(() => []),
   ]);
 
   const callAnalysesMap = Object.fromEntries(
@@ -81,6 +82,10 @@ export default async function LeadDetailPage({
 
   const meetAnalysesMap = Object.fromEntries(
     meetAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
+  );
+
+  const gkAnalysesMap = Object.fromEntries(
+    gkAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
   );
 
   // Activity IDs whose linked Meeting has a transcript (toggle trigger visible)
@@ -769,6 +774,7 @@ export default async function LeadDetailPage({
           callAnalysesMap={callAnalysesMap}
           meetAnalysesMap={meetAnalysesMap}
           meetTranscriptActivityIds={meetTranscriptActivityIds}
+          gkAnalysesMap={gkAnalysesMap}
           leadContacts={(lead.leadContacts ?? []).map((c) => ({
             id: c.id,
             name: c.name,
