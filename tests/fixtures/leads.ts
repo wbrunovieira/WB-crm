@@ -85,6 +85,8 @@ export const mockLead: Lead = {
   agentUpdatedFields: null,
   agentResearchAt: null,
   inOperationsAt: null,
+  notes: null,
+  parentLeadId: null,
   latitude: null,
   longitude: null,
   googleMapsUrl: null,
