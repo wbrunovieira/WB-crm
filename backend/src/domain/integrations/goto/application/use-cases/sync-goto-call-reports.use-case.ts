@@ -1,8 +1,9 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { Either, right } from "@/core/either";
-import { GoToApiPort } from "../ports/goto-api.port";
+import { GoToApiPort, GoToCallHistoryItem, GoToCallReport } from "../ports/goto-api.port";
 import { GoToTokenPort } from "../ports/goto-token.port";
 import { CreateCallActivityUseCase } from "./create-call-activity.use-case";
+import { CallOutcome } from "../../enterprise/value-objects/call-outcome.vo";
 
 export interface SyncGotoCallReportsInput {
   ownerId: string;
@@ -17,6 +18,48 @@ export interface SyncGotoCallReportsOutput {
 
 interface EventEmitter {
   emit(event: string, payload: unknown): void;
+}
+
+function historyItemToReport(item: GoToCallHistoryItem): GoToCallReport {
+  const durationMs = item.duration ?? 0;
+  const startMs = new Date(item.startTime).getTime();
+  const callEnded = new Date(startMs + durationMs).toISOString();
+
+  const externalNumber =
+    item.direction === "OUTBOUND" ? item.callee?.number : item.caller?.number;
+
+  return {
+    conversationSpaceId: item.originatorId,
+    accountKey: "",
+    direction: item.direction,
+    callCreated: item.startTime,
+    callEnded,
+    participants: [
+      {
+        id: item.legId,
+        legId: item.legId,
+        causeCode: item.hangupCause,
+        type: {
+          value: "PHONE_NUMBER",
+          number: externalNumber,
+          callee: item.direction === "OUTBOUND" ? item.callee : undefined,
+        },
+        recordings: [],
+      },
+    ],
+    _historyItem: item,
+  } as GoToCallReport & { _historyItem: GoToCallHistoryItem };
+}
+
+function deduplicateByOriginatorId(items: GoToCallHistoryItem[]): GoToCallHistoryItem[] {
+  const seen = new Map<string, GoToCallHistoryItem>();
+  for (const item of items) {
+    const existing = seen.get(item.originatorId);
+    if (!existing || (item.direction === "OUTBOUND" && existing.direction !== "OUTBOUND")) {
+      seen.set(item.originatorId, item);
+    }
+  }
+  return Array.from(seen.values());
 }
 
 @Injectable()
@@ -38,14 +81,28 @@ export class SyncGotoCallReportsUseCase {
 
     this.logger.log("Syncing GoTo call reports", { since, ownerId });
 
-    const reports = await this.goToApi.fetchReportsSince(accessToken, since);
+    const historyItems = await this.goToApi.fetchCallHistorySince(accessToken, since);
+    const dedupedItems = deduplicateByOriginatorId(historyItems);
 
     let created = 0;
     let skipped = 0;
 
-    for (const report of reports) {
+    for (const item of dedupedItems) {
       try {
-        const result = await this.createCallActivity.execute({ report, ownerId });
+        const report = historyItemToReport(item);
+        const outcomeResult = CallOutcome.fromCallHistory(
+          item.hangupCause,
+          item.direction,
+          item.duration,
+          item.answerTime,
+        );
+        if (outcomeResult.isLeft()) { skipped++; continue; }
+
+        const result = await this.createCallActivity.execute({
+          report,
+          ownerId,
+          callHistoryOutcome: outcomeResult.value,
+        });
         if (result.isRight()) {
           if (result.value.alreadyExists) {
             skipped++;
@@ -61,7 +118,7 @@ export class SyncGotoCallReportsUseCase {
       }
     }
 
-    this.logger.log("GoTo sync done", { fetched: reports.length, created, skipped });
-    return right({ fetched: reports.length, created, skipped });
+    this.logger.log("GoTo sync done", { fetched: historyItems.length, created, skipped });
+    return right({ fetched: historyItems.length, created, skipped });
   }
 }

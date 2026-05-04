@@ -1,8 +1,9 @@
-import { GoToApiPort, GoToCallReport } from "@/domain/integrations/goto/application/ports/goto-api.port";
+import { GoToApiPort, GoToCallReport, GoToCallHistoryItem } from "@/domain/integrations/goto/application/ports/goto-api.port";
 
 export class FakeGoToApiPort extends GoToApiPort {
   public callReports: Map<string, GoToCallReport> = new Map();
   public reportsSince: GoToCallReport[] = [];
+  public callHistoryItems: GoToCallHistoryItem[] = [];
   public fetchCallReportCalls: Array<{ conversationSpaceId: string; accessToken: string }> = [];
   public shouldFail = false;
 
@@ -18,6 +19,10 @@ export class FakeGoToApiPort extends GoToApiPort {
 
   async fetchReportsSince(_accessToken: string, _since: string): Promise<GoToCallReport[]> {
     return this.reportsSince;
+  }
+
+  async fetchCallHistorySince(_accessToken: string, _since: string): Promise<GoToCallHistoryItem[]> {
+    return this.callHistoryItems;
   }
 
   async refreshToken(_refreshToken: string): Promise<{ accessToken: string; refreshToken: string; expiresAt: number }> {

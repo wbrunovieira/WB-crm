@@ -83,4 +83,65 @@ describe("CallOutcome", () => {
       expect(result.unwrap().isAnswered).toBe(false);
     });
   });
+
+  describe("fromCallHistory — OUTBOUND respondidas", () => {
+    it("answerTime presente + duração >= 15s → answered", () => {
+      const result = CallOutcome.fromCallHistory(16, "OUTBOUND", 30_000, "2024-01-01T10:00:30Z");
+      expect(result.unwrap().toString()).toBe("answered");
+    });
+
+    it("answerTime presente + duração < 15s → voicemail (ligação breve)", () => {
+      const result = CallOutcome.fromCallHistory(16, "OUTBOUND", 10_000, "2024-01-01T10:00:10Z");
+      expect(result.unwrap().toString()).toBe("voicemail");
+    });
+  });
+
+  describe("fromCallHistory — OUTBOUND não respondidas", () => {
+    it("answerTime ausente + hangupCause 17 → busy", () => {
+      const result = CallOutcome.fromCallHistory(17, "OUTBOUND", 0, undefined);
+      expect(result.unwrap().toString()).toBe("busy");
+    });
+
+    it("answerTime ausente + hangupCause 18 → no_answer", () => {
+      const result = CallOutcome.fromCallHistory(18, "OUTBOUND", 0, undefined);
+      expect(result.unwrap().toString()).toBe("no_answer");
+    });
+
+    it("answerTime ausente + hangupCause 19 → no_answer", () => {
+      const result = CallOutcome.fromCallHistory(19, "OUTBOUND", 0, undefined);
+      expect(result.unwrap().toString()).toBe("no_answer");
+    });
+
+    it("answerTime ausente + hangupCause 21 → rejected", () => {
+      const result = CallOutcome.fromCallHistory(21, "OUTBOUND", 0, undefined);
+      expect(result.unwrap().toString()).toBe("rejected");
+    });
+
+    it("answerTime ausente + hangupCause 1 → invalid_number", () => {
+      const result = CallOutcome.fromCallHistory(1, "OUTBOUND", 0, undefined);
+      expect(result.unwrap().toString()).toBe("invalid_number");
+    });
+
+    it("answerTime ausente + hangupCause 16 (sem atendimento) → unknown", () => {
+      const result = CallOutcome.fromCallHistory(16, "OUTBOUND", 0, undefined);
+      expect(result.unwrap().toString()).toBe("unknown");
+    });
+
+    it("answerTime ausente + hangupCause undefined → unknown", () => {
+      const result = CallOutcome.fromCallHistory(undefined, "OUTBOUND", 0, undefined);
+      expect(result.unwrap().toString()).toBe("unknown");
+    });
+  });
+
+  describe("fromCallHistory — INBOUND", () => {
+    it("answerTime presente → answered", () => {
+      const result = CallOutcome.fromCallHistory(0, "INBOUND", 30_000, "2024-01-01T10:00:30Z");
+      expect(result.unwrap().toString()).toBe("answered");
+    });
+
+    it("answerTime ausente → missed", () => {
+      const result = CallOutcome.fromCallHistory(19, "INBOUND", 0, undefined);
+      expect(result.unwrap().toString()).toBe("missed");
+    });
+  });
 });

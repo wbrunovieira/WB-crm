@@ -10,6 +10,7 @@ import { PhoneMatcherService } from "@/infra/shared/phone-matcher/phone-matcher.
 export interface CreateCallActivityInput {
   report: GoToCallReport;
   ownerId: string;
+  callHistoryOutcome?: CallOutcome;
 }
 
 export interface CreateCallActivityOutput {
@@ -110,7 +111,7 @@ export class CreateCallActivityUseCase {
   async execute(
     input: CreateCallActivityInput,
   ): Promise<Either<Error, CreateCallActivityOutput>> {
-    const { report, ownerId } = input;
+    const { report, ownerId, callHistoryOutcome } = input;
     const { conversationSpaceId, direction, callCreated, callEnded } = report;
 
     // 1. Idempotency check — find by gotoCallId
@@ -125,12 +126,17 @@ export class CreateCallActivityUseCase {
     // 2. Calculate duration
     const durationSeconds = calcDurationSeconds(callCreated, callEnded);
 
-    // 3. Build CallOutcome VO
+    // 3. Build CallOutcome VO — usa o pré-computado (call-history) quando disponível
     const external = report.participants.find((p) => p.type.value === "PHONE_NUMBER");
     const causeCode = external?.causeCode;
-    const outcomeResult = CallOutcome.fromCauseCode(causeCode, direction, durationSeconds);
-    if (outcomeResult.isLeft()) return left(outcomeResult.value as Error);
-    const outcome = outcomeResult.value;
+    let outcome: CallOutcome;
+    if (callHistoryOutcome) {
+      outcome = callHistoryOutcome;
+    } else {
+      const outcomeResult = CallOutcome.fromCauseCode(causeCode, direction, durationSeconds);
+      if (outcomeResult.isLeft()) return left(outcomeResult.value as Error);
+      outcome = outcomeResult.value;
+    }
 
     // 4. Build CallDuration VO
     const durationResult = CallDuration.create(durationSeconds);

@@ -33,8 +33,21 @@ export interface GoToCallReport {
   callStates?: unknown[];
 }
 
+export interface GoToCallHistoryItem {
+  originatorId: string;
+  legId: string;
+  caller?: { name?: string; number?: string };
+  callee?: { name?: string; number?: string };
+  direction: "INBOUND" | "OUTBOUND";
+  startTime: string;   // ISO-8601
+  answerTime?: string; // ISO-8601; ausente quando não atendida
+  duration: number;    // milissegundos (startTime → hangup)
+  hangupCause?: number; // código Q.850
+}
+
 export abstract class GoToApiPort {
   abstract fetchCallReport(conversationSpaceId: string, accessToken: string): Promise<GoToCallReport | null>;
   abstract fetchReportsSince(accessToken: string, since: string): Promise<GoToCallReport[]>;
+  abstract fetchCallHistorySince(accessToken: string, since: string): Promise<GoToCallHistoryItem[]>;
   abstract refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string; expiresAt: number }>;
 }

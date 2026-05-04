@@ -15,6 +15,33 @@ const VOICEMAIL_THRESHOLD_S = 15;
 export class CallOutcome {
   private constructor(private readonly _value: CallOutcomeValue) {}
 
+  static fromCallHistory(
+    hangupCause: number | undefined,
+    direction: "INBOUND" | "OUTBOUND",
+    durationMs: number,
+    answerTime: string | undefined,
+  ): Either<never, CallOutcome> {
+    const durationSeconds = Math.round(durationMs / 1000);
+    const isAnswered = answerTime !== undefined;
+    let value: CallOutcomeValue;
+
+    if (direction === "INBOUND") {
+      value = isAnswered ? "answered" : "missed";
+    } else if (!isAnswered) {
+      switch (hangupCause) {
+        case 17: value = "busy"; break;
+        case 18: case 19: value = "no_answer"; break;
+        case 21: value = "rejected"; break;
+        case 1: value = "invalid_number"; break;
+        default: value = "unknown";
+      }
+    } else {
+      value = durationSeconds < VOICEMAIL_THRESHOLD_S ? "voicemail" : "answered";
+    }
+
+    return right(new CallOutcome(value));
+  }
+
   static fromCauseCode(
     causeCode: number | undefined,
     direction: "INBOUND" | "OUTBOUND",

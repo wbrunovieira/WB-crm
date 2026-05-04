@@ -1,5 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { GoToApiPort, GoToCallReport } from "@/domain/integrations/goto/application/ports/goto-api.port";
+import { GoToApiPort, GoToCallReport, GoToCallHistoryItem } from "@/domain/integrations/goto/application/ports/goto-api.port";
 
 const GOTO_API = "https://api.goto.com";
 const GOTO_TOKEN_URL = "https://authentication.logmeininc.com/oauth/token";
@@ -66,6 +66,38 @@ export class GoToApiClient extends GoToApiPort {
     } while (nextPageMarker);
 
     return allReports;
+  }
+
+  async fetchCallHistorySince(accessToken: string, since: string): Promise<GoToCallHistoryItem[]> {
+    const accountKey = process.env.GOTO_ACCOUNT_KEY;
+    const allItems: GoToCallHistoryItem[] = [];
+    let pageMarker: string | undefined;
+
+    do {
+      const params = new URLSearchParams({ startTime: since });
+      if (accountKey) params.set("accountKey", accountKey);
+      if (pageMarker) params.set("pageMarker", pageMarker);
+
+      const res = await fetch(
+        `${GOTO_API}/call-history/v1/calls?${params.toString()}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+
+      if (!res.ok) {
+        this.logger.warn(`Failed to fetch call history since ${since}: ${res.status}`);
+        break;
+      }
+
+      const data = await res.json() as {
+        items?: GoToCallHistoryItem[];
+        nextPageMarker?: string;
+      };
+
+      allItems.push(...(data.items ?? []));
+      pageMarker = data.nextPageMarker;
+    } while (pageMarker);
+
+    return allItems;
   }
 
   async refreshToken(
