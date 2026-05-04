@@ -274,10 +274,11 @@ type GkAnalysisSummary = { id: string; score: number | null; status: string };
 type TransferAnalysisSummary = { gkId: string; gkScore: number | null; gkStatus: string; spicedId: string; spicedScore: number | null; spicedStatus: string };
 
 const GOTO_OUTCOME_OPTIONS = [
-  { value: "answered",  label: "Atendida" },
-  { value: "no_answer", label: "Não atendeu" },
-  { value: "busy",      label: "Ocupado" },
-  { value: "voicemail", label: "Caixa postal" },
+  { value: "answered",       label: "Atendida" },
+  { value: "no_answer",      label: "Não atendeu" },
+  { value: "busy",           label: "Ocupado" },
+  { value: "voicemail",      label: "Caixa postal" },
+  { value: "invalid_number", label: "Número inválido" },
 ] as const;
 
 function SortableActivityItem({

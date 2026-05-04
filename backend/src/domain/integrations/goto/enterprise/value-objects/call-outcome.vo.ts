@@ -32,7 +32,7 @@ export class CallOutcome {
         case 17: value = "busy"; break;
         case 18: case 19: value = "no_answer"; break;
         case 21: value = "rejected"; break;
-        case 1: value = "invalid_number"; break;
+        case 1: case 28: value = "invalid_number"; break;
         default: value = "unknown";
       }
     } else {

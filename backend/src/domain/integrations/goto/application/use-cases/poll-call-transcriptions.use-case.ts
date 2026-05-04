@@ -84,10 +84,30 @@ export class PollCallTranscriptionsUseCase {
 
       const transcriptJson = JSON.stringify(interleaved);
 
+      // Detect carrier "invalid number" announcement in transcript
+      const fullText = interleaved.map((s) => s.text).join(" ").toLowerCase();
+      const isInvalidNumber =
+        fullText.includes("número de telefone não existe") ||
+        fullText.includes("número não existe") ||
+        fullText.includes("fora de serviço") ||
+        fullText.includes("número não está em serviço") ||
+        fullText.includes("not in service") ||
+        fullText.includes("not a working number");
+
+      const outcomeUpdate = isInvalidNumber &&
+        (activity.gotoCallOutcome === "voicemail" || activity.gotoCallOutcome === "answered")
+        ? { gotoCallOutcome: "invalid_number" }
+        : {};
+
+      if (isInvalidNumber) {
+        this.logger.log("Auto-reclassified call as invalid_number via transcript", { activityId });
+      }
+
       activity.update({
         gotoTranscriptText: transcriptJson,
         gotoTranscriptionJobId: undefined,
         gotoTranscriptionJobId2: undefined,
+        ...outcomeUpdate,
       });
 
       await this.activitiesRepository.save(activity);
