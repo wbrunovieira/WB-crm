@@ -1,12 +1,15 @@
 import {
   Controller,
   Post,
+  Get,
   Body,
   Query,
   Req,
   HttpCode,
   Logger,
   UnauthorizedException,
+  Delete,
+  Param,
 } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { EventEmitter2 } from "@nestjs/event-emitter";
@@ -15,6 +18,7 @@ import { HandleGotoWebhookUseCase } from "@/domain/integrations/goto/application
 import { SyncGotoCallReportsUseCase } from "@/domain/integrations/goto/application/use-cases/sync-goto-call-reports.use-case";
 import { GoToRecordingCronService } from "@/domain/integrations/goto/infra/scheduled/goto-recording-cron.service";
 import { GotoActivityCreatedEvent } from "@/domain/integrations/goto/enterprise/events/goto-activity-created.event";
+import { GoToTokenPort } from "@/domain/integrations/goto/application/ports/goto-token.port";
 
 interface GoToWebhookPayload {
   eventType?: string;
@@ -41,6 +45,7 @@ export class GoToWebhookController {
     private readonly syncCallReports: SyncGotoCallReportsUseCase,
     private readonly recordingCron: GoToRecordingCronService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly goToToken: GoToTokenPort,
   ) {}
 
   @Post("calls")
@@ -129,5 +134,70 @@ export class GoToWebhookController {
     const ownerId = process.env.GOTO_DEFAULT_OWNER_ID ?? "";
     const result = await this.syncCallReports.execute({ ownerId });
     return { ok: true, ...result.value };
+  }
+
+  @Get("subscriptions")
+  @ApiOperation({ summary: "Lista webhook subscriptions ativas no GoTo" })
+  async listSubscriptions(@Query("secret") secret: string) {
+    const expectedSecret = process.env.GOTO_WEBHOOK_SECRET;
+    if (!expectedSecret || secret !== expectedSecret) throw new UnauthorizedException("Invalid secret");
+
+    const token = await this.goToToken.getValidAccessToken();
+    const res = await fetch("https://api.goto.com/call-events/v1/subscriptions", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    const data = await res.json();
+    return data;
+  }
+
+  @Post("subscriptions/register")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Registra webhook subscription de call-events no GoTo" })
+  async registerSubscription(@Query("secret") secret: string) {
+    const expectedSecret = process.env.GOTO_WEBHOOK_SECRET;
+    if (!expectedSecret || secret !== expectedSecret) throw new UnauthorizedException("Invalid secret");
+
+    const token = await this.goToToken.getValidAccessToken();
+    const accountKey = process.env.GOTO_ACCOUNT_KEY;
+    const webhookUrl = `${process.env.BACKEND_URL ?? "https://crm.wbdigitalsolutions.com"}/webhooks/goto/calls`;
+    const webhookSecret = process.env.GOTO_WEBHOOK_SECRET ?? "";
+
+    this.logger.log(`Registering GoTo webhook subscription → ${webhookUrl}`);
+
+    const res = await fetch("https://api.goto.com/call-events/v1/subscriptions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        callEvents: ["CALL_ENDED"],
+        url: webhookUrl,
+        secret: webhookSecret,
+        ...(accountKey ? { accountKey } : {}),
+      }),
+    });
+
+    const data = await res.json();
+    this.logger.log(`GoTo subscription result: ${JSON.stringify(data)}`);
+    return { status: res.status, data };
+  }
+
+  @Delete("subscriptions/:subscriptionId")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Remove webhook subscription do GoTo" })
+  async deleteSubscription(
+    @Param("subscriptionId") subscriptionId: string,
+    @Query("secret") secret: string,
+  ) {
+    const expectedSecret = process.env.GOTO_WEBHOOK_SECRET;
+    if (!expectedSecret || secret !== expectedSecret) throw new UnauthorizedException("Invalid secret");
+
+    const token = await this.goToToken.getValidAccessToken();
+    const res = await fetch(`https://api.goto.com/call-events/v1/subscriptions/${subscriptionId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return { status: res.status, ok: res.ok };
   }
 }
