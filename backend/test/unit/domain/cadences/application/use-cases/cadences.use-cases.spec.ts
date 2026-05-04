@@ -227,6 +227,28 @@ describe("Lead cadence lifecycle", () => {
     expect((await repo.findLeadCadenceById(leadCadenceId))!.status).toBe("cancelled");
   });
 
+  it("marca atividades pendentes como skipped ao cancelar cadência", async () => {
+    const { uc, leadCadenceId } = await setup();
+    const before = repo.leadCadenceActivities.filter(a => a.leadCadenceId === leadCadenceId);
+    expect(before.length).toBeGreaterThan(0);
+    expect(before[0].skippedAt).toBeUndefined();
+
+    await uc.cancel.execute({ leadCadenceId, ...user });
+
+    const after = repo.leadCadenceActivities.filter(a => a.leadCadenceId === leadCadenceId);
+    expect(after[0].skippedAt).toBeInstanceOf(Date);
+  });
+
+  it("não toca atividades já concluídas ao cancelar cadência", async () => {
+    const { uc, leadCadenceId } = await setup();
+    const activity = repo.leadCadenceActivities.find(a => a.leadCadenceId === leadCadenceId)!;
+    activity.completed = true;
+
+    await uc.cancel.execute({ leadCadenceId, ...user });
+
+    expect(activity.skippedAt).toBeUndefined();
+  });
+
   it("forbids other user from pausing", async () => {
     const { uc, leadCadenceId } = await setup();
     const r = await uc.pause.execute({ leadCadenceId, ...other });

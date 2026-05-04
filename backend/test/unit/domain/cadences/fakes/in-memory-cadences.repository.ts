@@ -7,6 +7,14 @@ export class InMemoryCadencesRepository extends CadencesRepository {
   cadences: Cadence[] = [];
   steps: CadenceStep[] = [];
   leadCadences: LeadCadenceRecord[] = [];
+  leadCadenceActivities: Array<{
+    id: string;
+    leadCadenceId: string;
+    activityId: string;
+    completed: boolean;
+    skippedAt?: Date;
+    failedAt?: Date;
+  }> = [];
 
   async findById(id: string): Promise<Cadence | null> {
     return this.cadences.find(c => c.id.toString() === id) ?? null;
@@ -73,12 +81,9 @@ export class InMemoryCadencesRepository extends CadencesRepository {
     const activities: GeneratedActivity[] = steps.map(step => {
       const scheduled = new Date(input.startDate);
       scheduled.setDate(scheduled.getDate() + (step.dayNumber - 1));
-      return {
-        leadCadenceId,
-        cadenceStepId: step.id.toString(),
-        activityId: new UniqueEntityID().toString(),
-        scheduledDate: scheduled,
-      };
+      const activityId = new UniqueEntityID().toString();
+      this.leadCadenceActivities.push({ id: new UniqueEntityID().toString(), leadCadenceId, activityId, completed: false });
+      return { leadCadenceId, cadenceStepId: step.id.toString(), activityId, scheduledDate: scheduled };
     });
     return { leadCadenceId, activities };
   }
@@ -103,7 +108,13 @@ export class InMemoryCadencesRepository extends CadencesRepository {
 
   async cancelLeadCadence(id: string): Promise<void> {
     const lc = this.leadCadences.find(l => l.id === id);
-    if (lc) { lc.status = "cancelled"; lc.cancelledAt = new Date(); }
+    if (!lc) return;
+    const now = new Date();
+    lc.status = "cancelled";
+    lc.cancelledAt = now;
+    for (const a of this.leadCadenceActivities.filter(a => a.leadCadenceId === id)) {
+      if (!a.completed && !a.failedAt && !a.skippedAt) a.skippedAt = now;
+    }
   }
 
   async countActiveLeads(cadenceId: string): Promise<number> {

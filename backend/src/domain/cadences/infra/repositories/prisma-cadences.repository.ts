@@ -224,7 +224,22 @@ export class PrismaCadencesRepository extends CadencesRepository {
   }
 
   async cancelLeadCadence(id: string): Promise<void> {
-    await this.prisma.leadCadence.update({ where: { id }, data: { status: "cancelled", cancelledAt: new Date() } });
+    const now = new Date();
+    await this.prisma.$transaction(async (tx) => {
+      const cadenceActivities = await tx.leadCadenceActivity.findMany({
+        where: { leadCadenceId: id },
+        include: { activity: { select: { id: true, completed: true, failedAt: true, skippedAt: true } } },
+      });
+      for (const ca of cadenceActivities) {
+        if (!ca.activity.completed && !ca.activity.failedAt && !ca.activity.skippedAt) {
+          await tx.activity.update({
+            where: { id: ca.activity.id },
+            data: { skippedAt: now, skipReason: "Cadência cancelada" },
+          });
+        }
+      }
+      await tx.leadCadence.update({ where: { id }, data: { status: "cancelled", cancelledAt: now } });
+    });
   }
 
   async countActiveLeads(cadenceId: string): Promise<number> {
