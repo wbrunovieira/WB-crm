@@ -7,10 +7,10 @@ import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { useCreateLead, useUpdateLead, useLeadsForSelect, type CreateLeadPayload } from "@/hooks/leads/use-leads";
 import { normalizeCNPJ, validateCNPJ } from "@/lib/validations/cnpj";
-import { Trash2, Plus } from "lucide-react";
+import { Trash2, Plus, Search, X } from "lucide-react";
 import { useICPs, useLeadICPs } from "@/hooks/icps/use-icps";
 import { usePartnersForSelect } from "@/hooks/partners/use-partners";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MultiLabelSelect } from "@/components/shared/MultiLabelSelect";
 import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
 import { companySizes } from "@/lib/lists/company-sizes";
@@ -143,6 +143,9 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
   const [originalIcpId, setOriginalIcpId] = useState<string>("");
   const [referredByPartnerId, setReferredByPartnerId] = useState<string>(lead?.referredByPartnerId ?? "");
   const [parentLeadId, setParentLeadId] = useState<string>(lead?.parentLeadId ?? "");
+  const [parentLeadSearch, setParentLeadSearch] = useState("");
+  const [parentLeadOpen, setParentLeadOpen] = useState(false);
+  const parentLeadRef = useRef<HTMLDivElement>(null);
   const { data: availableIcps = [], isLoading: loadingIcps } = useICPs("active");
   const { data: leadICPs = [] } = useLeadICPs(lead?.id ?? "");
   const { data: partners = [] } = usePartnersForSelect();
@@ -170,6 +173,16 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
       setOriginalIcpId(currentIcpId);
     }
   }, [leadICPs]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (parentLeadRef.current && !parentLeadRef.current.contains(e.target as Node)) {
+        setParentLeadOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -552,20 +565,82 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
             <label className="block text-sm font-medium text-gray-300 mb-2">
               Empresa Matriz
             </label>
-            <select
-              value={parentLeadId}
-              onChange={(e) => setParentLeadId(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
-            >
-              <option value="">— Nenhuma —</option>
-              {leadsForSelect
-                .filter((l) => l.id !== lead?.id)
-                .map((l) => (
-                  <option key={l.id} value={l.id}>
-                    {l.businessName}{l.city ? ` (${l.city})` : ""}
-                  </option>
-                ))}
-            </select>
+            {parentLeadId ? (
+              <div className="flex items-center justify-between rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2">
+                <span className="text-sm text-gray-200">
+                  {(() => {
+                    const found = leadsForSelect.find((l) => l.id === parentLeadId);
+                    return found
+                      ? `${found.businessName}${found.city ? ` (${found.city})` : ""}`
+                      : parentLeadId;
+                  })()}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setParentLeadId("")}
+                  className="ml-2 text-gray-400 hover:text-red-400"
+                  title="Remover matriz"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ) : (
+              <div ref={parentLeadRef} className="relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    value={parentLeadSearch}
+                    onChange={(e) => {
+                      setParentLeadSearch(e.target.value);
+                      setParentLeadOpen(true);
+                    }}
+                    onFocus={() => setParentLeadOpen(true)}
+                    placeholder="Buscar empresa matriz..."
+                    className="w-full rounded-md border border-[#792990] bg-[#2d1b3d] py-2 pl-10 pr-3 text-sm text-gray-200 placeholder-gray-500 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                  />
+                </div>
+                {parentLeadOpen && (
+                  <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-600 bg-[#1a0022] shadow-lg">
+                    {leadsForSelect
+                      .filter(
+                        (l) =>
+                          l.id !== lead?.id &&
+                          (parentLeadSearch.length === 0 ||
+                            l.businessName.toLowerCase().includes(parentLeadSearch.toLowerCase()) ||
+                            (l.city ?? "").toLowerCase().includes(parentLeadSearch.toLowerCase()))
+                      )
+                      .slice(0, 50)
+                      .map((l) => (
+                        <button
+                          key={l.id}
+                          type="button"
+                          onClick={() => {
+                            setParentLeadId(l.id);
+                            setParentLeadSearch("");
+                            setParentLeadOpen(false);
+                          }}
+                          className="w-full px-3 py-2 text-left hover:bg-[#2d1b3d] transition-colors"
+                        >
+                          <div className="text-sm text-gray-200">{l.businessName}</div>
+                          {l.city && (
+                            <div className="text-xs text-gray-400">{l.city}{l.state ? `, ${l.state}` : ""}</div>
+                          )}
+                        </button>
+                      ))}
+                    {leadsForSelect.filter(
+                      (l) =>
+                        l.id !== lead?.id &&
+                        (parentLeadSearch.length === 0 ||
+                          l.businessName.toLowerCase().includes(parentLeadSearch.toLowerCase()) ||
+                          (l.city ?? "").toLowerCase().includes(parentLeadSearch.toLowerCase()))
+                    ).length === 0 && (
+                      <div className="px-3 py-2 text-sm text-gray-400">Nenhum lead encontrado</div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
             <p className="mt-1 text-xs text-gray-400">
               Vincule este lead como filial de uma empresa matriz
             </p>
