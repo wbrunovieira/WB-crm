@@ -3,14 +3,26 @@ import { CallOutcome } from "@/domain/integrations/goto/enterprise/value-objects
 
 describe("CallOutcome", () => {
   describe("OUTBOUND calls", () => {
-    it("causeCode 16 + duration >= 15s → answered", () => {
+    it("causeCode 16 + duration >= 25s → answered", () => {
       const result = CallOutcome.fromCauseCode(16, "OUTBOUND", 30);
       expect(result.isRight()).toBe(true);
       expect(result.unwrap().toString()).toBe("answered");
     });
 
-    it("causeCode 16 + duration < 15s → voicemail", () => {
+    it("causeCode 16 + duration = 25s (boundary) → answered", () => {
+      const result = CallOutcome.fromCauseCode(16, "OUTBOUND", 25);
+      expect(result.isRight()).toBe(true);
+      expect(result.unwrap().toString()).toBe("answered");
+    });
+
+    it("causeCode 16 + duration < 25s → voicemail", () => {
       const result = CallOutcome.fromCauseCode(16, "OUTBOUND", 10);
+      expect(result.isRight()).toBe(true);
+      expect(result.unwrap().toString()).toBe("voicemail");
+    });
+
+    it("causeCode 16 + duration = 24s (just below threshold) → voicemail", () => {
+      const result = CallOutcome.fromCauseCode(16, "OUTBOUND", 24);
       expect(result.isRight()).toBe(true);
       expect(result.unwrap().toString()).toBe("voicemail");
     });
@@ -41,6 +53,12 @@ describe("CallOutcome", () => {
 
     it("causeCode 1 → invalid_number", () => {
       const result = CallOutcome.fromCauseCode(1, "OUTBOUND", 0);
+      expect(result.isRight()).toBe(true);
+      expect(result.unwrap().toString()).toBe("invalid_number");
+    });
+
+    it("causeCode 28 → invalid_number", () => {
+      const result = CallOutcome.fromCauseCode(28, "OUTBOUND", 0);
       expect(result.isRight()).toBe(true);
       expect(result.unwrap().toString()).toBe("invalid_number");
     });
@@ -85,14 +103,24 @@ describe("CallOutcome", () => {
   });
 
   describe("fromCallHistory — OUTBOUND respondidas", () => {
-    it("answerTime presente + duração >= 15s → answered", () => {
+    it("answerTime presente + duração >= 25s → answered", () => {
       const result = CallOutcome.fromCallHistory(16, "OUTBOUND", 30_000, "2024-01-01T10:00:30Z");
       expect(result.unwrap().toString()).toBe("answered");
     });
 
-    it("answerTime presente + duração < 15s → voicemail (ligação breve)", () => {
+    it("answerTime presente + duração < 25s → voicemail (saudação da operadora)", () => {
       const result = CallOutcome.fromCallHistory(16, "OUTBOUND", 10_000, "2024-01-01T10:00:10Z");
       expect(result.unwrap().toString()).toBe("voicemail");
+    });
+
+    it("answerTime presente + duração 18s → voicemail (abaixo do threshold BR)", () => {
+      const result = CallOutcome.fromCallHistory(16, "OUTBOUND", 18_000, "2024-01-01T10:00:18Z");
+      expect(result.unwrap().toString()).toBe("voicemail");
+    });
+
+    it("answerTime ausente + hangupCause 28 → invalid_number", () => {
+      const result = CallOutcome.fromCallHistory(28, "OUTBOUND", 0, undefined);
+      expect(result.unwrap().toString()).toBe("invalid_number");
     });
   });
 

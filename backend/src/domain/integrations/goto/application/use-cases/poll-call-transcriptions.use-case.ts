@@ -84,8 +84,9 @@ export class PollCallTranscriptionsUseCase {
 
       const transcriptJson = JSON.stringify(interleaved);
 
-      // Detect carrier "invalid number" announcement in transcript
+      // Auto-reclassify based on transcript content
       const fullText = interleaved.map((s) => s.text).join(" ").toLowerCase();
+
       const isInvalidNumber =
         fullText.includes("número de telefone não existe") ||
         fullText.includes("número não existe") ||
@@ -94,13 +95,21 @@ export class PollCallTranscriptionsUseCase {
         fullText.includes("not in service") ||
         fullText.includes("not a working number");
 
-      const outcomeUpdate = isInvalidNumber &&
-        (activity.gotoCallOutcome === "voicemail" || activity.gotoCallOutcome === "answered")
-        ? { gotoCallOutcome: "invalid_number" }
-        : {};
+      const isVoicemail =
+        fullText.includes("encaminhada ao correio de voz") ||
+        fullText.includes("caixa de mensagens") ||
+        fullText.includes("grave a sua mensagem") ||
+        fullText.includes("deixe uma mensagem após o sinal") ||
+        fullText.includes("not available, please leave a message") ||
+        fullText.includes("leave a message after the");
 
-      if (isInvalidNumber) {
-        this.logger.log("Auto-reclassified call as invalid_number via transcript", { activityId });
+      let outcomeUpdate: { gotoCallOutcome?: string } = {};
+      if (isInvalidNumber && (activity.gotoCallOutcome === "voicemail" || activity.gotoCallOutcome === "answered")) {
+        outcomeUpdate = { gotoCallOutcome: "invalid_number" };
+        this.logger.log("Auto-reclassified as invalid_number via transcript", { activityId });
+      } else if (isVoicemail && activity.gotoCallOutcome === "answered") {
+        outcomeUpdate = { gotoCallOutcome: "voicemail" };
+        this.logger.log("Auto-reclassified as voicemail via transcript", { activityId });
       }
 
       activity.update({

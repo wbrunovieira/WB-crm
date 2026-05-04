@@ -10,7 +10,7 @@ export type CallOutcomeValue =
   | "missed"
   | "unknown";
 
-const VOICEMAIL_THRESHOLD_S = 15;
+const VOICEMAIL_THRESHOLD_S = 25; // BR carrier voicemail greetings typically 15-25s
 
 export class CallOutcome {
   private constructor(private readonly _value: CallOutcomeValue) {}
@@ -67,6 +67,7 @@ export class CallOutcome {
           value = "rejected";
           break;
         case 1:
+        case 28:
           value = "invalid_number";
           break;
         default:
