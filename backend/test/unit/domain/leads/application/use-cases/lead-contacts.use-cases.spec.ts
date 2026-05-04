@@ -80,6 +80,21 @@ describe("CreateLeadContactUseCase", () => {
     expect(result.isRight()).toBe(true);
     if (result.isRight()) expect(result.value.name).toBe("Carlos");
   });
+
+  it("aceita languages como JSON string e armazena corretamente", async () => {
+    const langs = JSON.stringify([{ code: "pt-BR", isPrimary: true }]);
+    const result = await sut.execute({ leadId: LEAD_ID, name: "Betinho", languages: langs });
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.languages).toBe(langs);
+    }
+  });
+
+  it("armazena languages null quando não informado", async () => {
+    const result = await sut.execute({ leadId: LEAD_ID, name: "Betinho" });
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) expect(result.value.languages).toBeNull();
+  });
 });
 
 // ─── UpdateLeadContactUseCase ─────────────────────────────────────────────────

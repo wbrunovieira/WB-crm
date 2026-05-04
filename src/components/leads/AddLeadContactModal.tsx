@@ -45,7 +45,7 @@ export function AddLeadContactModal({
       linkedin: getString("linkedin"),
       instagram: getString("instagram"),
       isPrimary: formData.get("isPrimary") === "on",
-      languages: languages.length > 0 ? languages : null,
+      languages: languages.length > 0 ? JSON.stringify(languages) : undefined,
     };
 
     try {

@@ -31,6 +31,8 @@ import { LeadCadenceSection } from "@/components/leads/LeadCadenceSection";
 import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
+import { LeadNotesBlock } from "@/components/leads/LeadNotesBlock";
+import { LeadHierarchySection } from "@/components/leads/LeadHierarchySection";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
@@ -288,6 +290,10 @@ export default async function LeadDetailPage({
           </p>
         </div>
       )}
+
+      {/* Notes + Hierarchy */}
+      <LeadNotesBlock leadId={lead.id} initialNotes={lead.notes} />
+      <LeadHierarchySection leadId={lead.id} parentLead={lead.parentLead} childLeads={lead.childLeads} />
 
       {/* ── 3-column grid ────────────────────────────────────────────── */}
       <div className="grid gap-5 lg:grid-cols-3">

@@ -136,6 +136,12 @@ export interface LeadProps {
   // Grouping / import tag (ex: "MatConstrPetropolis270426")
   sourceGroup?: string;
 
+  // Free-text notes (amber post-it block on detail page)
+  notes?: string | null;
+
+  // Matriz / Filiais — self-referential
+  parentLeadId?: string | null;
+
   createdAt: Date;
   updatedAt: Date;
 }
@@ -230,6 +236,8 @@ export class Lead extends AggregateRoot<LeadProps> {
   get driveFolderId()               { return this.props.driveFolderId; }
   get inOperationsAt()              { return this.props.inOperationsAt; }
   get sourceGroup()                 { return this.props.sourceGroup; }
+  get notes()                       { return this.props.notes ?? null; }
+  get parentLeadId()                { return this.props.parentLeadId ?? null; }
   get createdAt()                   { return this.props.createdAt; }
   get updatedAt()                   { return this.props.updatedAt; }
 

@@ -86,6 +86,62 @@ describe("UpdateLeadUseCase", () => {
       expect(result.value.lead.businessName).toBe("Atualizado pelo Admin");
     }
   });
+
+  it("atualiza campo notes do lead", async () => {
+    const lead = makeLead();
+    await repo.save(lead);
+
+    const result = await sut.execute({
+      id: lead.id.toString(),
+      requesterId: "user-1",
+      requesterRole: "sdr",
+      notes: "Está abrindo nova loja no bairro",
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) expect(result.value.lead.notes).toBe("Está abrindo nova loja no bairro");
+  });
+
+  it("limpa campo notes com null", async () => {
+    const lead = makeLead();
+    await repo.save(lead);
+
+    await sut.execute({ id: lead.id.toString(), requesterId: "user-1", requesterRole: "sdr", notes: "nota inicial" });
+    const result = await sut.execute({ id: lead.id.toString(), requesterId: "user-1", requesterRole: "sdr", notes: null });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) expect(result.value.lead.notes).toBeNull();
+  });
+
+  it("atualiza parentLeadId para vincular matriz", async () => {
+    const parent = makeLead("user-1", "Empresa Matriz");
+    const child = makeLead("user-1", "Filial 1");
+    await repo.save(parent);
+    await repo.save(child);
+
+    const result = await sut.execute({
+      id: child.id.toString(),
+      requesterId: "user-1",
+      requesterRole: "sdr",
+      parentLeadId: parent.id.toString(),
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) expect(result.value.lead.parentLeadId).toBe(parent.id.toString());
+  });
+
+  it("limpa parentLeadId com null", async () => {
+    const parent = makeLead("user-1", "Matriz");
+    const child = makeLead("user-1", "Filial");
+    await repo.save(parent);
+    await repo.save(child);
+
+    await sut.execute({ id: child.id.toString(), requesterId: "user-1", requesterRole: "sdr", parentLeadId: parent.id.toString() });
+    const result = await sut.execute({ id: child.id.toString(), requesterId: "user-1", requesterRole: "sdr", parentLeadId: null });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) expect(result.value.lead.parentLeadId).toBeNull();
+  });
 });
 
 // ─── ArchiveLeadUseCase ───────────────────────────────────────────────────────

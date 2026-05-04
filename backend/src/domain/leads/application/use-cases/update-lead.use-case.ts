@@ -80,6 +80,8 @@ export interface UpdateLeadInput {
   driveFolderId?: string;
   inOperationsAt?: Date;
   sourceGroup?: string;
+  notes?: string | null;
+  parentLeadId?: string | null;
   // Relations
   labelIds?: string[];
   icpId?: string | null; // null = remove ICP

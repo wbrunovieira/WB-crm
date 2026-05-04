@@ -459,6 +459,12 @@ class UpdateLeadDto {
   @ApiPropertyOptional()
   activityOrder?: string;
 
+  @ApiPropertyOptional({ nullable: true })
+  notes?: string | null;
+
+  @ApiPropertyOptional({ nullable: true })
+  parentLeadId?: string | null;
+
   // Relations
   @ApiPropertyOptional({ type: [String], description: "IDs dos labels (substitui todos)" })
   labelIds?: string[];
@@ -641,6 +647,8 @@ function serialize(lead: Lead) {
     agentSummary: lead.agentSummary,
     agentUpdatedFields: lead.agentUpdatedFields,
     agentResearchAt: lead.agentResearchAt,
+    notes: lead.notes,
+    parentLeadId: lead.parentLeadId,
     createdAt: lead.createdAt,
     updatedAt: lead.updatedAt,
   };
@@ -993,8 +1001,11 @@ export class LeadsController {
   @ApiParam({ name: "id", description: "ID do lead" })
   @ApiBody({ type: CreateLeadContactDto })
   async addContact(@Param("id") id: string, @Body() body: CreateLeadContactDto) {
-    const result = await this.createLeadContact.execute({ leadId: id, ...body });
-    if (result.isLeft()) throw new Error(result.value.message);
+    const languages = Array.isArray(body.languages)
+      ? JSON.stringify(body.languages)
+      : body.languages;
+    const result = await this.createLeadContact.execute({ leadId: id, ...body, languages });
+    if (result.isLeft()) handleError(result);
     return result.value;
   }
 

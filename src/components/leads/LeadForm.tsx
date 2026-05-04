@@ -5,7 +5,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
-import { useCreateLead, useUpdateLead, type CreateLeadPayload } from "@/hooks/leads/use-leads";
+import { useCreateLead, useUpdateLead, useLeadsForSelect, type CreateLeadPayload } from "@/hooks/leads/use-leads";
 import { normalizeCNPJ, validateCNPJ } from "@/lib/validations/cnpj";
 import { Trash2, Plus } from "lucide-react";
 import { useICPs, useLeadICPs } from "@/hooks/icps/use-icps";
@@ -99,6 +99,7 @@ type Lead = {
   googleAds?: string | null;
   starRating?: number | null;
   referredByPartnerId?: string | null;
+  parentLeadId?: string | null;
 };
 
 type LeadFormProps = {
@@ -141,9 +142,11 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
   const [selectedIcpId, setSelectedIcpId] = useState<string>("");
   const [originalIcpId, setOriginalIcpId] = useState<string>("");
   const [referredByPartnerId, setReferredByPartnerId] = useState<string>(lead?.referredByPartnerId ?? "");
+  const [parentLeadId, setParentLeadId] = useState<string>(lead?.parentLeadId ?? "");
   const { data: availableIcps = [], isLoading: loadingIcps } = useICPs("active");
   const { data: leadICPs = [] } = useLeadICPs(lead?.id ?? "");
   const { data: partners = [] } = usePartnersForSelect();
+  const { data: leadsForSelect = [] } = useLeadsForSelect();
   const [contacts, setContacts] = useState<ContactFormData[]>([]);
   const [leadLanguages, setLeadLanguages] = useState<LanguageEntry[]>(() => {
     if (lead?.languages) {
@@ -174,10 +177,10 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
 
     const formData = new FormData(e.currentTarget);
 
-    // Helper to get string value or undefined
-    const getString = (key: string) => {
+    const getString = (key: string): string | null | undefined => {
       const value = formData.get(key);
-      return value && value !== "" ? (value as string) : undefined;
+      if (value === null) return undefined;
+      return value !== "" ? (value as string) : null;
     };
 
     const data = {
@@ -253,6 +256,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
       googleAds: googleAds || undefined,
       starRating: starRating ?? undefined,
       referredByPartnerId: referredByPartnerId || undefined,
+      parentLeadId: parentLeadId || null,
     };
 
     // Validação client-side do CNPJ antes de chamar o servidor
@@ -540,6 +544,30 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
             </select>
             <p className="mt-1 text-xs text-gray-400">
               Registre o parceiro que indicou este lead
+            </p>
+          </div>
+
+          {/* Empresa Matriz */}
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Empresa Matriz
+            </label>
+            <select
+              value={parentLeadId}
+              onChange={(e) => setParentLeadId(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            >
+              <option value="">— Nenhuma —</option>
+              {leadsForSelect
+                .filter((l) => l.id !== lead?.id)
+                .map((l) => (
+                  <option key={l.id} value={l.id}>
+                    {l.businessName}{l.city ? ` (${l.city})` : ""}
+                  </option>
+                ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-400">
+              Vincule este lead como filial de uma empresa matriz
             </p>
           </div>
         </div>

@@ -253,6 +253,8 @@ export class PrismaLeadsRepository extends LeadsRepository {
         leadERPs: { include: { erp: { select: { name: true } } } },
         leadCRMs: { include: { crm: { select: { name: true } } } },
         leadEcommerces: { include: { ecommerce: { select: { name: true } } } },
+        parentLead: { select: { id: true, businessName: true } },
+        childLeads: { select: { id: true, businessName: true }, where: { isArchived: false } },
       },
     });
 
@@ -366,6 +368,8 @@ export class PrismaLeadsRepository extends LeadsRepository {
       agentSummary: row.agentSummary,
       agentUpdatedFields: row.agentUpdatedFields,
       agentResearchAt: row.agentResearchAt,
+      notes: (row as unknown as { notes?: string | null }).notes ?? null,
+      parentLeadId: (row as unknown as { parentLeadId?: string | null }).parentLeadId ?? null,
 
       // LeadDetail relations
       leadContacts: row.leadContacts.map((lc) => ({
@@ -433,6 +437,8 @@ export class PrismaLeadsRepository extends LeadsRepository {
         crms: row.leadCRMs.map((lc) => lc.crm.name),
         ecommerces: row.leadEcommerces.map((le) => le.ecommerce.name),
       },
+      parentLead: (row as unknown as { parentLead?: { id: string; businessName: string } | null }).parentLead ?? null,
+      childLeads: ((row as unknown as { childLeads?: Array<{ id: string; businessName: string }> }).childLeads ?? []),
     };
   }
 

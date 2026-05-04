@@ -117,4 +117,10 @@ export interface Lead {
   agentSummary?: string | null;
   agentUpdatedFields?: string | null; // JSON: string[]
   agentResearchAt?: string | null;
+  // Notes
+  notes?: string | null;
+  // Matriz / Filiais
+  parentLeadId?: string | null;
+  parentLead?: { id: string; businessName: string } | null;
+  childLeads?: Array<{ id: string; businessName: string }>;
 }

@@ -151,10 +151,14 @@ export interface LeadDetail extends LeadSummary {
   agentSummary: string | null;
   agentUpdatedFields: string | null;
   agentResearchAt: Date | null;
+  notes: string | null;
+  parentLeadId: string | null;
 
   // Relations
   leadContacts: LeadContact[];
   activities: LeadActivity[];
   secondaryCNAEs: Array<{ id: string; code: string; description: string }>;
   techProfile: LeadTechProfile;
+  parentLead: { id: string; businessName: string } | null;
+  childLeads: Array<{ id: string; businessName: string }>;
 }

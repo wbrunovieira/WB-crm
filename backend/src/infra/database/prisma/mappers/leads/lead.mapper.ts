@@ -108,6 +108,8 @@ export class LeadMapper {
         driveFolderId: raw.driveFolderId ?? undefined,
         inOperationsAt: raw.inOperationsAt ?? undefined,
         sourceGroup: raw.sourceGroup ?? undefined,
+        notes: (raw as unknown as { notes?: string | null }).notes ?? null,
+        parentLeadId: (raw as unknown as { parentLeadId?: string | null }).parentLeadId ?? null,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
       },
@@ -226,6 +228,8 @@ export class LeadMapper {
       activityOrder: toJsonString(lead.activityOrder),
       driveFolderId: lead.driveFolderId ?? null,
       sourceGroup: lead.sourceGroup ?? null,
+      notes: lead.notes ?? null,
+      parentLeadId: lead.parentLeadId ?? null,
       inOperationsAt: lead.inOperationsAt instanceof Date
         ? lead.inOperationsAt
         : lead.inOperationsAt

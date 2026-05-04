@@ -288,6 +288,12 @@ model Lead {
   // Grouping / import tag (ex: "MatConstrPetropolis270426")
   sourceGroup String? @db.VarChar(100)
 
+  // Notas livres (bloco âmbar editável na página do lead)
+  notes String?
+
+  // Matriz / Filiais (auto-referência)
+  parentLeadId String?
+
   // Owner e timestamps
   ownerId   String
   createdAt DateTime @default(now())
@@ -295,6 +301,8 @@ model Lead {
 
   // Relations
   owner                 User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  parentLead            Lead?         @relation("LeadHierarchy", fields: [parentLeadId], references: [id], onDelete: SetNull)
+  childLeads            Lead[]        @relation("LeadHierarchy")
   leadContacts          LeadContact[] // Lead tem múltiplos contatos
   contacts              Contact[]     // Contatos diretamente vinculados ao Lead
   activities            Activity[]    // Lead tem múltiplas atividades
