@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package, Briefcase, Code, Database, Target, Zap, MessageSquare, Mail, FileText, ArrowRightLeft, Building2 } from "lucide-react";
+import { Package, Briefcase, Code, Database, Target, Zap, MessageSquare, Mail, FileText, ArrowRightLeft, Building2, Phone } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -153,6 +153,26 @@ export default function AdminPage() {
             </div>
           </div>
         </Link>
+        {/* GoTo Connect Card */}
+        <Link
+          href="/admin/goto"
+          className="group block rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-all hover:border-teal-500"
+        >
+          <div className="flex items-center gap-4">
+            <div className="rounded-lg bg-teal-100 p-3 group-hover:bg-teal-600 transition-colors">
+              <Phone className="h-6 w-6 text-teal-600 group-hover:text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-teal-600">
+                GoTo Connect
+              </h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Ligações, gravações e análise SPICED
+              </p>
+            </div>
+          </div>
+        </Link>
+
         {/* Google Integration Card */}
         <Link
           href="/admin/google"

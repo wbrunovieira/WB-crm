@@ -11,6 +11,7 @@ import {
   DisconnectGoogleUseCase,
   StoreGoToTokensUseCase,
 } from "@/domain/auth/application/use-cases/oauth.use-cases";
+import { OAuthRepository } from "@/domain/auth/application/repositories/oauth.repository";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
@@ -63,6 +64,7 @@ export class AuthController {
     private readonly storeGoogleTokens: StoreGoogleTokensUseCase,
     private readonly disconnectGoogle: DisconnectGoogleUseCase,
     private readonly storeGoToTokens: StoreGoToTokensUseCase,
+    private readonly oauthRepo: OAuthRepository,
   ) {}
 
   @Post("register")
@@ -162,8 +164,8 @@ export class AuthController {
   @ApiOperation({ summary: "Callback OAuth GoTo — troca code por tokens e persiste" })
   async gotoCallback(@Query("code") code: string, @Query("error") error: string) {
     const base = frontendUrl();
-    if (error) return { url: `${base}/admin?goto_error=${encodeURIComponent(error)}`, statusCode: 302 };
-    if (!code) return { url: `${base}/admin?goto_error=no_code`, statusCode: 302 };
+    if (error) return { url: `${base}/admin/goto?error=${encodeURIComponent(error)}`, statusCode: 302 };
+    if (!code) return { url: `${base}/admin/goto?error=no_code`, statusCode: 302 };
     try {
       const backendUrl = process.env.BACKEND_URL ?? "http://localhost:3010";
       const clientId = process.env.GOTO_CLIENT_ID ?? "";
@@ -184,9 +186,24 @@ export class AuthController {
         refreshToken: data.refresh_token,
         expiresAt: Date.now() + data.expires_in * 1000,
       });
-      return { url: `${base}/admin?goto_connected=1`, statusCode: 302 };
+      return { url: `${base}/admin/goto?success=1`, statusCode: 302 };
     } catch {
-      return { url: `${base}/admin?goto_error=token_exchange_failed`, statusCode: 302 };
+      return { url: `${base}/admin/goto?error=token_exchange_failed`, statusCode: 302 };
     }
+  }
+
+  @Get("goto/status")
+  @ApiOperation({ summary: "Status da integração GoTo — retorna se há tokens válidos" })
+  async gotoStatus() {
+    const tokens = await this.oauthRepo.loadGoToTokens();
+    if (!tokens) return { connected: false };
+    const now = Date.now();
+    return {
+      connected: true,
+      hasRefreshToken: !!tokens.refreshToken,
+      expiresAt: tokens.expiresAt,
+      isExpired: tokens.expiresAt < now,
+      expiresInMs: tokens.expiresAt - now,
+    };
   }
 }
