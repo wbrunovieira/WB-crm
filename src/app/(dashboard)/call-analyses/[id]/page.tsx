@@ -150,6 +150,10 @@ export default async function CallAnalysisDetailPage({
 
   if (!analysis) notFound();
 
+  const lead = analysis.leadId
+    ? await backendFetch<{ id: string; businessName: string }>(`/leads/${analysis.leadId}`).catch(() => null)
+    : null;
+
   const totalScore = analysis.score ?? 0;
   const scoreColor =
     totalScore >= 80 ? "text-green-600" : totalScore >= 50 ? "text-yellow-600" : "text-red-600";
@@ -163,11 +167,17 @@ export default async function CallAnalysisDetailPage({
             <h1 className="text-2xl font-bold">Análise SPICED</h1>
             {analysis.noShowRisk && <RiskBadge risk={analysis.noShowRisk} />}
           </div>
-          <p className="mt-1 text-sm text-gray-500">
-            <Link href={`/activities/${analysis.activityId}`} className="text-primary hover:underline">
+          <div className="mt-1 flex flex-wrap items-center gap-3 text-sm text-gray-500">
+            {lead && (
+              <Link href={`/leads/${lead.id}`} className="font-medium text-primary hover:underline">
+                {lead.businessName}
+              </Link>
+            )}
+            {lead && <span>·</span>}
+            <Link href={`/activities/${analysis.activityId}`} className="hover:underline">
               Ver atividade da ligação
             </Link>
-          </p>
+          </div>
         </div>
         {analysis.score !== null && (
           <div className="text-right">
