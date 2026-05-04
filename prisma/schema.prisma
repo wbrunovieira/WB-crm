@@ -807,7 +807,9 @@ model Activity {
 
   whatsappMessages WhatsAppMessage[]
 
-  callAnalysis   CallAnalysis?
+  callAnalysis       CallAnalysis?
+  meetAnalysis       MeetAnalysis?
+  gatekeeperAnalysis GatekeeperAnalysis?
 
   @@index([dueDate])
   @@index([gotoCallId])
@@ -847,6 +849,93 @@ model CallAnalysis {
   @@index([ownerId])
   @@index([leadId])
   @@map("call_analyses")
+}
+
+model MeetAnalysis {
+  id         String   @id @default(cuid())
+  activityId String   @unique
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  leadId     String?
+  ownerId    String
+
+  score   Float?
+  summary String?
+  nextStep String?
+  status  String  @default("pending")
+  errorMsg String?
+  jobId   String? @unique
+
+  diagBusiness      String?
+  diagGaps          String?
+  diagUrgency       String?
+  diagDecisionPower String?
+  diagEngagement    String?
+  diagClosing       String?
+
+  positivePoints    String?
+  improvementPoints String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@index([leadId])
+  @@map("meet_analyses")
+}
+
+model GatekeeperAnalysis {
+  id         String   @id @default(cuid())
+  activityId String   @unique
+  activity   Activity @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  ownerId    String
+
+  score   Float?
+  summary String?
+  status  String  @default("pending")
+  errorMsg String?
+  jobId   String? @unique
+
+  raportRecepcao  String?
+  raportAlianca   String?
+  raportPerguntas String?
+  raportObjecoes  String?
+  raportResultado String?
+  raportTecnicas  String?
+
+  positivePoints    String?
+  improvementPoints String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@map("gatekeeper_analyses")
+}
+
+model GatekeeperBatch {
+  id      String @id @default(cuid())
+  ownerId String
+
+  status  String  @default("pending")
+  jobId   String? @unique
+  errorMsg String?
+
+  analysisIds           String?
+  overallScore          Float?
+  dimensionAverages     String?
+  patterns              String?
+  comparisonWithHistory String?
+  individualHighlights  String?
+  recommendations       String?
+  newSummary            String?
+  positivePoints        String?
+  improvementPoints     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([ownerId])
+  @@map("gatekeeper_batches")
 }
 
 model Partner {
