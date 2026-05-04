@@ -38,6 +38,18 @@ function getRecordingId(report: GoToCallReport): string | null {
   return null;
 }
 
+function phoneNumberReachedConnected(report: GoToCallReport): boolean {
+  if (!report.callStates?.length) return true; // sem callStates → não sobrescreve
+  for (const state of report.callStates) {
+    for (const p of state.participants ?? []) {
+      if (p.type?.value === "PHONE_NUMBER" && p.status?.value === "CONNECTED") {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
 function buildSubject(
   direction: "INBOUND" | "OUTBOUND",
   dialedNumber: string | null,
@@ -136,6 +148,16 @@ export class CreateCallActivityUseCase {
       const outcomeResult = CallOutcome.fromCauseCode(causeCode, direction, durationSeconds);
       if (outcomeResult.isLeft()) return left(outcomeResult.value as Error);
       outcome = outcomeResult.value;
+    }
+
+    // 3b. CDR callStates override — PHONE_NUMBER nunca chegou a CONNECTED = não atendida
+    // Cobre o caso onde call-history reporta answerTime (LINE aceitou) mas destinatário não atendeu
+    if (
+      direction === "OUTBOUND" &&
+      outcome.isAnswered &&
+      !phoneNumberReachedConnected(report)
+    ) {
+      outcome = CallOutcome.fromCauseCode(18, "OUTBOUND", 0).value; // 18 = no_answer
     }
 
     // 4. Build CallDuration VO

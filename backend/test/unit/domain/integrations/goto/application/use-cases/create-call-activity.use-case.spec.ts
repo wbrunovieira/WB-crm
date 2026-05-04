@@ -2,7 +2,8 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { CreateCallActivityUseCase } from "@/domain/integrations/goto/application/use-cases/create-call-activity.use-case";
 import { FakeActivitiesRepository } from "../../fakes/fake-activities.repository";
 import { FakePhoneMatcherService } from "../../fakes/fake-phone-matcher.service";
-import { GoToCallReport } from "@/domain/integrations/goto/application/ports/goto-api.port";
+import { GoToCallReport, GoToCallState } from "@/domain/integrations/goto/application/ports/goto-api.port";
+import { CallOutcome } from "@/domain/integrations/goto/enterprise/value-objects/call-outcome.vo";
 
 const OWNER_ID = "owner-001";
 const CALL_ID = "call-space-abc";
@@ -33,6 +34,56 @@ function makeReport(overrides: Partial<GoToCallReport> = {}): GoToCallReport {
   };
 }
 
+function makeCallState(
+  sequenceNumber: number,
+  participants: Array<{ id: string; typeValue: string; statusValue: string }>,
+): GoToCallState {
+  return {
+    type: "STARTING",
+    sequenceNumber,
+    participants: participants.map((p) => ({
+      id: p.id,
+      type: { value: p.typeValue },
+      status: { value: p.statusValue },
+    })),
+  };
+}
+
+/** callStates onde PHONE_NUMBER nunca chegou a CONNECTED (RINGING → DISCONNECTING) */
+function makeRingNoAnswerCallStates(): GoToCallState[] {
+  return [
+    makeCallState(1, [{ id: "line-1", typeValue: "LINE", statusValue: "RINGING" }]),
+    makeCallState(2, [
+      { id: "line-1", typeValue: "LINE", statusValue: "RINGING" },
+      { id: "phone-1", typeValue: "PHONE_NUMBER", statusValue: "RINGING" },
+    ]),
+    makeCallState(3, [
+      { id: "line-1", typeValue: "LINE", statusValue: "RINGING" },
+      { id: "phone-1", typeValue: "PHONE_NUMBER", statusValue: "DISCONNECTING" },
+    ]),
+    makeCallState(4, [{ id: "line-1", typeValue: "LINE", statusValue: "DISCONNECTING" }]),
+  ];
+}
+
+/** callStates onde PHONE_NUMBER chegou a CONNECTED (atendida de verdade) */
+function makeAnsweredCallStates(): GoToCallState[] {
+  return [
+    makeCallState(1, [{ id: "line-1", typeValue: "LINE", statusValue: "RINGING" }]),
+    makeCallState(2, [
+      { id: "line-1", typeValue: "LINE", statusValue: "RINGING" },
+      { id: "phone-1", typeValue: "PHONE_NUMBER", statusValue: "RINGING" },
+    ]),
+    makeCallState(3, [
+      { id: "line-1", typeValue: "LINE", statusValue: "CONNECTED" },
+      { id: "phone-1", typeValue: "PHONE_NUMBER", statusValue: "CONNECTED" },
+    ]),
+    makeCallState(4, [
+      { id: "line-1", typeValue: "LINE", statusValue: "DISCONNECTING" },
+      { id: "phone-1", typeValue: "PHONE_NUMBER", statusValue: "DISCONNECTING" },
+    ]),
+  ];
+}
+
 let repo: FakeActivitiesRepository;
 let phoneMatcher: FakePhoneMatcherService;
 let useCase: CreateCallActivityUseCase;
@@ -60,7 +111,7 @@ describe("CreateCallActivityUseCase", () => {
     expect(activity.completed).toBe(true);
   });
 
-  it("detects voicemail when causeCode 16 and duration < 15s", async () => {
+  it("detects voicemail when causeCode 16 and duration < 25s", async () => {
     const now = new Date();
     const report = makeReport({
       callCreated: new Date(now.getTime() - 10000).toISOString(), // 10s ago
@@ -197,6 +248,99 @@ describe("CreateCallActivityUseCase", () => {
     const activity = repo.items[0];
     expect(activity.gotoCallOutcome).toBe("busy");
     expect(activity.gotoRecordingId).toBeUndefined();
+  });
+
+  describe("callStates override — PHONE_NUMBER nunca CONNECTED", () => {
+    it("classifica como no_answer quando callStates mostra PHONE_NUMBER RINGING→DISCONNECTING (sem causeCode)", async () => {
+      const now = new Date();
+      const report = makeReport({
+        callCreated: new Date(now.getTime() - 56_000).toISOString(), // 56s de ring
+        callEnded: now.toISOString(),
+        participants: [
+          { id: "line-1", legId: "leg-line", type: { value: "LINE", lineId: "line-1" } },
+          {
+            id: "phone-1",
+            legId: "leg-phone",
+            type: { value: "PHONE_NUMBER", callee: { name: "", number: "+552422463024" } },
+            // causeCode ausente — caso real: carrier disconnected sem código Q.850
+          },
+        ],
+        callStates: makeRingNoAnswerCallStates(),
+      });
+
+      const result = await useCase.execute({ report, ownerId: OWNER_ID });
+      expect(result.isRight()).toBe(true);
+
+      const activity = repo.items[0];
+      expect(activity.gotoCallOutcome).toBe("no_answer");
+      expect(activity.gotoRecordingId).toBeUndefined(); // nunca atendeu → sem gravação
+      expect(activity.subject).toContain("Não atendeu");
+    });
+
+    it("classifica como no_answer mesmo quando callHistoryOutcome diz 'answered' mas callStates mostra sem CONNECTED", async () => {
+      const now = new Date();
+      const report = makeReport({
+        callCreated: new Date(now.getTime() - 56_000).toISOString(),
+        callEnded: now.toISOString(),
+        participants: [
+          { id: "line-1", legId: "leg-line", type: { value: "LINE", lineId: "line-1" } },
+          {
+            id: "phone-1",
+            legId: "leg-phone",
+            type: { value: "PHONE_NUMBER", callee: { name: "", number: "+552422463024" } },
+          },
+        ],
+        callStates: makeRingNoAnswerCallStates(),
+      });
+
+      // Simula sync path: call-history retornou answerTime presente → "answered" pré-computado
+      const callHistoryOutcome = CallOutcome.fromCallHistory(undefined, "OUTBOUND", 56_000, "2026-05-04T18:08:30Z").value;
+      expect(callHistoryOutcome.toString()).toBe("answered"); // confirma que sem o fix seria "answered"
+
+      const result = await useCase.execute({ report, ownerId: OWNER_ID, callHistoryOutcome });
+      expect(result.isRight()).toBe(true);
+
+      const activity = repo.items[0];
+      expect(activity.gotoCallOutcome).toBe("no_answer"); // callStates deve sobrescrever
+    });
+
+    it("mantém 'answered' quando callStates mostra PHONE_NUMBER CONNECTED", async () => {
+      const now = new Date();
+      const report = makeReport({
+        callCreated: new Date(now.getTime() - 60_000).toISOString(),
+        callEnded: now.toISOString(),
+        participants: [
+          { id: "line-1", legId: "leg-line", type: { value: "LINE", lineId: "line-1" } },
+          {
+            id: "phone-1",
+            legId: "leg-phone",
+            type: { value: "PHONE_NUMBER", callee: { name: "Cliente", number: "+5511999998888" } },
+            causeCode: 16,
+            recordings: [{ id: "rec-001", startTimestamp: now.toISOString(), transcriptEnabled: false }],
+          },
+        ],
+        callStates: makeAnsweredCallStates(),
+      });
+
+      const result = await useCase.execute({ report, ownerId: OWNER_ID });
+      expect(result.isRight()).toBe(true);
+
+      const activity = repo.items[0];
+      expect(activity.gotoCallOutcome).toBe("answered");
+      expect(activity.gotoRecordingId).toBe("rec-001");
+    });
+
+    it("mantém lógica atual quando callStates está ausente (sync sem CDR)", async () => {
+      // Sem callStates → não aplica override → comportamento original
+      const report = makeReport(); // causeCode 16, 60s → answered
+      delete (report as Partial<GoToCallReport>).callStates;
+
+      const result = await useCase.execute({ report, ownerId: OWNER_ID });
+      expect(result.isRight()).toBe(true);
+
+      const activity = repo.items[0];
+      expect(activity.gotoCallOutcome).toBe("answered"); // sem callStates → sem override
+    });
   });
 
   it("handles INBOUND missed call correctly", async () => {

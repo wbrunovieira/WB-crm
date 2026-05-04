@@ -23,6 +23,19 @@ export interface GoToCallParticipant {
   recordings?: GoToRecording[];
 }
 
+export interface GoToCallStateParticipant {
+  id: string;
+  type?: { value: string };
+  status?: { value: string };
+}
+
+export interface GoToCallState {
+  id?: string;
+  type: string;
+  sequenceNumber: number;
+  participants?: GoToCallStateParticipant[];
+}
+
 export interface GoToCallReport {
   conversationSpaceId: string;
   accountKey: string;
@@ -30,7 +43,7 @@ export interface GoToCallReport {
   callCreated: string; // ISO-8601
   callEnded: string;   // ISO-8601
   participants: GoToCallParticipant[];
-  callStates?: unknown[];
+  callStates?: GoToCallState[];
 }
 
 export interface GoToCallHistoryItem {
