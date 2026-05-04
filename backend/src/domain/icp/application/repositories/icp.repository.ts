@@ -25,6 +25,7 @@ export interface LeadICPRecord extends ICPLinkData {
   icpId: string;
   icpName: string;
   icpSlug: string;
+  icp: { id: string; name: string; slug: string; status: string };
   createdAt: Date;
   updatedAt: Date;
 }
@@ -35,6 +36,7 @@ export interface OrganizationICPRecord extends ICPLinkData {
   icpId: string;
   icpName: string;
   icpSlug: string;
+  icp: { id: string; name: string; slug: string; status: string };
   createdAt: Date;
   updatedAt: Date;
 }

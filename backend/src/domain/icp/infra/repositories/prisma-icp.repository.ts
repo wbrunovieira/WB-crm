@@ -100,6 +100,7 @@ export class PrismaICPRepository extends ICPRepository {
     return rows.map((r) => ({
       id: r.id, leadId: r.leadId, icpId: r.icpId,
       icpName: r.icp.name, icpSlug: r.icp.slug,
+      icp: { id: r.icp.id, name: r.icp.name, slug: r.icp.slug, status: r.icp.status },
       createdAt: r.createdAt, updatedAt: r.updatedAt,
       ...toLinkData(r as unknown as Record<string, unknown>),
     }));
@@ -130,6 +131,7 @@ export class PrismaICPRepository extends ICPRepository {
     return rows.map((r) => ({
       id: r.id, organizationId: r.organizationId, icpId: r.icpId,
       icpName: r.icp.name, icpSlug: r.icp.slug,
+      icp: { id: r.icp.id, name: r.icp.name, slug: r.icp.slug, status: r.icp.status },
       createdAt: r.createdAt, updatedAt: r.updatedAt,
       ...toLinkData(r as unknown as Record<string, unknown>),
     }));
