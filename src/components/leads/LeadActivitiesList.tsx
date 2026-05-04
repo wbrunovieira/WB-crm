@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowDownUp, Calendar, Check, GripVertical, Loader2, MessageCircleReply, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock, Search } from "lucide-react";
@@ -131,6 +131,105 @@ function GoToOutcomeBadge({ outcome }: { outcome?: string | null }) {
         </span>
       );
   }
+}
+
+// ─── Call grouping ────────────────────────────────────────────────────────────
+const UNPRODUCTIVE_OUTCOMES = new Set(["no_answer", "busy", "rejected"]);
+
+function isUnproductiveGoto(a: { gotoCallId?: string | null; completed: boolean; gotoCallOutcome?: string | null }): boolean {
+  return !!a.gotoCallId && a.completed && UNPRODUCTIVE_OUTCOMES.has(a.gotoCallOutcome ?? "");
+}
+
+type RenderItem =
+  | { kind: "single"; activity: Activity }
+  | { kind: "group"; activities: Activity[] };
+
+function groupUnproductiveCalls(acts: Activity[]): RenderItem[] {
+  const result: RenderItem[] = [];
+  let i = 0;
+  while (i < acts.length) {
+    const a = acts[i];
+    if (isUnproductiveGoto(a)) {
+      const run: Activity[] = [a];
+      while (i + 1 < acts.length && isUnproductiveGoto(acts[i + 1])) {
+        i++;
+        run.push(acts[i]);
+      }
+      if (run.length >= 2) {
+        result.push({ kind: "group", activities: run });
+      } else {
+        result.push({ kind: "single", activity: run[0] });
+      }
+    } else {
+      result.push({ kind: "single", activity: a });
+    }
+    i++;
+  }
+  return result;
+}
+
+const OUTCOME_LABEL: Record<string, string> = {
+  no_answer: "Não atendeu",
+  busy: "Ocupado",
+  rejected: "Rejeitada",
+};
+
+function CallGroupCard({
+  activities,
+  expanded,
+  onToggle,
+  renderItem,
+}: {
+  activities: Activity[];
+  expanded: boolean;
+  onToggle: () => void;
+  renderItem: (a: Activity) => React.ReactNode;
+}) {
+  const counts: Record<string, number> = {};
+  for (const a of activities) {
+    const k = a.gotoCallOutcome ?? "unknown";
+    counts[k] = (counts[k] ?? 0) + 1;
+  }
+  const breakdown = Object.entries(counts)
+    .map(([k, n]) => `${n}× ${OUTCOME_LABEL[k] ?? k}`)
+    .join(" · ");
+
+  const first = activities[activities.length - 1];
+  const last = activities[0];
+  const dateRange = `${formatDate(first.completedAt ?? first.dueDate)} – ${formatDate(last.completedAt ?? last.dueDate)}`;
+
+  return (
+    <div className="rounded-xl border border-red-500/30 bg-red-500/5">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="flex w-full items-center gap-3 px-4 py-3 text-left hover:bg-red-500/10 rounded-xl transition-colors"
+      >
+        <span className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-red-500/20 text-red-400">
+          <Phone className="h-4 w-4" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <span className="text-sm font-semibold text-red-300">
+            {activities.length} tentativas sem resposta
+          </span>
+          <span className="ml-2 text-xs text-red-400/70">{breakdown}</span>
+          <p className="text-xs text-gray-500 mt-0.5">{dateRange}</p>
+        </div>
+        <svg
+          className={`h-4 w-4 flex-shrink-0 text-gray-400 transition-transform ${expanded ? "rotate-180" : ""}`}
+          fill="none" viewBox="0 0 24 24" stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </button>
+
+      {expanded && (
+        <div className="border-t border-red-500/20 px-2 py-2 space-y-2">
+          {activities.map((a) => renderItem(a))}
+        </div>
+      )}
+    </div>
+  );
 }
 
 type LeadContact = {
@@ -855,6 +954,7 @@ export function LeadActivitiesList({
   const [replyNotes, setReplyNotes] = useState("");
   const [replyLoading, setReplyLoading] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
+  const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
 
   const hasCustomOrder = !!activityOrder;
 
@@ -1150,6 +1250,11 @@ export function LeadActivitiesList({
     return map;
   }, [filteredActivities]);
 
+  const renderItems = useMemo(
+    () => groupUnproductiveCalls(filteredActivities),
+    [filteredActivities]
+  );
+
   // Set de threadIds de e-mails recebidos — usado para marcar respostas enviadas
   const receivedThreadIds = useMemo(
     () =>
@@ -1346,7 +1451,57 @@ export function LeadActivitiesList({
             strategy={verticalListSortingStrategy}
           >
             <div className="space-y-3">
-              {filteredActivities.map((activity) => {
+              {renderItems.map((item) => {
+                if (item.kind === "group") {
+                  const groupKey = item.activities[0].id;
+                  const expanded = expandedGroups.has(groupKey);
+                  return (
+                    <CallGroupCard
+                      key={groupKey}
+                      activities={item.activities}
+                      expanded={expanded}
+                      onToggle={() =>
+                        setExpandedGroups((prev) => {
+                          const next = new Set(prev);
+                          next.has(groupKey) ? next.delete(groupKey) : next.add(groupKey);
+                          return next;
+                        })
+                      }
+                      renderItem={(activity) => {
+                        const conn = threadConnectors.get(activity.id);
+                        return (
+                          <SortableActivityItem
+                            key={activity.id}
+                            activity={activity}
+                            isPending={isPending}
+                            loadingId={loadingId}
+                            handleToggle={handleToggle}
+                            openOutcomeModal={openOutcomeModal}
+                            handleRevert={handleRevert}
+                            openAssignModal={openAssignModal}
+                            openReplyModal={setReplyingToActivity}
+                            onChangeOutcome={handleChangeOutcome}
+                            onChangeContactType={handleChangeContactType}
+                            getContactNames={getContactNames}
+                            leadContacts={leadContacts}
+                            typeConfig={typeConfig}
+                            receivedThreadIds={receivedThreadIds}
+                            hasPrev={conn?.hasPrev ?? false}
+                            hasNext={conn?.hasNext ?? false}
+                            isAdmin={isAdmin}
+                            onPurged={() => router.refresh()}
+                            callAnalysis={callAnalysesMap?.[activity.id]}
+                            meetAnalysis={meetAnalysesMap?.[activity.id]}
+                            hasMeetTranscript={meetTranscriptActivityIds?.has(activity.id)}
+                            gkAnalysis={gkAnalysesMap?.[activity.id]}
+                            token={token}
+                          />
+                        );
+                      }}
+                    />
+                  );
+                }
+                const activity = item.activity;
                 const conn = threadConnectors.get(activity.id);
                 return (
                   <SortableActivityItem

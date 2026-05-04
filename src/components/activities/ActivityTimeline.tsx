@@ -22,6 +22,7 @@ type Activity = {
   completedAt?: Date | string | null;
   createdAt?: string | Date | null;
   gotoCallId?: string | null;
+  gotoCallOutcome?: string | null;
   gotoRecordingUrl?: string | null;
   gotoRecordingUrl2?: string | null;
   gotoTranscriptText?: string | null;
@@ -289,6 +290,28 @@ export default function ActivityTimeline({
   );
 }
 
+// ─── GoTo outcome badge ───────────────────────────────────────────────────────
+function GoToOutcomeBadge({ outcome }: { outcome?: string | null }) {
+  switch (outcome) {
+    case "answered":
+      return <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">✓ Atendida</span>;
+    case "voicemail":
+      return <span className="inline-flex items-center rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">📬 Caixa postal</span>;
+    case "no_answer":
+      return <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">✗ Não atendeu</span>;
+    case "busy":
+      return <span className="inline-flex items-center rounded-full bg-orange-100 px-2 py-0.5 text-xs font-medium text-orange-700">⊘ Ocupado</span>;
+    case "rejected":
+      return <span className="inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">✗ Rejeitada</span>;
+    case "missed":
+      return <span className="inline-flex items-center rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">↙ Perdida</span>;
+    case "invalid_number":
+      return <span className="inline-flex items-center rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-600">✗ Nº inválido</span>;
+    default:
+      return null;
+  }
+}
+
 // ─── Activity item ────────────────────────────────────────────────────────────
 function ActivityItem({
   activity,
@@ -331,6 +354,9 @@ function ActivityItem({
           <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${config.badgeBg} ${config.badgeText}`}>
             {config.badge}
           </span>
+
+          {/* GoTo call outcome badge */}
+          {isGoto && <GoToOutcomeBadge outcome={activity.gotoCallOutcome} />}
 
           {/* Status badge */}
           {activity.completed ? (
