@@ -12,7 +12,7 @@ import type { TodayCallStats } from "@/app/(dashboard)/calls/page";
 type Props = {
   weekStart: string;  // YYYY-MM-DD
   stats: FunnelStats;
-  callsPerDay: Record<string, number>;
+  callsPerDay: Record<string, { total: number; answered: number; decisor: number }>;
   avgDuration: number | null;
   maxDuration: number | null;
   initialTargetSales: number;

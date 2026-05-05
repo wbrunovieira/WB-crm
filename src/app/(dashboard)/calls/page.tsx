@@ -86,16 +86,20 @@ export default async function CallsPage() {
     dailyStats[yesterdayStr] = callsForDay(yesterdayStr);
   }
 
-  // Calls per day — only completed calls
-  const callsPerDay: Record<string, number> = {};
+  // Calls per day — only completed calls, with answered + decisor breakdown
+  const callsPerDay: Record<string, { total: number; answered: number; decisor: number }> = {};
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
-    callsPerDay[d.toISOString().slice(0, 10)] = 0;
+    callsPerDay[d.toISOString().slice(0, 10)] = { total: 0, answered: 0, decisor: 0 };
   }
   for (const a of activities) {
     if (a.type === "call" && a.completed && a.dueDate) {
       const key = a.dueDate.toISOString().slice(0, 10);
-      if (key in callsPerDay) callsPerDay[key]++;
+      if (key in callsPerDay) {
+        callsPerDay[key].total++;
+        if (a.gotoCallOutcome === "answered") callsPerDay[key].answered++;
+        if (a.callContactType === "decisor") callsPerDay[key].decisor++;
+      }
     }
   }
 

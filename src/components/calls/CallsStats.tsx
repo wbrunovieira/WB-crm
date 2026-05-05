@@ -8,11 +8,14 @@ import {
   Tooltip,
   ResponsiveContainer,
   CartesianGrid,
+  Legend,
 } from "recharts";
 import { Phone, Clock, TrendingUp, Award } from "lucide-react";
 
+type DayStats = { total: number; answered: number; decisor: number };
+
 type Props = {
-  callsPerDay: Record<string, number>;
+  callsPerDay: Record<string, DayStats>;
   avgDuration: number | null;
   maxDuration: number | null;
   weekStart: string; // YYYY-MM-DD
@@ -27,16 +30,18 @@ function formatDuration(seconds: number): string {
 }
 
 export function CallsStats({ callsPerDay, avgDuration, maxDuration }: Props) {
-  const chartData = Object.entries(callsPerDay).map(([date, calls]) => {
+  const chartData = Object.entries(callsPerDay).map(([date, s]) => {
     const d = new Date(date + "T00:00:00.000Z");
     return {
       day: DAY_NAMES[d.getUTCDay()],
       date,
-      calls,
+      total: s.total,
+      answered: s.answered,
+      decisor: s.decisor,
     };
   });
 
-  const totalCalls = chartData.reduce((s, d) => s + d.calls, 0);
+  const totalCalls = chartData.reduce((s, d) => s + d.total, 0);
   const businessDays = chartData.filter((d) => {
     const idx = new Date(d.date + "T00:00:00.000Z").getUTCDay();
     return idx >= 1 && idx <= 5;
@@ -95,8 +100,8 @@ export function CallsStats({ callsPerDay, avgDuration, maxDuration }: Props) {
         style={{ backgroundColor: "#1a0022", borderColor: "#792990" }}
       >
         <h3 className="text-sm font-semibold text-white mb-4">Ligações por dia</h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={chartData} margin={{ top: 0, right: 8, left: -20, bottom: 0 }}>
+        <ResponsiveContainer width="100%" height={220}>
+          <BarChart data={chartData} margin={{ top: 0, right: 8, left: -20, bottom: 0 }} barCategoryGap="25%" barGap={2}>
             <CartesianGrid strokeDasharray="3 3" stroke="#2a0033" vertical={false} />
             <XAxis
               dataKey="day"
@@ -113,10 +118,20 @@ export function CallsStats({ callsPerDay, avgDuration, maxDuration }: Props) {
             <Tooltip
               contentStyle={{ backgroundColor: "#1a0022", border: "1px solid #792990", borderRadius: 8 }}
               labelStyle={{ color: "#e5e7eb" }}
-              itemStyle={{ color: "#c084fc" }}
-              formatter={(value: number | undefined) => [value != null ? `${value} ligações` : ""]}
+              formatter={(value: number, name: string) => {
+                const labels: Record<string, string> = { total: "Ligações", answered: "Conectaram", decisor: "Decisor" };
+                return [value, labels[name] ?? name];
+              }}
             />
-            <Bar dataKey="calls" fill="#792990" radius={[4, 4, 0, 0]} maxBarSize={48} />
+            <Legend
+              formatter={(value) => {
+                const labels: Record<string, string> = { total: "Ligações", answered: "Conectaram", decisor: "Decisor" };
+                return <span style={{ color: "#9ca3af", fontSize: 12 }}>{labels[value] ?? value}</span>;
+              }}
+            />
+            <Bar dataKey="total"    fill="#792990" radius={[4, 4, 0, 0]} maxBarSize={32} />
+            <Bar dataKey="answered" fill="#16a34a" radius={[4, 4, 0, 0]} maxBarSize={32} />
+            <Bar dataKey="decisor"  fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={32} />
           </BarChart>
         </ResponsiveContainer>
       </div>
