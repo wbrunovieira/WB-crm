@@ -8,6 +8,7 @@ import {
 import type { Activity } from "@/domain/activities/enterprise/entities/activity";
 import type { ActivitySummary, ActivityDetail } from "@/domain/activities/enterprise/read-models/activity-read-models";
 import { ActivityMapper } from "../../mappers/activities/activity.mapper";
+import { sortActivitiesDefaultOrder } from "@/domain/activities/application/sort/default-activities-sort";
 
 @Injectable()
 export class PrismaActivitiesRepository extends ActivitiesRepository {
@@ -105,7 +106,7 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
       orderBy: orderBy as any,
     });
 
-    return rows.map((r: any) => ({
+    const mapped: ActivitySummary[] = rows.map((r: any) => ({
       id: r.id,
       ownerId: r.ownerId,
       type: r.type,
@@ -140,6 +141,10 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
       partner: r.partner,
       cadenceActivity: r.cadenceActivity,
     }));
+
+    // Default sort applies the "completed sinks to end of its day" rule in JS
+    // because Prisma cannot ORDER BY DATE_TRUNC('day', dueDate).
+    return filters.sortBy ? mapped : sortActivitiesDefaultOrder(mapped);
   }
 
   async findById(id: string, requesterId: string, requesterRole: string): Promise<ActivityDetail | null> {
@@ -353,13 +358,11 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
       case "subject":
         return [{ subject: "asc" }];
       default:
+        // JS post-sort (sortActivitiesDefaultOrder) handles completed-last-per-day.
+        // Prisma just fetches in a reasonable order for the JS sort to refine.
         return [
-          { failedAt: { sort: "asc", nulls: "first" } },
-          { skippedAt: { sort: "asc", nulls: "first" } },
-          { completed: "asc" },
           { dueDate: { sort: "asc", nulls: "last" } },
-          { lead: { starRating: { sort: "desc", nulls: "last" } } },
-          { createdAt: "desc" },
+          { createdAt: "asc" },
         ];
     }
   }
