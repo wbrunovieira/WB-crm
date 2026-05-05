@@ -255,13 +255,13 @@ export default function ActivityForm({
       updateActivity.mutate(
         { id: activity.id, ...data },
         {
-          onSuccess: () => { router.push("/activities"); router.refresh(); },
+          onSuccess: () => router.push("/activities"),
           onError: (err) => setError(err instanceof Error ? err.message : "Erro ao atualizar atividade"),
         },
       );
     } else {
       createActivity.mutate(data, {
-        onSuccess: () => { router.push("/activities"); router.refresh(); },
+        onSuccess: () => router.push("/activities"),
         onError: (err) => setError(err instanceof Error ? err.message : "Erro ao criar atividade"),
       });
     }
