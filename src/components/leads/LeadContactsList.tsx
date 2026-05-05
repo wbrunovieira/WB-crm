@@ -11,6 +11,7 @@ import { PhoneLink } from "@/components/ui/phone-link";
 import { LanguageBadges, LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 import GmailButton from "@/components/gmail/GmailButton";
 import { WhatsAppCheckButton } from "@/components/whatsapp/WhatsAppCheckButton";
+import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import { LeadContactEmailVerifyButton } from "./LeadContactEmailVerifyButton";
 import { LeadContactPhoneVerifyButton } from "./LeadContactPhoneVerifyButton";
 
@@ -222,7 +223,17 @@ function ContactDetailModal({
                   </div>
                 )}
               </div>
-              {contact.whatsapp && <CopyButton value={contact.whatsapp} />}
+              {contact.whatsapp && (
+                <div className="flex items-center gap-1">
+                  <WhatsAppButton
+                    to={contact.whatsappVerifiedNumber ?? contact.whatsapp}
+                    name={contact.name}
+                    leadId={leadId}
+                    variant="icon"
+                  />
+                  <CopyButton value={contact.whatsapp} />
+                </div>
+              )}
             </div>
 
             {/* LinkedIn */}
