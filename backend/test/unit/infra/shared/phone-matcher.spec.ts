@@ -33,6 +33,15 @@ describe("phoneVariations", () => {
     expect(v.every((n) => n.length >= 8)).toBe(true);
   });
 
+  it("generates the same variations for phone2 as for any other phone — phoneVariations is field-agnostic", () => {
+    // PhoneMatcherService.match() queries phone, whatsapp AND phone2 on leads.
+    // This test documents that the same variation logic applies to phone2.
+    const v = phoneVariations("+5524988159144");
+    expect(v).toContain("5524988159144");
+    expect(v).toContain("24988159144");
+    expect(v).toContain("988159144");
+  });
+
   // --- Non-Brazilian numbers (Portugal 351, USA 1, etc.) ---
 
   it("includes digits-only for Portuguese number +351910155711", () => {

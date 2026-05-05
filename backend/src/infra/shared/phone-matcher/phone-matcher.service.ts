@@ -81,12 +81,13 @@ export class PhoneMatcherService extends IPhoneMatcherService {
       return null;
     }
 
-    // 2. Search Lead
+    // 2. Search Lead (phone, phone2, and whatsapp)
     const leadRows = await this.prisma.$queryRaw<Array<{ id: string }>>`
       SELECT id FROM leads
       WHERE "ownerId" = ${ownerId}
         AND (
           regexp_replace(COALESCE(phone, ''), '[^0-9]', '', 'g') = ANY(${variations}::text[])
+          OR regexp_replace(COALESCE(phone2, ''), '[^0-9]', '', 'g') = ANY(${variations}::text[])
           OR regexp_replace(COALESCE(whatsapp, ''), '[^0-9]', '', 'g') = ANY(${variations}::text[])
         )
       LIMIT 1
