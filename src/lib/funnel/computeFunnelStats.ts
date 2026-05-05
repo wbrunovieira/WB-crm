@@ -1,6 +1,7 @@
 export type FunnelActivity = {
   type: string;
   gotoDuration: number | null;
+  gotoCallOutcome: string | null;
   callContactType: string | null;
   completed: boolean;
   meetingNoShow: boolean;
@@ -34,7 +35,7 @@ export function computeFunnelStats(
     date !== null && date >= weekStart && date < weekEnd;
 
   const calls = activities.filter(
-    (a) => a.type === "call" && inWeek(a.dueDate)
+    (a) => a.type === "call" && a.completed && inWeek(a.dueDate)
   );
 
   const meetings = activities.filter(

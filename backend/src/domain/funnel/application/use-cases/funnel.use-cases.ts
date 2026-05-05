@@ -24,6 +24,7 @@ export class WeeklyGoalNotFoundError extends Error { name = "WeeklyGoalNotFoundE
 export interface WeeklyFunnelActivity {
   type: string;
   gotoDuration: number | null;
+  gotoCallOutcome: string | null;
   callContactType: string | null;
   completed: boolean;
   meetingNoShow: boolean;
@@ -95,7 +96,7 @@ export class GetWeeklyFunnelDataUseCase {
       this.prisma.activity.findMany({
         where: { ownerId: input.requesterId, dueDate: { gte: input.weekStart, lt: input.weekEnd } },
         select: {
-          type: true, gotoDuration: true, callContactType: true,
+          type: true, gotoDuration: true, gotoCallOutcome: true, callContactType: true,
           completed: true, meetingNoShow: true, dueDate: true,
           leadId: true, contactId: true,
         },

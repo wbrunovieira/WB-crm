@@ -5,6 +5,15 @@ import { backendFetch } from "@/lib/backend/client";
 import { computeFunnelStats, type FunnelActivity, type FunnelDeal } from "@/lib/funnel/computeFunnelStats";
 import { FunnelDashboard } from "@/components/calls/FunnelDashboard";
 
+export type TodayCallStats = {
+  total: number;
+  answered: number;
+  noAnswer: number;
+  voicemail: number;
+  busy: number;
+  decisor: number;
+};
+
 /** Returns Monday of the current week at UTC midnight. */
 function currentWeekStart(): Date {
   const now = new Date();
@@ -43,22 +52,56 @@ export default async function CallsPage() {
 
   const stats = computeFunnelStats(activities, wonDeals, weekStart, weekEnd);
 
-  // Calls per day
+  // Today in BR time (UTC-3)
+  const nowBR = new Date(Date.now() - 3 * 60 * 60 * 1000);
+  const todayStr = nowBR.toISOString().slice(0, 10); // YYYY-MM-DD
+
+  // Per-day stats for the whole week (for chevron navigation)
+  function callsForDay(dateStr: string): TodayCallStats {
+    const dayActivities = activities.filter((a) => {
+      if (a.type !== "call" || !a.completed || !a.dueDate) return false;
+      const dBR = new Date(a.dueDate.getTime() - 3 * 60 * 60 * 1000);
+      return dBR.toISOString().slice(0, 10) === dateStr;
+    });
+    return {
+      total: dayActivities.length,
+      answered: dayActivities.filter((a) => a.gotoCallOutcome === "answered").length,
+      noAnswer: dayActivities.filter((a) => a.gotoCallOutcome === "no_answer").length,
+      voicemail: dayActivities.filter((a) => a.gotoCallOutcome === "voicemail").length,
+      busy: dayActivities.filter((a) => a.gotoCallOutcome === "busy" || a.gotoCallOutcome === "rejected").length,
+      decisor: dayActivities.filter((a) => a.callContactType === "decisor").length,
+    };
+  }
+
+  const dailyStats: Record<string, TodayCallStats> = {};
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
+    const dStr = d.toISOString().slice(0, 10);
+    dailyStats[dStr] = callsForDay(dStr);
+  }
+  // Also ensure yesterday is included (in case it's in the previous week)
+  const yesterdayBR = new Date(nowBR.getTime() - 24 * 60 * 60 * 1000);
+  const yesterdayStr = yesterdayBR.toISOString().slice(0, 10);
+  if (!(yesterdayStr in dailyStats)) {
+    dailyStats[yesterdayStr] = callsForDay(yesterdayStr);
+  }
+
+  // Calls per day — only completed calls
   const callsPerDay: Record<string, number> = {};
   for (let i = 0; i < 7; i++) {
     const d = new Date(weekStart.getTime() + i * 24 * 60 * 60 * 1000);
     callsPerDay[d.toISOString().slice(0, 10)] = 0;
   }
   for (const a of activities) {
-    if (a.type === "call" && a.dueDate) {
+    if (a.type === "call" && a.completed && a.dueDate) {
       const key = a.dueDate.toISOString().slice(0, 10);
       if (key in callsPerDay) callsPerDay[key]++;
     }
   }
 
-  // Duration metrics
+  // Duration metrics — only completed calls with GoTo duration
   const durations = activities
-    .filter((a) => a.type === "call" && a.gotoDuration !== null)
+    .filter((a) => a.type === "call" && a.completed && a.gotoDuration !== null)
     .map((a) => a.gotoDuration as number);
   const avgDuration = durations.length > 0
     ? Math.round(durations.reduce((s, d) => s + d, 0) / durations.length)
@@ -82,6 +125,8 @@ export default async function CallsPage() {
           avgDuration={avgDuration}
           maxDuration={maxDuration}
           initialTargetSales={data.targetSales}
+          dailyStats={dailyStats}
+          todayDate={todayStr}
         />
       </div>
     </div>

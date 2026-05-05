@@ -6,6 +6,8 @@ import { computeGoalBreakdown, type GoalBreakdown } from "@/lib/funnel/computeGo
 import { FunnelVisualization } from "./FunnelVisualization";
 import { GoalSetter } from "./GoalSetter";
 import { CallsStats } from "./CallsStats";
+import { TodaySummary } from "./TodaySummary";
+import type { TodayCallStats } from "@/app/(dashboard)/calls/page";
 
 type Props = {
   weekStart: string;  // YYYY-MM-DD
@@ -14,6 +16,8 @@ type Props = {
   avgDuration: number | null;
   maxDuration: number | null;
   initialTargetSales: number;
+  dailyStats: Record<string, TodayCallStats>;
+  todayDate: string; // YYYY-MM-DD
 };
 
 function formatWeekLabel(weekStart: string): string {
@@ -31,6 +35,8 @@ export function FunnelDashboard({
   avgDuration,
   maxDuration,
   initialTargetSales,
+  dailyStats,
+  todayDate,
 }: Props) {
   const [breakdown, setBreakdown] = useState<GoalBreakdown>(
     computeGoalBreakdown(initialTargetSales)
@@ -58,6 +64,9 @@ export function FunnelDashboard({
         <h3 className="text-sm font-semibold text-white mb-4">Funil de vendas</h3>
         <FunnelVisualization stats={stats} breakdown={breakdown} />
       </div>
+
+      {/* Today summary */}
+      <TodaySummary dailyStats={dailyStats} todayDate={todayDate} />
 
       {/* Calls stats + chart */}
       <CallsStats

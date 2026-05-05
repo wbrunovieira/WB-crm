@@ -8,6 +8,7 @@ function call(overrides: Partial<FunnelActivity> = {}): FunnelActivity {
   return {
     type: "call",
     gotoDuration: null,
+    gotoCallOutcome: null,
     callContactType: null,
     completed: true,
     meetingNoShow: false,
@@ -22,6 +23,7 @@ function meeting(overrides: Partial<FunnelActivity> = {}): FunnelActivity {
   return {
     type: "meeting",
     gotoDuration: null,
+    gotoCallOutcome: null,
     callContactType: null,
     completed: true,
     meetingNoShow: false,
@@ -64,10 +66,20 @@ describe("computeFunnelStats", () => {
   it("does not count non-call activities as calls", () => {
     const activities: FunnelActivity[] = [
       meeting(),
-      { type: "email", gotoDuration: null, callContactType: null, completed: true, meetingNoShow: false, dueDate: new Date("2026-04-14T10:00:00.000Z"), leadId: null, contactId: null },
+      { type: "email", gotoDuration: null, gotoCallOutcome: null, callContactType: null, completed: true, meetingNoShow: false, dueDate: new Date("2026-04-14T10:00:00.000Z"), leadId: null, contactId: null },
     ];
     const stats = computeFunnelStats(activities, [], WEEK_START, WEEK_END);
     expect(stats.calls).toBe(0);
+  });
+
+  it("does not count incomplete call tasks as calls", () => {
+    const activities: FunnelActivity[] = [
+      call({ completed: false }), // scheduled task, not made yet
+      call({ completed: false }), // another pending task
+      call({ completed: true }),  // actual call made
+    ];
+    const stats = computeFunnelStats(activities, [], WEEK_START, WEEK_END);
+    expect(stats.calls).toBe(1);
   });
 
   it("counts connection only when gotoDuration > 60", () => {
