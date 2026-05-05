@@ -150,7 +150,7 @@ export default async function LeadDetailPage({
       {websiteAlert && <LeadWebsiteAlertToast leadId={lead.id} message={websiteAlert} />}
 
       {/* ── Header card ──────────────────────────────────────────────── */}
-      <div className="mb-6 rounded-2xl bg-white shadow-lg border border-purple-900/40 p-6">
+      <div className="sticky top-16 z-40 mb-6 rounded-2xl bg-white shadow-lg border border-purple-900/40 p-6">
 
         <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
           {/* Title block */}
@@ -252,6 +252,7 @@ export default async function LeadDetailPage({
         {/* Quick-nav — dark-safe pills */}
         <div className="mt-4 flex flex-wrap gap-1.5 border-t border-purple-900/40 pt-4">
           {[
+            { href: "#info-basica", icon: <Building2 size={11} />,    label: "Informações Básicas" },
             { href: "#contatos",  icon: <Users size={11} />,        label: "Contatos" },
             { href: "#atividades",icon: <Activity size={11} />,     label: "Atividades" },
             { href: "#reunioes",  icon: <Video size={11} />,        label: "Reuniões" },
@@ -299,7 +300,7 @@ export default async function LeadDetailPage({
       <div className="grid gap-5 lg:grid-cols-3">
 
         {/* Informações Básicas */}
-        <div className="rounded-xl bg-white shadow-md border border-purple-900/40 p-5">
+        <div id="info-basica" className="rounded-xl bg-white shadow-md border border-purple-900/40 p-5">
           <h2 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-400 border-b border-purple-900/40 pb-3">
             <Building2 size={14} />
             Informações Básicas
