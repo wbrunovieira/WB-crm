@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowDownUp, Calendar, Check, GripVertical, Loader2, MessageCircleReply, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock, Search } from "lucide-react";
+import { AlertTriangle, ArrowDownUp, Calendar, Check, Eye, GripVertical, Loader2, MessageCircleReply, MousePointerClick, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock, Search } from "lucide-react";
 import dynamic from "next/dynamic";
 const GmailComposeModal = dynamic(() => import("@/components/gmail/GmailComposeModal"), { ssr: false });
 const GoToCallPlayer = dynamic(() => import("@/components/activities/GoToCallPlayer"), { ssr: false });
@@ -266,6 +266,10 @@ type Activity = {
   emailFromAddress?: string | null;
   emailFromName?: string | null;
   emailReplied?: boolean | null;
+  emailOpenCount?: number | null;
+  emailOpenedAt?: string | null;
+  emailLinkClickCount?: number | null;
+  emailLinkClickedAt?: string | null;
 };
 
 type CallAnalysisSummary = { id: string; score: number | null; status: string };
@@ -451,6 +455,19 @@ function SortableActivityItem({
                 <span className="inline-flex items-center gap-1 rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-300 border border-blue-500/30">
                   <Reply className="h-3 w-3" />
                   Resposta enviada
+                </span>
+              )}
+              {/* Email tracking badges — only for outbound emails (no emailFromAddress) */}
+              {activity.type === "email" && !activity.emailFromAddress && (activity.emailOpenCount ?? 0) > 0 && (
+                <span className="inline-flex items-center gap-1 rounded bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300 border border-indigo-500/30">
+                  <Eye className="h-3 w-3" />
+                  {(activity.emailOpenCount ?? 0) === 1 ? "Aberto" : `Aberto ${activity.emailOpenCount}×`}
+                </span>
+              )}
+              {activity.type === "email" && !activity.emailFromAddress && (activity.emailLinkClickCount ?? 0) > 0 && (
+                <span className="inline-flex items-center gap-1 rounded bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-300 border border-teal-500/30">
+                  <MousePointerClick className="h-3 w-3" />
+                  {(activity.emailLinkClickCount ?? 0) === 1 ? "Link clicado" : `${activity.emailLinkClickCount} cliques`}
                 </span>
               )}
               {!activity.gotoCallId && (

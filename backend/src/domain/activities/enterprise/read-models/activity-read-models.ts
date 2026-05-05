@@ -24,6 +24,16 @@ export interface ActivitySummary {
   gotoCallOutcome: string | null;
   gotoDuration: number | null;
   gotoTranscriptText: string | null;
+  // Email fields (available in list view)
+  emailThreadId: string | null;
+  emailSubject: string | null;
+  emailFromAddress: string | null;
+  emailFromName: string | null;
+  emailReplied: boolean;
+  emailOpenCount: number;
+  emailOpenedAt: Date | null;
+  emailLinkClickCount: number;
+  emailLinkClickedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 
@@ -44,17 +54,8 @@ export interface ActivityDetail extends ActivitySummary {
   gotoTranscriptionJobId: string | null;
   gotoTranscriptionJobId2: string | null;
   emailMessageId: string | null;
-  emailThreadId: string | null;
-  emailSubject: string | null;
-  emailFromAddress: string | null;
-  emailFromName: string | null;
-  emailReplied: boolean;
   emailTrackingToken: string | null;
-  emailOpenCount: number;
-  emailOpenedAt: Date | null;
   emailLastOpenedAt: Date | null;
-  emailLinkClickCount: number;
-  emailLinkClickedAt: Date | null;
   emailLastLinkClickedAt: Date | null;
 
   // Extra resolved contacts
