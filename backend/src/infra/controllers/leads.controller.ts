@@ -1019,7 +1019,10 @@ export class LeadsController {
     @Param("contactId") contactId: string,
     @Body() body: UpdateLeadContactDto,
   ) {
-    const result = await this.updateLeadContact.execute({ id: contactId, ...body });
+    const languages = Array.isArray(body.languages)
+      ? JSON.stringify(body.languages)
+      : body.languages;
+    const result = await this.updateLeadContact.execute({ id: contactId, ...body, languages });
     if (result.isLeft()) handleError(result);
     return result.value;
   }

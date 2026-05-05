@@ -132,6 +132,36 @@ describe("UpdateLeadContactUseCase", () => {
     expect(result.isLeft()).toBe(true);
     if (result.isLeft()) expect(result.value.message).toContain("vazio");
   });
+
+  it("armazena languages como JSON string ao atualizar", async () => {
+    const contact = repo.items[0];
+    const langs = JSON.stringify([{ code: "pt-BR", isPrimary: true }]);
+    const result = await sut.execute({ id: contact.id, languages: langs });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.languages).toBe(langs);
+      // Deve ser uma string válida, não um objeto
+      expect(typeof result.value.languages).toBe("string");
+      expect(() => JSON.parse(result.value.languages!)).not.toThrow();
+    }
+  });
+
+  it("normaliza phone e whatsapp para E.164 ao atualizar", async () => {
+    const contact = repo.items[0];
+    const result = await sut.execute({
+      id: contact.id,
+      phone: "24988159144",
+      whatsapp: "24988159144",
+    });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      // normalizePhoneE164 deve prefixar com +55 para números BR
+      expect(result.value.phone).toMatch(/^\+/);
+      expect(result.value.whatsapp).toMatch(/^\+/);
+    }
+  });
 });
 
 // ─── DeleteLeadContactUseCase ─────────────────────────────────────────────────
