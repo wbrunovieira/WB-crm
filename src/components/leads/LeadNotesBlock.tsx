@@ -99,7 +99,7 @@ export function LeadNotesBlock({ leadId, initialNotes }: Props) {
             className="w-full resize-y rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
           />
         ) : hasNotes ? (
-          <p className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">{notes}</p>
+          <p className="whitespace-pre-wrap text-sm text-gray-400 leading-relaxed">{notes}</p>
         ) : (
           <p className="text-sm text-gray-400 italic cursor-pointer hover:text-amber-600" onClick={startEdit}>
             Clique em Editar para adicionar notas sobre este lead...
