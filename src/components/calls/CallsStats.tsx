@@ -118,9 +118,10 @@ export function CallsStats({ callsPerDay, avgDuration, maxDuration }: Props) {
             <Tooltip
               contentStyle={{ backgroundColor: "#1a0022", border: "1px solid #792990", borderRadius: 8 }}
               labelStyle={{ color: "#e5e7eb" }}
-              formatter={(value: number, name: string) => {
+              formatter={(value: number | undefined, name: string | undefined) => {
                 const labels: Record<string, string> = { total: "Ligações", answered: "Conectaram", decisor: "Decisor" };
-                return [value, labels[name] ?? name];
+                const key = name ?? "";
+                return [`${value ?? 0}`, labels[key] ?? key] as [string, string];
               }}
             />
             <Legend
