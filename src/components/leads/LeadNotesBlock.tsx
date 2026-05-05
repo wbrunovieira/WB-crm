@@ -51,8 +51,8 @@ export function LeadNotesBlock({ leadId, initialNotes }: Props) {
   const hasNotes = notes.trim().length > 0;
 
   return (
-    <div className="mb-5 rounded-xl border border-amber-400/60 bg-amber-50 shadow-sm">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-amber-300/50">
+    <div className="mb-5 rounded-xl border border-amber-400/70 bg-white shadow-sm">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-amber-300/50 bg-amber-50 rounded-t-xl">
         <span className="flex items-center gap-1.5 text-sm font-semibold text-amber-800">
           <StickyNote size={14} />
           Notas
@@ -96,12 +96,12 @@ export function LeadNotesBlock({ leadId, initialNotes }: Props) {
             onChange={(e) => setDraft(e.target.value)}
             rows={4}
             placeholder="Escreva suas notas aqui..."
-            className="w-full resize-y rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900 placeholder-amber-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
+            className="w-full resize-y rounded-lg border border-amber-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-400"
           />
         ) : hasNotes ? (
-          <p className="whitespace-pre-wrap text-sm text-amber-900 leading-relaxed">{notes}</p>
+          <p className="whitespace-pre-wrap text-sm text-gray-800 leading-relaxed">{notes}</p>
         ) : (
-          <p className="text-sm text-amber-500 italic cursor-pointer hover:text-amber-600" onClick={startEdit}>
+          <p className="text-sm text-gray-400 italic cursor-pointer hover:text-amber-600" onClick={startEdit}>
             Clique em Editar para adicionar notas sobre este lead...
           </p>
         )}
