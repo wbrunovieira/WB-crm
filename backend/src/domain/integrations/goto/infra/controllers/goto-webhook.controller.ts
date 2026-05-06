@@ -126,13 +126,17 @@ export class GoToWebhookController {
   @Post("sync")
   @HttpCode(200)
   @ApiOperation({ summary: "Manual GoTo call report sync (internal)" })
-  async syncReports(@Query("secret") secret: string): Promise<{ ok: boolean; fetched: number; created: number; skipped: number }> {
+  async syncReports(
+    @Query("secret") secret: string,
+    @Query("sinceDaysAgo") sinceDaysAgoParam?: string,
+  ): Promise<{ ok: boolean; fetched: number; created: number; skipped: number }> {
     const expectedSecret = process.env.GOTO_WEBHOOK_SECRET;
     if (!expectedSecret || secret !== expectedSecret) {
       throw new UnauthorizedException("Invalid webhook secret");
     }
     const ownerId = process.env.GOTO_DEFAULT_OWNER_ID ?? "";
-    const result = await this.syncCallReports.execute({ ownerId });
+    const sinceDaysAgo = sinceDaysAgoParam ? parseInt(sinceDaysAgoParam, 10) : undefined;
+    const result = await this.syncCallReports.execute({ ownerId, ...(sinceDaysAgo ? { sinceDaysAgo } : {}) });
     return { ok: true, ...result.value };
   }
 
