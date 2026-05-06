@@ -49,6 +49,15 @@ export class EvolutionApiClient extends EvolutionApiPort {
 
     if (!res.ok) {
       const text = await res.text();
+      try {
+        const json = JSON.parse(text);
+        const messages = json?.response?.message;
+        if (Array.isArray(messages) && messages.some((m: { exists?: boolean }) => m.exists === false)) {
+          throw new Error("Número não possui WhatsApp");
+        }
+      } catch (e) {
+        if (e instanceof Error && e.message === "Número não possui WhatsApp") throw e;
+      }
       throw new Error(`Evolution API error ${res.status} on ${path}: ${text}`);
     }
 
