@@ -20,18 +20,32 @@ interface EventEmitter {
   emit(event: string, payload: unknown): void;
 }
 
+function isInternalExtension(number: string | undefined): boolean {
+  if (!number) return false;
+  return number.replace(/\D/g, "").length <= 4;
+}
+
 function historyItemToReport(item: GoToCallHistoryItem): GoToCallReport {
   const durationMs = item.duration ?? 0;
   const startMs = new Date(item.startTime).getTime();
   const callEnded = new Date(startMs + durationMs).toISOString();
 
-  const externalNumber =
-    item.direction === "OUTBOUND" ? item.callee?.number : item.caller?.number;
+  // GoTo softphone outbound calls appear as INBOUND from an internal extension (e.g. "1001").
+  // The real external number is in callee.number; treat these as OUTBOUND.
+  const isBridgedOutbound =
+    item.direction === "INBOUND" && isInternalExtension(item.caller?.number);
+
+  const effectiveDirection: "INBOUND" | "OUTBOUND" = isBridgedOutbound ? "OUTBOUND" : item.direction;
+  const externalNumber = isBridgedOutbound
+    ? item.callee?.number
+    : item.direction === "OUTBOUND"
+      ? item.callee?.number
+      : item.caller?.number;
 
   return {
     conversationSpaceId: item.originatorId,
     accountKey: "",
-    direction: item.direction,
+    direction: effectiveDirection,
     callCreated: item.startTime,
     callEnded,
     participants: [
@@ -42,7 +56,7 @@ function historyItemToReport(item: GoToCallHistoryItem): GoToCallReport {
         type: {
           value: "PHONE_NUMBER",
           number: externalNumber,
-          callee: item.direction === "OUTBOUND" ? item.callee : undefined,
+          callee: effectiveDirection === "OUTBOUND" ? (item.callee ?? item.caller) : undefined,
         },
         recordings: [],
       },
@@ -92,7 +106,7 @@ export class SyncGotoCallReportsUseCase {
         const report = historyItemToReport(item);
         const outcomeResult = CallOutcome.fromCallHistory(
           item.hangupCause,
-          item.direction,
+          report.direction, // use effective direction (bridged outbound → OUTBOUND)
           item.duration,
           item.answerTime,
         );

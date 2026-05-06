@@ -223,3 +223,113 @@ describe("SyncGotoCallReportsUseCase — call-history source", () => {
     expect(eventEmitter.emit).toHaveBeenCalledTimes(2);
   });
 });
+
+// ─── Bridged outbound calls (softphone GoTo) ──────────────────────────────────
+// When an agent makes an outbound call via GoTo softphone, GoTo records it as
+// INBOUND from an internal extension (e.g. "1001") — the real external number
+// is in callee.number. These must be treated as OUTBOUND to the callee.
+
+describe("SyncGotoCallReportsUseCase — bridged outbound (INBOUND from ramal interno)", () => {
+  beforeEach(() => {
+    goToApi = new FakeGoToApiPort();
+    goToToken = new FakeGoToTokenPort();
+    activitiesRepo = new FakeActivitiesRepository();
+    phoneMatcher = new FakePhoneMatcherService();
+    createActivity = new CreateCallActivityUseCase(activitiesRepo, phoneMatcher as never);
+    eventEmitter = { emit: vi.fn() };
+    useCase = new SyncGotoCallReportsUseCase(goToApi, goToToken, createActivity, eventEmitter as never);
+  });
+
+  it("trata ligação INBOUND de ramal interno (1001) como OUTBOUND ao lead", async () => {
+    goToApi.callHistoryItems = [
+      makeHistoryItem("bridge-001", {
+        direction: "INBOUND",
+        caller: { number: "1001" },
+        callee: { number: "+5511999998888" },
+        answerTime: "2024-01-01T10:00:10Z",
+        duration: 90_000,
+      }),
+    ];
+
+    const result = await useCase.execute({ ownerId: "owner-001" });
+
+    expect(result.value).toMatchObject({ created: 1 });
+    expect(activitiesRepo.items[0].gotoCallOutcome).toBe("answered");
+    // Subject deve conter o número externo, não "1001"
+    expect(activitiesRepo.items[0].subject).toContain("+5511999998888");
+    expect(activitiesRepo.items[0].subject).not.toContain("1001");
+    // Deve ser "realizada" (OUTBOUND), não "recebida" (INBOUND)
+    expect(activitiesRepo.items[0].subject).toMatch(/realizada/i);
+  });
+
+  it("faz phone-match pelo número externo do callee, não pelo ramal 1001", async () => {
+    const leadId = "lead-abc";
+    phoneMatcher.addMatch("+5511999998888", { entityType: "lead", leadId });
+
+    goToApi.callHistoryItems = [
+      makeHistoryItem("bridge-002", {
+        direction: "INBOUND",
+        caller: { number: "1001" },
+        callee: { number: "+5511999998888" },
+        answerTime: "2024-01-01T10:00:10Z",
+        duration: 90_000,
+      }),
+    ];
+
+    await useCase.execute({ ownerId: "owner-001" });
+
+    expect(activitiesRepo.items[0].leadId?.toString()).toBe(leadId);
+  });
+
+  it("ramais com 2 dígitos também são detectados como internos", async () => {
+    goToApi.callHistoryItems = [
+      makeHistoryItem("bridge-003", {
+        direction: "INBOUND",
+        caller: { number: "42" },
+        callee: { number: "+5521999990000" },
+        answerTime: "2024-01-01T10:00:10Z",
+        duration: 60_000,
+      }),
+    ];
+
+    const result = await useCase.execute({ ownerId: "owner-001" });
+
+    expect(result.value).toMatchObject({ created: 1 });
+    expect(activitiesRepo.items[0].subject).toContain("+5521999990000");
+  });
+
+  it("INBOUND de número externo longo não é tratado como ramal interno", async () => {
+    goToApi.callHistoryItems = [
+      makeHistoryItem("bridge-004", {
+        direction: "INBOUND",
+        caller: { number: "+5511999990001" },
+        callee: { number: "+5511000001234" },
+        answerTime: "2024-01-01T10:00:10Z",
+        duration: 60_000,
+      }),
+    ];
+
+    await useCase.execute({ ownerId: "owner-001" });
+
+    // Deve usar caller como external (ligação recebida real)
+    expect(activitiesRepo.items[0].subject).toContain("+5511999990001");
+    expect(activitiesRepo.items[0].subject).toMatch(/recebida/i);
+  });
+
+  it("bridged outbound não atendida usa hangupCause para determinar outcome", async () => {
+    goToApi.callHistoryItems = [
+      makeHistoryItem("bridge-005", {
+        direction: "INBOUND",
+        caller: { number: "1001" },
+        callee: { number: "+5511999998888" },
+        answerTime: undefined,
+        duration: 0,
+        hangupCause: 18,
+      }),
+    ];
+
+    await useCase.execute({ ownerId: "owner-001" });
+
+    expect(activitiesRepo.items[0].gotoCallOutcome).toBe("no_answer");
+  });
+});
