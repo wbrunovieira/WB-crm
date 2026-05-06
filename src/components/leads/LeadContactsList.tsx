@@ -226,7 +226,7 @@ function ContactDetailModal({
               {contact.whatsapp && (
                 <div className="flex items-center gap-1">
                   <WhatsAppButton
-                    to={contact.whatsappVerifiedNumber ?? contact.whatsapp}
+                    to={contact.whatsapp}
                     name={contact.name}
                     leadId={leadId}
                     variant="icon"

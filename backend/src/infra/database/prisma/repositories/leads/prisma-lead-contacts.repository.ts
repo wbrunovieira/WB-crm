@@ -52,7 +52,12 @@ export class PrismaLeadContactsRepository extends LeadContactsRepository {
         ...(data.role !== undefined && { role: data.role }),
         ...(data.email !== undefined && { email: data.email }),
         ...(data.phone !== undefined && { phone: data.phone }),
-        ...(data.whatsapp !== undefined && { whatsapp: data.whatsapp }),
+        ...(data.whatsapp !== undefined && {
+          whatsapp: data.whatsapp,
+          whatsappVerified: false,
+          whatsappVerifiedAt: null,
+          whatsappVerifiedNumber: null,
+        }),
         ...(data.linkedin !== undefined && { linkedin: data.linkedin }),
         ...(data.instagram !== undefined && { instagram: data.instagram }),
         ...(data.isPrimary !== undefined && { isPrimary: data.isPrimary }),
