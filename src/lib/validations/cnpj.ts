@@ -4,9 +4,9 @@
  * Validação: verifica dígitos verificadores (algoritmo oficial).
  */
 
-/** Remove qualquer caractere não-numérico */
+/** Remove qualquer caractere não-numérico e normaliza para 14 dígitos com zero à esquerda */
 export function normalizeCNPJ(cnpj: string): string {
-  return cnpj.replace(/\D/g, "");
+  return cnpj.replace(/\D/g, "").padStart(14, "0");
 }
 
 /** Formata 14 dígitos como XX.XXX.XXX/XXXX-XX */

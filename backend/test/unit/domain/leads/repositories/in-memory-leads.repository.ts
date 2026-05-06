@@ -103,6 +103,14 @@ export class InMemoryLeadsRepository extends LeadsRepository {
     if (!lead) return null;
     if (requesterRole !== "admin" && lead.ownerId !== requesterId) return null;
 
+    const parentLead = lead.parentLeadId
+      ? (this.items.find((l) => l.id.toString() === lead.parentLeadId) ?? null)
+      : null;
+
+    const childLeads = this.items
+      .filter((l) => l.parentLeadId === lead.id.toString())
+      .map((l) => ({ id: l.id.toString(), businessName: l.businessName, isArchived: l.isArchived }));
+
     return {
       id: lead.id.toString(),
       ownerId: lead.ownerId,
@@ -129,6 +137,9 @@ export class InMemoryLeadsRepository extends LeadsRepository {
       source: lead.source ?? null,
       languages: lead.languages ?? null,
       referredByPartnerId: lead.referredByPartnerId ?? null,
+      parentLeadId: lead.parentLeadId ?? null,
+      parentLead: parentLead ? { id: parentLead.id.toString(), businessName: parentLead.businessName } : null,
+      childLeads,
       owner: null,
       labels: [],
       referredByPartner: null,

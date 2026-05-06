@@ -160,5 +160,5 @@ export interface LeadDetail extends LeadSummary {
   secondaryCNAEs: Array<{ id: string; code: string; description: string }>;
   techProfile: LeadTechProfile;
   parentLead: { id: string; businessName: string } | null;
-  childLeads: Array<{ id: string; businessName: string }>;
+  childLeads: Array<{ id: string; businessName: string; isArchived: boolean }>;
 }

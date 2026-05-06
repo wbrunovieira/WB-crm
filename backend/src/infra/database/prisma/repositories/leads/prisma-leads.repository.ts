@@ -254,7 +254,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
         leadCRMs: { include: { crm: { select: { name: true } } } },
         leadEcommerces: { include: { ecommerce: { select: { name: true } } } },
         parentLead: { select: { id: true, businessName: true } },
-        childLeads: { select: { id: true, businessName: true }, where: { isArchived: false } },
+        childLeads: { select: { id: true, businessName: true, isArchived: true } },
       },
     });
 
