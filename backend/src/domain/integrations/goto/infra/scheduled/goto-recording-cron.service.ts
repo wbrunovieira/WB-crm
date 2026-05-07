@@ -3,6 +3,7 @@ import { Cron } from "@nestjs/schedule";
 import { PrismaService } from "@/infra/database/prisma.service";
 import { ProcessCallRecordingUseCase } from "@/domain/integrations/goto/application/use-cases/process-call-recording.use-case";
 import { PollCallTranscriptionsUseCase } from "@/domain/integrations/goto/application/use-cases/poll-call-transcriptions.use-case";
+import { RefreshCallRecordingIdsUseCase } from "@/domain/integrations/goto/application/use-cases/refresh-call-recording-ids.use-case";
 
 @Injectable()
 export class GoToRecordingCronService {
@@ -12,6 +13,7 @@ export class GoToRecordingCronService {
     private readonly prisma: PrismaService,
     private readonly processRecording: ProcessCallRecordingUseCase,
     private readonly pollTranscriptions: PollCallTranscriptionsUseCase,
+    private readonly refreshRecordingIds: RefreshCallRecordingIdsUseCase,
   ) {}
 
   @Cron("0 * * * *")
@@ -22,6 +24,12 @@ export class GoToRecordingCronService {
     const since4h = new Date(now.getTime() - 4 * 60 * 60 * 1000);
 
     try {
+      // Pass 0: Fill in missing gotoRecordingId for answered calls (sync path gap)
+      const pass0 = await this.refreshRecordingIds.execute({ sinceDaysAgo: 2 });
+      if (pass0.isRight()) {
+        this.logger.log(`GoTo recording cron Pass 0: refreshed=${pass0.value.refreshed} skipped=${pass0.value.skipped}`);
+      }
+
       // Pass 1: Find activities with recording ID but no S3 key yet
       const pendingDownload = await this.prisma.activity.findMany({
         where: {

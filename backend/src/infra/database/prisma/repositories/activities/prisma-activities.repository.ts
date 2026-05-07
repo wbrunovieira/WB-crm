@@ -320,6 +320,20 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     return ActivityMapper.toDomain(row);
   }
 
+  async findAnsweredCallsMissingRecordingId(since: Date): Promise<Activity[]> {
+    const rows = await this.prisma.activity.findMany({
+      where: {
+        gotoCallId: { not: null },
+        gotoRecordingId: null,
+        gotoRecordingUrl: null,
+        gotoTranscriptText: null,
+        gotoDuration: { gt: 30 },
+        completedAt: { gte: since },
+      },
+    });
+    return rows.map((r) => ActivityMapper.toDomain(r));
+  }
+
   async save(activity: Activity): Promise<void> {
     const data = ActivityMapper.toPrisma(activity);
     await this.prisma.activity.upsert({

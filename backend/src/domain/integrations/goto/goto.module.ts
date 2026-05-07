@@ -16,6 +16,7 @@ import { ProcessCallRecordingUseCase } from "./application/use-cases/process-cal
 import { PollCallTranscriptionsUseCase } from "./application/use-cases/poll-call-transcriptions.use-case";
 import { SyncGotoCallReportsUseCase } from "./application/use-cases/sync-goto-call-reports.use-case";
 import { HandleTranscriptionCallbackUseCase } from "./application/use-cases/handle-transcription-callback.use-case";
+import { RefreshCallRecordingIdsUseCase } from "./application/use-cases/refresh-call-recording-ids.use-case";
 
 // Infrastructure
 import { GoToApiClient } from "./infra/goto-api.client";
@@ -44,6 +45,7 @@ import { GotoTranscriptionPollerListener } from "./infra/listeners/goto-transcri
     ProcessCallRecordingUseCase,
     PollCallTranscriptionsUseCase,
     HandleTranscriptionCallbackUseCase,
+    RefreshCallRecordingIdsUseCase,
     // Port implementations
     { provide: GoToApiPort, useClass: GoToApiClient },
     { provide: GoToTokenPort, useClass: GoToTokenService },

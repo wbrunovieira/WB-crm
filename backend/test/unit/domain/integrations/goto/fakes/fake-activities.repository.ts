@@ -49,6 +49,16 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
     return null;
   }
 
+  async findAnsweredCallsMissingRecordingId(since: Date): Promise<Activity[]> {
+    return this.items.filter((a) => {
+      if (!a.gotoCallId) return false;
+      if (a.gotoRecordingId) return false;
+      if (!a.gotoDuration || a.gotoDuration <= 30) return false;
+      if (a.completedAt && a.completedAt < since) return false;
+      return true;
+    });
+  }
+
   async findManyRaw(where: {
     gotoRecordingId?: { not: null };
     gotoRecordingUrl?: null;
