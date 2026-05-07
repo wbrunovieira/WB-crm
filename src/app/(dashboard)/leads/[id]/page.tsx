@@ -719,7 +719,7 @@ export default async function LeadDetailPage({
       </div>
 
       {!lead.convertedAt && (
-        <CollapsibleSection id="cnae" icon={<BarChart2 size={14} />} title="Atividades Econômicas (CNAE)">
+        <CollapsibleSection id="cnae" icon={<BarChart2 size={14} />} title="Atividades Econômicas (CNAE)" defaultOpen={false}>
           {lead.primaryCNAE && (
             <div className="mb-5 rounded-lg bg-purple-900/30 border border-purple-700/60 p-4">
               <dt className={dtCls + " mb-2"}>Atividade Primária</dt>
