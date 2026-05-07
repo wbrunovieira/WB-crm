@@ -14,6 +14,7 @@ export interface MeetingRecord {
   nativeTranscriptUrl: string | null;
   recordingDriveId: string | null;
   recordingUrl: string | null;
+  uploadedAudioKey: string | null;
   transcriptText: string | null;
   meetingSummary: string | null;
   leadId: string | null;
@@ -21,6 +22,11 @@ export interface MeetingRecord {
   organizationId: string | null;
   dealId: string | null;
   ownerId: string;
+  // Presential
+  isPresential: boolean;
+  location: string | null;
+  confirmationMethod: string | null;
+  confirmationSentAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
   activity?: { id: string; completed: boolean; completedAt: Date | null } | null;
@@ -48,6 +54,10 @@ export interface CreateMeetingData {
   ownerId: string;
   description?: string;
   createActivity?: boolean;
+  // Presential
+  isPresential?: boolean;
+  location?: string;
+  confirmationMethod?: string;
 }
 
 export interface UpdateMeetingData {
@@ -80,6 +90,11 @@ export interface SaveRecordingData {
   transcriptionJobId?: string;
 }
 
+export interface SaveUploadedRecordingData {
+  uploadedAudioKey: string;
+  transcriptionJobId: string;
+}
+
 export abstract class MeetingsRepository {
   abstract findScheduled(): Promise<MeetingRecord[]>;
   abstract findScheduledWithRsvpData(): Promise<Array<{ id: string; googleEventId: string; attendeeEmails: string }>>;
@@ -102,4 +117,8 @@ export abstract class MeetingsRepository {
   abstract updateRsvp(id: string, attendees: Array<{ email: string; responseStatus: string }>): Promise<void>;
   abstract delete(id: string): Promise<void>;
   abstract deleteActivity(activityId: string): Promise<void>;
+  // Presential
+  abstract saveUploadedRecording(id: string, data: SaveUploadedRecordingData): Promise<void>;
+  abstract markConfirmationSent(id: string): Promise<void>;
+  abstract saveGoogleEventId(id: string, googleEventId: string): Promise<void>;
 }

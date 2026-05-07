@@ -61,6 +61,7 @@ import {
   Globe,
   BrainCircuit,
   Sparkles,
+  ExternalLink,
 } from "lucide-react";
 
 export default async function LeadDetailPage({
@@ -583,6 +584,24 @@ export default async function LeadDetailPage({
           openingHours: lead.openingHours ?? null,
         }} />}
       >
+        {(() => {
+          const gbpUrl = lead.googleMapsUrl
+            ? lead.googleMapsUrl
+            : lead.googleId
+              ? `https://www.google.com/maps/place/?q=place_id:${lead.googleId}`
+              : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(lead.businessName ?? lead.registeredName ?? "")}`;
+          return (
+            <a
+              href={gbpUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-blue-400 hover:text-blue-300 hover:underline mb-4"
+            >
+              <ExternalLink size={13} />
+              Ver no Google Meu Negócio
+            </a>
+          );
+        })()}
         {!lead.googleId && !lead.rating && !lead.categories && !lead.userRatingsTotal && !lead.priceLevel && !lead.types ? (
           <p className="text-sm text-gray-500 italic">Nenhum dado do Google Places vinculado ainda.</p>
         ) : (
@@ -766,6 +785,28 @@ export default async function LeadDetailPage({
             ...(lead.leadContacts ?? [])
               .filter((c) => c.email && c.isActive !== false)
               .map((c) => ({ id: c.id, name: c.name, email: c.email!, role: c.role })),
+          ]}
+          presentialContacts={[
+            ...(lead.email || lead.phone || lead.whatsapp
+              ? [{
+                  id: `lead-${lead.id}`,
+                  name: lead.businessName,
+                  email: lead.email ?? null,
+                  phone: lead.phone ?? null,
+                  whatsapp: lead.whatsapp ?? null,
+                  role: "Empresa",
+                }]
+              : []),
+            ...(lead.leadContacts ?? [])
+              .filter((c) => c.isActive !== false)
+              .map((c) => ({
+                id: c.id,
+                name: c.name,
+                email: c.email ?? null,
+                phone: c.phone ?? null,
+                whatsapp: c.whatsapp ?? null,
+                role: c.role ?? null,
+              })),
           ]}
         />
       </div>

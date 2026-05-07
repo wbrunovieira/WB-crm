@@ -18,6 +18,8 @@ export interface CreateCalendarEventOptions {
   timeZone?: string;
   organizerEmail?: string;
   sendUpdates?: "all" | "externalOnly" | "none";
+  noConference?: boolean;
+  location?: string;
 }
 
 export interface CreateCalendarEventResult {

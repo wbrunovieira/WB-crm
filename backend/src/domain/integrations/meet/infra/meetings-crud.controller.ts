@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Request, HttpCode, HttpStatus } from "@nestjs/common";
+import { Controller, Get, Post, Patch, Delete, Param, Body, Query, UseGuards, Request, HttpCode, HttpStatus, UploadedFile, UseInterceptors, BadRequestException, NotFoundException, ForbiddenException } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import {
   GetMeetingsUseCase,
@@ -12,7 +13,9 @@ import {
   MeetingForbiddenError,
 } from "../application/use-cases/meetings-crud.use-cases";
 import { PurgeCompletedMeetingUseCase } from "../application/use-cases/purge-completed-meeting.use-case";
-import { NotFoundException, ForbiddenException } from "@nestjs/common";
+import { SchedulePresentialMeetingUseCase } from "../application/use-cases/schedule-presential-meeting.use-case";
+import { UploadPresentialRecordingUseCase } from "../application/use-cases/upload-presential-recording.use-case";
+import { MeetingsRepository } from "../application/repositories/meetings.repository";
 
 function serialize(m: any) {
   return {
@@ -22,10 +25,16 @@ function serialize(m: any) {
     attendeeEmails: m.attendeeEmails,
     organizerEmail: m.organizerEmail ?? null,
     recordingDriveId: m.recordingDriveId, recordingUrl: m.recordingUrl,
+    uploadedAudioKey: m.uploadedAudioKey ?? null,
     transcriptText: m.transcriptText, nativeTranscriptUrl: m.nativeTranscriptUrl,
     meetingSummary: m.meetingSummary, activityId: m.activityId,
     leadId: m.leadId, contactId: m.contactId, organizationId: m.organizationId, dealId: m.dealId,
-    ownerId: m.ownerId, createdAt: m.createdAt, updatedAt: m.updatedAt,
+    ownerId: m.ownerId,
+    isPresential: m.isPresential ?? false,
+    location: m.location ?? null,
+    confirmationMethod: m.confirmationMethod ?? null,
+    confirmationSentAt: m.confirmationSentAt ?? null,
+    createdAt: m.createdAt, updatedAt: m.updatedAt,
     activity: m.activity ?? null,
   };
 }
@@ -48,6 +57,9 @@ export class MeetingsCrudController {
     private readonly checkTitle: CheckMeetingTitleUseCase,
     private readonly updateSummary: UpdateMeetingSummaryUseCase,
     private readonly purge: PurgeCompletedMeetingUseCase,
+    private readonly schedulePresential: SchedulePresentialMeetingUseCase,
+    private readonly uploadRecording: UploadPresentialRecordingUseCase,
+    private readonly meetingsRepo: MeetingsRepository,
   ) {}
 
   @Get()
@@ -159,5 +171,82 @@ export class MeetingsCrudController {
       isAdmin: req.user.role === "admin",
     });
     if (r.isLeft()) throwIfError(r.value);
+  }
+
+  @Post("presential")
+  async createPresential(@Request() req: any, @Body() body: {
+    title: string;
+    startAt: string;
+    endAt?: string;
+    attendeeEmails?: string[];
+    location?: string;
+    confirmationMethod?: "email" | "whatsapp" | "none";
+    confirmationPhone?: string;
+    leadId?: string;
+    contactId?: string;
+    organizationId?: string;
+    dealId?: string;
+    description?: string;
+    reminderSteps?: ("immediate" | "morning_reminder" | "one_hour_reminder" | "on_time_reminder")[];
+    reminderChannels?: ("email" | "whatsapp")[];
+    attendeeEmail?: string;
+    attendeePhone?: string;
+    contactName?: string;
+    companyName?: string;
+  }) {
+    const r = await this.schedulePresential.execute({
+      title: body.title,
+      startAt: new Date(body.startAt),
+      endAt: body.endAt ? new Date(body.endAt) : undefined,
+      attendeeEmails: body.attendeeEmails ?? [],
+      requesterId: req.user.id,
+      isPresential: true,
+      location: body.location,
+      confirmationMethod: body.confirmationMethod,
+      confirmationPhone: body.confirmationPhone,
+      leadId: body.leadId,
+      contactId: body.contactId,
+      organizationId: body.organizationId,
+      dealId: body.dealId,
+      description: body.description,
+      reminderSteps: body.reminderSteps,
+      reminderChannels: body.reminderChannels,
+      attendeeEmail: body.attendeeEmail,
+      attendeePhone: body.attendeePhone,
+      contactName: body.contactName,
+      companyName: body.companyName,
+    });
+    if (r.isLeft()) throw new BadRequestException(r.value.message);
+    return serialize(r.value);
+  }
+
+  @Patch(":id/end")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async endMeeting(@Request() req: any, @Param("id") id: string) {
+    const meeting = await this.meetingsRepo.findById(id);
+    if (!meeting) throw new NotFoundException("Reunião não encontrada");
+    if (meeting.ownerId !== req.user.id && req.user.role !== "admin") {
+      throw new ForbiddenException("Sem permissão para encerrar esta reunião");
+    }
+    await this.meetingsRepo.markAsEnded(id, { actualEndAt: new Date() });
+  }
+
+  @Post(":id/upload-recording")
+  @UseInterceptors(FileInterceptor("file"))
+  async uploadPresentialRecording(
+    @Request() req: any,
+    @Param("id") id: string,
+    @UploadedFile() file: { buffer: Buffer; originalname: string; mimetype: string },
+  ) {
+    if (!file) throw new BadRequestException("Arquivo obrigatório");
+    const r = await this.uploadRecording.execute({
+      meetingId: id,
+      buffer: file.buffer,
+      filename: file.originalname,
+      contentType: file.mimetype,
+      requesterId: req.user.id,
+    });
+    if (r.isLeft()) throw new BadRequestException(r.value.message);
+    return r.value;
   }
 }

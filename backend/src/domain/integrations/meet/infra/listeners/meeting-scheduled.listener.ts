@@ -23,6 +23,9 @@ export class MeetingScheduledListener {
       description: payload.description,
       contactName: payload.contactName,
       companyName: payload.companyName,
+      reminderTypes: payload.reminderTypes,
+      channels: payload.reminderChannels,
+      recipientPhone: payload.recipientPhone,
     });
 
     if (result.isLeft()) {

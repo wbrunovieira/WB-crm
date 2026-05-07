@@ -7,6 +7,7 @@ import {
   MeetingTranscriptionRecord,
   EndMeetingData,
   SaveRecordingData,
+  SaveUploadedRecordingData,
   CreateMeetingData,
   UpdateMeetingData,
 } from "../application/repositories/meetings.repository";
@@ -208,6 +209,9 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
             dealId: data.dealId,
             ownerId: data.ownerId,
             activityId,
+            isPresential: data.isPresential ?? false,
+            location: data.location,
+            confirmationMethod: data.confirmationMethod,
           },
         });
       });
@@ -230,6 +234,9 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
         organizationId: data.organizationId,
         dealId: data.dealId,
         ownerId: data.ownerId,
+        isPresential: data.isPresential ?? false,
+        location: data.location,
+        confirmationMethod: data.confirmationMethod,
       },
     });
     return this.toDomain(row as any);
@@ -264,6 +271,30 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
     await this.prisma.activity.delete({ where: { id: activityId } });
   }
 
+  async saveUploadedRecording(id: string, data: SaveUploadedRecordingData): Promise<void> {
+    await this.prisma.meeting.update({
+      where: { id },
+      data: {
+        uploadedAudioKey: data.uploadedAudioKey,
+        transcriptionJobId: data.transcriptionJobId,
+      },
+    });
+  }
+
+  async markConfirmationSent(id: string): Promise<void> {
+    await this.prisma.meeting.update({
+      where: { id },
+      data: { confirmationSentAt: new Date() },
+    });
+  }
+
+  async saveGoogleEventId(id: string, googleEventId: string): Promise<void> {
+    await this.prisma.meeting.update({
+      where: { id },
+      data: { googleEventId },
+    });
+  }
+
   private toDomain(row: any): MeetingRecord {
     return {
       id: row.id, title: row.title, googleEventId: row.googleEventId ?? null,
@@ -275,11 +306,17 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
       activityId: row.activityId ?? null, nativeTranscriptUrl: row.nativeTranscriptUrl ?? null,
       recordingDriveId: row.recordingDriveId ?? null,
       recordingUrl: row.recordingUrl ?? null,
+      uploadedAudioKey: row.uploadedAudioKey ?? null,
       transcriptText: row.transcriptText ?? null,
       meetingSummary: row.meetingSummary ?? null,
       leadId: row.leadId ?? null, contactId: row.contactId ?? null,
       organizationId: row.organizationId ?? null, dealId: row.dealId ?? null,
-      ownerId: row.ownerId, createdAt: row.createdAt, updatedAt: row.updatedAt,
+      ownerId: row.ownerId,
+      isPresential: row.isPresential ?? false,
+      location: row.location ?? null,
+      confirmationMethod: row.confirmationMethod ?? null,
+      confirmationSentAt: row.confirmationSentAt ?? null,
+      createdAt: row.createdAt, updatedAt: row.updatedAt,
       activity: row.activity ?? null,
     };
   }

@@ -51,23 +51,29 @@ export class GoogleCalendarClient extends GoogleCalendarPort {
     const calendar = await this.getCalendarClient();
     const tz = opts.timeZone ?? "America/Sao_Paulo";
 
+    const requestBody: Record<string, unknown> = {
+      summary: opts.title,
+      description: opts.description,
+      start: { dateTime: opts.startAt.toISOString(), timeZone: tz },
+      end: { dateTime: opts.endAt.toISOString(), timeZone: tz },
+      attendees: opts.attendeeEmails.map((email) => ({ email })),
+      ...(opts.location ? { location: opts.location } : {}),
+    };
+
+    if (!opts.noConference) {
+      requestBody.conferenceData = {
+        createRequest: {
+          requestId: randomUUID(),
+          conferenceSolutionKey: { type: "hangoutsMeet" },
+        },
+      };
+    }
+
     const { data } = await calendar.events.insert({
       calendarId: "primary",
-      conferenceDataVersion: 1,
+      ...(opts.noConference ? {} : { conferenceDataVersion: 1 }),
       sendUpdates: opts.sendUpdates ?? "all",
-      requestBody: {
-        summary: opts.title,
-        description: opts.description,
-        start: { dateTime: opts.startAt.toISOString(), timeZone: tz },
-        end: { dateTime: opts.endAt.toISOString(), timeZone: tz },
-        attendees: opts.attendeeEmails.map((email) => ({ email })),
-        conferenceData: {
-          createRequest: {
-            requestId: randomUUID(),
-            conferenceSolutionKey: { type: "hangoutsMeet" },
-          },
-        },
-      },
+      requestBody,
     });
 
     return {

@@ -4,6 +4,7 @@ import {
   MeetingTranscriptionRecord,
   EndMeetingData,
   SaveRecordingData,
+  SaveUploadedRecordingData,
   CreateMeetingData,
   UpdateMeetingData,
 } from "@/domain/integrations/meet/application/repositories/meetings.repository";
@@ -112,10 +113,16 @@ export class FakeMeetingsRepository extends MeetingsRepository {
       actualStartAt: null, actualEndAt: null, attendeeEmails: JSON.stringify(data.attendeeEmails),
       organizerEmail: data.organizerEmail ?? null,
       status: "scheduled", activityId: null, nativeTranscriptUrl: null,
-      recordingDriveId: null, recordingUrl: null, transcriptText: null, meetingSummary: null,
+      recordingDriveId: null, recordingUrl: null, uploadedAudioKey: null,
+      transcriptText: null, meetingSummary: null,
       leadId: data.leadId ?? null, contactId: data.contactId ?? null,
       organizationId: data.organizationId ?? null, dealId: data.dealId ?? null,
-      ownerId: data.ownerId, createdAt: new Date(), updatedAt: new Date(),
+      ownerId: data.ownerId,
+      isPresential: data.isPresential ?? false,
+      location: data.location ?? null,
+      confirmationMethod: data.confirmationMethod ?? null,
+      confirmationSentAt: null,
+      createdAt: new Date(), updatedAt: new Date(),
     };
     this.items.push(record as any);
     return record;
@@ -144,14 +151,33 @@ export class FakeMeetingsRepository extends MeetingsRepository {
     this.deletedActivityIds.push(activityId);
   }
 
+  async saveUploadedRecording(id: string, data: SaveUploadedRecordingData): Promise<void> {
+    const item = this.items.find(m => m.id === id) as any;
+    if (!item) return;
+    item.uploadedAudioKey = data.uploadedAudioKey;
+    item.transcriptionJobId = data.transcriptionJobId;
+  }
+
+  async markConfirmationSent(id: string): Promise<void> {
+    const item = this.items.find(m => m.id === id);
+    if (item) item.confirmationSentAt = new Date();
+  }
+
+  async saveGoogleEventId(id: string, googleEventId: string): Promise<void> {
+    const item = this.items.find(m => m.id === id);
+    if (item) item.googleEventId = googleEventId;
+  }
+
   addMeeting(meeting: Partial<MeetingRecord> & { id: string; title: string; startAt: Date; status: string }): void {
     this.items.push({
       googleEventId: null, meetLink: null, endAt: null, actualStartAt: null,
       actualEndAt: null, attendeeEmails: "[]", organizerEmail: null, activityId: null,
       nativeTranscriptUrl: null, recordingDriveId: null, recordingUrl: null,
-      transcriptText: null, meetingSummary: null,
+      uploadedAudioKey: null, transcriptText: null, meetingSummary: null,
       leadId: null, contactId: null, organizationId: null,
-      dealId: null, ownerId: "system", createdAt: new Date(), updatedAt: new Date(),
+      dealId: null, ownerId: "system",
+      isPresential: false, location: null, confirmationMethod: null, confirmationSentAt: null,
+      createdAt: new Date(), updatedAt: new Date(),
       ...meeting,
     } as any);
   }

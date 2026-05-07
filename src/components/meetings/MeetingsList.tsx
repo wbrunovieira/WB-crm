@@ -15,12 +15,15 @@ import {
   Check,
   NotebookPen,
   Trash2,
+  MapPin,
+  Upload,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
 import ScheduleMeetingModal, { type SuggestedContact, type MeetingInitialData } from "./ScheduleMeetingModal";
+import SchedulePresentialMeetingModal, { type PresentialContact } from "./SchedulePresentialMeetingModal";
 
 export interface Meeting {
   id: string;
@@ -35,11 +38,17 @@ export interface Meeting {
   status: string; // scheduled | ended | cancelled
   recordingDriveId: string | null;
   recordingUrl: string | null;
+  uploadedAudioKey: string | null;
   transcriptText: string | null;
   nativeTranscriptUrl: string | null;
   meetingSummary: string | null;
   activityId: string | null;
   activity?: { id: string; completed: boolean; completedAt: string | Date | null } | null;
+  // Presential
+  isPresential?: boolean;
+  location?: string | null;
+  confirmationMethod?: string | null;
+  confirmationSentAt?: string | Date | null;
 }
 
 interface Props {
@@ -50,6 +59,8 @@ interface Props {
   dealId?: string;
   /** Contacts shown as clickable chips in the schedule modal */
   suggestedContacts?: SuggestedContact[];
+  /** Contacts with phone info for presential modal */
+  presentialContacts?: PresentialContact[];
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -129,12 +140,14 @@ export default function MeetingsList({
   organizationId,
   dealId,
   suggestedContacts = [],
+  presentialContacts = [],
 }: Props) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const isAdmin = session?.user?.role === "admin";
   const [meetings, setMeetings] = useState<typeof initial>(initial ?? []);
   const [showModal, setShowModal] = useState(false);
+  const [showPresentialModal, setShowPresentialModal] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
   const [expandedTranscript, setExpandedTranscript] = useState<string | null>(null);
   const [expandedSummary, setExpandedSummary] = useState<string | null>(null);
@@ -178,6 +191,20 @@ export default function MeetingsList({
     }
   }
 
+  async function handleEnd(id: string) {
+    try {
+      await apiFetch(`/meetings/${id}/end`, token, { method: "PATCH" });
+      setMeetings((prev) =>
+        prev.map((m) =>
+          m.id === id ? { ...m, status: "ended", actualEndAt: new Date().toISOString() } : m
+        )
+      );
+      toast.success("Reunião marcada como concluída.");
+    } catch {
+      toast.error("Erro ao concluir reunião");
+    }
+  }
+
   function handleCreated() {
     window.location.reload();
   }
@@ -187,13 +214,22 @@ export default function MeetingsList({
       {/* Header */}
       <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
         <h2 className="text-lg font-bold text-gray-900">Reuniões ({meetings.length})</h2>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-700"
-        >
-          <Plus size={15} />
-          Agendar Reunião
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setShowPresentialModal(true)}
+            className="flex items-center gap-1.5 rounded-md border border-purple-600 px-3 py-1.5 text-sm font-medium text-purple-300 hover:bg-purple-600/20"
+          >
+            <MapPin size={14} />
+            Presencial
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-700"
+          >
+            <Plus size={15} />
+            Google Meet
+          </button>
+        </div>
       </div>
 
       {meetings.length === 0 ? (
@@ -221,6 +257,7 @@ export default function MeetingsList({
                   <MeetingCard
                     key={m.id}
                     meeting={m}
+                    token={token}
                     suggestedContacts={suggestedContacts}
                     expandedTranscript={expandedTranscript}
                     expandedSummary={expandedSummary}
@@ -230,9 +267,11 @@ export default function MeetingsList({
                     onTogglePlayer={setExpandedPlayer}
                     onSummaryUpdated={handleSummaryUpdated}
                     onCancel={handleCancel}
+                    onEnd={handleEnd}
                     onEdit={setEditingMeeting}
                     isAdmin={isAdmin}
                     onPurge={handlePurge}
+                    onUploaded={(id, key) => setMeetings((prev) => prev.map((m) => m.id === id ? { ...m, uploadedAudioKey: key } : m))}
                   />
                 ))}
               </ul>
@@ -250,6 +289,7 @@ export default function MeetingsList({
                   <MeetingCard
                     key={m.id}
                     meeting={m}
+                    token={token}
                     suggestedContacts={suggestedContacts}
                     expandedTranscript={expandedTranscript}
                     expandedSummary={expandedSummary}
@@ -259,15 +299,29 @@ export default function MeetingsList({
                     onTogglePlayer={setExpandedPlayer}
                     onSummaryUpdated={handleSummaryUpdated}
                     onCancel={handleCancel}
+                    onEnd={handleEnd}
                     onEdit={setEditingMeeting}
                     isAdmin={isAdmin}
                     onPurge={handlePurge}
+                    onUploaded={(id, key) => setMeetings((prev) => prev.map((m) => m.id === id ? { ...m, uploadedAudioKey: key } : m))}
                   />
                 ))}
               </ul>
             </div>
           )}
         </div>
+      )}
+
+      {showPresentialModal && (
+        <SchedulePresentialMeetingModal
+          leadId={leadId}
+          contactId={contactId}
+          organizationId={organizationId}
+          dealId={dealId}
+          suggestedContacts={presentialContacts.length > 0 ? presentialContacts : suggestedContacts}
+          onClose={() => setShowPresentialModal(false)}
+          onCreated={handleCreated}
+        />
       )}
 
       {showModal && (
@@ -327,6 +381,7 @@ function CopyButton({ text }: { text: string }) {
 
 function MeetingCard({
   meeting,
+  token,
   suggestedContacts,
   expandedTranscript,
   expandedSummary,
@@ -336,11 +391,14 @@ function MeetingCard({
   onTogglePlayer,
   onSummaryUpdated,
   onCancel,
+  onEnd,
   onEdit,
   isAdmin,
   onPurge,
+  onUploaded,
 }: {
   meeting: Meeting;
+  token: string;
   suggestedContacts: SuggestedContact[];
   expandedTranscript: string | null;
   expandedSummary: string | null;
@@ -350,25 +408,31 @@ function MeetingCard({
   onTogglePlayer: (id: string | null) => void;
   onSummaryUpdated: (id: string, summary: string | null) => void;
   onCancel: (id: string) => Promise<void>;
+  onEnd?: (id: string) => Promise<void>;
   onEdit: (meeting: Meeting) => void;
   isAdmin?: boolean;
   onPurge?: (id: string) => Promise<void>;
+  onUploaded?: (id: string, key: string) => void;
 }) {
-  const { data: session } = useSession();
-  const token = session?.user?.accessToken ?? "";
   const contactByEmail = new Map(suggestedContacts.map((c) => [c.email, c]));
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [cancelling, setCancelling] = useState(false);
+  const [confirmingEnd, setConfirmingEnd] = useState(false);
+  const [ending, setEnding] = useState(false);
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editingSummary, setEditingSummary] = useState(false);
   const [summaryDraft, setSummaryDraft] = useState(meeting.meetingSummary ?? "");
   const [savingSummary, setSavingSummary] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const uploadRef = useRef<HTMLInputElement>(null);
 
   const statusCfg = STATUS_CONFIG[meeting.status] ?? STATUS_CONFIG.scheduled;
   const isScheduled = meeting.status === "scheduled";
   const isEnded = meeting.status === "ended";
+  const isPresential = !!meeting.isPresential;
   const hasRecording = !!meeting.recordingUrl;
+  const hasUploadedAudio = !!meeting.uploadedAudioKey;
   const hasTranscript = !!meeting.transcriptText;
   const hasSummary = !!meeting.meetingSummary;
   const isTranscriptOpen = expandedTranscript === meeting.id;
@@ -384,6 +448,37 @@ function MeetingCard({
     } finally {
       setCancelling(false);
       setConfirmingCancel(false);
+    }
+  }
+
+  async function handleConfirmEnd() {
+    if (!onEnd) return;
+    setEnding(true);
+    try {
+      await onEnd(meeting.id);
+    } finally {
+      setEnding(false);
+      setConfirmingEnd(false);
+    }
+  }
+
+  async function handleUploadAudio(file: File) {
+    setUploading(true);
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3010"}/meetings/${meeting.id}/upload-recording`,
+        { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: form }
+      );
+      if (!res.ok) throw new Error(await res.text());
+      const data = await res.json();
+      onUploaded?.(meeting.id, data.transcriptionJobId ?? "uploaded");
+      toast.success("Áudio enviado para transcrição!");
+    } catch (err: any) {
+      toast.error(err?.message ?? "Erro ao enviar áudio");
+    } finally {
+      setUploading(false);
     }
   }
 
@@ -420,12 +515,21 @@ function MeetingCard({
   return (
     <li className="rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-4 py-3">
       <div className="flex items-start gap-3">
-        <Video size={18} className="mt-0.5 flex-shrink-0 text-purple-500" />
+        {isPresential
+          ? <MapPin size={18} className="mt-0.5 flex-shrink-0 text-orange-400" />
+          : <Video size={18} className="mt-0.5 flex-shrink-0 text-purple-500" />
+        }
 
         <div className="min-w-0 flex-1">
-          {/* Title + status */}
+          {/* Title + status + badges */}
           <div className="flex flex-wrap items-center gap-2">
             <span className="font-medium text-gray-900 text-sm">{meeting.title}</span>
+            {isPresential && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-orange-500/15 px-2 py-0.5 text-xs font-medium text-orange-300">
+                <MapPin size={10} />
+                Presencial
+              </span>
+            )}
             <span
               className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusCfg.color}`}
             >
@@ -433,6 +537,13 @@ function MeetingCard({
               {statusCfg.label}
             </span>
           </div>
+          {/* Location */}
+          {meeting.location && (
+            <p className="mt-0.5 flex items-center gap-1 text-xs text-orange-300/80">
+              <MapPin size={10} />
+              {meeting.location}
+            </p>
+          )}
 
           {/* Date/time */}
           <div className="mt-0.5 space-y-0.5">
@@ -508,13 +619,39 @@ function MeetingCard({
             </button>
           )}
 
-          {isScheduled && !confirmingCancel && (
+          {isScheduled && !confirmingCancel && !confirmingEnd && (
             <button
               onClick={() => setConfirmingCancel(true)}
               className="rounded-md px-2 py-1.5 text-xs text-red-400 hover:bg-red-500/15"
             >
               Cancelar
             </button>
+          )}
+
+          {/* End presential meeting */}
+          {isScheduled && isPresential && onEnd && !confirmingCancel && !confirmingEnd && (
+            <button
+              onClick={() => setConfirmingEnd(true)}
+              className="flex items-center gap-1.5 rounded-md bg-green-600/20 border border-green-600/40 px-2 py-1.5 text-xs font-medium text-green-400 hover:bg-green-600/30"
+            >
+              <CheckCircle size={12} />
+              Concluir
+            </button>
+          )}
+
+          {/* Inline end confirmation */}
+          {confirmingEnd && (
+            <div className="flex items-center gap-1.5 rounded-lg border border-green-600/30 bg-green-600/10 px-3 py-1.5">
+              {ending ? (
+                <Loader2 size={13} className="animate-spin text-green-500" />
+              ) : (
+                <>
+                  <span className="text-xs text-green-300 font-medium">Marcar como concluída?</span>
+                  <button onClick={handleConfirmEnd} className="rounded bg-green-600 px-2 py-0.5 text-xs font-semibold text-white hover:bg-green-700">Sim</button>
+                  <button onClick={() => setConfirmingEnd(false)} className="rounded px-2 py-0.5 text-xs font-medium text-green-400 hover:bg-green-900/30">Não</button>
+                </>
+              )}
+            </div>
           )}
 
           {/* Inline cancel confirmation */}
@@ -585,8 +722,34 @@ function MeetingCard({
       </div>
 
       {/* Action bar: recording, summary, transcript (ended meetings) */}
-      {isEnded && (hasRecording || hasTranscript || hasSummary || true) && (
+      {isEnded && (hasRecording || hasTranscript || hasSummary || isPresential || true) && (
         <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-gray-200 pt-3">
+
+          {/* Upload audio for presential */}
+          {isPresential && (
+            <>
+              <input
+                ref={uploadRef}
+                type="file"
+                accept="audio/*,video/*"
+                className="hidden"
+                onChange={(e) => { if (e.target.files?.[0]) handleUploadAudio(e.target.files[0]); }}
+              />
+              <button
+                onClick={() => uploadRef.current?.click()}
+                disabled={uploading}
+                className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  hasUploadedAudio
+                    ? "border-green-500/30 bg-green-500/15 text-green-300 hover:bg-green-500/25"
+                    : "border-orange-500/30 bg-orange-500/10 text-orange-300 hover:bg-orange-500/20"
+                }`}
+              >
+                {uploading ? <Loader2 size={12} className="animate-spin" /> : <Upload size={12} />}
+                {hasUploadedAudio ? "Substituir Gravação" : "Upload Gravação"}
+              </button>
+            </>
+          )}
+
           {hasRecording && (
             <div className="flex items-center gap-1">
               <button

@@ -28,6 +28,8 @@ export class InMemoryScheduledEmailsRepository extends ScheduledEmailsRepository
         meetLink: input.meetLink ?? null,
         contactName: input.contactName ?? null,
         companyName: input.companyName ?? null,
+        channel: input.channel ?? "email",
+        recipientPhone: input.recipientPhone ?? null,
         createdAt: new Date(),
       });
     }

@@ -1,6 +1,8 @@
 import { Module } from "@nestjs/common";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
 import { EmailModule } from "@/domain/integrations/email/email.module";
+import { EvolutionApiPort } from "@/domain/integrations/whatsapp/application/ports/evolution-api.port";
+import { EvolutionApiClient } from "@/domain/integrations/whatsapp/infra/evolution-api.client";
 
 // Ports
 import { GoogleDrivePort } from "./application/ports/google-drive.port";
@@ -23,6 +25,9 @@ import { CreateMeetingRemindersUseCase } from "./application/use-cases/create-me
 import { CancelMeetingRemindersUseCase } from "./application/use-cases/cancel-meeting-reminders.use-case";
 import { SendScheduledEmailsUseCase } from "./application/use-cases/send-scheduled-emails.use-case";
 import { PurgeCompletedMeetingUseCase } from "./application/use-cases/purge-completed-meeting.use-case";
+import { SchedulePresentialMeetingUseCase } from "./application/use-cases/schedule-presential-meeting.use-case";
+import { UploadPresentialRecordingUseCase } from "./application/use-cases/upload-presential-recording.use-case";
+import { PresentialRecordingStoragePort } from "./application/ports/presential-recording-storage.port";
 
 // Infrastructure
 import { GoogleDriveClient } from "./infra/google-drive.client";
@@ -36,6 +41,7 @@ import { MeetingRemindersCronService } from "./infra/scheduled/meeting-reminders
 import { MeetingScheduledListener } from "./infra/listeners/meeting-scheduled.listener";
 import { MeetingCancelledListener } from "./infra/listeners/meeting-cancelled.listener";
 import { MeetingsCrudController } from "./infra/meetings-crud.controller";
+import { PresentialRecordingS3Adapter } from "./infra/presential-recording-s3.adapter";
 import { AuthModule } from "@/infra/auth/auth.module";
 
 @Module({
@@ -62,9 +68,15 @@ import { AuthModule } from "@/infra/auth/auth.module";
     // Use Cases — admin
     PurgeCompletedMeetingUseCase,
 
+    // Use Cases — presential meetings
+    SchedulePresentialMeetingUseCase,
+    UploadPresentialRecordingUseCase,
+
     // Port implementations
     { provide: GoogleDrivePort, useClass: GoogleDriveClient },
     { provide: GoogleCalendarPort, useClass: GoogleCalendarClient },
+    { provide: PresentialRecordingStoragePort, useClass: PresentialRecordingS3Adapter },
+    { provide: EvolutionApiPort, useClass: EvolutionApiClient },
 
     // Repository implementations
     PrismaMeetingsRepository,

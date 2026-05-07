@@ -60,6 +60,12 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
     return this.items.find((a) => a.gotoTranscriptionJobId === jobId || a.gotoTranscriptionJobId2 === jobId) ?? null;
   }
 
+  async findAnsweredCallsMissingRecordingId(since: Date): Promise<Activity[]> {
+    return this.items.filter(
+      (a) => a.gotoCallId !== null && a.gotoRecordingId === null && a.completedAt !== null && a.completedAt! >= since,
+    );
+  }
+
   createAndAdd(props: Parameters<typeof Activity.create>[0]): Activity {
     const activity = Activity.create(props, new UniqueEntityID());
     this.items.push(activity);

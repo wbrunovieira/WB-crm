@@ -170,4 +170,10 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
   async findWhatsAppDriveIds(activityId: string): Promise<string[]> {
     return this.whatsAppDriveIds.get(activityId) ?? [];
   }
+
+  async findAnsweredCallsMissingRecordingId(since: Date): Promise<Activity[]> {
+    return this.items.filter(
+      (a) => a.gotoCallId !== null && a.gotoRecordingId === null && a.completedAt !== null && a.completedAt! >= since,
+    );
+  }
 }

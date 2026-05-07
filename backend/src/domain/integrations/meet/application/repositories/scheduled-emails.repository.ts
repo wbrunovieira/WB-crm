@@ -16,6 +16,8 @@ export interface ScheduledEmailRecord {
   meetLink: string | null;
   contactName: string | null;
   companyName: string | null;
+  channel: "email" | "whatsapp";
+  recipientPhone: string | null;
   createdAt: Date;
 }
 
@@ -32,6 +34,8 @@ export interface CreateScheduledEmailInput {
   meetLink?: string;
   contactName?: string;
   companyName?: string;
+  channel?: "email" | "whatsapp";
+  recipientPhone?: string;
 }
 
 export abstract class ScheduledEmailsRepository {

@@ -2177,12 +2177,21 @@ model Meeting {
   organizerEmail  String?            // alias used as organizer (e.g. bruno@saltoup.com)
   status          String    @default("scheduled") // scheduled | ended | cancelled
 
-  // Recording (Google Drive)
+  // Presential meeting fields
+  isPresential        Boolean   @default(false)
+  location            String?   // Physical address for presential meetings
+  confirmationMethod  String?   // "email" | "whatsapp" | "none"
+  confirmationSentAt  DateTime? // When confirmation was sent to attendees
+
+  // Recording (Google Drive — Google Meet only)
   recordingDriveId  String?  // Drive file ID of recording
   recordingUrl      String?  // URL to access recording
   recordingMovedAt  DateTime? // When recording was moved to CRM folder
 
-  // Transcription
+  // Uploaded recording (presential meetings)
+  uploadedAudioKey  String?   // S3 key of manually uploaded audio file
+
+  // Transcription (shared by Google Meet auto-detected and presential uploaded recordings)
   transcriptionJobId  String?   // Job ID from transcriptor API (pending)
   transcriptText      String?   // Full transcription text (from our transcriptor API)
   transcribedAt       DateTime? // When transcription was completed
@@ -2241,6 +2250,8 @@ model ScheduledEmail {
   meetLink            String?
   contactName         String?
   companyName         String?
+  channel             String    @default("email") // "email" | "whatsapp"
+  recipientPhone      String?
 
   createdAt DateTime @default(now())
 

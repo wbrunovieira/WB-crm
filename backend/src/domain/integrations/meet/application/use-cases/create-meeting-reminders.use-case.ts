@@ -38,6 +38,9 @@ export interface CreateMeetingRemindersInput {
   description?: string;
   contactName?: string;
   companyName?: string;
+  reminderTypes?: ("morning_reminder" | "one_hour_reminder" | "on_time_reminder")[];
+  channels?: ("email" | "whatsapp")[];
+  recipientPhone?: string;
 }
 
 @Injectable()
@@ -45,7 +48,12 @@ export class CreateMeetingRemindersUseCase {
   constructor(private readonly repo: ScheduledEmailsRepository) {}
 
   async execute(input: CreateMeetingRemindersInput): Promise<Either<Error, void>> {
-    if (!input.attendeeEmails.length) {
+    const channels = input.channels ?? ["email"];
+    const hasEmailChannel = channels.includes("email");
+    const hasWhatsAppChannel = channels.includes("whatsapp");
+
+    // Need at least one valid recipient
+    if (!input.attendeeEmails.length && !(hasWhatsAppChannel && input.recipientPhone)) {
       return left(new Error("No attendee emails provided"));
     }
 
@@ -68,24 +76,54 @@ export class CreateMeetingRemindersUseCase {
     const minutesUntilMorningEnd = (input.startAt.getTime() - morning.getTime()) / 60_000;
     const minutesUntilStart = (input.startAt.getTime() - now.getTime()) / 60_000;
 
-    for (const email of input.attendeeEmails) {
-      // Morning: only if meeting starts > 90min after 08:00 and 08:00 is in the future
-      if (morning > now && minutesUntilMorningEnd >= MIN_GAP_MORNING_MINUTES) {
-        records.push({ ...base, type: "morning_reminder", scheduledFor: morning, recipientEmail: email });
+    // Determine which reminder types are active (skip logic still applies)
+    const allowedTypes = input.reminderTypes;
+
+    const shouldInclude = (type: "morning_reminder" | "one_hour_reminder" | "on_time_reminder"): boolean => {
+      if (allowedTypes && !allowedTypes.includes(type)) return false;
+      if (type === "morning_reminder") return morning > now && minutesUntilMorningEnd >= MIN_GAP_MORNING_MINUTES;
+      if (type === "one_hour_reminder") return minutesUntilStart >= MIN_GAP_ONE_HOUR_MINUTES;
+      if (type === "on_time_reminder") return input.startAt > now;
+      return false;
+    };
+
+    const scheduledForByType: Record<string, Date> = {
+      morning_reminder: morning,
+      one_hour_reminder: oneHour,
+      on_time_reminder: input.startAt,
+    };
+
+    const types: ("morning_reminder" | "one_hour_reminder" | "on_time_reminder")[] = [
+      "morning_reminder",
+      "one_hour_reminder",
+      "on_time_reminder",
+    ];
+
+    for (const type of types) {
+      if (!shouldInclude(type)) continue;
+      const scheduledFor = scheduledForByType[type];
+
+      if (hasEmailChannel && input.attendeeEmails.length > 0) {
+        for (const email of input.attendeeEmails) {
+          records.push({ ...base, type, scheduledFor, recipientEmail: email, channel: "email" });
+        }
       }
 
-      // 1h before: only if meeting is more than 62min away
-      if (minutesUntilStart >= MIN_GAP_ONE_HOUR_MINUTES) {
-        records.push({ ...base, type: "one_hour_reminder", scheduledFor: oneHour, recipientEmail: email });
-      }
-
-      // On-time: always (as long as not in the past)
-      if (input.startAt > now) {
-        records.push({ ...base, type: "on_time_reminder", scheduledFor: input.startAt, recipientEmail: email });
+      if (hasWhatsAppChannel && input.recipientPhone) {
+        records.push({
+          ...base,
+          type,
+          scheduledFor,
+          recipientEmail: input.attendeeEmails[0] ?? "",
+          channel: "whatsapp",
+          recipientPhone: input.recipientPhone,
+        });
       }
     }
 
-    await this.repo.createMany(records);
+    if (records.length > 0) {
+      await this.repo.createMany(records);
+    }
     return right(undefined);
   }
 }

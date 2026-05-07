@@ -10,5 +10,8 @@ export class MeetingScheduledEvent {
     description?: string;
     contactName?: string;
     companyName?: string;
+    reminderTypes?: ("morning_reminder" | "one_hour_reminder" | "on_time_reminder")[];
+    reminderChannels?: ("email" | "whatsapp")[];
+    recipientPhone?: string;
   }) {}
 }

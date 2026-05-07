@@ -25,6 +25,8 @@ export class PrismaScheduledEmailsRepository extends ScheduledEmailsRepository {
         meetLink: i.meetLink ?? null,
         contactName: i.contactName ?? null,
         companyName: i.companyName ?? null,
+        channel: i.channel ?? "email",
+        recipientPhone: i.recipientPhone ?? null,
       })),
     });
   }
@@ -78,6 +80,8 @@ export class PrismaScheduledEmailsRepository extends ScheduledEmailsRepository {
       meetLink: row.meetLink,
       contactName: row.contactName,
       companyName: row.companyName,
+      channel: (row.channel ?? "email") as "email" | "whatsapp",
+      recipientPhone: row.recipientPhone ?? null,
       createdAt: row.createdAt,
     };
   }
