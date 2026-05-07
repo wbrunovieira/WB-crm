@@ -11,6 +11,7 @@ import PurgeActivityButton from "@/components/activities/PurgeActivityButton";
 import { ActivitiesSortSelect } from "@/components/activities/ActivitiesSortSelect";
 import { ActivitiesDateFilter } from "@/components/activities/ActivitiesDateFilter";
 import { ShowArchivedToggle } from "@/components/activities/ShowArchivedToggle";
+import { ActivitiesLeadSearch } from "@/components/activities/ActivitiesLeadSearch";
 import { OwnerFilter } from "@/components/shared/OwnerFilter";
 import { OwnerBadge } from "@/components/shared/OwnerBadge";
 import { ActivityOutcomeButtons } from "@/components/activities/ActivityOutcomeButtons";
@@ -50,7 +51,7 @@ function getCadenceBadgeColor(name: string): string {
 export default async function ActivitiesPage({
   searchParams,
 }: {
-  searchParams: { type?: string; completed?: string; sortBy?: string; owner?: string; dateFrom?: string; dateTo?: string; showArchived?: string; outcome?: string };
+  searchParams: { type?: string; completed?: string; sortBy?: string; owner?: string; dateFrom?: string; dateTo?: string; showArchived?: string; outcome?: string; leadSearch?: string };
 }) {
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
@@ -69,6 +70,7 @@ export default async function ActivitiesPage({
   if (searchParams.dateTo) qs.set("dateTo", searchParams.dateTo);
   if (searchParams.showArchived === "true") qs.set("includeArchivedLeads", "true");
   if (searchParams.outcome) qs.set("outcome", searchParams.outcome);
+  if (searchParams.leadSearch) qs.set("leadSearch", searchParams.leadSearch);
 
   const activities = await backendFetch<Activity[]>(`/activities${qs.toString() ? `?${qs}` : ""}`).catch(() => []);
 
@@ -163,6 +165,7 @@ export default async function ActivitiesPage({
 
           {/* Date Filter, Sort, Owner */}
           <div className="flex items-center gap-4">
+            <ActivitiesLeadSearch />
             <ShowArchivedToggle />
             <ActivitiesDateFilter />
             <ActivitiesSortSelect />
@@ -178,7 +181,7 @@ export default async function ActivitiesPage({
         <span className="inline-flex items-center rounded-lg bg-purple-100 px-3 py-1.5 text-sm font-semibold text-purple-800">
           {activities.length} {activities.length === 1 ? "atividade" : "atividades"}
         </span>
-        {(searchParams.type || searchParams.completed || searchParams.dateFrom || searchParams.dateTo || searchParams.owner || searchParams.showArchived || searchParams.outcome) && (
+        {(searchParams.type || searchParams.completed || searchParams.dateFrom || searchParams.dateTo || searchParams.owner || searchParams.showArchived || searchParams.outcome || searchParams.leadSearch) && (
           <span className="text-sm text-gray-500">com os filtros aplicados</span>
         )}
       </div>

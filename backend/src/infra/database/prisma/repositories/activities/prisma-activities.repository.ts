@@ -78,6 +78,7 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
         ...dealFilter,
         ...(filters.contactId && { contactId: filters.contactId }),
         ...(filters.leadId && { leadId: filters.leadId }),
+        ...(filters.leadSearch && { lead: { businessName: { contains: filters.leadSearch, mode: "insensitive" as const } } }),
         ...outcomeFilter,
         ...dateFilter,
       },

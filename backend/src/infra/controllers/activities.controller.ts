@@ -144,6 +144,7 @@ export class ActivitiesController {
   @ApiQuery({ name: "dateTo", required: false })
   @ApiQuery({ name: "outcome", required: false, enum: ["failed", "skipped"] })
   @ApiQuery({ name: "includeArchivedLeads", required: false, type: Boolean })
+  @ApiQuery({ name: "leadSearch", required: false, description: "Busca por nome do lead" })
   @ApiQuery({ name: "sortBy", required: false })
   async list(
     @Query("type") type?: string,
@@ -156,6 +157,7 @@ export class ActivitiesController {
     @Query("dateTo") dateTo?: string,
     @Query("outcome") outcome?: string,
     @Query("includeArchivedLeads") includeArchivedLeads?: string,
+    @Query("leadSearch") leadSearch?: string,
     @Query("sortBy") sortBy?: string,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
@@ -173,6 +175,7 @@ export class ActivitiesController {
         dateTo,
         outcome,
         includeArchivedLeads: includeArchivedLeads === "true",
+        leadSearch,
         sortBy,
       },
     });

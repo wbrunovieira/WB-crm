@@ -7,6 +7,7 @@ export interface ActivityFilters {
   dealId?: string;
   contactId?: string;
   leadId?: string;
+  leadSearch?: string;
   owner?: string;
   dateFrom?: string;
   dateTo?: string;
