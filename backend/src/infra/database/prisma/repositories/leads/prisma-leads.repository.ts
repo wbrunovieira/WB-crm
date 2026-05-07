@@ -266,6 +266,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
         leadEcommerces: { include: { ecommerce: { select: { name: true } } } },
         parentLead: { select: { id: true, businessName: true } },
         childLeads: { select: { id: true, businessName: true, isArchived: true } },
+        _count: { select: { leadCadences: true, leadContacts: true } },
       },
     });
 
@@ -449,7 +450,8 @@ export class PrismaLeadsRepository extends LeadsRepository {
         ecommerces: row.leadEcommerces.map((le) => le.ecommerce.name),
       },
       parentLead: (row as unknown as { parentLead?: { id: string; businessName: string } | null }).parentLead ?? null,
-      childLeads: ((row as unknown as { childLeads?: Array<{ id: string; businessName: string }> }).childLeads ?? []),
+      childLeads: ((row as unknown as { childLeads?: Array<{ id: string; businessName: string; isArchived: boolean }> }).childLeads ?? []),
+      _count: { leadCadences: row._count.leadCadences, leadContacts: row._count.leadContacts },
     };
   }
 
