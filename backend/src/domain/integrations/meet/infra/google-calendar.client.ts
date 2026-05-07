@@ -26,7 +26,10 @@ export class GoogleCalendarClient extends GoogleCalendarPort {
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_SECRET,
     );
-    auth.setCredentials({ access_token: token.accessToken });
+    auth.setCredentials({
+      access_token: token.accessToken,
+      refresh_token: token.refreshToken,
+    });
     return google.calendar({ version: "v3", auth });
   }
 

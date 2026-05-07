@@ -1,4 +1,4 @@
-import { Injectable, Logger, Optional } from "@nestjs/common";
+import { Injectable, Logger, Optional, Inject } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Either, left, right } from "@/core/either";
 import { MeetingsRepository, MeetingRecord } from "../repositories/meetings.repository";
@@ -37,10 +37,10 @@ export class SchedulePresentialMeetingUseCase {
 
   constructor(
     private readonly repo: MeetingsRepository,
-    @Optional() private readonly whatsApp: EvolutionApiPort | null,
-    @Optional() private readonly gmail: GmailPort | null,
-    @Optional() private readonly googleCalendar: GoogleCalendarPort | null,
-    @Optional() private readonly eventEmitter: EventEmitter2 | null,
+    @Optional() @Inject(EvolutionApiPort) private readonly whatsApp: EvolutionApiPort | null,
+    @Optional() @Inject(GmailPort) private readonly gmail: GmailPort | null,
+    @Optional() @Inject(GoogleCalendarPort) private readonly googleCalendar: GoogleCalendarPort | null,
+    @Optional() @Inject(EventEmitter2) private readonly eventEmitter: EventEmitter2 | null,
   ) {}
 
   async execute(
