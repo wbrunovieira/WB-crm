@@ -778,6 +778,7 @@ export default async function LeadDetailPage({
         <MeetingsList
           meetings={meetings ?? []}
           leadId={lead.id}
+          defaultLocation={[lead.address, lead.city, lead.state, lead.zipCode].filter(Boolean).join(", ")}
           suggestedContacts={[
             ...(lead.email
               ? [{ id: `lead-${lead.id}`, name: lead.businessName, email: lead.email, role: "Empresa" }]

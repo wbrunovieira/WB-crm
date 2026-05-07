@@ -61,6 +61,8 @@ interface Props {
   suggestedContacts?: SuggestedContact[];
   /** Contacts with phone info for presential modal */
   presentialContacts?: PresentialContact[];
+  /** Default location pre-filled in presential modal */
+  defaultLocation?: string;
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
@@ -141,6 +143,7 @@ export default function MeetingsList({
   dealId,
   suggestedContacts = [],
   presentialContacts = [],
+  defaultLocation = "",
 }: Props) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
@@ -319,6 +322,7 @@ export default function MeetingsList({
           organizationId={organizationId}
           dealId={dealId}
           suggestedContacts={presentialContacts.length > 0 ? presentialContacts : suggestedContacts}
+          defaultLocation={defaultLocation}
           onClose={() => setShowPresentialModal(false)}
           onCreated={handleCreated}
         />

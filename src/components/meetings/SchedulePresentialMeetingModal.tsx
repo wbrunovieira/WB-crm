@@ -21,6 +21,7 @@ interface Props {
   organizationId?: string;
   dealId?: string;
   suggestedContacts?: PresentialContact[];
+  defaultLocation?: string;
   onClose: () => void;
   onCreated: () => void;
 }
@@ -53,6 +54,7 @@ export default function SchedulePresentialMeetingModal({
   organizationId,
   dealId,
   suggestedContacts = [],
+  defaultLocation = "",
   onClose,
   onCreated,
 }: Props) {
@@ -63,7 +65,7 @@ export default function SchedulePresentialMeetingModal({
   const [date, setDate] = useState(todayLocalIso());
   const [startTime, setStartTime] = useState(nextHourTime());
   const [duration, setDuration] = useState(60);
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState(defaultLocation);
   const [description, setDescription] = useState("");
 
   // Contact selection
