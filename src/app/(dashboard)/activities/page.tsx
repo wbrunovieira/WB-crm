@@ -18,6 +18,7 @@ import { ActivityOutcomeButtons } from "@/components/activities/ActivityOutcomeB
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import WhatsAppActivityLog from "@/components/whatsapp/WhatsAppActivityLog";
+import { ActivityDescriptionExpand } from "@/components/activities/ActivityDescriptionExpand";
 
 // Generate consistent color for cadence name
 const CADENCE_COLORS = [
@@ -309,9 +310,7 @@ export default async function ActivitiesPage({
                         />
                       </div>
                     ) : (
-                      <p className="mt-2 text-sm text-gray-600">
-                        {activity.description}
-                      </p>
+                      <ActivityDescriptionExpand description={activity.description} />
                     )
                   )}
 
