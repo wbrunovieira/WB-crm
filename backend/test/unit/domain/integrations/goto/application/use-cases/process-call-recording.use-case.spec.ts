@@ -50,8 +50,8 @@ describe("ProcessCallRecordingUseCase", () => {
     expect(transcriber.submittedJobs).toHaveLength(0);
   });
 
-  it("skips activity with no gotoRecordingId", async () => {
-    const activity = makeActivity({ gotoRecordingId: undefined });
+  it("skips activity with no gotoRecordingId AND no gotoCallId", async () => {
+    const activity = makeActivity({ gotoRecordingId: undefined, gotoCallId: undefined });
     repo.items.push(activity);
 
     const result = await useCase.execute({ activityId: "activity-001" });
@@ -67,7 +67,7 @@ describe("ProcessCallRecordingUseCase", () => {
     expect(result.value).toMatchObject({ notFound: true });
   });
 
-  it("returns notFound when S3 key not found yet", async () => {
+  it("returns notFound when S3 key not found (has gotoRecordingId)", async () => {
     const activity = makeActivity();
     repo.items.push(activity);
     // Don't add to S3 — key not found
@@ -164,5 +164,65 @@ describe("ProcessCallRecordingUseCase", () => {
     expect(saved.gotoRecordingUrl2).toBe(clientKey);
     expect(saved.gotoTranscriptionJobId).toBe("job-001");
     expect(saved.gotoTranscriptionJobId2).toBe("job-001"); // same fake job id
+  });
+
+  describe("fallback: find by conversationSpaceId when gotoRecordingId is null", () => {
+    it("finds recording via gotoCallId when gotoRecordingId is not set", async () => {
+      const activity = makeActivity({ gotoRecordingId: undefined, gotoCallId: "conv-abc" });
+      repo.items.push(activity);
+
+      const agentKey = "2026/05/07/ts~conv-abc~551150264203~unknown~rec-xyz.mp3";
+      s3.addRecordingKeyByConversationId("conv-abc", agentKey, "rec-xyz");
+
+      transcriber.setNextJobId("job-001");
+
+      const result = await useCase.execute({ activityId: "activity-001" });
+
+      expect(result.isRight()).toBe(true);
+      expect(result.value).toMatchObject({ submitted: true });
+      expect(transcriber.submittedJobs).toHaveLength(1);
+    });
+
+    it("saves the discovered recordingId back on the activity", async () => {
+      const activity = makeActivity({ gotoRecordingId: undefined, gotoCallId: "conv-abc" });
+      repo.items.push(activity);
+
+      const agentKey = "2026/05/07/ts~conv-abc~551150264203~unknown~rec-xyz.mp3";
+      s3.addRecordingKeyByConversationId("conv-abc", agentKey, "rec-xyz");
+      transcriber.setNextJobId("job-001");
+
+      await useCase.execute({ activityId: "activity-001" });
+
+      const saved = repo.items[0];
+      expect(saved.gotoRecordingId).toBe("rec-xyz");
+      expect(saved.gotoRecordingUrl).toBe(agentKey);
+    });
+
+    it("returns notFound when neither gotoRecordingId nor S3 match by conversationSpaceId", async () => {
+      const activity = makeActivity({ gotoRecordingId: undefined, gotoCallId: "conv-missing" });
+      repo.items.push(activity);
+      // S3 has no file for conv-missing
+
+      const result = await useCase.execute({ activityId: "activity-001" });
+
+      expect(result.isRight()).toBe(true);
+      expect(result.value).toMatchObject({ notFound: true });
+    });
+
+    it("also submits sibling track when found via conversationSpaceId fallback", async () => {
+      const activity = makeActivity({ gotoRecordingId: undefined, gotoCallId: "conv-abc" });
+      repo.items.push(activity);
+
+      const agentKey = "2026/05/07/ts~conv-abc~551150264203~unknown~rec-xyz.mp3";
+      const clientKey = "2026/05/07/ts~conv-abc~552422371695~unknown~rec-client.mp3";
+      s3.addRecordingKeyByConversationId("conv-abc", agentKey, "rec-xyz");
+      s3.addSibling(agentKey, clientKey, 0);
+      transcriber.setNextJobId("job-001");
+
+      const result = await useCase.execute({ activityId: "activity-001" });
+
+      expect(result.value).toMatchObject({ submitted: true });
+      expect(transcriber.submittedJobs).toHaveLength(2);
+    });
   });
 });

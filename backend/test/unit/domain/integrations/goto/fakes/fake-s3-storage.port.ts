@@ -2,11 +2,17 @@ import { S3StoragePort } from "@/domain/integrations/goto/application/ports/s3-s
 
 export class FakeS3StoragePort extends S3StoragePort {
   public keys: Map<string, string> = new Map(); // recordingId → s3Key
+  public byConversationId: Map<string, { key: string; recordingId: string }> = new Map();
   public siblings: Map<string, { key: string; offsetMs: number }> = new Map(); // agentKey → sibling
   public buffers: Map<string, Buffer> = new Map(); // s3Key → buffer
 
   addRecordingKey(recordingId: string, key: string, buffer?: Buffer): void {
     this.keys.set(recordingId, key);
+    this.buffers.set(key, buffer ?? Buffer.from(`fake-audio-${recordingId}`));
+  }
+
+  addRecordingKeyByConversationId(conversationSpaceId: string, key: string, recordingId: string, buffer?: Buffer): void {
+    this.byConversationId.set(conversationSpaceId, { key, recordingId });
     this.buffers.set(key, buffer ?? Buffer.from(`fake-audio-${recordingId}`));
   }
 
@@ -17,6 +23,13 @@ export class FakeS3StoragePort extends S3StoragePort {
 
   async findRecordingKey(recordingId: string, _callDate: Date): Promise<string | null> {
     return this.keys.get(recordingId) ?? null;
+  }
+
+  async findRecordingKeyByConversationId(
+    conversationSpaceId: string,
+    _callDate: Date,
+  ): Promise<{ key: string; recordingId: string } | null> {
+    return this.byConversationId.get(conversationSpaceId) ?? null;
   }
 
   async findSiblingKey(agentKey: string): Promise<{ key: string; offsetMs: number } | null> {

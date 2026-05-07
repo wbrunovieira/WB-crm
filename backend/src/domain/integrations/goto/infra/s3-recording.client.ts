@@ -60,6 +60,40 @@ export class S3RecordingClient extends S3StoragePort {
     return null;
   }
 
+  async findRecordingKeyByConversationId(
+    conversationSpaceId: string,
+    callDate: Date,
+  ): Promise<{ key: string; recordingId: string } | null> {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const { ListObjectsV2Command } = require("@aws-sdk/client-s3") as typeof import("@aws-sdk/client-s3");
+    const client = getS3Client();
+    const bucket = getBucket();
+
+    const datesToTry = [callDate, new Date(callDate.getTime() - 86400000)];
+
+    for (const date of datesToTry) {
+      const yyyy = date.getUTCFullYear();
+      const MM = String(date.getUTCMonth() + 1).padStart(2, "0");
+      const dd = String(date.getUTCDate()).padStart(2, "0");
+      const prefix = `${yyyy}/${MM}/${dd}/`;
+
+      const res = await client.send(
+        new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix }),
+      );
+
+      const match = res.Contents?.find((obj) => obj.Key?.includes(`~${conversationSpaceId}~`));
+      if (match?.Key) {
+        const filename = match.Key.split("/").pop() ?? "";
+        const withoutExt = filename.replace(/\.mp3$/i, "");
+        const parts = withoutExt.split("~");
+        const recordingId = parts[parts.length - 1];
+        if (recordingId) return { key: match.Key, recordingId };
+      }
+    }
+
+    return null;
+  }
+
   async findSiblingKey(agentKey: string): Promise<{ key: string; offsetMs: number } | null> {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { ListObjectsV2Command } = require("@aws-sdk/client-s3") as typeof import("@aws-sdk/client-s3");

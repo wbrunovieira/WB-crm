@@ -21,7 +21,7 @@ export class GoToRecordingCronService {
     this.logger.log("GoTo recording cron: starting");
 
     const now = new Date();
-    const since4h = new Date(now.getTime() - 4 * 60 * 60 * 1000);
+    const since7d = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
 
     try {
       // Pass 0: Fill in missing gotoRecordingId for answered calls (sync path gap)
@@ -30,12 +30,15 @@ export class GoToRecordingCronService {
         this.logger.log(`GoTo recording cron Pass 0: refreshed=${pass0.value.refreshed} skipped=${pass0.value.skipped}`);
       }
 
-      // Pass 1: Find activities with recording ID but no S3 key yet
+      // Pass 1: Find activities pending S3 download (with recordingId or at least callId for fallback)
       const pendingDownload = await this.prisma.activity.findMany({
         where: {
-          gotoRecordingId: { not: null },
+          OR: [
+            { gotoRecordingId: { not: null } },
+            { gotoCallId: { not: null } },
+          ],
           gotoRecordingUrl: null,
-          completedAt: { gte: since4h },
+          completedAt: { gte: since7d },
         },
         select: { id: true },
       });

@@ -35,21 +35,36 @@ export class ProcessCallRecordingUseCase {
       return right({ notFound: true });
     }
 
-    // 2. Skip if no recording ID
-    if (!activity.gotoRecordingId) {
+    // 2. Skip if already processed
+    if (activity.gotoRecordingUrl) {
       return right({ skipped: true });
     }
 
-    // 3. Skip if already processed
-    if (activity.gotoRecordingUrl) {
+    // 3. Skip if no recording info at all
+    if (!activity.gotoRecordingId && !activity.gotoCallId) {
       return right({ skipped: true });
     }
 
     const callDate = activity.completedAt ?? new Date();
 
     try {
-      // 4. Find agent S3 key
-      const agentKey = await this.s3Storage.findRecordingKey(activity.gotoRecordingId, callDate);
+      // 4. Find agent S3 key — by recordingId or fallback by conversationSpaceId
+      let agentKey: string | null = null;
+      let discoveredRecordingId: string | undefined;
+
+      if (activity.gotoRecordingId) {
+        agentKey = await this.s3Storage.findRecordingKey(activity.gotoRecordingId, callDate);
+      } else if (activity.gotoCallId) {
+        const fallback = await this.s3Storage.findRecordingKeyByConversationId(
+          activity.gotoCallId,
+          callDate,
+        );
+        if (fallback) {
+          agentKey = fallback.key;
+          discoveredRecordingId = fallback.recordingId;
+        }
+      }
+
       if (!agentKey) {
         this.logger.debug("Agent recording key not found in S3 yet", { activityId });
         return right({ notFound: true });
@@ -83,8 +98,9 @@ export class ProcessCallRecordingUseCase {
         jobClient = jobId;
       }
 
-      // 8. Update activity with S3 keys and job IDs
+      // 8. Update activity with S3 keys, job IDs, and discovered recordingId if fallback was used
       activity.update({
+        ...(discoveredRecordingId ? { gotoRecordingId: discoveredRecordingId } : {}),
         gotoRecordingUrl: agentKey,
         gotoRecordingUrl2: clientKey ?? undefined,
         gotoTranscriptionJobId: jobAgent,
