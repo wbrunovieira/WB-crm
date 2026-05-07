@@ -1253,25 +1253,29 @@ export function LeadActivitiesList({
     });
   }, [displayActivities, filterType, filterStatus, searchQuery]);
 
-  // Mapa de conectores de thread: hasPrev/hasNext para linhas visuais
-  const threadConnectors = useMemo(() => {
+  const pendingFiltered = useMemo(() => filteredActivities.filter(isPending), [filteredActivities]);
+  const doneFiltered    = useMemo(() => filteredActivities.filter((a) => !isPending(a)), [filteredActivities]);
+
+  function buildThreadConnectors(list: Activity[]) {
     const map = new Map<string, { hasPrev: boolean; hasNext: boolean }>();
-    for (let i = 0; i < filteredActivities.length; i++) {
-      const a = filteredActivities[i];
+    for (let i = 0; i < list.length; i++) {
+      const a = list[i];
       if (!a.emailThreadId) continue;
-      const prev = filteredActivities[i - 1];
-      const next = filteredActivities[i + 1];
+      const prev = list[i - 1];
+      const next = list[i + 1];
       const hasPrev = prev?.emailThreadId === a.emailThreadId;
       const hasNext = next?.emailThreadId === a.emailThreadId;
       if (hasPrev || hasNext) map.set(a.id, { hasPrev, hasNext });
     }
     return map;
-  }, [filteredActivities]);
+  }
 
-  const renderItems = useMemo(
-    () => groupUnproductiveCalls(filteredActivities),
-    [filteredActivities]
-  );
+  // Mapa de conectores de thread por coluna
+  const pendingThreadConnectors = useMemo(() => buildThreadConnectors(pendingFiltered), [pendingFiltered]);
+  const doneThreadConnectors    = useMemo(() => buildThreadConnectors(doneFiltered), [doneFiltered]);
+
+  const pendingRenderItems = useMemo(() => groupUnproductiveCalls(pendingFiltered), [pendingFiltered]);
+  const doneRenderItems    = useMemo(() => groupUnproductiveCalls(doneFiltered), [doneFiltered]);
 
   // Set de threadIds de e-mails recebidos — usado para marcar respostas enviadas
   const receivedThreadIds = useMemo(
@@ -1459,100 +1463,220 @@ export function LeadActivitiesList({
           <p className="text-sm text-gray-400">Nenhuma atividade encontrada para os filtros aplicados.</p>
         </div>
       ) : (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCenter}
-          onDragEnd={handleDragEnd}
-        >
-          <SortableContext
-            items={filteredActivities.map((a) => a.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <div className="space-y-3">
-              {renderItems.map((item) => {
-                if (item.kind === "group") {
-                  const groupKey = item.activities[0].id;
-                  const expanded = expandedGroups.has(groupKey);
-                  return (
-                    <CallGroupCard
-                      key={groupKey}
-                      activities={item.activities}
-                      expanded={expanded}
-                      onToggle={() =>
-                        setExpandedGroups((prev) => {
-                          const next = new Set(prev);
-                          next.has(groupKey) ? next.delete(groupKey) : next.add(groupKey);
-                          return next;
-                        })
-                      }
-                      renderItem={(activity) => {
-                        const conn = threadConnectors.get(activity.id);
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 items-start">
+
+          {/* ── Coluna esquerda: Pendentes ──────────────────────────────── */}
+          <div>
+            <div className="mb-2 flex items-center gap-2 border-b border-blue-500/30 pb-2">
+              <Clock className="h-4 w-4 text-blue-400" />
+              <span className="text-sm font-semibold text-blue-300">
+                Pendentes
+              </span>
+              <span className="ml-auto rounded-full bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 text-xs font-semibold text-blue-300">
+                {pendingFiltered.length}
+              </span>
+            </div>
+            {pendingFiltered.length === 0 ? (
+              <p className="py-6 text-center text-sm text-gray-500">Nenhuma atividade pendente.</p>
+            ) : (
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCenter}
+                onDragEnd={handleDragEnd}
+              >
+                <SortableContext
+                  items={pendingFiltered.map((a) => a.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <div className="space-y-3">
+                    {pendingRenderItems.map((item) => {
+                      if (item.kind === "group") {
+                        const groupKey = item.activities[0].id;
+                        const expanded = expandedGroups.has(groupKey);
                         return (
-                          <SortableActivityItem
-                            key={activity.id}
-                            activity={activity}
-                            isPending={isPending}
-                            loadingId={loadingId}
-                            handleToggle={handleToggle}
-                            openOutcomeModal={openOutcomeModal}
-                            handleRevert={handleRevert}
-                            openAssignModal={openAssignModal}
-                            openReplyModal={setReplyingToActivity}
-                            onChangeOutcome={handleChangeOutcome}
-                            onChangeContactType={handleChangeContactType}
-                            getContactNames={getContactNames}
-                            leadContacts={leadContacts}
-                            typeConfig={typeConfig}
-                            receivedThreadIds={receivedThreadIds}
-                            hasPrev={conn?.hasPrev ?? false}
-                            hasNext={conn?.hasNext ?? false}
-                            isAdmin={isAdmin}
-                            onPurged={() => router.refresh()}
-                            callAnalysis={callAnalysesMap?.[activity.id]}
-                            meetAnalysis={meetAnalysesMap?.[activity.id]}
-                            hasMeetTranscript={meetTranscriptActivityIds?.has(activity.id)}
-                            gkAnalysis={gkAnalysesMap?.[activity.id]}
-                            token={token}
+                          <CallGroupCard
+                            key={groupKey}
+                            activities={item.activities}
+                            expanded={expanded}
+                            onToggle={() =>
+                              setExpandedGroups((prev) => {
+                                const next = new Set(prev);
+                                next.has(groupKey) ? next.delete(groupKey) : next.add(groupKey);
+                                return next;
+                              })
+                            }
+                            renderItem={(activity) => {
+                              const conn = pendingThreadConnectors.get(activity.id);
+                              return (
+                                <SortableActivityItem
+                                  key={activity.id}
+                                  activity={activity}
+                                  isPending={isPending}
+                                  loadingId={loadingId}
+                                  handleToggle={handleToggle}
+                                  openOutcomeModal={openOutcomeModal}
+                                  handleRevert={handleRevert}
+                                  openAssignModal={openAssignModal}
+                                  openReplyModal={setReplyingToActivity}
+                                  onChangeOutcome={handleChangeOutcome}
+                                  onChangeContactType={handleChangeContactType}
+                                  getContactNames={getContactNames}
+                                  leadContacts={leadContacts}
+                                  typeConfig={typeConfig}
+                                  receivedThreadIds={receivedThreadIds}
+                                  hasPrev={conn?.hasPrev ?? false}
+                                  hasNext={conn?.hasNext ?? false}
+                                  isAdmin={isAdmin}
+                                  onPurged={() => router.refresh()}
+                                  callAnalysis={callAnalysesMap?.[activity.id]}
+                                  meetAnalysis={meetAnalysesMap?.[activity.id]}
+                                  hasMeetTranscript={meetTranscriptActivityIds?.has(activity.id)}
+                                  gkAnalysis={gkAnalysesMap?.[activity.id]}
+                                  token={token}
+                                />
+                              );
+                            }}
                           />
                         );
-                      }}
+                      }
+                      const activity = item.activity;
+                      const conn = pendingThreadConnectors.get(activity.id);
+                      return (
+                        <SortableActivityItem
+                          key={activity.id}
+                          activity={activity}
+                          isPending={isPending}
+                          loadingId={loadingId}
+                          handleToggle={handleToggle}
+                          openOutcomeModal={openOutcomeModal}
+                          handleRevert={handleRevert}
+                          openAssignModal={openAssignModal}
+                          openReplyModal={setReplyingToActivity}
+                          onChangeOutcome={handleChangeOutcome}
+                          onChangeContactType={handleChangeContactType}
+                          getContactNames={getContactNames}
+                          leadContacts={leadContacts}
+                          typeConfig={typeConfig}
+                          receivedThreadIds={receivedThreadIds}
+                          hasPrev={conn?.hasPrev ?? false}
+                          hasNext={conn?.hasNext ?? false}
+                          isAdmin={isAdmin}
+                          onPurged={() => router.refresh()}
+                          callAnalysis={callAnalysesMap?.[activity.id]}
+                          meetAnalysis={meetAnalysesMap?.[activity.id]}
+                          hasMeetTranscript={meetTranscriptActivityIds?.has(activity.id)}
+                          gkAnalysis={gkAnalysesMap?.[activity.id]}
+                          token={token}
+                        />
+                      );
+                    })}
+                  </div>
+                </SortableContext>
+              </DndContext>
+            )}
+          </div>
+
+          {/* ── Coluna direita: Concluídas ──────────────────────────────── */}
+          <div>
+            <div className="mb-2 flex items-center gap-2 border-b border-green-500/30 pb-2">
+              <Check className="h-4 w-4 text-green-400" />
+              <span className="text-sm font-semibold text-green-300">
+                Concluídas
+              </span>
+              <span className="ml-auto rounded-full bg-green-500/15 border border-green-500/30 px-2 py-0.5 text-xs font-semibold text-green-300">
+                {doneFiltered.length}
+              </span>
+            </div>
+            {doneFiltered.length === 0 ? (
+              <p className="py-6 text-center text-sm text-gray-500">Nenhuma atividade concluída.</p>
+            ) : (
+              <div className="space-y-3">
+                {doneRenderItems.map((item) => {
+                  if (item.kind === "group") {
+                    const groupKey = item.activities[0].id;
+                    const expanded = expandedGroups.has(groupKey);
+                    return (
+                      <CallGroupCard
+                        key={groupKey}
+                        activities={item.activities}
+                        expanded={expanded}
+                        onToggle={() =>
+                          setExpandedGroups((prev) => {
+                            const next = new Set(prev);
+                            next.has(groupKey) ? next.delete(groupKey) : next.add(groupKey);
+                            return next;
+                          })
+                        }
+                        renderItem={(activity) => {
+                          const conn = doneThreadConnectors.get(activity.id);
+                          return (
+                            <SortableActivityItem
+                              key={activity.id}
+                              activity={activity}
+                              isPending={isPending}
+                              loadingId={loadingId}
+                              handleToggle={handleToggle}
+                              openOutcomeModal={openOutcomeModal}
+                              handleRevert={handleRevert}
+                              openAssignModal={openAssignModal}
+                              openReplyModal={setReplyingToActivity}
+                              onChangeOutcome={handleChangeOutcome}
+                              onChangeContactType={handleChangeContactType}
+                              getContactNames={getContactNames}
+                              leadContacts={leadContacts}
+                              typeConfig={typeConfig}
+                              receivedThreadIds={receivedThreadIds}
+                              hasPrev={conn?.hasPrev ?? false}
+                              hasNext={conn?.hasNext ?? false}
+                              isAdmin={isAdmin}
+                              onPurged={() => router.refresh()}
+                              callAnalysis={callAnalysesMap?.[activity.id]}
+                              meetAnalysis={meetAnalysesMap?.[activity.id]}
+                              hasMeetTranscript={meetTranscriptActivityIds?.has(activity.id)}
+                              gkAnalysis={gkAnalysesMap?.[activity.id]}
+                              token={token}
+                            />
+                          );
+                        }}
+                      />
+                    );
+                  }
+                  const activity = item.activity;
+                  const conn = doneThreadConnectors.get(activity.id);
+                  return (
+                    <SortableActivityItem
+                      key={activity.id}
+                      activity={activity}
+                      isPending={isPending}
+                      loadingId={loadingId}
+                      handleToggle={handleToggle}
+                      openOutcomeModal={openOutcomeModal}
+                      handleRevert={handleRevert}
+                      openAssignModal={openAssignModal}
+                      openReplyModal={setReplyingToActivity}
+                      onChangeOutcome={handleChangeOutcome}
+                      onChangeContactType={handleChangeContactType}
+                      getContactNames={getContactNames}
+                      leadContacts={leadContacts}
+                      typeConfig={typeConfig}
+                      receivedThreadIds={receivedThreadIds}
+                      hasPrev={conn?.hasPrev ?? false}
+                      hasNext={conn?.hasNext ?? false}
+                      isAdmin={isAdmin}
+                      onPurged={() => router.refresh()}
+                      callAnalysis={callAnalysesMap?.[activity.id]}
+                      meetAnalysis={meetAnalysesMap?.[activity.id]}
+                      hasMeetTranscript={meetTranscriptActivityIds?.has(activity.id)}
+                      gkAnalysis={gkAnalysesMap?.[activity.id]}
+                      token={token}
                     />
                   );
-                }
-                const activity = item.activity;
-                const conn = threadConnectors.get(activity.id);
-                return (
-                  <SortableActivityItem
-                    key={activity.id}
-                    activity={activity}
-                    isPending={isPending}
-                    loadingId={loadingId}
-                    handleToggle={handleToggle}
-                    openOutcomeModal={openOutcomeModal}
-                    handleRevert={handleRevert}
-                    openAssignModal={openAssignModal}
-                    openReplyModal={setReplyingToActivity}
-                    onChangeOutcome={handleChangeOutcome}
-                    onChangeContactType={handleChangeContactType}
-                    getContactNames={getContactNames}
-                    leadContacts={leadContacts}
-                    typeConfig={typeConfig}
-                    receivedThreadIds={receivedThreadIds}
-                    hasPrev={conn?.hasPrev ?? false}
-                    hasNext={conn?.hasNext ?? false}
-                    isAdmin={isAdmin}
-                    onPurged={() => router.refresh()}
-                    callAnalysis={callAnalysesMap?.[activity.id]}
-                    meetAnalysis={meetAnalysesMap?.[activity.id]}
-                    hasMeetTranscript={meetTranscriptActivityIds?.has(activity.id)}
-                    gkAnalysis={gkAnalysesMap?.[activity.id]}
-                    token={token}
-                  />
-                );
-              })}
-            </div>
-          </SortableContext>
-        </DndContext>
+                })}
+              </div>
+            )}
+          </div>
+
+        </div>
       )}
 
       {/* Outcome Modal (Failed / Skipped) */}
