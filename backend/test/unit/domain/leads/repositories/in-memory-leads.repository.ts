@@ -93,6 +93,7 @@ export class InMemoryLeadsRepository extends LeadsRepository {
       primaryCNAE: null,
       createdAt: l.createdAt,
       updatedAt: l.updatedAt,
+      _count: { leadCadences: 0, leadContacts: 0 },
     }));
 
     return { leads, total, page, pageSize };

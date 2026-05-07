@@ -126,11 +126,20 @@ export class PrismaLeadsRepository extends LeadsRepository {
     const pageSize = filters.pageSize && filters.pageSize > 0 ? Math.min(filters.pageSize, 200) : 50;
     const skip = (page - 1) * pageSize;
 
+    const dir = filters.sortDir === "asc" ? "asc" : "desc";
+    const orderBy: object =
+      filters.sortBy === "businessName" ? { businessName: dir } :
+      filters.sortBy === "city"         ? [{ city: dir }, { state: dir }] :
+      filters.sortBy === "quality"      ? { quality: dir } :
+      filters.sortBy === "status"       ? { status: dir } :
+      filters.sortBy === "hasCadence"   ? { leadCadences: { _count: dir } } :
+      { createdAt: "desc" };
+
     const [total, rows] = await Promise.all([
       this.prisma.lead.count({ where }),
       this.prisma.lead.findMany({
         where,
-        orderBy: { createdAt: "desc" },
+        orderBy,
         skip,
         take: pageSize,
         include: {
@@ -138,6 +147,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
           referredByPartner: { select: { id: true, name: true } },
           labels: { select: { id: true, name: true, color: true } },
           primaryCNAE: { select: { id: true, code: true, description: true } },
+          _count: { select: { leadCadences: true, leadContacts: true } },
         },
       }),
     ]);
@@ -171,6 +181,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
       referredByPartner: row.referredByPartner ? { id: row.referredByPartner.id, name: row.referredByPartner.name } : null,
       labels: row.labels.map((l) => ({ id: l.id, name: l.name, color: l.color })),
       primaryCNAE: row.primaryCNAE ? { id: row.primaryCNAE.id, code: row.primaryCNAE.code, description: row.primaryCNAE.description } : null,
+      _count: { leadCadences: row._count.leadCadences, leadContacts: row._count.leadContacts },
     }));
 
     return { leads, total, page, pageSize };

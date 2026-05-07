@@ -28,6 +28,7 @@ export interface LeadSummary {
   referredByPartner: { id: string; name: string } | null;
   labels: Array<{ id: string; name: string; color: string }>;
   primaryCNAE: { id: string; code: string; description: string } | null;
+  _count: { leadCadences: number; leadContacts: number };
 }
 
 export interface LeadContact {

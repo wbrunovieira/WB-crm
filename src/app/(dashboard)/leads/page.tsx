@@ -31,6 +31,8 @@ export default async function LeadsPage({
     hasDeepResearch?: string;
     sourceGroup?: string;
     page?: string;
+    sortBy?: string;
+    sortDir?: string;
   };
 }) {
   const session = await getServerSession(authOptions);
@@ -66,6 +68,8 @@ export default async function LeadsPage({
   if (searchParams.hasDeepResearch) leadsQs.set("hasDeepResearch", searchParams.hasDeepResearch);
   if (searchParams.sourceGroup) leadsQs.set("sourceGroup", searchParams.sourceGroup);
   if (searchParams.page) leadsQs.set("page", searchParams.page);
+  if (searchParams.sortBy) leadsQs.set("sortBy", searchParams.sortBy);
+  if (searchParams.sortDir) leadsQs.set("sortDir", searchParams.sortDir);
   // Map archived → isArchived
   if (searchParams.archived === "yes") leadsQs.set("isArchived", "true");
   else if (searchParams.archived === "all") { /* no filter */ }
@@ -173,6 +177,8 @@ export default async function LeadsPage({
             sharedUsersMap={sharedUsersMap}
             currentUserId={currentUserId}
             contactSearch={searchParams.contactSearch}
+            sortBy={searchParams.sortBy}
+            sortDir={searchParams.sortDir}
           />
           <Pagination total={total} page={page} pageSize={pageSize} />
         </>

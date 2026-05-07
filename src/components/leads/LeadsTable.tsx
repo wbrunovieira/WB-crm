@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Zap, Archive, BrainCircuit } from "lucide-react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { Zap, Archive, BrainCircuit, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
 import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
@@ -37,11 +37,15 @@ type Lead = {
 
 type SharedUser = { id: string; name: string };
 
+type SortColumn = "businessName" | "city" | "quality" | "status" | "hasCadence";
+
 interface LeadsTableProps {
   leads: Lead[];
   sharedUsersMap: Record<string, SharedUser[]>;
   currentUserId: string;
   contactSearch?: string;
+  sortBy?: string;
+  sortDir?: string;
 }
 
 const statusLabels: Record<string, string> = {
@@ -61,14 +65,44 @@ function normalize(str: string): string {
   return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 }
 
-export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch }: LeadsTableProps) {
+export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch, sortBy, sortDir }: LeadsTableProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  const handleSort = useCallback((col: SortColumn) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (params.get("sortBy") === col) {
+      if (params.get("sortDir") === "asc") {
+        params.set("sortDir", "desc");
+      } else if (params.get("sortDir") === "desc") {
+        params.delete("sortBy");
+        params.delete("sortDir");
+      } else {
+        params.set("sortDir", "asc");
+      }
+    } else {
+      params.set("sortBy", col);
+      params.set("sortDir", "asc");
+    }
+    params.delete("page");
+    router.push(`${pathname}?${params.toString()}`);
+  }, [searchParams, pathname, router]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [showBulkArchiveModal, setShowBulkArchiveModal] = useState(false);
   const [showBulkResearchModal, setShowBulkResearchModal] = useState(false);
   const lastSelectedIndex = useRef<number | null>(null);
   const headerCheckboxRef = useRef<HTMLInputElement>(null);
+
+  const SortIcon = ({ col }: { col: SortColumn }) => {
+    if (sortBy !== col) return <ChevronsUpDown className="inline-block h-3 w-3 opacity-40" />;
+    return sortDir === "asc"
+      ? <ChevronUp className="inline-block h-3 w-3 text-primary" />
+      : <ChevronDown className="inline-block h-3 w-3 text-primary" />;
+  };
+
+  const thSort = "cursor-pointer select-none px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 hover:text-gray-900 whitespace-nowrap";
 
   const allSelected = leads.length > 0 && selectedIds.size === leads.length;
   const someSelected = selectedIds.size > 0 && !allSelected;
@@ -168,28 +202,28 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
                   title={allSelected ? "Desselecionar todos" : "Selecionar todos"}
                 />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Empresa
+              <th className={thSort} onClick={() => handleSort("businessName")}>
+                Empresa <SortIcon col="businessName" />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap">
                 ICP
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Localização
+              <th className={thSort} onClick={() => handleSort("city")}>
+                Localização <SortIcon col="city" />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap">
                 Contatos
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Qualidade
+              <th className={thSort} onClick={() => handleSort("quality")}>
+                Qualidade <SortIcon col="quality" />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Status
+              <th className={thSort} onClick={() => handleSort("status")}>
+                Status <SortIcon col="status" />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">
-                Cadência
+              <th className={thSort} onClick={() => handleSort("hasCadence")}>
+                Cadência <SortIcon col="hasCadence" />
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500">
+              <th className="px-6 py-3 text-center text-xs font-medium uppercase tracking-wider text-gray-500 whitespace-nowrap">
                 Ações
               </th>
             </tr>

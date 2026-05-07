@@ -15,6 +15,8 @@ export interface LeadFilters {
   sourceGroup?: string;
   page?: number;
   pageSize?: number;
+  sortBy?: "businessName" | "city" | "quality" | "status" | "hasCadence";
+  sortDir?: "asc" | "desc";
 }
 
 export interface PaginatedLeads {

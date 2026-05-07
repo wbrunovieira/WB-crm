@@ -737,6 +737,8 @@ export class LeadsController {
   @ApiQuery({ name: "sourceGroup", required: false, description: "Filtrar leads pelo grupo/lote de importação" })
   @ApiQuery({ name: "page", required: false, type: Number, description: "Página (default: 1)" })
   @ApiQuery({ name: "pageSize", required: false, type: Number, description: "Itens por página (default: 50, max: 200)" })
+  @ApiQuery({ name: "sortBy", required: false, enum: ["businessName", "city", "quality", "status", "hasCadence"], description: "Campo de ordenação" })
+  @ApiQuery({ name: "sortDir", required: false, enum: ["asc", "desc"], description: "Direção da ordenação" })
   @ApiResponse({ status: 200, description: "Lista de leads com relações e paginação" })
   @ApiResponse({ status: 401, description: "Token inválido ou ausente" })
   async list(
@@ -753,6 +755,8 @@ export class LeadsController {
     @Query("sourceGroup") sourceGroup?: string,
     @Query("page") pageStr?: string,
     @Query("pageSize") pageSizeStr?: string,
+    @Query("sortBy") sortBy?: string,
+    @Query("sortDir") sortDir?: string,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
     const isArchived =
@@ -783,6 +787,8 @@ export class LeadsController {
         sourceGroup,
         page,
         pageSize,
+        sortBy: (["businessName", "city", "quality", "status", "hasCadence"].includes(sortBy ?? "") ? sortBy : undefined) as "businessName" | "city" | "quality" | "status" | "hasCadence" | undefined,
+        sortDir: sortDir === "asc" ? "asc" : sortDir === "desc" ? "desc" : undefined,
       },
     });
     return result.unwrap();

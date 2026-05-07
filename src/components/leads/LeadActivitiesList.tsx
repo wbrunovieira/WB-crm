@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, ArrowDownUp, Calendar, Check, Eye, GripVertical, Loader2, MessageCircleReply, MousePointerClick, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock, Search } from "lucide-react";
@@ -973,6 +973,50 @@ export function LeadActivitiesList({
   const [replyLoading, setReplyLoading] = useState(false);
   const [savingOrder, setSavingOrder] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
+
+  // Poll for pending/processing call analyses and notify when completed
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const completedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    const pendingIds = Object.entries(callAnalysesMap)
+      .filter(([, a]) => a.status === "pending" || a.status === "processing")
+      .map(([activityId]) => activityId);
+
+    if (pendingIds.length === 0) return;
+
+    pollRef.current = setInterval(async () => {
+      try {
+        const results = await Promise.all(
+          pendingIds.map((actId) =>
+            apiFetch<{ id: string; status: string; score: number | null }>(
+              `/call-analysis/by-activity/${actId}`,
+              token,
+            ).catch(() => null),
+          ),
+        );
+        let anyCompleted = false;
+        for (const result of results) {
+          if (!result) continue;
+          if (result.status === "completed" && !completedRef.current.has(result.id)) {
+            completedRef.current.add(result.id);
+            anyCompleted = true;
+          }
+        }
+        if (anyCompleted) {
+          toast.success("🧠 Análise SPICED concluída!");
+          router.refresh();
+          clearInterval(pollRef.current!);
+          pollRef.current = null;
+        }
+      } catch {
+        // silently ignore poll errors
+      }
+    }, 6000);
+
+    return () => {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    };
+  }, [callAnalysesMap, token, router]);
 
   const hasCustomOrder = !!activityOrder;
 
