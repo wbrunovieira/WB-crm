@@ -3,6 +3,8 @@
 import { useState } from "react";
 import type { FunnelStats } from "@/lib/funnel/computeFunnelStats";
 import { computeGoalBreakdown, type GoalBreakdown } from "@/lib/funnel/computeGoalBreakdown";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { FunnelVisualization } from "./FunnelVisualization";
 import { GoalSetter } from "./GoalSetter";
 import { CallsStats } from "./CallsStats";
@@ -11,6 +13,7 @@ import type { TodayCallStats } from "@/app/(dashboard)/calls/page";
 
 type Props = {
   weekStart: string;  // YYYY-MM-DD
+  weekOffset: number;
   stats: FunnelStats;
   callsPerDay: Record<string, { total: number; answered: number; decisor: number }>;
   avgDuration: number | null;
@@ -30,6 +33,7 @@ function formatWeekLabel(weekStart: string): string {
 
 export function FunnelDashboard({
   weekStart,
+  weekOffset,
   stats,
   callsPerDay,
   avgDuration,
@@ -44,9 +48,29 @@ export function FunnelDashboard({
 
   return (
     <div className="space-y-6">
-      {/* Week label */}
+      {/* Week label + navigation */}
       <div className="flex items-center justify-between">
+        <Link
+          href={`/calls?weekOffset=${weekOffset - 1}`}
+          className="rounded p-1 text-gray-400 hover:text-white transition-colors"
+          title="Semana anterior"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </Link>
         <h2 className="text-sm font-medium text-purple-300">{formatWeekLabel(weekStart)}</h2>
+        {weekOffset < 0 ? (
+          <Link
+            href={`/calls?weekOffset=${weekOffset + 1}`}
+            className="rounded p-1 text-gray-400 hover:text-white transition-colors"
+            title="Próxima semana"
+          >
+            <ChevronRight className="h-5 w-5" />
+          </Link>
+        ) : (
+          <span className="rounded p-1 text-gray-600 cursor-not-allowed">
+            <ChevronRight className="h-5 w-5" />
+          </span>
+        )}
       </div>
 
       {/* Goal setter */}

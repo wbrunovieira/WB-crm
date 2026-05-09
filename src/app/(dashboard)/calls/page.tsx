@@ -28,11 +28,17 @@ interface WeeklyFunnelData {
   targetSales: number;
 }
 
-export default async function CallsPage() {
+export default async function CallsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ weekOffset?: string }>;
+}) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) redirect("/login");
 
-  const weekStart = currentWeekStart();
+  const params = await searchParams;
+  const weekOffset = Math.min(0, parseInt(params.weekOffset ?? "0", 10)); // never future
+  const weekStart = new Date(currentWeekStart().getTime() + weekOffset * 7 * 24 * 60 * 60 * 1000);
   const weekEnd = new Date(weekStart.getTime() + 7 * 24 * 60 * 60 * 1000);
   const weekStartStr = weekStart.toISOString().slice(0, 10);
 
@@ -79,11 +85,13 @@ export default async function CallsPage() {
     const dStr = d.toISOString().slice(0, 10);
     dailyStats[dStr] = callsForDay(dStr);
   }
-  // Also ensure yesterday is included (in case it's in the previous week)
-  const yesterdayBR = new Date(nowBR.getTime() - 24 * 60 * 60 * 1000);
-  const yesterdayStr = yesterdayBR.toISOString().slice(0, 10);
-  if (!(yesterdayStr in dailyStats)) {
-    dailyStats[yesterdayStr] = callsForDay(yesterdayStr);
+  // For current week: also ensure yesterday is included if it fell in the prior week
+  if (weekOffset === 0) {
+    const yesterdayBR = new Date(nowBR.getTime() - 24 * 60 * 60 * 1000);
+    const yesterdayStr = yesterdayBR.toISOString().slice(0, 10);
+    if (!(yesterdayStr in dailyStats)) {
+      dailyStats[yesterdayStr] = callsForDay(yesterdayStr);
+    }
   }
 
   // Calls per day — only completed calls, with answered + decisor breakdown
@@ -124,13 +132,14 @@ export default async function CallsPage() {
 
         <FunnelDashboard
           weekStart={weekStartStr}
+          weekOffset={weekOffset}
           stats={stats}
           callsPerDay={callsPerDay}
           avgDuration={avgDuration}
           maxDuration={maxDuration}
           initialTargetSales={data.targetSales}
           dailyStats={dailyStats}
-          todayDate={todayStr}
+          todayDate={weekOffset === 0 ? todayStr : new Date(weekStart.getTime() + 4 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)}
         />
       </div>
     </div>

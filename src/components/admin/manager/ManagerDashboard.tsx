@@ -16,6 +16,8 @@ interface ManagerDashboardProps {
   currentPeriod: PeriodOption;
   startDate?: string;
   endDate?: string;
+  weekOffset?: number;
+  dayOffset?: number;
 }
 
 export function ManagerDashboard({
@@ -23,6 +25,8 @@ export function ManagerDashboard({
   currentPeriod,
   startDate,
   endDate,
+  weekOffset = 0,
+  dayOffset = 0,
 }: ManagerDashboardProps) {
   // Format period display
   const formatDate = (dateStr: string) => {
@@ -47,6 +51,8 @@ export function ManagerDashboard({
           currentPeriod={currentPeriod}
           startDate={startDate}
           endDate={endDate}
+          weekOffset={weekOffset}
+          dayOffset={dayOffset}
         />
       </div>
 

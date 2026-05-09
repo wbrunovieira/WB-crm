@@ -85,7 +85,12 @@ export function TodaySummary({ dailyStats, todayDate }: Props) {
       ) : (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {items.map(({ icon: Icon, label, value, prev, color, border, bg }) => {
-            const pct = label === "Ligações" ? null : stats.total > 0 ? Math.round((value / stats.total) * 100) : 0;
+            const pct = label === "Ligações"
+              ? null
+              : label === "Decisor"
+                ? (stats.answered > 0 ? Math.round((value / stats.answered) * 100) : 0)
+                : (stats.total > 0 ? Math.round((value / stats.total) * 100) : 0);
+            const pctLabel = label === "Decisor" ? "das atendidas" : "do total";
             return (
               <div
                 key={label}
@@ -95,7 +100,7 @@ export function TodaySummary({ dailyStats, todayDate }: Props) {
                 <Icon className={`h-4 w-4 ${color}`} />
                 <span className="text-2xl font-bold text-white leading-none">{value}</span>
                 {pct !== null && (
-                  <span className={`text-xs font-semibold ${color}`}>{pct}%</span>
+                  <span className={`text-xs font-semibold ${color}`} title={pctLabel}>{pct}%</span>
                 )}
                 <span className="text-xs text-gray-400 text-center leading-tight">{label}</span>
                 {prev !== undefined && (
