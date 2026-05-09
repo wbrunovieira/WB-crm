@@ -48,8 +48,8 @@ export default function PurgeActivityButton({ activityId, onPurged }: { activity
   return (
     <button
       onClick={() => setConfirming(true)}
-      className="text-gray-400 hover:text-red-600"
-      title="Excluir permanentemente (admin)"
+      className="text-red-400 hover:text-red-600"
+      title="Excluir permanentemente — apaga todos os dados (GoTo, transcrição, gravação)"
     >
       <Trash2 size={15} />
     </button>
