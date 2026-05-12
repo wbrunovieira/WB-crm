@@ -81,6 +81,7 @@ export class PrismaDealsRepository extends DealsRepository {
         ...(filters.stageId && { stageId: filters.stageId }),
         ...(filters.organizationId && { organizationId: filters.organizationId }),
         ...(filters.contactId && { contactId: filters.contactId }),
+        ...(filters.leadId && { leadId: filters.leadId }),
         ...(filters.search && {
           OR: [
             { title: { contains: filters.search, mode: "insensitive" } },

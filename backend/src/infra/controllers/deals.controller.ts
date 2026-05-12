@@ -151,6 +151,7 @@ export class DealsController {
   @ApiQuery({ name: "status", required: false, enum: ["open", "won", "lost"] })
   @ApiQuery({ name: "organizationId", required: false })
   @ApiQuery({ name: "contactId", required: false })
+  @ApiQuery({ name: "leadId", required: false })
   @ApiQuery({ name: "valueRange", required: false, description: "'0-10000', '10000-50000', '50000-100000', '100000+', 'all'" })
   @ApiQuery({ name: "sortBy", required: false, enum: ["value", "title", "createdAt"] })
   @ApiQuery({ name: "sortOrder", required: false, enum: ["asc", "desc"] })
@@ -163,6 +164,7 @@ export class DealsController {
     @Query("status") status?: string,
     @Query("organizationId") organizationId?: string,
     @Query("contactId") contactId?: string,
+    @Query("leadId") leadId?: string,
     @Query("valueRange") valueRange?: string,
     @Query("sortBy") sortBy?: string,
     @Query("sortOrder") sortOrder?: string,
@@ -173,7 +175,7 @@ export class DealsController {
     const result = await this.getDeals.execute({
       requesterId: user!.id,
       requesterRole: user!.role ?? "sdr",
-      filters: { search, owner, stageId, status, organizationId, contactId, valueRange, sortBy, sortOrder: sortOrderTyped, closedMonth },
+      filters: { search, owner, stageId, status, organizationId, contactId, leadId, valueRange, sortBy, sortOrder: sortOrderTyped, closedMonth },
     });
     return result.unwrap().deals;
   }

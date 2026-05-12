@@ -2,6 +2,7 @@ import { backendFetch } from "@/lib/backend/client";
 import type { Lead } from "@/types/lead";
 import ProposalsList from "@/components/proposals/ProposalsList";
 import type { Proposal } from "@/components/proposals/ProposalsList";
+import { LeadDealsList } from "@/components/leads/LeadDealsList";
 import MeetingsList from "@/components/meetings/MeetingsList";
 import type { Meeting } from "@/components/meetings/MeetingsList";
 import { PhoneLink } from "@/components/ui/phone-link";
@@ -62,6 +63,7 @@ import {
   BrainCircuit,
   Sparkles,
   ExternalLink,
+  TrendingUp,
 } from "lucide-react";
 
 export default async function LeadDetailPage({
@@ -69,7 +71,7 @@ export default async function LeadDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [lead, session, proposals, meetings, callAnalyses, meetAnalyses, gkAnalyses] = await Promise.all([
+  const [lead, session, proposals, meetings, callAnalyses, meetAnalyses, gkAnalyses, deals] = await Promise.all([
     backendFetch<Lead>(`/leads/${params.id}`).catch(() => null),
     getServerSession(authOptions),
     backendFetch<Proposal[]>(`/proposals?leadId=${params.id}`).catch((): Proposal[] => []),
@@ -77,6 +79,7 @@ export default async function LeadDetailPage({
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/call-analysis").catch(() => []),
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/meet-analysis").catch(() => []),
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/gatekeeper-analysis").catch(() => []),
+    backendFetch<{ id: string; title: string; value: number; currency: string; status: string; stage: { id: string; name: string; pipeline?: { id: string; name: string } } | null; contact: { id: string; name: string } | null; _count: { activities: number } }[]>(`/deals?leadId=${params.id}&closedMonth=all`).catch(() => []),
   ]);
 
   const callAnalysesMap = Object.fromEntries(
@@ -257,6 +260,7 @@ export default async function LeadDetailPage({
             { href: "#contatos",  icon: <Users size={11} />,        label: "Contatos" },
             { href: "#atividades",icon: <Activity size={11} />,     label: "Atividades" },
             { href: "#reunioes",  icon: <Video size={11} />,        label: "Reuniões" },
+            { href: "#negocios",  icon: <TrendingUp size={11} />,   label: "Negócios" },
             { href: "#propostas", icon: <FileText size={11} />,     label: "Propostas" },
             { href: "#produtos",  icon: <Package size={11} />,      label: "Produtos" },
             { href: "#tech",      icon: <Cpu size={11} />,          label: "Tech" },
@@ -768,6 +772,10 @@ export default async function LeadDetailPage({
           leadContacts={lead.leadContacts ?? []}
           isConverted={!!lead.convertedAt}
         />
+      </div>
+
+      <div id="negocios" className="mt-6">
+        <LeadDealsList deals={deals ?? []} leadId={lead.id} leadName={lead.businessName} />
       </div>
 
       <div id="propostas" className="mt-6">

@@ -8,6 +8,7 @@ export interface DealFilters {
   status?: string;
   organizationId?: string;
   contactId?: string;
+  leadId?: string;
   valueRange?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";

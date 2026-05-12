@@ -55,6 +55,7 @@ type DealFormProps = {
   leads: Lead[];
   stages: Stage[];
   preselectedOrganizationId?: string;
+  preselectedLeadId?: string;
 };
 
 /* ─── SearchableSelect ───────────────────────────────────────────────────────── */
@@ -174,6 +175,7 @@ export default function DealForm({
   leads,
   stages,
   preselectedOrganizationId,
+  preselectedLeadId,
 }: DealFormProps) {
   const router = useRouter();
   const createMutation = useCreateDeal();
@@ -182,7 +184,7 @@ export default function DealForm({
   const [error, setError] = useState<string | null>(null);
 
   // Determine initial link type
-  const initialLinkType = deal?.leadId ? "lead" : "organization";
+  const initialLinkType = (deal?.leadId || preselectedLeadId) ? "lead" : "organization";
 
   const [linkType, setLinkType] = useState<"organization" | "lead">(initialLinkType);
   const [formData, setFormData] = useState({
@@ -193,7 +195,7 @@ export default function DealForm({
     status: deal?.status || "open",
     contactId: deal?.contactId || "",
     organizationId: deal?.organizationId || preselectedOrganizationId || "",
-    leadId: deal?.leadId || "",
+    leadId: deal?.leadId || preselectedLeadId || "",
     stageId: deal?.stageId || "",
     expectedCloseDate: deal?.expectedCloseDate
       ? new Date(deal.expectedCloseDate).toISOString().split("T")[0]

@@ -7,7 +7,7 @@ import Link from "next/link";
 export default async function NewDealPage({
   searchParams,
 }: {
-  searchParams: { organizationId?: string };
+  searchParams: { organizationId?: string; leadId?: string };
 }) {
   const [contacts, organizations, stages, leadsData] = await Promise.all([
     getContactsList(),
@@ -36,6 +36,7 @@ export default async function NewDealPage({
           leads={leads}
           stages={stages}
           preselectedOrganizationId={searchParams.organizationId}
+          preselectedLeadId={searchParams.leadId}
         />
       </div>
     </div>
