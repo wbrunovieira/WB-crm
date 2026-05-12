@@ -154,13 +154,13 @@ export default async function LeadDetailPage({
       {websiteAlert && <LeadWebsiteAlertToast leadId={lead.id} message={websiteAlert} />}
 
       {/* ── Header card ──────────────────────────────────────────────── */}
-      <div className="sticky top-16 z-40 mb-6 rounded-2xl bg-white shadow-lg border border-purple-900/40 p-6">
+      <div className="sticky top-16 z-40 mb-6 rounded-2xl bg-white shadow-lg border border-purple-900/40 px-4 py-4 md:px-6 md:py-5">
 
-        <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+        <div className="flex items-start justify-between gap-3">
           {/* Title block */}
           <div className="flex-1 min-w-0">
             {/* Name — primary hierarchy */}
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-2">
+            <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-2 break-words">
               {lead.businessName}
             </h1>
 
@@ -202,8 +202,8 @@ export default async function LeadDetailPage({
             </div>
           </div>
 
-          {/* Actions */}
-          <div className="flex flex-wrap gap-2 flex-shrink-0">
+          {/* Actions — scrollable strip on mobile, wrap on desktop */}
+          <div className="flex flex-shrink-0 items-center gap-1.5 overflow-x-auto max-w-[50%] sm:max-w-none sm:flex-wrap sm:gap-2 pb-0.5">
             <LeadDeepResearchButton leadId={lead.id} hasResearch={!!lead.agentResearchAt} agentResearchAt={lead.agentResearchAt ? String(lead.agentResearchAt) : null} />
             <LeadFocusedResearchButton
               leadId={lead.id}
@@ -229,10 +229,10 @@ export default async function LeadDetailPage({
                   <>
                     <Link
                       href={`/leads/${lead.id}/edit`}
-                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
+                      className="inline-flex flex-shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs sm:text-sm font-semibold text-white hover:bg-purple-700 transition-colors"
                     >
-                      <Pencil size={14} />
-                      Editar
+                      <Pencil size={13} />
+                      <span className="hidden sm:inline">Editar</span>
                     </Link>
                     <ConvertLeadButton leadId={lead.id} hasContacts={(lead.leadContacts?.length ?? 0) > 0} />
                   </>
@@ -244,10 +244,10 @@ export default async function LeadDetailPage({
             {lead.convertedAt && lead.convertedOrganization && (
               <Link
                 href={`/organizations/${lead.convertedOrganization.id}`}
-                className="inline-flex items-center gap-1.5 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-800 transition-colors"
+                className="inline-flex flex-shrink-0 items-center gap-1.5 rounded-lg bg-green-700 px-3 py-1.5 text-xs sm:text-sm font-semibold text-white hover:bg-green-800 transition-colors"
               >
-                <Building2 size={14} />
-                Ver Organização
+                <Building2 size={13} />
+                <span className="hidden sm:inline">Ver Organização</span>
               </Link>
             )}
           </div>
