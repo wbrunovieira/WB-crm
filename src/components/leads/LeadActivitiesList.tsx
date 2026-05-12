@@ -1367,7 +1367,7 @@ export function LeadActivitiesList({
             </button>
           )}
           <Link
-            href={`/activities/new?leadId=${leadId}`}
+            href={`/activities/new?leadId=${leadId}&returnTo=/leads/${leadId}`}
             className="inline-flex items-center gap-2 rounded-lg bg-[#792990] px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
           >
             <span className="text-lg text-white">+</span>

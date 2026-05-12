@@ -223,7 +223,7 @@ export default async function DealDetailPage({
             Timeline ({deal.activities.length + (deal.stageHistory?.length || 0)})
           </h2>
           <Link
-            href={`/activities/new?dealId=${deal.id}`}
+            href={`/activities/new?dealId=${deal.id}&returnTo=/deals/${deal.id}`}
             className="text-sm text-primary hover:underline"
           >
             + Nova Atividade

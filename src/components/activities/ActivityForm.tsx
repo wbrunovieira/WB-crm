@@ -251,17 +251,19 @@ export default function ActivityForm({
       meetingNoShow: formData.type === "meeting" ? formData.meetingNoShow : false,
     };
 
+    const returnTo = searchParams.get("returnTo") || "/activities";
+
     if (activity) {
       updateActivity.mutate(
         { id: activity.id, ...data },
         {
-          onSuccess: () => router.push("/activities"),
+          onSuccess: () => router.push(returnTo),
           onError: (err) => setError(err instanceof Error ? err.message : "Erro ao atualizar atividade"),
         },
       );
     } else {
       createActivity.mutate(data, {
-        onSuccess: () => router.push("/activities"),
+        onSuccess: () => router.push(returnTo),
         onError: (err) => setError(err instanceof Error ? err.message : "Erro ao criar atividade"),
       });
     }

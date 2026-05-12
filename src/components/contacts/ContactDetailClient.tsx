@@ -176,7 +176,7 @@ export function ContactDetailClient({ id, isAdmin }: Props) {
               <h2 className="text-lg font-semibold">
                 Timeline de Atividades ({contact.activities.length})
               </h2>
-              <Link href={`/activities/new?contactId=${contact.id}`} className="text-sm text-primary hover:underline">
+              <Link href={`/activities/new?contactId=${contact.id}&returnTo=/contacts/${contact.id}`} className="text-sm text-primary hover:underline">
                 + Nova Atividade
               </Link>
             </div>

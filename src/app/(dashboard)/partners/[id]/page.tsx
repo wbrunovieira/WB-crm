@@ -331,7 +331,7 @@ export default async function PartnerDetailPage({
               Atividades ({partner.activities.length})
             </h2>
             <Link
-              href={`/activities/new?partnerId=${partner.id}`}
+              href={`/activities/new?partnerId=${partner.id}&returnTo=/partners/${partner.id}`}
               className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
             >
               + Nova Atividade

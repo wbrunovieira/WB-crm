@@ -89,7 +89,7 @@ export function OrganizationActivities({
           )}
         </div>
         <Link
-          href={`/activities/new?organizationId=${organizationId}`}
+          href={`/activities/new?organizationId=${organizationId}&returnTo=/organizations/${organizationId}`}
           className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
         >
           + Nova Atividade
@@ -102,7 +102,7 @@ export function OrganizationActivities({
             Nenhuma atividade registrada para esta organização
           </p>
           <Link
-            href={`/activities/new?organizationId=${organizationId}`}
+            href={`/activities/new?organizationId=${organizationId}&returnTo=/organizations/${organizationId}`}
             className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
           >
             Registrar Primeira Atividade
