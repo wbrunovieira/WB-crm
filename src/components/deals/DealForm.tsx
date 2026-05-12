@@ -69,6 +69,7 @@ type DealFormProps = {
   preselectedOrganizationId?: string;
   preselectedLeadId?: string;
   leadContacts?: LeadContactItem[];
+  returnTo?: string;
 };
 
 /* ─── SearchableSelect ───────────────────────────────────────────────────────── */
@@ -190,6 +191,7 @@ export default function DealForm({
   preselectedOrganizationId,
   preselectedLeadId,
   leadContacts = [],
+  returnTo,
 }: DealFormProps) {
   const router = useRouter();
   const { data: session } = useSession();
@@ -310,7 +312,7 @@ export default function DealForm({
         await createMutation.mutateAsync(payload);
       }
       toast.success(deal ? "Negócio atualizado!" : "Negócio criado!");
-      router.push("/deals");
+      router.push(returnTo || "/deals");
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Erro ao salvar negócio");

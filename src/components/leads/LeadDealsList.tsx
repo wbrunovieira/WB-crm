@@ -40,7 +40,7 @@ export function LeadDealsList({ deals, leadId }: Props) {
             {deals.length}
           </span>
           <Link
-            href={`/deals/new?leadId=${leadId}`}
+            href={`/deals/new?leadId=${leadId}&returnTo=/leads/${leadId}`}
             className="ml-auto flex items-center gap-1 rounded-lg bg-purple-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-600 transition-colors"
           >
             <Plus size={12} />
