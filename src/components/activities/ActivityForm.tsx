@@ -391,7 +391,7 @@ export default function ActivityForm({
             id="dueDate"
             value={formData.dueDate}
             onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
-            className="flex-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary"
+            className="flex-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary [color-scheme:light]"
           />
           <input
             type="time"
@@ -399,7 +399,7 @@ export default function ActivityForm({
             value={formData.dueTime}
             onChange={(e) => setFormData({ ...formData, dueTime: e.target.value })}
             disabled={!formData.dueDate}
-            className="w-32 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary disabled:opacity-40"
+            className="w-32 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary disabled:opacity-40 [color-scheme:light]"
           />
         </div>
       </div>

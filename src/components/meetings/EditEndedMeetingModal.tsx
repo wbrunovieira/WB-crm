@@ -102,7 +102,7 @@ export function EditEndedMeetingModal({
               type="datetime-local"
               value={actStart}
               onChange={(e) => setActStart(e.target.value)}
-              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none [color-scheme:dark]"
             />
           </div>
 
@@ -114,7 +114,7 @@ export function EditEndedMeetingModal({
               type="datetime-local"
               value={actEnd}
               onChange={(e) => setActEnd(e.target.value)}
-              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none [color-scheme:dark]"
             />
           </div>
         </div>
