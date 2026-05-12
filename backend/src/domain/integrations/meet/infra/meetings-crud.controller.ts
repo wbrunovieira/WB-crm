@@ -15,6 +15,7 @@ import {
 import { PurgeCompletedMeetingUseCase } from "../application/use-cases/purge-completed-meeting.use-case";
 import { SchedulePresentialMeetingUseCase } from "../application/use-cases/schedule-presential-meeting.use-case";
 import { UploadPresentialRecordingUseCase } from "../application/use-cases/upload-presential-recording.use-case";
+import { EndMeetingUseCase } from "../application/use-cases/end-meeting.use-case";
 import { MeetingsRepository } from "../application/repositories/meetings.repository";
 
 function serialize(m: any) {
@@ -59,6 +60,7 @@ export class MeetingsCrudController {
     private readonly purge: PurgeCompletedMeetingUseCase,
     private readonly schedulePresential: SchedulePresentialMeetingUseCase,
     private readonly uploadRecording: UploadPresentialRecordingUseCase,
+    private readonly endMeeting: EndMeetingUseCase,
     private readonly meetingsRepo: MeetingsRepository,
   ) {}
 
@@ -134,13 +136,17 @@ export class MeetingsCrudController {
 
   @Patch(":id")
   async updateOne(@Request() req: any, @Param("id") id: string, @Body() body: {
-    title?: string; startAt?: string; endAt?: string; status?: string; attendeeEmails?: string[];
+    title?: string; startAt?: string; endAt?: string;
+    actualStartAt?: string; actualEndAt?: string;
+    status?: string; attendeeEmails?: string[];
   }) {
     const r = await this.update.execute({
       id, requesterId: req.user.id,
       title: body.title,
       startAt: body.startAt ? new Date(body.startAt) : undefined,
       endAt: body.endAt ? new Date(body.endAt) : undefined,
+      actualStartAt: body.actualStartAt ? new Date(body.actualStartAt) : undefined,
+      actualEndAt: body.actualEndAt ? new Date(body.actualEndAt) : undefined,
       status: body.status,
       attendeeEmails: body.attendeeEmails,
     });
@@ -222,13 +228,9 @@ export class MeetingsCrudController {
 
   @Patch(":id/end")
   @HttpCode(HttpStatus.NO_CONTENT)
-  async endMeeting(@Request() req: any, @Param("id") id: string) {
-    const meeting = await this.meetingsRepo.findById(id);
-    if (!meeting) throw new NotFoundException("Reunião não encontrada");
-    if (meeting.ownerId !== req.user.id && req.user.role !== "admin") {
-      throw new ForbiddenException("Sem permissão para encerrar esta reunião");
-    }
-    await this.meetingsRepo.markAsEnded(id, { actualEndAt: new Date() });
+  async endMeetingRoute(@Request() req: any, @Param("id") id: string) {
+    const r = await this.endMeeting.execute({ id, requesterId: req.user.id });
+    if (r.isLeft()) throwIfError(r.value);
   }
 
   @Post(":id/upload-recording")

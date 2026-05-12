@@ -24,6 +24,7 @@ import { toast } from "sonner";
 import { formatDate } from "@/lib/utils";
 import ScheduleMeetingModal, { type SuggestedContact, type MeetingInitialData } from "./ScheduleMeetingModal";
 import SchedulePresentialMeetingModal, { type PresentialContact } from "./SchedulePresentialMeetingModal";
+import { EditEndedMeetingModal } from "./EditEndedMeetingModal";
 
 export interface Meeting {
   id: string;
@@ -152,6 +153,7 @@ export default function MeetingsList({
   const [showModal, setShowModal] = useState(false);
   const [showPresentialModal, setShowPresentialModal] = useState(false);
   const [editingMeeting, setEditingMeeting] = useState<Meeting | null>(null);
+  const [editingEndedMeeting, setEditingEndedMeeting] = useState<Meeting | null>(null);
   const [expandedTranscript, setExpandedTranscript] = useState<string | null>(null);
   const [expandedSummary, setExpandedSummary] = useState<string | null>(null);
   const [expandedPlayer, setExpandedPlayer] = useState<string | null>(null);
@@ -272,6 +274,7 @@ export default function MeetingsList({
                     onCancel={handleCancel}
                     onEnd={handleEnd}
                     onEdit={setEditingMeeting}
+                    onEditEnded={setEditingEndedMeeting}
                     isAdmin={isAdmin}
                     onPurge={handlePurge}
                     onUploaded={(id, key) => setMeetings((prev) => prev.map((m) => m.id === id ? { ...m, uploadedAudioKey: key } : m))}
@@ -304,6 +307,7 @@ export default function MeetingsList({
                     onCancel={handleCancel}
                     onEnd={handleEnd}
                     onEdit={setEditingMeeting}
+                    onEditEnded={setEditingEndedMeeting}
                     isAdmin={isAdmin}
                     onPurge={handlePurge}
                     onUploaded={(id, key) => setMeetings((prev) => prev.map((m) => m.id === id ? { ...m, uploadedAudioKey: key } : m))}
@@ -337,6 +341,27 @@ export default function MeetingsList({
           suggestedContacts={suggestedContacts}
           onClose={() => setShowModal(false)}
           onCreated={handleCreated}
+        />
+      )}
+
+      {editingEndedMeeting && (
+        <EditEndedMeetingModal
+          meetingId={editingEndedMeeting.id}
+          title={editingEndedMeeting.title}
+          startAt={editingEndedMeeting.startAt}
+          endAt={editingEndedMeeting.endAt ?? null}
+          actualStartAt={editingEndedMeeting.actualStartAt ?? null}
+          actualEndAt={editingEndedMeeting.actualEndAt ?? null}
+          onClose={() => setEditingEndedMeeting(null)}
+          onSaved={({ title, actualStartAt, actualEndAt }) => {
+            setMeetings((prev) =>
+              prev.map((m) =>
+                m.id === editingEndedMeeting.id
+                  ? { ...m, title, actualStartAt: actualStartAt ?? null, actualEndAt: actualEndAt ?? null }
+                  : m
+              )
+            );
+          }}
         />
       )}
 
@@ -397,6 +422,7 @@ function MeetingCard({
   onCancel,
   onEnd,
   onEdit,
+  onEditEnded,
   isAdmin,
   onPurge,
   onUploaded,
@@ -414,6 +440,7 @@ function MeetingCard({
   onCancel: (id: string) => Promise<void>;
   onEnd?: (id: string) => Promise<void>;
   onEdit: (meeting: Meeting) => void;
+  onEditEnded?: (meeting: Meeting) => void;
   isAdmin?: boolean;
   onPurge?: (id: string) => Promise<void>;
   onUploaded?: (id: string, key: string) => void;
@@ -618,6 +645,16 @@ function MeetingCard({
               onClick={() => onEdit(meeting)}
               className="rounded-md p-1.5 text-gray-400 hover:bg-gray-100 hover:text-gray-700"
               title="Editar reunião"
+            >
+              <Pencil size={13} />
+            </button>
+          )}
+
+          {isEnded && onEditEnded && (
+            <button
+              onClick={() => onEditEnded(meeting)}
+              className="rounded-md p-1.5 text-gray-400 hover:bg-purple-500/20 hover:text-purple-300"
+              title="Editar data/hora de encerramento"
             >
               <Pencil size={13} />
             </button>

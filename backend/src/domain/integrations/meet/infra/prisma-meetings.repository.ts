@@ -249,6 +249,8 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
         ...(data.title !== undefined ? { title: data.title } : {}),
         ...(data.startAt !== undefined ? { startAt: data.startAt } : {}),
         ...(data.endAt !== undefined ? { endAt: data.endAt } : {}),
+        ...(data.actualStartAt !== undefined ? { actualStartAt: data.actualStartAt } : {}),
+        ...(data.actualEndAt !== undefined ? { actualEndAt: data.actualEndAt } : {}),
         ...(data.status !== undefined ? { status: data.status } : {}),
         ...(data.attendeeEmails !== undefined ? { attendeeEmails: JSON.stringify(data.attendeeEmails) } : {}),
       },

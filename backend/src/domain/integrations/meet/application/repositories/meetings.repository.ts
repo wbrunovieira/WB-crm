@@ -64,6 +64,8 @@ export interface UpdateMeetingData {
   title?: string;
   startAt?: Date;
   endAt?: Date;
+  actualStartAt?: Date;
+  actualEndAt?: Date;
   status?: string;
   attendeeEmails?: string[];
 }

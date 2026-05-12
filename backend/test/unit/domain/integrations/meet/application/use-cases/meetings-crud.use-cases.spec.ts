@@ -360,6 +360,19 @@ describe("UpdateMeetingUseCase", () => {
     expect(result.isLeft()).toBe(true);
     expect(result.value).toBeInstanceOf(MeetingForbiddenError);
   });
+
+  it("updates actualStartAt and actualEndAt for ended meetings", async () => {
+    const useCase = new UpdateMeetingUseCase(meetings, calendar);
+    const actual = new Date("2026-05-11T14:30:00.000Z");
+    const actualEnd = new Date("2026-05-11T15:15:00.000Z");
+    meetings.addMeeting({ id: "m1", title: "R", startAt: FUTURE, status: "ended", ownerId: OWNER });
+
+    const result = await useCase.execute({ id: "m1", requesterId: OWNER, actualStartAt: actual, actualEndAt: actualEnd });
+
+    expect(result.isRight()).toBe(true);
+    expect(meetings.items[0].actualStartAt).toEqual(actual);
+    expect(meetings.items[0].actualEndAt).toEqual(actualEnd);
+  });
 });
 
 // ---------------------------------------------------------------------------

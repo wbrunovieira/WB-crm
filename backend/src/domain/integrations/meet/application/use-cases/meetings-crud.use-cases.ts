@@ -400,6 +400,8 @@ export class UpdateMeetingUseCase {
     title?: string;
     startAt?: Date;
     endAt?: Date;
+    actualStartAt?: Date;
+    actualEndAt?: Date;
     status?: string;
     attendeeEmails?: string[];
   }): Promise<Either<Error, MeetingRecord>> {
@@ -424,6 +426,8 @@ export class UpdateMeetingUseCase {
       title: input.title,
       startAt: input.startAt,
       endAt: input.endAt,
+      actualStartAt: input.actualStartAt,
+      actualEndAt: input.actualEndAt,
       status: input.status,
       attendeeEmails: input.attendeeEmails,
     });

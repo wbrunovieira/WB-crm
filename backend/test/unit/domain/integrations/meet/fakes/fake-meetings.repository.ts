@@ -133,6 +133,8 @@ export class FakeMeetingsRepository extends MeetingsRepository {
     if (data.title !== undefined) item.title = data.title;
     if (data.startAt !== undefined) item.startAt = data.startAt;
     if (data.endAt !== undefined) item.endAt = data.endAt;
+    if (data.actualStartAt !== undefined) item.actualStartAt = data.actualStartAt;
+    if (data.actualEndAt !== undefined) item.actualEndAt = data.actualEndAt;
     if (data.status !== undefined) item.status = data.status;
     if (data.attendeeEmails !== undefined) item.attendeeEmails = JSON.stringify(data.attendeeEmails);
     return item as MeetingRecord;
