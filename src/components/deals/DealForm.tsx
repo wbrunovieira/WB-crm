@@ -2,7 +2,9 @@
 
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { useCreateDeal, useUpdateDeal } from "@/hooks/deals/use-deals";
+import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 
 /* ─── Types ─────────────────────────────────────────────────────────────────── */
@@ -12,6 +14,16 @@ type Contact = {
   name: string;
   organizationId?: string | null;
   leadId?: string | null;
+  _isLeadContact?: boolean;
+};
+
+type LeadContactItem = {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  role?: string | null;
+  whatsapp?: string | null;
 };
 
 type Organization = {
@@ -56,6 +68,7 @@ type DealFormProps = {
   stages: Stage[];
   preselectedOrganizationId?: string;
   preselectedLeadId?: string;
+  leadContacts?: LeadContactItem[];
 };
 
 /* ─── SearchableSelect ───────────────────────────────────────────────────────── */
@@ -176,8 +189,11 @@ export default function DealForm({
   stages,
   preselectedOrganizationId,
   preselectedLeadId,
+  leadContacts = [],
 }: DealFormProps) {
   const router = useRouter();
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
   const createMutation = useCreateDeal();
   const updateMutation = useUpdateDeal();
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
@@ -202,13 +218,29 @@ export default function DealForm({
       : "",
   });
 
+  // Lead contacts mapped to the Contact shape (unconverted LeadContacts)
+  const leadContactsMapped: Contact[] = leadContacts.map((lc) => ({
+    id: lc.id,
+    name: lc.name,
+    leadId: preselectedLeadId || deal?.leadId || "",
+    _isLeadContact: true,
+  }));
+
+  // Merge lead contacts into the pool when in lead mode, avoiding duplicates
+  const allContacts = linkType === "lead" && formData.leadId
+    ? [
+        ...contacts,
+        ...leadContactsMapped.filter((lc) => !contacts.some((c) => c.id === lc.id)),
+      ]
+    : contacts;
+
   // Filter contacts based on selected link
-  const filteredContacts = contacts.filter((c) => {
+  const filteredContacts = allContacts.filter((c) => {
     if (linkType === "organization" && formData.organizationId) {
       return c.organizationId === formData.organizationId;
     }
     if (linkType === "lead" && formData.leadId) {
-      return c.leadId === formData.leadId;
+      return c.leadId === formData.leadId || c._isLeadContact;
     }
     // No org/lead selected → show all
     return true;
@@ -228,13 +260,43 @@ export default function DealForm({
     e.preventDefault();
     setError(null);
 
+    let resolvedContactId: string | null = formData.contactId || null;
+
+    // If selected contact is a LeadContact (not yet a Contact), auto-create it
+    if (resolvedContactId) {
+      const selectedLeadContact = leadContactsMapped.find((lc) => lc.id === resolvedContactId);
+      if (selectedLeadContact) {
+        const originalLC = leadContacts.find((lc) => lc.id === resolvedContactId);
+        if (originalLC) {
+          try {
+            const created = await apiFetch<{ id: string }>("/contacts", token, {
+              method: "POST",
+              body: JSON.stringify({
+                name: originalLC.name,
+                email: originalLC.email || undefined,
+                phone: originalLC.phone || undefined,
+                whatsapp: originalLC.whatsapp || undefined,
+                role: originalLC.role || undefined,
+                leadId: formData.leadId || undefined,
+                sourceLeadContactId: originalLC.id,
+              }),
+            });
+            resolvedContactId = created.id;
+          } catch {
+            setError("Erro ao converter contato do lead. Tente novamente.");
+            return;
+          }
+        }
+      }
+    }
+
     const payload = {
       title: formData.title,
       description: formData.description || undefined,
       value: Number(formData.value),
       currency: formData.currency,
       status: formData.status as "open" | "won" | "lost",
-      contactId: formData.contactId || null,
+      contactId: resolvedContactId,
       organizationId: linkType === "organization" ? (formData.organizationId || null) : null,
       leadId: linkType === "lead" ? (formData.leadId || null) : null,
       stageId: formData.stageId,

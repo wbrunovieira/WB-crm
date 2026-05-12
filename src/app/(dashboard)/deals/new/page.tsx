@@ -9,14 +9,18 @@ export default async function NewDealPage({
 }: {
   searchParams: { organizationId?: string; leadId?: string };
 }) {
-  const [contacts, organizations, stages, leadsData] = await Promise.all([
+  const [contacts, organizations, stages, leadsData, leadData] = await Promise.all([
     getContactsList(),
     backendFetch<{ id: string; name: string }[]>("/organizations").catch(() => []),
     getStagesList(),
     backendFetch<{ leads: { id: string; businessName: string }[] }>("/leads?isArchived=false&isProspect=false&pageSize=200").catch(() => ({ leads: [] })),
+    searchParams.leadId
+      ? backendFetch<{ leadContacts?: { id: string; name: string; email?: string | null; phone?: string | null; role?: string | null; whatsapp?: string | null }[] }>(`/leads/${searchParams.leadId}`).catch(() => null)
+      : Promise.resolve(null),
   ]);
 
   const leads = leadsData.leads.map((l) => ({ id: l.id, businessName: l.businessName }));
+  const leadContacts = leadData?.leadContacts ?? [];
 
   return (
     <div className="p-8">
@@ -37,6 +41,7 @@ export default async function NewDealPage({
           stages={stages}
           preselectedOrganizationId={searchParams.organizationId}
           preselectedLeadId={searchParams.leadId}
+          leadContacts={leadContacts}
         />
       </div>
     </div>
