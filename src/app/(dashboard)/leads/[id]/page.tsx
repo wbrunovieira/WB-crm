@@ -19,6 +19,13 @@ import { LeadFocusedResearchButton } from "@/components/leads/LeadFocusedResearc
 import { LeadGooglePlacesLinkButton } from "@/components/leads/LeadGooglePlacesLinkButton";
 import { LeadStarRatingInline } from "@/components/leads/LeadStarRatingInline";
 import { LeadWebsiteAlertToast } from "@/components/leads/LeadWebsiteAlertToast";
+import {
+  LeadEditInfoBasica,
+  LeadEditContato,
+  LeadEditLocalizacao,
+  LeadEditEmpresa,
+  LeadEditRedes,
+} from "@/components/leads/LeadSectionEditModal";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
@@ -316,6 +323,17 @@ export default async function LeadDetailPage({
           <h2 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-400 border-b border-purple-900/40 pb-3">
             <Building2 size={14} />
             Informações Básicas
+            <LeadEditInfoBasica
+              leadId={lead.id}
+              businessName={lead.businessName}
+              registeredName={lead.registeredName}
+              companyRegistrationID={lead.companyRegistrationID}
+              foundationDate={lead.foundationDate}
+              segment={lead.segment}
+              description={lead.description}
+              status={lead.status}
+              quality={lead.quality}
+            />
           </h2>
           <dl className="space-y-4">
             <div><dt className={dtCls}>Nome Comercial</dt><dd className={ddCls}>{lead.businessName}</dd></div>
@@ -332,6 +350,14 @@ export default async function LeadDetailPage({
           <h2 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-400 border-b border-purple-900/40 pb-3">
             <Phone size={14} />
             Contato da Empresa
+            <LeadEditContato
+              leadId={lead.id}
+              phone={lead.phone}
+              phone2={lead.phone2}
+              whatsapp={lead.whatsapp}
+              email={lead.email}
+              website={lead.website}
+            />
           </h2>
           <dl className="space-y-4">
             <div>
@@ -411,6 +437,15 @@ export default async function LeadDetailPage({
           <h2 className="mb-4 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-purple-400 border-b border-purple-900/40 pb-3">
             <MapPin size={14} />
             Localização
+            <LeadEditLocalizacao
+              leadId={lead.id}
+              address={lead.address}
+              vicinity={lead.vicinity}
+              city={lead.city}
+              state={lead.state}
+              country={lead.country}
+              zipCode={lead.zipCode}
+            />
           </h2>
           <dl className="space-y-4">
             <div><dt className={dtCls}>Endereço</dt>     <dd className={ddCls}>{lead.address || dash}</dd></div>
@@ -425,7 +460,7 @@ export default async function LeadDetailPage({
 
       {/* ── Collapsible sections ──────────────────────────────────────── */}
 
-      <CollapsibleSection id="empresa" icon={<Building2 size={14} />} title="Informações da Empresa">
+      <CollapsibleSection id="empresa" icon={<Building2 size={14} />} title="Informações da Empresa" action={<LeadEditEmpresa leadId={lead.id} companyOwner={lead.companyOwner} companySize={lead.companySize} employeesCount={lead.employeesCount} revenue={lead.revenue} revenueRange={lead.revenueRange} equityCapital={lead.equityCapital} businessStatus={lead.businessStatus} legalNature={lead.legalNature} branchType={lead.branchType} simplesNacional={lead.simplesNacional} isMei={lead.isMei} />}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div><dt className={dtCls}>Proprietário/Sócio</dt><dd className={ddCls}>{lead.companyOwner || dash}</dd></div>
           <div><dt className={dtCls}>Porte</dt><dd className={ddCls}>{lead.companySize || dash}</dd></div>
@@ -457,7 +492,7 @@ export default async function LeadDetailPage({
         </div>
       </CollapsibleSection>
 
-      <CollapsibleSection id="redes" icon={<Share2 size={14} />} title="Redes Sociais" defaultOpen={false}>
+      <CollapsibleSection id="redes" icon={<Share2 size={14} />} title="Redes Sociais" defaultOpen={false} action={<LeadEditRedes leadId={lead.id} instagram={lead.instagram} linkedin={lead.linkedin} facebook={lead.facebook} twitter={lead.twitter} tiktok={lead.tiktok} />}>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           <div>
             <dt className={dtCls}>Instagram<IaBadge field="instagram" /></dt>
