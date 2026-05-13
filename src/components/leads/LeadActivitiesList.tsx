@@ -974,6 +974,8 @@ export function LeadActivitiesList({
   const [savingOrder, setSavingOrder] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(new Set());
   const [showSkipped, setShowSkipped] = useState(false);
+  const [completionModal, setCompletionModal] = useState<{ activity: Activity; candidates: Activity[] } | null>(null);
+  const [completionLinkedId, setCompletionLinkedId] = useState<string | null>(null);
 
   // Poll for pending/processing call analyses and notify when completed
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -1189,10 +1191,47 @@ export function LeadActivitiesList({
   const handleToggle = (e: React.MouseEvent, activityId: string) => {
     e.preventDefault();
     e.stopPropagation();
+
+    const act = activities.find((a) => a.id === activityId);
+
+    // When completing a pending activity, check if there are executed activities of the same type
+    if (act && !act.completed && !act.failedAt && !act.skippedAt) {
+      const candidates = activities
+        .filter((a) =>
+          a.id !== activityId &&
+          a.type === act.type &&
+          !(!a.completed && !a.failedAt && !a.skippedAt) && // not pending
+          !a.skippedAt // skipped doesn't count as "executed"
+        )
+        .sort((a, b) => {
+          const aD = new Date(a.completedAt ?? a.failedAt ?? a.dueDate ?? 0).getTime();
+          const bD = new Date(b.completedAt ?? b.failedAt ?? b.dueDate ?? 0).getTime();
+          return bD - aD;
+        })
+        .slice(0, 8);
+
+      if (candidates.length > 0) {
+        setCompletionLinkedId(null);
+        setCompletionModal({ activity: act, candidates });
+        return;
+      }
+    }
+
     setLoadingId(activityId);
     toggleCompleted.mutate(activityId, {
       onSuccess: () => router.refresh(),
       onSettled: () => setLoadingId(null),
+    });
+  };
+
+  const handleCompleteWithLink = () => {
+    if (!completionModal) return;
+    const activityId = completionModal.activity.id;
+    setCompletionModal(null);
+    setLoadingId(activityId);
+    toggleCompleted.mutate(activityId, {
+      onSuccess: () => router.refresh(),
+      onSettled: () => { setLoadingId(null); setCompletionLinkedId(null); },
     });
   };
 
@@ -1822,6 +1861,123 @@ export function LeadActivitiesList({
             )}
           </div>
 
+        </div>
+      )}
+
+      {/* Completion linking modal */}
+      {completionModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setCompletionModal(null)}
+        >
+          <div
+            className="w-full max-w-md rounded-xl border border-[#3d2b4d] bg-[#1a0022] shadow-2xl flex flex-col max-h-[85vh]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-[#3d2b4d] px-5 py-4 flex-shrink-0">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
+                <Check className="h-4 w-4 text-green-400" />
+                Concluir atividade
+              </h2>
+              <button onClick={() => setCompletionModal(null)} className="rounded p-1 text-gray-400 hover:text-white">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
+              {/* Activity being completed */}
+              <div className="rounded-lg border border-green-500/30 bg-green-500/10 px-4 py-3">
+                <p className="text-xs font-medium text-green-400 mb-0.5">
+                  {typeConfig[completionModal.activity.type]?.label ?? completionModal.activity.type}
+                </p>
+                <p className="text-sm font-semibold text-white truncate">
+                  {completionModal.activity.subject}
+                </p>
+                {completionModal.activity.dueDate && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    Vencimento: {formatDate(completionModal.activity.dueDate)}
+                  </p>
+                )}
+              </div>
+
+              {/* Picker */}
+              <div className="space-y-2">
+                <p className="text-xs font-semibold text-gray-300">
+                  Vincular à atividade executada{" "}
+                  <span className="font-normal text-gray-500">(opcional)</span>
+                </p>
+                <p className="text-xs text-gray-500">
+                  Selecione se essa atividade planejada foi realizada via uma das atividades abaixo. Caso contrário, conclua sem vincular.
+                </p>
+
+                <div className="space-y-1.5">
+                  {/* None option */}
+                  <button
+                    onClick={() => setCompletionLinkedId(null)}
+                    className={`w-full text-left rounded-lg border px-3 py-2.5 text-xs transition-colors ${
+                      completionLinkedId === null
+                        ? "border-purple-500 bg-purple-500/20 text-white"
+                        : "border-[#3d2b4d] bg-[#2d1b3d] text-gray-400 hover:border-[#5a3a70] hover:text-gray-300"
+                    }`}
+                  >
+                    <span className="font-medium">Nenhuma — concluir sem vincular</span>
+                  </button>
+
+                  {/* Candidates */}
+                  {completionModal.candidates.map((candidate) => {
+                    const dateRef = candidate.completedAt ?? candidate.failedAt ?? candidate.dueDate;
+                    return (
+                      <button
+                        key={candidate.id}
+                        onClick={() => setCompletionLinkedId(candidate.id)}
+                        className={`w-full text-left rounded-lg border px-3 py-2.5 text-xs transition-colors ${
+                          completionLinkedId === candidate.id
+                            ? "border-purple-500 bg-purple-500/20 text-white"
+                            : "border-[#3d2b4d] bg-[#2d1b3d] text-gray-400 hover:border-[#5a3a70] hover:text-gray-300"
+                        }`}
+                      >
+                        <div className="flex items-center gap-1.5 mb-0.5">
+                          <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold ${
+                            typeConfig[candidate.type]
+                              ? `${typeConfig[candidate.type].bg} ${typeConfig[candidate.type].text}`
+                              : "bg-gray-700 text-gray-300"
+                          }`}>
+                            {typeConfig[candidate.type]?.label ?? candidate.type}
+                          </span>
+                          {dateRef && (
+                            <span className="text-gray-500">{formatDate(dateRef)}</span>
+                          )}
+                          {candidate.gotoCallId && candidate.gotoCallOutcome && (
+                            <span className="text-gray-500 capitalize">· {candidate.gotoCallOutcome.replace("_", " ")}</span>
+                          )}
+                        </div>
+                        <p className="font-medium text-gray-200 truncate">{candidate.subject}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-2 border-t border-[#3d2b4d] px-5 py-4 flex-shrink-0">
+              <button
+                onClick={() => setCompletionModal(null)}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleCompleteWithLink}
+                className="flex items-center gap-1.5 rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white hover:bg-green-600 transition-colors"
+              >
+                <Check className="h-4 w-4" />
+                {completionLinkedId ? "Concluir vinculando" : "Concluir"}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
