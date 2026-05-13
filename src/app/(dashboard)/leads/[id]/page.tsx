@@ -164,7 +164,7 @@ export default async function LeadDetailPage({
       {/* ── Header card ──────────────────────────────────────────────── */}
       <div className="sticky top-16 z-40 mb-6 rounded-2xl bg-white shadow-lg border border-purple-900/40 px-4 py-4 md:px-6 md:py-5">
 
-        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+        <div className="flex flex-col gap-3">
           {/* Title block */}
           <div className="min-w-0">
             {/* Name — primary hierarchy */}
@@ -216,8 +216,8 @@ export default async function LeadDetailPage({
             </div>
           </div>
 
-          {/* Actions — full-width wrap on mobile, shrink row on desktop */}
-          <div className="flex flex-wrap flex-shrink-0 items-center gap-1.5 sm:gap-2 pb-0.5">
+          {/* Actions — always below the name, wraps as needed */}
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 pb-0.5">
             <LeadDeepResearchButton leadId={lead.id} hasResearch={!!lead.agentResearchAt} agentResearchAt={lead.agentResearchAt ? String(lead.agentResearchAt) : null} />
             <LeadFocusedResearchButton
               leadId={lead.id}
