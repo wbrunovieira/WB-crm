@@ -171,6 +171,28 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
     return this.whatsAppDriveIds.get(activityId) ?? [];
   }
 
+  async updateEmailOpenStats(trackingToken: string, openedAt: Date): Promise<void> {
+    for (const a of this.items) {
+      if (a.emailTrackingToken === trackingToken) {
+        a.update({
+          emailOpenCount: a.emailOpenCount + 1,
+          emailOpenedAt: a.emailOpenedAt ?? openedAt,
+        });
+      }
+    }
+  }
+
+  async updateEmailClickStats(trackingToken: string, clickedAt: Date): Promise<void> {
+    for (const a of this.items) {
+      if (a.emailTrackingToken === trackingToken) {
+        a.update({
+          emailLinkClickCount: a.emailLinkClickCount + 1,
+          emailLinkClickedAt: a.emailLinkClickedAt ?? clickedAt,
+        });
+      }
+    }
+  }
+
   async findAnsweredCallsMissingRecordingId(since: Date): Promise<Activity[]> {
     return this.items.filter(
       (a) => a.gotoCallId !== null && a.gotoRecordingId === null && a.completedAt !== null && a.completedAt! >= since,

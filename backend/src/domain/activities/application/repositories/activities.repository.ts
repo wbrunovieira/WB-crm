@@ -34,4 +34,6 @@ export abstract class ActivitiesRepository {
   abstract delete(id: string): Promise<void>;
   abstract markThreadReplied(threadId: string): Promise<void>;
   abstract findWhatsAppDriveIds(activityId: string): Promise<string[]>;
+  abstract updateEmailOpenStats(trackingToken: string, openedAt: Date): Promise<void>;
+  abstract updateEmailClickStats(trackingToken: string, clickedAt: Date): Promise<void>;
 }

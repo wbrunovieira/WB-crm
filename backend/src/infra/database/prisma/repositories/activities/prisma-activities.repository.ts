@@ -363,6 +363,28 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     });
   }
 
+  async updateEmailOpenStats(trackingToken: string, openedAt: Date): Promise<void> {
+    await this.prisma.activity.updateMany({
+      where: { emailTrackingToken: trackingToken },
+      data: { emailOpenCount: { increment: 1 } },
+    });
+    await this.prisma.activity.updateMany({
+      where: { emailTrackingToken: trackingToken, emailOpenedAt: null },
+      data: { emailOpenedAt: openedAt },
+    });
+  }
+
+  async updateEmailClickStats(trackingToken: string, clickedAt: Date): Promise<void> {
+    await this.prisma.activity.updateMany({
+      where: { emailTrackingToken: trackingToken },
+      data: { emailLinkClickCount: { increment: 1 } },
+    });
+    await this.prisma.activity.updateMany({
+      where: { emailTrackingToken: trackingToken, emailLinkClickedAt: null },
+      data: { emailLinkClickedAt: clickedAt },
+    });
+  }
+
   private buildOrderBy(sortBy?: string): Record<string, any>[] {
     switch (sortBy) {
       case "dueDate-asc":

@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { EmailTrackingRepository } from "../repositories/email-tracking.repository";
 import { EmailTrackingToken } from "../../enterprise/value-objects/email-tracking-token.vo";
+import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
 
 export interface TrackEmailClickInput {
   token: string;
@@ -20,6 +21,7 @@ export class TrackEmailClickUseCase {
 
   constructor(
     private readonly emailTrackingRepo: EmailTrackingRepository,
+    private readonly activitiesRepo: ActivitiesRepository,
   ) {}
 
   async execute(input: TrackEmailClickInput): Promise<Either<Error, TrackEmailClickOutput>> {
@@ -39,13 +41,23 @@ export class TrackEmailClickUseCase {
 
     const redirectUrl = url.trim();
 
-    // 3. Record click (best-effort — clicks always count)
+    // 3. Record click and mirror stats onto the Activity (both best-effort)
+    const now = new Date();
     try {
       await this.emailTrackingRepo.recordClick(validToken, redirectUrl, userAgent, ip);
     } catch (err) {
       this.logger.warn("TrackEmailClickUseCase: failed to record click", {
         token: validToken,
         url: redirectUrl,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    try {
+      await this.activitiesRepo.updateEmailClickStats(validToken, now);
+    } catch (err) {
+      this.logger.warn("TrackEmailClickUseCase: failed to update activity click stats", {
+        token: validToken,
         error: err instanceof Error ? err.message : String(err),
       });
     }

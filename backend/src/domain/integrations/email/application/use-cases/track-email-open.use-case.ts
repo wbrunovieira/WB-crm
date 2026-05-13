@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { EmailTrackingRepository } from "../repositories/email-tracking.repository";
 import { EmailTrackingToken } from "../../enterprise/value-objects/email-tracking-token.vo";
+import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
 
 export interface TrackEmailOpenInput {
   token: string;
@@ -36,6 +37,7 @@ export class TrackEmailOpenUseCase {
 
   constructor(
     private readonly emailTrackingRepo: EmailTrackingRepository,
+    private readonly activitiesRepo: ActivitiesRepository,
   ) {}
 
   async execute(input: TrackEmailOpenInput): Promise<Either<Error, TrackEmailOpenOutput>> {
@@ -65,11 +67,21 @@ export class TrackEmailOpenUseCase {
       return right({ tracked: false });
     }
 
-    // 4. Record open
+    // 4. Record open and mirror stats onto the Activity
+    const now = new Date();
     try {
       await this.emailTrackingRepo.recordOpen(validToken, userAgent, ip);
     } catch (err) {
       this.logger.warn("TrackEmailOpenUseCase: failed to record open", {
+        token: validToken,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    try {
+      await this.activitiesRepo.updateEmailOpenStats(validToken, now);
+    } catch (err) {
+      this.logger.warn("TrackEmailOpenUseCase: failed to update activity open stats", {
         token: validToken,
         error: err instanceof Error ? err.message : String(err),
       });
