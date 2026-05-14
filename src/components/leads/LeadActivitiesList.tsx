@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowDownUp, Calendar, Check, Eye, GripVertical, Loader2, MessageCircleReply, MousePointerClick, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock, Search } from "lucide-react";
+import { AlertTriangle, ArrowDownUp, Calendar, Check, Eye, GripVertical, Loader2, MessageCircleReply, MousePointerClick, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock, Search, RefreshCcw } from "lucide-react";
 import dynamic from "next/dynamic";
 const GmailComposeModal = dynamic(() => import("@/components/gmail/GmailComposeModal"), { ssr: false });
 const GoToCallPlayer = dynamic(() => import("@/components/activities/GoToCallPlayer"), { ssr: false });
@@ -976,6 +976,29 @@ export function LeadActivitiesList({
   const [showSkipped, setShowSkipped] = useState(false);
   const [completionModal, setCompletionModal] = useState<{ activity: Activity; candidates: Activity[] } | null>(null);
   const [completionLinkedId, setCompletionLinkedId] = useState<string | null>(null);
+  const [syncingGoTo, setSyncingGoTo] = useState(false);
+
+  const handleGoToSync = async () => {
+    if (!token || syncingGoTo) return;
+    setSyncingGoTo(true);
+    try {
+      const result = await apiFetch<{ fetched: number; created: number; skipped: number }>(
+        "/goto/quick-sync",
+        token,
+        { method: "POST" },
+      );
+      if (result.created > 0) {
+        toast.success(`GoTo sincronizado — ${result.created} ligaç${result.created === 1 ? "ão" : "ões"} adicionada${result.created === 1 ? "" : "s"}`);
+        router.refresh();
+      } else {
+        toast.info("GoTo sincronizado — nenhuma ligação nova");
+      }
+    } catch {
+      toast.error("Erro ao sincronizar GoTo");
+    } finally {
+      setSyncingGoTo(false);
+    }
+  };
 
   // Poll for pending/processing call analyses and notify when completed
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -1560,9 +1583,20 @@ export function LeadActivitiesList({
               <span className="text-sm font-semibold text-blue-300">
                 Pendentes
               </span>
-              <span className="ml-auto rounded-full bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 text-xs font-semibold text-blue-300">
+              <span className="rounded-full bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 text-xs font-semibold text-blue-300">
                 {pendingFiltered.length}
               </span>
+              <button
+                onClick={handleGoToSync}
+                disabled={syncingGoTo}
+                title="Sincronizar ligações recentes do GoTo"
+                className="ml-auto flex items-center gap-1 rounded-md border border-purple-500/40 bg-purple-500/10 px-2 py-0.5 text-xs font-medium text-purple-300 hover:bg-purple-500/20 hover:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {syncingGoTo
+                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                  : <RefreshCcw className="h-3 w-3" />}
+                GoTo
+              </button>
             </div>
             {pendingFiltered.length === 0 ? (
               <p className="py-6 text-center text-sm text-gray-500">Nenhuma atividade pendente.</p>
