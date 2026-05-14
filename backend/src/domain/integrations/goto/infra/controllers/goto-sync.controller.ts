@@ -1,4 +1,4 @@
-import { Controller, Post, Query, UseGuards, Logger } from "@nestjs/common";
+import { Controller, Post, Query, UseGuards, Logger, HttpCode } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth, ApiOperation, ApiQuery } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { SyncGotoCallReportsUseCase } from "@/domain/integrations/goto/application/use-cases/sync-goto-call-reports.use-case";
@@ -16,6 +16,7 @@ export class GoToSyncController {
   constructor(private readonly syncCallReports: SyncGotoCallReportsUseCase) {}
 
   @Post("quick-sync")
+  @HttpCode(200)
   @ApiOperation({ summary: "Sincroniza ligações recentes do GoTo imediatamente (JWT-protegido)" })
   @ApiQuery({ name: "sinceHoursAgo", required: false, description: "Janela de tempo em horas (padrão: 2, máximo: 24)" })
   async quickSync(
