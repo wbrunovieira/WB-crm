@@ -181,10 +181,12 @@ export class SchedulePresentialMeetingUseCase {
       day: "2-digit",
       month: "2-digit",
       year: "numeric",
+      timeZone: "America/Sao_Paulo",
     });
     const timeStr = meeting.startAt.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "America/Sao_Paulo",
     });
     const lines = [
       `📅 *Reunião agendada: ${meeting.title}*`,
@@ -205,10 +207,12 @@ export class SchedulePresentialMeetingUseCase {
       day: "2-digit",
       month: "long",
       year: "numeric",
+      timeZone: "America/Sao_Paulo",
     });
     const timeStr = meeting.startAt.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
+      timeZone: "America/Sao_Paulo",
     });
 
     return `
