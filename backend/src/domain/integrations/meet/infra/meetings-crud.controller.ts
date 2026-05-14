@@ -199,6 +199,7 @@ export class MeetingsCrudController {
     attendeePhone?: string;
     contactName?: string;
     companyName?: string;
+    organizerEmail?: string;
   }) {
     const r = await this.schedulePresential.execute({
       title: body.title,
@@ -221,6 +222,7 @@ export class MeetingsCrudController {
       attendeePhone: body.attendeePhone,
       contactName: body.contactName,
       companyName: body.companyName,
+      organizerEmail: body.organizerEmail,
     });
     if (r.isLeft()) throw new BadRequestException(r.value.message);
     return serialize(r.value);

@@ -6,6 +6,7 @@ import { EvolutionApiPort } from "@/domain/integrations/whatsapp/application/por
 import { GmailPort } from "@/domain/integrations/email/application/ports/gmail.port";
 import { GoogleCalendarPort } from "../ports/google-calendar.port";
 import { MeetingScheduledEvent } from "../../enterprise/events/meeting-scheduled.event";
+import { getBrandConfig, buildBrandedEmail } from "../helpers/brand-email.helper";
 
 export interface SchedulePresentialMeetingInput {
   title: string;
@@ -29,6 +30,7 @@ export interface SchedulePresentialMeetingInput {
   attendeePhone?: string;
   contactName?: string;
   companyName?: string;
+  organizerEmail?: string;
 }
 
 @Injectable()
@@ -117,17 +119,48 @@ export class SchedulePresentialMeetingUseCase {
       }
 
       if ((method === "email" || (!method && input.reminderChannels?.includes("email"))) && effectiveAttendeeEmails.length > 0 && this.gmail) {
+        // Resolve organizer: explicit alias → primary account email → fallback
+        let primaryEmail = input.organizerEmail ?? "";
+        try {
+          const profile = await this.gmail.getProfile("google-token-singleton");
+          primaryEmail = primaryEmail || profile.emailAddress;
+        } catch { /* non-fatal */ }
+
+        const organizerEmail = input.organizerEmail ?? primaryEmail;
+        const brand = getBrandConfig(organizerEmail);
+        const endAt = input.endAt ?? new Date(input.startAt.getTime() + 60 * 60 * 1000);
+        const bodyHtml = buildBrandedEmail({
+          brand,
+          title: meeting.title,
+          startAt: input.startAt,
+          endAt,
+          location: input.location,
+          description: input.description,
+          organizerEmail,
+          contactName: input.contactName,
+          companyName: input.companyName,
+        });
+
         for (const email of effectiveAttendeeEmails) {
           try {
-            await this.gmail.send({
+            await this.gmail.sendCalendarInvite({
               userId: "google-token-singleton",
               to: email,
+              from: primaryEmail || organizerEmail,
+              organizerEmail,
+              attendeeEmails: [email],
               subject: `Reunião agendada: ${meeting.title}`,
-              bodyHtml: this.buildEmailHtml(meeting, input.location),
+              bodyHtml,
+              startAt: input.startAt,
+              endAt,
+              title: meeting.title,
+              description: input.description,
+              googleEventId: meeting.googleEventId ?? undefined,
+              meetLink: input.location,
             });
             confirmationSent = true;
           } catch (err) {
-            this.logger.warn("Email confirmation failed (non-fatal)", {
+            this.logger.warn("Email calendar invite failed (non-fatal)", {
               to: email,
               error: err instanceof Error ? err.message : String(err),
             });
@@ -178,14 +211,11 @@ export class SchedulePresentialMeetingUseCase {
   private buildWhatsAppText(meeting: MeetingRecord & { location?: string | null }, location?: string): string {
     const loc = location ?? meeting.location;
     const dateStr = meeting.startAt.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
+      day: "2-digit", month: "2-digit", year: "numeric",
       timeZone: "America/Sao_Paulo",
     });
     const timeStr = meeting.startAt.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
+      hour: "2-digit", minute: "2-digit",
       timeZone: "America/Sao_Paulo",
     });
     const lines = [
@@ -195,32 +225,5 @@ export class SchedulePresentialMeetingUseCase {
     if (loc) lines.push(`📍 ${loc}`);
     lines.push("Aguardamos sua confirmação. ✅");
     return lines.join("\n");
-  }
-
-  private buildEmailHtml(
-    meeting: MeetingRecord,
-    location?: string,
-  ): string {
-    const loc = location ?? meeting.location;
-    const dateStr = meeting.startAt.toLocaleDateString("pt-BR", {
-      weekday: "long",
-      day: "2-digit",
-      month: "long",
-      year: "numeric",
-      timeZone: "America/Sao_Paulo",
-    });
-    const timeStr = meeting.startAt.toLocaleTimeString("pt-BR", {
-      hour: "2-digit",
-      minute: "2-digit",
-      timeZone: "America/Sao_Paulo",
-    });
-
-    return `
-<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto;padding:24px;">
-  <h2 style="color:#222;">Reunião agendada: ${meeting.title}</h2>
-  <p><strong>Data:</strong> ${dateStr} às ${timeStr}</p>
-  ${loc ? `<p><strong>Local:</strong> ${loc}</p>` : ""}
-  <p>Aguardamos sua confirmação de presença.</p>
-</div>`;
   }
 }

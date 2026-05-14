@@ -10,8 +10,9 @@ const makeWhatsAppPort = (overrides: { sendText?: (to: string, text: string) => 
 });
 
 // Minimal fake for Gmail confirmation
-const makeGmailPort = (overrides: { send?: (...args: any[]) => Promise<void> } = {}) => ({
-  send: overrides.send ?? vi.fn().mockResolvedValue(undefined),
+const makeGmailPort = (overrides: { sendCalendarInvite?: (...args: any[]) => Promise<void> } = {}) => ({
+  send: vi.fn().mockResolvedValue(undefined),
+  sendCalendarInvite: overrides.sendCalendarInvite ?? vi.fn().mockResolvedValue(undefined),
   getProfile: vi.fn().mockResolvedValue({ emailAddress: "owner@example.com" }),
   sendWithAttachment: vi.fn(),
   pollHistory: vi.fn(),
@@ -178,8 +179,8 @@ describe("SchedulePresentialMeetingUseCase", () => {
 
   describe("confirmação por email", () => {
     it("envia email de confirmação quando confirmationMethod=email", async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const gmail = makeGmailPort({ send });
+      const sendCalendarInvite = vi.fn().mockResolvedValue(undefined);
+      const gmail = makeGmailPort({ sendCalendarInvite });
       const sut2 = new SchedulePresentialMeetingUseCase(repo, null, gmail as any, null, null);
 
       const result = await sut2.execute({
@@ -192,16 +193,16 @@ describe("SchedulePresentialMeetingUseCase", () => {
       });
 
       expect(result.isRight()).toBe(true);
-      expect(send).toHaveBeenCalledOnce();
-      const callArgs = send.mock.calls[0][0];
+      expect(sendCalendarInvite).toHaveBeenCalledOnce();
+      const callArgs = sendCalendarInvite.mock.calls[0][0];
       expect(callArgs.to).toBe("cliente@empresa.com");
       expect(callArgs.subject).toContain("Reunião Presencial");
       expect(repo.items[0].confirmationSentAt).not.toBeNull();
     });
 
     it("envia email para cada attendee", async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const gmail = makeGmailPort({ send });
+      const sendCalendarInvite = vi.fn().mockResolvedValue(undefined);
+      const gmail = makeGmailPort({ sendCalendarInvite });
       const sut2 = new SchedulePresentialMeetingUseCase(repo, null, gmail as any, null, null);
 
       await sut2.execute({
@@ -213,12 +214,12 @@ describe("SchedulePresentialMeetingUseCase", () => {
         confirmationMethod: "email",
       });
 
-      expect(send).toHaveBeenCalledTimes(2);
+      expect(sendCalendarInvite).toHaveBeenCalledTimes(2);
     });
 
     it("não falha a criação se envio de email falhar", async () => {
       const gmail = makeGmailPort({
-        send: vi.fn().mockRejectedValue(new Error("SMTP error")),
+        sendCalendarInvite: vi.fn().mockRejectedValue(new Error("SMTP error")),
       });
       const sut2 = new SchedulePresentialMeetingUseCase(repo, null, gmail as any, null, null);
 
@@ -235,8 +236,8 @@ describe("SchedulePresentialMeetingUseCase", () => {
     });
 
     it("não envia email quando attendeeEmails vazio", async () => {
-      const send = vi.fn().mockResolvedValue(undefined);
-      const gmail = makeGmailPort({ send });
+      const sendCalendarInvite = vi.fn().mockResolvedValue(undefined);
+      const gmail = makeGmailPort({ sendCalendarInvite });
       const sut2 = new SchedulePresentialMeetingUseCase(repo, null, gmail as any, null, null);
 
       await sut2.execute({
@@ -248,7 +249,7 @@ describe("SchedulePresentialMeetingUseCase", () => {
         confirmationMethod: "email",
       });
 
-      expect(send).not.toHaveBeenCalled();
+      expect(sendCalendarInvite).not.toHaveBeenCalled();
     });
   });
 });
