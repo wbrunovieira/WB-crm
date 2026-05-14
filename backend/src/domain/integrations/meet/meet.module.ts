@@ -28,6 +28,7 @@ import { PurgeCompletedMeetingUseCase } from "./application/use-cases/purge-comp
 import { SchedulePresentialMeetingUseCase } from "./application/use-cases/schedule-presential-meeting.use-case";
 import { UploadPresentialRecordingUseCase } from "./application/use-cases/upload-presential-recording.use-case";
 import { EndMeetingUseCase } from "./application/use-cases/end-meeting.use-case";
+import { ResendMeetingConfirmationUseCase } from "./application/use-cases/resend-meeting-confirmation.use-case";
 import { PresentialRecordingStoragePort } from "./application/ports/presential-recording-storage.port";
 
 // Infrastructure
@@ -73,6 +74,7 @@ import { AuthModule } from "@/infra/auth/auth.module";
     SchedulePresentialMeetingUseCase,
     UploadPresentialRecordingUseCase,
     EndMeetingUseCase,
+    ResendMeetingConfirmationUseCase,
 
     // Port implementations
     { provide: GoogleDrivePort, useClass: GoogleDriveClient },

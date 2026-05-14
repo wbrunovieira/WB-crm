@@ -16,6 +16,7 @@ import { PurgeCompletedMeetingUseCase } from "../application/use-cases/purge-com
 import { SchedulePresentialMeetingUseCase } from "../application/use-cases/schedule-presential-meeting.use-case";
 import { UploadPresentialRecordingUseCase } from "../application/use-cases/upload-presential-recording.use-case";
 import { EndMeetingUseCase } from "../application/use-cases/end-meeting.use-case";
+import { ResendMeetingConfirmationUseCase } from "../application/use-cases/resend-meeting-confirmation.use-case";
 import { MeetingsRepository } from "../application/repositories/meetings.repository";
 
 function serialize(m: any) {
@@ -23,7 +24,7 @@ function serialize(m: any) {
     id: m.id, title: m.title, googleEventId: m.googleEventId, meetLink: m.meetLink,
     startAt: m.startAt, endAt: m.endAt, actualStartAt: m.actualStartAt, actualEndAt: m.actualEndAt,
     status: m.status,
-    attendeeEmails: m.attendeeEmails,
+    attendeeEmails: typeof m.attendeeEmails === "string" ? JSON.parse(m.attendeeEmails) : (m.attendeeEmails ?? []),
     organizerEmail: m.organizerEmail ?? null,
     recordingDriveId: m.recordingDriveId, recordingUrl: m.recordingUrl,
     uploadedAudioKey: m.uploadedAudioKey ?? null,
@@ -61,6 +62,7 @@ export class MeetingsCrudController {
     private readonly schedulePresential: SchedulePresentialMeetingUseCase,
     private readonly uploadRecording: UploadPresentialRecordingUseCase,
     private readonly endMeeting: EndMeetingUseCase,
+    private readonly resendConfirmation: ResendMeetingConfirmationUseCase,
     private readonly meetingsRepo: MeetingsRepository,
   ) {}
 
@@ -232,6 +234,17 @@ export class MeetingsCrudController {
   @HttpCode(HttpStatus.NO_CONTENT)
   async endMeetingRoute(@Request() req: any, @Param("id") id: string) {
     const r = await this.endMeeting.execute({ id, requesterId: req.user.id });
+    if (r.isLeft()) throwIfError(r.value);
+  }
+
+  @Post(":id/resend-confirmation")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async resendConfirmationRoute(
+    @Request() req: any,
+    @Param("id") id: string,
+    @Body() body: { organizerEmail?: string } = {},
+  ) {
+    const r = await this.resendConfirmation.execute({ id, requesterId: req.user.id, organizerEmail: body.organizerEmail });
     if (r.isLeft()) throwIfError(r.value);
   }
 

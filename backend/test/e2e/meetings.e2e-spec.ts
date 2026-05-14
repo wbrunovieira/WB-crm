@@ -96,6 +96,70 @@ describe("PATCH /meetings/:id (e2e)", () => {
   });
 });
 
+describe("POST /meetings/:id/resend-confirmation (e2e)", () => {
+  it("retorna 401 sem token", async () => {
+    await request(app.getHttpServer())
+      .post("/meetings/qualquer-id/resend-confirmation")
+      .expect(401);
+  });
+
+  it("retorna 404 para reunião inexistente", async () => {
+    await request(app.getHttpServer())
+      .post("/meetings/nao-existe/resend-confirmation")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(404);
+  });
+
+  it("retorna 403 para reunião de outro usuário", async () => {
+    const other = await prisma.user.upsert({
+      where: { email: "e2e-meetings-other@test.com" },
+      update: {},
+      create: { email: "e2e-meetings-other@test.com", name: "Other", password: "x", role: "sdr" },
+    });
+    const meeting = await prisma.meeting.create({
+      data: {
+        title: "Outra reunião", startAt: new Date(), status: "scheduled",
+        ownerId: other.id, attendeeEmails: "[]",
+      },
+    });
+
+    await request(app.getHttpServer())
+      .post(`/meetings/${meeting.id}/resend-confirmation`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(403);
+
+    await prisma.meeting.delete({ where: { id: meeting.id } });
+    await prisma.user.delete({ where: { id: other.id } });
+  });
+
+  it("retorna 204 para reunião própria (sem Gmail configurado no test env)", async () => {
+    const created = await request(app.getHttpServer())
+      .post("/meetings")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Reunião para reenvio", startAt: "2026-06-01T18:00:00.000Z", skipCalendar: true })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/meetings/${created.body.id}/resend-confirmation`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(204);
+  });
+
+  it("aceita organizerEmail opcional no body", async () => {
+    const created = await request(app.getHttpServer())
+      .post("/meetings")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Reunião com alias", startAt: "2026-06-01T18:00:00.000Z", skipCalendar: true })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .post(`/meetings/${created.body.id}/resend-confirmation`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ organizerEmail: "bruno@saltoup.com" })
+      .expect(204);
+  });
+});
+
 describe("DELETE /meetings/:id (e2e)", () => {
   it("cancela reunião (seta status cancelled)", async () => {
     const created = await request(app.getHttpServer())
