@@ -155,4 +155,43 @@ describe("ResendMeetingConfirmationUseCase", () => {
     expect(sendCalendarInvite).toHaveBeenCalledOnce();
     expect(sendCalendarInvite.mock.calls[0][0].to).toBe("a@a.com");
   });
+
+  describe("contact name in email body", () => {
+    it("passa contactName e companyName resolvidos via findRelatedNames ao buildBrandedEmail", async () => {
+      const sendCalendarInvite = vi.fn().mockResolvedValue(undefined);
+      const gmail = makeGmailPort({ sendCalendarInvite });
+      repo.addMeeting({
+        id: "m-1", title: "Demo", startAt: new Date(),
+        status: "scheduled", ownerId: "owner-1",
+        attendeeEmails: JSON.stringify(["cli@cli.com"]),
+        leadId: "lead-1",
+        contactId: "contact-1",
+      });
+      repo.setRelatedNames("m-1", { contactName: "Maria Silva", companyName: "Empresa ABC" });
+      const sut = new ResendMeetingConfirmationUseCase(repo, gmail as any);
+
+      await sut.execute({ id: "m-1", requesterId: "owner-1" });
+
+      const { bodyHtml } = sendCalendarInvite.mock.calls[0][0];
+      expect(bodyHtml).toContain("Maria Silva");
+      expect(bodyHtml).toContain("Empresa ABC");
+    });
+
+    it("funciona sem contactName quando findRelatedNames retorna vazio", async () => {
+      const sendCalendarInvite = vi.fn().mockResolvedValue(undefined);
+      const gmail = makeGmailPort({ sendCalendarInvite });
+      repo.addMeeting({
+        id: "m-1", title: "Demo", startAt: new Date(),
+        status: "scheduled", ownerId: "owner-1",
+        attendeeEmails: JSON.stringify(["cli@cli.com"]),
+      });
+      const sut = new ResendMeetingConfirmationUseCase(repo, gmail as any);
+
+      const result = await sut.execute({ id: "m-1", requesterId: "owner-1" });
+
+      expect(result.isRight()).toBe(true);
+      const { bodyHtml } = sendCalendarInvite.mock.calls[0][0];
+      expect(bodyHtml).toContain("Olá!");
+    });
+  });
 });

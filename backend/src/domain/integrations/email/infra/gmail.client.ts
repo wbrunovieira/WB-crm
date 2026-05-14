@@ -206,11 +206,13 @@ export class GmailClient extends GmailPort {
     const boundary = `wbcrm_alt_${randomUUID().replace(/-/g, "")}`;
 
     const htmlB64 = Buffer.from(bodyHtml).toString("base64");
+    const encodeHeader = (s: string) =>
+      /[^\x00-\x7F]/.test(s) ? `=?UTF-8?B?${Buffer.from(s).toString("base64")}?=` : s;
 
     const mime = [
       `To: ${to}`,
       `From: ${from}`,
-      `Subject: ${subject}`,
+      `Subject: ${encodeHeader(subject)}`,
       "MIME-Version: 1.0",
       `Content-Type: multipart/alternative; boundary="${boundary}"`,
       "",

@@ -297,6 +297,22 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
     });
   }
 
+  async findRelatedNames(meetingId: string): Promise<{ contactName?: string; companyName?: string }> {
+    const row = await this.prisma.meeting.findUnique({
+      where: { id: meetingId },
+      include: {
+        contact: { select: { name: true } },
+        lead: { select: { businessName: true } },
+        organization: { select: { name: true } },
+      },
+    });
+    if (!row) return {};
+    return {
+      contactName: row.contact?.name ?? undefined,
+      companyName: row.organization?.name ?? row.lead?.businessName ?? undefined,
+    };
+  }
+
   private toDomain(row: any): MeetingRecord {
     return {
       id: row.id, title: row.title, googleEventId: row.googleEventId ?? null,

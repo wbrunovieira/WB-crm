@@ -45,6 +45,8 @@ export class ResendMeetingConfirmationUseCase {
     const brand = getBrandConfig(effectiveOrganizer);
     const endAt = meeting.endAt ?? new Date(meeting.startAt.getTime() + 60 * 60 * 1000);
 
+    const { contactName, companyName } = await this.repo.findRelatedNames(input.id);
+
     const bodyHtml = buildBrandedEmail({
       brand,
       title: meeting.title,
@@ -53,6 +55,8 @@ export class ResendMeetingConfirmationUseCase {
       location: meeting.location ?? undefined,
       meetLink: meeting.meetLink ?? undefined,
       organizerEmail: effectiveOrganizer,
+      contactName,
+      companyName,
     });
 
     for (const email of attendeeEmails) {

@@ -170,6 +170,16 @@ export class FakeMeetingsRepository extends MeetingsRepository {
     if (item) item.googleEventId = googleEventId;
   }
 
+  private relatedNames: Map<string, { contactName?: string; companyName?: string }> = new Map();
+
+  setRelatedNames(meetingId: string, names: { contactName?: string; companyName?: string }): void {
+    this.relatedNames.set(meetingId, names);
+  }
+
+  async findRelatedNames(meetingId: string): Promise<{ contactName?: string; companyName?: string }> {
+    return this.relatedNames.get(meetingId) ?? {};
+  }
+
   addMeeting(meeting: Partial<MeetingRecord> & { id: string; title: string; startAt: Date; status: string }): void {
     this.items.push({
       googleEventId: null, meetLink: null, endAt: null, actualStartAt: null,

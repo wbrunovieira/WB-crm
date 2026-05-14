@@ -123,4 +123,5 @@ export abstract class MeetingsRepository {
   abstract saveUploadedRecording(id: string, data: SaveUploadedRecordingData): Promise<void>;
   abstract markConfirmationSent(id: string): Promise<void>;
   abstract saveGoogleEventId(id: string, googleEventId: string): Promise<void>;
+  abstract findRelatedNames(meetingId: string): Promise<{ contactName?: string; companyName?: string }>;
 }
