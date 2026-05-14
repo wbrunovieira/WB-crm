@@ -18,7 +18,7 @@ export interface MeetingInitialData {
   description?: string;
   startAt: Date;
   endAt: Date | null;
-  attendeeEmails: string; // JSON string [{email, responseStatus}] or string[]
+  attendeeEmails: string | any[]; // JSON string or parsed array
 }
 
 interface Props {
@@ -41,7 +41,9 @@ function parseInitialEmails(
 ): string[] {
   if (!initialData) return [""];
   try {
-    const parsed = JSON.parse(initialData.attendeeEmails);
+    const parsed = Array.isArray(initialData.attendeeEmails)
+      ? initialData.attendeeEmails
+      : JSON.parse(initialData.attendeeEmails as string);
     const emails: string[] = Array.isArray(parsed)
       ? parsed.map((a: unknown) => (typeof a === "string" ? a : (a as { email: string }).email))
       : [];
@@ -114,7 +116,9 @@ export default function ScheduleMeetingModal({
   const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(() => {
     if (!initialData) return new Set();
     try {
-      const parsed = JSON.parse(initialData.attendeeEmails);
+      const parsed = Array.isArray(initialData.attendeeEmails)
+        ? initialData.attendeeEmails
+        : JSON.parse(initialData.attendeeEmails as string);
       const emails = new Set<string>(
         Array.isArray(parsed)
           ? parsed.map((a: unknown) => (typeof a === "string" ? a : (a as { email: string }).email))

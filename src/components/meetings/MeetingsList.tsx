@@ -17,6 +17,7 @@ import {
   Trash2,
   MapPin,
   Upload,
+  Send,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
@@ -35,7 +36,7 @@ export interface Meeting {
   endAt: string | Date | null;
   actualStartAt: string | Date | null;
   actualEndAt: string | Date | null;
-  attendeeEmails: string; // JSON array
+  attendeeEmails: string | any[]; // JSON string or parsed array
   status: string; // scheduled | ended | cancelled
   recordingDriveId: string | null;
   recordingUrl: string | null;
@@ -120,10 +121,9 @@ const RSVP_CONFIG: Record<
   needsAction: { label: "Pendente",   color: "bg-[#2d1b3d] text-gray-400" },
 };
 
-function parseAttendees(json: string): Attendee[] {
+function parseAttendees(raw: string | any[]): Attendee[] {
   try {
-    const parsed = JSON.parse(json);
-    // Support both old format (string[]) and new format ({email, responseStatus}[])
+    const parsed = Array.isArray(raw) ? raw : JSON.parse(raw as string);
     if (Array.isArray(parsed) && parsed.length > 0) {
       if (typeof parsed[0] === "string") {
         return parsed.map((email: string) => ({ email, responseStatus: "needsAction" as const }));
@@ -456,6 +456,7 @@ function MeetingCard({
   const [summaryDraft, setSummaryDraft] = useState(meeting.meetingSummary ?? "");
   const [savingSummary, setSavingSummary] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [resending, setResending] = useState(false);
   const uploadRef = useRef<HTMLInputElement>(null);
 
   const statusCfg = STATUS_CONFIG[meeting.status] ?? STATUS_CONFIG.scheduled;
@@ -490,6 +491,18 @@ function MeetingCard({
     } finally {
       setEnding(false);
       setConfirmingEnd(false);
+    }
+  }
+
+  async function handleResendConfirmation() {
+    setResending(true);
+    try {
+      await apiFetch(`/meetings/${meeting.id}/resend-confirmation`, token, { method: "POST" });
+      toast.success("Confirmação reenviada com sucesso!");
+    } catch {
+      toast.error("Erro ao reenviar confirmação.");
+    } finally {
+      setResending(false);
     }
   }
 
@@ -647,6 +660,18 @@ function MeetingCard({
               title="Editar reunião"
             >
               <Pencil size={13} />
+            </button>
+          )}
+
+          {/* Resend confirmation — presential only, not cancelled */}
+          {isPresential && meeting.status !== "cancelled" && !confirmingCancel && !confirmingEnd && (
+            <button
+              onClick={handleResendConfirmation}
+              disabled={resending}
+              title="Reenviar confirmação por email"
+              className="rounded-md p-1.5 text-blue-400/70 hover:bg-blue-500/15 hover:text-blue-400 disabled:opacity-50"
+            >
+              {resending ? <Loader2 size={13} className="animate-spin" /> : <Send size={13} />}
             </button>
           )}
 
