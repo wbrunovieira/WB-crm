@@ -24,6 +24,7 @@ import { GoToTokenService } from "./infra/goto-token.service";
 import { S3RecordingClient } from "./infra/s3-recording.client";
 import { GoToWebhookController } from "./infra/controllers/goto-webhook.controller";
 import { GoToRecordingsController } from "./infra/controllers/goto-recordings.controller";
+import { GoToSyncController } from "./infra/controllers/goto-sync.controller";
 import { TranscriptionWebhookController } from "./infra/controllers/transcription-webhook.controller";
 import { GoToRecordingCronService } from "./infra/scheduled/goto-recording-cron.service";
 import { GotoActivityCreatedListener } from "./infra/listeners/goto-activity-created.listener";
@@ -31,7 +32,7 @@ import { GotoTranscriptionPollerListener } from "./infra/listeners/goto-transcri
 
 @Module({
   imports: [EventEmitterModule, SharedInfraModule, ActivitiesModule, AuthModule],
-  controllers: [GoToWebhookController, GoToRecordingsController, TranscriptionWebhookController],
+  controllers: [GoToWebhookController, GoToRecordingsController, GoToSyncController, TranscriptionWebhookController],
   providers: [
     // Use Cases
     HandleGotoWebhookUseCase,

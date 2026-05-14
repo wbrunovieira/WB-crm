@@ -108,26 +108,26 @@ describe("AuthController.gotoCallback()", () => {
     vi.restoreAllMocks();
   });
 
-  it("redirects to /admin (not /dashboard/admin) with goto_error on GoTo error param", async () => {
+  it("redirects to /admin (not /dashboard/admin) with error param on GoTo error", async () => {
     const result = await controller.gotoCallback("", "access_denied");
 
     expect(result.statusCode).toBe(302);
-    expect(result.url).toContain("goto_error=access_denied");
+    expect(result.url).toContain("error=access_denied");
     expect(result.url).toContain("crm.example.com");
     expect(result.url).not.toContain("/dashboard/admin");
     expect(result.url).toContain("/admin");
   });
 
-  it("redirects to /admin with goto_error=no_code when code is absent", async () => {
+  it("redirects to /admin with error=no_code when code is absent", async () => {
     const result = await controller.gotoCallback("", "");
 
     expect(result.statusCode).toBe(302);
-    expect(result.url).toContain("goto_error=no_code");
+    expect(result.url).toContain("error=no_code");
     expect(result.url).not.toContain("/dashboard/admin");
     expect(result.url).toContain("/admin");
   });
 
-  it("calls storeGoToTokens and redirects to /admin with goto_connected=1 on success", async () => {
+  it("calls storeGoToTokens and redirects to /admin with success=1 on success", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
@@ -146,12 +146,12 @@ describe("AuthController.gotoCallback()", () => {
       }),
     );
     expect(result.statusCode).toBe(302);
-    expect(result.url).toContain("goto_connected=1");
+    expect(result.url).toContain("success=1");
     expect(result.url).not.toContain("/dashboard/admin");
     expect(result.url).toContain("/admin");
   });
 
-  it("redirects to /admin with goto_error=token_exchange_failed when exchange fails", async () => {
+  it("redirects to /admin with error=token_exchange_failed when exchange fails", async () => {
     global.fetch = vi.fn().mockResolvedValue({
       ok: false,
       status: 400,
@@ -160,7 +160,7 @@ describe("AuthController.gotoCallback()", () => {
     const result = await controller.gotoCallback("bad-code", "");
 
     expect(result.statusCode).toBe(302);
-    expect(result.url).toContain("goto_error=token_exchange_failed");
+    expect(result.url).toContain("error=token_exchange_failed");
     expect(result.url).not.toContain("/dashboard/admin");
     expect(result.url).toContain("/admin");
   });

@@ -95,6 +95,10 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
 
   async findWhatsAppDriveIds(_activityId: string): Promise<string[]> { return []; }
 
+  async updateEmailOpenStats(_trackingToken: string, _openedAt: Date): Promise<void> {}
+
+  async updateEmailClickStats(_trackingToken: string, _clickedAt: Date): Promise<void> {}
+
   // Helper for tests
   createAndAdd(props: Parameters<typeof Activity.create>[0]): Activity {
     const activity = Activity.create(props, new UniqueEntityID());
