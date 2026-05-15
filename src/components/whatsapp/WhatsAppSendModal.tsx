@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { X, Send, Loader2, Smile, Paperclip, FileText, ChevronDown, ChevronUp, Mic } from "lucide-react";
+import { X, Send, Loader2, Smile, Paperclip, FileText, ChevronDown, ChevronUp, Mic, Square } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { apiFetch, BACKEND_URL } from "@/lib/api-client";
@@ -40,7 +40,6 @@ function EmojiPicker({ onSelect }: { onSelect: (emoji: string) => void }) {
 
   return (
     <div className="rounded-xl border border-gray-200 bg-white shadow-lg">
-      {/* Category tabs */}
       <div className="flex gap-1 border-b border-gray-100 px-2 pt-2">
         {EMOJI_CATEGORIES.map((cat, i) => (
           <button
@@ -56,7 +55,6 @@ function EmojiPicker({ onSelect }: { onSelect: (emoji: string) => void }) {
           </button>
         ))}
       </div>
-      {/* Emoji grid */}
       <div className="grid grid-cols-8 gap-0.5 p-2 max-h-36 overflow-y-auto">
         {EMOJI_CATEGORIES[activeCategory].emojis.map((emoji) => (
           <button
@@ -73,7 +71,7 @@ function EmojiPicker({ onSelect }: { onSelect: (emoji: string) => void }) {
 }
 
 // ---------------------------------------------------------------------------
-// Media helpers
+// Helpers
 // ---------------------------------------------------------------------------
 
 function getMediatype(mime: string): "image" | "video" | "document" | "audio" {
@@ -88,18 +86,36 @@ function fileToBase64(file: File): Promise<string> {
     const reader = new FileReader();
     reader.onload = () => {
       const result = reader.result as string;
-      // Strip data:...;base64, prefix
-      const base64 = result.split(",")[1] ?? result;
-      resolve(base64);
+      resolve(result.split(",")[1] ?? result);
     };
     reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
 
+function formatSeconds(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
+
+function pickMimeType(): string {
+  const candidates = [
+    "audio/ogg;codecs=opus",
+    "audio/webm;codecs=opus",
+    "audio/webm",
+  ];
+  for (const mime of candidates) {
+    if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(mime)) return mime;
+  }
+  return "";
+}
+
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
+
+type RecordingState = "idle" | "requesting" | "recording" | "preview";
 
 type Template = {
   id: string;
@@ -132,15 +148,21 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
   // Emoji
   const [showEmoji, setShowEmoji] = useState(false);
 
-  // Anexo
+  // Anexo de arquivo
   const [attachment, setAttachment] = useState<File | null>(null);
   const [attachPreview, setAttachPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Áudio PTT
-  const [audioAttachment, setAudioAttachment] = useState<File | null>(null);
+  // Gravação de áudio PTT
+  const [recordingState, setRecordingState] = useState<RecordingState>("idle");
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
+  const [audioMime, setAudioMime] = useState("audio/ogg");
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const streamRef = useRef<MediaStream | null>(null);
 
   // Templates
   const [showTemplates, setShowTemplates] = useState(false);
@@ -149,18 +171,31 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
 
   useEffect(() => { textareaRef.current?.focus(); }, []);
 
+  // Cleanup ao desmontar
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      streamRef.current?.getTracks().forEach((t) => t.stop());
+      if (audioUrl) URL.revokeObjectURL(audioUrl);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ESC fecha tudo
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         if (showEmoji) { setShowEmoji(false); return; }
         if (showTemplates) { setShowTemplates(false); return; }
+        if (recordingState === "recording") { stopRecording(); return; }
+        if (recordingState === "preview") { discardRecording(); return; }
         onClose();
       }
     };
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
-  }, [onClose, showEmoji, showTemplates]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onClose, showEmoji, showTemplates, recordingState]);
 
   // Carregar templates ao abrir o painel (lazy)
   const handleOpenTemplates = useCallback(async () => {
@@ -180,7 +215,6 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
     const end = ta.selectionEnd;
     const newText = text.slice(0, start) + emoji + text.slice(end);
     setText(newText);
-    // Reposicionar cursor
     setTimeout(() => {
       ta.focus();
       ta.selectionStart = ta.selectionEnd = start + emoji.length;
@@ -188,7 +222,6 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
     setShowEmoji(false);
   }
 
-  // Aplicar template
   function applyTemplate(t: Template) {
     setText(t.text);
     setShowTemplates(false);
@@ -205,7 +238,6 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
     } else {
       setAttachPreview(null);
     }
-    // Limpar input para permitir re-selecionar o mesmo arquivo
     e.target.value = "";
   }
 
@@ -214,34 +246,85 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
     setAttachPreview(null);
   }
 
-  function handleAudioFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setAudioAttachment(file);
-    setAudioUrl(URL.createObjectURL(file));
-    setAttachment(null);
-    setAttachPreview(null);
-    e.target.value = "";
+  // ---------------------------------------------------------------------------
+  // Gravação de áudio
+  // ---------------------------------------------------------------------------
+
+  async function startRecording() {
+    if (recordingState !== "idle") return;
+    setRecordingState("requesting");
+
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    } catch {
+      setRecordingState("idle");
+      toast.error("Não foi possível acessar o microfone");
+      return;
+    }
+
+    streamRef.current = stream;
+    chunksRef.current = [];
+
+    const mimeType = pickMimeType();
+    setAudioMime(mimeType || "audio/ogg");
+
+    const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    mediaRecorderRef.current = mr;
+
+    mr.ondataavailable = (e) => {
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
+
+    mr.onstop = () => {
+      stream.getTracks().forEach((t) => t.stop());
+      const blob = new Blob(chunksRef.current, { type: mr.mimeType || "audio/ogg" });
+      const url = URL.createObjectURL(blob);
+      setAudioBlob(blob);
+      setAudioUrl(url);
+      setAudioMime(mr.mimeType || "audio/ogg");
+      setRecordingState("preview");
+    };
+
+    mr.start(250);
+    setRecordingState("recording");
+    setRecordingSeconds(0);
+    timerRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
   }
 
-  function removeAudioAttachment() {
+  function stopRecording() {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    mediaRecorderRef.current?.stop();
+  }
+
+  function discardRecording() {
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    mediaRecorderRef.current?.stop();
+    streamRef.current?.getTracks().forEach((t) => t.stop());
     if (audioUrl) URL.revokeObjectURL(audioUrl);
-    setAudioAttachment(null);
+    setAudioBlob(null);
     setAudioUrl(null);
+    setRecordingState("idle");
+    setRecordingSeconds(0);
   }
 
+  // ---------------------------------------------------------------------------
   // Enviar
+  // ---------------------------------------------------------------------------
+
   async function handleSend() {
     const trimmed = text.trim();
-    if (!trimmed && !attachment && !audioAttachment) return;
+    if (!trimmed && !attachment && !audioBlob) return;
 
     setSending(true);
     try {
-      let result;
+      let result: { success: boolean; error?: string };
 
-      if (audioAttachment) {
+      if (audioBlob) {
+        const ext = audioMime.includes("ogg") ? "ogg" : "webm";
+        const file = new File([audioBlob], `audio_${Date.now()}.${ext}`, { type: audioMime });
         const formData = new FormData();
-        formData.append("file", audioAttachment, audioAttachment.name);
+        formData.append("file", file);
         formData.append("to", to);
         formData.append("entityName", name);
         const res = await fetch(`${BACKEND_URL}/whatsapp/send-audio`, {
@@ -280,7 +363,6 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
       }
 
       if (result.success) {
-        removeAudioAttachment();
         toast.success("Mensagem enviada!", { description: `WhatsApp para ${name}` });
         router.refresh();
         onClose();
@@ -307,12 +389,13 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
     groupedTemplates[key].push(t);
   }
 
-  const canSend = !sending && (!!text.trim() || !!attachment || !!audioAttachment);
+  const isRecordingActive = recordingState === "recording" || recordingState === "requesting";
+  const canSend = !sending && (!!text.trim() || !!attachment || !!audioBlob);
 
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}
+      onClick={(e) => e.target === e.currentTarget && !isRecordingActive && onClose()}
     >
       <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]">
 
@@ -394,111 +477,134 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
             </div>
           )}
 
-          {/* Audio PTT preview */}
-          {audioAttachment && audioUrl && (
-            <div className="mx-5 mt-3 flex items-center gap-3 rounded-xl border border-[#25D366]/40 bg-[#f0fdf4] p-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#25D366]/15">
-                <Mic className="h-5 w-5 text-[#25D366]" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-medium text-gray-700">{audioAttachment.name}</p>
-                <audio src={audioUrl} controls className="mt-1 h-7 w-full" />
-              </div>
-              <button onClick={removeAudioAttachment} className="shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600">
-                <X className="h-4 w-4" />
-              </button>
+          {/* Gravando — indicador em tempo real */}
+          {isRecordingActive && (
+            <div className="mx-5 mt-3 flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3">
+              <span className="relative flex h-3 w-3 shrink-0">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-red-500" />
+              </span>
+              <p className="flex-1 text-sm font-medium text-red-600">
+                {recordingState === "requesting" ? "Aguardando permissão..." : `Gravando  ${formatSeconds(recordingSeconds)}`}
+              </p>
+              {recordingState === "recording" && (
+                <button
+                  onClick={stopRecording}
+                  className="flex items-center gap-1.5 rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 transition-colors"
+                >
+                  <Square className="h-3 w-3 fill-white" />
+                  Parar
+                </button>
+              )}
             </div>
           )}
 
-          {/* Textarea */}
-          <div className="p-5">
-            <textarea
-              ref={textareaRef}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              rows={4}
-              placeholder={attachment ? "Legenda (opcional)..." : "Digite sua mensagem..."}
-              className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#25D366] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#25D366]/20 transition-colors"
-              disabled={sending}
-            />
-            <p className="mt-1.5 text-xs text-gray-400">Ctrl+Enter para enviar</p>
-          </div>
+          {/* Preview do áudio gravado */}
+          {recordingState === "preview" && audioUrl && (
+            <div className="mx-5 mt-3 rounded-xl border border-[#25D366]/40 bg-[#f0fdf4] p-3">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#25D366]/15">
+                  <Mic className="h-4 w-4 text-[#25D366]" />
+                </div>
+                <p className="text-xs font-medium text-gray-700">Áudio de voz • {formatSeconds(recordingSeconds)}</p>
+                <button
+                  onClick={discardRecording}
+                  className="ml-auto rounded-full p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600"
+                  title="Descartar gravação"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+              <audio src={audioUrl} controls className="w-full h-8" />
+            </div>
+          )}
+
+          {/* Textarea — oculto durante gravação */}
+          {!isRecordingActive && recordingState !== "preview" && (
+            <div className="p-5">
+              <textarea
+                ref={textareaRef}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={handleKeyDown}
+                rows={4}
+                placeholder={attachment ? "Legenda (opcional)..." : "Digite sua mensagem..."}
+                className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#25D366] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#25D366]/20 transition-colors"
+                disabled={sending}
+              />
+              <p className="mt-1.5 text-xs text-gray-400">Ctrl+Enter para enviar</p>
+            </div>
+          )}
         </div>
 
         {/* Toolbar + Footer */}
         <div className="shrink-0 border-t border-gray-100 px-5 py-3 space-y-3">
           {/* Toolbar de ações */}
-          <div className="flex items-center gap-1">
-            {/* Emoji */}
-            <button
-              type="button"
-              onClick={() => { setShowEmoji((v) => !v); setShowTemplates(false); }}
-              disabled={sending}
-              title="Emoji"
-              className={`rounded-lg p-2 transition-colors disabled:opacity-50 ${showEmoji ? "bg-[#25D366]/15 text-[#25D366]" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}
-            >
-              <Smile className="h-5 w-5" />
-            </button>
+          {!isRecordingActive && recordingState !== "preview" && (
+            <div className="flex items-center gap-1">
+              {/* Emoji */}
+              <button
+                type="button"
+                onClick={() => { setShowEmoji((v) => !v); setShowTemplates(false); }}
+                disabled={sending}
+                title="Emoji"
+                className={`rounded-lg p-2 transition-colors disabled:opacity-50 ${showEmoji ? "bg-[#25D366]/15 text-[#25D366]" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}
+              >
+                <Smile className="h-5 w-5" />
+              </button>
 
-            {/* Anexo */}
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              disabled={sending}
-              title="Anexar arquivo"
-              className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50"
-            >
-              <Paperclip className="h-5 w-5" />
-            </button>
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
-              onChange={handleFileChange}
-              className="hidden"
-            />
+              {/* Anexo */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={sending}
+                title="Anexar arquivo"
+                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50"
+              >
+                <Paperclip className="h-5 w-5" />
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
+                onChange={handleFileChange}
+                className="hidden"
+              />
 
-            {/* Áudio PTT */}
-            <button
-              type="button"
-              onClick={() => audioInputRef.current?.click()}
-              disabled={sending}
-              title="Enviar áudio de voz (PTT)"
-              className={`rounded-lg p-2 transition-colors disabled:opacity-50 ${audioAttachment ? "bg-[#25D366]/15 text-[#25D366]" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}
-            >
-              <Mic className="h-5 w-5" />
-            </button>
-            <input
-              ref={audioInputRef}
-              type="file"
-              accept="audio/*"
-              onChange={handleAudioFileChange}
-              className="hidden"
-            />
+              {/* Gravar áudio PTT */}
+              <button
+                type="button"
+                onClick={startRecording}
+                disabled={sending || !!(typeof window !== "undefined" && !navigator.mediaDevices)}
+                title="Gravar áudio de voz"
+                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50"
+              >
+                <Mic className="h-5 w-5" />
+              </button>
 
-            {/* Templates */}
-            <button
-              type="button"
-              onClick={handleOpenTemplates}
-              disabled={sending}
-              title="Templates"
-              className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${showTemplates ? "bg-[#25D366]/15 text-[#25D366]" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}
-            >
-              <FileText className="h-4 w-4" />
-              Templates
-              {showTemplates ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </button>
-          </div>
+              {/* Templates */}
+              <button
+                type="button"
+                onClick={handleOpenTemplates}
+                disabled={sending}
+                title="Templates"
+                className={`flex items-center gap-1.5 rounded-lg px-2.5 py-2 text-xs font-medium transition-colors disabled:opacity-50 ${showTemplates ? "bg-[#25D366]/15 text-[#25D366]" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}
+              >
+                <FileText className="h-4 w-4" />
+                Templates
+                {showTemplates ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              </button>
+            </div>
+          )}
 
           {/* Cancel + Send */}
           <div className="flex items-center justify-end gap-3">
             <button
-              onClick={onClose}
+              onClick={isRecordingActive ? stopRecording : onClose}
               disabled={sending}
               className="rounded-lg px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 transition-colors disabled:opacity-50"
             >
-              Cancelar
+              {isRecordingActive ? "Parar" : "Cancelar"}
             </button>
             <button
               onClick={handleSend}
