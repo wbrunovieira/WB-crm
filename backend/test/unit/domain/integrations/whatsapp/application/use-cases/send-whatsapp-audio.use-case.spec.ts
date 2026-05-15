@@ -4,6 +4,7 @@ import { FakeEvolutionApiPort } from "../../fakes/fake-evolution-api.port";
 import { FakeGoogleDrivePort } from "../../fakes/fake-google-drive.port";
 import { FakeWhatsAppMessagesRepository } from "../../fakes/fake-whatsapp-messages.repository";
 import { FakeTranscriberPort } from "../../fakes/fake-transcriber.port";
+import { FakeActivitiesRepository } from "../../fakes/fake-activities.repository";
 
 const audioBuffer = Buffer.from("fake-audio-data");
 const baseInput = {
@@ -20,6 +21,7 @@ describe("SendWhatsAppAudioUseCase", () => {
   let drive: FakeGoogleDrivePort;
   let repo: FakeWhatsAppMessagesRepository;
   let transcriber: FakeTranscriberPort;
+  let activitiesRepo: FakeActivitiesRepository;
   let sut: SendWhatsAppAudioUseCase;
 
   beforeEach(() => {
@@ -27,7 +29,8 @@ describe("SendWhatsAppAudioUseCase", () => {
     drive = new FakeGoogleDrivePort();
     repo = new FakeWhatsAppMessagesRepository();
     transcriber = new FakeTranscriberPort();
-    sut = new SendWhatsAppAudioUseCase(evolutionApi, drive, repo, transcriber);
+    activitiesRepo = new FakeActivitiesRepository();
+    sut = new SendWhatsAppAudioUseCase(evolutionApi, drive, repo, transcriber, activitiesRepo);
   });
 
   it("envia áudio via Evolution API como PTT", async () => {
@@ -70,7 +73,7 @@ describe("SendWhatsAppAudioUseCase", () => {
     expect(msg.mediaTranscriptionJobId).toBe("job-audio-123");
   });
 
-  it("retorna messageId e driveId no resultado", async () => {
+  it("retorna messageId, driveId e activityId no resultado", async () => {
     evolutionApi.nextMessageId = "msg-audio-999";
 
     const result = await sut.execute(baseInput);
@@ -79,6 +82,26 @@ describe("SendWhatsAppAudioUseCase", () => {
     const value = result.unwrap();
     expect(value.messageId).toBe("msg-audio-999");
     expect(value.driveId).toBeDefined();
+    expect(value.activityId).toBeDefined();
+  });
+
+  it("cria atividade whatsapp quando não há sessão ativa", async () => {
+    await sut.execute(baseInput);
+
+    expect(activitiesRepo.items).toHaveLength(1);
+    const activity = activitiesRepo.items[0];
+    expect(activity.type).toBe("whatsapp");
+    expect(activity.completed).toBe(true);
+    expect(activity.subject).toContain("Lead Teste");
+    expect(activity.description).toContain("🎤 Áudio de voz");
+  });
+
+  it("associa leadId e contactId à atividade criada", async () => {
+    await sut.execute({ ...baseInput, leadId: "lead-1", contactId: "contact-1" });
+
+    const activity = activitiesRepo.items[0];
+    expect(activity.leadId).toBe("lead-1");
+    expect(activity.contactId).toBe("contact-1");
   });
 
   it("falha se Evolution API lançar erro", async () => {
@@ -95,7 +118,6 @@ describe("SendWhatsAppAudioUseCase", () => {
     const result = await sut.execute(baseInput);
 
     expect(result.isRight()).toBe(true);
-    // message still created, just without transcription job
     expect(repo.items).toHaveLength(1);
     expect(repo.items[0].mediaTranscriptionJobId).toBeUndefined();
   });
@@ -107,14 +129,13 @@ describe("SendWhatsAppAudioUseCase", () => {
   });
 
   it("associa activityId quando encontra sessão ativa", async () => {
-    // Seed an existing session message
     repo.items.push({
       id: "existing-msg",
       messageId: "existing-waid",
       remoteJid: "+5524999990000@s.whatsapp.net",
       fromMe: true,
       messageType: "conversation",
-      timestamp: new Date(Date.now() - 60_000), // 1 min ago
+      timestamp: new Date(Date.now() - 60_000),
       ownerId: "owner-1",
       activityId: "act-123",
     } as any);
@@ -122,5 +143,37 @@ describe("SendWhatsAppAudioUseCase", () => {
     await sut.execute(baseInput);
 
     expect(repo.items[repo.items.length - 1].activityId).toBe("act-123");
+  });
+
+  it("não cria atividade nova quando há sessão ativa", async () => {
+    const existingActivity = activitiesRepo.createAndAdd({
+      ownerId: "owner-1",
+      type: "whatsapp",
+      subject: "WhatsApp — Lead Teste",
+      description: "[10:00] Você: oi",
+      completed: true,
+      completedAt: new Date(),
+      dueDate: new Date(),
+      meetingNoShow: false,
+      emailReplied: false,
+      emailOpenCount: 0,
+      emailLinkClickCount: 0,
+    });
+    repo.items.push({
+      id: "existing-msg",
+      messageId: "existing-waid",
+      remoteJid: "+5524999990000@s.whatsapp.net",
+      fromMe: true,
+      messageType: "conversation",
+      timestamp: new Date(Date.now() - 60_000),
+      ownerId: "owner-1",
+      activityId: existingActivity.id.toString(),
+    } as any);
+
+    await sut.execute(baseInput);
+
+    // Still only 1 activity, description was appended
+    expect(activitiesRepo.items).toHaveLength(1);
+    expect(activitiesRepo.items[0].description).toContain("🎤 Áudio de voz");
   });
 });

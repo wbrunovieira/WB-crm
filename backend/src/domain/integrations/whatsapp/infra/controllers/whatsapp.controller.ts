@@ -161,8 +161,10 @@ export class WhatsAppController {
     @UploadedFile() file: Express.Multer.File,
     @Body("to") to: string,
     @Body("entityName") entityName: string,
+    @Body("leadId") leadId: string | undefined,
+    @Body("contactId") contactId: string | undefined,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<{ ok: boolean; messageId?: string; driveId?: string; error?: string }> {
+  ): Promise<{ ok: boolean; messageId?: string; driveId?: string; activityId?: string; error?: string }> {
     if (!file || !to) {
       throw new BadRequestException("Missing required fields: file, to");
     }
@@ -174,6 +176,8 @@ export class WhatsAppController {
       mimetype: file.mimetype,
       requesterId: user.id,
       entityName: entityName ?? to,
+      leadId: leadId || null,
+      contactId: contactId || null,
     });
 
     if (result.isLeft()) {

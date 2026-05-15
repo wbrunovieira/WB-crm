@@ -4,6 +4,8 @@ import { EvolutionApiPort } from "../ports/evolution-api.port";
 import { GoogleDrivePort } from "../ports/google-drive.port";
 import { WhatsAppMessagesRepository } from "../repositories/whatsapp-messages.repository";
 import { TranscriberPort } from "@/infra/shared/transcriber/transcriber.port";
+import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
+import { Activity } from "@/domain/activities/enterprise/entities/activity";
 
 export interface SendWhatsAppAudioInput {
   to: string;
@@ -12,12 +14,17 @@ export interface SendWhatsAppAudioInput {
   mimetype: string;
   requesterId: string;
   entityName: string;
+  leadId?: string | null;
+  contactId?: string | null;
 }
 
 export interface SendWhatsAppAudioOutput {
   messageId: string;
   driveId: string;
+  activityId: string;
 }
+
+const SESSION_WINDOW_MS = 2 * 60 * 60 * 1000;
 
 @Injectable()
 export class SendWhatsAppAudioUseCase {
@@ -28,10 +35,11 @@ export class SendWhatsAppAudioUseCase {
     private readonly drive: GoogleDrivePort,
     private readonly repo: WhatsAppMessagesRepository,
     private readonly transcriber: TranscriberPort,
+    private readonly activitiesRepo: ActivitiesRepository,
   ) {}
 
   async execute(input: SendWhatsAppAudioInput): Promise<Either<Error, SendWhatsAppAudioOutput>> {
-    const { to, buffer, fileName, mimetype, requesterId, entityName } = input;
+    const { to, buffer, fileName, mimetype, requesterId, entityName, leadId, contactId } = input;
 
     // 1. Upload to Google Drive
     const folderId = await this.drive.getOrCreateFolder(`WhatsApp - ${entityName}`);
@@ -52,10 +60,48 @@ export class SendWhatsAppAudioUseCase {
       return left(err instanceof Error ? err : new Error(String(err)));
     }
 
-    // 3. Find existing session to inherit activityId
+    // 3. Compute remoteJid and find existing session
     const remoteJid = to.includes("@") ? to : `${to}@s.whatsapp.net`;
-    const sessionMsg = await this.repo.findLastInSession(remoteJid, requesterId, 2 * 60 * 60 * 1000);
-    const activityId = sessionMsg?.activityId ?? null;
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+    const messageLine = `[${timeStr}] Você: 🎤 Áudio de voz`;
+
+    const lastInSession = await this.repo.findLastInSession(remoteJid, requesterId, SESSION_WINDOW_MS);
+
+    let activityId: string;
+
+    if (lastInSession?.activityId) {
+      // Append to existing activity
+      activityId = lastInSession.activityId;
+      const activity = await this.activitiesRepo.findByIdRaw(activityId);
+      if (activity) {
+        activity.update({
+          description: activity.description
+            ? `${activity.description}\n${messageLine}`
+            : messageLine,
+        });
+        await this.activitiesRepo.save(activity);
+      }
+    } else {
+      // New session — create activity
+      const activity = Activity.create({
+        ownerId: requesterId,
+        type: "whatsapp",
+        subject: `WhatsApp — ${entityName}`,
+        description: messageLine,
+        completed: true,
+        completedAt: now,
+        dueDate: now,
+        leadId: leadId ?? null,
+        contactId: contactId ?? null,
+        meetingNoShow: false,
+        emailReplied: false,
+        emailOpenCount: 0,
+        emailLinkClickCount: 0,
+      });
+      await this.activitiesRepo.save(activity);
+      activityId = activity.id.toString();
+    }
 
     // 4. Create WhatsApp message record
     const msg = await this.repo.create({
@@ -68,7 +114,7 @@ export class SendWhatsAppAudioUseCase {
       mediaUrl,
       mediaMimeType: mimetype,
       mediaLabel: "🎤 Áudio de voz",
-      timestamp: new Date(),
+      timestamp: now,
       activityId,
     });
 
@@ -82,6 +128,6 @@ export class SendWhatsAppAudioUseCase {
       });
     }
 
-    return right({ messageId, driveId });
+    return right({ messageId, driveId, activityId });
   }
 }
