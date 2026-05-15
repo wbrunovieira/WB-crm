@@ -327,6 +327,7 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
         formData.append("file", file);
         formData.append("to", to);
         formData.append("entityName", name);
+        console.log("[WhatsAppSendModal] audio send — leadId:", leadId, "contactId:", contactId);
         if (leadId) formData.append("leadId", leadId);
         if (contactId) formData.append("contactId", contactId);
         const res = await fetch(`${BACKEND_URL}/whatsapp/send-audio`, {
