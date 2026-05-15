@@ -169,6 +169,8 @@ export class WhatsAppController {
       throw new BadRequestException("Missing required fields: file, to");
     }
 
+    this.logger.log(`send-audio: to=${to} entityName=${entityName} leadId=${leadId ?? "undefined"} contactId=${contactId ?? "undefined"}`);
+
     const result = await this.sendAudioUseCase.execute({
       to,
       buffer: file.buffer,
