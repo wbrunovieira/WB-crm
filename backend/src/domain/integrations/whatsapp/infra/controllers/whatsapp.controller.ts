@@ -15,7 +15,10 @@ import {
   NotFoundException,
   UnauthorizedException,
   Res,
+  UseInterceptors,
+  UploadedFile,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
@@ -23,6 +26,7 @@ import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { SendWhatsAppMessageUseCase } from "@/domain/integrations/whatsapp/application/use-cases/send-whatsapp-message.use-case";
 import { SendWhatsAppMediaUseCase } from "@/domain/integrations/whatsapp/application/use-cases/send-whatsapp-media.use-case";
+import { SendWhatsAppAudioUseCase } from "@/domain/integrations/whatsapp/application/use-cases/send-whatsapp-audio.use-case";
 import { GetWhatsAppMediaMessagesUseCase } from "@/domain/integrations/whatsapp/application/use-cases/get-whatsapp-media-messages.use-case";
 import { SaveWhatsAppVerificationUseCase } from "@/domain/integrations/whatsapp/application/use-cases/save-whatsapp-verification.use-case";
 import { SaveWhatsAppNumberUseCase } from "@/domain/integrations/whatsapp/application/use-cases/save-whatsapp-number.use-case";
@@ -79,6 +83,7 @@ export class WhatsAppController {
   constructor(
     private readonly sendMessage: SendWhatsAppMessageUseCase,
     private readonly sendMedia: SendWhatsAppMediaUseCase,
+    private readonly sendAudioUseCase: SendWhatsAppAudioUseCase,
     private readonly getMediaMessages: GetWhatsAppMediaMessagesUseCase,
     private readonly saveVerification: SaveWhatsAppVerificationUseCase,
     private readonly saveNumber: SaveWhatsAppNumberUseCase,
@@ -146,6 +151,37 @@ export class WhatsAppController {
     }
 
     return { ok: true, messageId: result.value.messageId };
+  }
+
+  @Post("send-audio")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Send a WhatsApp voice audio (PTT)" })
+  @UseInterceptors(FileInterceptor("file"))
+  async sendAudioMessage(
+    @UploadedFile() file: Express.Multer.File,
+    @Body("to") to: string,
+    @Body("entityName") entityName: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ ok: boolean; messageId?: string; driveId?: string; error?: string }> {
+    if (!file || !to) {
+      throw new BadRequestException("Missing required fields: file, to");
+    }
+
+    const result = await this.sendAudioUseCase.execute({
+      to,
+      buffer: file.buffer,
+      fileName: file.originalname,
+      mimetype: file.mimetype,
+      requesterId: user.id,
+      entityName: entityName ?? to,
+    });
+
+    if (result.isLeft()) {
+      this.logger.error("Failed to send WhatsApp audio", { error: result.value.message });
+      return { ok: false, error: result.value.message };
+    }
+
+    return { ok: true, ...result.value };
   }
 
   @Post("check")

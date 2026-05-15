@@ -3,10 +3,10 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { X, Send, Loader2, Smile, Paperclip, FileText, ChevronDown, ChevronUp } from "lucide-react";
+import { X, Send, Loader2, Smile, Paperclip, FileText, ChevronDown, ChevronUp, Mic } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, BACKEND_URL } from "@/lib/api-client";
 
 // ---------------------------------------------------------------------------
 // Emoji picker (curado — sem dependência externa)
@@ -137,6 +137,11 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
   const [attachPreview, setAttachPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Áudio PTT
+  const [audioAttachment, setAudioAttachment] = useState<File | null>(null);
+  const [audioUrl, setAudioUrl] = useState<string | null>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
+
   // Templates
   const [showTemplates, setShowTemplates] = useState(false);
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -209,16 +214,44 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
     setAttachPreview(null);
   }
 
+  function handleAudioFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setAudioAttachment(file);
+    setAudioUrl(URL.createObjectURL(file));
+    setAttachment(null);
+    setAttachPreview(null);
+    e.target.value = "";
+  }
+
+  function removeAudioAttachment() {
+    if (audioUrl) URL.revokeObjectURL(audioUrl);
+    setAudioAttachment(null);
+    setAudioUrl(null);
+  }
+
   // Enviar
   async function handleSend() {
     const trimmed = text.trim();
-    if (!trimmed && !attachment) return;
+    if (!trimmed && !attachment && !audioAttachment) return;
 
     setSending(true);
     try {
       let result;
 
-      if (attachment) {
+      if (audioAttachment) {
+        const formData = new FormData();
+        formData.append("file", audioAttachment, audioAttachment.name);
+        formData.append("to", to);
+        formData.append("entityName", name);
+        const res = await fetch(`${BACKEND_URL}/whatsapp/send-audio`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const nestResult = await res.json().catch(() => ({ ok: false, error: res.statusText }));
+        result = { success: nestResult.ok as boolean, error: nestResult.error as string | undefined };
+      } else if (attachment) {
         const mediaBase64 = await fileToBase64(attachment);
         const nestResult = await apiFetch<{ ok: boolean; error?: string }>(
           "/whatsapp/send-media",
@@ -247,6 +280,7 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
       }
 
       if (result.success) {
+        removeAudioAttachment();
         toast.success("Mensagem enviada!", { description: `WhatsApp para ${name}` });
         router.refresh();
         onClose();
@@ -273,7 +307,7 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
     groupedTemplates[key].push(t);
   }
 
-  const canSend = !sending && (!!text.trim() || !!attachment);
+  const canSend = !sending && (!!text.trim() || !!attachment || !!audioAttachment);
 
   return (
     <div
@@ -360,6 +394,22 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
             </div>
           )}
 
+          {/* Audio PTT preview */}
+          {audioAttachment && audioUrl && (
+            <div className="mx-5 mt-3 flex items-center gap-3 rounded-xl border border-[#25D366]/40 bg-[#f0fdf4] p-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#25D366]/15">
+                <Mic className="h-5 w-5 text-[#25D366]" />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-medium text-gray-700">{audioAttachment.name}</p>
+                <audio src={audioUrl} controls className="mt-1 h-7 w-full" />
+              </div>
+              <button onClick={removeAudioAttachment} className="shrink-0 rounded-full p-1 text-gray-400 hover:bg-gray-200 hover:text-gray-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
           {/* Textarea */}
           <div className="p-5">
             <textarea
@@ -406,6 +456,24 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
               type="file"
               accept="image/*,video/*,.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt,.zip"
               onChange={handleFileChange}
+              className="hidden"
+            />
+
+            {/* Áudio PTT */}
+            <button
+              type="button"
+              onClick={() => audioInputRef.current?.click()}
+              disabled={sending}
+              title="Enviar áudio de voz (PTT)"
+              className={`rounded-lg p-2 transition-colors disabled:opacity-50 ${audioAttachment ? "bg-[#25D366]/15 text-[#25D366]" : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"}`}
+            >
+              <Mic className="h-5 w-5" />
+            </button>
+            <input
+              ref={audioInputRef}
+              type="file"
+              accept="audio/*"
+              onChange={handleAudioFileChange}
               className="hidden"
             />
 

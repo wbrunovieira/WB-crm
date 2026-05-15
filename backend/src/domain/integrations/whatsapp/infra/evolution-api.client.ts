@@ -106,6 +106,27 @@ export class EvolutionApiClient extends EvolutionApiPort {
     };
   }
 
+  async sendAudio(opts: {
+    to: string;
+    audioBase64: string;
+    mimetype?: string;
+  }): Promise<SendMediaResult> {
+    const data = await this.post<{
+      key: { id: string; remoteJid: string };
+      messageTimestamp: number;
+    }>(`/message/sendWhatsAppAudio/${this.instance}`, {
+      number: opts.to,
+      audio: opts.audioBase64,
+      encoding: true,
+    });
+
+    return {
+      messageId: data.key.id,
+      remoteJid: data.key.remoteJid,
+      timestamp: data.messageTimestamp,
+    };
+  }
+
   async downloadMedia(payload: {
     key: { id: string; fromMe: boolean; remoteJid: string };
     message: Record<string, unknown> | null;

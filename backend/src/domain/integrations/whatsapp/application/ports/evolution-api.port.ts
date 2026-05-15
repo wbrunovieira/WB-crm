@@ -33,6 +33,11 @@ export abstract class EvolutionApiPort {
     fileName?: string;
     mimetype?: string;
   }): Promise<SendMediaResult>;
+  abstract sendAudio(opts: {
+    to: string;
+    audioBase64: string;
+    mimetype?: string;
+  }): Promise<SendMediaResult>;
   abstract downloadMedia(payload: {
     key: { id: string; fromMe: boolean; remoteJid: string };
     message: Record<string, unknown> | null;

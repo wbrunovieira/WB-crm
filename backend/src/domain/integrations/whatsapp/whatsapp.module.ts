@@ -19,6 +19,7 @@ import { ProcessWhatsAppMediaUseCase } from "./application/use-cases/process-wha
 import { PollWhatsAppTranscriptionsUseCase } from "./application/use-cases/poll-whatsapp-transcriptions.use-case";
 import { SendWhatsAppMessageUseCase } from "./application/use-cases/send-whatsapp-message.use-case";
 import { SendWhatsAppMediaUseCase } from "./application/use-cases/send-whatsapp-media.use-case";
+import { SendWhatsAppAudioUseCase } from "./application/use-cases/send-whatsapp-audio.use-case";
 import { GetWhatsAppMediaMessagesUseCase } from "./application/use-cases/get-whatsapp-media-messages.use-case";
 import { SaveWhatsAppVerificationUseCase } from "./application/use-cases/save-whatsapp-verification.use-case";
 import { SaveWhatsAppNumberUseCase } from "./application/use-cases/save-whatsapp-number.use-case";
@@ -52,6 +53,7 @@ import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-tra
     PollWhatsAppTranscriptionsUseCase,
     SendWhatsAppMessageUseCase,
     SendWhatsAppMediaUseCase,
+    SendWhatsAppAudioUseCase,
     GetWhatsAppMediaMessagesUseCase,
     SaveWhatsAppVerificationUseCase,
     SaveWhatsAppNumberUseCase,

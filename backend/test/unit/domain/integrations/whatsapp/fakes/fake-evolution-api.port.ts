@@ -9,8 +9,10 @@ import {
 export class FakeEvolutionApiPort extends EvolutionApiPort {
   public sentTexts: Array<{ to: string; text: string }> = [];
   public sentMedia: Array<{ opts: Parameters<EvolutionApiPort["sendMedia"]>[0] }> = [];
+  public sentAudios: Array<{ to: string; audioBase64: string; mimetype?: string }> = [];
   public shouldFailDownload = false;
   public shouldFailSend = false;
+  public shouldFailAudio = false;
   public downloadResult: DownloadMediaResult = {
     buffer: Buffer.from("fake-media"),
     mimeType: "audio/ogg",
@@ -31,6 +33,16 @@ export class FakeEvolutionApiPort extends EvolutionApiPort {
 
   async sendMedia(opts: Parameters<EvolutionApiPort["sendMedia"]>[0]): Promise<SendMediaResult> {
     this.sentMedia.push({ opts });
+    return {
+      messageId: this.nextMessageId,
+      remoteJid: `${opts.to}@s.whatsapp.net`,
+      timestamp: Math.floor(Date.now() / 1000),
+    };
+  }
+
+  async sendAudio(opts: { to: string; audioBase64: string; mimetype?: string }): Promise<SendMediaResult> {
+    if (this.shouldFailAudio) throw new Error("sendAudio failed");
+    this.sentAudios.push(opts);
     return {
       messageId: this.nextMessageId,
       remoteJid: `${opts.to}@s.whatsapp.net`,

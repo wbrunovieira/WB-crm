@@ -5,6 +5,7 @@ export class FakeTranscriberPort extends TranscriberPort {
   public jobStatuses: Map<string, TranscriptionJob> = new Map();
   public jobResults: Map<string, TranscriptionResult> = new Map();
   public nextJobId = "job-wa-001";
+  public shouldFailSubmit = false;
 
   setNextJobId(id: string): void {
     this.nextJobId = id;
@@ -19,12 +20,14 @@ export class FakeTranscriberPort extends TranscriberPort {
   }
 
   async submitAudio(buffer: Buffer, fileName: string): Promise<{ jobId: string }> {
+    if (this.shouldFailSubmit) throw new Error("submitAudio failed");
     this.submittedJobs.push({ buffer, fileName, type: "audio" });
     const jobId = this.nextJobId;
     return { jobId };
   }
 
   async submitVideo(buffer: Buffer, fileName: string): Promise<{ jobId: string }> {
+    if (this.shouldFailSubmit) throw new Error("submitVideo failed");
     this.submittedJobs.push({ buffer, fileName, type: "video" });
     const jobId = this.nextJobId;
     return { jobId };
