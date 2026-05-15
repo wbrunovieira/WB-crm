@@ -28,6 +28,8 @@ FROM node:20-alpine AS runtime
 
 WORKDIR /app
 
+RUN apk add --no-cache ffmpeg
+
 # Cria usuário não-root para segurança
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 

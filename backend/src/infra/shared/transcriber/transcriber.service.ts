@@ -1,8 +1,41 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import { execFile } from "child_process";
+import { tmpdir } from "os";
+import { join } from "path";
+import { writeFile, readFile, unlink } from "fs/promises";
+import { randomUUID } from "crypto";
 import { TranscriberPort, TranscriberCallbackOptions, TranscriptionJob, TranscriptionResult } from "./transcriber.port";
+
+async function toMp3IfNeeded(buffer: Buffer, fileName: string): Promise<{ buffer: Buffer; fileName: string }> {
+  const ext = fileName.split(".").pop()?.toLowerCase() ?? "";
+  const unsupported = ["webm"];
+  if (!unsupported.includes(ext)) return { buffer, fileName };
+
+  const id = randomUUID();
+  const inputPath = join(tmpdir(), `wa_${id}.${ext}`);
+  const outputPath = join(tmpdir(), `wa_${id}.mp3`);
+
+  await writeFile(inputPath, buffer);
+
+  await new Promise<void>((resolve, reject) => {
+    execFile("ffmpeg", ["-y", "-i", inputPath, "-q:a", "4", outputPath], (_err, _stdout, stderr) => {
+      if (_err) reject(new Error(stderr || _err.message));
+      else resolve();
+    });
+  });
+
+  const mp3Buffer = await readFile(outputPath);
+  await unlink(inputPath).catch(() => {});
+  await unlink(outputPath).catch(() => {});
+
+  const baseName = fileName.replace(/\.[^.]+$/, "");
+  return { buffer: mp3Buffer, fileName: `${baseName}.mp3` };
+}
 
 @Injectable()
 export class TranscriberService extends TranscriberPort {
+  private readonly logger = new Logger(TranscriberService.name);
+
   private baseUrl(): string {
     return process.env.TRANSCRIPTOR_BASE_URL ?? "https://transcritor.wbdigitalsolutions.com";
   }
@@ -12,10 +45,21 @@ export class TranscriberService extends TranscriberPort {
   }
 
   async submitAudio(buffer: Buffer, fileName: string, callback?: TranscriberCallbackOptions): Promise<{ jobId: string }> {
+    let finalBuffer = buffer;
+    let finalFileName = fileName;
+    try {
+      ({ buffer: finalBuffer, fileName: finalFileName } = await toMp3IfNeeded(buffer, fileName));
+      if (finalFileName !== fileName) {
+        this.logger.log(`Converted ${fileName} → ${finalFileName} for transcription`);
+      }
+    } catch (err) {
+      this.logger.warn(`Audio conversion failed, using original: ${err instanceof Error ? err.message : err}`);
+    }
+
     const formData = new FormData();
     formData.append(
       "file",
-      new File([new Uint8Array(buffer)], fileName, { type: "audio/mpeg" }),
+      new File([new Uint8Array(finalBuffer)], finalFileName, { type: "audio/mpeg" }),
     );
     if (callback?.callbackUrl) {
       formData.append("callback_url", callback.callbackUrl);
