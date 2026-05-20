@@ -1,5 +1,4 @@
 import { Injectable } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
 import { Either, left, right } from "@/core/either";
 import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
 import { ProposalsRepository } from "@/domain/proposals/application/repositories/proposals.repository";
@@ -23,7 +22,6 @@ export class TriggerProposalAgentUseCase {
     private readonly leadsRepo: LeadsRepository,
     private readonly proposalsRepo: ProposalsRepository,
     private readonly agentPort: ProposalAgentPort,
-    private readonly config: ConfigService,
   ) {}
 
   async execute(input: TriggerProposalAgentInput): Promise<Output> {
@@ -46,7 +44,7 @@ export class TriggerProposalAgentUseCase {
     const proposal = proposalResult.value;
     await this.proposalsRepo.save(proposal);
 
-    const baseUrl = this.config.get<string>("BASE_URL") ?? "http://localhost:3010";
+    const baseUrl = process.env.BACKEND_PUBLIC_URL ?? "https://crm.wbdigitalsolutions.com";
     const webhookUrl = `${baseUrl}/webhooks/proposal-agent`;
 
     let jobId: string;

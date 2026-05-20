@@ -25,7 +25,7 @@ describe("TriggerProposalAgentUseCase", () => {
     leadsRepo = new InMemoryLeadsRepository();
     proposalsRepo = new InMemoryProposalsRepository();
     agentPort = new FakeProposalAgentPort();
-    sut = new TriggerProposalAgentUseCase(leadsRepo, proposalsRepo, agentPort, makeConfig());
+    sut = new TriggerProposalAgentUseCase(leadsRepo, proposalsRepo, agentPort);
   });
 
   it("retorna erro se lead não encontrado", async () => {
@@ -89,6 +89,6 @@ describe("TriggerProposalAgentUseCase", () => {
       brand: "wb",
       contacts: [],
     });
-    expect(agentPort.triggerCalls[0].webhookUrl).toBe("http://localhost:3010/webhooks/proposal-agent");
+    expect(agentPort.triggerCalls[0].webhookUrl).toBe("https://crm.wbdigitalsolutions.com/webhooks/proposal-agent");
   });
 });

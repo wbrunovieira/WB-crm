@@ -1,5 +1,4 @@
 import { Module } from "@nestjs/common";
-import { ConfigModule } from "@nestjs/config";
 import { AuthModule } from "@/infra/auth/auth.module";
 import { LeadsModule } from "@/domain/leads/leads.module";
 import { ProposalsModule } from "@/domain/proposals/proposals.module";
@@ -12,7 +11,7 @@ import { ProposalAgentHttpAdapter } from "./infra/proposal-agent-http.adapter";
 import { ProposalAgentController } from "./infra/controllers/proposal-agent.controller";
 
 @Module({
-  imports: [ConfigModule, AuthModule, LeadsModule, ProposalsModule, SharedInfraModule],
+  imports: [AuthModule, LeadsModule, ProposalsModule, SharedInfraModule],
   controllers: [ProposalAgentController],
   providers: [
     TriggerProposalAgentUseCase,
