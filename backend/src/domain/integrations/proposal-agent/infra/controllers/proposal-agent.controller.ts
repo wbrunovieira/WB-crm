@@ -140,7 +140,10 @@ export class ProposalAgentController {
     if (apiKey && apiKey === process.env.INTERNAL_API_KEY) return true;
 
     const webhookSecret = headers["x-webhook-secret"];
-    if (webhookSecret && webhookSecret === process.env.WEBHOOK_SECRET) return true;
+    if (webhookSecret) {
+      if (webhookSecret === process.env.WEBHOOK_SECRET) return true;
+      if (process.env.PROPOSAL_AGENT_SECRET && webhookSecret === process.env.PROPOSAL_AGENT_SECRET) return true;
+    }
 
     const forwardedFor = headers["x-forwarded-for"];
     if (forwardedFor) {
