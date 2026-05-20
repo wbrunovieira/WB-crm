@@ -6,11 +6,21 @@ import { AppModule } from "@/app.module";
 import { PrismaService } from "@/infra/database/prisma.service";
 import { JwtService } from "@nestjs/jwt";
 import { ProposalAgentPort } from "@/domain/integrations/proposal-agent/application/ports/proposal-agent.port";
+import { GoogleDrivePort } from "@/domain/integrations/whatsapp/application/ports/google-drive.port";
 
-// ─── Fake port ────────────────────────────────────────────────────────────────
+// ─── Fake ports ───────────────────────────────────────────────────────────────
 const fakeProposalAgentPort = {
   trigger: async () => ({ jobId: "fake-e2e-job-001" }),
   answer: async () => undefined,
+};
+
+const fakeGoogleDrivePort = {
+  uploadFile: async (opts: { name: string }) => ({
+    id: "fake-drive-id-e2e",
+    webViewLink: `https://drive.google.com/file/d/fake-drive-id-e2e/view`,
+  }),
+  deleteFile: async () => undefined,
+  getOrCreateFolder: async () => "fake-folder-id-e2e",
 };
 
 // ─── Shared state ─────────────────────────────────────────────────────────────
@@ -31,6 +41,8 @@ beforeAll(async () => {
   const module = await Test.createTestingModule({ imports: [AppModule] })
     .overrideProvider(ProposalAgentPort)
     .useValue(fakeProposalAgentPort)
+    .overrideProvider(GoogleDrivePort)
+    .useValue(fakeGoogleDrivePort)
     .compile();
 
   app = module.createNestApplication();
@@ -308,6 +320,29 @@ describe("POST /webhooks/proposal-agent", () => {
     expect(updated!.driveFileId).toBe("drive-file-e2e-001");
     expect(updated!.driveUrl).toBe("https://drive.google.com/file/d/e2e-001");
     expect(updated!.fileName).toBe("proposta_empresa.pdf");
+  });
+
+  it("faz upload no Drive via fileBase64 e salva driveFileId", async () => {
+    const jobId = "job-base64-e2e-005";
+    const created = await prisma.proposal.create({
+      data: { title: "Proposta Base64 E2E", ownerId, leadId, status: "draft", agentJobId: jobId, agentStatus: "processing" },
+    });
+
+    const fakeBase64 = Buffer.from("%PDF-1.4 fake content").toString("base64");
+
+    await request(app.getHttpServer())
+      .post("/webhooks/proposal-agent")
+      .set("x-webhook-secret", INTERNAL_SECRET)
+      .send({ jobId, proposalId: created.id, status: "completed", fileBase64: fakeBase64, fileName: "proposta_e2e.pdf" })
+      .expect(200);
+
+    await new Promise((r) => setTimeout(r, 300));
+
+    const updated = await prisma.proposal.findUnique({ where: { id: created.id } });
+    expect(updated!.agentStatus).toBe("completed");
+    expect(updated!.driveFileId).toBe("fake-drive-id-e2e");
+    expect(updated!.driveUrl).toContain("fake-drive-id-e2e");
+    expect(updated!.fileName).toBe("proposta_e2e.pdf");
   });
 
   it("atualiza proposta para error via webhook de erro", async () => {

@@ -1,8 +1,15 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { HandleProposalAgentWebhookUseCase } from "@/domain/integrations/proposal-agent/application/use-cases/handle-proposal-agent-webhook.use-case";
 import { InMemoryProposalsRepository } from "../../fakes/in-memory-proposals.repository";
 import { Proposal } from "@/domain/proposals/enterprise/entities/proposal";
 import { UniqueEntityID } from "@/core/unique-entity-id";
+import { GoogleDrivePort } from "@/domain/integrations/whatsapp/application/ports/google-drive.port";
+
+const fakeDrive = {
+  uploadFile: vi.fn().mockResolvedValue({ id: "fake-drive-id", webViewLink: "https://drive.google.com/file/fake" }),
+  deleteFile: vi.fn().mockResolvedValue(undefined),
+  getOrCreateFolder: vi.fn().mockResolvedValue("fake-folder-id"),
+} as unknown as GoogleDrivePort;
 
 function makeProposal(id = "prop-1", agentJobId = "job-1") {
   const p = Proposal.create({
@@ -21,7 +28,7 @@ describe("HandleProposalAgentWebhookUseCase", () => {
 
   beforeEach(() => {
     repo = new InMemoryProposalsRepository();
-    sut = new HandleProposalAgentWebhookUseCase(repo);
+    sut = new HandleProposalAgentWebhookUseCase(repo, fakeDrive);
   });
 
   it("retorna erro se proposta não encontrada", async () => {
@@ -70,6 +77,20 @@ describe("HandleProposalAgentWebhookUseCase", () => {
 
     expect(repo.items[0].agentStatus).toBe("error");
     expect(repo.items[0].agentCurrentQuestion).toBeUndefined();
+  });
+
+  it("faz upload via fileBase64 e salva driveFileId retornado pelo Drive", async () => {
+    repo.items.push(makeProposal());
+    const fakeBase64 = Buffer.from("%PDF-1.4 fake").toString("base64");
+
+    await sut.execute({ jobId: "job-1", status: "completed", fileBase64: fakeBase64, fileName: "proposta.pdf" });
+
+    expect(fakeDrive.uploadFile).toHaveBeenCalled();
+    const saved = repo.items[0];
+    expect(saved.agentStatus).toBe("completed");
+    expect(saved.driveFileId).toBe("fake-drive-id");
+    expect(saved.driveUrl).toContain("fake");
+    expect(saved.fileName).toBe("proposta.pdf");
   });
 
   it("localiza proposta pelo proposalId quando fornecido", async () => {
