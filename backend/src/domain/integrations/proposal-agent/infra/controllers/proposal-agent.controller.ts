@@ -20,6 +20,8 @@ import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { TriggerProposalAgentUseCase } from "../../application/use-cases/trigger-proposal-agent.use-case";
 import { HandleProposalAgentWebhookUseCase, type ProposalAgentWebhookPayload } from "../../application/use-cases/handle-proposal-agent-webhook.use-case";
 import { AnswerProposalAgentQuestionUseCase } from "../../application/use-cases/answer-proposal-agent-question.use-case";
+import { CorrectProposalUseCase } from "../../application/use-cases/correct-proposal.use-case";
+import { ReviseProposalUseCase } from "../../application/use-cases/revise-proposal.use-case";
 
 function isLocalIp(ip: string): boolean {
   return (
@@ -40,6 +42,8 @@ export class ProposalAgentController {
     private readonly triggerUseCase: TriggerProposalAgentUseCase,
     private readonly webhookUseCase: HandleProposalAgentWebhookUseCase,
     private readonly answerUseCase: AnswerProposalAgentQuestionUseCase,
+    private readonly correctUseCase: CorrectProposalUseCase,
+    private readonly reviseUseCase: ReviseProposalUseCase,
   ) {}
 
   @Post("leads/:id/proposal-agent")
@@ -104,6 +108,69 @@ export class ProposalAgentController {
     }
 
     return { ok: true };
+  }
+
+  @Post("proposals/:id/agent-correct")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(202)
+  @ApiOperation({ summary: "Aciona o agente para corrigir uma proposta existente" })
+  async correct(
+    @Param("id") proposalId: string,
+    @Body() body: { instructions: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (!body.instructions?.trim()) throw new BadRequestException("instructions é obrigatório");
+
+    const result = await this.correctUseCase.execute({
+      proposalId,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+      instructions: body.instructions,
+    });
+
+    if (result.isLeft()) {
+      const msg = result.value.message;
+      if (msg.includes("não encontrada")) throw new NotFoundException(msg);
+      if (msg.includes("Drive")) throw new UnprocessableEntityException(msg);
+      throw new BadGatewayException(msg);
+    }
+
+    return { status: "accepted", proposalId: result.value.proposalId, jobId: result.value.jobId };
+  }
+
+  @Post("proposals/:id/agent-revise")
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @HttpCode(202)
+  @ApiOperation({ summary: "Aciona o agente para criar uma revisão de proposta" })
+  async revise(
+    @Param("id") proposalId: string,
+    @Body() body: { revisionNotes: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (!body.revisionNotes?.trim()) throw new BadRequestException("revisionNotes é obrigatório");
+
+    const result = await this.reviseUseCase.execute({
+      proposalId,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+      revisionNotes: body.revisionNotes,
+    });
+
+    if (result.isLeft()) {
+      const msg = result.value.message;
+      if (msg.includes("não encontrada")) throw new NotFoundException(msg);
+      if (msg.includes("Drive")) throw new UnprocessableEntityException(msg);
+      throw new BadGatewayException(msg);
+    }
+
+    return {
+      status: "accepted",
+      proposalId: result.value.proposalId,
+      jobId: result.value.jobId,
+      revisionNumber: result.value.revisionNumber,
+    };
   }
 
   @Post("webhooks/proposal-agent")

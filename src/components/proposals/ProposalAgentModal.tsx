@@ -360,3 +360,192 @@ export function ProposalAgentErrorBadge() {
     </span>
   );
 }
+
+// Correct Proposal modal
+interface CorrectModalProps {
+  proposalId: string;
+  proposalTitle: string;
+  onClose: () => void;
+  onStarted: (proposalId: string, jobId: string) => void;
+}
+
+export function ProposalCorrectModal({ proposalId, proposalTitle, onClose, onStarted }: CorrectModalProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  const [instructions, setInstructions] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    if (!instructions.trim()) return;
+    setLoading(true);
+    try {
+      const res = await apiFetch<{ status: string; proposalId: string; jobId: string }>(
+        `/proposals/${proposalId}/agent-correct`,
+        token,
+        { method: "POST", body: JSON.stringify({ instructions: instructions.trim() }) },
+      );
+      onStarted(res.proposalId, res.jobId);
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao acionar correção");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-xl border border-[#3d2b4d] bg-[#1a0022] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-[#3d2b4d] px-6 py-4">
+          <div className="flex items-center gap-2">
+            <BrainCircuit size={18} className="text-orange-400" />
+            <h2 className="text-base font-semibold text-gray-100">Corrigir Proposta</h2>
+          </div>
+          <button onClick={onClose} className="rounded-md p-1.5 text-gray-400 hover:bg-white/10">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-sm text-gray-400 line-clamp-1">
+            <span className="text-gray-500">Proposta:</span>{" "}
+            <span className="text-gray-300">{proposalTitle}</span>
+          </p>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-300">
+              O que precisa ser corrigido?
+            </label>
+            <textarea
+              value={instructions}
+              onChange={(e) => setInstructions(e.target.value)}
+              placeholder="Ex: Reduza o prazo para 5 dias úteis, ajuste o valor para R$ 1.200..."
+              rows={4}
+              autoFocus
+              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-500 focus:outline-none resize-none"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSubmit();
+              }}
+            />
+            <p className="mt-1 text-xs text-gray-600">Ctrl+Enter para enviar</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-[#3d2b4d] px-6 py-4">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="rounded-lg border border-[#3d2b4d] px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading || !instructions.trim()}
+            className="flex items-center gap-2 rounded-lg bg-orange-700 px-5 py-2 text-sm font-medium text-white hover:bg-orange-600 disabled:opacity-50 transition-colors"
+          >
+            {loading ? <Loader2 size={15} className="animate-spin" /> : <BrainCircuit size={15} />}
+            {loading ? "Enviando..." : "Corrigir com Agente"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// Revise Proposal modal
+interface ReviseModalProps {
+  proposalId: string;
+  proposalTitle: string;
+  onClose: () => void;
+  onStarted: (newProposalId: string, jobId: string, revisionNumber: number) => void;
+}
+
+export function ProposalReviseModal({ proposalId, proposalTitle, onClose, onStarted }: ReviseModalProps) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  const [revisionNotes, setRevisionNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit() {
+    if (!revisionNotes.trim()) return;
+    setLoading(true);
+    try {
+      const res = await apiFetch<{ status: string; proposalId: string; jobId: string; revisionNumber: number }>(
+        `/proposals/${proposalId}/agent-revise`,
+        token,
+        { method: "POST", body: JSON.stringify({ revisionNotes: revisionNotes.trim() }) },
+      );
+      onStarted(res.proposalId, res.jobId, res.revisionNumber);
+      onClose();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao acionar revisão");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
+      <div
+        className="w-full max-w-md rounded-xl border border-[#3d2b4d] bg-[#1a0022] shadow-2xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-[#3d2b4d] px-6 py-4">
+          <div className="flex items-center gap-2">
+            <BrainCircuit size={18} className="text-blue-400" />
+            <h2 className="text-base font-semibold text-gray-100">Revisão de Proposta</h2>
+          </div>
+          <button onClick={onClose} className="rounded-md p-1.5 text-gray-400 hover:bg-white/10">
+            <X size={18} />
+          </button>
+        </div>
+
+        <div className="px-6 py-5 space-y-4">
+          <p className="text-sm text-gray-400 line-clamp-1">
+            <span className="text-gray-500">Proposta:</span>{" "}
+            <span className="text-gray-300">{proposalTitle}</span>
+          </p>
+          <p className="text-xs text-blue-400/80 bg-blue-500/10 border border-blue-500/20 rounded-lg px-3 py-2">
+            Será criada uma nova versão da proposta com número de revisão incrementado (REV1, REV2...).
+          </p>
+          <div>
+            <label className="mb-1.5 block text-sm font-medium text-gray-300">
+              Notas de revisão
+            </label>
+            <textarea
+              value={revisionNotes}
+              onChange={(e) => setRevisionNotes(e.target.value)}
+              placeholder="Ex: Cliente pediu desconto de 10% e prazo de 30 dias no pagamento..."
+              rows={4}
+              autoFocus
+              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-500 focus:outline-none resize-none"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSubmit();
+              }}
+            />
+            <p className="mt-1 text-xs text-gray-600">Ctrl+Enter para enviar</p>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 border-t border-[#3d2b4d] px-6 py-4">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="rounded-lg border border-[#3d2b4d] px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-50"
+          >
+            Cancelar
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={loading || !revisionNotes.trim()}
+            className="flex items-center gap-2 rounded-lg bg-blue-700 px-5 py-2 text-sm font-medium text-white hover:bg-blue-600 disabled:opacity-50 transition-colors"
+          >
+            {loading ? <Loader2 size={15} className="animate-spin" /> : <BrainCircuit size={15} />}
+            {loading ? "Enviando..." : "Criar Revisão"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

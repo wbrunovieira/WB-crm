@@ -2154,6 +2154,9 @@ model Proposal {
   agentStatus           String?   // "processing" | "awaiting_answer" | "completed" | "error"
   agentCurrentQuestion  String?
   agentTriggeredAt      DateTime?
+  // Revision fields
+  revisionNumber        Int?
+  originalProposalId    String?
   createdAt             DateTime  @default(now())
   updatedAt             DateTime  @updatedAt
 

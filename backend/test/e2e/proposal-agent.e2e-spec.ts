@@ -12,6 +12,8 @@ import { GoogleDrivePort } from "@/domain/integrations/whatsapp/application/port
 const fakeProposalAgentPort = {
   trigger: async () => ({ jobId: "fake-e2e-job-001" }),
   answer: async () => undefined,
+  correct: async () => ({ jobId: "fake-e2e-job-correct" }),
+  revise: async () => ({ jobId: "fake-e2e-job-revise" }),
 };
 
 const fakeGoogleDrivePort = {
@@ -397,5 +399,172 @@ describe("GET /proposals/:id retorna campos do agente", () => {
     expect(res.body.agentJobId).toBe("job-fields-test");
     expect(res.body.agentStatus).toBe("awaiting_answer");
     expect(res.body.agentCurrentQuestion).toBe("Qual o prazo?");
+  });
+});
+
+// ─── CorrectProposalUseCase E2E ───────────────────────────────────────────────
+describe("POST /proposals/:id/agent-correct", () => {
+  it("retorna 401 sem autenticação", async () => {
+    await request(app.getHttpServer())
+      .post("/proposals/any-id/agent-correct")
+      .send({ instructions: "Ajuste" })
+      .expect(401);
+  });
+
+  it("retorna 400 se instructions estiver vazio", async () => {
+    const p = await prisma.proposal.create({
+      data: { title: "Proposta Correct Test", ownerId, status: "draft", leadId },
+    });
+    await request(app.getHttpServer())
+      .post(`/proposals/${p.id}/agent-correct`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ instructions: "" })
+      .expect(400);
+  });
+
+  it("retorna 422 se proposta não tem driveUrl", async () => {
+    const p = await prisma.proposal.create({
+      data: { title: "Proposta sem Drive", ownerId, status: "draft", leadId },
+    });
+    const res = await request(app.getHttpServer())
+      .post(`/proposals/${p.id}/agent-correct`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ instructions: "Corrija o preço" })
+      .expect(422);
+    expect(res.body.message).toContain("Drive");
+  });
+
+  it("retorna 404 se proposta não encontrada", async () => {
+    await request(app.getHttpServer())
+      .post("/proposals/non-existent-id/agent-correct")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ instructions: "Corrija algo" })
+      .expect(404);
+  });
+
+  it("aciona correção com sucesso e retorna jobId", async () => {
+    const p = await prisma.proposal.create({
+      data: {
+        title: "Proposta com Drive",
+        ownerId,
+        status: "draft",
+        leadId,
+        driveUrl: "https://drive.google.com/file/d/test123/view",
+        agentStatus: "completed",
+      },
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(`/proposals/${p.id}/agent-correct`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ instructions: "Reduza o prazo para 5 dias úteis" })
+      .expect(202);
+
+    expect(res.body.status).toBe("accepted");
+    expect(res.body.jobId).toBe("fake-e2e-job-correct");
+    expect(res.body.proposalId).toBe(p.id);
+
+    const updated = await prisma.proposal.findUnique({ where: { id: p.id } });
+    expect(updated?.agentStatus).toBe("processing");
+    expect(updated?.agentJobId).toBe("fake-e2e-job-correct");
+  });
+});
+
+// ─── ReviseProposalUseCase E2E ────────────────────────────────────────────────
+describe("POST /proposals/:id/agent-revise", () => {
+  it("retorna 401 sem autenticação", async () => {
+    await request(app.getHttpServer())
+      .post("/proposals/any-id/agent-revise")
+      .send({ revisionNotes: "Ajuste" })
+      .expect(401);
+  });
+
+  it("retorna 400 se revisionNotes estiver vazio", async () => {
+    const p = await prisma.proposal.create({
+      data: { title: "Proposta Revise Test", ownerId, status: "draft", leadId },
+    });
+    await request(app.getHttpServer())
+      .post(`/proposals/${p.id}/agent-revise`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ revisionNotes: "" })
+      .expect(400);
+  });
+
+  it("retorna 422 se proposta não tem driveUrl", async () => {
+    const p = await prisma.proposal.create({
+      data: { title: "Proposta sem Drive Revise", ownerId, status: "draft", leadId },
+    });
+    const res = await request(app.getHttpServer())
+      .post(`/proposals/${p.id}/agent-revise`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ revisionNotes: "Reduza 10%" })
+      .expect(422);
+    expect(res.body.message).toContain("Drive");
+  });
+
+  it("cria revisão REV1 a partir de proposta original", async () => {
+    const original = await prisma.proposal.create({
+      data: {
+        title: "Proposta Original",
+        ownerId,
+        status: "draft",
+        leadId,
+        driveUrl: "https://drive.google.com/file/d/orig123/view",
+        agentStatus: "completed",
+      },
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(`/proposals/${original.id}/agent-revise`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ revisionNotes: "Reduza 10% e aumente prazo" })
+      .expect(202);
+
+    expect(res.body.status).toBe("accepted");
+    expect(res.body.revisionNumber).toBe(1);
+    expect(res.body.jobId).toBe("fake-e2e-job-revise");
+
+    const revision = await prisma.proposal.findUnique({ where: { id: res.body.proposalId } });
+    expect(revision).toBeTruthy();
+    expect(revision?.revisionNumber).toBe(1);
+    expect(revision?.originalProposalId).toBe(original.id);
+    expect(revision?.title).toContain("REV1");
+    expect(revision?.agentStatus).toBe("processing");
+  });
+
+  it("cria revisão REV2 a partir de uma REV1", async () => {
+    const original = await prisma.proposal.create({
+      data: {
+        title: "Proposta Original",
+        ownerId,
+        status: "draft",
+        leadId,
+        driveUrl: "https://drive.google.com/file/d/orig456/view",
+        agentStatus: "completed",
+      },
+    });
+    const rev1 = await prisma.proposal.create({
+      data: {
+        title: "Proposta Original REV1",
+        ownerId,
+        status: "draft",
+        leadId,
+        driveUrl: "https://drive.google.com/file/d/rev1-456/view",
+        agentStatus: "completed",
+        revisionNumber: 1,
+        originalProposalId: original.id,
+      },
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(`/proposals/${rev1.id}/agent-revise`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ revisionNotes: "Mais ajustes" })
+      .expect(202);
+
+    expect(res.body.revisionNumber).toBe(2);
+    const rev2 = await prisma.proposal.findUnique({ where: { id: res.body.proposalId } });
+    expect(rev2?.revisionNumber).toBe(2);
+    expect(rev2?.title).toContain("REV2");
   });
 });

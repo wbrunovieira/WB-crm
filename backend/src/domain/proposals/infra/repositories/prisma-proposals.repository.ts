@@ -22,6 +22,8 @@ function map(raw: Record<string, unknown>): Proposal {
       agentStatus: raw.agentStatus as string | undefined,
       agentCurrentQuestion: raw.agentCurrentQuestion as string | undefined,
       agentTriggeredAt: raw.agentTriggeredAt as Date | undefined,
+      revisionNumber: raw.revisionNumber as number | undefined,
+      originalProposalId: raw.originalProposalId as string | undefined,
       createdAt: raw.createdAt as Date,
       updatedAt: raw.updatedAt as Date,
     },
@@ -75,6 +77,8 @@ export class PrismaProposalsRepository extends ProposalsRepository {
       agentStatus: proposal.agentStatus ?? null,
       agentCurrentQuestion: proposal.agentCurrentQuestion ?? null,
       agentTriggeredAt: proposal.agentTriggeredAt ?? null,
+      revisionNumber: proposal.revisionNumber ?? null,
+      originalProposalId: proposal.originalProposalId ?? null,
     };
     await this.prisma.proposal.upsert({
       where: { id: proposal.id.toString() },

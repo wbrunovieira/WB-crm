@@ -18,6 +18,8 @@ import {
   BrainCircuit,
   HelpCircle,
   Hourglass,
+  WrenchIcon,
+  GitBranchPlus,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -33,6 +35,8 @@ import {
   ProposalAgentModal,
   ProposalAgentQuestionModal,
   ProposalAgentCompletionDialog,
+  ProposalCorrectModal,
+  ProposalReviseModal,
 } from "./ProposalAgentModal";
 import type { LeadContact } from "@/types/lead";
 
@@ -54,6 +58,9 @@ export interface Proposal {
   agentStatus?: string | null;
   agentCurrentQuestion?: string | null;
   agentTriggeredAt?: string | Date | null;
+  // Revision fields
+  revisionNumber?: number | null;
+  originalProposalId?: string | null;
 }
 
 interface Props {
@@ -119,6 +126,8 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, lead
   const [updating, setUpdating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [viewing, setViewing] = useState<Proposal | null>(null);
+  const [correcting, setCorrecting] = useState<Proposal | null>(null);
+  const [revising, setRevising] = useState<Proposal | null>(null);
 
   // Agent polling state
   const [agentProposalId, setAgentProposalId] = useState<string | null>(null);
@@ -184,6 +193,35 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, lead
       agentStatus: "processing",
     };
     setProposals((prev) => [placeholder, ...prev.filter((p) => p.id !== proposalId)]);
+  }
+
+  // Correction: same proposal ID — update in place, don't add placeholder
+  function handleCorrectionStarted(proposalId: string, _jobId: string) {
+    setAgentProposalId(proposalId);
+    setProposals((prev) =>
+      prev.map((p) => p.id === proposalId ? { ...p, agentStatus: "processing" } : p)
+    );
+  }
+
+  // Revision: new proposal ID — add placeholder at top
+  function handleRevisionStarted(newProposalId: string, _jobId: string, revisionNumber: number) {
+    setAgentProposalId(newProposalId);
+    const placeholder: Proposal = {
+      id: newProposalId,
+      title: `Gerando revisão REV${revisionNumber}...`,
+      description: null,
+      status: "draft",
+      driveFileId: null,
+      driveUrl: null,
+      fileName: null,
+      fileSize: null,
+      sentAt: null,
+      createdAt: new Date(),
+      leadId: leadId ?? null,
+      agentStatus: "processing",
+      revisionNumber,
+    };
+    setProposals((prev) => [placeholder, ...prev]);
   }
 
   function handleQuestionAnswered(_answer: string) {
@@ -303,6 +341,11 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, lead
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                       <span className="font-medium text-gray-900 text-sm">{proposal.title}</span>
+                      {proposal.revisionNumber != null && (
+                        <span className="inline-flex items-center rounded bg-sky-500/20 px-1.5 py-0.5 text-[10px] font-bold text-sky-300 border border-sky-500/30">
+                          REV{proposal.revisionNumber}
+                        </span>
+                      )}
                       <span
                         className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${statusCfg.color}`}
                       >
@@ -432,6 +475,35 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, lead
                         Abrir no Drive
                       </a>
                     )}
+
+                    {/* 5. Corrigir com agente (só quando não está processando) */}
+                    {proposal.agentStatus !== "processing" && (
+                      <button
+                        onClick={() => setCorrecting(proposal)}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-orange-500/30 bg-orange-500/10 px-3 py-1.5 text-xs font-medium text-orange-300 hover:bg-orange-500/20"
+                        title="Pedir ao agente que corrija esta proposta"
+                      >
+                        <WrenchIcon size={13} />
+                        Corrigir
+                      </button>
+                    )}
+
+                    {/* 6. Revisão com agente (só quando não está processando) */}
+                    {proposal.agentStatus !== "processing" && (
+                      <button
+                        onClick={() => setRevising(proposal)}
+                        className="inline-flex items-center gap-1.5 rounded-md border border-sky-500/30 bg-sky-500/10 px-3 py-1.5 text-xs font-medium text-sky-300 hover:bg-sky-500/20"
+                        title="Criar nova versão revisada desta proposta"
+                      >
+                        <GitBranchPlus size={13} />
+                        Revisão
+                        {proposal.revisionNumber != null && (
+                          <span className="ml-0.5 rounded bg-sky-500/20 px-1 text-[10px] font-semibold">
+                            REV{proposal.revisionNumber}
+                          </span>
+                        )}
+                      </button>
+                    )}
                   </div>
                 )}
               </li>
@@ -499,6 +571,24 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, lead
           proposalTitle={completedProposal.title}
           driveUrl={completedProposal.driveUrl}
           onClose={() => setCompletedProposal(null)}
+        />
+      )}
+
+      {correcting && (
+        <ProposalCorrectModal
+          proposalId={correcting.id}
+          proposalTitle={correcting.title}
+          onClose={() => setCorrecting(null)}
+          onStarted={handleCorrectionStarted}
+        />
+      )}
+
+      {revising && (
+        <ProposalReviseModal
+          proposalId={revising.id}
+          proposalTitle={revising.title}
+          onClose={() => setRevising(null)}
+          onStarted={handleRevisionStarted}
         />
       )}
     </div>

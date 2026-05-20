@@ -8,6 +8,10 @@ export class InMemoryProposalsRepository extends ProposalsRepository {
     return this.items.find(p => p.id.toString() === id) ?? null;
   }
 
+  async findByAgentJobId(jobId: string): Promise<Proposal | null> {
+    return this.items.find(p => p.agentJobId === jobId) ?? null;
+  }
+
   async findByOwner(ownerId: string, filters?: ProposalFilters): Promise<Proposal[]> {
     return this.items.filter(p => {
       if (p.ownerId !== ownerId) return false;

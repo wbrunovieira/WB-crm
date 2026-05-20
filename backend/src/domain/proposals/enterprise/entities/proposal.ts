@@ -21,6 +21,9 @@ export interface ProposalProps {
   agentStatus?: string;
   agentCurrentQuestion?: string;
   agentTriggeredAt?: Date;
+  // Revision fields
+  revisionNumber?: number;
+  originalProposalId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -41,6 +44,8 @@ export class Proposal extends AggregateRoot<ProposalProps> {
   get agentStatus(): string | undefined { return this.props.agentStatus; }
   get agentCurrentQuestion(): string | undefined { return this.props.agentCurrentQuestion; }
   get agentTriggeredAt(): Date | undefined { return this.props.agentTriggeredAt; }
+  get revisionNumber(): number | undefined { return this.props.revisionNumber; }
+  get originalProposalId(): string | undefined { return this.props.originalProposalId; }
   get createdAt(): Date { return this.props.createdAt; }
   get updatedAt(): Date { return this.props.updatedAt; }
 
@@ -60,6 +65,8 @@ export class Proposal extends AggregateRoot<ProposalProps> {
     agentStatus?: string;
     agentCurrentQuestion?: string;
     agentTriggeredAt?: Date;
+    revisionNumber?: number;
+    originalProposalId?: string;
     createdAt?: Date;
     updatedAt?: Date;
   }, id?: UniqueEntityID): Either<Error, Proposal> {
@@ -89,6 +96,8 @@ export class Proposal extends AggregateRoot<ProposalProps> {
       agentStatus: data.agentStatus,
       agentCurrentQuestion: data.agentCurrentQuestion,
       agentTriggeredAt: data.agentTriggeredAt,
+      revisionNumber: data.revisionNumber,
+      originalProposalId: data.originalProposalId,
       createdAt: data.createdAt ?? now,
       updatedAt: data.updatedAt ?? now,
     }, id));
@@ -108,6 +117,8 @@ export class Proposal extends AggregateRoot<ProposalProps> {
     agentStatus?: string;
     agentCurrentQuestion?: string | null;
     agentTriggeredAt?: Date;
+    revisionNumber?: number;
+    originalProposalId?: string;
   }): Either<Error, void> {
     if (data.title !== undefined) {
       const r = ProposalTitle.create(data.title);
@@ -133,6 +144,8 @@ export class Proposal extends AggregateRoot<ProposalProps> {
     if (data.agentStatus !== undefined) this.props.agentStatus = data.agentStatus;
     if (data.agentCurrentQuestion !== undefined) this.props.agentCurrentQuestion = data.agentCurrentQuestion ?? undefined;
     if (data.agentTriggeredAt !== undefined) this.props.agentTriggeredAt = data.agentTriggeredAt;
+    if (data.revisionNumber !== undefined) this.props.revisionNumber = data.revisionNumber;
+    if (data.originalProposalId !== undefined) this.props.originalProposalId = data.originalProposalId;
     this.props.updatedAt = new Date();
     return right(undefined);
   }
