@@ -30,6 +30,10 @@ function serialize(p: Proposal) {
     leadId: p.leadId,
     dealId: p.dealId,
     ownerId: p.ownerId,
+    agentJobId: p.agentJobId ?? null,
+    agentStatus: p.agentStatus ?? null,
+    agentCurrentQuestion: p.agentCurrentQuestion ?? null,
+    agentTriggeredAt: p.agentTriggeredAt ?? null,
     createdAt: p.createdAt,
     updatedAt: p.updatedAt,
   };

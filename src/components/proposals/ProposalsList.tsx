@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   FileText,
   ExternalLink,
@@ -15,6 +15,9 @@ import {
   Eye,
   MonitorDown,
   Pencil,
+  BrainCircuit,
+  HelpCircle,
+  Hourglass,
 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
@@ -26,6 +29,12 @@ import { formatDate } from "@/lib/utils";
 import ProposalUploadModal from "./ProposalUploadModal";
 import ProposalEditModal from "./ProposalEditModal";
 import ProposalViewer from "./ProposalViewer";
+import {
+  ProposalAgentModal,
+  ProposalAgentQuestionModal,
+  ProposalAgentCompletionDialog,
+} from "./ProposalAgentModal";
+import type { LeadContact } from "@/types/lead";
 
 export interface Proposal {
   id: string;
@@ -40,12 +49,18 @@ export interface Proposal {
   createdAt: string | Date;
   leadId?: string | null;
   dealId?: string | null;
+  // Agent fields
+  agentJobId?: string | null;
+  agentStatus?: string | null;
+  agentCurrentQuestion?: string | null;
+  agentTriggeredAt?: string | Date | null;
 }
 
 interface Props {
   proposals: Proposal[];
   leadId?: string;
   dealId?: string;
+  leadContacts?: LeadContact[];
 }
 
 function isNotFound(err: unknown): boolean {
@@ -93,16 +108,90 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function ProposalsList({ proposals: initial, leadId, dealId }: Props) {
+export default function ProposalsList({ proposals: initial, leadId, dealId, leadContacts = [] }: Props) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const router = useRouter();
   const [proposals, setProposals] = useState<typeof initial>(initial ?? []);
   const [showModal, setShowModal] = useState(false);
+  const [showAgentModal, setShowAgentModal] = useState(false);
   const [editing, setEditing] = useState<Proposal | null>(null);
   const [updating, setUpdating] = useState<string | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [viewing, setViewing] = useState<Proposal | null>(null);
+
+  // Agent polling state
+  const [agentProposalId, setAgentProposalId] = useState<string | null>(null);
+  const [completedProposal, setCompletedProposal] = useState<Proposal | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Fetch latest proposal data for the agent proposal being tracked
+  useEffect(() => {
+    if (!agentProposalId) return;
+
+    let attempts = 0;
+    pollRef.current = setInterval(async () => {
+      attempts++;
+      try {
+        router.refresh();
+        const updated = await apiFetch<Proposal>(`/proposals/${agentProposalId}`, token);
+        setProposals((prev) => {
+          const exists = prev.find((p) => p.id === agentProposalId);
+          if (exists) return prev.map((p) => p.id === agentProposalId ? updated : p);
+          return [updated, ...prev];
+        });
+
+        const status = updated.agentStatus;
+        if (status === "completed") {
+          clearInterval(pollRef.current!);
+          pollRef.current = null;
+          setAgentProposalId(null);
+          setCompletedProposal(updated);
+        } else if (status === "error") {
+          clearInterval(pollRef.current!);
+          pollRef.current = null;
+          setAgentProposalId(null);
+        }
+      } catch { /* ignore poll errors */ }
+
+      if (attempts >= 30) {
+        clearInterval(pollRef.current!);
+        pollRef.current = null;
+        setAgentProposalId(null);
+      }
+    }, 6000);
+
+    return () => {
+      if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
+    };
+  }, [agentProposalId, token, router]);
+
+  function handleAgentProposalCreated(proposalId: string, _jobId: string) {
+    setAgentProposalId(proposalId);
+    // Add a placeholder proposal immediately
+    const placeholder: Proposal = {
+      id: proposalId,
+      title: "Gerando com agente IA...",
+      description: null,
+      status: "draft",
+      driveFileId: null,
+      driveUrl: null,
+      fileName: null,
+      fileSize: null,
+      sentAt: null,
+      createdAt: new Date(),
+      leadId: leadId ?? null,
+      agentStatus: "processing",
+    };
+    setProposals((prev) => [placeholder, ...prev.filter((p) => p.id !== proposalId)]);
+  }
+
+  function handleQuestionAnswered(_answer: string) {
+    // Status will update via polling
+    setProposals((prev) => prev.map((p) =>
+      p.id === agentProposalId ? { ...p, agentStatus: "processing", agentCurrentQuestion: null } : p
+    ));
+  }
 
   async function handleStatusChange(id: string, status: ProposalStatus) {
     setUpdating(id);
@@ -162,13 +251,24 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
         <h2 className="text-lg font-bold text-gray-900">
           Propostas ({proposals.length})
         </h2>
-        <button
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-700"
-        >
-          <Plus size={15} />
-          Nova Proposta
-        </button>
+        <div className="flex items-center gap-2">
+          {leadId && (
+            <button
+              onClick={() => setShowAgentModal(true)}
+              className="flex items-center gap-1.5 rounded-md border border-purple-500/50 bg-purple-950/40 px-3 py-1.5 text-sm font-medium text-purple-300 hover:bg-purple-900/50 hover:border-purple-400 transition-colors"
+            >
+              <BrainCircuit size={15} />
+              Gerar com Agente
+            </button>
+          )}
+          <button
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-1.5 rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-white hover:bg-purple-700"
+          >
+            <Plus size={15} />
+            Nova Proposta
+          </button>
+        </div>
       </div>
 
       {proposals.length === 0 ? (
@@ -209,6 +309,24 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
                         {statusCfg.icon}
                         {statusCfg.label}
                       </span>
+                      {/* Agent status badges */}
+                      {proposal.agentStatus === "processing" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 px-2 py-0.5 text-xs text-purple-400 border border-purple-500/30">
+                          <Hourglass size={10} className="animate-pulse" />
+                          Agente gerando...
+                        </span>
+                      )}
+                      {proposal.agentStatus === "awaiting_answer" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-yellow-500/15 px-2 py-0.5 text-xs text-yellow-400 border border-yellow-500/30">
+                          <HelpCircle size={10} />
+                          Aguardando resposta
+                        </span>
+                      )}
+                      {proposal.agentStatus === "error" && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-red-500/15 px-2 py-0.5 text-xs text-red-400 border border-red-500/30">
+                          Erro no agente
+                        </span>
+                      )}
                     </div>
 
                     {proposal.description && (
@@ -346,6 +464,41 @@ export default function ProposalsList({ proposals: initial, leadId, dealId }: Pr
           proposalId={viewing.id}
           fileName={viewing.fileName}
           onClose={() => setViewing(null)}
+        />
+      )}
+
+      {showAgentModal && leadId && (
+        <ProposalAgentModal
+          leadId={leadId}
+          leadContacts={leadContacts}
+          onClose={() => setShowAgentModal(false)}
+          onProposalCreated={handleAgentProposalCreated}
+        />
+      )}
+
+      {/* Question modal: show for the proposal currently being tracked */}
+      {(() => {
+        if (!agentProposalId) return null;
+        const tracked = proposals.find((p) => p.id === agentProposalId);
+        if (!tracked || tracked.agentStatus !== "awaiting_answer" || !tracked.agentCurrentQuestion) return null;
+        return (
+          <ProposalAgentQuestionModal
+            question={tracked.agentCurrentQuestion}
+            proposalId={agentProposalId}
+            onAnswered={handleQuestionAnswered}
+            onClose={() => {
+              // Don't close—user must answer. Allow dismiss to just hide the modal
+              setAgentProposalId(null);
+            }}
+          />
+        );
+      })()}
+
+      {completedProposal && (
+        <ProposalAgentCompletionDialog
+          proposalTitle={completedProposal.title}
+          driveUrl={completedProposal.driveUrl}
+          onClose={() => setCompletedProposal(null)}
         />
       )}
     </div>

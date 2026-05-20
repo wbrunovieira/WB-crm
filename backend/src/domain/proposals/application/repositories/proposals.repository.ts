@@ -9,6 +9,7 @@ export interface ProposalFilters {
 export abstract class ProposalsRepository {
   abstract findById(id: string): Promise<Proposal | null>;
   abstract findByOwner(ownerId: string, filters?: ProposalFilters): Promise<Proposal[]>;
+  abstract findByAgentJobId(jobId: string): Promise<Proposal | null>;
   abstract save(proposal: Proposal): Promise<void>;
   abstract delete(id: string): Promise<void>;
 }

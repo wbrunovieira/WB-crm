@@ -821,7 +821,7 @@ export default async function LeadDetailPage({
       </div>
 
       <div id="propostas" className="mt-6">
-        <ProposalsList proposals={proposals ?? []} leadId={lead.id} />
+        <ProposalsList proposals={proposals ?? []} leadId={lead.id} leadContacts={lead.leadContacts ?? []} />
       </div>
 
       <div id="reunioes" className="mt-6">

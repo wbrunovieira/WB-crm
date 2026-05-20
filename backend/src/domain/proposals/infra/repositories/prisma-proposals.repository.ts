@@ -18,6 +18,10 @@ function map(raw: Record<string, unknown>): Proposal {
       leadId: raw.leadId as string | undefined,
       dealId: raw.dealId as string | undefined,
       ownerId: raw.ownerId as string,
+      agentJobId: raw.agentJobId as string | undefined,
+      agentStatus: raw.agentStatus as string | undefined,
+      agentCurrentQuestion: raw.agentCurrentQuestion as string | undefined,
+      agentTriggeredAt: raw.agentTriggeredAt as Date | undefined,
       createdAt: raw.createdAt as Date,
       updatedAt: raw.updatedAt as Date,
     },
@@ -31,6 +35,12 @@ export class PrismaProposalsRepository extends ProposalsRepository {
 
   async findById(id: string): Promise<Proposal | null> {
     const raw = await this.prisma.proposal.findUnique({ where: { id } });
+    if (!raw) return null;
+    return map(raw as unknown as Record<string, unknown>);
+  }
+
+  async findByAgentJobId(jobId: string): Promise<Proposal | null> {
+    const raw = await this.prisma.proposal.findFirst({ where: { agentJobId: jobId } });
     if (!raw) return null;
     return map(raw as unknown as Record<string, unknown>);
   }
@@ -61,6 +71,10 @@ export class PrismaProposalsRepository extends ProposalsRepository {
       leadId: proposal.leadId ?? null,
       dealId: proposal.dealId ?? null,
       ownerId: proposal.ownerId,
+      agentJobId: proposal.agentJobId ?? null,
+      agentStatus: proposal.agentStatus ?? null,
+      agentCurrentQuestion: proposal.agentCurrentQuestion ?? null,
+      agentTriggeredAt: proposal.agentTriggeredAt ?? null,
     };
     await this.prisma.proposal.upsert({
       where: { id: proposal.id.toString() },

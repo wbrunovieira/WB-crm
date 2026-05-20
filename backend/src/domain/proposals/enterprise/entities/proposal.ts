@@ -16,6 +16,11 @@ export interface ProposalProps {
   leadId?: string;
   dealId?: string;
   ownerId: string;
+  // Agent fields
+  agentJobId?: string;
+  agentStatus?: string;
+  agentCurrentQuestion?: string;
+  agentTriggeredAt?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -32,6 +37,10 @@ export class Proposal extends AggregateRoot<ProposalProps> {
   get leadId(): string | undefined { return this.props.leadId; }
   get dealId(): string | undefined { return this.props.dealId; }
   get ownerId(): string { return this.props.ownerId; }
+  get agentJobId(): string | undefined { return this.props.agentJobId; }
+  get agentStatus(): string | undefined { return this.props.agentStatus; }
+  get agentCurrentQuestion(): string | undefined { return this.props.agentCurrentQuestion; }
+  get agentTriggeredAt(): Date | undefined { return this.props.agentTriggeredAt; }
   get createdAt(): Date { return this.props.createdAt; }
   get updatedAt(): Date { return this.props.updatedAt; }
 
@@ -47,6 +56,10 @@ export class Proposal extends AggregateRoot<ProposalProps> {
     leadId?: string;
     dealId?: string;
     ownerId: string;
+    agentJobId?: string;
+    agentStatus?: string;
+    agentCurrentQuestion?: string;
+    agentTriggeredAt?: Date;
     createdAt?: Date;
     updatedAt?: Date;
   }, id?: UniqueEntityID): Either<Error, Proposal> {
@@ -72,6 +85,10 @@ export class Proposal extends AggregateRoot<ProposalProps> {
       leadId: data.leadId,
       dealId: data.dealId,
       ownerId: data.ownerId,
+      agentJobId: data.agentJobId,
+      agentStatus: data.agentStatus,
+      agentCurrentQuestion: data.agentCurrentQuestion,
+      agentTriggeredAt: data.agentTriggeredAt,
       createdAt: data.createdAt ?? now,
       updatedAt: data.updatedAt ?? now,
     }, id));
@@ -87,6 +104,10 @@ export class Proposal extends AggregateRoot<ProposalProps> {
     fileSize?: number;
     leadId?: string;
     dealId?: string;
+    agentJobId?: string;
+    agentStatus?: string;
+    agentCurrentQuestion?: string | null;
+    agentTriggeredAt?: Date;
   }): Either<Error, void> {
     if (data.title !== undefined) {
       const r = ProposalTitle.create(data.title);
@@ -108,6 +129,10 @@ export class Proposal extends AggregateRoot<ProposalProps> {
     if (data.fileSize !== undefined) this.props.fileSize = data.fileSize;
     if (data.leadId !== undefined) this.props.leadId = data.leadId;
     if (data.dealId !== undefined) this.props.dealId = data.dealId;
+    if (data.agentJobId !== undefined) this.props.agentJobId = data.agentJobId;
+    if (data.agentStatus !== undefined) this.props.agentStatus = data.agentStatus;
+    if (data.agentCurrentQuestion !== undefined) this.props.agentCurrentQuestion = data.agentCurrentQuestion ?? undefined;
+    if (data.agentTriggeredAt !== undefined) this.props.agentTriggeredAt = data.agentTriggeredAt;
     this.props.updatedAt = new Date();
     return right(undefined);
   }

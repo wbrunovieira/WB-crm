@@ -21,5 +21,6 @@ import { ProposalsFileController } from "./infra/controllers/proposals-file.cont
     UpdateProposalWithFileUseCase,
     { provide: ProposalsRepository, useClass: PrismaProposalsRepository },
   ],
+  exports: [ProposalsRepository],
 })
 export class ProposalsModule {}

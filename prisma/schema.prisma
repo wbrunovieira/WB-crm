@@ -2137,20 +2137,25 @@ model Notification {
 
 // Propostas comerciais vinculadas a Leads e/ou Deals
 model Proposal {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  status      String    @default("draft") // draft | sent | accepted | rejected
-  driveFileId String?                      // ID do arquivo no Google Drive
-  driveUrl    String?                      // URL de visualização no Drive
-  fileName    String?                      // Nome original do arquivo
-  fileSize    Int?                         // Tamanho em bytes
-  sentAt      DateTime?                    // Quando foi enviada ao cliente
-  leadId      String?
-  dealId      String?
-  ownerId     String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id                    String    @id @default(cuid())
+  title                 String
+  description           String?
+  status                String    @default("draft") // draft | sent | accepted | rejected
+  driveFileId           String?                      // ID do arquivo no Google Drive
+  driveUrl              String?                      // URL de visualização no Drive
+  fileName              String?                      // Nome original do arquivo
+  fileSize              Int?                         // Tamanho em bytes
+  sentAt                DateTime?                    // Quando foi enviada ao cliente
+  leadId                String?
+  dealId                String?
+  ownerId               String
+  // Agent fields
+  agentJobId            String?
+  agentStatus           String?   // "processing" | "awaiting_answer" | "completed" | "error"
+  agentCurrentQuestion  String?
+  agentTriggeredAt      DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   lead    Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
   deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)

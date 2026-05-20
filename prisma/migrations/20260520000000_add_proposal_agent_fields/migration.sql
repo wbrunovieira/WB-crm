@@ -1,0 +1,4 @@
+ALTER TABLE "proposals" ADD COLUMN IF NOT EXISTS "agentJobId" TEXT;
+ALTER TABLE "proposals" ADD COLUMN IF NOT EXISTS "agentStatus" TEXT;
+ALTER TABLE "proposals" ADD COLUMN IF NOT EXISTS "agentCurrentQuestion" TEXT;
+ALTER TABLE "proposals" ADD COLUMN IF NOT EXISTS "agentTriggeredAt" TIMESTAMP(3);
