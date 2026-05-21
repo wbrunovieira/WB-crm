@@ -53,6 +53,9 @@ interface SendMediaBody {
   mimetype: string;
   caption?: string;
   contactName?: string;
+  leadId?: string;
+  contactId?: string;
+  organizationId?: string;
 }
 
 interface CheckNumberBody {
@@ -131,8 +134,8 @@ export class WhatsAppController {
   @ApiOperation({ summary: "Send a WhatsApp media message" })
   async sendMediaMessage(
     @Body() body: SendMediaBody,
-    @CurrentUser() _user: AuthenticatedUser,
-  ): Promise<{ ok: boolean; messageId?: string; error?: string }> {
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ ok: boolean; messageId?: string; activityId?: string; error?: string }> {
     if (!body.to || !body.mediaBase64) {
       throw new BadRequestException("Missing required fields: to, mediaBase64");
     }
@@ -144,13 +147,18 @@ export class WhatsAppController {
       fileName: body.fileName,
       mimetype: body.mimetype,
       caption: body.caption,
+      ownerId: user.id,
+      entityName: body.contactName ?? body.to,
+      leadId: body.leadId ?? null,
+      contactId: body.contactId ?? null,
+      organizationId: body.organizationId ?? null,
     });
 
     if (result.isLeft()) {
       return { ok: false, error: result.value.message };
     }
 
-    return { ok: true, messageId: result.value.messageId };
+    return { ok: true, messageId: result.value.messageId, activityId: result.value.activityId };
   }
 
   @Post("send-audio")

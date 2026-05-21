@@ -352,6 +352,8 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
               mimetype: attachment.type,
               caption: trimmed || undefined,
               contactName: name,
+              leadId: leadId ?? undefined,
+              contactId: contactId ?? undefined,
             }),
           },
         );
