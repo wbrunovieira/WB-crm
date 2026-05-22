@@ -75,17 +75,21 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
   const handleSort = useCallback((col: SortColumn) => {
     const params = new URLSearchParams(searchParams.toString());
     if (params.get("sortBy") === col) {
-      if (params.get("sortDir") === "asc") {
-        params.set("sortDir", "desc");
-      } else if (params.get("sortDir") === "desc") {
-        params.delete("sortBy");
-        params.delete("sortDir");
+      const isRating = col === "starRating";
+      const cur = params.get("sortDir");
+      if (isRating) {
+        // desc → asc → clear
+        if (cur === "desc") { params.set("sortDir", "asc"); }
+        else { params.delete("sortBy"); params.delete("sortDir"); }
       } else {
-        params.set("sortDir", "asc");
+        // asc → desc → clear
+        if (cur === "asc") { params.set("sortDir", "desc"); }
+        else { params.delete("sortBy"); params.delete("sortDir"); }
       }
     } else {
       params.set("sortBy", col);
-      params.set("sortDir", "asc");
+      // starRating defaults to desc (highest first) on first click
+      params.set("sortDir", col === "starRating" ? "desc" : "asc");
     }
     params.delete("page");
     router.push(`${pathname}?${params.toString()}`);
