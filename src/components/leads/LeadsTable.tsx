@@ -3,10 +3,11 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Zap, Archive, BrainCircuit, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { Zap, Archive, BrainCircuit, ChevronUp, ChevronDown, ChevronsUpDown, Star } from "lucide-react";
 import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
 import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
+import { LeadStarRatingInline } from "@/components/leads/LeadStarRatingInline";
 import { BulkApplyCadenceModal } from "@/components/leads/BulkApplyCadenceModal";
 import { BulkArchiveModal } from "@/components/leads/BulkArchiveModal";
 import { BulkDeepResearchModal } from "@/components/leads/BulkDeepResearchModal";
@@ -27,6 +28,7 @@ type Lead = {
   state: string | null;
   status: string;
   quality: string | null;
+  starRating: number | null;
   isArchived: boolean;
   agentResearchAt?: string | Date | null;
   owner: { id: string; name: string } | null;
@@ -37,7 +39,7 @@ type Lead = {
 
 type SharedUser = { id: string; name: string };
 
-type SortColumn = "businessName" | "city" | "quality" | "status" | "hasCadence";
+type SortColumn = "businessName" | "city" | "quality" | "status" | "hasCadence" | "starRating";
 
 interface LeadsTableProps {
   leads: Lead[];
@@ -217,6 +219,9 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
               <th className={thSort} onClick={() => handleSort("quality")}>
                 Qualidade <SortIcon col="quality" />
               </th>
+              <th className={thSort} onClick={() => handleSort("starRating")}>
+                Classificação <SortIcon col="starRating" />
+              </th>
               <th className={thSort} onClick={() => handleSort("status")}>
                 Status <SortIcon col="status" />
               </th>
@@ -334,6 +339,9 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
                       {qualityLabels[lead.quality]}
                     </span>
                   )}
+                </td>
+                <td className="whitespace-nowrap px-6 py-4" onClick={(e) => e.stopPropagation()}>
+                  <LeadStarRatingInline leadId={lead.id} initialValue={lead.starRating} />
                 </td>
                 <td className="whitespace-nowrap px-6 py-4">
                   <span

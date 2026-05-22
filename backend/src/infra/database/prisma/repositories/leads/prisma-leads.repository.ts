@@ -133,6 +133,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
       filters.sortBy === "quality"      ? { quality: dir } :
       filters.sortBy === "status"       ? { status: dir } :
       filters.sortBy === "hasCadence"   ? { leadCadences: { _count: dir } } :
+      filters.sortBy === "starRating"   ? [{ starRating: { sort: dir, nulls: "last" } }] :
       { createdAt: "desc" };
 
     const [total, rows] = await Promise.all([
