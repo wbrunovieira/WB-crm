@@ -668,3 +668,56 @@ describe("Qualify & Bulk Archive E2E", () => {
     expect(res.body.skipped).toBe(1);
   });
 });
+
+describe("GET /leads?sortBy=starRating", () => {
+  let sortApp: INestApplication;
+  let sortPrisma: PrismaService;
+  let sortOwnerId: string;
+  let sortToken: string;
+
+  beforeAll(async () => {
+    sortApp = await Test.createTestingModule({ imports: [AppModule] })
+      .compile()
+      .then((m) => m.createNestApplication().init());
+    sortPrisma = sortApp.get(PrismaService);
+    const sortJwt = sortApp.get(JwtService);
+    const user = await sortPrisma.user.create({ data: { name: "Sort User", email: `sort-star-${Date.now()}@test.com`, password: "x", role: "sdr" } });
+    sortOwnerId = user.id;
+    sortToken = sortJwt.sign({ sub: user.id, email: user.email, role: user.role });
+    await sortPrisma.lead.createMany({
+      data: [
+        { businessName: "Sem Rating", ownerId: sortOwnerId, status: "new", starRating: null },
+        { businessName: "Rating 3",   ownerId: sortOwnerId, status: "new", starRating: 3 },
+        { businessName: "Rating 1",   ownerId: sortOwnerId, status: "new", starRating: 1 },
+      ],
+    });
+  });
+
+  afterAll(async () => {
+    await sortPrisma.lead.deleteMany({ where: { ownerId: sortOwnerId } });
+    await sortPrisma.user.delete({ where: { id: sortOwnerId } });
+    await sortApp.close();
+  });
+
+  it("asc: leads com starRating aparecem antes dos sem (nulls last)", async () => {
+    const res = await request(sortApp.getHttpServer())
+      .get("/leads?sortBy=starRating&sortDir=asc")
+      .set("Authorization", `Bearer ${sortToken}`)
+      .expect(200);
+
+    const names: string[] = res.body.leads.map((l: { businessName: string }) => l.businessName);
+    expect(names.indexOf("Rating 1")).toBeLessThan(names.indexOf("Rating 3"));
+    expect(names.indexOf("Rating 3")).toBeLessThan(names.indexOf("Sem Rating"));
+  });
+
+  it("desc: starRating mais alto primeiro, nulls last", async () => {
+    const res = await request(sortApp.getHttpServer())
+      .get("/leads?sortBy=starRating&sortDir=desc")
+      .set("Authorization", `Bearer ${sortToken}`)
+      .expect(200);
+
+    const names: string[] = res.body.leads.map((l: { businessName: string }) => l.businessName);
+    expect(names.indexOf("Rating 3")).toBeLessThan(names.indexOf("Rating 1"));
+    expect(names.indexOf("Rating 1")).toBeLessThan(names.indexOf("Sem Rating"));
+  });
+});

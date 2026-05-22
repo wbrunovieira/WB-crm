@@ -60,6 +60,18 @@ export class InMemoryLeadsRepository extends LeadsRepository {
       results = results.filter((l) => l.sourceGroup === filters.sourceGroup);
     }
 
+    if (filters.sortBy === "starRating") {
+      const dir = filters.sortDir === "desc" ? -1 : 1;
+      results = [...results].sort((a, b) => {
+        const aVal = a.starRating ?? null;
+        const bVal = b.starRating ?? null;
+        if (aVal === null && bVal === null) return 0;
+        if (aVal === null) return 1;  // nulls last
+        if (bVal === null) return -1; // nulls last
+        return (aVal - bVal) * dir;
+      });
+    }
+
     const total = results.length;
     const page = filters.page && filters.page > 0 ? filters.page : 1;
     const pageSize = filters.pageSize && filters.pageSize > 0 ? filters.pageSize : 50;

@@ -482,6 +482,72 @@ describe("GetLeadsUseCase", () => {
     });
   });
 
+  // ─── Ordenação por starRating ────────────────────────────────────────────────
+
+  describe("ordenação por starRating", () => {
+    it("asc: leads com classificação aparecem antes dos sem classificação (nulls last)", async () => {
+      repo.items = [
+        makeLead("l1", { businessName: "Sem Rating" }),
+        makeLead("l2", { businessName: "Rating 3", starRating: 3 }),
+        makeLead("l3", { businessName: "Rating 1", starRating: 1 }),
+      ];
+
+      const result = await sut.execute({
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        filters: { sortBy: "starRating", sortDir: "asc" },
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        const ids = result.value.leads.map((l) => l.id);
+        expect(ids[0]).toBe("l3"); // starRating 1
+        expect(ids[1]).toBe("l2"); // starRating 3
+        expect(ids[2]).toBe("l1"); // null — por último
+      }
+    });
+
+    it("desc: leads com classificação mais alta primeiro, nulls last", async () => {
+      repo.items = [
+        makeLead("l1", { businessName: "Rating 2", starRating: 2 }),
+        makeLead("l2", { businessName: "Sem Rating" }),
+        makeLead("l3", { businessName: "Rating 5", starRating: 5 }),
+      ];
+
+      const result = await sut.execute({
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        filters: { sortBy: "starRating", sortDir: "desc" },
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        const ids = result.value.leads.map((l) => l.id);
+        expect(ids[0]).toBe("l3"); // starRating 5
+        expect(ids[1]).toBe("l1"); // starRating 2
+        expect(ids[2]).toBe("l2"); // null — por último
+      }
+    });
+
+    it("todos sem classificação mantém ordem padrão (nulls last asc)", async () => {
+      repo.items = [
+        makeLead("l1", { businessName: "Alpha" }),
+        makeLead("l2", { businessName: "Beta" }),
+      ];
+
+      const result = await sut.execute({
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        filters: { sortBy: "starRating", sortDir: "asc" },
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.leads).toHaveLength(2);
+      }
+    });
+  });
+
   // ─── Combinação de filtros ────────────────────────────────────────────────────
 
   describe("combinação de filtros", () => {
