@@ -162,23 +162,25 @@ export class ProcessWhatsAppMessageUseCase {
       await this.activitiesRepo.save(activity);
       activityId = activity.id.toString();
 
-      // Create notification
-      try {
-        await this.prisma.notification.create({
-          data: {
-            type: "WHATSAPP_MESSAGE",
-            status: "pending",
-            title: `Nova mensagem WhatsApp — ${pushName ?? phone}`,
-            summary: text ?? mediaLabel ?? "(mídia)",
-            payload: JSON.stringify({ activityId, remoteJid, messageId }),
-            read: false,
-            userId: ownerId,
-          },
-        });
-      } catch (err) {
-        this.logger.warn("Failed to create WhatsApp notification", {
-          error: err instanceof Error ? err.message : String(err),
-        });
+      // Notify only when the CLIENT initiates (not outgoing messages)
+      if (!fromMe) {
+        try {
+          await this.prisma.notification.create({
+            data: {
+              type: "WHATSAPP_MESSAGE",
+              status: "pending",
+              title: `Nova mensagem WhatsApp — ${pushName ?? phone}`,
+              summary: text ?? mediaLabel ?? "(mídia)",
+              payload: JSON.stringify({ activityId, remoteJid, messageId }),
+              read: false,
+              userId: ownerId,
+            },
+          });
+        } catch (err) {
+          this.logger.warn("Failed to create WhatsApp notification", {
+            error: err instanceof Error ? err.message : String(err),
+          });
+        }
       }
     }
 
