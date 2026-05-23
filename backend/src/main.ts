@@ -20,8 +20,19 @@ async function bootstrap() {
   });
   // ─────────────────────────────────────────────────────────────────────────
 
+  const allowedOrigins = [
+    process.env.CRM_URL ?? "http://localhost:3000",
+    "https://crm.wbdigitalsolutions.com",
+    "http://localhost:3000",
+  ];
   app.enableCors({
-    origin: process.env.CRM_URL ?? "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+      }
+    },
     credentials: true,
   });
 

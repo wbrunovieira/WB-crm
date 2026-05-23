@@ -128,9 +128,12 @@ export class WarmingController {
 
   @Post("run")
   @HttpCode(200)
-  @ApiOperation({ summary: "Executa ciclo de aquecimento manualmente" })
-  async triggerCycle(@CurrentUser() user: AuthenticatedUser) {
-    const result = await this.runCycle.execute({ ownerId: user.id });
-    return result.value;
+  @ApiOperation({ summary: "Executa ciclo de aquecimento manualmente (fire-and-forget)" })
+  triggerCycle(@CurrentUser() user: AuthenticatedUser) {
+    // Run in background — auto-replies have 2–15 min delays, we can't hold the HTTP connection
+    this.runCycle.execute({ ownerId: user.id }).catch((err) => {
+      console.error("[warming/run] cycle error:", err);
+    });
+    return { started: true };
   }
 }

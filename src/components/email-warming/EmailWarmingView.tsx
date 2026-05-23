@@ -111,11 +111,10 @@ export function EmailWarmingView({ accounts, poolEmails, history, historyTotal }
   const handleRunCycle = async () => {
     setIsRunning(true);
     try {
-      const result = await apiFetch<{ totalSent: number }>("/warming/run", token, { method: "POST" });
-      toast.success(`Ciclo executado: ${result.totalSent} emails enviados`);
-      router.refresh();
+      await apiFetch<{ started: boolean }>("/warming/run", token, { method: "POST" });
+      toast.success("Ciclo iniciado em background. Os emails serão enviados nos próximos minutos.");
     } catch {
-      toast.error("Erro ao executar ciclo");
+      toast.error("Erro ao iniciar ciclo");
     } finally {
       setIsRunning(false);
     }
