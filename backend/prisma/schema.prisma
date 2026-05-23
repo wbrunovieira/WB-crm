@@ -80,6 +80,8 @@ model User {
   bulkResearchSessions BulkResearchSession[]
   warmingAccounts      WarmingAccount[]
   warmingPoolEmails    WarmingPoolEmail[]
+  emailCampaigns       EmailCampaign[]
+  emailSuppressions    EmailSuppression[]
 
   @@map("users")
 }
@@ -2598,4 +2600,93 @@ model WarmingSend {
   @@index([warmingAccountId, sentAt])
   @@index([fromEmail, sentAt])
   @@map("warming_sends")
+}
+
+// ─── Email Campaigns ─────────────────────────────────────────────────────────
+
+model EmailCampaign {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  fromEmail   String
+  status      String   @default("DRAFT") // DRAFT | ACTIVE | PAUSED | FINISHED
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner      User                     @relation(fields: [ownerId], references: [id])
+  steps      EmailCampaignStep[]
+  recipients EmailCampaignRecipient[]
+
+  @@index([ownerId, status])
+  @@map("email_campaigns")
+}
+
+model EmailCampaignStep {
+  id         String @id @default(cuid())
+  campaignId String
+  order      Int
+  subject    String
+  bodyHtml   String
+  delayDays  Int    @default(0)
+
+  campaign EmailCampaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sends    EmailCampaignSend[]
+
+  @@index([campaignId, order])
+  @@map("email_campaign_steps")
+}
+
+model EmailCampaignRecipient {
+  id            String  @id @default(cuid())
+  campaignId    String
+  recipientType String  // LEAD | CONTACT
+  recipientId   String
+  email         String
+  name          String?
+  company       String?
+  role          String?
+  customVars    String? // JSON key-value
+  currentStep     Int       @default(0)
+  status          String    @default("PENDING") // PENDING | ACTIVE | COMPLETED | UNSUBSCRIBED | BOUNCED
+  unsubscribedAt  DateTime?
+
+  campaign EmailCampaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sends    EmailCampaignSend[]
+
+  @@unique([campaignId, recipientId, recipientType])
+  @@index([campaignId, status])
+  @@map("email_campaign_recipients")
+}
+
+model EmailSuppression {
+  id        String   @id @default(cuid())
+  email     String
+  ownerId   String
+  reason    String   @default("manual") // manual | unsubscribed | bounced | spam
+  createdAt DateTime @default(now())
+
+  owner User @relation(fields: [ownerId], references: [id])
+
+  @@unique([email, ownerId])
+  @@index([ownerId])
+  @@map("email_suppressions")
+}
+
+model EmailCampaignSend {
+  id             String    @id @default(cuid())
+  recipientId    String
+  stepId         String
+  sentAt         DateTime  @default(now())
+  openedAt       DateTime?
+  clickedAt      DateTime?
+  gmailMessageId String?
+  gmailThreadId  String?
+
+  recipient EmailCampaignRecipient @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  step      EmailCampaignStep      @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, stepId])
+  @@index([stepId])
+  @@map("email_campaign_sends")
 }

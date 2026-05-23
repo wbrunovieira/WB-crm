@@ -45,9 +45,10 @@ import { NotificationsModule } from "./domain/notifications/notifications.module
 import { DashboardModule } from "./domain/dashboard/dashboard.module";
 import { FunnelModule } from "./domain/funnel/funnel.module";
 import { WarmingModule } from "./domain/warming/warming.module";
+import { EmailCampaignsModule } from "./domain/email-campaigns/email-campaigns.module";
 
 @Module({
-  imports: [EventEmitterModule.forRoot(), ScheduleModule.forRoot(), DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, PhoneModule, MetaAdsModule, MeetModule, LeadResearchModule, LeadDeepResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule, NotificationsModule, DashboardModule, FunnelModule, CallAnalysisModule, MeetAnalysisModule, GatekeeperAnalysisModule, TransferAnalysisModule, ProposalAgentModule, WarmingModule],
+  imports: [EventEmitterModule.forRoot(), ScheduleModule.forRoot(), DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, PhoneModule, MetaAdsModule, MeetModule, LeadResearchModule, LeadDeepResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule, NotificationsModule, DashboardModule, FunnelModule, CallAnalysisModule, MeetAnalysisModule, GatekeeperAnalysisModule, TransferAnalysisModule, ProposalAgentModule, WarmingModule, EmailCampaignsModule],
   controllers: [HealthController],
   providers: [],
 })
