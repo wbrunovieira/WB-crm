@@ -1,8 +1,9 @@
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import { Response } from "express";
-import { JwtAuthGuard } from "@/infra/auth/jwt-auth.guard";
-import { CurrentUser, AuthenticatedUser } from "@/infra/auth/current-user.decorator";
+import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
+import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
+import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { CreateEmailCampaignUseCase } from "@/domain/email-campaigns/application/use-cases/create-email-campaign.use-case";
 import { AddCampaignStepUseCase } from "@/domain/email-campaigns/application/use-cases/add-campaign-step.use-case";
 import { AddRecipientsUseCase } from "@/domain/email-campaigns/application/use-cases/add-recipients.use-case";
