@@ -41,5 +41,6 @@ export interface CampaignSend {
 }
 
 export interface CampaignDetail extends Campaign {
+  steps: CampaignStep[];
   sends: CampaignSend[];
 }

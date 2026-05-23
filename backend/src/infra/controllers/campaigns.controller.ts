@@ -271,7 +271,11 @@ export class CampaignsController {
     const result = await this.getCampaign.execute({ campaignId: id, ownerId: user.id });
     if (result.isLeft()) handleError(result);
     const { campaign, sends } = result.value;
-    return { ...serializeCampaign(campaign), sends: sends.map(serializeSend) };
+    return {
+      ...serializeCampaign(campaign),
+      steps: campaign.steps.map(serializeStep),
+      sends: sends.map(serializeSend),
+    };
   }
 
   @Delete(":id")
