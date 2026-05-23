@@ -78,6 +78,8 @@ model User {
 
   // Bulk AI Research sessions
   bulkResearchSessions BulkResearchSession[]
+  warmingAccounts      WarmingAccount[]
+  warmingPoolEmails    WarmingPoolEmail[]
 
   @@map("users")
 }
@@ -2543,4 +2545,57 @@ model BulkResearchSession {
 
   @@index([userId, status])
   @@map("bulk_research_sessions")
+}
+
+// ─── Email Warming ────────────────────────────────────────────────────────────
+
+model WarmingAccount {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  isActive  Boolean  @default(true)
+  phase     String   @default("ramping") // "ramping" | "maintenance"
+  startedAt DateTime @default(now())
+  ownerId   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sends     WarmingSend[]
+
+  owner     User     @relation(fields: [ownerId], references: [id])
+
+  @@index([ownerId, isActive])
+  @@map("warming_accounts")
+}
+
+model WarmingPoolEmail {
+  id        String   @id @default(cuid())
+  email     String
+  name      String?
+  isActive  Boolean  @default(true)
+  ownerId   String
+  createdAt DateTime @default(now())
+
+  owner     User     @relation(fields: [ownerId], references: [id])
+
+  @@unique([email, ownerId])
+  @@index([ownerId, isActive])
+  @@map("warming_pool_emails")
+}
+
+model WarmingSend {
+  id               String   @id @default(cuid())
+  fromEmail        String
+  toEmail          String
+  subject          String
+  gmailMessageId   String?
+  gmailThreadId    String?
+  isAutoReply      Boolean  @default(false)
+  warmingAccountId String
+  sentAt           DateTime @default(now())
+
+  warmingAccount   WarmingAccount @relation(fields: [warmingAccountId], references: [id])
+
+  @@index([warmingAccountId, sentAt])
+  @@index([fromEmail, sentAt])
+  @@map("warming_sends")
 }

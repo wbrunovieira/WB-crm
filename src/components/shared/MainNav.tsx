@@ -24,6 +24,7 @@ import {
   ScanSearch,
   MessageCircle,
   BrainCircuit,
+  Flame,
 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 
@@ -90,6 +91,11 @@ const navItems = [
     name: "Campanhas",
     href: "/campaigns",
     icon: MessageCircle,
+  },
+  {
+    name: "Aquecimento",
+    href: "/email-warming",
+    icon: Flame,
   },
   {
     name: "Funil",

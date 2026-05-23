@@ -15,7 +15,7 @@ export interface LeadFilters {
   sourceGroup?: string;
   page?: number;
   pageSize?: number;
-  sortBy?: "businessName" | "city" | "quality" | "status" | "hasCadence";
+  sortBy?: "businessName" | "city" | "quality" | "status" | "hasCadence" | "starRating";
   sortDir?: "asc" | "desc";
 }
 
