@@ -122,7 +122,7 @@ describe("GetWarmingStatusUseCase", () => {
     const account = WarmingAccount.create({ email: "a@example.com", isActive: true, phase: "ramping", startedAt: new Date(), ownerId: OWNER });
     await accounts.save(account);
 
-    const result = await sut.execute({ ownerId: OWNER });
+    const result = await sut.execute({ ownerId: OWNER, replyDelayMs: 0 });
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value.accounts).toHaveLength(1);
@@ -140,7 +140,7 @@ describe("GetWarmingStatusUseCase", () => {
     });
     await accounts.save(account);
 
-    const result = await sut.execute({ ownerId: OWNER });
+    const result = await sut.execute({ ownerId: OWNER, replyDelayMs: 0 });
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value.accounts[0].dailyVolume).toBe(15);
@@ -169,7 +169,7 @@ describe("RunWarmingCycleUseCase", () => {
     await accounts.save(acc1);
     await accounts.save(acc2);
 
-    const result = await sut.execute({ ownerId: OWNER });
+    const result = await sut.execute({ ownerId: OWNER, replyDelayMs: 0 });
     expect(result.isRight()).toBe(true);
 
     // Each account sends to the other + auto-reply
@@ -188,7 +188,7 @@ describe("RunWarmingCycleUseCase", () => {
     await poolEmails.save(pool1);
     await poolEmails.save(pool2);
 
-    await sut.execute({ ownerId: OWNER });
+    await sut.execute({ ownerId: OWNER, replyDelayMs: 0 });
 
     const toEmails = gmail.sentEmails.map((e) => e.to);
     expect(toEmails.some((e) => e === "friend1@gmail.com" || e === "friend2@gmail.com")).toBe(true);
@@ -204,7 +204,7 @@ describe("RunWarmingCycleUseCase", () => {
       await poolEmails.save(pe);
     }
 
-    await sut.execute({ ownerId: OWNER });
+    await sut.execute({ ownerId: OWNER, replyDelayMs: 0 });
 
     // Daily volume for day 0 = 10 per account (1 account), so max 10 emails
     expect(gmail.sentEmails.length).toBeLessThanOrEqual(10);
@@ -214,7 +214,7 @@ describe("RunWarmingCycleUseCase", () => {
     const acc1 = WarmingAccount.create({ email: "a@example.com", isActive: false, phase: "ramping", startedAt: new Date(), ownerId: OWNER });
     await accounts.save(acc1);
 
-    await sut.execute({ ownerId: OWNER });
+    await sut.execute({ ownerId: OWNER, replyDelayMs: 0 });
     expect(gmail.sentEmails).toHaveLength(0);
   });
 
@@ -224,7 +224,7 @@ describe("RunWarmingCycleUseCase", () => {
     await accounts.save(acc1);
     await accounts.save(acc2);
 
-    await sut.execute({ ownerId: OWNER });
+    await sut.execute({ ownerId: OWNER, replyDelayMs: 0 });
 
     expect(sends.items.length).toBeGreaterThan(0);
     expect(sends.items[0].fromEmail).toBeTruthy();

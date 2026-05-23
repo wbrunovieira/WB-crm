@@ -88,8 +88,19 @@ const AUTO_REPLY_BODIES = [
   "<p>Muito obrigado! Esse tipo de troca é sempre bem-vindo. Vamos mantendo contato.</p><p>Att!</p>",
 ];
 
+const MIN_REPLY_DELAY_MS = 2 * 60 * 1000;  // 2 minutes
+const MAX_REPLY_DELAY_MS = 15 * 60 * 1000; // 15 minutes
+
 function randomPick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function randomReplyDelay(): number {
+  return MIN_REPLY_DELAY_MS + Math.random() * (MAX_REPLY_DELAY_MS - MIN_REPLY_DELAY_MS);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 @Injectable()
@@ -101,7 +112,7 @@ export class RunWarmingCycleUseCase {
     private readonly gmail: GmailPort,
   ) {}
 
-  async execute({ ownerId }: { ownerId: string }): Promise<Either<never, { totalSent: number }>> {
+  async execute({ ownerId, replyDelayMs }: { ownerId: string; replyDelayMs?: number }): Promise<Either<never, { totalSent: number }>> {
     const activeAccounts = await this.accounts.findAllActive(ownerId);
     if (activeAccounts.length === 0) return right({ totalSent: 0 });
 
@@ -144,6 +155,10 @@ export class RunWarmingCycleUseCase {
           remaining--;
 
           // Auto-reply from target back (simulates engagement)
+          // Delay before reply to avoid instant-bot pattern detected by spam filters
+          const delay = replyDelayMs ?? randomReplyDelay();
+          if (delay > 0) await sleep(delay);
+
           const replySubject = randomPick(AUTO_REPLY_SUBJECTS);
           const replyBody = randomPick(AUTO_REPLY_BODIES);
 
