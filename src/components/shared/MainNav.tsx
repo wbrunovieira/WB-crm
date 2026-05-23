@@ -25,6 +25,7 @@ import {
   MessageCircle,
   BrainCircuit,
   Flame,
+  Send,
 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 
@@ -96,6 +97,11 @@ const navItems = [
     name: "Aquecimento",
     href: "/email-warming",
     icon: Flame,
+  },
+  {
+    name: "Campanhas Email",
+    href: "/email-campaigns",
+    icon: Send,
   },
   {
     name: "Funil",
