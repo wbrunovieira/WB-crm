@@ -5,7 +5,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { formatCurrency } from "@/lib/utils";
 import Link from "next/link";
-import { Clock, CalendarPlus } from "lucide-react";
+import { Clock, CalendarPlus, Briefcase } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useSession } from "next-auth/react";
@@ -26,6 +26,7 @@ type Deal = {
     id: string;
     name: string;
   } | null;
+  lead: { id: string; businessName: string } | null;
   activities?: Array<{
     id: string;
     subject: string;
@@ -108,7 +109,7 @@ export default function DealCard({ deal, isDragging }: DealCardProps) {
   };
 
   const getBorderClass = () => {
-    if (hasNoActivity) return "border-2 border-red-500";
+    if (hasNoActivity) return "border border-amber-300";
     return "border border-gray-200";
   };
 
@@ -177,6 +178,16 @@ export default function DealCard({ deal, isDragging }: DealCardProps) {
               <span className="truncate">{deal.organization.name}</span>
             </div>
           )}
+          {deal.lead && (
+            <Link
+              href={`/leads/${deal.lead.id}`}
+              className="flex items-center gap-2 text-sm text-indigo-600 hover:text-indigo-800 transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Briefcase className="h-4 w-4 flex-shrink-0 text-indigo-400" />
+              <span className="truncate">{deal.lead.businessName}</span>
+            </Link>
+          )}
         </div>
 
         {/* Activity Section */}
@@ -206,7 +217,7 @@ export default function DealCard({ deal, isDragging }: DealCardProps) {
           ) : (
             <button
               onClick={handleScheduleClick}
-              className="w-full flex items-center justify-center gap-2 rounded-md bg-red-50 border border-red-200 px-2 py-1.5 text-xs text-red-600 hover:bg-red-100 transition-colors font-medium"
+              className="w-full flex items-center justify-center gap-2 rounded-md bg-amber-50 border border-amber-200 px-2 py-1.5 text-xs text-amber-700 hover:bg-amber-100 transition-colors font-medium"
               title="Agendar Atividade"
             >
               <CalendarPlus className="h-3 w-3" />

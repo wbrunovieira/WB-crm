@@ -19,6 +19,7 @@ type Deal = {
     id: string;
     name: string;
   } | null;
+  lead: { id: string; businessName: string } | null;
 };
 
 type Stage = {

@@ -11,6 +11,7 @@ interface PipelineViewDeal {
   currency: string;
   contactName: string | null;
   organizationName: string | null;
+  lead: { id: string; businessName: string } | null;
 }
 
 interface PipelineView {
@@ -42,6 +43,7 @@ function transformPipelineView(pipelineData: PipelineView) {
         currency: deal.currency,
         contact: deal.contactName ? { id: deal.id, name: deal.contactName, email: null } : null,
         organization: deal.organizationName ? { id: deal.id, name: deal.organizationName } : null,
+        lead: deal.lead ?? null,
       })),
     })),
   };

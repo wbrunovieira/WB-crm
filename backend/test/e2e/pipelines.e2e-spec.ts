@@ -335,4 +335,81 @@ describe("Pipelines API (e2e)", () => {
         .expect(204);
     });
   });
+
+  // ─── GET /pipelines/view — lead in deal ────────────────────────────────────
+
+  describe("GET /pipelines/view — lead no deal", () => {
+    it("inclui lead.id e lead.businessName no deal do pipeline view", async () => {
+      // Create pipeline + stage
+      const pipeline = await request(app.getHttpServer())
+        .post("/pipelines")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Pipeline Lead View E2E", isDefault: true })
+        .expect(201);
+      const pipelineId = pipeline.body.id;
+      const stageId = pipeline.body.stages?.[0]?.id
+        ?? (await prisma.stage.findFirst({ where: { pipelineId }, orderBy: { order: "asc" } }))!.id;
+
+      // Create lead
+      const lead = await prisma.lead.create({
+        data: { businessName: "Lead Kanban Ltda", ownerId: userId, status: "new" },
+      });
+
+      // Create deal linked to lead + stage
+      await prisma.deal.create({
+        data: {
+          title: "Negócio com Lead",
+          value: 15000,
+          currency: "BRL",
+          status: "open",
+          ownerId: userId,
+          stageId,
+          leadId: lead.id,
+        },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/pipelines/view?pipelineId=${pipelineId}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const deal = res.body.stages?.[0]?.deals?.[0];
+      expect(deal).toBeDefined();
+      expect(deal.lead).not.toBeNull();
+      expect(deal.lead.id).toBe(lead.id);
+      expect(deal.lead.businessName).toBe("Lead Kanban Ltda");
+
+      // cleanup
+      await prisma.deal.deleteMany({ where: { stageId } });
+      await prisma.lead.delete({ where: { id: lead.id } });
+      await prisma.pipeline.delete({ where: { id: pipelineId } });
+    });
+
+    it("lead é null no deal quando deal não tem lead", async () => {
+      const pipeline = await request(app.getHttpServer())
+        .post("/pipelines")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Pipeline Sem Lead E2E", isDefault: true })
+        .expect(201);
+      const pipelineId = pipeline.body.id;
+      const stageId = (await prisma.stage.findFirst({ where: { pipelineId }, orderBy: { order: "asc" } }))!.id;
+
+      await prisma.deal.create({
+        data: { title: "Deal Sem Lead", value: 5000, currency: "BRL", status: "open", ownerId: userId, stageId },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/pipelines/view?pipelineId=${pipelineId}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const deal = res.body.stages?.[0]?.deals?.[0];
+      expect(deal).toBeDefined();
+      expect(deal.lead).toBeNull();
+
+      // cleanup
+      await prisma.deal.deleteMany({ where: { stageId } });
+      await prisma.pipeline.delete({ where: { id: pipelineId } });
+    });
+  });
 });

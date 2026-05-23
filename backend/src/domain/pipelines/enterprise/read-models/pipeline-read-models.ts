@@ -8,6 +8,7 @@ export interface PipelineViewDeal {
   createdAt: Date;
   contact: { id: string; name: string; email: string | null } | null;
   organization: { id: string; name: string } | null;
+  lead: { id: string; businessName: string } | null;
   nextActivity: { id: string; subject: string; type: string; dueDate: Date | null } | null;
 }
 

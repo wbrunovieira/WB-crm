@@ -139,8 +139,8 @@ export class PrismaPipelinesRepository extends PipelinesRepository {
       : { status: "open", OR: [{ ownerId: requesterId }, { id: { in: sharedDealIds } }] };
 
     const pipeline = pipelineId
-      ? await this.prisma.pipeline.findUnique({ where: { id: pipelineId }, include: { stages: { orderBy: { order: "asc" }, include: { deals: { where: dealWhere, include: { contact: { select: { id: true, name: true, email: true } }, organization: { select: { id: true, name: true } }, activities: { where: { completed: false }, orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }], take: 1, select: { id: true, subject: true, type: true, dueDate: true } } }, orderBy: { createdAt: "desc" } } } } } })
-      : await this.prisma.pipeline.findFirst({ where: { isDefault: true }, include: { stages: { orderBy: { order: "asc" }, include: { deals: { where: dealWhere, include: { contact: { select: { id: true, name: true, email: true } }, organization: { select: { id: true, name: true } }, activities: { where: { completed: false }, orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }], take: 1, select: { id: true, subject: true, type: true, dueDate: true } } }, orderBy: { createdAt: "desc" } } } } } });
+      ? await this.prisma.pipeline.findUnique({ where: { id: pipelineId }, include: { stages: { orderBy: { order: "asc" }, include: { deals: { where: dealWhere, include: { contact: { select: { id: true, name: true, email: true } }, organization: { select: { id: true, name: true } }, lead: { select: { id: true, businessName: true } }, activities: { where: { completed: false }, orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }], take: 1, select: { id: true, subject: true, type: true, dueDate: true } } }, orderBy: { createdAt: "desc" } } } } } })
+      : await this.prisma.pipeline.findFirst({ where: { isDefault: true }, include: { stages: { orderBy: { order: "asc" }, include: { deals: { where: dealWhere, include: { contact: { select: { id: true, name: true, email: true } }, organization: { select: { id: true, name: true } }, lead: { select: { id: true, businessName: true } }, activities: { where: { completed: false }, orderBy: [{ dueDate: { sort: "asc", nulls: "last" } }, { createdAt: "desc" }], take: 1, select: { id: true, subject: true, type: true, dueDate: true } } }, orderBy: { createdAt: "desc" } } } } } });
 
     if (!pipeline) return null;
 
@@ -163,6 +163,7 @@ export class PrismaPipelinesRepository extends PipelinesRepository {
           createdAt: deal.createdAt,
           contact: deal.contact ? { id: deal.contact.id, name: deal.contact.name, email: deal.contact.email } : null,
           organization: deal.organization ? { id: deal.organization.id, name: deal.organization.name } : null,
+          lead: deal.lead ? { id: deal.lead.id, businessName: deal.lead.businessName } : null,
           nextActivity: deal.activities[0] ? { id: deal.activities[0].id, subject: deal.activities[0].subject, type: deal.activities[0].type, dueDate: deal.activities[0].dueDate } : null,
         })),
       })),

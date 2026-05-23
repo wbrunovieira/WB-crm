@@ -24,10 +24,13 @@ function toStageSummary(s: Stage, dealCount = 0): StageSummary {
   };
 }
 
+import type { PipelineViewDeal } from "@/domain/pipelines/enterprise/read-models/pipeline-read-models";
+
 export class InMemoryPipelinesRepository extends PipelinesRepository {
   public pipelines: Pipeline[] = [];
   public stages: Stage[] = [];
   public dealCounts: Map<string, number> = new Map(); // stageId → deal count
+  public stageDeals: Map<string, PipelineViewDeal[]> = new Map(); // stageId → deals
 
   async findMany(): Promise<PipelineSummary[]> {
     return this.pipelines.map((p) => ({
@@ -134,7 +137,7 @@ export class InMemoryPipelinesRepository extends PipelinesRepository {
           name: s.name,
           order: s.order,
           probability: s.probability,
-          deals: [],
+          deals: this.stageDeals.get(s.id.toString()) ?? [],
         })),
     };
   }

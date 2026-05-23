@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { InMemoryPipelinesRepository } from "../../repositories/in-memory-pipelines.repository";
+import { GetPipelineViewUseCase } from "@/domain/pipelines/application/use-cases/get-pipeline-view.use-case";
 import { GetPipelinesUseCase } from "@/domain/pipelines/application/use-cases/get-pipelines.use-case";
 import { GetPipelineByIdUseCase } from "@/domain/pipelines/application/use-cases/get-pipeline-by-id.use-case";
 import { CreatePipelineUseCase } from "@/domain/pipelines/application/use-cases/create-pipeline.use-case";
@@ -23,6 +24,7 @@ describe("Pipelines Use Cases", () => {
   let updateStage: UpdateStageUseCase;
   let deleteStage: DeleteStageUseCase;
   let reorderStages: ReorderStagesUseCase;
+  let getPipelineView: GetPipelineViewUseCase;
 
   beforeEach(() => {
     repo = new InMemoryPipelinesRepository();
@@ -36,6 +38,7 @@ describe("Pipelines Use Cases", () => {
     updateStage = new UpdateStageUseCase(repo);
     deleteStage = new DeleteStageUseCase(repo);
     reorderStages = new ReorderStagesUseCase(repo);
+    getPipelineView = new GetPipelineViewUseCase(repo);
   });
 
   // ─── CreatePipelineUseCase ──────────────────────────────────────────────
@@ -325,6 +328,75 @@ describe("Pipelines Use Cases", () => {
     it("retorna erro quando pipeline não existe", async () => {
       const result = await reorderStages.execute({ pipelineId: "nao-existe", stageIds: ["s1"] });
       expect(result.isLeft()).toBe(true);
+    });
+  });
+
+  // ─── GetPipelineViewUseCase ───────────────────────────────────────────────
+
+  describe("GetPipelineViewUseCase", () => {
+    it("retorna erro quando pipeline não existe", async () => {
+      const result = await getPipelineView.execute("user-1", "sdr", "nao-existe");
+      expect(result.isLeft()).toBe(true);
+    });
+
+    it("inclui lead no deal do pipeline view", async () => {
+      const pipelineResult = await create.execute({ name: "Pipeline Lead", isDefault: true });
+      expect(pipelineResult.isRight()).toBe(true);
+      if (!pipelineResult.isRight()) return;
+      const pipelineId = pipelineResult.value.pipeline.id.toString();
+
+      const stage = repo.stages.find((s) => s.pipelineId === pipelineId)!;
+      const stageId = stage.id.toString();
+
+      repo.stageDeals.set(stageId, [{
+        id: "deal-1",
+        title: "Negócio Teste",
+        value: 10000,
+        currency: "BRL",
+        probability: null,
+        status: "open",
+        createdAt: new Date(),
+        contact: null,
+        organization: null,
+        lead: { id: "lead-abc", businessName: "Empresa ABC Ltda" },
+        nextActivity: null,
+      }]);
+
+      const result = await getPipelineView.execute("user-1", "sdr");
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        const deal = result.value.view.stages[0].deals[0];
+        expect(deal.lead).toEqual({ id: "lead-abc", businessName: "Empresa ABC Ltda" });
+      }
+    });
+
+    it("lead é null quando deal não tem lead associado", async () => {
+      const pipelineResult = await create.execute({ name: "Pipeline Sem Lead", isDefault: true });
+      if (!pipelineResult.isRight()) return;
+      const pipelineId = pipelineResult.value.pipeline.id.toString();
+      const stage = repo.stages.find((s) => s.pipelineId === pipelineId)!;
+
+      repo.stageDeals.set(stage.id.toString(), [{
+        id: "deal-2",
+        title: "Sem Lead",
+        value: 5000,
+        currency: "BRL",
+        probability: null,
+        status: "open",
+        createdAt: new Date(),
+        contact: null,
+        organization: null,
+        lead: null,
+        nextActivity: null,
+      }]);
+
+      const result = await getPipelineView.execute("user-1", "sdr");
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.view.stages[0].deals[0].lead).toBeNull();
+      }
     });
   });
 });

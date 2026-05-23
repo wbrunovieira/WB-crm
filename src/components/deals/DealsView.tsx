@@ -36,6 +36,7 @@ interface KanbanDeal {
   expectedCloseDate: Date | null;
   contact: { id: string; name: string; email: string | null } | null;
   organization: { id: string; name: string } | null;
+  lead: { id: string; businessName: string } | null;
   createdAt: Date;
   activities?: Array<{
     id: string;
