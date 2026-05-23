@@ -230,4 +230,26 @@ describe("RunWarmingCycleUseCase", () => {
     expect(sends.items[0].fromEmail).toBeTruthy();
     expect(sends.items[0].toEmail).toBeTruthy();
   });
+
+  it("should auto-promote ramping account to maintenance after 56 days", async () => {
+    const startedAt = new Date(Date.now() - 57 * 24 * 60 * 60 * 1000);
+    const acc = WarmingAccount.create({ email: "old@example.com", isActive: true, phase: "ramping", startedAt, ownerId: OWNER });
+    await accounts.save(acc);
+
+    await sut.execute({ ownerId: OWNER, replyDelayMs: 0 });
+
+    const saved = accounts.items.find((a) => a.email === "old@example.com");
+    expect(saved?.phase).toBe("maintenance");
+  });
+
+  it("should not promote account with less than 56 days", async () => {
+    const startedAt = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000);
+    const acc = WarmingAccount.create({ email: "mid@example.com", isActive: true, phase: "ramping", startedAt, ownerId: OWNER });
+    await accounts.save(acc);
+
+    await sut.execute({ ownerId: OWNER, replyDelayMs: 0 });
+
+    const saved = accounts.items.find((a) => a.email === "mid@example.com");
+    expect(saved?.phase).toBe("ramping");
+  });
 });

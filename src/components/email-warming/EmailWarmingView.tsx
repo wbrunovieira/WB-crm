@@ -124,6 +124,22 @@ export function EmailWarmingView({ accounts, poolEmails, history, historyTotal }
   const phaseLabel = (phase: string) => phase === "maintenance" ? "Manutenção" : "Rampa";
   const phaseColor = (phase: string) => phase === "maintenance" ? "text-green-400 bg-green-400/10" : "text-amber-400 bg-amber-400/10";
 
+  const WARMING_STAGES = [
+    { label: "Início", days: "Dias 0–13", volume: 10 },
+    { label: "Crescendo", days: "Dias 14–27", volume: 20 },
+    { label: "Acelerando", days: "Dias 28–41", volume: 40 },
+    { label: "Rampa total", days: "Dias 42–55", volume: 80 },
+    { label: "Manutenção", days: "Dia 56+", volume: 15 },
+  ];
+
+  function getCurrentStageIndex(phase: string, day: number): number {
+    if (phase === "maintenance") return 4;
+    if (day < 14) return 0;
+    if (day < 28) return 1;
+    if (day < 42) return 2;
+    return 3;
+  }
+
   const totalActiveAccounts = accounts.filter((a) => a.isActive).length;
   const totalSentToday = accounts.reduce((sum, a) => sum + a.todaySentCount, 0);
   const totalDailyVolume = accounts.filter((a) => a.isActive).reduce((sum, a) => sum + a.dailyVolume, 0);
@@ -190,39 +206,83 @@ export function EmailWarmingView({ accounts, poolEmails, history, historyTotal }
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              {accounts.map((account) => (
-                <div key={account.id} className="rounded-xl border border-gray-700 bg-gray-800/50 p-5">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="font-medium text-white truncate">{account.email}</span>
-                    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${phaseColor(account.phase)}`}>
-                      {phaseLabel(account.phase)}
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Dia</span>
-                      <span className="text-gray-200">{account.daysSinceStart}</span>
+              {accounts.map((account) => {
+                const stageIndex = getCurrentStageIndex(account.phase, account.daysSinceStart);
+                return (
+                  <div key={account.id} className="rounded-xl border border-gray-700 bg-gray-800/50 p-5 space-y-4">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-white truncate">{account.email}</span>
+                      <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${phaseColor(account.phase)}`}>
+                        {phaseLabel(account.phase)}
+                      </span>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Volume diário</span>
-                      <span className="text-gray-200">{account.dailyVolume} emails</span>
+
+                    {/* Warming progression stepper */}
+                    <div className="space-y-2">
+                      <p className="text-xs text-gray-500 uppercase tracking-wide">Progressão de aquecimento</p>
+                      <div className="flex items-start gap-1">
+                        {WARMING_STAGES.map((stage, i) => {
+                          const isActive = i === stageIndex;
+                          const isDone = i < stageIndex;
+                          return (
+                            <div key={i} className="flex flex-col items-center flex-1">
+                              {/* Connector line + dot */}
+                              <div className="flex items-center w-full">
+                                <div className={`h-px flex-1 ${i === 0 ? "invisible" : isDone || isActive ? "bg-primary" : "bg-gray-700"}`} />
+                                <div className={`h-3 w-3 rounded-full flex-shrink-0 border-2 transition-colors ${
+                                  isActive
+                                    ? "border-primary bg-primary shadow-[0_0_6px_#792990]"
+                                    : isDone
+                                    ? "border-primary bg-primary/40"
+                                    : "border-gray-600 bg-gray-800"
+                                }`} />
+                                <div className={`h-px flex-1 ${i === WARMING_STAGES.length - 1 ? "invisible" : isDone ? "bg-primary" : "bg-gray-700"}`} />
+                              </div>
+                              {/* Label */}
+                              <div className="mt-1 text-center">
+                                <p className={`text-[10px] font-medium leading-tight ${isActive ? "text-primary" : isDone ? "text-gray-400" : "text-gray-600"}`}>
+                                  {stage.label}
+                                </p>
+                                <p className={`text-[9px] leading-tight ${isActive ? "text-amber-400" : isDone ? "text-gray-500" : "text-gray-700"}`}>
+                                  {stage.volume}/dia
+                                </p>
+                                {isActive && (
+                                  <p className="text-[9px] text-gray-500 leading-tight">{stage.days}</p>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Enviados hoje</span>
-                      <span className="text-gray-200">{account.todaySentCount}</span>
-                    </div>
-                    {/* Progress bar */}
-                    <div className="mt-2">
-                      <div className="h-1.5 rounded-full bg-gray-700 overflow-hidden">
-                        <div
-                          className="h-full bg-primary transition-all"
-                          style={{ width: `${Math.min(100, (account.todaySentCount / account.dailyVolume) * 100)}%` }}
-                        />
+
+                    {/* Stats */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Dia desde início</span>
+                        <span className="text-gray-200">{account.daysSinceStart}</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Volume hoje</span>
+                        <span className="text-gray-200">{account.dailyVolume} emails</span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-400">Enviados hoje</span>
+                        <span className="text-gray-200">{account.todaySentCount} / {account.dailyVolume}</span>
+                      </div>
+                      <div className="mt-1">
+                        <div className="h-1.5 rounded-full bg-gray-700 overflow-hidden">
+                          <div
+                            className="h-full bg-primary transition-all"
+                            style={{ width: `${Math.min(100, (account.todaySentCount / account.dailyVolume) * 100)}%` }}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
 

@@ -116,6 +116,13 @@ export class RunWarmingCycleUseCase {
     const activeAccounts = await this.accounts.findAllActive(ownerId);
     if (activeAccounts.length === 0) return right({ totalSent: 0 });
 
+    for (const account of activeAccounts) {
+      if (account.shouldPromoteToMaintenance) {
+        account.setMaintenance();
+        await this.accounts.save(account);
+      }
+    }
+
     const pool = await this.poolEmails.findAllActive(ownerId);
     let totalSent = 0;
 

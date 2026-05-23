@@ -27,6 +27,10 @@ export class WarmingAccount extends Entity<WarmingAccountProps> {
     return Math.floor(ms / (1000 * 60 * 60 * 24));
   }
 
+  get shouldPromoteToMaintenance(): boolean {
+    return this.props.phase === "ramping" && this.daysSinceStart >= 56;
+  }
+
   get dailyVolume(): number {
     const day = this.daysSinceStart;
     if (this.props.phase === "maintenance") return 15;
