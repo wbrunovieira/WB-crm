@@ -26,6 +26,7 @@ import {
   BrainCircuit,
   Flame,
   Send,
+  Bot,
 } from "lucide-react";
 import { useState, useMemo, useRef, useEffect } from "react";
 
@@ -102,6 +103,11 @@ const navItems = [
     name: "Campanhas Email",
     href: "/email-campaigns",
     icon: Send,
+  },
+  {
+    name: "Bot Flows",
+    href: "/bot-flows",
+    icon: Bot,
   },
   {
     name: "Funil",

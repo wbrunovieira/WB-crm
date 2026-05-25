@@ -104,6 +104,9 @@ export class WhatsAppWebhookController {
     const mediaLabel = extractMediaLabel(body?.data);
     const messageTimestamp = body?.data?.messageTimestamp;
 
+    // 4b. Extract instance name
+    const instanceName = body?.instance;
+
     // 5. Delegate — never returns error
     try {
       await this.handleWebhook.execute({
@@ -117,6 +120,7 @@ export class WhatsAppWebhookController {
         messageRaw: body?.data?.message ?? null,
         messageTimestamp,
         ownerId,
+        instanceName,
       });
     } catch (err) {
       this.logger.error("WhatsApp webhook unhandled error", {

@@ -83,6 +83,9 @@ model User {
   emailCampaigns       EmailCampaign[]
   emailSuppressions    EmailSuppression[]
 
+  // Bot Flows
+  botFlows             BotFlow[]
+
   @@map("users")
 }
 
@@ -2689,4 +2692,67 @@ model EmailCampaignSend {
   @@index([recipientId, stepId])
   @@index([stepId])
   @@map("email_campaign_sends")
+}
+
+// ─── Bot Flows ────────────────────────────────────────────────────────────────
+
+model BotFlow {
+  id           String           @id @default(cuid())
+  ownerId      String
+  instanceName String
+  name         String
+  description  String?
+  isActive     Boolean          @default(false)
+  triggerType  String           @default("KEYWORD")
+  triggerValue String?
+  nodes        BotFlowNode[]
+  edges        BotFlowEdge[]
+  sessions     BotFlowSession[]
+  owner        User             @relation(fields: [ownerId], references: [id])
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  @@index([instanceName, isActive])
+}
+
+model BotFlowNode {
+  id       String        @id @default(cuid())
+  flowId   String
+  nodeType String
+  posX     Float         @default(0)
+  posY     Float         @default(0)
+  config   Json          @default("{}")
+  flow     BotFlow       @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  outEdges BotFlowEdge[] @relation("BotEdgeSource")
+  inEdges  BotFlowEdge[] @relation("BotEdgeTarget")
+}
+
+model BotFlowEdge {
+  id             String      @id @default(cuid())
+  flowId         String
+  sourceNodeId   String
+  targetNodeId   String
+  conditionType  String?
+  conditionValue String?
+  label          String?
+  flow           BotFlow     @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  sourceNode     BotFlowNode @relation("BotEdgeSource", fields: [sourceNodeId], references: [id], onDelete: Cascade)
+  targetNode     BotFlowNode @relation("BotEdgeTarget", fields: [targetNodeId], references: [id], onDelete: Cascade)
+}
+
+model BotFlowSession {
+  id            String    @id @default(cuid())
+  flowId        String
+  instanceName  String
+  phone         String
+  leadId        String?
+  currentNodeId String?
+  status        String    @default("ACTIVE")
+  variables     Json      @default("{}")
+  waitingSince  DateTime?
+  flow          BotFlow   @relation(fields: [flowId], references: [id])
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([phone, instanceName, status])
 }

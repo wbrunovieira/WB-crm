@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { EventEmitterModule } from "@nestjs/event-emitter";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
 import { ActivitiesModule } from "@/domain/activities/activities.module";
 import { AuthModule } from "@/infra/auth/auth.module";
@@ -43,7 +44,7 @@ import { WhatsAppTranscriptionCallbackController } from "./infra/controllers/wha
 import { WhatsAppTranscriptionCronService } from "./infra/scheduled/whatsapp-transcription-cron.service";
 
 @Module({
-  imports: [SharedInfraModule, ActivitiesModule, AuthModule, NotificationsModule, LeadsModule],
+  imports: [EventEmitterModule, SharedInfraModule, ActivitiesModule, AuthModule, NotificationsModule, LeadsModule],
   controllers: [WhatsAppWebhookController, WhatsAppController, WhatsAppMediaController, WhatsAppTranscriptionCallbackController],
   providers: [
     // Use Cases

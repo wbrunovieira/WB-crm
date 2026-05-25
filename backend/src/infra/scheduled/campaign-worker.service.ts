@@ -4,6 +4,7 @@ import { CampaignSendsRepository } from "@/domain/campaigns/application/reposito
 import { CampaignsRepository } from "@/domain/campaigns/application/repositories/campaigns.repository";
 import { StepExecutorService } from "@/domain/campaigns/application/services/step-executor.service";
 import { AntiBlockService } from "@/domain/campaigns/application/services/anti-block.service";
+import { PrismaService } from "@/infra/database/prisma.service";
 
 const BATCH_SIZE = 10;
 
@@ -16,6 +17,7 @@ export class CampaignWorkerService {
     private readonly campaigns: CampaignsRepository,
     private readonly stepExecutor: StepExecutorService,
     private readonly antiBlock: AntiBlockService,
+    private readonly prisma: PrismaService,
   ) {}
 
   @Cron(CronExpression.EVERY_30_SECONDS)
@@ -57,7 +59,21 @@ export class CampaignWorkerService {
         return;
       }
 
-      await this.stepExecutor.execute(send, step, campaign.instanceName);
+      // Build variables for template substitution
+      let variables: Record<string, string> = { phone: send.phone };
+      if (send.leadId) {
+        const lead = await this.prisma.lead.findUnique({
+          where: { id: send.leadId },
+          select: { businessName: true, phone: true },
+        });
+        variables = {
+          nome: lead?.businessName ?? "",
+          empresa: lead?.businessName ?? "",
+          phone: lead?.phone ?? send.phone,
+        };
+      }
+
+      await this.stepExecutor.execute(send, step, campaign.instanceName, variables);
       this.antiBlock.recordSend(campaign.instanceName);
 
       const nextStep = campaign.steps[send.currentStep + 1];

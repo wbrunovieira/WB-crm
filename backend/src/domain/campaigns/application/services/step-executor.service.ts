@@ -17,13 +17,14 @@ export class StepExecutorService {
     send: CampaignSend,
     step: CampaignStep,
     instanceName: string,
+    variables: Record<string, string> = {},
   ): Promise<void> {
     const phone = send.phone;
 
     switch (step.type) {
       case "TEXT":
         if (!step.text) throw new Error("Step TEXT sem conteúdo");
-        await this.evolutionApi.sendText({ instanceName, phone, text: step.text });
+        await this.evolutionApi.sendText({ instanceName, phone, text: this.resolveVars(step.text, variables) });
         break;
 
       case "MEDIA":
@@ -67,6 +68,10 @@ export class StepExecutorService {
         break;
       }
     }
+  }
+
+  resolveVars(text: string, vars: Record<string, string>): string {
+    return text.replace(/\{\{(\w[\w-]*)\}\}/g, (_, key) => vars[key] ?? vars[key.toLowerCase()] ?? `{{${key}}}`);
   }
 
   private resolveMediaType(

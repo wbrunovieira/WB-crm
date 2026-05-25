@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Either, right } from "@/core/either";
 import { WhatsAppJid } from "@/domain/integrations/whatsapp/enterprise/value-objects/whatsapp-jid.vo";
 import { WhatsAppMessageType } from "@/domain/integrations/whatsapp/enterprise/value-objects/whatsapp-message-type.vo";
@@ -16,6 +17,7 @@ export interface HandleWhatsAppWebhookInput {
   messageRaw?: unknown;
   messageTimestamp?: number;
   ownerId: string;
+  instanceName?: string;
 }
 
 export interface HandleWhatsAppWebhookOutput {
@@ -30,6 +32,7 @@ export class HandleWhatsAppWebhookUseCase {
   constructor(
     private readonly processMessage: ProcessWhatsAppMessageUseCase,
     private readonly processMedia: ProcessWhatsAppMediaUseCase,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   async execute(
@@ -37,7 +40,7 @@ export class HandleWhatsAppWebhookUseCase {
   ): Promise<Either<never, HandleWhatsAppWebhookOutput>> {
     const {
       event, remoteJid, messageId, fromMe, messageType,
-      pushName, text, messageRaw, messageTimestamp, ownerId,
+      pushName, text, messageRaw, messageTimestamp, ownerId, instanceName,
     } = input;
 
     try {
@@ -105,6 +108,18 @@ export class HandleWhatsAppWebhookUseCase {
             });
           });
         }
+      }
+
+      // Emit event for bot flow processing (fire-and-forget)
+      if (!fromMe && text) {
+        const phone = remoteJid.split("@")[0];
+        this.eventEmitter.emit("whatsapp.message.received", {
+          instanceName: instanceName ?? ownerId,
+          phone: `+${phone}`,
+          text,
+          ownerId,
+          pushName,
+        });
       }
 
       return right({ processed: true });

@@ -20,6 +20,7 @@ import { PrismaCampaignsRepository } from "@/infra/database/prisma/repositories/
 import { PrismaCampaignSendsRepository } from "@/infra/database/prisma/repositories/campaigns/prisma-campaign-sends.repository";
 import { CampaignWorkerService } from "@/infra/scheduled/campaign-worker.service";
 import { CampaignsController } from "@/infra/controllers/campaigns.controller";
+import { PrismaService } from "@/infra/database/prisma.service";
 
 @Module({
   imports: [AuthModule],
@@ -31,6 +32,7 @@ import { CampaignsController } from "@/infra/controllers/campaigns.controller";
     // Ports
     { provide: EvolutionApiPort, useClass: EvolutionApiClient },
     // Services
+    PrismaService,
     AntiBlockService,
     StepExecutorService,
     CampaignWorkerService,
