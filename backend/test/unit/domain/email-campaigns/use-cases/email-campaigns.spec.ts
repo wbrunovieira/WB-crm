@@ -80,6 +80,42 @@ describe("VariableResolverService", () => {
     );
     expect(result).toContain("https://api.example.com/tracking/unsubscribe/send-1");
   });
+
+  it("should replace {{setor}} from customVars.setor", () => {
+    const recipient = EmailCampaignRecipient.create({
+      campaignId: "c1", recipientType: "LEAD", recipientId: "l1",
+      email: "a@b.com", customVars: { setor: "tecnologia" },
+    });
+    const result = resolver.resolve("Empresas do setor de {{setor}}.", recipient);
+    expect(result).toBe("Empresas do setor de tecnologia.");
+  });
+
+  it("should replace {{setor}} from customVars.segment as alias", () => {
+    const recipient = EmailCampaignRecipient.create({
+      campaignId: "c1", recipientType: "LEAD", recipientId: "l1",
+      email: "a@b.com", customVars: { segment: "retalho" },
+    });
+    const result = resolver.resolve("Setor: {{setor}}", recipient);
+    expect(result).toBe("Setor: retalho");
+  });
+
+  it("should replace {{segment}} from customVars.setor as alias", () => {
+    const recipient = EmailCampaignRecipient.create({
+      campaignId: "c1", recipientType: "LEAD", recipientId: "l1",
+      email: "a@b.com", customVars: { setor: "saúde" },
+    });
+    const result = resolver.resolve("Segment: {{segment}}", recipient);
+    expect(result).toBe("Segment: saúde");
+  });
+
+  it("should return empty string for {{setor}} when not set in customVars", () => {
+    const recipient = EmailCampaignRecipient.create({
+      campaignId: "c1", recipientType: "LEAD", recipientId: "l1",
+      email: "a@b.com", name: "Ana",
+    });
+    const result = resolver.resolve("Olá {{nome}} {{setor}}.", recipient);
+    expect(result).toBe("Olá Ana .");
+  });
 });
 
 describe("CreateEmailCampaignUseCase", () => {

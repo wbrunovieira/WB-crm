@@ -3,6 +3,7 @@ import type { EmailCampaignRecipient } from "../../enterprise/entities/email-cam
 export class VariableResolverService {
   resolve(template: string, recipient: EmailCampaignRecipient, trackingBaseUrl?: string, sendId?: string): string {
     const firstName = recipient.name?.split(" ")[0] ?? "";
+    const saudacao = firstName || recipient.company || "";
 
     const unsubscribeUrl = trackingBaseUrl && sendId
       ? `${trackingBaseUrl}/tracking/unsubscribe/${sendId}`
@@ -13,11 +14,15 @@ export class VariableResolverService {
       name: recipient.name ?? "",
       "primeiro-nome": firstName,
       "first-name": firstName,
+      saudacao,
+      greeting: saudacao,
       email: recipient.email,
       empresa: recipient.company ?? "",
       company: recipient.company ?? "",
       cargo: recipient.role ?? "",
       role: recipient.role ?? "",
+      setor: recipient.customVars?.setor ?? recipient.customVars?.segment ?? "",
+      segment: recipient.customVars?.segment ?? recipient.customVars?.setor ?? "",
       link_descadastro: unsubscribeUrl,
       unsubscribe_link: unsubscribeUrl,
       ...recipient.customVars,
