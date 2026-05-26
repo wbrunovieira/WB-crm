@@ -19,7 +19,7 @@ export class GmailPollCronService {
     try {
       // Find all users with Google tokens
       const tokens = await this.prisma.googleToken.findMany({
-        select: { id: true },
+        select: { id: true, email: true },
       });
 
       this.logger.log(`Gmail poll cron: polling ${tokens.length} users`);
@@ -27,10 +27,20 @@ export class GmailPollCronService {
       let totalProcessed = 0;
 
       for (const token of tokens) {
+        const user = await this.prisma.user.findFirst({
+          where: { email: token.email },
+          select: { id: true },
+        });
+
+        if (!user) {
+          this.logger.warn("Gmail poll cron: no user found for token email", { email: token.email });
+          continue;
+        }
+
         try {
           const result = await this.pollGmail.execute({
             userId: token.id,
-            ownerId: token.id,
+            ownerId: user.id,
           });
 
           if (result.isRight()) {

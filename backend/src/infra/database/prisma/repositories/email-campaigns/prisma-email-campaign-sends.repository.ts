@@ -40,6 +40,11 @@ export class PrismaEmailCampaignSendsRepository implements EmailCampaignSendsRep
     return rows.map((r) => this.toDomain(r));
   }
 
+  async existsByRecipientAndStep(recipientId: string, stepId: string): Promise<boolean> {
+    const count = await this.prisma.emailCampaignSend.count({ where: { recipientId, stepId } });
+    return count > 0;
+  }
+
   async countByStep(stepId: string) {
     const [sent, opened, clicked] = await Promise.all([
       this.prisma.emailCampaignSend.count({ where: { stepId } }),

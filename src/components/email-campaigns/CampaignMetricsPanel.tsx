@@ -7,8 +7,9 @@ import {
 import type { Payload } from "recharts/types/component/DefaultTooltipContent";
 import {
   Send, Eye, MousePointerClick, UserX, AlertTriangle, Users,
-  TrendingUp, TrendingDown,
+  TrendingUp, TrendingDown, Link,
 } from "lucide-react";
+import type { RecipientProgress } from "./CampaignProgressPanel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -112,7 +113,7 @@ function FunnelBar({ label, value, max, color }: { label: string; value: number;
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function CampaignMetricsPanel({ metrics }: { metrics: CampaignMetrics }) {
+export function CampaignMetricsPanel({ metrics, recipients = [] }: { metrics: CampaignMetrics; recipients?: RecipientProgress[] }) {
   const { recipients, totals, steps, bySegment, byRole, byRecipientType } = metrics;
 
   const statusPieData = [
@@ -257,6 +258,62 @@ export function CampaignMetricsPanel({ metrics }: { metrics: CampaignMetrics }) 
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Engajamento por Lead ──────────────────────────────────────────── */}
+      {recipients.length > 0 && (
+        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5">
+          <h3 className="text-white font-semibold mb-4">Engajamento por Lead</h3>
+          <div className="divide-y divide-gray-700/50">
+            {recipients.map((r) => (
+              <div key={r.id} className="py-3 flex flex-col gap-1.5">
+                <div className="flex items-center justify-between gap-3 flex-wrap">
+                  <div className="min-w-0">
+                    <span className="text-sm text-white font-medium">{r.name ?? r.email}</span>
+                    {r.name && <span className="text-xs text-gray-400 ml-2">{r.email}</span>}
+                  </div>
+                  <div className="flex items-center gap-3 shrink-0 text-xs">
+                    {r.openedAt ? (
+                      <span className="flex items-center gap-1 text-green-400 font-medium">
+                        <Eye size={12} />
+                        {r.openCount > 0 ? `${r.openCount}x` : "Abriu"}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-gray-600">
+                        <Eye size={12} /> Não abriu
+                      </span>
+                    )}
+                    {r.clickedAt ? (
+                      <span className="flex items-center gap-1 text-yellow-400 font-medium">
+                        <MousePointerClick size={12} />
+                        {Object.values(r.clickData ?? {}).reduce((a, b) => a + b, 0) || 1}x
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-gray-600">
+                        <MousePointerClick size={12} /> Não clicou
+                      </span>
+                    )}
+                  </div>
+                </div>
+                {Object.entries(r.clickData ?? {}).length > 0 && (
+                  <div className="flex flex-wrap gap-2 pl-1">
+                    {Object.entries(r.clickData).map(([url, count]) => {
+                      let display = url;
+                      try { display = new URL(url).hostname.replace(/^www\./, "") + new URL(url).pathname; } catch { /* keep url */ }
+                      return (
+                        <span key={url} className="flex items-center gap-1 text-xs bg-gray-700/60 text-gray-300 px-2 py-0.5 rounded-full">
+                          <Link size={10} className="text-yellow-400 shrink-0" />
+                          <span className="truncate max-w-[180px]" title={url}>{display}</span>
+                          <span className="text-yellow-400 font-semibold ml-1">{count}×</span>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       )}

@@ -427,6 +427,44 @@ describe("UnsubscribeRecipientUseCase", () => {
   });
 });
 
+describe("SendCampaignStep — duplicate send guard", () => {
+  it("should not send to recipient if send already exists for same step", async () => {
+    const campaigns = new InMemoryEmailCampaignsRepository();
+    const steps = new InMemoryEmailCampaignStepsRepository();
+    const recipients = new InMemoryEmailCampaignRecipientsRepository();
+    const sends = new InMemoryEmailCampaignSendsRepository();
+    const suppressions = new InMemoryEmailSuppressionsRepository();
+    const gmail = new FakeGmailPortForCampaigns();
+    const resolver = new VariableResolverService();
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions);
+
+    const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const campaignId = (created.value as { id: string }).id;
+    const campaign = await campaigns.findById(campaignId);
+    campaign!.start();
+    await campaigns.save(campaign!);
+
+    const step = EmailCampaignStep.create({ campaignId, order: 0, subject: "S", bodyHtml: "B", delayDays: 0 });
+    await steps.save(step);
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "a@b.com" });
+    await recipients.save(r);
+
+    // First send
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+    expect(gmail.sentEmails).toHaveLength(1);
+
+    // Reset recipient to PENDING/step 0 to simulate a re-trigger
+    r.props.currentStep = 0;
+    r.props.status = "PENDING";
+    await recipients.save(r);
+
+    // Second trigger — should be blocked by duplicate guard
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+    expect(gmail.sentEmails).toHaveLength(1); // still 1, not 2
+  });
+});
+
 describe("SendCampaignStep — suppression check", () => {
   it("should not send to suppressed emails", async () => {
     const campaigns = new InMemoryEmailCampaignsRepository();

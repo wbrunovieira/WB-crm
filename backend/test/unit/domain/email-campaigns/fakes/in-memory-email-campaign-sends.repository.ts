@@ -12,6 +12,10 @@ export class InMemoryEmailCampaignSendsRepository implements EmailCampaignSendsR
     return this.items.filter((s) => s.recipientId === recipientId);
   }
 
+  async existsByRecipientAndStep(recipientId: string, stepId: string): Promise<boolean> {
+    return this.items.some((s) => s.recipientId === recipientId && s.stepId === stepId);
+  }
+
   async countByStep(stepId: string) {
     const sends = this.items.filter((s) => s.stepId === stepId);
     return {

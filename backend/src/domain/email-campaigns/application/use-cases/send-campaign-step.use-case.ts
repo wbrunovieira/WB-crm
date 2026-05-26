@@ -68,6 +68,10 @@ export class SendCampaignStepUseCase {
         continue;
       }
 
+      // Guard against duplicate sends (e.g. triggered twice in quick succession)
+      const alreadySent = await this.sends.existsByRecipientAndStep(recipient.id.toString(), step.id.toString());
+      if (alreadySent) continue;
+
       const send = EmailCampaignSend.create({ recipientId: recipient.id.toString(), stepId: step.id.toString() });
 
       let subject = this.resolver.resolve(step.subject, recipient);

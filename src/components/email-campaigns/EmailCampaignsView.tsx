@@ -110,6 +110,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
   // ── Metrics tab state ──
   const [selectedMetricsCampaign, setSelectedMetricsCampaign] = useState<string>("");
   const [metricsData, setMetricsData] = useState<CampaignMetrics | null>(null);
+  const [metricsRecipients, setMetricsRecipients] = useState<import("./CampaignProgressPanel").RecipientProgress[]>([]);
   const [loadingMetrics, setLoadingMetrics] = useState(false);
 
   // ── Create form state ──
@@ -173,9 +174,14 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
     if (!campaignId) return;
     setLoadingMetrics(true);
     setMetricsData(null);
+    setMetricsRecipients([]);
     try {
-      const data = await apiFetch<CampaignMetrics>(`/email-campaigns/${campaignId}/stats`, token);
+      const [data, progress] = await Promise.all([
+        apiFetch<CampaignMetrics>(`/email-campaigns/${campaignId}/stats`, token),
+        apiFetch<import("./CampaignProgressPanel").CampaignProgressData>(`/email-campaigns/${campaignId}/progress`, token).catch(() => null),
+      ]);
       setMetricsData(data);
+      setMetricsRecipients(progress?.recipients ?? []);
     } catch {
       toast.error("Erro ao carregar métricas");
     } finally {
@@ -625,7 +631,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
           )}
 
           {metricsData && !loadingMetrics && (
-            <CampaignMetricsPanel metrics={metricsData} />
+            <CampaignMetricsPanel metrics={metricsData} recipients={metricsRecipients} />
           )}
         </div>
       )}
