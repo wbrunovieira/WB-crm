@@ -12,6 +12,7 @@ import { normalizeSegment } from "./segment-taxonomy";
 
 // Contact fields for import — not on LeadFormData; passed through to create a LeadContact
 export type ContactImportField =
+  | "contactName"
   | "contactRole"
   | "contactEmail"
   | "contactPhone"
@@ -76,6 +77,7 @@ export const IMPORTABLE_FIELDS: ImportableField[] = [
   { value: "twitter",               label: "Twitter / X",                      group: "Redes sociais" },
   { value: "tiktok",                label: "TikTok",                           group: "Redes sociais" },
   // Contato do responsável (cria um LeadContact vinculado ao lead)
+  { value: "contactName",           label: "Nome do contato",                  group: "Contato do Responsável" },
   { value: "contactRole",           label: "Cargo do responsável",             group: "Contato do Responsável" },
   { value: "contactEmail",          label: "E-mail do responsável",            group: "Contato do Responsável" },
   { value: "contactPhone",          label: "Telefone do responsável",          group: "Contato do Responsável" },
@@ -295,6 +297,12 @@ const AUTO_SUGGEST_MAP: Record<string, string> = {
   "international activity": "internationalActivity",
   "internationalactivity": "internationalActivity",
   "atividade": "internationalActivity",
+  // contactName
+  "nome do contato": "contactName",
+  "nome contato": "contactName",
+  "contato nome": "contactName",
+  "contact name": "contactName",
+  "contact": "contactName",
   // contactRole
   "cargo responsavel": "contactRole",
   "cargo do responsavel": "contactRole",

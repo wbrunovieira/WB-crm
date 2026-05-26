@@ -248,6 +248,33 @@ describe("ImportLeadsUseCase", () => {
       expect(repo.contacts[0].leadId).toBe(repo.leads[0].id.toString());
     });
 
+    it("creates a LeadContact from contactName without saving to companyOwner", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa B", contactName: "Maria Costa" }],
+        ...base,
+      });
+      expect(repo.contacts).toHaveLength(1);
+      expect(repo.contacts[0].name).toBe("Maria Costa");
+      expect(repo.leads[0].companyOwner).toBeUndefined();
+    });
+
+    it("prefers contactName over companyOwner for the contact name when both are present", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa C", contactName: "Nome Contato", companyOwner: "Dono Empresa" }],
+        ...base,
+      });
+      expect(repo.contacts).toHaveLength(1);
+      expect(repo.contacts[0].name).toBe("Nome Contato");
+    });
+
+    it("does not create a contact when contactName and companyOwner are both absent", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa D" }],
+        ...base,
+      });
+      expect(repo.contacts).toHaveLength(0);
+    });
+
     it("uses default role 'Responsável' when contactRole is not provided", async () => {
       await uc.execute({
         rows: [{ businessName: "Empresa A", companyOwner: "Maria" }],

@@ -28,6 +28,7 @@ export interface ImportLeadRowData {
   tiktok?: string;
   companyOwner?: string;
   // Contact fields — each maps to a LeadContact field for the primary contact
+  contactName?: string;
   contactRole?: string;
   contactEmail?: string;
   contactPhone?: string;

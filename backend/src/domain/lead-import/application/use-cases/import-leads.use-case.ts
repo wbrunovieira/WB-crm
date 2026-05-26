@@ -153,10 +153,11 @@ export class ImportLeadsUseCase {
       const contactItems: ImportContactData[] = [];
       for (let j = 0; j < toCreate.length; j++) {
         const row = rows[toCreateRowIndices[j]];
-        if (!row.companyOwner?.trim()) continue;
+        const contactName = row.contactName?.trim() || row.companyOwner?.trim();
+        if (!contactName) continue;
         contactItems.push({
           leadId: toCreate[j].id.toString(),
-          name: row.companyOwner.trim(),
+          name: contactName,
           role: row.contactRole?.trim() || "Responsável",
           email: row.contactEmail?.trim() || undefined,
           phone: row.contactPhone?.trim() || undefined,
