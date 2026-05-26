@@ -631,7 +631,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
           )}
 
           {metricsData && !loadingMetrics && (
-            <CampaignMetricsPanel metrics={metricsData} recipients={metricsRecipients} />
+            <CampaignMetricsPanel metrics={metricsData} recipientEngagement={metricsRecipients} />
           )}
         </div>
       )}

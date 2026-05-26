@@ -113,7 +113,7 @@ function FunnelBar({ label, value, max, color }: { label: string; value: number;
 
 // ── Main component ────────────────────────────────────────────────────────────
 
-export function CampaignMetricsPanel({ metrics, recipients = [] }: { metrics: CampaignMetrics; recipients?: RecipientProgress[] }) {
+export function CampaignMetricsPanel({ metrics, recipientEngagement = [] }: { metrics: CampaignMetrics; recipients?: RecipientProgress[]; recipientEngagement?: RecipientProgress[] }) {
   const { recipients, totals, steps, bySegment, byRole, byRecipientType } = metrics;
 
   const statusPieData = [
@@ -263,11 +263,11 @@ export function CampaignMetricsPanel({ metrics, recipients = [] }: { metrics: Ca
       )}
 
       {/* ── Engajamento por Lead ──────────────────────────────────────────── */}
-      {recipients.length > 0 && (
+      {recipientEngagement.length > 0 && (
         <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5">
           <h3 className="text-white font-semibold mb-4">Engajamento por Lead</h3>
           <div className="divide-y divide-gray-700/50">
-            {recipients.map((r) => (
+            {recipientEngagement.map((r) => (
               <div key={r.id} className="py-3 flex flex-col gap-1.5">
                 <div className="flex items-center justify-between gap-3 flex-wrap">
                   <div className="min-w-0">
