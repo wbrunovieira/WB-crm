@@ -66,14 +66,12 @@ export class PollGmailUseCase {
         }
       }
 
-      // 4. Update historyId to the latest one
-      if (messages.length > 0) {
-        const profile = await this.gmailPort.getProfile(userId);
-        await this.prisma.googleToken.updateMany({
-          where: { id: userId },
-          data: { gmailHistoryId: profile.historyId },
-        });
-      }
+      // 4. Always advance historyId so expired/stale IDs don't get stuck
+      const profile = await this.gmailPort.getProfile(userId);
+      await this.prisma.googleToken.updateMany({
+        where: { id: userId },
+        data: { gmailHistoryId: profile.historyId },
+      });
 
       return right({ processed });
     } catch (err) {

@@ -217,9 +217,13 @@ export class ProcessIncomingEmailUseCase {
     const originalRecipient = bodyText.match(/Original-Recipient:\s*rfc822;\s*([^\s\r\n]+)/i);
     if (originalRecipient) return originalRecipient[1].toLowerCase();
 
-    // Gmail human-readable: "wasn't delivered to email@domain"
+    // Gmail human-readable: "wasn't delivered to email@domain" (EN)
     const notDelivered = bodyText.match(/wasn't delivered to\s+([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i);
     if (notDelivered) return notDelivered[1].toLowerCase();
+
+    // Gmail PT-BR: "não foi entregue para email@domain"
+    const naoEntregue = bodyText.match(/não foi entregue para\s+([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i);
+    if (naoEntregue) return naoEntregue[1].toLowerCase();
 
     // Generic: "failed ... to email@domain"
     const failedTo = bodyText.match(/failed.*?(?:to|recipients?)[:\s]+([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i);
