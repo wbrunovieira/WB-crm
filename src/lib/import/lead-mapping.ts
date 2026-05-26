@@ -8,6 +8,7 @@
 
 import type { ParsedRow } from "./parse-file";
 import type { LeadFormData } from "@/lib/validations/lead";
+import { normalizeSegment } from "./segment-taxonomy";
 
 export type ColumnMapping = Record<string, keyof LeadFormData | "ignore">;
 
@@ -38,6 +39,7 @@ export const IMPORTABLE_FIELDS: ImportableField[] = [
   { value: "simplesNacional",       label: "Optante Simples Nacional",         group: "Empresa" },
   { value: "isMei",                 label: "Optante MEI",                      group: "Empresa" },
   { value: "segment",               label: "Segmento comercial",               group: "Empresa" },
+  { value: "internationalActivity", label: "Atividade (empresa internacional)",  group: "Empresa" },
   { value: "companyOwner",          label: "Responsável / sócio",              group: "Empresa" },
   { value: "description",           label: "Descrição / observação",           group: "Empresa" },
   { value: "cnaePrincipal",         label: "CNAE Principal",                   group: "Empresa" },
@@ -268,6 +270,12 @@ const AUTO_SUGGEST_MAP: Record<string, string> = {
   "cnaes secundarios": "cnaesSecundarios",
   "cnaessecundarios": "cnaesSecundarios",
   "atividades secundarias": "cnaesSecundarios",
+  // internationalActivity
+  "atividade internacional": "internationalActivity",
+  "atividade da empresa": "internationalActivity",
+  "international activity": "internationalActivity",
+  "internationalactivity": "internationalActivity",
+  "atividade": "internationalActivity",
   // sourceGroup
   "lote": "sourceGroup",
   "grupo": "sourceGroup",
@@ -348,6 +356,8 @@ export function mapRowToLeadData(
       (result as Record<string, unknown>)[campo] = v === "sim" || v === "yes" || v === "true" || v === "1";
     } else if (campo === "phone" || campo === "phone2" || campo === "whatsapp") {
       (result as Record<string, unknown>)[campo] = extractFirstPhone(raw);
+    } else if (campo === "segment") {
+      (result as Record<string, unknown>)[campo] = normalizeSegment(raw.trim());
     } else {
       (result as Record<string, unknown>)[campo] = raw.trim();
     }
