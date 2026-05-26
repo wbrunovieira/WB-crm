@@ -272,80 +272,141 @@ export class EmailCampaignsController {
     const term = q.trim();
     const contains = { contains: term, mode: "insensitive" as const };
 
-    const [leadContacts, orgContacts, leadDirectContacts] = await Promise.all([
+    const [leadContacts, orgContacts, leadDirectContacts, orgs] = await Promise.all([
+      // Lead contacts — match by contact name, email OR lead company name
       this.prisma.leadContact.findMany({
         where: {
           lead: { ownerId: user.id },
-          OR: [{ name: contains }, { email: contains }],
           email: { not: null },
+          OR: [
+            { name: contains },
+            { email: contains },
+            { lead: { businessName: contains } },
+          ],
         },
         select: {
           id: true, name: true, email: true, role: true,
           lead: { select: { businessName: true, sourceGroup: true } },
         },
-        take: 20,
+        take: 30,
       }),
+      // Contacts linked to organizations — match by contact name, email OR org name
       this.prisma.contact.findMany({
         where: {
           organizationId: { not: null },
           organization: { ownerId: user.id },
-          OR: [{ name: contains }, { email: contains }],
           email: { not: null },
+          OR: [
+            { name: contains },
+            { email: contains },
+            { organization: { name: contains } },
+          ],
         },
         select: {
           id: true, name: true, email: true, role: true,
           organization: { select: { name: true, sourceGroup: true } },
         },
-        take: 20,
+        take: 30,
       }),
+      // Contacts linked directly to leads (no org)
       this.prisma.contact.findMany({
         where: {
           organizationId: null,
           leadId: { not: null },
           lead: { ownerId: user.id },
-          OR: [{ name: contains }, { email: contains }],
           email: { not: null },
+          OR: [
+            { name: contains },
+            { email: contains },
+            { lead: { businessName: contains } },
+          ],
         },
         select: {
           id: true, name: true, email: true, role: true,
           lead: { select: { businessName: true, sourceGroup: true } },
         },
-        take: 10,
+        take: 20,
+      }),
+      // Organizations with email — match by org name or email
+      this.prisma.organization.findMany({
+        where: {
+          ownerId: user.id,
+          email: { not: null },
+          OR: [
+            { name: contains },
+            { email: contains },
+          ],
+        },
+        select: { id: true, name: true, email: true, sourceGroup: true },
+        take: 20,
       }),
     ]);
 
-    return [
-      ...leadContacts.map((lc) => ({
-        key: `LEAD:${lc.id}`,
-        recipientType: "LEAD" as const,
-        recipientId: lc.id,
-        email: lc.email!,
-        name: lc.name,
-        company: lc.lead?.businessName,
-        role: lc.role,
-        sourceGroup: lc.lead?.sourceGroup,
-      })),
-      ...orgContacts.map((c) => ({
-        key: `CONTACT:${c.id}`,
-        recipientType: "CONTACT" as const,
-        recipientId: c.id,
-        email: c.email!,
-        name: c.name,
-        company: c.organization?.name,
-        role: c.role,
-        sourceGroup: c.organization?.sourceGroup,
-      })),
-      ...leadDirectContacts.map((c) => ({
-        key: `CONTACT:${c.id}`,
-        recipientType: "CONTACT" as const,
-        recipientId: c.id,
-        email: c.email!,
-        name: c.name,
-        company: c.lead?.businessName,
-        role: c.role,
-        sourceGroup: c.lead?.sourceGroup,
-      })),
-    ];
+    // Deduplicate by email (prefer lead contacts over direct orgs)
+    const seen = new Set<string>();
+    const results: object[] = [];
+
+    for (const lc of leadContacts) {
+      if (!seen.has(lc.email!)) {
+        seen.add(lc.email!);
+        results.push({
+          key: `LEAD:${lc.id}`,
+          recipientType: "LEAD" as const,
+          recipientId: lc.id,
+          email: lc.email!,
+          name: lc.name,
+          company: lc.lead?.businessName,
+          role: lc.role,
+          sourceGroup: lc.lead?.sourceGroup,
+        });
+      }
+    }
+    for (const c of orgContacts) {
+      if (!seen.has(c.email!)) {
+        seen.add(c.email!);
+        results.push({
+          key: `CONTACT:${c.id}`,
+          recipientType: "CONTACT" as const,
+          recipientId: c.id,
+          email: c.email!,
+          name: c.name,
+          company: c.organization?.name,
+          role: c.role,
+          sourceGroup: c.organization?.sourceGroup,
+        });
+      }
+    }
+    for (const c of leadDirectContacts) {
+      if (!seen.has(c.email!)) {
+        seen.add(c.email!);
+        results.push({
+          key: `CONTACT:${c.id}`,
+          recipientType: "CONTACT" as const,
+          recipientId: c.id,
+          email: c.email!,
+          name: c.name,
+          company: c.lead?.businessName,
+          role: c.role,
+          sourceGroup: c.lead?.sourceGroup,
+        });
+      }
+    }
+    for (const org of orgs) {
+      if (!seen.has(org.email!)) {
+        seen.add(org.email!);
+        results.push({
+          key: `CONTACT:${org.id}`,
+          recipientType: "CONTACT" as const,
+          recipientId: org.id,
+          email: org.email!,
+          name: org.name,
+          company: org.name,
+          sourceGroup: org.sourceGroup,
+        });
+      }
+    }
+
+    return results;
   }
 
   // ─── Suppression ────────────────────────────────────────────────────────────
