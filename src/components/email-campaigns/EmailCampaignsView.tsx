@@ -63,13 +63,12 @@ interface EmailTemplate {
 
 interface RecipientCandidate {
   key: string;
-  recipientType: "LEAD" | "CONTACT";
-  recipientId: string;
-  email: string;
+  entityType: "lead" | "organization";
+  entityId: string;
   name: string;
-  company?: string;
-  role?: string;
-  sourceGroup?: string;
+  email?: string;
+  emailCount: number;
+  previewEmails: string[];
 }
 
 interface Props {
@@ -114,7 +113,8 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
   const [loadingMetrics, setLoadingMetrics] = useState(false);
 
   // ── Create form state ──
-  const [form, setForm] = useState({ name: "", description: "", fromEmail: "" });
+  const SENDER_OPTIONS = ["bruno@wbdigitalsolutions.com", "bruno@saltoup.com"];
+  const [form, setForm] = useState({ name: "", description: "", fromEmail: "bruno@wbdigitalsolutions.com" });
   const [steps, setSteps] = useState<CampaignStep[]>([
     { order: 0, subject: "", bodyHtml: "", delayDays: 0 },
   ]);
@@ -262,28 +262,22 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
 
   const addSelectedCandidates = async () => {
     if (!enrollCampaignId || selectedCandidates.size === 0) return;
-    const toAdd = searchResults
-      .filter((r) => selectedCandidates.has(r.key))
-      .map((r) => ({
-        recipientType: r.recipientType,
-        recipientId: r.recipientId,
-        email: r.email,
-        name: r.name,
-        company: r.company,
-        role: r.role,
-        customVars: r.sourceGroup ? { sourceGroup: r.sourceGroup } : {},
-      }));
+    const toAdd = searchResults.filter((r) => selectedCandidates.has(r.key));
     setEnrollLoading(true);
     try {
-      const result = await apiFetch<{ added: number }>(
-        `/email-campaigns/${enrollCampaignId}/recipients`, token,
-        { method: "POST", body: JSON.stringify({ recipients: toAdd }) },
-      );
-      setTotalEnrolled((p) => p + result.added);
+      let totalNewlyEnrolled = 0;
+      for (const candidate of toAdd) {
+        const result = await apiFetch<{ enrolled: number; skipped: number }>(
+          `/email-campaigns/${enrollCampaignId}/enroll-entity`, token,
+          { method: "POST", body: JSON.stringify({ entityType: candidate.entityType, entityId: candidate.entityId }) },
+        );
+        totalNewlyEnrolled += result.enrolled;
+      }
+      setTotalEnrolled((p) => p + totalNewlyEnrolled);
       setSelectedCandidates(new Set());
       setSearchResults([]);
       setSearchQuery("");
-      toast.success(`${result.added} destinatário(s) adicionado(s)`);
+      toast.success(`${totalNewlyEnrolled} destinatário(s) adicionado(s)`);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Erro ao adicionar");
     } finally {
@@ -364,8 +358,8 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
 
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name || !form.fromEmail || steps.some((s) => !s.subject || !s.bodyHtml)) {
-      toast.error("Preencha nome, remetente e todos os passos");
+    if (!form.name || steps.some((s) => !s.subject || !s.bodyHtml)) {
+      toast.error("Preencha nome e todos os passos");
       return;
     }
     setCreating(true);
@@ -381,7 +375,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
         });
       }
       toast.success("Campanha criada! Agora adicione os destinatários.");
-      setForm({ name: "", description: "", fromEmail: "" });
+      setForm({ name: "", description: "", fromEmail: "bruno@wbdigitalsolutions.com" });
       setSteps([{ order: 0, subject: "", bodyHtml: "", delayDays: 0 }]);
       await refreshCampaigns();
       await enterEnrollPhase(campaign.id);
@@ -677,15 +671,16 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-300 mb-1">Remetente (email) *</label>
-                <input
-                  type="email"
+                <label className="block text-sm text-gray-300 mb-1">Remetente (email)</label>
+                <select
                   value={form.fromEmail}
                   onChange={(e) => setForm((p) => ({ ...p, fromEmail: e.target.value }))}
-                  placeholder="voce@empresa.com"
                   className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
-                  required
-                />
+                >
+                  {SENDER_OPTIONS.map((email) => (
+                    <option key={email} value={email}>{email}</option>
+                  ))}
+                </select>
               </div>
             </div>
             <div>
@@ -968,17 +963,21 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                       />
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-white font-medium truncate">{r.name}</p>
-                        <p className="text-xs text-gray-400 truncate">
-                          {r.email}{r.company ? ` · ${r.company}` : ""}{r.role ? ` · ${r.role}` : ""}
+                        <p className="text-xs text-gray-500 truncate">
+                          {r.previewEmails.join(", ")}
+                          {r.emailCount > 3 ? ` +${r.emailCount - 3} mais` : ""}
                         </p>
                       </div>
-                      <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
-                        r.recipientType === "LEAD"
-                          ? "bg-purple-500/20 text-purple-400"
-                          : "bg-blue-500/20 text-blue-400"
-                      }`}>
-                        {r.recipientType === "LEAD" ? "Lead" : "Contacto"}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs text-gray-400">{r.emailCount} email{r.emailCount !== 1 ? "s" : ""}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full ${
+                          r.entityType === "lead"
+                            ? "bg-purple-500/20 text-purple-400"
+                            : "bg-blue-500/20 text-blue-400"
+                        }`}>
+                          {r.entityType === "lead" ? "Lead" : "Org"}
+                        </span>
+                      </div>
                     </label>
                   ))}
                 </div>
