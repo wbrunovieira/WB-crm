@@ -1018,7 +1018,12 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
 
           <div className="flex gap-3 pt-2 border-t border-gray-700 flex-wrap">
             <button
-              onClick={finishEnroll}
+              onClick={async () => {
+                if (selectedCandidates.size > 0) {
+                  await addSelectedCandidates();
+                }
+                finishEnroll();
+              }}
               className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
             >
               <CheckCircle size={16} /> Concluir
@@ -1028,6 +1033,10 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                 onClick={async () => {
                   if (!enrollCampaignId) return;
                   const id = enrollCampaignId;
+                  // Enroll any pending selected candidates before sending
+                  if (selectedCandidates.size > 0) {
+                    await addSelectedCandidates();
+                  }
                   finishEnroll();
                   await handleSendNow(id);
                 }}
