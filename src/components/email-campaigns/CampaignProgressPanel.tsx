@@ -16,8 +16,10 @@ export interface RecipientProgress {
   stepsSent: number[];
   lastSentAt?: string;
   openedAt?: string;
+  openCount: number;
   clickedAt?: string;
   clickedUrl?: string;
+  clickData: Record<string, number>;
 }
 
 export interface CampaignProgressData {
@@ -201,19 +203,33 @@ export function CampaignProgressPanel({ campaignId, token, totalSteps }: Props) 
                 {/* Open / Click indicators */}
                 <div className="flex items-center gap-2 shrink-0">
                   <span
-                    title={recipient.openedAt ? `Abriu em ${new Date(recipient.openedAt).toLocaleString("pt-BR")}` : "Não abriu"}
+                    title={recipient.openedAt ? `Abriu ${recipient.openCount}x — primeira vez em ${new Date(recipient.openedAt).toLocaleString("pt-BR")}` : "Não abriu"}
                     className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${recipient.openedAt ? "text-blue-400" : "text-gray-600"}`}
                   >
                     <Eye size={11} />
+                    {recipient.openCount > 0 && <span>{recipient.openCount}</span>}
                   </span>
                   <span
-                    title={recipient.clickedAt ? `Clicou em ${new Date(recipient.clickedAt).toLocaleString("pt-BR")}${recipient.clickedUrl ? `\n${recipient.clickedUrl}` : ""}` : "Não clicou"}
+                    title={
+                      recipient.clickedAt
+                        ? [
+                            `Clicou em ${new Date(recipient.clickedAt).toLocaleString("pt-BR")}`,
+                            ...Object.entries(recipient.clickData ?? {}).map(([url, n]) => {
+                              try { return `${new URL(url).hostname}: ${n}x`; } catch { return `${url}: ${n}x`; }
+                            }),
+                          ].join("\n")
+                        : "Não clicou"
+                    }
                     className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${recipient.clickedAt ? "text-purple-400" : "text-gray-600"}`}
                   >
                     <MousePointer size={11} />
-                    {recipient.clickedUrl && (
-                      <span className="max-w-[120px] truncate hidden sm:inline">
-                        {(() => { try { return new URL(recipient.clickedUrl).hostname.replace(/^www\./, ""); } catch { return recipient.clickedUrl.slice(0, 20); } })()}
+                    {recipient.clickedAt && (
+                      <span className="hidden sm:inline">
+                        {Object.values(recipient.clickData ?? {}).reduce((a, b) => a + b, 0) || 1}x
+                        {recipient.clickedUrl && (() => {
+                          try { return ` · ${new URL(recipient.clickedUrl).hostname.replace(/^www\./, "")}`; }
+                          catch { return ""; }
+                        })()}
                       </span>
                     )}
                   </span>

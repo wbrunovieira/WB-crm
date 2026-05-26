@@ -2681,8 +2681,10 @@ model EmailCampaignSend {
   stepId         String
   sentAt         DateTime  @default(now())
   openedAt       DateTime?
+  openCount      Int       @default(0)
   clickedAt      DateTime?
   clickedUrl     String?
+  clickData      String?
   gmailMessageId String?
   gmailThreadId  String?
 

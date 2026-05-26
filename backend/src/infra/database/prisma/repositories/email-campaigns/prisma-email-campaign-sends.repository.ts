@@ -9,14 +9,20 @@ export class PrismaEmailCampaignSendsRepository implements EmailCampaignSendsRep
   constructor(private readonly prisma: PrismaService) {}
 
   private toDomain(raw: any): EmailCampaignSend {
+    let clickData: Record<string, number> = {};
+    if (raw.clickData) {
+      try { clickData = JSON.parse(raw.clickData); } catch { /* keep empty */ }
+    }
     return EmailCampaignSend.reconstitute(
       {
         recipientId: raw.recipientId,
         stepId: raw.stepId,
         sentAt: raw.sentAt,
         openedAt: raw.openedAt ?? undefined,
+        openCount: raw.openCount ?? 0,
         clickedAt: raw.clickedAt ?? undefined,
         clickedUrl: raw.clickedUrl ?? undefined,
+        clickData,
         gmailMessageId: raw.gmailMessageId ?? undefined,
         gmailThreadId: raw.gmailThreadId ?? undefined,
       },
@@ -53,6 +59,9 @@ export class PrismaEmailCampaignSendsRepository implements EmailCampaignSendsRep
   }
 
   async save(send: EmailCampaignSend) {
+    const clickData = Object.keys(send.clickData).length > 0
+      ? JSON.stringify(send.clickData)
+      : null;
     await this.prisma.emailCampaignSend.upsert({
       where: { id: send.id.toString() },
       create: {
@@ -61,15 +70,19 @@ export class PrismaEmailCampaignSendsRepository implements EmailCampaignSendsRep
         stepId: send.stepId,
         sentAt: send.sentAt,
         openedAt: send.openedAt,
+        openCount: send.openCount,
         clickedAt: send.clickedAt,
         clickedUrl: send.clickedUrl,
+        clickData,
         gmailMessageId: send.gmailMessageId,
         gmailThreadId: send.gmailThreadId,
       },
       update: {
         openedAt: send.openedAt,
+        openCount: send.openCount,
         clickedAt: send.clickedAt,
         clickedUrl: send.clickedUrl,
+        clickData,
         gmailMessageId: send.gmailMessageId,
         gmailThreadId: send.gmailThreadId,
       },

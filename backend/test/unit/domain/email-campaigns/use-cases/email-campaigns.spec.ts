@@ -462,14 +462,47 @@ describe("SendCampaignStep — suppression check", () => {
   });
 });
 
+describe("EmailCampaignSend — markOpened", () => {
+  it("should set openedAt on first call and start openCount at 1", () => {
+    const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
+    expect(send.openedAt).toBeUndefined();
+    expect(send.openCount).toBe(0);
+
+    send.markOpened();
+
+    expect(send.openedAt).toBeDefined();
+    expect(send.openCount).toBe(1);
+  });
+
+  it("should not overwrite openedAt but should increment openCount on repeat calls", () => {
+    const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
+    send.markOpened();
+    const firstOpenedAt = send.openedAt;
+    send.markOpened();
+    send.markOpened();
+
+    expect(send.openedAt).toBe(firstOpenedAt);
+    expect(send.openCount).toBe(3);
+  });
+
+  it("should start with openCount 0 on create", () => {
+    const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
+    expect(send.openCount).toBe(0);
+  });
+
+  it("should reconstitute with existing openCount", () => {
+    const send = EmailCampaignSend.reconstitute(
+      { recipientId: "r1", stepId: "s1", sentAt: new Date(), openedAt: new Date(), openCount: 5 },
+      new UniqueEntityID(),
+    );
+    expect(send.openCount).toBe(5);
+  });
+});
+
 describe("EmailCampaignSend — markClicked", () => {
   it("should set clickedAt and openedAt on first click", () => {
     const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
-    expect(send.clickedAt).toBeUndefined();
-    expect(send.openedAt).toBeUndefined();
-
     send.markClicked();
-
     expect(send.clickedAt).toBeDefined();
     expect(send.openedAt).toBeDefined();
   });
@@ -480,11 +513,21 @@ describe("EmailCampaignSend — markClicked", () => {
     expect(send.clickedUrl).toBe("https://wbdigitalsolutions.com/case");
   });
 
-  it("should not overwrite clickedUrl on subsequent clicks", () => {
+  it("should not overwrite clickedUrl on subsequent clicks but should count each URL", () => {
     const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
     send.markClicked("https://first.com");
     send.markClicked("https://second.com");
     expect(send.clickedUrl).toBe("https://first.com");
+    expect(send.clickData["https://first.com"]).toBe(1);
+    expect(send.clickData["https://second.com"]).toBe(1);
+  });
+
+  it("should increment count for same URL on multiple clicks", () => {
+    const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
+    send.markClicked("https://landing.com");
+    send.markClicked("https://landing.com");
+    send.markClicked("https://landing.com");
+    expect(send.clickData["https://landing.com"]).toBe(3);
   });
 
   it("should not overwrite clickedAt on subsequent calls", () => {
@@ -495,24 +538,30 @@ describe("EmailCampaignSend — markClicked", () => {
     expect(send.clickedAt).toBe(firstClickedAt);
   });
 
-  it("should leave clickedUrl undefined when called without URL", () => {
+  it("should leave clickedUrl and clickData empty when called without URL", () => {
     const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
     send.markClicked();
     expect(send.clickedUrl).toBeUndefined();
+    expect(Object.keys(send.clickData)).toHaveLength(0);
   });
 
-  it("should reconstitute with existing clickedUrl", () => {
+  it("should start with empty clickData on create", () => {
+    const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
+    expect(send.clickData).toEqual({});
+  });
+
+  it("should reconstitute with existing clickedUrl and clickData", () => {
     const send = EmailCampaignSend.reconstitute(
       {
-        recipientId: "r1",
-        stepId: "s1",
-        sentAt: new Date(),
-        clickedAt: new Date(),
-        clickedUrl: "https://landing.com",
+        recipientId: "r1", stepId: "s1", sentAt: new Date(),
+        clickedAt: new Date(), clickedUrl: "https://landing.com",
+        clickData: { "https://landing.com": 2, "https://pricing.com": 1 },
       },
       new UniqueEntityID(),
     );
     expect(send.clickedUrl).toBe("https://landing.com");
+    expect(send.clickData["https://landing.com"]).toBe(2);
+    expect(send.clickData["https://pricing.com"]).toBe(1);
   });
 });
 

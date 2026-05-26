@@ -17,8 +17,10 @@ export interface RecipientProgress {
   stepsSent: number[];
   lastSentAt?: Date;
   openedAt?: Date;
+  openCount: number;
   clickedAt?: Date;
   clickedUrl?: string;
+  clickData: Record<string, number>;
 }
 
 export interface CampaignProgressOutput {
@@ -69,17 +71,23 @@ export class GetCampaignProgressUseCase {
         const stepsSent: number[] = [];
         let lastSentAt: Date | undefined;
         let openedAt: Date | undefined;
+        let openCount = 0;
         let clickedAt: Date | undefined;
         let clickedUrl: string | undefined;
+        const clickData: Record<string, number> = {};
 
         for (const send of sends) {
           const order = stepOrderMap.get(send.stepId);
           if (order !== undefined) stepsSent.push(order);
           if (!lastSentAt || send.sentAt > lastSentAt) lastSentAt = send.sentAt;
           if (send.openedAt && (!openedAt || send.openedAt < openedAt)) openedAt = send.openedAt;
+          openCount += send.openCount;
           if (send.clickedAt && (!clickedAt || send.clickedAt < clickedAt)) {
             clickedAt = send.clickedAt;
             clickedUrl = send.clickedUrl;
+          }
+          for (const [url, count] of Object.entries(send.clickData)) {
+            clickData[url] = (clickData[url] ?? 0) + count;
           }
         }
 
@@ -95,8 +103,10 @@ export class GetCampaignProgressUseCase {
           stepsSent,
           lastSentAt,
           openedAt,
+          openCount,
           clickedAt,
           clickedUrl,
+          clickData,
         };
       }),
     );
