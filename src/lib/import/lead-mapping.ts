@@ -317,6 +317,11 @@ const AUTO_SUGGEST_MAP: Record<string, string> = {
   // contactInstagram
   "instagram responsavel": "contactInstagram",
   "instagram do responsavel": "contactInstagram",
+  // quality
+  "quality": "quality",
+  "qualidade": "quality",
+  "temperatura": "quality",
+  "lead quality": "quality",
   // sourceGroup
   "lote": "sourceGroup",
   "grupo": "sourceGroup",
