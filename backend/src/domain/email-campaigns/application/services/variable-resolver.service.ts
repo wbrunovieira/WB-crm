@@ -6,7 +6,7 @@ export class VariableResolverService {
     const saudacao = firstName || recipient.company || "";
 
     const unsubscribeUrl = trackingBaseUrl && sendId
-      ? `${trackingBaseUrl}/tracking/unsubscribe/${sendId}`
+      ? `${trackingBaseUrl}/email-campaigns/tracking/unsubscribe/${sendId}`
       : "";
 
     const vars: Record<string, string> = {
@@ -42,12 +42,12 @@ export class VariableResolverService {
   private rewriteLinks(html: string, baseUrl: string, sendId: string): string {
     return html.replace(
       /href="(https?:\/\/[^"]+)"/g,
-      (_, url: string) => `href="${baseUrl}/tracking/click/${sendId}?url=${encodeURIComponent(url)}"`,
+      (_, url: string) => `href="${baseUrl}/email-campaigns/tracking/click/${sendId}?url=${encodeURIComponent(url)}"`,
     );
   }
 
   injectTrackingPixel(html: string, baseUrl: string, sendId: string): string {
-    const pixel = `<img src="${baseUrl}/tracking/open/${sendId}" width="1" height="1" style="display:none" alt="" />`;
+    const pixel = `<img src="${baseUrl}/email-campaigns/tracking/open/${sendId}" width="1" height="1" style="display:none" alt="" />`;
     return html.includes("</body>") ? html.replace("</body>", `${pixel}</body>`) : html + pixel;
   }
 }

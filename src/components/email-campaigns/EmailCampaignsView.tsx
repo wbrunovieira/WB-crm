@@ -485,6 +485,13 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <button
+                    onClick={() => { enterEnrollPhase(c.id); setActiveTab("criar"); }}
+                    className="p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-500/10 rounded-lg transition-colors"
+                    title="Gerenciar destinatários"
+                  >
+                    <Users size={16} />
+                  </button>
+                  <button
                     onClick={() => toggleStats(c.id)}
                     className="p-2 text-gray-400 hover:text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
                     title="Ver estatísticas"
