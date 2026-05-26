@@ -169,7 +169,7 @@ describe("RunWarmingCycleUseCase", () => {
     await accounts.save(acc1);
     await accounts.save(acc2);
 
-    const result = await sut.execute({ ownerId: OWNER });
+    const result = await sut.execute({ ownerId: OWNER, replyDelayMs: 0 });
     expect(result.isRight()).toBe(true);
 
     // Each account sends to the other + auto-reply
@@ -224,7 +224,7 @@ describe("RunWarmingCycleUseCase", () => {
     await accounts.save(acc1);
     await accounts.save(acc2);
 
-    await sut.execute({ ownerId: OWNER });
+    await sut.execute({ ownerId: OWNER, replyDelayMs: 0 });
 
     expect(sends.items.length).toBeGreaterThan(0);
     expect(sends.items[0].fromEmail).toBeTruthy();
