@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
+import { Eye, MousePointer } from "lucide-react";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -14,6 +15,9 @@ export interface RecipientProgress {
   currentStep: number;
   stepsSent: number[];
   lastSentAt?: string;
+  openedAt?: string;
+  clickedAt?: string;
+  clickedUrl?: string;
 }
 
 export interface CampaignProgressData {
@@ -192,6 +196,27 @@ export function CampaignProgressPanel({ campaignId, token, totalSteps }: Props) 
                     {recipient.name ? recipient.email : ""}
                     {recipient.company ? (recipient.name ? ` · ${recipient.company}` : recipient.company) : ""}
                   </p>
+                </div>
+
+                {/* Open / Click indicators */}
+                <div className="flex items-center gap-2 shrink-0">
+                  <span
+                    title={recipient.openedAt ? `Abriu em ${new Date(recipient.openedAt).toLocaleString("pt-BR")}` : "Não abriu"}
+                    className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${recipient.openedAt ? "text-blue-400" : "text-gray-600"}`}
+                  >
+                    <Eye size={11} />
+                  </span>
+                  <span
+                    title={recipient.clickedAt ? `Clicou em ${new Date(recipient.clickedAt).toLocaleString("pt-BR")}${recipient.clickedUrl ? `\n${recipient.clickedUrl}` : ""}` : "Não clicou"}
+                    className={`flex items-center gap-1 text-xs px-1.5 py-0.5 rounded ${recipient.clickedAt ? "text-purple-400" : "text-gray-600"}`}
+                  >
+                    <MousePointer size={11} />
+                    {recipient.clickedUrl && (
+                      <span className="max-w-[120px] truncate hidden sm:inline">
+                        {(() => { try { return new URL(recipient.clickedUrl).hostname.replace(/^www\./, ""); } catch { return recipient.clickedUrl.slice(0, 20); } })()}
+                      </span>
+                    )}
+                  </span>
                 </div>
 
                 {/* Step bubbles */}

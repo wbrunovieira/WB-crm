@@ -35,7 +35,7 @@ export class ProcessIncomingEmailUseCase {
 
       // 2. Detect bounce messages from mailer-daemon / postmaster
       if (this.isBounceMessage(message.from)) {
-        const bouncedEmail = this.extractBouncedEmail(message.bodyText);
+        const bouncedEmail = this.extractBouncedEmail(message.bodyText) ?? this.extractBouncedEmail(message.bodyHtml);
         if (!bouncedEmail) return right({ skipped: true });
 
         const campaigns = await this.prisma.emailCampaign.findMany({
@@ -45,8 +45,9 @@ export class ProcessIncomingEmailUseCase {
         const campaignIds = campaigns.map((c: { id: string }) => c.id);
 
         if (campaignIds.length > 0) {
+          // Exclude only already-bounced or unsubscribed — COMPLETED recipients can still bounce
           await this.prisma.emailCampaignRecipient.updateMany({
-            where: { email: bouncedEmail, campaignId: { in: campaignIds }, status: { in: ["PENDING", "ACTIVE"] } },
+            where: { email: bouncedEmail, campaignId: { in: campaignIds }, status: { notIn: ["BOUNCED", "UNSUBSCRIBED"] } },
             data: { status: "BOUNCED" },
           });
         }
@@ -207,8 +208,10 @@ export class ProcessIncomingEmailUseCase {
     );
   }
 
-  private extractBouncedEmail(bodyText: string | undefined): string | undefined {
-    if (!bodyText) return undefined;
+  private extractBouncedEmail(body: string | undefined): string | undefined {
+    if (!body) return undefined;
+    // Strip HTML tags so regex works on both text/plain and text/html bodies
+    const bodyText = body.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ");
 
     // DSN standard headers (RFC 3464)
     const finalRecipient = bodyText.match(/Final-Recipient:\s*rfc822;\s*([^\s\r\n]+)/i);

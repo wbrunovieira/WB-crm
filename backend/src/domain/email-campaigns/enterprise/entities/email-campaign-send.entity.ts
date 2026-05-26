@@ -7,6 +7,7 @@ interface EmailCampaignSendProps {
   sentAt: Date;
   openedAt?: Date;
   clickedAt?: Date;
+  clickedUrl?: string;
   gmailMessageId?: string;
   gmailThreadId?: string;
 }
@@ -17,6 +18,7 @@ export class EmailCampaignSend extends Entity<EmailCampaignSendProps> {
   get sentAt()         { return this.props.sentAt; }
   get openedAt()       { return this.props.openedAt; }
   get clickedAt()      { return this.props.clickedAt; }
+  get clickedUrl()     { return this.props.clickedUrl; }
   get gmailMessageId() { return this.props.gmailMessageId; }
   get gmailThreadId()  { return this.props.gmailThreadId; }
 
@@ -24,9 +26,10 @@ export class EmailCampaignSend extends Entity<EmailCampaignSendProps> {
     if (!this.props.openedAt) this.props.openedAt = new Date();
   }
 
-  markClicked() {
+  markClicked(url?: string) {
     if (!this.props.clickedAt) this.props.clickedAt = new Date();
     if (!this.props.openedAt) this.props.openedAt = new Date();
+    if (url && !this.props.clickedUrl) this.props.clickedUrl = url;
   }
 
   static create(props: Omit<EmailCampaignSendProps, "sentAt">, id?: UniqueEntityID) {

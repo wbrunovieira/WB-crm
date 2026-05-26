@@ -2682,6 +2682,7 @@ model EmailCampaignSend {
   sentAt         DateTime  @default(now())
   openedAt       DateTime?
   clickedAt      DateTime?
+  clickedUrl     String?
   gmailMessageId String?
   gmailThreadId  String?
 

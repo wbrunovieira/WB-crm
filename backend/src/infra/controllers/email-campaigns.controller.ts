@@ -468,7 +468,7 @@ export class EmailCampaignsController {
   async trackClick(@Param("sendId") sendId: string, @Query("url") url: string, @Res() res: Response) {
     const send = await this.sends.findById(sendId);
     if (send) {
-      send.markClicked();
+      send.markClicked(url || undefined);
       await this.sends.save(send);
     }
     res.redirect(url || "/");

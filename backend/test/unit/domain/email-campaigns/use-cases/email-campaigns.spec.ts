@@ -55,7 +55,7 @@ describe("VariableResolverService", () => {
   it("should inject tracking pixel into HTML", () => {
     const html = "<p>Hello</p></body>";
     const result = resolver.injectTrackingPixel(html, "https://api.example.com", "send-1");
-    expect(result).toContain('<img src="https://api.example.com/tracking/open/send-1"');
+    expect(result).toContain('<img src="https://api.example.com/email-campaigns/tracking/open/send-1"');
     expect(result).toContain("</body>");
   });
 
@@ -79,7 +79,7 @@ describe("VariableResolverService", () => {
       "https://api.example.com",
       "send-1",
     );
-    expect(result).toContain("https://api.example.com/tracking/unsubscribe/send-1");
+    expect(result).toContain("https://api.example.com/email-campaigns/tracking/unsubscribe/send-1");
   });
 
   it("should replace {{setor}} from customVars.setor", () => {
@@ -462,6 +462,60 @@ describe("SendCampaignStep — suppression check", () => {
   });
 });
 
+describe("EmailCampaignSend — markClicked", () => {
+  it("should set clickedAt and openedAt on first click", () => {
+    const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
+    expect(send.clickedAt).toBeUndefined();
+    expect(send.openedAt).toBeUndefined();
+
+    send.markClicked();
+
+    expect(send.clickedAt).toBeDefined();
+    expect(send.openedAt).toBeDefined();
+  });
+
+  it("should save clickedUrl on first click with URL", () => {
+    const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
+    send.markClicked("https://wbdigitalsolutions.com/case");
+    expect(send.clickedUrl).toBe("https://wbdigitalsolutions.com/case");
+  });
+
+  it("should not overwrite clickedUrl on subsequent clicks", () => {
+    const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
+    send.markClicked("https://first.com");
+    send.markClicked("https://second.com");
+    expect(send.clickedUrl).toBe("https://first.com");
+  });
+
+  it("should not overwrite clickedAt on subsequent calls", () => {
+    const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
+    send.markClicked("https://a.com");
+    const firstClickedAt = send.clickedAt;
+    send.markClicked("https://b.com");
+    expect(send.clickedAt).toBe(firstClickedAt);
+  });
+
+  it("should leave clickedUrl undefined when called without URL", () => {
+    const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });
+    send.markClicked();
+    expect(send.clickedUrl).toBeUndefined();
+  });
+
+  it("should reconstitute with existing clickedUrl", () => {
+    const send = EmailCampaignSend.reconstitute(
+      {
+        recipientId: "r1",
+        stepId: "s1",
+        sentAt: new Date(),
+        clickedAt: new Date(),
+        clickedUrl: "https://landing.com",
+      },
+      new UniqueEntityID(),
+    );
+    expect(send.clickedUrl).toBe("https://landing.com");
+  });
+});
+
 describe("HandleGmailBounceUseCase", () => {
   let campaigns: InMemoryEmailCampaignsRepository;
   let recipients: InMemoryEmailCampaignRecipientsRepository;
@@ -560,5 +614,38 @@ describe("HandleGmailBounceUseCase", () => {
     expect(result.isRight()).toBe(true);
     expect(suppressions.items).toHaveLength(1);
     expect(suppressions.items[0].reason).toBe("bounced");
+  });
+
+  it("should mark COMPLETED recipient as BOUNCED (NDR arrives after all steps sent)", async () => {
+    const r = EmailCampaignRecipient.reconstitute(
+      { campaignId, recipientType: "LEAD", recipientId: "l1", email: "bounce@example.com", currentStep: 1, status: "COMPLETED" },
+      new UniqueEntityID(),
+    );
+    await recipients.save(r);
+
+    const result = await sut.execute({ email: "bounce@example.com", ownerId: OWNER });
+
+    expect(result.isRight()).toBe(true);
+    expect((result.value as { bouncedCount: number }).bouncedCount).toBe(1);
+    expect(recipients.items[0].status).toBe("BOUNCED");
+  });
+
+  it("should not mark BOUNCED or UNSUBSCRIBED recipients again", async () => {
+    const r1 = EmailCampaignRecipient.reconstitute(
+      { campaignId, recipientType: "LEAD", recipientId: "l1", email: "x@example.com", currentStep: 0, status: "BOUNCED" },
+      new UniqueEntityID(),
+    );
+    const r2 = EmailCampaignRecipient.reconstitute(
+      { campaignId, recipientType: "LEAD", recipientId: "l2", email: "x@example.com", currentStep: 0, status: "UNSUBSCRIBED" },
+      new UniqueEntityID(),
+    );
+    await recipients.save(r1);
+    await recipients.save(r2);
+
+    const result = await sut.execute({ email: "x@example.com", ownerId: OWNER });
+
+    expect((result.value as { bouncedCount: number }).bouncedCount).toBe(0);
+    expect(recipients.items[0].status).toBe("BOUNCED");
+    expect(recipients.items[1].status).toBe("UNSUBSCRIBED");
   });
 });
