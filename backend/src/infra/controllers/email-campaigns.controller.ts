@@ -176,9 +176,17 @@ export class EmailCampaignsController {
   @Post(":id/send-now")
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: "Trigger immediate send for all steps of a campaign (fire-and-forget, 202)" })
-  sendNow(@Param("id") id: string) {
+  async sendNow(@Param("id") id: string) {
     if (sendingInProgress.has(id)) {
       throw new ConflictException("Campaign send already in progress");
+    }
+
+    // Auto-activate if DRAFT so send-now works without requiring manual start
+    const campaign = await this.campaigns.findById(id);
+    if (!campaign) throw new NotFoundException("Campaign not found");
+    if (campaign.status === "DRAFT" || campaign.status === "PAUSED") {
+      campaign.start();
+      await this.campaigns.save(campaign);
     }
 
     // Fire-and-forget: do not await
