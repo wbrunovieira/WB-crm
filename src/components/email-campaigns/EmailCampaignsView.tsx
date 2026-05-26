@@ -8,9 +8,10 @@ import { toast } from "sonner";
 import {
   Mail, Plus, Play, Pause, BarChart2, Trash2, Users, ShieldOff,
   ChevronDown, ChevronUp, Send, ArrowRight, CheckCircle, Clock, XCircle,
-  FileCode, Search, Group, UserPlus,
+  FileCode, Search, Group, UserPlus, Zap, ListChecks,
 } from "lucide-react";
 import { CampaignMetricsPanel, type CampaignMetrics } from "./CampaignMetricsPanel";
+import { CampaignProgressPanel } from "./CampaignProgressPanel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -76,7 +77,7 @@ interface Props {
   suppressions: Suppression[];
 }
 
-type Tab = "campanhas" | "metricas" | "criar" | "suppressions";
+type Tab = "campanhas" | "metricas" | "criar" | "suppressions" | "progresso";
 type EnrollMode = "todos" | "sourceGroup" | "buscar";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
@@ -135,6 +136,9 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
   const [searchLoading, setSearchLoading] = useState(false);
   const [enrollLoading, setEnrollLoading] = useState(false);
   const [totalEnrolled, setTotalEnrolled] = useState(0);
+
+  // ── Progress tab state ──
+  const [selectedProgressCampaign, setSelectedProgressCampaign] = useState<string>("");
 
   // ── Suppression form ──
   const [suppressEmail, setSuppressEmail] = useState("");
@@ -325,6 +329,22 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
     }
   };
 
+  const handleSendNow = async (id: string) => {
+    try {
+      await apiFetch(`/email-campaigns/${id}/send-now`, token, { method: "POST" });
+      toast.success("Envio iniciado! Acompanhe o progresso na aba Progresso.");
+      setSelectedProgressCampaign(id);
+      setActiveTab("progresso");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao iniciar envio";
+      if (msg.includes("already in progress") || msg.includes("409")) {
+        toast.error("Envio já está em andamento para esta campanha.");
+      } else {
+        toast.error(msg);
+      }
+    }
+  };
+
   // ── Create campaign ───────────────────────────────────────────────────────
 
   const addStep = () => {
@@ -406,6 +426,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "campanhas", label: "Campanhas", icon: <Mail size={16} /> },
     { key: "metricas", label: "Métricas", icon: <BarChart2 size={16} /> },
+    { key: "progresso", label: "Progresso", icon: <ListChecks size={16} /> },
     { key: "criar", label: "Nova Campanha", icon: <Plus size={16} /> },
     { key: "suppressions", label: "Lista de Bloqueio", icon: <ShieldOff size={16} /> },
   ];
@@ -490,13 +511,22 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                       <Play size={16} />
                     </button>
                   ) : c.status === "ACTIVE" ? (
-                    <button
-                      onClick={() => handlePause(c.id)}
-                      className="p-2 text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
-                      title="Pausar campanha"
-                    >
-                      <Pause size={16} />
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleSendNow(c.id)}
+                        className="p-2 text-gray-400 hover:text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
+                        title="Enviar agora"
+                      >
+                        <Zap size={16} />
+                      </button>
+                      <button
+                        onClick={() => handlePause(c.id)}
+                        className="p-2 text-gray-400 hover:text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
+                        title="Pausar campanha"
+                      >
+                        <Pause size={16} />
+                      </button>
+                    </>
                   ) : null}
                   <button
                     onClick={() => handleDelete(c.id)}
@@ -594,6 +624,37 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
 
           {metricsData && !loadingMetrics && (
             <CampaignMetricsPanel metrics={metricsData} />
+          )}
+        </div>
+      )}
+
+      {/* ── Progresso tab ─────────────────────────────────────────────────── */}
+      {activeTab === "progresso" && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <select
+              value={selectedProgressCampaign}
+              onChange={(e) => setSelectedProgressCampaign(e.target.value)}
+              className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500 min-w-[280px]"
+            >
+              <option value="">Selecione uma campanha...</option>
+              {campaigns.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {selectedProgressCampaign ? (
+            <CampaignProgressPanel
+              campaignId={selectedProgressCampaign}
+              token={token}
+              totalSteps={campaigns.find((c) => c.id === selectedProgressCampaign) ? 0 : 0}
+            />
+          ) : (
+            <div className="text-center py-20 text-gray-500">
+              <ListChecks size={48} className="mx-auto mb-4 opacity-30" />
+              <p>Selecione uma campanha para acompanhar o progresso de envio.</p>
+            </div>
           )}
         </div>
       )}
@@ -936,13 +997,26 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
             </div>
           )}
 
-          <div className="flex gap-3 pt-2 border-t border-gray-700">
+          <div className="flex gap-3 pt-2 border-t border-gray-700 flex-wrap">
             <button
               onClick={finishEnroll}
               className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
             >
               <CheckCircle size={16} /> Concluir
             </button>
+            {enrollCampaignId && (
+              <button
+                onClick={async () => {
+                  if (!enrollCampaignId) return;
+                  const id = enrollCampaignId;
+                  finishEnroll();
+                  await handleSendNow(id);
+                }}
+                className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition-colors"
+              >
+                <Zap size={16} /> Enviar agora
+              </button>
+            )}
             <button
               onClick={() => { setEnrollCampaignId(null); setActiveTab("campanhas"); refreshCampaigns(); }}
               className="px-5 py-2.5 text-gray-400 hover:text-white transition-colors text-sm"

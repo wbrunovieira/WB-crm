@@ -15,6 +15,8 @@ import { AddToSuppressionUseCase } from "./application/use-cases/add-to-suppress
 import { UnsubscribeRecipientUseCase } from "./application/use-cases/unsubscribe-recipient.use-case";
 import { HandleGmailBounceUseCase } from "./application/use-cases/handle-gmail-bounce.use-case";
 import { BulkEnrollUseCase } from "./application/use-cases/bulk-enroll.use-case";
+import { TriggerCampaignSendNowUseCase } from "./application/use-cases/trigger-campaign-send-now.use-case";
+import { GetCampaignProgressUseCase } from "./application/use-cases/get-campaign-progress.use-case";
 import { VariableResolverService } from "./application/services/variable-resolver.service";
 
 import { EmailCampaignsRepository } from "./application/repositories/email-campaigns.repository";
@@ -46,6 +48,8 @@ import { PrismaEmailSuppressionsRepository } from "@/infra/database/prisma/repos
     UnsubscribeRecipientUseCase,
     HandleGmailBounceUseCase,
     BulkEnrollUseCase,
+    TriggerCampaignSendNowUseCase,
+    GetCampaignProgressUseCase,
 
     { provide: EmailCampaignsRepository, useClass: PrismaEmailCampaignsRepository },
     { provide: EmailCampaignStepsRepository, useClass: PrismaEmailCampaignStepsRepository },

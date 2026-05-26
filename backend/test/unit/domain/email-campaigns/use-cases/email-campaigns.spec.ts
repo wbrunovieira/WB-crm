@@ -244,7 +244,7 @@ describe("SendCampaignStepUseCase", () => {
     const r2 = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l2", email: "bob@corp.com", name: "Bob", company: "Corp" });
     await recipients.saveMany([r1, r2]);
 
-    const result = await sut.execute({ campaignId, stepOrder: 0 });
+    const result = await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
     expect(result.isRight()).toBe(true);
     expect(gmail.sentEmails).toHaveLength(2);
     expect(gmail.sentEmails[0].subject).toBe("Oi Alice");
@@ -270,7 +270,7 @@ describe("SendCampaignStepUseCase", () => {
     const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "a@b.com", name: "Ana" });
     await recipients.save(r);
 
-    await sut.execute({ campaignId, stepOrder: 0 });
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
 
     const updated = recipients.items.find((rec) => rec.recipientId === "l1");
     expect(updated?.currentStep).toBe(1);
@@ -293,7 +293,7 @@ describe("SendCampaignStepUseCase", () => {
     r.unsubscribe();
     await recipients.save(r);
 
-    await sut.execute({ campaignId, stepOrder: 0 });
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
     expect(gmail.sentEmails).toHaveLength(0);
   });
 
@@ -313,7 +313,7 @@ describe("SendCampaignStepUseCase", () => {
     const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "a@b.com" });
     await recipients.save(r);
 
-    await sut.execute({ campaignId, stepOrder: 0 });
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
 
     const updated = recipients.items[0];
     expect(updated.status).toBe("COMPLETED");
@@ -457,7 +457,7 @@ describe("SendCampaignStep — suppression check", () => {
     // Add to suppression list
     suppressions.items.push({ email: "suppressed@example.com", ownerId: OWNER } as any);
 
-    await sut.execute({ campaignId, stepOrder: 0 });
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
     expect(gmail.sentEmails).toHaveLength(0);
   });
 });

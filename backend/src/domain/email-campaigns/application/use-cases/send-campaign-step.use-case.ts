@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { EmailCampaignsRepository } from "../repositories/email-campaigns.repository";
 import { EmailCampaignStepsRepository } from "../repositories/email-campaign-steps.repository";
@@ -9,11 +9,32 @@ import { GmailPort } from "@/domain/integrations/email/application/ports/gmail.p
 import { VariableResolverService } from "../services/variable-resolver.service";
 import { EmailSuppressionsRepository } from "../repositories/email-suppressions.repository";
 
-interface Input { campaignId: string; stepOrder: number; trackingBaseUrl?: string; }
-interface Output { sent: number; }
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+interface DelayRange {
+  min: number;
+  max: number;
+}
+
+interface Input {
+  campaignId: string;
+  stepOrder: number;
+  trackingBaseUrl?: string;
+  delayRange?: DelayRange;
+}
+
+interface Output {
+  sent: number;
+  failed: number;
+  suppressed: number;
+}
 
 @Injectable()
 export class SendCampaignStepUseCase {
+  private readonly logger = new Logger(SendCampaignStepUseCase.name);
+
   constructor(
     private readonly campaigns: EmailCampaignsRepository,
     private readonly steps: EmailCampaignStepsRepository,
@@ -34,11 +55,18 @@ export class SendCampaignStepUseCase {
     if (!step) return left(new Error("Step not found"));
 
     const pending = await this.recipients.findPendingForStep(input.campaignId, input.stepOrder);
+    const delayRange: DelayRange = input.delayRange ?? { min: 8000, max: 25000 };
+
     let sent = 0;
+    let failed = 0;
+    let suppressed = 0;
 
     for (const recipient of pending) {
-      const suppressed = await this.suppressions.isEmailSuppressed(recipient.email, campaign.ownerId);
-      if (suppressed) continue;
+      const isSuppressed = await this.suppressions.isEmailSuppressed(recipient.email, campaign.ownerId);
+      if (isSuppressed) {
+        suppressed++;
+        continue;
+      }
 
       const send = EmailCampaignSend.create({ recipientId: recipient.id.toString(), stepId: step.id.toString() });
 
@@ -69,11 +97,18 @@ export class SendCampaignStepUseCase {
 
         await this.recipients.save(recipient);
         sent++;
-      } catch {
-        // continue on individual send failure
+
+        // Random delay between sends to avoid triggering spam filters
+        const delayMs = delayRange.min + Math.floor(Math.random() * (delayRange.max - delayRange.min));
+        await sleep(delayMs);
+      } catch (err) {
+        failed++;
+        this.logger.error(
+          `Failed to send email to ${recipient.email} for campaign ${input.campaignId} step ${input.stepOrder}: ${err}`,
+        );
       }
     }
 
-    return right({ sent });
+    return right({ sent, failed, suppressed });
   }
 }

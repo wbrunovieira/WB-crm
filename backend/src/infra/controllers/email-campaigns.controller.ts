@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as fs from "fs";
-import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
+import { Body, ConflictException, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
@@ -15,6 +15,8 @@ import { GetCampaignStatsUseCase } from "@/domain/email-campaigns/application/us
 import { AddToSuppressionUseCase } from "@/domain/email-campaigns/application/use-cases/add-to-suppression.use-case";
 import { UnsubscribeRecipientUseCase } from "@/domain/email-campaigns/application/use-cases/unsubscribe-recipient.use-case";
 import { HandleGmailBounceUseCase } from "@/domain/email-campaigns/application/use-cases/handle-gmail-bounce.use-case";
+import { TriggerCampaignSendNowUseCase, sendingInProgress } from "@/domain/email-campaigns/application/use-cases/trigger-campaign-send-now.use-case";
+import { GetCampaignProgressUseCase } from "@/domain/email-campaigns/application/use-cases/get-campaign-progress.use-case";
 import { EmailCampaignsRepository } from "@/domain/email-campaigns/application/repositories/email-campaigns.repository";
 import { EmailSuppressionsRepository } from "@/domain/email-campaigns/application/repositories/email-suppressions.repository";
 import { EmailCampaignSendsRepository } from "@/domain/email-campaigns/application/repositories/email-campaign-sends.repository";
@@ -35,6 +37,8 @@ export class EmailCampaignsController {
     private readonly addSuppression: AddToSuppressionUseCase,
     private readonly unsubscribeRecipient: UnsubscribeRecipientUseCase,
     private readonly handleBounce: HandleGmailBounceUseCase,
+    private readonly triggerSendNow: TriggerCampaignSendNowUseCase,
+    private readonly getProgress: GetCampaignProgressUseCase,
     private readonly campaigns: EmailCampaignsRepository,
     private readonly suppressions: EmailSuppressionsRepository,
     private readonly sends: EmailCampaignSendsRepository,
@@ -159,6 +163,36 @@ export class EmailCampaignsController {
     @Body() body: { mode: "all" | "sourceGroup"; sourceGroup?: string },
   ) {
     const result = await this.bulkEnroll.execute({ campaignId, ownerId: user.id, ...body });
+    if (result.isLeft()) throw new Error(result.value.message);
+    return result.value;
+  }
+
+  // ─── Send Now & Progress ────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Post(":id/send-now")
+  @HttpCode(HttpStatus.ACCEPTED)
+  @ApiOperation({ summary: "Trigger immediate send for all steps of a campaign (fire-and-forget, 202)" })
+  sendNow(@Param("id") id: string) {
+    if (sendingInProgress.has(id)) {
+      throw new ConflictException("Campaign send already in progress");
+    }
+
+    // Fire-and-forget: do not await
+    this.triggerSendNow.execute({ campaignId: id })
+      .catch((err) => console.error("[email-campaign/send-now] error:", err));
+
+    return {
+      triggered: true,
+      message: "Envio iniciado em background. Acompanhe o progresso.",
+    };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(":id/progress")
+  @ApiOperation({ summary: "Get per-recipient send progress for a campaign" })
+  async progress(@Param("id") id: string) {
+    const result = await this.getProgress.execute({ campaignId: id });
     if (result.isLeft()) throw new Error(result.value.message);
     return result.value;
   }
