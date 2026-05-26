@@ -1,12 +1,15 @@
+import * as path from "path";
+import * as fs from "fs";
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import { Response } from "express";
+import type { Response } from "express";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { CreateEmailCampaignUseCase } from "@/domain/email-campaigns/application/use-cases/create-email-campaign.use-case";
 import { AddCampaignStepUseCase } from "@/domain/email-campaigns/application/use-cases/add-campaign-step.use-case";
 import { AddRecipientsUseCase } from "@/domain/email-campaigns/application/use-cases/add-recipients.use-case";
+import { BulkEnrollUseCase } from "@/domain/email-campaigns/application/use-cases/bulk-enroll.use-case";
 import { SendCampaignStepUseCase } from "@/domain/email-campaigns/application/use-cases/send-campaign-step.use-case";
 import { GetCampaignStatsUseCase } from "@/domain/email-campaigns/application/use-cases/get-campaign-stats.use-case";
 import { AddToSuppressionUseCase } from "@/domain/email-campaigns/application/use-cases/add-to-suppression.use-case";
@@ -15,6 +18,7 @@ import { HandleGmailBounceUseCase } from "@/domain/email-campaigns/application/u
 import { EmailCampaignsRepository } from "@/domain/email-campaigns/application/repositories/email-campaigns.repository";
 import { EmailSuppressionsRepository } from "@/domain/email-campaigns/application/repositories/email-suppressions.repository";
 import { EmailCampaignSendsRepository } from "@/domain/email-campaigns/application/repositories/email-campaign-sends.repository";
+import { PrismaService } from "@/infra/database/prisma.service";
 
 const TRACKING_BASE_URL = process.env.BACKEND_URL ?? "https://api.crm.wbdigitalsolutions.com";
 
@@ -25,6 +29,7 @@ export class EmailCampaignsController {
     private readonly createCampaign: CreateEmailCampaignUseCase,
     private readonly addStep: AddCampaignStepUseCase,
     private readonly addRecipients: AddRecipientsUseCase,
+    private readonly bulkEnroll: BulkEnrollUseCase,
     private readonly sendStep: SendCampaignStepUseCase,
     private readonly getStats: GetCampaignStatsUseCase,
     private readonly addSuppression: AddToSuppressionUseCase,
@@ -33,6 +38,7 @@ export class EmailCampaignsController {
     private readonly campaigns: EmailCampaignsRepository,
     private readonly suppressions: EmailSuppressionsRepository,
     private readonly sends: EmailCampaignSendsRepository,
+    private readonly prisma: PrismaService,
   ) {}
 
   // ─── Campaigns ──────────────────────────────────────────────────────────────
@@ -139,6 +145,173 @@ export class EmailCampaignsController {
     campaign.pause();
     await this.campaigns.save(campaign);
     return { status: campaign.status };
+  }
+
+  // ─── Bulk enroll ────────────────────────────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Post(":id/enroll")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Bulk enroll recipients (all or by sourceGroup)" })
+  async enrollRecipients(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id") campaignId: string,
+    @Body() body: { mode: "all" | "sourceGroup"; sourceGroup?: string },
+  ) {
+    const result = await this.bulkEnroll.execute({ campaignId, ownerId: user.id, ...body });
+    if (result.isLeft()) throw new Error(result.value.message);
+    return result.value;
+  }
+
+  // ─── Templates ──────────────────────────────────────────────────────────────
+
+  private get templatesDir(): string {
+    // Works both in dev (src/) and prod (dist/) because nest-cli copies assets
+    const srcDir = path.join(process.cwd(), "src/domain/email-campaigns/templates/campaigns");
+    const distDir = path.join(process.cwd(), "dist/domain/email-campaigns/templates/campaigns");
+    return fs.existsSync(srcDir) ? srcDir : distDir;
+  }
+
+  private templateLabel(filename: string): string {
+    // "2026-05-26-ia-amplifica-vs-substitui.html" → "IA Amplifica vs Substitui — 26 Mai 2026"
+    const base = filename.replace(".html", "");
+    const dateMatch = base.match(/^(\d{4})-(\d{2})-(\d{2})-(.+)$/);
+    if (!dateMatch) return base;
+    const [, year, month, day, slug] = dateMatch;
+    const months = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"];
+    const label = slug.replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+    return `${label} — ${parseInt(day)} ${months[parseInt(month) - 1]} ${year}`;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("templates")
+  @ApiOperation({ summary: "List available HTML email templates" })
+  listTemplates() {
+    const dir = this.templatesDir;
+    if (!fs.existsSync(dir)) return [];
+    return fs.readdirSync(dir)
+      .filter((f) => f.endsWith(".html"))
+      .map((f) => ({ name: f.replace(".html", ""), label: this.templateLabel(f) }))
+      .sort((a, b) => b.name.localeCompare(a.name));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("templates/:name")
+  @ApiOperation({ summary: "Get HTML template content" })
+  getTemplate(@Param("name") name: string) {
+    const safe = path.basename(name.replace(/\//g, "")) + ".html";
+    const filePath = path.join(this.templatesDir, safe);
+    if (!fs.existsSync(filePath)) throw new Error("Template not found");
+    return { content: fs.readFileSync(filePath, "utf8") };
+  }
+
+  // ─── Source groups & recipient search ───────────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get("source-groups")
+  @ApiOperation({ summary: "List distinct sourceGroups for the current user" })
+  async listSourceGroups(@CurrentUser() user: AuthenticatedUser) {
+    const [leadGroups, orgGroups] = await Promise.all([
+      this.prisma.lead.findMany({
+        where: { ownerId: user.id, sourceGroup: { not: null } },
+        select: { sourceGroup: true },
+        distinct: ["sourceGroup"],
+      }),
+      this.prisma.organization.findMany({
+        where: { ownerId: user.id, sourceGroup: { not: null } },
+        select: { sourceGroup: true },
+        distinct: ["sourceGroup"],
+      }),
+    ]);
+    const all = new Set([
+      ...leadGroups.map((r) => r.sourceGroup!),
+      ...orgGroups.map((r) => r.sourceGroup!),
+    ]);
+    return [...all].sort();
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get("recipient-search")
+  @ApiOperation({ summary: "Search leads/contacts/orgs for individual recipient add" })
+  async searchRecipients(@CurrentUser() user: AuthenticatedUser, @Query("q") q: string) {
+    if (!q || q.trim().length < 2) return [];
+    const term = q.trim();
+    const contains = { contains: term, mode: "insensitive" as const };
+
+    const [leadContacts, orgContacts, leadDirectContacts] = await Promise.all([
+      this.prisma.leadContact.findMany({
+        where: {
+          lead: { ownerId: user.id },
+          OR: [{ name: contains }, { email: contains }],
+          email: { not: null },
+        },
+        select: {
+          id: true, name: true, email: true, role: true,
+          lead: { select: { businessName: true, sourceGroup: true } },
+        },
+        take: 20,
+      }),
+      this.prisma.contact.findMany({
+        where: {
+          organizationId: { not: null },
+          organization: { ownerId: user.id },
+          OR: [{ name: contains }, { email: contains }],
+          email: { not: null },
+        },
+        select: {
+          id: true, name: true, email: true, role: true,
+          organization: { select: { name: true, sourceGroup: true } },
+        },
+        take: 20,
+      }),
+      this.prisma.contact.findMany({
+        where: {
+          organizationId: null,
+          leadId: { not: null },
+          lead: { ownerId: user.id },
+          OR: [{ name: contains }, { email: contains }],
+          email: { not: null },
+        },
+        select: {
+          id: true, name: true, email: true, role: true,
+          lead: { select: { businessName: true, sourceGroup: true } },
+        },
+        take: 10,
+      }),
+    ]);
+
+    return [
+      ...leadContacts.map((lc) => ({
+        key: `LEAD:${lc.id}`,
+        recipientType: "LEAD" as const,
+        recipientId: lc.id,
+        email: lc.email!,
+        name: lc.name,
+        company: lc.lead?.businessName,
+        role: lc.role,
+        sourceGroup: lc.lead?.sourceGroup,
+      })),
+      ...orgContacts.map((c) => ({
+        key: `CONTACT:${c.id}`,
+        recipientType: "CONTACT" as const,
+        recipientId: c.id,
+        email: c.email!,
+        name: c.name,
+        company: c.organization?.name,
+        role: c.role,
+        sourceGroup: c.organization?.sourceGroup,
+      })),
+      ...leadDirectContacts.map((c) => ({
+        key: `CONTACT:${c.id}`,
+        recipientType: "CONTACT" as const,
+        recipientId: c.id,
+        email: c.email!,
+        name: c.name,
+        company: c.lead?.businessName,
+        role: c.role,
+        sourceGroup: c.lead?.sourceGroup,
+      })),
+    ];
   }
 
   // ─── Suppression ────────────────────────────────────────────────────────────

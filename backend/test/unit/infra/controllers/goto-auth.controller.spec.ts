@@ -23,6 +23,7 @@ function makeController() {
     fakeStoreGoogle,
     fakeDisconnectGoogle,
     fakeStoreGoTo,
+    {} as any,
   );
 }
 

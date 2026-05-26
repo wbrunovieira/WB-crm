@@ -4,7 +4,7 @@ import { EmailCampaign } from "../../enterprise/entities/email-campaign.entity";
 import { EmailCampaignsRepository } from "../repositories/email-campaigns.repository";
 
 interface Input { name: string; description?: string; fromEmail: string; ownerId: string; }
-interface Output { id: string; }
+export interface Output { id: string; }
 
 @Injectable()
 export class CreateEmailCampaignUseCase {

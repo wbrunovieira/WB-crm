@@ -29,6 +29,8 @@ function makeActivity(emailTrackingToken: string) {
     emailTrackingToken,
     emailOpenCount: 0,
     emailLinkClickCount: 0,
+    meetingNoShow: false,
+    emailReplied: false,
   });
 }
 

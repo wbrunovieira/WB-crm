@@ -15,7 +15,7 @@ interface StepStats {
   clickRate: number;
 }
 
-interface Output {
+export interface Output {
   campaignId: string;
   name: string;
   status: string;

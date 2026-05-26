@@ -42,7 +42,7 @@ describe("CampaignWorkerService", () => {
       execute: vi.fn().mockResolvedValue(undefined),
     } as unknown as StepExecutorService;
 
-    worker = new CampaignWorkerService(sends, campaigns, stepExecutor, antiBlock);
+    worker = new CampaignWorkerService(sends, campaigns, stepExecutor, antiBlock, {} as any);
   });
 
   it("não faz nada quando não há sends pendentes", async () => {

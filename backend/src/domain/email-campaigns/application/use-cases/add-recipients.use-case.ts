@@ -15,7 +15,7 @@ interface RecipientInput {
 }
 
 interface Input { campaignId: string; recipients: RecipientInput[]; }
-interface Output { added: number; }
+export interface Output { added: number; }
 
 @Injectable()
 export class AddRecipientsUseCase {

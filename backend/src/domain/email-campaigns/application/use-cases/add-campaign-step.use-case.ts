@@ -5,7 +5,7 @@ import { EmailCampaignsRepository } from "../repositories/email-campaigns.reposi
 import { EmailCampaignStepsRepository } from "../repositories/email-campaign-steps.repository";
 
 interface Input { campaignId: string; order: number; subject: string; bodyHtml: string; delayDays: number; }
-interface Output { id: string; }
+export interface Output { id: string; }
 
 @Injectable()
 export class AddCampaignStepUseCase {

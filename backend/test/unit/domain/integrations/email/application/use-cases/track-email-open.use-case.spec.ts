@@ -21,7 +21,7 @@ let useCase: TrackEmailOpenUseCase;
 
 beforeEach(() => {
   trackingRepo = new FakeEmailTrackingRepository();
-  useCase = new TrackEmailOpenUseCase(trackingRepo);
+  useCase = new TrackEmailOpenUseCase(trackingRepo, {} as any);
 });
 
 describe("TrackEmailOpenUseCase", () => {

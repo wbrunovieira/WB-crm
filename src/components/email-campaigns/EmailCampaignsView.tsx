@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   Mail, Plus, Play, Pause, BarChart2, Trash2, Users, ShieldOff,
   ChevronDown, ChevronUp, Send, ArrowRight, CheckCircle, Clock, XCircle,
+  FileCode, Search, Group, UserPlus,
 } from "lucide-react";
 import { CampaignMetricsPanel, type CampaignMetrics } from "./CampaignMetricsPanel";
 
@@ -54,12 +55,29 @@ interface Suppression {
   createdAt: string;
 }
 
+interface EmailTemplate {
+  name: string;
+  label: string;
+}
+
+interface RecipientCandidate {
+  key: string;
+  recipientType: "LEAD" | "CONTACT";
+  recipientId: string;
+  email: string;
+  name: string;
+  company?: string;
+  role?: string;
+  sourceGroup?: string;
+}
+
 interface Props {
   campaigns: Campaign[];
   suppressions: Suppression[];
 }
 
 type Tab = "campanhas" | "metricas" | "criar" | "suppressions";
+type EnrollMode = "todos" | "sourceGroup" | "buscar";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 
@@ -101,6 +119,23 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
   ]);
   const [creating, setCreating] = useState(false);
 
+  // ── Template picker ──
+  const [templates, setTemplates] = useState<EmailTemplate[] | null>(null);
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
+  const [openTemplatePicker, setOpenTemplatePicker] = useState<number | null>(null);
+
+  // ── Enroll phase (after campaign creation) ──
+  const [enrollCampaignId, setEnrollCampaignId] = useState<string | null>(null);
+  const [enrollMode, setEnrollMode] = useState<EnrollMode>("todos");
+  const [sourceGroups, setSourceGroups] = useState<string[]>([]);
+  const [sourceGroupInput, setSourceGroupInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<RecipientCandidate[]>([]);
+  const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [enrollLoading, setEnrollLoading] = useState(false);
+  const [totalEnrolled, setTotalEnrolled] = useState(0);
+
   // ── Suppression form ──
   const [suppressEmail, setSuppressEmail] = useState("");
 
@@ -141,6 +176,122 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
     } finally {
       setLoadingMetrics(false);
     }
+  };
+
+  // ── Template picker helpers ───────────────────────────────────────────────
+
+  const fetchTemplates = async () => {
+    if (templates !== null) return;
+    setLoadingTemplates(true);
+    try {
+      const list = await apiFetch<EmailTemplate[]>("/email-campaigns/templates", token);
+      setTemplates(list);
+    } catch {
+      toast.error("Erro ao carregar templates");
+      setTemplates([]);
+    } finally {
+      setLoadingTemplates(false);
+    }
+  };
+
+  const applyTemplate = async (stepIdx: number, templateName: string) => {
+    setOpenTemplatePicker(null);
+    try {
+      const { content } = await apiFetch<{ content: string }>(`/email-campaigns/templates/${templateName}`, token);
+      setSteps((p) => p.map((s, i) => i === stepIdx ? { ...s, bodyHtml: content } : s));
+    } catch {
+      toast.error("Erro ao carregar template");
+    }
+  };
+
+  // ── Enroll helpers ────────────────────────────────────────────────────────
+
+  const enterEnrollPhase = async (campaignId: string) => {
+    setEnrollCampaignId(campaignId);
+    setTotalEnrolled(0);
+    setEnrollMode("todos");
+    try {
+      const groups = await apiFetch<string[]>("/email-campaigns/source-groups", token);
+      setSourceGroups(groups);
+    } catch { /* non-critical */ }
+  };
+
+  const handleBulkEnroll = async (mode: "all" | "sourceGroup", sourceGroup?: string) => {
+    if (!enrollCampaignId) return;
+    setEnrollLoading(true);
+    try {
+      const result = await apiFetch<{ enrolled: number; skipped: number }>(
+        `/email-campaigns/${enrollCampaignId}/enroll`, token,
+        { method: "POST", body: JSON.stringify({ mode, sourceGroup }) },
+      );
+      setTotalEnrolled((p) => p + result.enrolled);
+      toast.success(`${result.enrolled} destinatários adicionados${result.skipped ? ` (${result.skipped} duplicados ignorados)` : ""}`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao adicionar destinatários");
+    } finally {
+      setEnrollLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (searchQuery.trim().length < 2) return;
+    setSearchLoading(true);
+    try {
+      const results = await apiFetch<RecipientCandidate[]>(
+        `/email-campaigns/recipient-search?q=${encodeURIComponent(searchQuery)}`, token,
+      );
+      setSearchResults(results);
+    } catch {
+      toast.error("Erro na busca");
+    } finally {
+      setSearchLoading(false);
+    }
+  };
+
+  const toggleCandidate = (key: string) => {
+    setSelectedCandidates((prev) => {
+      const next = new Set(prev);
+      next.has(key) ? next.delete(key) : next.add(key);
+      return next;
+    });
+  };
+
+  const addSelectedCandidates = async () => {
+    if (!enrollCampaignId || selectedCandidates.size === 0) return;
+    const toAdd = searchResults
+      .filter((r) => selectedCandidates.has(r.key))
+      .map((r) => ({
+        recipientType: r.recipientType,
+        recipientId: r.recipientId,
+        email: r.email,
+        name: r.name,
+        company: r.company,
+        role: r.role,
+        customVars: r.sourceGroup ? { sourceGroup: r.sourceGroup } : {},
+      }));
+    setEnrollLoading(true);
+    try {
+      const result = await apiFetch<{ added: number }>(
+        `/email-campaigns/${enrollCampaignId}/recipients`, token,
+        { method: "POST", body: JSON.stringify({ recipients: toAdd }) },
+      );
+      setTotalEnrolled((p) => p + result.added);
+      setSelectedCandidates(new Set());
+      setSearchResults([]);
+      setSearchQuery("");
+      toast.success(`${result.added} destinatário(s) adicionado(s)`);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao adicionar");
+    } finally {
+      setEnrollLoading(false);
+    }
+  };
+
+  const finishEnroll = () => {
+    setEnrollCampaignId(null);
+    setTotalEnrolled(0);
+    setActiveTab("campanhas");
+    refreshCampaigns();
   };
 
   const handleStart = async (id: string) => {
@@ -209,11 +360,11 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
           body: JSON.stringify(step),
         });
       }
-      toast.success("Campanha criada com sucesso");
+      toast.success("Campanha criada! Agora adicione os destinatários.");
       setForm({ name: "", description: "", fromEmail: "" });
       setSteps([{ order: 0, subject: "", bodyHtml: "", delayDays: 0 }]);
-      setActiveTab("campanhas");
       await refreshCampaigns();
+      await enterEnrollPhase(campaign.id);
     } catch (err: unknown) {
       toast.error(err instanceof Error ? err.message : "Erro ao criar campanha");
     } finally {
@@ -448,7 +599,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
       )}
 
       {/* ── Criar tab ─────────────────────────────────────────────────────── */}
-      {activeTab === "criar" && (
+      {activeTab === "criar" && !enrollCampaignId && (
         <form onSubmit={handleCreate} className="space-y-6 max-w-3xl">
           <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-6 space-y-4">
             <h2 className="text-white font-semibold text-lg">Informações da Campanha</h2>
@@ -552,7 +703,40 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                     </div>
                   </div>
                   <div>
-                    <label className="block text-xs text-gray-400 mb-1">Corpo do email (HTML ou texto) *</label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-xs text-gray-400">Corpo do email (HTML ou texto) *</label>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            fetchTemplates();
+                            setOpenTemplatePicker(openTemplatePicker === i ? null : i);
+                          }}
+                          className="flex items-center gap-1.5 text-xs text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 px-2.5 py-1 rounded-lg transition-colors"
+                        >
+                          {loadingTemplates ? <Clock size={12} className="animate-spin" /> : <FileCode size={12} />}
+                          Usar Template
+                        </button>
+                        {openTemplatePicker === i && templates && (
+                          <div className="absolute right-0 top-8 z-10 bg-gray-800 border border-gray-600 rounded-xl shadow-xl min-w-[260px]">
+                            {templates.length === 0 ? (
+                              <p className="text-xs text-gray-500 p-3">Nenhum template disponível</p>
+                            ) : (
+                              templates.map((t) => (
+                                <button
+                                  key={t.name}
+                                  type="button"
+                                  onClick={() => applyTemplate(i, t.name)}
+                                  className="w-full text-left px-3 py-2.5 text-sm text-gray-300 hover:bg-gray-700 hover:text-white first:rounded-t-xl last:rounded-b-xl transition-colors"
+                                >
+                                  {t.label}
+                                </button>
+                              ))
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
                     <textarea
                       value={step.bodyHtml}
                       onChange={(e) => updateStep(i, "bodyHtml", e.target.value)}
@@ -585,6 +769,188 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
             </button>
           </div>
         </form>
+      )}
+
+      {/* ── Fase 2: Adicionar Destinatários ───────────────────────────────── */}
+      {activeTab === "criar" && enrollCampaignId && (
+        <div className="max-w-3xl space-y-5">
+          <div className="flex items-center gap-3">
+            <UserPlus size={22} className="text-purple-400" />
+            <div>
+              <h2 className="text-white font-semibold text-lg">Adicionar Destinatários</h2>
+              <p className="text-xs text-gray-400">Campanha criada. Escolha quem vai receber os emails.</p>
+            </div>
+            {totalEnrolled > 0 && (
+              <span className="ml-auto text-sm text-green-400 font-medium">{totalEnrolled} adicionados</span>
+            )}
+          </div>
+
+          {/* Mode selector */}
+          <div className="flex gap-1 bg-gray-800/50 rounded-lg p-1 w-fit">
+            {([
+              { key: "todos", label: "Todos", icon: <Users size={14} /> },
+              { key: "sourceGroup", label: "Por Grupo", icon: <Group size={14} /> },
+              { key: "buscar", label: "Buscar", icon: <Search size={14} /> },
+            ] as { key: EnrollMode; label: string; icon: React.ReactNode }[]).map((m) => (
+              <button
+                key={m.key}
+                onClick={() => setEnrollMode(m.key)}
+                className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-all ${
+                  enrollMode === m.key
+                    ? "bg-purple-600 text-white shadow"
+                    : "text-gray-400 hover:text-white hover:bg-gray-700/50"
+                }`}
+              >
+                {m.icon}{m.label}
+              </button>
+            ))}
+          </div>
+
+          {/* Todos */}
+          {enrollMode === "todos" && (
+            <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5 space-y-4">
+              <p className="text-sm text-gray-300">
+                Adiciona todos os <span className="text-white font-medium">contactos de leads</span>,{" "}
+                <span className="text-white font-medium">contactos de organizações</span> e{" "}
+                <span className="text-white font-medium">emails de organizações</span> da sua conta (apenas com email preenchido).
+              </p>
+              <button
+                onClick={() => handleBulkEnroll("all")}
+                disabled={enrollLoading}
+                className="flex items-center gap-2 px-5 py-2.5 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
+              >
+                {enrollLoading ? <Clock size={16} className="animate-spin" /> : <Users size={16} />}
+                Adicionar Todos
+              </button>
+            </div>
+          )}
+
+          {/* Por SourceGroup */}
+          {enrollMode === "sourceGroup" && (
+            <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5 space-y-4">
+              <p className="text-sm text-gray-400">Selecione um grupo de importação (sourceGroup) para adicionar apenas os contactos desse grupo.</p>
+              <div className="flex gap-3 flex-wrap">
+                <div className="flex-1 min-w-[200px]">
+                  <input
+                    list="sg-list"
+                    value={sourceGroupInput}
+                    onChange={(e) => setSourceGroupInput(e.target.value)}
+                    placeholder="Ex: MatConstrPetropolis270426"
+                    className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
+                  />
+                  <datalist id="sg-list">
+                    {sourceGroups.map((sg) => <option key={sg} value={sg} />)}
+                  </datalist>
+                </div>
+                <button
+                  onClick={() => handleBulkEnroll("sourceGroup", sourceGroupInput)}
+                  disabled={enrollLoading || !sourceGroupInput.trim()}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                >
+                  {enrollLoading ? <Clock size={14} className="animate-spin" /> : <Group size={14} />}
+                  Adicionar Grupo
+                </button>
+              </div>
+              {sourceGroups.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {sourceGroups.map((sg) => (
+                    <button
+                      key={sg}
+                      onClick={() => setSourceGroupInput(sg)}
+                      className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${
+                        sourceGroupInput === sg
+                          ? "bg-purple-600 border-purple-500 text-white"
+                          : "border-gray-600 text-gray-400 hover:border-purple-500 hover:text-purple-300"
+                      }`}
+                    >
+                      {sg}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Buscar individual */}
+          {enrollMode === "buscar" && (
+            <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5 space-y-4">
+              <div className="flex gap-3">
+                <input
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  placeholder="Buscar por nome ou email..."
+                  className="flex-1 bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
+                />
+                <button
+                  onClick={handleSearch}
+                  disabled={searchLoading || searchQuery.trim().length < 2}
+                  className="flex items-center gap-2 px-4 py-2 bg-gray-600 text-white rounded-lg text-sm hover:bg-gray-500 disabled:opacity-50 transition-colors"
+                >
+                  {searchLoading ? <Clock size={14} className="animate-spin" /> : <Search size={14} />}
+                  Buscar
+                </button>
+              </div>
+
+              {searchResults.length > 0 && (
+                <div className="space-y-1 max-h-72 overflow-y-auto">
+                  {searchResults.map((r) => (
+                    <label
+                      key={r.key}
+                      className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-gray-700/50 cursor-pointer"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedCandidates.has(r.key)}
+                        onChange={() => toggleCandidate(r.key)}
+                        className="accent-purple-500"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm text-white font-medium truncate">{r.name}</p>
+                        <p className="text-xs text-gray-400 truncate">
+                          {r.email}{r.company ? ` · ${r.company}` : ""}{r.role ? ` · ${r.role}` : ""}
+                        </p>
+                      </div>
+                      <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${
+                        r.recipientType === "LEAD"
+                          ? "bg-purple-500/20 text-purple-400"
+                          : "bg-blue-500/20 text-blue-400"
+                      }`}>
+                        {r.recipientType === "LEAD" ? "Lead" : "Contacto"}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              )}
+
+              {selectedCandidates.size > 0 && (
+                <button
+                  onClick={addSelectedCandidates}
+                  disabled={enrollLoading}
+                  className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                >
+                  {enrollLoading ? <Clock size={14} className="animate-spin" /> : <UserPlus size={14} />}
+                  Adicionar {selectedCandidates.size} selecionado(s)
+                </button>
+              )}
+            </div>
+          )}
+
+          <div className="flex gap-3 pt-2 border-t border-gray-700">
+            <button
+              onClick={finishEnroll}
+              className="flex items-center gap-2 px-5 py-2.5 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700 transition-colors"
+            >
+              <CheckCircle size={16} /> Concluir
+            </button>
+            <button
+              onClick={() => { setEnrollCampaignId(null); setActiveTab("campanhas"); refreshCampaigns(); }}
+              className="px-5 py-2.5 text-gray-400 hover:text-white transition-colors text-sm"
+            >
+              Pular — adicionar depois
+            </button>
+          </div>
+        </div>
       )}
 
       {/* ── Suppressions tab ──────────────────────────────────────────────── */}

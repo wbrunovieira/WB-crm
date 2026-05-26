@@ -47,7 +47,8 @@ beforeAll(async () => {
   const meeting = await prisma.meeting.create({
     data: {
       title: "Reunião E2E",
-      startTime: new Date(),
+      startAt: new Date(),
+      attendeeEmails: "[]",
       ownerId,
       leadId,
       activityId,

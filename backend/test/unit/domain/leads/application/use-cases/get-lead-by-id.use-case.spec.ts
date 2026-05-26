@@ -3,7 +3,7 @@ import { GetLeadByIdUseCase } from "@/domain/leads/application/use-cases/get-lea
 import { InMemoryLeadsRepository } from "../../repositories/in-memory-leads.repository";
 import { Lead } from "@/domain/leads/enterprise/entities/lead";
 
-function makeLead(ownerId = "user-1", businessName = "Empresa Teste", overrides: Parameters<typeof Lead.create>[0] = {}) {
+function makeLead(ownerId = "user-1", businessName = "Empresa Teste", overrides: Partial<Parameters<typeof Lead.create>[0]> = {}) {
   return Lead.create({ ownerId, businessName, ...overrides });
 }
 

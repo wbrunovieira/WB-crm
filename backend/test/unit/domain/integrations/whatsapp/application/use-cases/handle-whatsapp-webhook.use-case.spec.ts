@@ -56,7 +56,7 @@ beforeEach(() => {
     transcriber,
   );
 
-  useCase = new HandleWhatsAppWebhookUseCase(processMessage, processMedia);
+  useCase = new HandleWhatsAppWebhookUseCase(processMessage, processMedia, {} as any);
 });
 
 describe("HandleWhatsAppWebhookUseCase", () => {
@@ -120,7 +120,7 @@ describe("HandleWhatsAppWebhookUseCase", () => {
       execute: vi.fn().mockRejectedValue(new Error("DB crashed")),
     } as unknown as ProcessWhatsAppMessageUseCase;
 
-    const throwingUseCase = new HandleWhatsAppWebhookUseCase(throwingProcessMessage, processMedia);
+    const throwingUseCase = new HandleWhatsAppWebhookUseCase(throwingProcessMessage, processMedia, {} as any);
 
     const result = await throwingUseCase.execute({
       event: "messages.upsert",

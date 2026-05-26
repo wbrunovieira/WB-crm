@@ -3,7 +3,7 @@ import { Either, right } from "@/core/either";
 import { WarmingAccountsRepository } from "../repositories/warming-accounts.repository";
 import { WarmingSendsRepository } from "../repositories/warming-sends.repository";
 
-interface AccountStatus {
+export interface AccountStatus {
   id: string;
   email: string;
   isActive: boolean;

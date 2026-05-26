@@ -5,12 +5,16 @@ import { UpdateActivityUseCase } from "@/domain/activities/application/use-cases
 import { Activity } from "@/domain/activities/enterprise/entities/activity";
 import type { TriggerCallAnalysisUseCase } from "@/domain/integrations/call-analysis/application/use-cases/trigger-call-analysis.use-case";
 
-function makeActivity(overrides: Partial<ConstructorParameters<typeof Activity>[0]["props"]> = {}) {
+function makeActivity(overrides: Partial<Parameters<typeof Activity.create>[0]> = {}) {
   return Activity.create({
     ownerId: "user-1",
     type: "call",
     subject: "Ligação teste",
     completed: false,
+    meetingNoShow: false,
+    emailReplied: false,
+    emailOpenCount: 0,
+    emailLinkClickCount: 0,
     leadId: "lead-1",
     gotoTranscriptText: '[{"start":0,"end":5,"text":" Olá!","speaker":"agent","speakerName":"Bruno"}]',
     gotoDuration: 144,

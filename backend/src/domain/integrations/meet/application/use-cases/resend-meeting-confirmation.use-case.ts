@@ -72,7 +72,6 @@ export class ResendMeetingConfirmationUseCase {
           startAt: meeting.startAt,
           endAt,
           title: meeting.title,
-          location: meeting.location ?? undefined,
           googleEventId: meeting.googleEventId ?? undefined,
           meetLink: meeting.meetLink ?? undefined,
         });

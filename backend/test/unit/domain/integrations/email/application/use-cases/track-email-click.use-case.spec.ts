@@ -22,7 +22,7 @@ let useCase: TrackEmailClickUseCase;
 
 beforeEach(() => {
   trackingRepo = new FakeEmailTrackingRepository();
-  useCase = new TrackEmailClickUseCase(trackingRepo);
+  useCase = new TrackEmailClickUseCase(trackingRepo, {} as any);
 });
 
 describe("TrackEmailClickUseCase", () => {
