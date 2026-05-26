@@ -132,7 +132,8 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
   const [sourceGroupInput, setSourceGroupInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<RecipientCandidate[]>([]);
-  const [selectedCandidates, setSelectedCandidates] = useState<Set<string>>(new Set());
+  // Map<key, candidate> so selections survive between searches
+  const [selectedCandidates, setSelectedCandidates] = useState<Map<string, RecipientCandidate>>(new Map());
   const [searchLoading, setSearchLoading] = useState(false);
   const [enrollLoading, setEnrollLoading] = useState(false);
   const [totalEnrolled, setTotalEnrolled] = useState(0);
@@ -252,17 +253,17 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
     }
   };
 
-  const toggleCandidate = (key: string) => {
+  const toggleCandidate = (candidate: RecipientCandidate) => {
     setSelectedCandidates((prev) => {
-      const next = new Set(prev);
-      next.has(key) ? next.delete(key) : next.add(key);
+      const next = new Map(prev);
+      next.has(candidate.key) ? next.delete(candidate.key) : next.set(candidate.key, candidate);
       return next;
     });
   };
 
   const addSelectedCandidates = async () => {
     if (!enrollCampaignId || selectedCandidates.size === 0) return;
-    const toAdd = searchResults.filter((r) => selectedCandidates.has(r.key));
+    const toAdd = Array.from(selectedCandidates.values());
     setEnrollLoading(true);
     try {
       let totalNewlyEnrolled = 0;
@@ -274,7 +275,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
         totalNewlyEnrolled += result.enrolled;
       }
       setTotalEnrolled((p) => p + totalNewlyEnrolled);
-      setSelectedCandidates(new Set());
+      setSelectedCandidates(new Map());
       setSearchResults([]);
       setSearchQuery("");
       toast.success(`${totalNewlyEnrolled} destinatário(s) adicionado(s)`);
@@ -948,6 +949,25 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                 </button>
               </div>
 
+              {/* Accumulated selections from previous searches */}
+              {selectedCandidates.size > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {Array.from(selectedCandidates.values()).map((c) => (
+                    <span
+                      key={c.key}
+                      className="flex items-center gap-1.5 text-xs bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-1 rounded-full"
+                    >
+                      {c.name}
+                      <button
+                        type="button"
+                        onClick={() => toggleCandidate(c)}
+                        className="text-purple-400 hover:text-white leading-none"
+                      >×</button>
+                    </span>
+                  ))}
+                </div>
+              )}
+
               {searchResults.length > 0 && (
                 <div className="space-y-1 max-h-72 overflow-y-auto">
                   {searchResults.map((r) => (
@@ -958,7 +978,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                       <input
                         type="checkbox"
                         checked={selectedCandidates.has(r.key)}
-                        onChange={() => toggleCandidate(r.key)}
+                        onChange={() => toggleCandidate(r)}
                         className="accent-purple-500"
                       />
                       <div className="min-w-0 flex-1">
