@@ -43,6 +43,16 @@ const fakePrisma = {
       return Promise.resolve(data);
     }),
   },
+  emailCampaign: {
+    findMany: vi.fn().mockResolvedValue([]),
+  },
+  emailCampaignRecipient: {
+    updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+  },
+  emailSuppression: {
+    findFirst: vi.fn().mockResolvedValue(null),
+    create: vi.fn().mockResolvedValue({}),
+  },
 };
 
 beforeEach(() => {
@@ -236,5 +246,120 @@ describe("ProcessIncomingEmailUseCase", () => {
     await useCase.execute(makeMessage(), OWNER_ID);
 
     expect(createdNotifications).toHaveLength(0);
+  });
+});
+
+describe("ProcessIncomingEmailUseCase — bounce detection", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fakePrisma.contact.findFirst.mockResolvedValue(null);
+    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
+    fakePrisma.organization.findFirst.mockResolvedValue(null);
+    fakePrisma.emailCampaign.findMany.mockResolvedValue([{ id: "camp-1" }]);
+    fakePrisma.emailCampaignRecipient.updateMany.mockResolvedValue({ count: 1 });
+    fakePrisma.emailSuppression.findFirst.mockResolvedValue(null);
+    fakePrisma.emailSuppression.create.mockResolvedValue({});
+    emailMessagesRepo = new FakeEmailMessagesRepository();
+    activitiesRepo = new FakeActivitiesRepository();
+    useCase = new ProcessIncomingEmailUseCase(emailMessagesRepo, activitiesRepo, fakePrisma as never);
+  });
+
+  it("detects bounce from mailer-daemon and marks recipients as BOUNCED", async () => {
+    const message = makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      subject: "Delivery Status Notification (Failure)",
+      bodyText: "Final-Recipient: rfc822; bounce@example.com\nStatus: 5.1.1",
+    });
+
+    const result = await useCase.execute(message, OWNER_ID);
+
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().skipped).toBe(false);
+    expect(result.unwrap().bounced).toBe(true);
+    expect(fakePrisma.emailCampaignRecipient.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { status: "BOUNCED" } }),
+    );
+  });
+
+  it("adds bounced email to suppression list", async () => {
+    const message = makeMessage({
+      from: "postmaster@mail.example.com",
+      bodyText: "Final-Recipient: rfc822; victim@domain.com",
+    });
+
+    await useCase.execute(message, OWNER_ID);
+
+    expect(fakePrisma.emailSuppression.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ email: "victim@domain.com", ownerId: OWNER_ID, reason: "bounced" }),
+      }),
+    );
+  });
+
+  it("does not duplicate suppression when email is already suppressed", async () => {
+    fakePrisma.emailSuppression.findFirst.mockResolvedValue({ id: "existing" });
+
+    const message = makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      bodyText: "Final-Recipient: rfc822; already@suppressed.com",
+    });
+
+    await useCase.execute(message, OWNER_ID);
+
+    expect(fakePrisma.emailSuppression.create).not.toHaveBeenCalled();
+  });
+
+  it("extracts bounced email from 'Original-Recipient' DSN header", async () => {
+    const message = makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      bodyText: "Original-Recipient: rfc822; other@example.com\nSome other text",
+    });
+
+    await useCase.execute(message, OWNER_ID);
+
+    expect(fakePrisma.emailSuppression.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ email: "other@example.com" }),
+      }),
+    );
+  });
+
+  it("extracts bounced email from Gmail human-readable format", async () => {
+    const message = makeMessage({
+      from: "Mail Delivery Subsystem <mailer-daemon@googlemail.com>",
+      bodyText: "Your message wasn't delivered to human@readable.com because the address couldn't be found.",
+    });
+
+    await useCase.execute(message, OWNER_ID);
+
+    expect(fakePrisma.emailSuppression.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ email: "human@readable.com" }),
+      }),
+    );
+  });
+
+  it("returns skipped=true when bounce body contains no extractable email", async () => {
+    const message = makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      bodyText: "Something went wrong but no email address here.",
+    });
+
+    const result = await useCase.execute(message, OWNER_ID);
+
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().skipped).toBe(true);
+    expect(fakePrisma.emailSuppression.create).not.toHaveBeenCalled();
+  });
+
+  it("does not treat normal email from known contact as bounce", async () => {
+    fakePrisma.contact.findFirst.mockResolvedValue({ id: "contact-1" });
+
+    const message = makeMessage({ from: "normal@contact.com" });
+    const result = await useCase.execute(message, OWNER_ID);
+
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().bounced).toBeUndefined();
+    expect(fakePrisma.emailCampaignRecipient.updateMany).not.toHaveBeenCalled();
   });
 });

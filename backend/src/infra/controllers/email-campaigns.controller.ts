@@ -11,6 +11,7 @@ import { SendCampaignStepUseCase } from "@/domain/email-campaigns/application/us
 import { GetCampaignStatsUseCase } from "@/domain/email-campaigns/application/use-cases/get-campaign-stats.use-case";
 import { AddToSuppressionUseCase } from "@/domain/email-campaigns/application/use-cases/add-to-suppression.use-case";
 import { UnsubscribeRecipientUseCase } from "@/domain/email-campaigns/application/use-cases/unsubscribe-recipient.use-case";
+import { HandleGmailBounceUseCase } from "@/domain/email-campaigns/application/use-cases/handle-gmail-bounce.use-case";
 import { EmailCampaignsRepository } from "@/domain/email-campaigns/application/repositories/email-campaigns.repository";
 import { EmailSuppressionsRepository } from "@/domain/email-campaigns/application/repositories/email-suppressions.repository";
 import { EmailCampaignSendsRepository } from "@/domain/email-campaigns/application/repositories/email-campaign-sends.repository";
@@ -28,6 +29,7 @@ export class EmailCampaignsController {
     private readonly getStats: GetCampaignStatsUseCase,
     private readonly addSuppression: AddToSuppressionUseCase,
     private readonly unsubscribeRecipient: UnsubscribeRecipientUseCase,
+    private readonly handleBounce: HandleGmailBounceUseCase,
     private readonly campaigns: EmailCampaignsRepository,
     private readonly suppressions: EmailSuppressionsRepository,
     private readonly sends: EmailCampaignSendsRepository,
@@ -164,6 +166,38 @@ export class EmailCampaignsController {
   @ApiOperation({ summary: "Remove email from suppression list" })
   async removeSuppression(@CurrentUser() user: AuthenticatedUser, @Param("email") email: string) {
     await this.suppressions.delete(email, user.id);
+  }
+
+  // ─── Webhooks (public — secret-validated) ───────────────────────────────────
+
+  @Post("webhooks/bounce")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Receive Gmail bounce notification (Pub/Sub or direct)" })
+  async handleGmailBounce(@Query("secret") secret: string, @Body() body: any) {
+    if (secret !== process.env.GMAIL_WEBHOOK_SECRET) return { ok: false };
+
+    // Accepts Google Pub/Sub format: { message: { data: base64(...) } }
+    // OR direct format: { email, ownerId }
+    let email: string | undefined;
+    let ownerId: string | undefined;
+
+    if (body?.message?.data) {
+      try {
+        const decoded = JSON.parse(Buffer.from(body.message.data, "base64").toString("utf8"));
+        email = decoded.email;
+        ownerId = decoded.ownerId;
+      } catch {
+        return { ok: false, error: "invalid_payload" };
+      }
+    } else {
+      email = body?.email;
+      ownerId = body?.ownerId;
+    }
+
+    if (!email || !ownerId) return { ok: false, error: "missing_fields" };
+
+    await this.handleBounce.execute({ email, ownerId });
+    return { ok: true };
   }
 
   // ─── Tracking (public — no auth) ────────────────────────────────────────────

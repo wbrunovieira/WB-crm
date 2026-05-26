@@ -21,6 +21,14 @@ export class InMemoryEmailCampaignSendsRepository implements EmailCampaignSendsR
     };
   }
 
+  async aggregateByCampaign(_campaignId: string) {
+    return {
+      totalSent: this.items.length,
+      uniqueOpened: this.items.filter((s) => s.openedAt).length,
+      uniqueClicked: this.items.filter((s) => s.clickedAt).length,
+    };
+  }
+
   async save(send: EmailCampaignSend) {
     const idx = this.items.findIndex((s) => s.id.equals(send.id));
     if (idx >= 0) this.items[idx] = send;

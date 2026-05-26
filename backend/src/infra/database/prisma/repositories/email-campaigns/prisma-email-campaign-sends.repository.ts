@@ -42,6 +42,15 @@ export class PrismaEmailCampaignSendsRepository implements EmailCampaignSendsRep
     return { sent, opened, clicked };
   }
 
+  async aggregateByCampaign(campaignId: string) {
+    const [totalSent, uniqueOpened, uniqueClicked] = await Promise.all([
+      this.prisma.emailCampaignSend.count({ where: { step: { campaignId } } }),
+      this.prisma.emailCampaignSend.count({ where: { step: { campaignId }, openedAt: { not: null } } }),
+      this.prisma.emailCampaignSend.count({ where: { step: { campaignId }, clickedAt: { not: null } } }),
+    ]);
+    return { totalSent, uniqueOpened, uniqueClicked };
+  }
+
   async save(send: EmailCampaignSend) {
     await this.prisma.emailCampaignSend.upsert({
       where: { id: send.id.toString() },

@@ -12,6 +12,10 @@ export class InMemoryEmailCampaignRecipientsRepository implements EmailCampaignR
     return this.items.find((r) => r.id.toString() === id) ?? null;
   }
 
+  async findByEmail(email: string) {
+    return this.items.filter((r) => r.email === email);
+  }
+
   async findPendingForStep(campaignId: string, step: number) {
     return this.items.filter(
       (r) => r.campaignId === campaignId && r.currentStep === step && (r.status === "PENDING" || r.status === "ACTIVE"),

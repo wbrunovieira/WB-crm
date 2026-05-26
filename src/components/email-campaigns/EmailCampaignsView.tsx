@@ -9,6 +9,7 @@ import {
   Mail, Plus, Play, Pause, BarChart2, Trash2, Users, ShieldOff,
   ChevronDown, ChevronUp, Send, ArrowRight, CheckCircle, Clock, XCircle,
 } from "lucide-react";
+import { CampaignMetricsPanel, type CampaignMetrics } from "./CampaignMetricsPanel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -31,14 +32,19 @@ interface CampaignStep {
 interface CampaignStats {
   campaignId: string;
   steps: {
-    stepId: string;
     order: number;
     subject: string;
     sent: number;
     opened: number;
     clicked: number;
+    openRate: number;
+    clickRate: number;
   }[];
-  recipients: { total: number; active: number; completed: number; unsubscribed: number };
+  recipients: { total: number; pending: number; active: number; completed: number; unsubscribed: number; bounced: number };
+  totals: { sent: number; uniqueOpened: number; uniqueClicked: number; openRate: number; clickRate: number; bounceRate: number; unsubscribeRate: number };
+  bySegment: { segment: string; total: number }[];
+  byRole: { role: string; total: number }[];
+  byRecipientType: { type: string; total: number }[];
 }
 
 interface Suppression {
@@ -53,7 +59,7 @@ interface Props {
   suppressions: Suppression[];
 }
 
-type Tab = "campanhas" | "criar" | "suppressions";
+type Tab = "campanhas" | "metricas" | "criar" | "suppressions";
 
 // ── Status badge ──────────────────────────────────────────────────────────────
 
@@ -82,6 +88,11 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
   const [suppressions, setSuppressions] = useState(initialSuppressions);
   const [expandedStats, setExpandedStats] = useState<Record<string, CampaignStats | null>>({});
   const [loadingStats, setLoadingStats] = useState<string | null>(null);
+
+  // ── Metrics tab state ──
+  const [selectedMetricsCampaign, setSelectedMetricsCampaign] = useState<string>("");
+  const [metricsData, setMetricsData] = useState<CampaignMetrics | null>(null);
+  const [loadingMetrics, setLoadingMetrics] = useState(false);
 
   // ── Create form state ──
   const [form, setForm] = useState({ name: "", description: "", fromEmail: "" });
@@ -115,6 +126,20 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
       toast.error("Erro ao carregar estatísticas");
     } finally {
       setLoadingStats(null);
+    }
+  };
+
+  const loadMetrics = async (campaignId: string) => {
+    if (!campaignId) return;
+    setLoadingMetrics(true);
+    setMetricsData(null);
+    try {
+      const data = await apiFetch<CampaignMetrics>(`/email-campaigns/${campaignId}/stats`, token);
+      setMetricsData(data);
+    } catch {
+      toast.error("Erro ao carregar métricas");
+    } finally {
+      setLoadingMetrics(false);
     }
   };
 
@@ -229,6 +254,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
 
   const tabs: { key: Tab; label: string; icon: React.ReactNode }[] = [
     { key: "campanhas", label: "Campanhas", icon: <Mail size={16} /> },
+    { key: "metricas", label: "Métricas", icon: <BarChart2 size={16} /> },
     { key: "criar", label: "Nova Campanha", icon: <Plus size={16} /> },
     { key: "suppressions", label: "Lista de Bloqueio", icon: <ShieldOff size={16} /> },
   ];
@@ -352,7 +378,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                   <div className="space-y-2">
                     <p className="text-xs text-gray-400 font-medium uppercase tracking-wide">Passos</p>
                     {expandedStats[c.id]!.steps.map((s) => (
-                      <div key={s.stepId} className="bg-gray-700/30 rounded-lg p-3 flex items-center justify-between gap-4">
+                      <div key={s.order} className="bg-gray-700/30 rounded-lg p-3 flex items-center justify-between gap-4">
                         <div className="min-w-0">
                           <span className="text-xs text-gray-500 mr-2">#{s.order + 1}</span>
                           <span className="text-sm text-gray-200 truncate">{s.subject}</span>
@@ -369,6 +395,55 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
               )}
             </div>
           ))}
+        </div>
+      )}
+
+      {/* ── Métricas tab ──────────────────────────────────────────────────── */}
+      {activeTab === "metricas" && (
+        <div className="space-y-6">
+          <div className="flex items-center gap-4">
+            <select
+              value={selectedMetricsCampaign}
+              onChange={(e) => {
+                setSelectedMetricsCampaign(e.target.value);
+                loadMetrics(e.target.value);
+              }}
+              className="bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500 min-w-[280px]"
+            >
+              <option value="">Selecione uma campanha...</option>
+              {campaigns.map((c) => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+            {selectedMetricsCampaign && (
+              <button
+                onClick={() => loadMetrics(selectedMetricsCampaign)}
+                disabled={loadingMetrics}
+                className="flex items-center gap-2 px-3 py-2 bg-gray-700 hover:bg-gray-600 text-gray-300 text-sm rounded-lg transition-colors disabled:opacity-50"
+              >
+                {loadingMetrics ? <Clock size={14} className="animate-spin" /> : <BarChart2 size={14} />}
+                Atualizar
+              </button>
+            )}
+          </div>
+
+          {!selectedMetricsCampaign && (
+            <div className="text-center py-20 text-gray-500">
+              <BarChart2 size={48} className="mx-auto mb-4 opacity-30" />
+              <p>Selecione uma campanha para ver as métricas detalhadas.</p>
+            </div>
+          )}
+
+          {selectedMetricsCampaign && loadingMetrics && (
+            <div className="text-center py-20 text-gray-500">
+              <Clock size={32} className="mx-auto mb-3 animate-spin opacity-50" />
+              <p className="text-sm">Carregando métricas...</p>
+            </div>
+          )}
+
+          {metricsData && !loadingMetrics && (
+            <CampaignMetricsPanel metrics={metricsData} />
+          )}
         </div>
       )}
 

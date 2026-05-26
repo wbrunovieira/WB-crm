@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
+import { HandleGmailBounceUseCase } from "@/domain/email-campaigns/application/use-cases/handle-gmail-bounce.use-case";
 import { InMemoryEmailCampaignsRepository } from "../fakes/in-memory-email-campaigns.repository";
 import { InMemoryEmailCampaignStepsRepository } from "../fakes/in-memory-email-campaign-steps.repository";
 import { InMemoryEmailCampaignRecipientsRepository } from "../fakes/in-memory-email-campaign-recipients.repository";
@@ -352,7 +353,7 @@ describe("GetCampaignStatsUseCase", () => {
     const result = await sut.execute({ campaignId });
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
-      expect(result.value.totalRecipients).toBe(1);
+      expect(result.value.recipients.total).toBe(1);
       expect(result.value.steps[0].sent).toBe(1);
       expect(result.value.steps[0].opened).toBe(1);
       expect(result.value.steps[0].clicked).toBe(0);
@@ -458,5 +459,106 @@ describe("SendCampaignStep — suppression check", () => {
 
     await sut.execute({ campaignId, stepOrder: 0 });
     expect(gmail.sentEmails).toHaveLength(0);
+  });
+});
+
+describe("HandleGmailBounceUseCase", () => {
+  let campaigns: InMemoryEmailCampaignsRepository;
+  let recipients: InMemoryEmailCampaignRecipientsRepository;
+  let suppressions: InMemoryEmailSuppressionsRepository;
+  let sut: HandleGmailBounceUseCase;
+  let campaignId: string;
+
+  beforeEach(async () => {
+    campaigns = new InMemoryEmailCampaignsRepository();
+    recipients = new InMemoryEmailCampaignRecipientsRepository();
+    suppressions = new InMemoryEmailSuppressionsRepository();
+    sut = new HandleGmailBounceUseCase(recipients, suppressions, campaigns);
+
+    const created = await new CreateEmailCampaignUseCase(campaigns).execute({
+      name: "Bounce Test Campaign", fromEmail: FROM, ownerId: OWNER,
+    });
+    campaignId = (created.value as { id: string }).id;
+  });
+
+  it("should mark recipient as BOUNCED", async () => {
+    const recipient = EmailCampaignRecipient.create({
+      campaignId, recipientType: "LEAD", recipientId: "l1", email: "bounce@example.com",
+    });
+    await recipients.save(recipient);
+
+    const result = await sut.execute({ email: "bounce@example.com", ownerId: OWNER });
+
+    expect(result.isRight()).toBe(true);
+    expect(recipients.items[0].status).toBe("BOUNCED");
+  });
+
+  it("should add email to suppression list with reason 'bounced'", async () => {
+    const recipient = EmailCampaignRecipient.create({
+      campaignId, recipientType: "LEAD", recipientId: "l1", email: "bounce@example.com",
+    });
+    await recipients.save(recipient);
+
+    await sut.execute({ email: "bounce@example.com", ownerId: OWNER });
+
+    expect(suppressions.items).toHaveLength(1);
+    expect(suppressions.items[0].email).toBe("bounce@example.com");
+    expect(suppressions.items[0].reason).toBe("bounced");
+  });
+
+  it("should not duplicate suppression if email already suppressed", async () => {
+    const recipient = EmailCampaignRecipient.create({
+      campaignId, recipientType: "LEAD", recipientId: "l1", email: "bounce@example.com",
+    });
+    await recipients.save(recipient);
+
+    await sut.execute({ email: "bounce@example.com", ownerId: OWNER });
+    await sut.execute({ email: "bounce@example.com", ownerId: OWNER });
+
+    expect(suppressions.items).toHaveLength(1);
+  });
+
+  it("should mark all recipients with the same email as BOUNCED across campaigns", async () => {
+    const created2 = await new CreateEmailCampaignUseCase(campaigns).execute({
+      name: "Campaign 2", fromEmail: FROM, ownerId: OWNER,
+    });
+    const campaignId2 = (created2.value as { id: string }).id;
+
+    const r1 = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "bounce@example.com" });
+    const r2 = EmailCampaignRecipient.create({ campaignId: campaignId2, recipientType: "LEAD", recipientId: "l2", email: "bounce@example.com" });
+    await recipients.save(r1);
+    await recipients.save(r2);
+
+    const result = await sut.execute({ email: "bounce@example.com", ownerId: OWNER });
+
+    expect(result.isRight()).toBe(true);
+    expect((result.value as { bouncedCount: number }).bouncedCount).toBe(2);
+    expect(recipients.items.every((r) => r.status === "BOUNCED")).toBe(true);
+  });
+
+  it("should skip recipients already BOUNCED or UNSUBSCRIBED", async () => {
+    const r1 = EmailCampaignRecipient.reconstitute(
+      { campaignId, recipientType: "LEAD", recipientId: "l1", email: "bounce@example.com", currentStep: 0, status: "BOUNCED" },
+      new UniqueEntityID(),
+    );
+    const r2 = EmailCampaignRecipient.reconstitute(
+      { campaignId, recipientType: "LEAD", recipientId: "l2", email: "bounce@example.com", currentStep: 0, status: "UNSUBSCRIBED" },
+      new UniqueEntityID(),
+    );
+    await recipients.save(r1);
+    await recipients.save(r2);
+
+    const result = await sut.execute({ email: "bounce@example.com", ownerId: OWNER });
+
+    expect(result.isRight()).toBe(true);
+    expect((result.value as { bouncedCount: number }).bouncedCount).toBe(0);
+  });
+
+  it("should still add to suppression even when no active recipients found", async () => {
+    const result = await sut.execute({ email: "ghost@example.com", ownerId: OWNER });
+
+    expect(result.isRight()).toBe(true);
+    expect(suppressions.items).toHaveLength(1);
+    expect(suppressions.items[0].reason).toBe("bounced");
   });
 });

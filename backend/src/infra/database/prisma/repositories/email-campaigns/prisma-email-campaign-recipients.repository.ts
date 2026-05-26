@@ -37,6 +37,11 @@ export class PrismaEmailCampaignRecipientsRepository implements EmailCampaignRec
     return raw ? this.toDomain(raw) : null;
   }
 
+  async findByEmail(email: string) {
+    const rows = await this.prisma.emailCampaignRecipient.findMany({ where: { email } });
+    return rows.map((r) => this.toDomain(r));
+  }
+
   async findPendingForStep(campaignId: string, step: number) {
     const rows = await this.prisma.emailCampaignRecipient.findMany({
       where: { campaignId, currentStep: step, status: { in: ["PENDING", "ACTIVE"] } },

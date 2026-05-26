@@ -3,6 +3,7 @@ import type { EmailCampaignRecipient } from "../../enterprise/entities/email-cam
 export abstract class EmailCampaignRecipientsRepository {
   abstract findByCampaign(campaignId: string): Promise<EmailCampaignRecipient[]>;
   abstract findById(id: string): Promise<EmailCampaignRecipient | null>;
+  abstract findByEmail(email: string): Promise<EmailCampaignRecipient[]>;
   abstract findPendingForStep(campaignId: string, step: number): Promise<EmailCampaignRecipient[]>;
   abstract save(recipient: EmailCampaignRecipient): Promise<void>;
   abstract saveMany(recipients: EmailCampaignRecipient[]): Promise<void>;

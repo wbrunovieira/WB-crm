@@ -9,6 +9,7 @@ import { PrismaService } from "@/infra/database/prisma.service";
 export interface ProcessIncomingEmailOutput {
   activityId?: string;
   skipped: boolean;
+  bounced?: boolean;
 }
 
 @Injectable()
@@ -32,7 +33,37 @@ export class ProcessIncomingEmailUseCase {
         return right({ skipped: true });
       }
 
-      // 2. Extract sender email (strip display name if present: "Name <email@example.com>")
+      // 2. Detect bounce messages from mailer-daemon / postmaster
+      if (this.isBounceMessage(message.from)) {
+        const bouncedEmail = this.extractBouncedEmail(message.bodyText);
+        if (!bouncedEmail) return right({ skipped: true });
+
+        const campaigns = await this.prisma.emailCampaign.findMany({
+          where: { ownerId },
+          select: { id: true },
+        });
+        const campaignIds = campaigns.map((c: { id: string }) => c.id);
+
+        if (campaignIds.length > 0) {
+          await this.prisma.emailCampaignRecipient.updateMany({
+            where: { email: bouncedEmail, campaignId: { in: campaignIds }, status: { in: ["PENDING", "ACTIVE"] } },
+            data: { status: "BOUNCED" },
+          });
+        }
+
+        const alreadySuppressed = await this.prisma.emailSuppression.findFirst({
+          where: { email: bouncedEmail, ownerId },
+        });
+        if (!alreadySuppressed) {
+          await this.prisma.emailSuppression.create({
+            data: { id: crypto.randomUUID(), email: bouncedEmail, ownerId, reason: "bounced", createdAt: new Date() },
+          });
+        }
+
+        return right({ skipped: false, bounced: true });
+      }
+
+      // 3. Extract sender email (strip display name if present: "Name <email@example.com>")
       const fromEmail = this.extractEmail(message.from);
 
       // 3. Find matching contact/lead/organization by email
@@ -160,13 +191,39 @@ export class ProcessIncomingEmailUseCase {
   }
 
   private extractEmail(from: string): string | undefined {
-    // Handle "Name <email@example.com>" format
     const angleMatch = from.match(/<([^>]+)>/);
     if (angleMatch) return angleMatch[1].trim().toLowerCase();
-
-    // Handle plain email
     const trimmed = from.trim().toLowerCase();
     if (trimmed.includes("@")) return trimmed;
+    return undefined;
+  }
+
+  private isBounceMessage(from: string): boolean {
+    const lower = from.toLowerCase();
+    return (
+      lower.includes("mailer-daemon") ||
+      lower.includes("postmaster@") ||
+      lower.includes("mail delivery subsystem")
+    );
+  }
+
+  private extractBouncedEmail(bodyText: string | undefined): string | undefined {
+    if (!bodyText) return undefined;
+
+    // DSN standard headers (RFC 3464)
+    const finalRecipient = bodyText.match(/Final-Recipient:\s*rfc822;\s*([^\s\r\n]+)/i);
+    if (finalRecipient) return finalRecipient[1].toLowerCase();
+
+    const originalRecipient = bodyText.match(/Original-Recipient:\s*rfc822;\s*([^\s\r\n]+)/i);
+    if (originalRecipient) return originalRecipient[1].toLowerCase();
+
+    // Gmail human-readable: "wasn't delivered to email@domain"
+    const notDelivered = bodyText.match(/wasn't delivered to\s+([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i);
+    if (notDelivered) return notDelivered[1].toLowerCase();
+
+    // Generic: "failed ... to email@domain"
+    const failedTo = bodyText.match(/failed.*?(?:to|recipients?)[:\s]+([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i);
+    if (failedTo) return failedTo[1].toLowerCase();
 
     return undefined;
   }
