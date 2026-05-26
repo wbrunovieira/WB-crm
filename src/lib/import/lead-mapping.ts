@@ -10,10 +10,22 @@ import type { ParsedRow } from "./parse-file";
 import type { LeadFormData } from "@/lib/validations/lead";
 import { normalizeSegment } from "./segment-taxonomy";
 
-export type ColumnMapping = Record<string, keyof LeadFormData | "ignore">;
+// Contact fields for import — not on LeadFormData; passed through to create a LeadContact
+export type ContactImportField =
+  | "contactRole"
+  | "contactEmail"
+  | "contactPhone"
+  | "contactWhatsapp"
+  | "contactLinkedin"
+  | "contactInstagram";
+
+export type ColumnMapping = Record<string, keyof LeadFormData | ContactImportField | "ignore">;
+
+// Data shape sent to the backend (lead fields + optional contact fields)
+export type ImportRowData = Partial<LeadFormData> & Partial<Record<ContactImportField, string>>;
 
 export interface ImportableField {
-  value: keyof LeadFormData | "ignore";
+  value: keyof LeadFormData | ContactImportField | "ignore";
   label: string;
   group: string;
 }
@@ -40,7 +52,7 @@ export const IMPORTABLE_FIELDS: ImportableField[] = [
   { value: "isMei",                 label: "Optante MEI",                      group: "Empresa" },
   { value: "segment",               label: "Segmento comercial",               group: "Empresa" },
   { value: "internationalActivity", label: "Atividade (empresa internacional)",  group: "Empresa" },
-  { value: "companyOwner",          label: "Responsável / sócio",              group: "Empresa" },
+  { value: "companyOwner",          label: "Responsável / sócio (nome)",       group: "Empresa" },
   { value: "description",           label: "Descrição / observação",           group: "Empresa" },
   { value: "cnaePrincipal",         label: "CNAE Principal",                   group: "Empresa" },
   { value: "cnaesSecundarios",      label: "CNAEs Secundários",                group: "Empresa" },
@@ -63,6 +75,13 @@ export const IMPORTABLE_FIELDS: ImportableField[] = [
   { value: "facebook",              label: "Facebook",                         group: "Redes sociais" },
   { value: "twitter",               label: "Twitter / X",                      group: "Redes sociais" },
   { value: "tiktok",                label: "TikTok",                           group: "Redes sociais" },
+  // Contato do responsável (cria um LeadContact vinculado ao lead)
+  { value: "contactRole",           label: "Cargo do responsável",             group: "Contato do Responsável" },
+  { value: "contactEmail",          label: "E-mail do responsável",            group: "Contato do Responsável" },
+  { value: "contactPhone",          label: "Telefone do responsável",          group: "Contato do Responsável" },
+  { value: "contactWhatsapp",       label: "WhatsApp do responsável",          group: "Contato do Responsável" },
+  { value: "contactLinkedin",       label: "LinkedIn do responsável",          group: "Contato do Responsável" },
+  { value: "contactInstagram",      label: "Instagram do responsável",         group: "Contato do Responsável" },
   // Metadados de importação
   { value: "source",                label: "Fonte (ex: B2BLeads)",             group: "Importação" },
   { value: "searchTerm",            label: "Termo de busca",                   group: "Importação" },
@@ -276,6 +295,28 @@ const AUTO_SUGGEST_MAP: Record<string, string> = {
   "international activity": "internationalActivity",
   "internationalactivity": "internationalActivity",
   "atividade": "internationalActivity",
+  // contactRole
+  "cargo responsavel": "contactRole",
+  "cargo do responsavel": "contactRole",
+  "cargo contato": "contactRole",
+  // contactEmail
+  "email responsavel": "contactEmail",
+  "email do responsavel": "contactEmail",
+  "email contato": "contactEmail",
+  // contactPhone
+  "telefone responsavel": "contactPhone",
+  "telefone do responsavel": "contactPhone",
+  "fone responsavel": "contactPhone",
+  // contactWhatsapp
+  "whatsapp responsavel": "contactWhatsapp",
+  "whatsapp do responsavel": "contactWhatsapp",
+  "zap responsavel": "contactWhatsapp",
+  // contactLinkedin
+  "linkedin responsavel": "contactLinkedin",
+  "linkedin do responsavel": "contactLinkedin",
+  // contactInstagram
+  "instagram responsavel": "contactInstagram",
+  "instagram do responsavel": "contactInstagram",
   // sourceGroup
   "lote": "sourceGroup",
   "grupo": "sourceGroup",
@@ -327,14 +368,19 @@ function extractFirstPhone(raw: string): string {
   return raw.split(/[,|]/).map((s) => s.trim()).filter(Boolean)[0] ?? raw.trim();
 }
 
+const CONTACT_IMPORT_FIELDS = new Set<string>([
+  "contactRole", "contactEmail", "contactPhone",
+  "contactWhatsapp", "contactLinkedin", "contactInstagram",
+]);
+
 /**
- * Converte uma linha do arquivo em LeadFormData conforme o mapeamento definido.
+ * Converte uma linha do arquivo em ImportRowData conforme o mapeamento definido.
  */
 export function mapRowToLeadData(
   row: ParsedRow,
   mapping: ColumnMapping
-): Partial<LeadFormData> {
-  const result: Partial<LeadFormData> = {};
+): ImportRowData {
+  const result: ImportRowData = {};
 
   for (const [coluna, campo] of Object.entries(mapping)) {
     if (campo === "ignore") continue;
@@ -358,6 +404,8 @@ export function mapRowToLeadData(
       (result as Record<string, unknown>)[campo] = extractFirstPhone(raw);
     } else if (campo === "segment") {
       (result as Record<string, unknown>)[campo] = normalizeSegment(raw.trim());
+    } else if (CONTACT_IMPORT_FIELDS.has(campo)) {
+      (result as Record<string, unknown>)[campo] = raw.trim();
     } else {
       (result as Record<string, unknown>)[campo] = raw.trim();
     }

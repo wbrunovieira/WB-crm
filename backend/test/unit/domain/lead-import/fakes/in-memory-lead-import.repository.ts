@@ -1,8 +1,9 @@
-import { LeadImportRepository } from "@/domain/lead-import/application/repositories/lead-import.repository";
+import { LeadImportRepository, ImportContactData } from "@/domain/lead-import/application/repositories/lead-import.repository";
 import { Lead } from "@/domain/leads/enterprise/entities/lead";
 
 export class InMemoryLeadImportRepository extends LeadImportRepository {
   leads: Lead[] = [];
+  contacts: ImportContactData[] = [];
   cnaes: Array<{ id: string; code: string; description: string }> = [];
   secondaryCnaes: Array<{ leadId: string; cnaeId: string }> = [];
   cnaeUpdates: Map<string, { primaryCnaeId?: string; secondaryCnaeIds: string[] }> = new Map();
@@ -29,6 +30,10 @@ export class InMemoryLeadImportRepository extends LeadImportRepository {
 
   async batchCreate(leads: Lead[]): Promise<void> {
     this.leads.push(...leads);
+  }
+
+  async batchCreateContacts(contacts: ImportContactData[]): Promise<void> {
+    this.contacts.push(...contacts);
   }
 
   async findOrCreateCnaeByCode(code: string, description: string): Promise<string> {

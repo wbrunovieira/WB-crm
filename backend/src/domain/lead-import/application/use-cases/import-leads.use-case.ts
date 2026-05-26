@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { Either, right } from "@/core/either";
 import { Lead } from "@/domain/leads/enterprise/entities/lead";
-import { LeadImportRepository, ImportLeadRowData, ImportResult } from "../repositories/lead-import.repository";
+import { LeadImportRepository, ImportLeadRowData, ImportResult, ImportContactData } from "../repositories/lead-import.repository";
 import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
 
 function parseCnaeEntry(raw: string): { code: string; description: string } | null {
@@ -148,6 +148,27 @@ export class ImportLeadsUseCase {
     if (toCreate.length > 0) {
       await this.repo.batchCreate(toCreate);
       result.imported = toCreate.length;
+
+      // Create LeadContacts for leads that have a companyOwner
+      const contactItems: ImportContactData[] = [];
+      for (let j = 0; j < toCreate.length; j++) {
+        const row = rows[toCreateRowIndices[j]];
+        if (!row.companyOwner?.trim()) continue;
+        contactItems.push({
+          leadId: toCreate[j].id.toString(),
+          name: row.companyOwner.trim(),
+          role: row.contactRole?.trim() || "Responsável",
+          email: row.contactEmail?.trim() || undefined,
+          phone: row.contactPhone?.trim() || undefined,
+          whatsapp: row.contactWhatsapp?.trim() || undefined,
+          linkedin: row.contactLinkedin?.trim() || undefined,
+          instagram: row.contactInstagram?.trim() || undefined,
+          isPrimary: true,
+        });
+      }
+      if (contactItems.length > 0) {
+        await this.repo.batchCreateContacts(contactItems);
+      }
 
       // Build secondary CNAE items using the created lead IDs
       const secondaryItems: Array<{ leadId: string; cnaeId: string }> = [];

@@ -235,6 +235,115 @@ describe("ImportLeadsUseCase", () => {
     expect(r.skippedDetails[0].existingLeadId).toBe("");
   });
 
+  // companyOwner → LeadContact tests
+  describe("companyOwner → LeadContact", () => {
+    it("creates a primary LeadContact when companyOwner is present", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa A", companyOwner: "João Silva" }],
+        ...base,
+      });
+      expect(repo.contacts).toHaveLength(1);
+      expect(repo.contacts[0].name).toBe("João Silva");
+      expect(repo.contacts[0].isPrimary).toBe(true);
+      expect(repo.contacts[0].leadId).toBe(repo.leads[0].id.toString());
+    });
+
+    it("uses default role 'Responsável' when contactRole is not provided", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa A", companyOwner: "Maria" }],
+        ...base,
+      });
+      expect(repo.contacts[0].role).toBe("Responsável");
+    });
+
+    it("uses contactRole when provided", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa A", companyOwner: "Maria", contactRole: "Sócia" }],
+        ...base,
+      });
+      expect(repo.contacts[0].role).toBe("Sócia");
+    });
+
+    it("does not create a contact when companyOwner is absent", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa Sem Dono" }],
+        ...base,
+      });
+      expect(repo.contacts).toHaveLength(0);
+    });
+
+    it("does not create a contact when companyOwner is empty string", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa Sem Dono", companyOwner: "  " }],
+        ...base,
+      });
+      expect(repo.contacts).toHaveLength(0);
+    });
+
+    it("copies contactEmail to the LeadContact", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa A", companyOwner: "Ana", contactEmail: "ana@empresa.pt" }],
+        ...base,
+      });
+      expect(repo.contacts[0].email).toBe("ana@empresa.pt");
+    });
+
+    it("copies contactPhone to the LeadContact", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa A", companyOwner: "Ana", contactPhone: "+351910000001" }],
+        ...base,
+      });
+      expect(repo.contacts[0].phone).toBe("+351910000001");
+    });
+
+    it("copies contactWhatsapp to the LeadContact", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa A", companyOwner: "Ana", contactWhatsapp: "+351910000002" }],
+        ...base,
+      });
+      expect(repo.contacts[0].whatsapp).toBe("+351910000002");
+    });
+
+    it("copies contactLinkedin to the LeadContact", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa A", companyOwner: "Ana", contactLinkedin: "https://linkedin.com/in/ana" }],
+        ...base,
+      });
+      expect(repo.contacts[0].linkedin).toBe("https://linkedin.com/in/ana");
+    });
+
+    it("copies contactInstagram to the LeadContact", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa A", companyOwner: "Ana", contactInstagram: "@ana" }],
+        ...base,
+      });
+      expect(repo.contacts[0].instagram).toBe("@ana");
+    });
+
+    it("creates contacts only for leads that have companyOwner", async () => {
+      await uc.execute({
+        rows: [
+          { businessName: "Com Dono", companyOwner: "Dono" },
+          { businessName: "Sem Dono" },
+          { businessName: "Outro Com Dono", companyOwner: "Outro" },
+        ],
+        ...base,
+      });
+      expect(repo.leads).toHaveLength(3);
+      expect(repo.contacts).toHaveLength(2);
+      expect(repo.contacts.map(c => c.name)).toEqual(["Dono", "Outro"]);
+    });
+
+    it("does not create contact for skipped (duplicate) leads", async () => {
+      await uc.execute({ rows: [{ businessName: "Existente", companyOwner: "Dono1" }], ...base });
+
+      await uc.execute({ rows: [{ businessName: "Existente", companyOwner: "Dono2" }], ...base });
+
+      expect(repo.contacts).toHaveLength(1);
+      expect(repo.contacts[0].name).toBe("Dono1");
+    });
+  });
+
   // CNAE tests
   it("sets primaryCNAEId when cnaePrincipal is provided", async () => {
     const r = (await uc.execute({

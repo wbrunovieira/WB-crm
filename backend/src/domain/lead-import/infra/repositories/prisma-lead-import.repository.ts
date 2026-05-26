@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/infra/database/prisma.service";
-import { LeadImportRepository } from "../../application/repositories/lead-import.repository";
+import { LeadImportRepository, ImportContactData } from "../../application/repositories/lead-import.repository";
 import { Lead } from "@/domain/leads/enterprise/entities/lead";
 
 @Injectable()
@@ -33,6 +33,24 @@ export class PrismaLeadImportRepository extends LeadImportRepository {
       select: { id: true },
     });
     return record.id;
+  }
+
+  async batchCreateContacts(contacts: ImportContactData[]): Promise<void> {
+    if (contacts.length === 0) return;
+    await this.prisma.leadContact.createMany({
+      data: contacts.map(c => ({
+        leadId: c.leadId,
+        name: c.name,
+        role: c.role ?? null,
+        email: c.email ?? null,
+        phone: c.phone ?? null,
+        whatsapp: c.whatsapp ?? null,
+        linkedin: c.linkedin ?? null,
+        instagram: c.instagram ?? null,
+        isPrimary: c.isPrimary,
+      })),
+      skipDuplicates: true,
+    });
   }
 
   async batchCreateSecondaryCNAEs(items: Array<{ leadId: string; cnaeId: string }>): Promise<void> {
