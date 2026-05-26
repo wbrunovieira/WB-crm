@@ -18,6 +18,7 @@ import { EmailCampaignRecipient } from "@/domain/email-campaigns/enterprise/enti
 import { EmailCampaignStep } from "@/domain/email-campaigns/enterprise/entities/email-campaign-step.entity";
 import { EmailCampaignSend } from "@/domain/email-campaigns/enterprise/entities/email-campaign-send.entity";
 import { UniqueEntityID } from "@/core/unique-entity-id";
+import { EmailSuppression } from "@/domain/email-campaigns/enterprise/entities/email-suppression.entity";
 
 const OWNER = "owner-1";
 const FROM = "bruno@wbdigitalsolutions.com";
@@ -463,10 +464,8 @@ describe("SendCampaignStep — duplicate send guard", () => {
     await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
     expect(gmail.sentEmails).toHaveLength(1); // still 1, not 2
   });
-});
 
-describe("SendCampaignStep — suppression check", () => {
-  it("should not send to suppressed emails", async () => {
+  it("should advance recipient status when send exists but recipient is still PENDING (crash recovery)", async () => {
     const campaigns = new InMemoryEmailCampaignsRepository();
     const steps = new InMemoryEmailCampaignStepsRepository();
     const recipients = new InMemoryEmailCampaignRecipientsRepository();
@@ -476,10 +475,8 @@ describe("SendCampaignStep — suppression check", () => {
     const resolver = new VariableResolverService();
     const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions);
 
-    const createSut = new CreateEmailCampaignUseCase(campaigns);
-    const created = await createSut.execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
     const campaignId = (created.value as { id: string }).id;
-
     const campaign = await campaigns.findById(campaignId);
     campaign!.start();
     await campaigns.save(campaign!);
@@ -487,16 +484,85 @@ describe("SendCampaignStep — suppression check", () => {
     const step = EmailCampaignStep.create({ campaignId, order: 0, subject: "S", bodyHtml: "B", delayDays: 0 });
     await steps.save(step);
 
-    const r = EmailCampaignRecipient.create({
-      campaignId, recipientType: "LEAD", recipientId: "l1", email: "suppressed@example.com",
-    });
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "a@b.com" });
     await recipients.save(r);
 
-    // Add to suppression list
-    suppressions.items.push({ email: "suppressed@example.com", ownerId: OWNER } as any);
+    // Simulate: send record was created but recipient status was never advanced (crash scenario)
+    const existingSend = EmailCampaignSend.create({ recipientId: r.id.toString(), stepId: step.id.toString() });
+    await sends.save(existingSend);
+    // Recipient is still PENDING at step 0
+    expect(r.status).toBe("PENDING");
+
+    // Re-trigger — should NOT send again but SHOULD advance status
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(gmail.sentEmails).toHaveLength(0); // no new email sent
+    const saved = await recipients.findById(r.id.toString());
+    expect(saved!.status).toBe("COMPLETED"); // advanced to completed (single-step campaign)
+  });
+});
+
+describe("SendCampaignStep — suppression check", () => {
+  async function makeBase() {
+    const campaigns = new InMemoryEmailCampaignsRepository();
+    const steps = new InMemoryEmailCampaignStepsRepository();
+    const recipients = new InMemoryEmailCampaignRecipientsRepository();
+    const sends = new InMemoryEmailCampaignSendsRepository();
+    const suppressions = new InMemoryEmailSuppressionsRepository();
+    const gmail = new FakeGmailPortForCampaigns();
+    const resolver = new VariableResolverService();
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions);
+
+    const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const campaignId = (created.value as { id: string }).id;
+    const campaign = await campaigns.findById(campaignId);
+    campaign!.start();
+    await campaigns.save(campaign!);
+
+    const step = EmailCampaignStep.create({ campaignId, order: 0, subject: "S", bodyHtml: "B", delayDays: 0 });
+    await steps.save(step);
+
+    return { campaigns, steps, recipients, sends, suppressions, gmail, sut, campaignId };
+  }
+
+  it("should not send to suppressed emails", async () => {
+    const { recipients, suppressions, gmail, sut, campaignId } = await makeBase();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "suppressed@example.com" });
+    await recipients.save(r);
+
+    suppressions.items.push(EmailSuppression.create({ email: "suppressed@example.com", ownerId: OWNER, reason: "bounced" }));
 
     await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
     expect(gmail.sentEmails).toHaveLength(0);
+  });
+
+  it("should mark recipient as BOUNCED when suppressed due to bounce", async () => {
+    const { recipients, suppressions, gmail, sut, campaignId } = await makeBase();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "bad@nxdomain.com" });
+    await recipients.save(r);
+
+    suppressions.items.push(EmailSuppression.create({ email: "bad@nxdomain.com", ownerId: OWNER, reason: "bounced" }));
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+    expect(gmail.sentEmails).toHaveLength(0);
+    const saved = await recipients.findById(r.id.toString());
+    expect(saved!.status).toBe("BOUNCED");
+  });
+
+  it("should mark recipient as UNSUBSCRIBED when suppressed due to unsubscribe", async () => {
+    const { recipients, suppressions, gmail, sut, campaignId } = await makeBase();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "unsub@example.com" });
+    await recipients.save(r);
+
+    suppressions.items.push(EmailSuppression.create({ email: "unsub@example.com", ownerId: OWNER, reason: "unsubscribed" }));
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+    expect(gmail.sentEmails).toHaveLength(0);
+    const saved = await recipients.findById(r.id.toString());
+    expect(saved!.status).toBe("UNSUBSCRIBED");
   });
 });
 

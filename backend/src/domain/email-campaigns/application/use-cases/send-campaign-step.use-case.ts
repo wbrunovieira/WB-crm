@@ -62,15 +62,30 @@ export class SendCampaignStepUseCase {
     let suppressed = 0;
 
     for (const recipient of pending) {
-      const isSuppressed = await this.suppressions.isEmailSuppressed(recipient.email, campaign.ownerId);
-      if (isSuppressed) {
+      const suppression = await this.suppressions.findByEmail(recipient.email, campaign.ownerId);
+      if (suppression) {
         suppressed++;
+        if (suppression.reason === "unsubscribed") {
+          recipient.unsubscribe();
+        } else {
+          recipient.markBounced();
+        }
+        await this.recipients.save(recipient);
         continue;
       }
 
       // Guard against duplicate sends (e.g. triggered twice in quick succession)
       const alreadySent = await this.sends.existsByRecipientAndStep(recipient.id.toString(), step.id.toString());
-      if (alreadySent) continue;
+      if (alreadySent) {
+        // Email was sent but recipient status wasn't advanced (e.g., process crashed after send).
+        // Recover by advancing status without re-sending.
+        recipient.markActive();
+        recipient.advanceStep();
+        const isLastStep = recipient.currentStep >= allSteps.length;
+        if (isLastStep) recipient.markCompleted();
+        await this.recipients.save(recipient);
+        continue;
+      }
 
       const send = EmailCampaignSend.create({ recipientId: recipient.id.toString(), stepId: step.id.toString() });
 

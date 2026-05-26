@@ -124,8 +124,8 @@ describe("PollGmailUseCase", () => {
 
     expect(result.isRight()).toBe(true);
     expect(result.unwrap().processed).toBe(0);
-    // No messages — no historyId update needed
-    expect(fakePrisma.googleToken.updateMany).not.toHaveBeenCalled();
+    // historyId is always advanced to prevent stale IDs from getting stuck
+    expect(fakePrisma.googleToken.updateMany).toHaveBeenCalled();
   });
 
   it("updates historyId after processing messages", async () => {
