@@ -244,6 +244,21 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
     }
   };
 
+  const handleClearRecipients = async () => {
+    if (!enrollCampaignId) return;
+    if (!confirm("Remover todos os destinatários desta campanha?")) return;
+    setEnrollLoading(true);
+    try {
+      await apiFetch(`/email-campaigns/${enrollCampaignId}/recipients`, token, { method: "DELETE" });
+      setTotalEnrolled(0);
+      toast.success("Destinatários removidos");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao limpar destinatários");
+    } finally {
+      setEnrollLoading(false);
+    }
+  };
+
   const handleSearch = async () => {
     if (searchQuery.trim().length < 2) return;
     setSearchLoading(true);
@@ -851,7 +866,16 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
               <p className="text-xs text-gray-400">Campanha criada. Escolha quem vai receber os emails.</p>
             </div>
             {totalEnrolled > 0 && (
-              <span className="ml-auto text-sm text-green-400 font-medium">{totalEnrolled} adicionados</span>
+              <div className="ml-auto flex items-center gap-2">
+                <span className="text-sm text-green-400 font-medium">{totalEnrolled} adicionados</span>
+                <button
+                  onClick={handleClearRecipients}
+                  disabled={enrollLoading}
+                  className="text-xs text-red-400 hover:text-red-300 underline disabled:opacity-50"
+                >
+                  Limpar tudo
+                </button>
+              </div>
             )}
           </div>
 

@@ -18,6 +18,7 @@ import { UnsubscribeRecipientUseCase } from "@/domain/email-campaigns/applicatio
 import { HandleGmailBounceUseCase } from "@/domain/email-campaigns/application/use-cases/handle-gmail-bounce.use-case";
 import { TriggerCampaignSendNowUseCase, sendingInProgress } from "@/domain/email-campaigns/application/use-cases/trigger-campaign-send-now.use-case";
 import { GetCampaignProgressUseCase } from "@/domain/email-campaigns/application/use-cases/get-campaign-progress.use-case";
+import { ClearCampaignRecipientsUseCase } from "@/domain/email-campaigns/application/use-cases/clear-campaign-recipients.use-case";
 import { EmailCampaignsRepository } from "@/domain/email-campaigns/application/repositories/email-campaigns.repository";
 import { EmailSuppressionsRepository } from "@/domain/email-campaigns/application/repositories/email-suppressions.repository";
 import { EmailCampaignSendsRepository } from "@/domain/email-campaigns/application/repositories/email-campaign-sends.repository";
@@ -41,6 +42,7 @@ export class EmailCampaignsController {
     private readonly handleBounce: HandleGmailBounceUseCase,
     private readonly triggerSendNow: TriggerCampaignSendNowUseCase,
     private readonly getProgress: GetCampaignProgressUseCase,
+    private readonly clearRecipients: ClearCampaignRecipientsUseCase,
     private readonly campaigns: EmailCampaignsRepository,
     private readonly suppressions: EmailSuppressionsRepository,
     private readonly sends: EmailCampaignSendsRepository,
@@ -166,6 +168,16 @@ export class EmailCampaignsController {
     @Body() body: { mode: "all" | "sourceGroup"; sourceGroup?: string },
   ) {
     const result = await this.bulkEnroll.execute({ campaignId, ownerId: user.id, ...body });
+    if (result.isLeft()) throw new Error(result.value.message);
+    return result.value;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(":id/recipients")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Remove all recipients from a campaign (only allowed when not ACTIVE)" })
+  async clearCampaignRecipients(@CurrentUser() user: AuthenticatedUser, @Param("id") campaignId: string) {
+    const result = await this.clearRecipients.execute({ campaignId, ownerId: user.id });
     if (result.isLeft()) throw new Error(result.value.message);
     return result.value;
   }
