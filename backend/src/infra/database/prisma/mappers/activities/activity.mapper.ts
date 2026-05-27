@@ -37,6 +37,8 @@ export class ActivityMapper {
         gotoDuration: raw.gotoDuration ?? undefined,
         callContactType: raw.callContactType ?? undefined,
         meetingNoShow: raw.meetingNoShow,
+        emailCampaignSendId: (raw as any).emailCampaignSendId ?? undefined,
+        emailCampaignId: (raw as any).emailCampaignId ?? undefined,
         emailMessageId: raw.emailMessageId ?? undefined,
         emailThreadId: raw.emailThreadId ?? undefined,
         emailSubject: raw.emailSubject ?? undefined,
@@ -58,7 +60,7 @@ export class ActivityMapper {
   }
 
   static toPrisma(activity: Activity): PrismaActivity {
-    return {
+    return ({
       id: activity.id.toString(),
       ownerId: activity.ownerId,
       type: activity.type,
@@ -91,6 +93,8 @@ export class ActivityMapper {
       gotoDuration: activity.gotoDuration ?? null,
       callContactType: activity.callContactType ?? null,
       meetingNoShow: activity.meetingNoShow,
+      emailCampaignSendId: activity.emailCampaignSendId ?? null,
+      emailCampaignId: activity.emailCampaignId ?? null,
       emailMessageId: activity.emailMessageId ?? null,
       emailThreadId: activity.emailThreadId ?? null,
       emailSubject: activity.emailSubject ?? null,
@@ -106,6 +110,6 @@ export class ActivityMapper {
       emailLastLinkClickedAt: activity.emailLastLinkClickedAt ?? null,
       createdAt: activity.createdAt,
       updatedAt: activity.updatedAt,
-    };
+    }) as PrismaActivity;
   }
 }

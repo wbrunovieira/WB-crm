@@ -8,6 +8,9 @@ import { EmailCampaignSend } from "../../enterprise/entities/email-campaign-send
 import { GmailPort } from "@/domain/integrations/email/application/ports/gmail.port";
 import { VariableResolverService } from "../services/variable-resolver.service";
 import { EmailSuppressionsRepository } from "../repositories/email-suppressions.repository";
+import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
+import { Activity } from "@/domain/activities/enterprise/entities/activity";
+import { RecipientContextPort } from "../ports/recipient-context.port";
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -43,6 +46,8 @@ export class SendCampaignStepUseCase {
     private readonly gmail: GmailPort,
     private readonly resolver: VariableResolverService,
     private readonly suppressions: EmailSuppressionsRepository,
+    private readonly activitiesRepo: ActivitiesRepository,
+    private readonly recipientContext: RecipientContextPort,
   ) {}
 
   async execute(input: Input): Promise<Either<Error, Output>> {
@@ -117,6 +122,8 @@ export class SendCampaignStepUseCase {
         await this.recipients.save(recipient);
         sent++;
 
+        await this.createSentActivity(campaign.ownerId, input.campaignId, subject, messageId, threadId, send.id.toString(), recipient.recipientType, recipient.recipientId);
+
         // Random delay between sends to avoid triggering spam filters
         const delayMs = delayRange.min + Math.floor(Math.random() * (delayRange.max - delayRange.min));
         await sleep(delayMs);
@@ -133,10 +140,81 @@ export class SendCampaignStepUseCase {
         if (isInvalidAddress) {
           recipient.markBounced();
           await this.recipients.save(recipient);
+          await this.createBounceActivity(campaign.ownerId, input.campaignId, subject, send.id.toString(), msg, recipient.recipientType, recipient.recipientId);
         }
       }
     }
 
     return right({ sent, failed, suppressed });
+  }
+
+  private async createSentActivity(
+    ownerId: string,
+    campaignId: string,
+    subject: string,
+    messageId: string,
+    threadId: string,
+    sendId: string,
+    recipientType: string,
+    recipientId: string,
+  ) {
+    const context = await this.recipientContext.resolve(recipientType, recipientId);
+
+    const activity = Activity.create({
+      ownerId,
+      type: "campaign_email",
+      subject,
+      completed: true,
+      completedAt: new Date(),
+      meetingNoShow: false,
+      emailReplied: false,
+      emailOpenCount: 0,
+      emailLinkClickCount: 0,
+      emailMessageId: messageId,
+      emailThreadId: threadId,
+      emailSubject: subject,
+      emailCampaignSendId: sendId,
+      emailCampaignId: campaignId,
+      leadId: context.leadId,
+      organizationId: context.organizationId,
+      contactId: context.contactId,
+      partnerId: context.partnerId,
+    });
+
+    await this.activitiesRepo.save(activity);
+  }
+
+  private async createBounceActivity(
+    ownerId: string,
+    campaignId: string,
+    subject: string,
+    sendId: string,
+    bounceReason: string,
+    recipientType: string,
+    recipientId: string,
+  ) {
+    const context = await this.recipientContext.resolve(recipientType, recipientId);
+
+    const activity = Activity.create({
+      ownerId,
+      type: "campaign_email",
+      subject,
+      completed: false,
+      failedAt: new Date(),
+      failReason: `Bounce: ${bounceReason}`,
+      meetingNoShow: false,
+      emailReplied: false,
+      emailOpenCount: 0,
+      emailLinkClickCount: 0,
+      emailSubject: subject,
+      emailCampaignSendId: sendId,
+      emailCampaignId: campaignId,
+      leadId: context.leadId,
+      organizationId: context.organizationId,
+      contactId: context.contactId,
+      partnerId: context.partnerId,
+    });
+
+    await this.activitiesRepo.save(activity);
   }
 }

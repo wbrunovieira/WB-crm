@@ -3,12 +3,14 @@ import { GmailPort, type GmailMessage, type GmailAttachment, type SendAsAlias, t
 export class FakeGmailPortForCampaigns extends GmailPort {
   sentEmails: { to: string; subject: string; bodyHtml: string; from?: string }[] = [];
   shouldFail = false;
+  failWith?: Error;
 
   async send(params: {
     userId: string; to: string; subject: string; bodyHtml: string;
     from?: string; replyTo?: string; cc?: string; threadId?: string;
     attachments?: GmailAttachment[];
   }) {
+    if (this.failWith) throw this.failWith;
     if (this.shouldFail) throw new Error("Gmail send failed");
     this.sentEmails.push({ to: params.to, subject: params.subject, bodyHtml: params.bodyHtml, from: params.from });
     return { messageId: `msg-${Date.now()}`, threadId: `thread-${Date.now()}` };

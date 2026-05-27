@@ -40,6 +40,10 @@ export interface ActivityProps {
   callContactType?: string;
   meetingNoShow: boolean;
 
+  // Campaign email
+  emailCampaignSendId?: string;
+  emailCampaignId?: string;
+
   // Email
   emailMessageId?: string;
   emailThreadId?: string;
@@ -91,6 +95,8 @@ export class Activity extends AggregateRoot<ActivityProps> {
   get gotoDuration()         { return this.props.gotoDuration; }
   get callContactType()      { return this.props.callContactType; }
   get meetingNoShow()        { return this.props.meetingNoShow; }
+  get emailCampaignSendId()  { return this.props.emailCampaignSendId; }
+  get emailCampaignId()      { return this.props.emailCampaignId; }
   get emailMessageId()       { return this.props.emailMessageId; }
   get emailThreadId()        { return this.props.emailThreadId; }
   get emailSubject()         { return this.props.emailSubject; }

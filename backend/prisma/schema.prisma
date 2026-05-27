@@ -820,6 +820,10 @@ model Activity {
   emailLinkClickedAt     DateTime?              // Primeiro clique em link
   emailLastLinkClickedAt DateTime?              // Último clique em link
 
+  // Campaign email — links this activity to a specific campaign send
+  emailCampaignSendId String? @unique
+  emailCampaignId     String?
+
   whatsappMessages WhatsAppMessage[]
 
   callAnalysis          CallAnalysis?

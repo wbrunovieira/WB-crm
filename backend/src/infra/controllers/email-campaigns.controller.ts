@@ -22,6 +22,7 @@ import { ClearCampaignRecipientsUseCase } from "@/domain/email-campaigns/applica
 import { EmailCampaignsRepository } from "@/domain/email-campaigns/application/repositories/email-campaigns.repository";
 import { EmailSuppressionsRepository } from "@/domain/email-campaigns/application/repositories/email-suppressions.repository";
 import { EmailCampaignSendsRepository } from "@/domain/email-campaigns/application/repositories/email-campaign-sends.repository";
+import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
 import { PrismaService } from "@/infra/database/prisma.service";
 
 const TRACKING_BASE_URL = process.env.BACKEND_URL ?? "https://api.crm.wbdigitalsolutions.com";
@@ -46,6 +47,7 @@ export class EmailCampaignsController {
     private readonly campaigns: EmailCampaignsRepository,
     private readonly suppressions: EmailSuppressionsRepository,
     private readonly sends: EmailCampaignSendsRepository,
+    private readonly activitiesRepo: ActivitiesRepository,
     private readonly prisma: PrismaService,
   ) {}
 
@@ -506,6 +508,16 @@ export class EmailCampaignsController {
     if (send) {
       send.markOpened();
       await this.sends.save(send);
+      // Sync stats to linked Activity
+      const activity = await this.activitiesRepo.findByCampaignSendId(sendId);
+      if (activity) {
+        activity.update({
+          emailOpenCount: send.openCount,
+          emailOpenedAt: activity.emailOpenedAt ?? send.openedAt,
+          emailLastOpenedAt: send.openedAt,
+        });
+        await this.activitiesRepo.save(activity);
+      }
     }
     // Return 1x1 transparent GIF
     const pixel = Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64");
@@ -520,6 +532,17 @@ export class EmailCampaignsController {
     if (send) {
       send.markClicked(url || undefined);
       await this.sends.save(send);
+      // Sync stats to linked Activity
+      const activity = await this.activitiesRepo.findByCampaignSendId(sendId);
+      if (activity) {
+        const totalClicks = Object.values(send.clickData).reduce((sum, c) => sum + c, 0);
+        activity.update({
+          emailLinkClickCount: totalClicks,
+          emailLinkClickedAt: activity.emailLinkClickedAt ?? send.clickedAt,
+          emailLastLinkClickedAt: send.clickedAt,
+        });
+        await this.activitiesRepo.save(activity);
+      }
     }
     res.redirect(url || "/");
   }

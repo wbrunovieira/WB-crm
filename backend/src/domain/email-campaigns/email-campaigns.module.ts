@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { PrismaService } from "@/infra/database/prisma.service";
 import { AuthModule } from "@/infra/auth/auth.module";
 import { EmailModule } from "@/domain/integrations/email/email.module";
+import { ActivitiesModule } from "@/domain/activities/activities.module";
 
 import { EmailCampaignsController } from "@/infra/controllers/email-campaigns.controller";
 import { EmailCampaignCronService } from "@/infra/scheduled/email-campaign-cron.service";
@@ -32,9 +33,11 @@ import { PrismaEmailCampaignStepsRepository } from "@/infra/database/prisma/repo
 import { PrismaEmailCampaignRecipientsRepository } from "@/infra/database/prisma/repositories/email-campaigns/prisma-email-campaign-recipients.repository";
 import { PrismaEmailCampaignSendsRepository } from "@/infra/database/prisma/repositories/email-campaigns/prisma-email-campaign-sends.repository";
 import { PrismaEmailSuppressionsRepository } from "@/infra/database/prisma/repositories/email-campaigns/prisma-email-suppressions.repository";
+import { RecipientContextPort } from "./application/ports/recipient-context.port";
+import { PrismaRecipientContextAdapter } from "@/infra/database/prisma/adapters/prisma-recipient-context.adapter";
 
 @Module({
-  imports: [AuthModule, EmailModule],
+  imports: [AuthModule, EmailModule, ActivitiesModule],
   controllers: [EmailCampaignsController],
   providers: [
     PrismaService,
@@ -60,6 +63,7 @@ import { PrismaEmailSuppressionsRepository } from "@/infra/database/prisma/repos
     { provide: EmailCampaignRecipientsRepository, useClass: PrismaEmailCampaignRecipientsRepository },
     { provide: EmailCampaignSendsRepository, useClass: PrismaEmailCampaignSendsRepository },
     { provide: EmailSuppressionsRepository, useClass: PrismaEmailSuppressionsRepository },
+    { provide: RecipientContextPort, useClass: PrismaRecipientContextAdapter },
   ],
 })
 export class EmailCampaignsModule {}

@@ -73,6 +73,7 @@ class FakeActivitiesRepo extends ActivitiesRepository {
   async findWhatsAppDriveIds() { return []; }
   async updateEmailOpenStats() {}
   async updateEmailClickStats() {}
+  async findByCampaignSendId() { return null; }
 }
 
 // ── Suite ─────────────────────────────────────────────────────────────────────

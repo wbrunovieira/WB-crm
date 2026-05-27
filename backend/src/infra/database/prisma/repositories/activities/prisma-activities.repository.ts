@@ -385,6 +385,13 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     });
   }
 
+  async findByCampaignSendId(sendId: string): Promise<Activity | null> {
+    const raw = await this.prisma.activity.findFirst({
+      where: { emailCampaignSendId: sendId } as any,
+    });
+    return raw ? ActivityMapper.toDomain(raw) : null;
+  }
+
   private buildOrderBy(sortBy?: string): Record<string, any>[] {
     switch (sortBy) {
       case "dueDate-asc":

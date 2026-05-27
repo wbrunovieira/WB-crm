@@ -198,4 +198,8 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
       (a) => a.gotoCallId !== null && a.gotoRecordingId === null && a.completedAt !== null && a.completedAt! >= since,
     );
   }
+
+  async findByCampaignSendId(sendId: string): Promise<Activity | null> {
+    return this.items.find((a) => a.emailCampaignSendId === sendId) ?? null;
+  }
 }

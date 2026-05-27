@@ -19,6 +19,8 @@ import { EmailCampaignStep } from "@/domain/email-campaigns/enterprise/entities/
 import { EmailCampaignSend } from "@/domain/email-campaigns/enterprise/entities/email-campaign-send.entity";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 import { EmailSuppression } from "@/domain/email-campaigns/enterprise/entities/email-suppression.entity";
+import { InMemoryActivitiesRepository } from "../fakes/in-memory-activities.repository";
+import { FakeRecipientContextPort } from "../fakes/fake-recipient-context.port";
 
 const OWNER = "owner-1";
 const FROM = "bruno@wbdigitalsolutions.com";
@@ -226,7 +228,7 @@ describe("SendCampaignStepUseCase", () => {
     suppressions = new InMemoryEmailSuppressionsRepository();
     gmail = new FakeGmailPortForCampaigns();
     resolver = new VariableResolverService();
-    sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions);
+    sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
   });
 
   it("should send step 0 to all pending recipients with variable substitution", async () => {
@@ -437,7 +439,7 @@ describe("SendCampaignStep — duplicate send guard", () => {
     const suppressions = new InMemoryEmailSuppressionsRepository();
     const gmail = new FakeGmailPortForCampaigns();
     const resolver = new VariableResolverService();
-    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions);
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
 
     const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
     const campaignId = (created.value as { id: string }).id;
@@ -473,7 +475,7 @@ describe("SendCampaignStep — duplicate send guard", () => {
     const suppressions = new InMemoryEmailSuppressionsRepository();
     const gmail = new FakeGmailPortForCampaigns();
     const resolver = new VariableResolverService();
-    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions);
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
 
     const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
     const campaignId = (created.value as { id: string }).id;
@@ -511,7 +513,7 @@ describe("SendCampaignStep — suppression check", () => {
     const suppressions = new InMemoryEmailSuppressionsRepository();
     const gmail = new FakeGmailPortForCampaigns();
     const resolver = new VariableResolverService();
-    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions);
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
 
     const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
     const campaignId = (created.value as { id: string }).id;
@@ -800,5 +802,156 @@ describe("HandleGmailBounceUseCase", () => {
     expect((result.value as { bouncedCount: number }).bouncedCount).toBe(0);
     expect(recipients.items[0].status).toBe("BOUNCED");
     expect(recipients.items[1].status).toBe("UNSUBSCRIBED");
+  });
+});
+
+// ─── Campaign email activity creation ────────────────────────────────────────
+
+describe("SendCampaignStep — campaign_email activity creation", () => {
+  async function makeSut() {
+    const campaigns = new InMemoryEmailCampaignsRepository();
+    const steps = new InMemoryEmailCampaignStepsRepository();
+    const recipients = new InMemoryEmailCampaignRecipientsRepository();
+    const sends = new InMemoryEmailCampaignSendsRepository();
+    const suppressions = new InMemoryEmailSuppressionsRepository();
+    const gmail = new FakeGmailPortForCampaigns();
+    const resolver = new VariableResolverService();
+    const activities = new InMemoryActivitiesRepository();
+    const recipientContext = new FakeRecipientContextPort();
+
+    const sut = new SendCampaignStepUseCase(
+      campaigns, steps, recipients, sends, gmail, resolver, suppressions,
+      activities, recipientContext,
+    );
+
+    const created = await new CreateEmailCampaignUseCase(campaigns).execute({
+      name: "Campaign", fromEmail: FROM, ownerId: OWNER,
+    });
+    const campaignId = (created.value as { id: string }).id;
+    const campaign = await campaigns.findById(campaignId);
+    campaign!.start();
+    await campaigns.save(campaign!);
+
+    const step = EmailCampaignStep.create({ campaignId, order: 0, subject: "Assunto Campanha", bodyHtml: "<p>Body</p>", delayDays: 0 });
+    await steps.save(step);
+
+    return { campaigns, steps, recipients, sends, suppressions, gmail, resolver, activities, recipientContext, sut, campaignId, step };
+  }
+
+  it("creates a campaign_email activity linked to lead for LEAD recipient", async () => {
+    const { recipients, activities, recipientContext, sut, campaignId } = await makeSut();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "lead-1", email: "a@b.com" });
+    await recipients.save(r);
+    recipientContext.register("LEAD", "lead-1", { leadId: "lead-1" });
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(activities.items).toHaveLength(1);
+    const act = activities.items[0];
+    expect(act.type).toBe("campaign_email");
+    expect(act.leadId).toBe("lead-1");
+    expect(act.emailCampaignId).toBe(campaignId);
+    expect(act.emailCampaignSendId).toBeDefined();
+    expect(act.completed).toBe(true);
+    expect(act.ownerId).toBe(OWNER);
+  });
+
+  it("creates activity linked to parent lead when recipient is a CONTACT with leadId", async () => {
+    const { recipients, activities, recipientContext, sut, campaignId } = await makeSut();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "CONTACT", recipientId: "contact-1", email: "contact@co.com" });
+    await recipients.save(r);
+    recipientContext.register("CONTACT", "contact-1", { contactId: "contact-1", leadId: "lead-99" });
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(activities.items).toHaveLength(1);
+    const act = activities.items[0];
+    expect(act.type).toBe("campaign_email");
+    expect(act.leadId).toBe("lead-99");
+    expect(act.contactId).toBe("contact-1");
+  });
+
+  it("creates activity linked to organization when recipient is a CONTACT with orgId", async () => {
+    const { recipients, activities, recipientContext, sut, campaignId } = await makeSut();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "CONTACT", recipientId: "contact-2", email: "org@co.com" });
+    await recipients.save(r);
+    recipientContext.register("CONTACT", "contact-2", { contactId: "contact-2", organizationId: "org-1" });
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(activities.items).toHaveLength(1);
+    const act = activities.items[0];
+    expect(act.organizationId).toBe("org-1");
+    expect(act.contactId).toBe("contact-2");
+  });
+
+  it("creates activity linked to organization when recipient IS the organization", async () => {
+    const { recipients, activities, recipientContext, sut, campaignId } = await makeSut();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "CONTACT", recipientId: "org-direct", email: "info@org.com" });
+    await recipients.save(r);
+    recipientContext.register("CONTACT", "org-direct", { organizationId: "org-direct" });
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(activities.items).toHaveLength(1);
+    expect(activities.items[0].organizationId).toBe("org-direct");
+  });
+
+  it("creates a failed campaign_email activity with bounce reason when Gmail rejects address", async () => {
+    const { recipients, activities, recipientContext, sut, campaignId, gmail } = await makeSut();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "lead-bad", email: "bad@nxdomain.invalid" });
+    await recipients.save(r);
+    recipientContext.register("LEAD", "lead-bad", { leadId: "lead-bad" });
+
+    gmail.failWith = new Error("550 5.1.1 The email account does not exist");
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(activities.items).toHaveLength(1);
+    const act = activities.items[0];
+    expect(act.type).toBe("campaign_email");
+    expect(act.leadId).toBe("lead-bad");
+    expect(act.completed).toBe(false);
+    expect(act.failedAt).toBeDefined();
+    expect(act.failReason).toContain("550");
+    expect(act.emailCampaignId).toBe(campaignId);
+  });
+
+  it("does NOT create duplicate activity on crash-recovery path (alreadySent guard)", async () => {
+    const { recipients, sends, activities, recipientContext, sut, campaignId, step } = await makeSut();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "lead-crash", email: "crash@test.com" });
+    await recipients.save(r);
+    recipientContext.register("LEAD", "lead-crash", { leadId: "lead-crash" });
+
+    // Simulate crash: send record exists but recipient still PENDING
+    const existingSend = EmailCampaignSend.create({ recipientId: r.id.toString(), stepId: step.id.toString() });
+    await sends.save(existingSend);
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    // Status should be advanced, but no new activity created (email was already sent before crash)
+    const saved = await recipients.findById(r.id.toString());
+    expect(saved!.status).toBe("COMPLETED");
+    expect(activities.items).toHaveLength(0);
+  });
+
+  it("activity emailCampaignSendId matches the EmailCampaignSend record", async () => {
+    const { recipients, sends, activities, recipientContext, sut, campaignId } = await makeSut();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "lead-link", email: "link@test.com" });
+    await recipients.save(r);
+    recipientContext.register("LEAD", "lead-link", { leadId: "lead-link" });
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(sends.items).toHaveLength(1);
+    expect(activities.items).toHaveLength(1);
+    expect(activities.items[0].emailCampaignSendId).toBe(sends.items[0].id.toString());
   });
 });

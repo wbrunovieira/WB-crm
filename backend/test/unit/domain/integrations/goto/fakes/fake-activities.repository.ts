@@ -99,6 +99,8 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
 
   async updateEmailClickStats(_trackingToken: string, _clickedAt: Date): Promise<void> {}
 
+  async findByCampaignSendId(_sendId: string): Promise<Activity | null> { return null; }
+
   // Helper for tests
   createAndAdd(props: Parameters<typeof Activity.create>[0]): Activity {
     const activity = Activity.create(props, new UniqueEntityID());

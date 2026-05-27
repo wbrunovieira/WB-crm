@@ -19,6 +19,9 @@ export interface CreateActivityInput {
   partnerId?: string;
   callContactType?: string;
   meetingNoShow?: boolean;
+  // Campaign email fields
+  emailCampaignSendId?: string;
+  emailCampaignId?: string;
   // Email-specific fields
   emailMessageId?: string;
   emailThreadId?: string;
@@ -62,6 +65,8 @@ export class CreateActivityUseCase {
       organizationId: input.organizationId,
       partnerId: input.partnerId,
       callContactType: input.callContactType,
+      emailCampaignSendId: input.emailCampaignSendId,
+      emailCampaignId: input.emailCampaignId,
       emailMessageId: input.emailMessageId,
       emailThreadId: input.emailThreadId,
       emailSubject: input.emailSubject,
