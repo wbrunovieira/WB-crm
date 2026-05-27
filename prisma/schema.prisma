@@ -819,6 +819,8 @@ model Activity {
   emailLinkClickCount    Int       @default(0)  // Total de cliques em links rastreados
   emailLinkClickedAt     DateTime?              // Primeiro clique em link
   emailLastLinkClickedAt DateTime?              // Último clique em link
+  emailCampaignSendId    String?   @unique      // Vincula atividade ao envio da campanha
+  emailCampaignId        String?                // Campanha de origem
 
   whatsappMessages WhatsAppMessage[]
 

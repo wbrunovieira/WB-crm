@@ -70,7 +70,9 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
     );
   }
 
-  async findByCampaignSendId(_sendId: string): Promise<Activity | null> { return null; }
+  async findByCampaignSendId(sendId: string): Promise<Activity | null> {
+    return this.items.find((a) => a.emailCampaignSendId === sendId) ?? null;
+  }
 
   createAndAdd(props: Parameters<typeof Activity.create>[0]): Activity {
     const activity = Activity.create(props, new UniqueEntityID());

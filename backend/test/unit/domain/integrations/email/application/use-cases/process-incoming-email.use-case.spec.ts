@@ -3,6 +3,8 @@ import { ProcessIncomingEmailUseCase } from "@/domain/integrations/email/applica
 import { FakeEmailMessagesRepository } from "../../fakes/fake-email-messages.repository";
 import { FakeActivitiesRepository } from "@test/unit/domain/integrations/whatsapp/fakes/fake-activities.repository";
 import type { GmailMessage } from "@/domain/integrations/email/application/ports/gmail.port";
+import { Activity } from "@/domain/activities/enterprise/entities/activity";
+import { UniqueEntityID } from "@/core/unique-entity-id";
 
 const OWNER_ID = "owner-001";
 
@@ -48,6 +50,9 @@ const fakePrisma = {
   },
   emailCampaignRecipient: {
     updateMany: vi.fn().mockResolvedValue({ count: 0 }),
+  },
+  emailCampaignSend: {
+    findMany: vi.fn().mockResolvedValue([]),
   },
   emailSuppression: {
     findFirst: vi.fn().mockResolvedValue(null),
@@ -257,6 +262,7 @@ describe("ProcessIncomingEmailUseCase — bounce detection", () => {
     fakePrisma.organization.findFirst.mockResolvedValue(null);
     fakePrisma.emailCampaign.findMany.mockResolvedValue([{ id: "camp-1" }]);
     fakePrisma.emailCampaignRecipient.updateMany.mockResolvedValue({ count: 1 });
+    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([]);
     fakePrisma.emailSuppression.findFirst.mockResolvedValue(null);
     fakePrisma.emailSuppression.create.mockResolvedValue({});
     emailMessagesRepo = new FakeEmailMessagesRepository();
@@ -361,5 +367,125 @@ describe("ProcessIncomingEmailUseCase — bounce detection", () => {
     expect(result.isRight()).toBe(true);
     expect(result.unwrap().bounced).toBeUndefined();
     expect(fakePrisma.emailCampaignRecipient.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+describe("ProcessIncomingEmailUseCase — bounce updates linked campaign_email activity", () => {
+  function makeCampaignActivity(sendId: string): Activity {
+    return Activity.create(
+      {
+        ownerId: OWNER_ID,
+        type: "campaign_email",
+        subject: "Campanha X",
+        completed: true,
+        completedAt: new Date("2024-01-10T08:00:00Z"),
+        meetingNoShow: false,
+        emailReplied: false,
+        emailOpenCount: 0,
+        emailLinkClickCount: 0,
+        emailCampaignSendId: sendId,
+        emailCampaignId: "camp-1",
+      },
+      new UniqueEntityID(),
+    );
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fakePrisma.contact.findFirst.mockResolvedValue(null);
+    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
+    fakePrisma.organization.findFirst.mockResolvedValue(null);
+    fakePrisma.emailCampaign.findMany.mockResolvedValue([{ id: "camp-1" }]);
+    fakePrisma.emailCampaignRecipient.updateMany.mockResolvedValue({ count: 1 });
+    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([]);
+    fakePrisma.emailSuppression.findFirst.mockResolvedValue(null);
+    fakePrisma.emailSuppression.create.mockResolvedValue({});
+    emailMessagesRepo = new FakeEmailMessagesRepository();
+    activitiesRepo = new FakeActivitiesRepository();
+    useCase = new ProcessIncomingEmailUseCase(emailMessagesRepo, activitiesRepo, fakePrisma as never);
+  });
+
+  it("marks linked campaign_email activity as failed when bounce NDR arrives", async () => {
+    const sendId = "send-abc-001";
+    const activity = makeCampaignActivity(sendId);
+    activitiesRepo.items.push(activity);
+
+    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([{ id: sendId }]);
+
+    const message = makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      bodyText: "Final-Recipient: rfc822; bounced@example.com",
+    });
+
+    await useCase.execute(message, OWNER_ID);
+
+    const updated = activitiesRepo.items.find((a) => a.emailCampaignSendId === sendId)!;
+    expect(updated.failedAt).toBeDefined();
+    expect(updated.failReason).toBe("Email retornou (bounce)");
+    expect(updated.completed).toBe(false);
+  });
+
+  it("does not double-fail an activity already marked as failed", async () => {
+    const sendId = "send-already-failed";
+    const activity = makeCampaignActivity(sendId);
+    activity.fail("Erro anterior");
+    const originalFailedAt = activity.failedAt!;
+    activitiesRepo.items.push(activity);
+
+    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([{ id: sendId }]);
+
+    await new Promise((r) => setTimeout(r, 5)); // garante timestamp diferente
+
+    const message = makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      bodyText: "Final-Recipient: rfc822; bounced@example.com",
+    });
+
+    await useCase.execute(message, OWNER_ID);
+
+    const afterUpdate = activitiesRepo.items.find((a) => a.emailCampaignSendId === sendId)!;
+    expect(afterUpdate.failedAt!.getTime()).toBe(originalFailedAt.getTime());
+  });
+
+  it("does not update activity when no send record is linked to the bounce", async () => {
+    const activity = makeCampaignActivity("send-unrelated");
+    activitiesRepo.items.push(activity);
+
+    // no matching send returned
+    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([]);
+
+    const message = makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      bodyText: "Final-Recipient: rfc822; other@example.com",
+    });
+
+    await useCase.execute(message, OWNER_ID);
+
+    // activity untouched
+    const untouched = activitiesRepo.items[0];
+    expect(untouched.failedAt).toBeUndefined();
+    expect(untouched.completed).toBe(true);
+  });
+
+  it("updates multiple activities when multiple sends are linked to the bounced email", async () => {
+    const sendId1 = "send-multi-1";
+    const sendId2 = "send-multi-2";
+    activitiesRepo.items.push(makeCampaignActivity(sendId1));
+    activitiesRepo.items.push(makeCampaignActivity(sendId2));
+
+    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([{ id: sendId1 }, { id: sendId2 }]);
+
+    const message = makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      bodyText: "Final-Recipient: rfc822; multi@example.com",
+    });
+
+    await useCase.execute(message, OWNER_ID);
+
+    for (const sendId of [sendId1, sendId2]) {
+      const act = activitiesRepo.items.find((a) => a.emailCampaignSendId === sendId)!;
+      expect(act.failedAt).toBeDefined();
+      expect(act.completed).toBe(false);
+    }
   });
 });

@@ -50,6 +50,24 @@ export class ProcessIncomingEmailUseCase {
             where: { email: bouncedEmail, campaignId: { in: campaignIds }, status: { notIn: ["BOUNCED", "UNSUBSCRIBED"] } },
             data: { status: "BOUNCED" },
           });
+
+          // Update the linked campaign_email Activity to reflect the bounce
+          const bouncedSends = await this.prisma.emailCampaignSend.findMany({
+            where: { recipient: { email: bouncedEmail, campaignId: { in: campaignIds } } },
+            select: { id: true },
+          });
+          for (const send of bouncedSends) {
+            const activity = await this.activitiesRepo.findByCampaignSendId(send.id);
+            if (activity && !activity.failedAt) {
+              activity.update({
+                completed: false,
+                completedAt: undefined,
+                failedAt: new Date(),
+                failReason: "Email retornou (bounce)",
+              });
+              await this.activitiesRepo.save(activity);
+            }
+          }
         }
 
         const alreadySuppressed = await this.prisma.emailSuppression.findFirst({
