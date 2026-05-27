@@ -61,13 +61,13 @@ export function OrganizationTechProfileSection({ organizationId }: OrganizationT
   };
 
   const hasAnyTech = techProfile && (
-    techProfile.languages.length > 0 ||
-    techProfile.frameworks.length > 0 ||
-    techProfile.hosting.length > 0 ||
-    techProfile.databases.length > 0 ||
-    techProfile.erps.length > 0 ||
-    techProfile.crms.length > 0 ||
-    techProfile.ecommerces.length > 0
+    (techProfile.languages ?? []).length > 0 ||
+    (techProfile.frameworks ?? []).length > 0 ||
+    (techProfile.hosting ?? []).length > 0 ||
+    (techProfile.databases ?? []).length > 0 ||
+    (techProfile.erps ?? []).length > 0 ||
+    (techProfile.crms ?? []).length > 0 ||
+    (techProfile.ecommerces ?? []).length > 0
   );
 
   if (loading) {
@@ -108,10 +108,10 @@ export function OrganizationTechProfileSection({ organizationId }: OrganizationT
           </p>
         ) : (
           <div className="space-y-4">
-            {techProfile.languages.length > 0 && (
+            {(techProfile.languages ?? []).length > 0 && (
               <TechProfileBadge
                 title="Linguagens"
-                items={techProfile.languages.map((l) => l.language)}
+                items={(techProfile.languages ?? []).map((l) => l.language)}
                 entityId={organizationId}
                 entityType="organization"
                 profileType="languages"
@@ -119,10 +119,10 @@ export function OrganizationTechProfileSection({ organizationId }: OrganizationT
               />
             )}
 
-            {techProfile.frameworks.length > 0 && (
+            {(techProfile.frameworks ?? []).length > 0 && (
               <TechProfileBadge
                 title="Frameworks"
-                items={techProfile.frameworks.map((f) => f.framework)}
+                items={(techProfile.frameworks ?? []).map((f) => f.framework)}
                 entityId={organizationId}
                 entityType="organization"
                 profileType="frameworks"
@@ -130,10 +130,10 @@ export function OrganizationTechProfileSection({ organizationId }: OrganizationT
               />
             )}
 
-            {techProfile.hosting.length > 0 && (
+            {(techProfile.hosting ?? []).length > 0 && (
               <TechProfileBadge
                 title="Hospedagem"
-                items={techProfile.hosting.map((h) => h.hosting)}
+                items={(techProfile.hosting ?? []).map((h) => h.hosting)}
                 entityId={organizationId}
                 entityType="organization"
                 profileType="hosting"
@@ -141,10 +141,10 @@ export function OrganizationTechProfileSection({ organizationId }: OrganizationT
               />
             )}
 
-            {techProfile.databases.length > 0 && (
+            {(techProfile.databases ?? []).length > 0 && (
               <TechProfileBadge
                 title="Bancos de Dados"
-                items={techProfile.databases.map((d) => d.database)}
+                items={(techProfile.databases ?? []).map((d) => d.database)}
                 entityId={organizationId}
                 entityType="organization"
                 profileType="databases"
@@ -152,10 +152,10 @@ export function OrganizationTechProfileSection({ organizationId }: OrganizationT
               />
             )}
 
-            {techProfile.erps.length > 0 && (
+            {(techProfile.erps ?? []).length > 0 && (
               <TechProfileBadge
                 title="ERPs"
-                items={techProfile.erps.map((e) => e.erp)}
+                items={(techProfile.erps ?? []).map((e) => e.erp)}
                 entityId={organizationId}
                 entityType="organization"
                 profileType="erps"
@@ -163,10 +163,10 @@ export function OrganizationTechProfileSection({ organizationId }: OrganizationT
               />
             )}
 
-            {techProfile.crms.length > 0 && (
+            {(techProfile.crms ?? []).length > 0 && (
               <TechProfileBadge
                 title="CRMs"
-                items={techProfile.crms.map((c) => c.crm)}
+                items={(techProfile.crms ?? []).map((c) => c.crm)}
                 entityId={organizationId}
                 entityType="organization"
                 profileType="crms"
@@ -174,10 +174,10 @@ export function OrganizationTechProfileSection({ organizationId }: OrganizationT
               />
             )}
 
-            {techProfile.ecommerces.length > 0 && (
+            {(techProfile.ecommerces ?? []).length > 0 && (
               <TechProfileBadge
                 title="E-commerce"
-                items={techProfile.ecommerces.map((e) => e.ecommerce)}
+                items={(techProfile.ecommerces ?? []).map((e) => e.ecommerce)}
                 entityId={organizationId}
                 entityType="organization"
                 profileType="ecommerces"
