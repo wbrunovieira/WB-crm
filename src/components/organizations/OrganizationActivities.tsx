@@ -50,7 +50,7 @@ function calculateDaysSinceLastActivity(activities: Activity[]): number | null {
 }
 
 export function OrganizationActivities({
-  activities,
+  activities = [],
   organizationId,
 }: OrganizationActivitiesProps) {
   const { data: session } = useSession();

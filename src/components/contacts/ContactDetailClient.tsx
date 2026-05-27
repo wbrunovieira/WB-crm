@@ -153,13 +153,13 @@ export function ContactDetailClient({ id, isAdmin }: Props) {
         <div className="space-y-6">
           <div className="rounded-lg bg-white p-6 shadow">
             <h2 className="mb-4 text-lg font-semibold">
-              Negócios ({contact.deals.length})
+              Negócios ({(contact.deals ?? []).length})
             </h2>
-            {contact.deals.length === 0 ? (
+            {(contact.deals ?? []).length === 0 ? (
               <p className="text-sm text-gray-500">Nenhum negócio vinculado</p>
             ) : (
               <ul className="space-y-2">
-                {contact.deals.map((deal) => (
+                {(contact.deals ?? []).map((deal) => (
                   <li key={deal.id} className="text-sm">
                     <Link href={`/deals/${deal.id}`} className="text-primary hover:underline">
                       {deal.title}
@@ -174,14 +174,14 @@ export function ContactDetailClient({ id, isAdmin }: Props) {
           <div className="rounded-lg bg-white p-6 shadow">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">
-                Timeline de Atividades ({contact.activities.length})
+                Timeline de Atividades ({(contact.activities ?? []).length})
               </h2>
               <Link href={`/activities/new?contactId=${contact.id}&returnTo=/contacts/${contact.id}`} className="text-sm text-primary hover:underline">
                 + Nova Atividade
               </Link>
             </div>
             <ActivityTimeline
-              activities={contact.activities.map((a) => ({
+              activities={(contact.activities ?? []).map((a) => ({
                 ...a,
                 whatsappMessages: a.whatsappMessages.map((m) => ({
                   ...m,

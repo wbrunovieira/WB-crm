@@ -17,7 +17,7 @@ type Contact = {
 
 export function OrganizationContactsList({
   organizationId,
-  contacts,
+  contacts = [],
 }: {
   organizationId: string;
   contacts: Contact[];
