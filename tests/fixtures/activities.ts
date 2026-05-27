@@ -46,6 +46,8 @@ export const mockActivity: Activity = {
   emailLinkClickCount: 0,
   emailLinkClickedAt: null,
   emailLastLinkClickedAt: null,
+  emailCampaignSendId: null,
+  emailCampaignId: null,
   createdAt: new Date('2024-01-01'),
   updatedAt: new Date('2024-01-01'),
 };
