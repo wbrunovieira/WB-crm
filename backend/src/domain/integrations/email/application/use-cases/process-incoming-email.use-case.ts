@@ -34,7 +34,7 @@ export class ProcessIncomingEmailUseCase {
       }
 
       // 2. Detect bounce messages from mailer-daemon / postmaster
-      if (this.isBounceMessage(message.from)) {
+      if (this.isBounceMessage(message.from, message.subject)) {
         const bouncedEmail = this.extractBouncedEmail(message.bodyText) ?? this.extractBouncedEmail(message.bodyHtml);
         if (!bouncedEmail) return right({ skipped: true });
 
@@ -199,13 +199,24 @@ export class ProcessIncomingEmailUseCase {
     return undefined;
   }
 
-  private isBounceMessage(from: string): boolean {
+  private isBounceMessage(from: string, subject?: string): boolean {
     const lower = from.toLowerCase();
-    return (
+    if (
       lower.includes("mailer-daemon") ||
       lower.includes("postmaster@") ||
       lower.includes("mail delivery subsystem")
-    );
+    ) return true;
+
+    if (subject) {
+      const subjectLower = subject.toLowerCase();
+      if (
+        subjectLower.startsWith("undeliverable:") ||
+        subjectLower.includes("mail delivery failed") ||
+        subjectLower.includes("returned mail:")
+      ) return true;
+    }
+
+    return false;
   }
 
   private extractBouncedEmail(body: string | undefined): string | undefined {
@@ -213,23 +224,45 @@ export class ProcessIncomingEmailUseCase {
     // Strip HTML tags so regex works on both text/plain and text/html bodies
     const bodyText = body.replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/\s+/g, " ");
 
+    const emailPattern = "[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}";
+
     // DSN standard headers (RFC 3464)
-    const finalRecipient = bodyText.match(/Final-Recipient:\s*rfc822;\s*([^\s\r\n]+)/i);
+    const finalRecipient = bodyText.match(new RegExp(`Final-Recipient:\\s*rfc822;\\s*(${emailPattern})`, "i"));
     if (finalRecipient) return finalRecipient[1].toLowerCase();
 
-    const originalRecipient = bodyText.match(/Original-Recipient:\s*rfc822;\s*([^\s\r\n]+)/i);
+    const originalRecipient = bodyText.match(new RegExp(`Original-Recipient:\\s*rfc822;\\s*(${emailPattern})`, "i"));
     if (originalRecipient) return originalRecipient[1].toLowerCase();
 
-    // Gmail human-readable: "wasn't delivered to email@domain" (EN)
-    const notDelivered = bodyText.match(/wasn't delivered to\s+([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i);
+    // Gmail EN: "wasn't delivered to email@domain"
+    const notDelivered = bodyText.match(new RegExp(`wasn't delivered to\\s+(${emailPattern})`, "i"));
     if (notDelivered) return notDelivered[1].toLowerCase();
 
+    // Microsoft 365: "Your message to email@domain couldn't be delivered" / "could not be delivered"
+    const ms365 = bodyText.match(new RegExp(`message to\\s+(${emailPattern})\\s+(?:couldn't|could not) be delivered`, "i"));
+    if (ms365) return ms365[1].toLowerCase();
+
     // Gmail PT-BR: "não foi entregue para email@domain"
-    const naoEntregue = bodyText.match(/não foi entregue para\s+([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i);
+    const naoEntregue = bodyText.match(new RegExp(`não foi entregue para\\s+(${emailPattern})`, "i"));
     if (naoEntregue) return naoEntregue[1].toLowerCase();
 
-    // Generic: "failed ... to email@domain"
-    const failedTo = bodyText.match(/failed.*?(?:to|recipients?)[:\s]+([a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,})/i);
+    // Gmail PT-BR mailbox full: "não foi entregue a email@domain" (uses "a" not "para")
+    const naoEntregueA = bodyText.match(new RegExp(`não foi entregue a\\s+(${emailPattern})`, "i"));
+    if (naoEntregueA) return naoEntregueA[1].toLowerCase();
+
+    // Gmail PT-BR misconfigured server: "entregar a mensagem a email@domain"
+    const entregarA = bodyText.match(new RegExp(`entregar a mensagem a\\s+(${emailPattern})`, "i"));
+    if (entregarA) return entregarA[1].toLowerCase();
+
+    // cPanel/Exim: "The following address(es) failed: email@domain"
+    const cpanelFailed = bodyText.match(new RegExp(`address(?:es)?\\s+failed[:\\s]+(${emailPattern})`, "i"));
+    if (cpanelFailed) return cpanelFailed[1].toLowerCase();
+
+    // Proofpoint: "permanent fatal errors ----- <email@domain" or "fatal errors ... email@domain"
+    const proofpoint = bodyText.match(new RegExp(`fatal errors.*?-*\\s*<?(${emailPattern})`, "i"));
+    if (proofpoint) return proofpoint[1].toLowerCase();
+
+    // Generic catch-all: "failed ... to/recipient(s): email@domain"
+    const failedTo = bodyText.match(new RegExp(`failed.*?(?:to|recipients?)[:\\s]+(${emailPattern})`, "i"));
     if (failedTo) return failedTo[1].toLowerCase();
 
     return undefined;
