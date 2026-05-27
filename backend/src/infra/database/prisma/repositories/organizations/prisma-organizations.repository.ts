@@ -131,6 +131,7 @@ export class PrismaOrganizationsRepository extends OrganizationsRepository {
             whatsapp: true,
             role: true,
             isPrimary: true,
+            status: true,
           },
         },
         deals: {
@@ -240,6 +241,7 @@ export class PrismaOrganizationsRepository extends OrganizationsRepository {
         whatsapp: c.whatsapp,
         role: c.role,
         isPrimary: c.isPrimary,
+        status: c.status ?? "active",
       })),
       deals: row.deals.map((d) => ({
         id: d.id,

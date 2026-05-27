@@ -300,6 +300,32 @@ describe("Organizations API (e2e)", () => {
       expect(res.body.deals).toBeInstanceOf(Array);
     });
 
+    it("retorna contatos com campo status incluído", async () => {
+      const org = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Org Com Contato Status E2E" })
+        .expect(201);
+
+      await prisma.contact.create({
+        data: {
+          name: "Contato Status E2E",
+          email: "status-e2e@test.com",
+          status: "active",
+          ownerId,
+          organizationId: org.body.id,
+        },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/organizations/${org.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.contacts).toHaveLength(1);
+      expect(res.body.contacts[0]).toHaveProperty("status", "active");
+    });
+
     it("retorna 404 quando organização não existe", async () => {
       await request(app.getHttpServer())
         .get("/organizations/id-inexistente-123")
