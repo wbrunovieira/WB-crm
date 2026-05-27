@@ -5,7 +5,7 @@ import { ptBR } from "date-fns/locale";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { Eye, MousePointerClick, XCircle, SkipForward } from "lucide-react";
+import { Eye, EyeOff, MousePointerClick, XCircle, SkipForward } from "lucide-react";
 import PurgeActivityButton from "@/components/activities/PurgeActivityButton";
 import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
 
@@ -22,6 +22,7 @@ type Activity = {
   skippedAt?: Date | string | null;
   emailOpenCount?: number;
   emailOpenedAt?: Date | string | null;
+  emailLinkClickCount?: number;
   emailLinkClickedAt?: Date | string | null;
   emailCampaignSendId?: string | null;
   createdAt: Date | string;
@@ -169,24 +170,36 @@ export function OrganizationActivities({
                         locale: ptBR,
                       })}
                     </span>
-                    {activity.type === "campaign_email" && activity.failedAt && (
-                      <span className="flex items-center gap-1 text-red-600 font-medium">
+                    {(activity.type === "email" || activity.type === "campaign_email") && activity.failedAt && (
+                      <span className="inline-flex items-center gap-1 rounded bg-red-100 px-2 py-0.5 text-xs font-medium text-red-700">
                         <XCircle size={11} /> Bounce
                       </span>
                     )}
-                    {activity.type === "campaign_email" && activity.skippedAt && (
-                      <span className="flex items-center gap-1 text-amber-600 font-medium">
+                    {(activity.type === "email" || activity.type === "campaign_email") && activity.skippedAt && (
+                      <span className="inline-flex items-center gap-1 rounded bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-700">
                         <SkipForward size={11} /> Descadastrou
                       </span>
                     )}
-                    {activity.type === "campaign_email" && (activity.emailOpenCount ?? 0) > 0 && (
-                      <span className="flex items-center gap-1 text-green-600 font-medium">
-                        <Eye size={11} /> {activity.emailOpenCount}×
+                    {(activity.type === "email" || activity.type === "campaign_email") && !activity.failedAt && !activity.skippedAt && (activity.emailOpenCount ?? 0) > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
+                        <Eye size={11} />
+                        {(activity.emailOpenCount ?? 0) === 1 ? "Aberto" : `Aberto ${activity.emailOpenCount}×`}
                       </span>
                     )}
-                    {activity.type === "campaign_email" && activity.emailLinkClickedAt && (
-                      <span className="flex items-center gap-1 text-yellow-600 font-medium">
-                        <MousePointerClick size={11} /> Clicou
+                    {(activity.type === "email" || activity.type === "campaign_email") && !activity.failedAt && !activity.skippedAt && (activity.emailOpenCount ?? 0) === 0 && activity.completed && (
+                      <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-500">
+                        <EyeOff size={11} /> Não abriu
+                      </span>
+                    )}
+                    {(activity.type === "email" || activity.type === "campaign_email") && !activity.failedAt && !activity.skippedAt && (activity.emailLinkClickCount ?? 0) > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded bg-yellow-100 px-2 py-0.5 text-xs font-medium text-yellow-700">
+                        <MousePointerClick size={11} />
+                        {(activity.emailLinkClickCount ?? 0) === 1 ? "Link clicado" : `${activity.emailLinkClickCount} cliques`}
+                      </span>
+                    )}
+                    {(activity.type === "email" || activity.type === "campaign_email") && !activity.failedAt && !activity.skippedAt && (activity.emailLinkClickCount ?? 0) === 0 && activity.completed && (
+                      <span className="inline-flex items-center gap-1 rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-400">
+                        <MousePointerClick size={11} /> Sem cliques
                       </span>
                     )}
                   </div>

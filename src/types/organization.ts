@@ -28,6 +28,7 @@ export interface OrganizationActivity {
   skipReason: string | null;
   emailOpenCount: number;
   emailOpenedAt: Date | string | null;
+  emailLinkClickCount: number;
   emailLinkClickedAt: Date | string | null;
   emailCampaignSendId: string | null;
   emailCampaignId: string | null;

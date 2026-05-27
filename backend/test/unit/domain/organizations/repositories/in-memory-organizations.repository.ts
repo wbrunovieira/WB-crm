@@ -118,6 +118,7 @@ export class InMemoryOrganizationsRepository extends OrganizationsRepository {
         crms: [],
         ecommerces: [],
       },
+      activities: [],
     };
   }
 

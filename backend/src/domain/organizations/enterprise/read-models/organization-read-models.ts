@@ -95,6 +95,7 @@ export interface OrganizationDetail extends OrganizationSummary {
     skipReason: string | null;
     emailOpenCount: number;
     emailOpenedAt: Date | null;
+    emailLinkClickCount: number;
     emailLinkClickedAt: Date | null;
     emailCampaignSendId: string | null;
     emailCampaignId: string | null;
