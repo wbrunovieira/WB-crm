@@ -5,6 +5,7 @@ import { ptBR } from "date-fns/locale";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { Eye, MousePointerClick, XCircle, SkipForward } from "lucide-react";
 import PurgeActivityButton from "@/components/activities/PurgeActivityButton";
 import ActivityTypeIcon from "@/components/activities/ActivityTypeIcon";
 
@@ -15,6 +16,14 @@ type Activity = {
   description: string | null;
   dueDate: Date | string | null;
   completed: boolean;
+  completedAt?: Date | string | null;
+  failedAt?: Date | string | null;
+  failReason?: string | null;
+  skippedAt?: Date | string | null;
+  emailOpenCount?: number;
+  emailOpenedAt?: Date | string | null;
+  emailLinkClickedAt?: Date | string | null;
+  emailCampaignSendId?: string | null;
   createdAt: Date | string;
   deal: { title: string } | null;
   contact: { name: string } | null;
@@ -35,6 +44,7 @@ const typeConfig: Record<string, { label: string; bg: string; text: string }> = 
   visit: { label: "Visita", bg: "bg-red-100", text: "text-red-800" },
   instagram_dm: { label: "DM Instagram", bg: "bg-pink-100", text: "text-pink-800" },
   instagram: { label: "Instagram", bg: "bg-pink-100", text: "text-pink-800" },
+  campaign_email: { label: "E-mail Campanha", bg: "bg-indigo-100", text: "text-indigo-800" },
 };
 
 function calculateDaysSinceLastActivity(activities: Activity[]): number | null {
@@ -159,6 +169,26 @@ export function OrganizationActivities({
                         locale: ptBR,
                       })}
                     </span>
+                    {activity.type === "campaign_email" && activity.failedAt && (
+                      <span className="flex items-center gap-1 text-red-600 font-medium">
+                        <XCircle size={11} /> Bounce
+                      </span>
+                    )}
+                    {activity.type === "campaign_email" && activity.skippedAt && (
+                      <span className="flex items-center gap-1 text-amber-600 font-medium">
+                        <SkipForward size={11} /> Descadastrou
+                      </span>
+                    )}
+                    {activity.type === "campaign_email" && (activity.emailOpenCount ?? 0) > 0 && (
+                      <span className="flex items-center gap-1 text-green-600 font-medium">
+                        <Eye size={11} /> {activity.emailOpenCount}×
+                      </span>
+                    )}
+                    {activity.type === "campaign_email" && activity.emailLinkClickedAt && (
+                      <span className="flex items-center gap-1 text-yellow-600 font-medium">
+                        <MousePointerClick size={11} /> Clicou
+                      </span>
+                    )}
                   </div>
                 </div>
                 {isAdmin && (

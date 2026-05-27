@@ -21,6 +21,16 @@ export interface OrganizationActivity {
   description: string | null;
   dueDate: Date | string | null;
   completed: boolean;
+  completedAt: Date | string | null;
+  failedAt: Date | string | null;
+  failReason: string | null;
+  skippedAt: Date | string | null;
+  skipReason: string | null;
+  emailOpenCount: number;
+  emailOpenedAt: Date | string | null;
+  emailLinkClickedAt: Date | string | null;
+  emailCampaignSendId: string | null;
+  emailCampaignId: string | null;
   createdAt: Date | string;
   deal: { title: string } | null;
   contact: { name: string } | null;

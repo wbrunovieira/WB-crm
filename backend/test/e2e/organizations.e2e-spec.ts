@@ -326,6 +326,48 @@ describe("Organizations API (e2e)", () => {
       expect(res.body.contacts[0]).toHaveProperty("status", "active");
     });
 
+    it("retorna atividades vinculadas à organização com dados de rastreamento de email", async () => {
+      const org = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Org Com Atividade E2E" })
+        .expect(201);
+
+      const emailOpenedAt = new Date("2026-05-27T10:00:00Z");
+      const emailLinkClickedAt = new Date("2026-05-27T10:05:00Z");
+
+      await prisma.activity.create({
+        data: {
+          type: "campaign_email",
+          subject: "Email campanha teste",
+          completed: true,
+          ownerId,
+          organizationId: org.body.id,
+          emailOpenCount: 3,
+          emailOpenedAt,
+          emailLinkClickedAt,
+        },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/organizations/${org.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body).toHaveProperty("activities");
+      expect(res.body.activities).toBeInstanceOf(Array);
+      expect(res.body.activities).toHaveLength(1);
+
+      const act = res.body.activities[0];
+      expect(act).toHaveProperty("type", "campaign_email");
+      expect(act).toHaveProperty("subject", "Email campanha teste");
+      expect(act).toHaveProperty("emailOpenCount", 3);
+      expect(act.emailOpenedAt).toBeTruthy();
+      expect(act.emailLinkClickedAt).toBeTruthy();
+      expect(act).toHaveProperty("failedAt");
+      expect(act).toHaveProperty("skippedAt");
+    });
+
     it("retorna 404 quando organização não existe", async () => {
       await request(app.getHttpServer())
         .get("/organizations/id-inexistente-123")

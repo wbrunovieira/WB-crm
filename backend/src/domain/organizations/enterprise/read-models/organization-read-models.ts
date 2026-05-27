@@ -81,4 +81,25 @@ export interface OrganizationDetail extends OrganizationSummary {
   sectors: Array<{ id: string; name: string }>;
   icps: Array<{ id: string; name: string }>;
   techProfile: OrganizationTechProfile;
+  activities: Array<{
+    id: string;
+    type: string;
+    subject: string;
+    description: string | null;
+    dueDate: Date | null;
+    completed: boolean;
+    completedAt: Date | null;
+    failedAt: Date | null;
+    failReason: string | null;
+    skippedAt: Date | null;
+    skipReason: string | null;
+    emailOpenCount: number;
+    emailOpenedAt: Date | null;
+    emailLinkClickedAt: Date | null;
+    emailCampaignSendId: string | null;
+    emailCampaignId: string | null;
+    createdAt: Date;
+    deal: { title: string } | null;
+    contact: { name: string } | null;
+  }>;
 }
