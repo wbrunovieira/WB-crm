@@ -62,6 +62,7 @@ function ActivityTypeIcon({ type, className }: { type: string; className?: strin
   switch (type) {
     case "call":           return <Phone className={cls} />;
     case "email":          return <Mail className={cls} />;
+    case "campaign_email": return <Mail className={cls} />;
     case "meeting":        return <Users2 className={cls} />;
     case "task":           return <ClipboardList className={cls} />;
     case "whatsapp":       return <IconWhatsApp className={cls} />;
@@ -457,17 +458,29 @@ function SortableActivityItem({
                   Resposta enviada
                 </span>
               )}
-              {/* Email tracking badges — only for outbound emails (no emailFromAddress) */}
-              {activity.type === "email" && !activity.emailFromAddress && (activity.emailOpenCount ?? 0) > 0 && (
+              {/* Email tracking badges — outbound emails and campaign emails */}
+              {(activity.type === "email" || activity.type === "campaign_email") && !activity.emailFromAddress && (activity.emailOpenCount ?? 0) > 0 && (
                 <span className="inline-flex items-center gap-1 rounded bg-indigo-500/10 px-2 py-0.5 text-xs font-medium text-indigo-300 border border-indigo-500/30">
                   <Eye className="h-3 w-3" />
                   {(activity.emailOpenCount ?? 0) === 1 ? "Aberto" : `Aberto ${activity.emailOpenCount}×`}
                 </span>
               )}
-              {activity.type === "email" && !activity.emailFromAddress && (activity.emailLinkClickCount ?? 0) > 0 && (
+              {(activity.type === "email" || activity.type === "campaign_email") && !activity.emailFromAddress && (activity.emailLinkClickCount ?? 0) > 0 && (
                 <span className="inline-flex items-center gap-1 rounded bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-300 border border-teal-500/30">
                   <MousePointerClick className="h-3 w-3" />
                   {(activity.emailLinkClickCount ?? 0) === 1 ? "Link clicado" : `${activity.emailLinkClickCount} cliques`}
+                </span>
+              )}
+              {activity.type === "campaign_email" && activity.failedAt && (
+                <span className="inline-flex items-center gap-1 rounded bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-300 border border-red-500/30">
+                  <XCircle className="h-3 w-3" />
+                  Bounce
+                </span>
+              )}
+              {activity.type === "campaign_email" && activity.skippedAt && (
+                <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300 border border-amber-500/30">
+                  <SkipForward className="h-3 w-3" />
+                  Descadastrou
                 </span>
               )}
               {!activity.gotoCallId && (
@@ -1200,10 +1213,11 @@ export function LeadActivitiesList({
   };
 
   const typeConfig: Record<string, { label: string; bg: string; text: string; border: string; dot: string }> = {
-    call:           { label: "Ligação",      bg: "bg-violet-100", text: "text-violet-800", border: "border-l-violet-500",  dot: "bg-violet-500" },
-    meeting:        { label: "Reunião",      bg: "bg-amber-100",  text: "text-amber-800",  border: "border-l-amber-500",   dot: "bg-amber-500" },
-    email:          { label: "E-mail",       bg: "bg-blue-100",   text: "text-blue-800",   border: "border-l-blue-500",    dot: "bg-blue-500" },
-    task:           { label: "Tarefa",       bg: "bg-slate-100",  text: "text-slate-700",  border: "border-l-slate-400",   dot: "bg-slate-400" },
+    call:           { label: "Ligação",        bg: "bg-violet-100",  text: "text-violet-800", border: "border-l-violet-500",  dot: "bg-violet-500" },
+    meeting:        { label: "Reunião",        bg: "bg-amber-100",   text: "text-amber-800",  border: "border-l-amber-500",   dot: "bg-amber-500" },
+    email:          { label: "E-mail",         bg: "bg-blue-100",    text: "text-blue-800",   border: "border-l-blue-500",    dot: "bg-blue-500" },
+    campaign_email: { label: "E-mail Campanha",bg: "bg-indigo-100",  text: "text-indigo-800", border: "border-l-indigo-500",  dot: "bg-indigo-500" },
+    task:           { label: "Tarefa",         bg: "bg-slate-100",   text: "text-slate-700",  border: "border-l-slate-400",   dot: "bg-slate-400" },
     whatsapp:       { label: "WhatsApp",     bg: "bg-[#25D366]",  text: "text-white",      border: "border-l-emerald-500", dot: "bg-emerald-500" },
     linkedin:       { label: "LinkedIn",     bg: "bg-sky-600",    text: "text-white",      border: "border-l-sky-600",     dot: "bg-sky-600" },
     instagram_dm:   { label: "Instagram DM",bg: "bg-pink-500",   text: "text-white",      border: "border-l-pink-500",    dot: "bg-pink-500" },
