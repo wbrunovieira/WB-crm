@@ -54,6 +54,8 @@ interface Suppression {
   email: string;
   reason: string;
   createdAt: string;
+  leadName?: string | null;
+  contactName?: string | null;
 }
 
 interface EmailTemplate {
@@ -104,6 +106,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
   const [activeTab, setActiveTab] = useState<Tab>("campanhas");
   const [campaigns, setCampaigns] = useState(initialCampaigns);
   const [suppressions, setSuppressions] = useState(initialSuppressions);
+  const [suppressionFilter, setSuppressionFilter] = useState<"todos" | "bounced" | "unsubscribed" | "manual" | "spam">("todos");
   const [expandedStats, setExpandedStats] = useState<Record<string, CampaignStats | null>>({});
   const [loadingStats, setLoadingStats] = useState<string | null>(null);
 
@@ -1019,21 +1022,26 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                         className="accent-purple-500"
                       />
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm text-white font-medium truncate">{r.name}</p>
-                        <p className="text-xs text-gray-500 truncate">
-                          {r.previewEmails.join(", ")}
-                          {r.emailCount > 3 ? ` +${r.emailCount - 3} mais` : ""}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        <span className="text-xs text-gray-400">{r.emailCount} email{r.emailCount !== 1 ? "s" : ""}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full ${
-                          r.entityType === "lead"
-                            ? "bg-purple-500/20 text-purple-400"
-                            : "bg-blue-500/20 text-blue-400"
-                        }`}>
-                          {r.entityType === "lead" ? "Lead" : "Org"}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-white font-medium truncate">{r.name}</p>
+                          <span className={`shrink-0 text-xs px-2 py-0.5 rounded-full ${
+                            r.entityType === "lead"
+                              ? "bg-purple-500/20 text-purple-400"
+                              : "bg-blue-500/20 text-blue-400"
+                          }`}>
+                            {r.entityType === "lead" ? "Lead" : "Org"}
+                          </span>
+                        </div>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {r.previewEmails.map((email) => (
+                            <span key={email} className="text-xs bg-gray-700 text-gray-300 px-2 py-0.5 rounded">
+                              {email}
+                            </span>
+                          ))}
+                          {r.emailCount > r.previewEmails.length && (
+                            <span className="text-xs text-gray-500">+{r.emailCount - r.previewEmails.length} mais</span>
+                          )}
+                        </div>
                       </div>
                     </label>
                   ))}
@@ -1117,33 +1125,69 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
           </form>
 
           <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5">
-            <h2 className="text-white font-semibold mb-4">
-              Lista de bloqueio ({suppressions.length})
-            </h2>
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <h2 className="text-white font-semibold">
+                Lista de bloqueio ({suppressions.length})
+              </h2>
+              <div className="flex gap-1 flex-wrap text-xs">
+                {(["todos", "bounced", "unsubscribed", "manual", "spam"] as const).map((f) => {
+                  const count = f === "todos" ? suppressions.length : suppressions.filter((s) => s.reason === f).length;
+                  if (f !== "todos" && count === 0) return null;
+                  return (
+                    <button
+                      key={f}
+                      onClick={() => setSuppressionFilter(f)}
+                      className={`px-2 py-0.5 rounded-full border transition-colors ${
+                        suppressionFilter === f
+                          ? "bg-purple-600 border-purple-600 text-white"
+                          : "border-gray-600 text-gray-400 hover:border-gray-400"
+                      }`}
+                    >
+                      {f === "todos" ? "Todos" : f === "bounced" ? "Bounce" : f === "unsubscribed" ? "Descadastrado" : f === "manual" ? "Manual" : "Spam"} ({count})
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
             {suppressions.length === 0 ? (
               <p className="text-gray-500 text-sm">Nenhum email bloqueado.</p>
             ) : (
-              <div className="space-y-2">
-                {suppressions.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between gap-3 py-2 border-b border-gray-700/50 last:border-0">
-                    <div>
-                      <p className="text-sm text-white">{s.email}</p>
-                      <p className="text-xs text-gray-500">
-                        {s.reason === "manual" ? "Bloqueado manualmente" :
-                         s.reason === "unsubscribed" ? "Descadastrado pelo destinatário" :
-                         s.reason === "bounced" ? "Bounce" : s.reason} ·{" "}
-                        {new Date(s.createdAt).toLocaleDateString("pt-BR")}
-                      </p>
-                    </div>
-                    <button
-                      onClick={() => handleRemoveSuppression(s.email)}
-                      className="text-gray-500 hover:text-red-400 transition-colors shrink-0"
-                      title="Remover bloqueio"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                ))}
+              <div className="space-y-1">
+                {suppressions
+                  .filter((s) => suppressionFilter === "todos" || s.reason === suppressionFilter)
+                  .map((s) => {
+                    const reasonLabel =
+                      s.reason === "manual" ? { label: "Manual", cls: "bg-gray-500/20 text-gray-400" } :
+                      s.reason === "unsubscribed" ? { label: "Descadastrado", cls: "bg-yellow-500/20 text-yellow-400" } :
+                      s.reason === "bounced" ? { label: "Bounce", cls: "bg-red-500/20 text-red-400" } :
+                      s.reason === "spam" ? { label: "Spam", cls: "bg-orange-500/20 text-orange-400" } :
+                      { label: s.reason, cls: "bg-gray-500/20 text-gray-400" };
+                    return (
+                      <div key={s.id} className="flex items-center justify-between gap-3 py-2.5 border-b border-gray-700/50 last:border-0">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm text-white">{s.email}</p>
+                            <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 ${reasonLabel.cls}`}>
+                              {reasonLabel.label}
+                            </span>
+                          </div>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {s.leadName && <span className="text-gray-400 font-medium">{s.leadName}</span>}
+                            {s.contactName && s.contactName !== s.leadName && <span className="text-gray-500"> · {s.contactName}</span>}
+                            {(s.leadName || s.contactName) && " · "}
+                            {new Date(s.createdAt).toLocaleDateString("pt-BR")}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => handleRemoveSuppression(s.email)}
+                          className="text-gray-500 hover:text-red-400 transition-colors shrink-0"
+                          title="Remover bloqueio"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    );
+                  })}
               </div>
             )}
           </div>

@@ -355,7 +355,7 @@ export class EmailCampaignsController {
         name: lead.businessName,
         email: lead.email ?? undefined,
         emailCount: allEmails.length,
-        previewEmails: allEmails.slice(0, 3),
+        previewEmails: allEmails.slice(0, 5),
       });
     }
 
@@ -372,7 +372,7 @@ export class EmailCampaignsController {
         name: org.name,
         email: org.email ?? undefined,
         emailCount: allEmails.length,
-        previewEmails: allEmails.slice(0, 3),
+        previewEmails: allEmails.slice(0, 5),
       });
     }
 
@@ -404,10 +404,48 @@ export class EmailCampaignsController {
 
   @UseGuards(JwtAuthGuard)
   @Get("suppressions")
-  @ApiOperation({ summary: "List suppressed emails" })
+  @ApiOperation({ summary: "List suppressed emails with lead/contact name" })
   async listSuppressions(@CurrentUser() user: AuthenticatedUser) {
     const list = await this.suppressions.findAllByOwner(user.id);
-    return list.map((s) => ({ id: s.id.toString(), email: s.email, reason: s.reason, createdAt: s.createdAt }));
+
+    const enriched = await Promise.all(
+      list.map(async (s) => {
+        // Try to find the lead name by matching email across sources
+        const [lead, leadContact, contact] = await Promise.all([
+          this.prisma.lead.findFirst({
+            where: { email: { equals: s.email, mode: "insensitive" }, ownerId: user.id },
+            select: { businessName: true },
+          }),
+          this.prisma.leadContact.findFirst({
+            where: { email: { equals: s.email, mode: "insensitive" }, lead: { ownerId: user.id } },
+            select: { name: true, lead: { select: { businessName: true } } },
+          }),
+          this.prisma.contact.findFirst({
+            where: { email: { equals: s.email, mode: "insensitive" }, ownerId: user.id },
+            select: { name: true },
+          }),
+        ]);
+
+        const leadName =
+          lead?.businessName ??
+          leadContact?.lead?.businessName ??
+          contact?.name ??
+          null;
+
+        const contactName = leadContact?.name ?? contact?.name ?? null;
+
+        return {
+          id: s.id.toString(),
+          email: s.email,
+          reason: s.reason,
+          createdAt: s.createdAt,
+          leadName,
+          contactName,
+        };
+      }),
+    );
+
+    return enriched.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
   }
 
   @UseGuards(JwtAuthGuard)

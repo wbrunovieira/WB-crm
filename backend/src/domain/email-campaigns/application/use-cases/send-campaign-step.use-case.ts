@@ -122,9 +122,18 @@ export class SendCampaignStepUseCase {
         await sleep(delayMs);
       } catch (err) {
         failed++;
+        const msg = err instanceof Error ? err.message : String(err);
         this.logger.error(
-          `Failed to send email to ${recipient.email} for campaign ${input.campaignId} step ${input.stepOrder}: ${err}`,
+          `Failed to send email to ${recipient.email} for campaign ${input.campaignId} step ${input.stepOrder}: ${msg}`,
         );
+        // If Gmail rejected the address as invalid, mark BOUNCED so it won't be retried
+        const isInvalidAddress =
+          /invalid.*address|recipient.*invalid|bad.*recipient|does not exist|550|551|553/i.test(msg) ||
+          !/^[^\s@,;/\\]+@[^\s@,;/\\]+\.[^\s@,;/\\]{2,}$/.test(recipient.email.trim());
+        if (isInvalidAddress) {
+          recipient.markBounced();
+          await this.recipients.save(recipient);
+        }
       }
     }
 

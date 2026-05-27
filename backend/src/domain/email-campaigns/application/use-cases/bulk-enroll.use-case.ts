@@ -5,6 +5,8 @@ import { EmailCampaignsRepository } from "../repositories/email-campaigns.reposi
 import { EmailCampaignRecipientsRepository } from "../repositories/email-campaign-recipients.repository";
 import { EmailCampaignRecipient } from "../../enterprise/entities/email-campaign-recipient.entity";
 
+const EMAIL_REGEX = /^[^\s@,;/\\]+@[^\s@,;/\\]+\.[^\s@,;/\\]{2,}$/;
+
 type EnrollMode = "all" | "sourceGroup";
 
 interface Input {
@@ -41,8 +43,9 @@ export class BulkEnrollUseCase {
     const toAdd: EmailCampaignRecipient[] = [];
 
     function tryAdd(key: string, email: string, build: () => EmailCampaignRecipient) {
+      if (!EMAIL_REGEX.test(email.trim())) { skipped++; return; }
       if (existingKeys.has(key)) { skipped++; return; }
-      const normalized = email.toLowerCase();
+      const normalized = email.toLowerCase().trim();
       if (seenEmails.has(normalized)) { skipped++; return; }
       toAdd.push(build());
       existingKeys.add(key);
