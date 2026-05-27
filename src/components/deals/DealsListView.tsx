@@ -474,11 +474,12 @@ export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin =
   // Group by stage for stats
   const stageStats: { [key: string]: { name: string; count: number; total: number; pipeline: string } } = {};
   deals.forEach((deal) => {
+    if (!deal.stage) return;
     const key = deal.stage.id;
     if (!stageStats[key]) {
       stageStats[key] = {
         name: deal.stage.name,
-        pipeline: deal.stage.pipeline.name,
+        pipeline: deal.stage.pipeline?.name ?? "—",
         count: 0,
         total: 0,
       };

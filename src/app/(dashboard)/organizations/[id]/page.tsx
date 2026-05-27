@@ -327,7 +327,7 @@ export default async function OrganizationDetailPage({
                     {deal.title}
                   </Link>
                   <span className="ml-2 text-gray-400">
-                    • {deal.stage.name} • R${" "}
+                    {deal.stage?.name ? `• ${deal.stage.name} ` : ""}• R${" "}
                     {deal.value.toLocaleString("pt-BR")}
                   </span>
                 </li>

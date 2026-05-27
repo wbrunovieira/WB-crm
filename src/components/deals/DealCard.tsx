@@ -149,9 +149,9 @@ export function DealCard({ deal, isAdmin = false, currentUserId = "", sharedWith
             )}
           </div>
           <div className="mt-1 flex items-center gap-2">
-            <span className="text-xs text-gray-500">{deal.stage.pipeline.name}</span>
+            <span className="text-xs text-gray-500">{deal.stage?.pipeline?.name ?? "—"}</span>
             <span className="text-gray-300">•</span>
-            <span className="text-xs text-gray-500">{deal.stage.name}</span>
+            <span className="text-xs text-gray-500">{deal.stage?.name ?? "—"}</span>
           </div>
         </div>
         {!isWon && (

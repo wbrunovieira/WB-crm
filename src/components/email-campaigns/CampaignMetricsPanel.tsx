@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useMemo } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend,
@@ -7,7 +8,8 @@ import {
 import type { Payload } from "recharts/types/component/DefaultTooltipContent";
 import {
   Send, Eye, MousePointerClick, UserX, AlertTriangle, Users,
-  TrendingUp, TrendingDown, Link,
+  TrendingUp, TrendingDown, Link, ChevronDown, ChevronUp,
+  Search, Flame, Snowflake, Trophy, Zap,
 } from "lucide-react";
 import type { RecipientProgress } from "./CampaignProgressPanel";
 
@@ -115,6 +117,58 @@ function FunnelBar({ label, value, max, color }: { label: string; value: number;
 
 export function CampaignMetricsPanel({ metrics, recipientEngagement = [] }: { metrics: CampaignMetrics; recipients?: RecipientProgress[]; recipientEngagement?: RecipientProgress[] }) {
   const { recipients, totals, steps, bySegment, byRole, byRecipientType } = metrics;
+
+  const [engagementOpen, setEngagementOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // ── Highlights computations ───────────────────────────────────────────────
+
+  const highlights = useMemo(() => {
+    const topOpeners = [...recipientEngagement]
+      .filter((r) => (r.openCount ?? 0) > 0)
+      .sort((a, b) => (b.openCount ?? 0) - (a.openCount ?? 0))
+      .slice(0, 5);
+
+    const urlClickMap: Record<string, { count: number; clickers: string[] }> = {};
+    for (const r of recipientEngagement) {
+      for (const [url, count] of Object.entries(r.clickData ?? {})) {
+        if (!urlClickMap[url]) urlClickMap[url] = { count: 0, clickers: [] };
+        urlClickMap[url].count += count;
+        const label = r.name ?? r.email ?? "";
+        if (label && !urlClickMap[url].clickers.includes(label))
+          urlClickMap[url].clickers.push(label);
+      }
+    }
+    const topUrls = Object.entries(urlClickMap)
+      .sort((a, b) => b[1].count - a[1].count)
+      .slice(0, 5);
+
+    const hotLeads = recipientEngagement.filter((r) => r.openedAt && r.clickedAt);
+    const coldLeads = recipientEngagement.filter((r) => !r.openedAt);
+    const cto = totals.uniqueOpened > 0
+      ? Math.round((totals.uniqueClicked / totals.uniqueOpened) * 100)
+      : 0;
+    const bestStep = steps.length > 0
+      ? steps.reduce((a, b) => (b.openRate > a.openRate ? b : a))
+      : null;
+
+    return { topOpeners, topUrls, hotLeads, coldLeads, cto, bestStep };
+  }, [recipientEngagement, totals, steps]);
+
+  // ── Filtered engagement list ──────────────────────────────────────────────
+
+  const filteredEngagement = useMemo(() => {
+    const q = searchQuery.toLowerCase().trim();
+    if (!q) return recipientEngagement;
+    return recipientEngagement.filter(
+      (r) =>
+        (r.name ?? "").toLowerCase().includes(q) ||
+        (r.email ?? "").toLowerCase().includes(q) ||
+        (r.company ?? "").toLowerCase().includes(q),
+    );
+  }, [recipientEngagement, searchQuery]);
+
+  // ── Charts data ───────────────────────────────────────────────────────────
 
   const statusPieData = [
     { name: "Concluídos", value: recipients.completed },
@@ -262,59 +316,280 @@ export function CampaignMetricsPanel({ metrics, recipientEngagement = [] }: { me
         </div>
       )}
 
-      {/* ── Engajamento por Lead ──────────────────────────────────────────── */}
+      {/* ── Destaques da Campanha ─────────────────────────────────────────── */}
       {recipientEngagement.length > 0 && (
-        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5">
-          <h3 className="text-white font-semibold mb-4">Engajamento por Lead</h3>
-          <div className="divide-y divide-gray-700/50">
-            {recipientEngagement.map((r) => (
-              <div key={r.id} className="py-3 flex flex-col gap-1.5">
-                <div className="flex items-center justify-between gap-3 flex-wrap">
-                  <div className="min-w-0">
-                    <span className="text-sm text-white font-medium">{r.name ?? r.email}</span>
-                    {r.name && <span className="text-xs text-gray-400 ml-2">{r.email}</span>}
-                  </div>
-                  <div className="flex items-center gap-3 shrink-0 text-xs">
-                    {r.openedAt ? (
-                      <span className="flex items-center gap-1 text-green-400 font-medium">
-                        <Eye size={12} />
-                        {r.openCount > 0 ? `${r.openCount}x` : "Abriu"}
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-gray-600">
-                        <Eye size={12} /> Não abriu
-                      </span>
-                    )}
-                    {r.clickedAt ? (
-                      <span className="flex items-center gap-1 text-yellow-400 font-medium">
-                        <MousePointerClick size={12} />
-                        {Object.values(r.clickData ?? {}).reduce((a, b) => a + b, 0) || 1}x
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-1 text-gray-600">
-                        <MousePointerClick size={12} /> Não clicou
-                      </span>
-                    )}
-                  </div>
+        <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5 space-y-5">
+          <div className="flex items-center gap-2">
+            <Trophy size={18} className="text-yellow-400" />
+            <h3 className="text-white font-semibold">Destaques da Campanha</h3>
+          </div>
+
+          {/* Resumo rápido: quentes / frios / CTO */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-3 flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-orange-400">
+                <Flame size={14} />
+                <span className="text-xs uppercase tracking-wide">Leads Quentes</span>
+              </div>
+              <div className="text-2xl font-bold text-orange-400">{highlights.hotLeads.length}</div>
+              <div className="text-xs text-gray-500">abriram e clicaram</div>
+            </div>
+            <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-3 flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-blue-400">
+                <Snowflake size={14} />
+                <span className="text-xs uppercase tracking-wide">Leads Frios</span>
+              </div>
+              <div className="text-2xl font-bold text-blue-400">{highlights.coldLeads.length}</div>
+              <div className="text-xs text-gray-500">nunca abriram</div>
+            </div>
+            <div className="bg-purple-500/10 border border-purple-500/30 rounded-xl p-3 flex flex-col gap-1">
+              <div className="flex items-center gap-2 text-purple-400">
+                <Zap size={14} />
+                <span className="text-xs uppercase tracking-wide">Click-to-Open</span>
+              </div>
+              <div className="text-2xl font-bold text-purple-400">{highlights.cto}%</div>
+              <div className="text-xs text-gray-500">
+                {highlights.cto >= 20 ? "engajamento alto" : highlights.cto >= 10 ? "engajamento médio" : "engajamento baixo"}
+              </div>
+            </div>
+            {highlights.bestStep && (
+              <div className="bg-green-500/10 border border-green-500/30 rounded-xl p-3 flex flex-col gap-1">
+                <div className="flex items-center gap-2 text-green-400">
+                  <TrendingUp size={14} />
+                  <span className="text-xs uppercase tracking-wide">Melhor Passo</span>
                 </div>
-                {Object.entries(r.clickData ?? {}).length > 0 && (
-                  <div className="flex flex-wrap gap-2 pl-1">
-                    {Object.entries(r.clickData).map(([url, count]) => {
-                      let display = url;
-                      try { display = new URL(url).hostname.replace(/^www\./, "") + new URL(url).pathname; } catch { /* keep url */ }
-                      return (
-                        <span key={url} className="flex items-center gap-1 text-xs bg-gray-700/60 text-gray-300 px-2 py-0.5 rounded-full">
-                          <Link size={10} className="text-yellow-400 shrink-0" />
-                          <span className="truncate max-w-[180px]" title={url}>{display}</span>
-                          <span className="text-yellow-400 font-semibold ml-1">{count}×</span>
-                        </span>
-                      );
-                    })}
-                  </div>
+                <div className="text-2xl font-bold text-green-400">#{highlights.bestStep.order + 1}</div>
+                <div className="text-xs text-gray-500 truncate" title={highlights.bestStep.subject}>
+                  {highlights.bestStep.openRate}% abertura
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+
+            {/* Top abridores */}
+            {highlights.topOpeners.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-1.5">
+                  <Eye size={14} className="text-green-400" /> Top Abridores
+                </h4>
+                <div className="space-y-2">
+                  {highlights.topOpeners.map((r, i) => (
+                    <div key={r.id} className="flex items-center gap-3">
+                      <span className="text-xs font-bold text-gray-500 w-4 shrink-0">{i + 1}</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs text-white truncate">{r.name ?? r.email}</div>
+                        {r.name && <div className="text-xs text-gray-500 truncate">{r.company ?? r.email}</div>}
+                      </div>
+                      <div className="shrink-0 flex items-center gap-1">
+                        <div
+                          className="h-2 rounded-full bg-green-500/70"
+                          style={{ width: `${Math.max(8, Math.round(((r.openCount ?? 0) / (highlights.topOpeners[0]?.openCount ?? 1)) * 64))}px` }}
+                        />
+                        <span className="text-xs font-semibold text-green-400 w-8 text-right">{r.openCount}×</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Top links clicados */}
+            {highlights.topUrls.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-gray-300 mb-3 flex items-center gap-1.5">
+                  <Link size={14} className="text-yellow-400" /> Links Mais Clicados
+                </h4>
+                <div className="space-y-3">
+                  {highlights.topUrls.map(([url, data]) => {
+                    let display = url;
+                    try { display = new URL(url).hostname.replace(/^www\./, "") + new URL(url).pathname; } catch { /* keep url */ }
+                    return (
+                      <div key={url}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-xs text-gray-300 truncate flex-1" title={url}>{display}</span>
+                          <span className="text-xs font-bold text-yellow-400 shrink-0">{data.count}×</span>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {data.clickers.slice(0, 4).map((name) => (
+                            <span key={name} className="text-xs bg-gray-700/60 text-gray-400 px-1.5 py-0.5 rounded-full truncate max-w-[120px]">
+                              {name}
+                            </span>
+                          ))}
+                          {data.clickers.length > 4 && (
+                            <span className="text-xs text-gray-500">+{data.clickers.length - 4}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Análise gerencial */}
+          <div className="border-t border-gray-700 pt-4">
+            <h4 className="text-sm font-medium text-gray-300 mb-3">Análise da Campanha</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-gray-400">
+              {highlights.hotLeads.length > 0 && (
+                <div className="flex gap-2 bg-orange-500/5 border border-orange-500/20 rounded-lg px-3 py-2">
+                  <span className="text-orange-400 shrink-0">→</span>
+                  <span>
+                    <strong className="text-orange-300">{highlights.hotLeads.length} leads quentes</strong> abriram e clicaram — priorize o follow-up comercial com eles agora.
+                  </span>
+                </div>
+              )}
+              {highlights.coldLeads.length > 0 && (
+                <div className="flex gap-2 bg-blue-500/5 border border-blue-500/20 rounded-lg px-3 py-2">
+                  <span className="text-blue-400 shrink-0">→</span>
+                  <span>
+                    <strong className="text-blue-300">{highlights.coldLeads.length} leads</strong> nunca abriram — considere um assunto diferente ou remova da lista.
+                  </span>
+                </div>
+              )}
+              {highlights.cto > 0 && (
+                <div className="flex gap-2 bg-purple-500/5 border border-purple-500/20 rounded-lg px-3 py-2">
+                  <span className="text-purple-400 shrink-0">→</span>
+                  <span>
+                    Click-to-open de <strong className="text-purple-300">{highlights.cto}%</strong> —{" "}
+                    {highlights.cto >= 20
+                      ? "conteúdo altamente relevante para quem abriu."
+                      : highlights.cto >= 10
+                      ? "conteúdo relevante, mas o CTA pode ser melhorado."
+                      : "o conteúdo não está convertendo quem abre — revise o CTA."}
+                  </span>
+                </div>
+              )}
+              {highlights.bestStep && steps.length > 1 && (
+                <div className="flex gap-2 bg-green-500/5 border border-green-500/20 rounded-lg px-3 py-2">
+                  <span className="text-green-400 shrink-0">→</span>
+                  <span>
+                    O <strong className="text-green-300">passo #{highlights.bestStep.order + 1}</strong> teve melhor abertura ({highlights.bestStep.openRate}%) — use esse assunto como referência para próximas campanhas.
+                  </span>
+                </div>
+              )}
+              {totals.bounceRate > 5 && (
+                <div className="flex gap-2 bg-red-500/5 border border-red-500/20 rounded-lg px-3 py-2">
+                  <span className="text-red-400 shrink-0">→</span>
+                  <span>
+                    <strong className="text-red-300">Bounce rate de {totals.bounceRate}%</strong> está acima do ideal — limpe a lista e remova endereços inválidos.
+                  </span>
+                </div>
+              )}
+              {totals.unsubscribeRate > 1 && (
+                <div className="flex gap-2 bg-yellow-500/5 border border-yellow-500/20 rounded-lg px-3 py-2">
+                  <span className="text-yellow-400 shrink-0">→</span>
+                  <span>
+                    <strong className="text-yellow-300">{totals.unsubscribeRate}% descadastraram</strong> — avalie se a lista está bem segmentada para essa mensagem.
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Engajamento por Lead (colapsável) ────────────────────────────── */}
+      {recipientEngagement.length > 0 && (
+        <div className="bg-gray-800/60 border border-gray-700 rounded-xl overflow-hidden">
+          {/* Header clicável */}
+          <button
+            type="button"
+            onClick={() => setEngagementOpen((v) => !v)}
+            className="w-full flex items-center justify-between px-5 py-4 hover:bg-gray-700/30 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <Users size={16} className="text-purple-400" />
+              <span className="text-white font-semibold">Engajamento por Lead</span>
+              <span className="text-xs text-gray-500 ml-1">({recipientEngagement.length})</span>
+            </div>
+            {engagementOpen
+              ? <ChevronUp size={16} className="text-gray-400" />
+              : <ChevronDown size={16} className="text-gray-400" />}
+          </button>
+
+          {/* Conteúdo colapsável */}
+          {engagementOpen && (
+            <div className="px-5 pb-5 border-t border-gray-700">
+              {/* Busca */}
+              <div className="relative my-4">
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder="Buscar por nome, email ou empresa…"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full bg-gray-700/50 border border-gray-600 rounded-lg pl-9 pr-4 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-purple-500 transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300"
+                  >
+                    ×
+                  </button>
                 )}
               </div>
-            ))}
-          </div>
+
+              {filteredEngagement.length === 0 ? (
+                <div className="text-center py-6 text-gray-500 text-sm">Nenhum resultado para "{searchQuery}"</div>
+              ) : (
+                <div className="divide-y divide-gray-700/50">
+                  {filteredEngagement.map((r) => (
+                    <div key={r.id} className="py-3 flex flex-col gap-1.5">
+                      <div className="flex items-center justify-between gap-3 flex-wrap">
+                        <div className="min-w-0">
+                          <span className="text-sm text-white font-medium">{r.name ?? r.email}</span>
+                          {r.name && <span className="text-xs text-gray-400 ml-2">{r.email}</span>}
+                          {r.company && <span className="text-xs text-gray-500 ml-2">· {r.company}</span>}
+                        </div>
+                        <div className="flex items-center gap-3 shrink-0 text-xs">
+                          {r.openedAt ? (
+                            <span className="flex items-center gap-1 text-green-400 font-medium">
+                              <Eye size={12} />
+                              {(r.openCount ?? 0) > 0 ? `${r.openCount}×` : "Abriu"}
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-gray-600">
+                              <Eye size={12} /> Não abriu
+                            </span>
+                          )}
+                          {r.clickedAt ? (
+                            <span className="flex items-center gap-1 text-yellow-400 font-medium">
+                              <MousePointerClick size={12} />
+                              {Object.values(r.clickData ?? {}).reduce((a, b) => a + b, 0) || 1}×
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-1 text-gray-600">
+                              <MousePointerClick size={12} /> Não clicou
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      {Object.entries(r.clickData ?? {}).length > 0 && (
+                        <div className="flex flex-wrap gap-2 pl-1">
+                          {Object.entries(r.clickData).map(([url, count]) => {
+                            let display = url;
+                            try { display = new URL(url).hostname.replace(/^www\./, "") + new URL(url).pathname; } catch { /* keep url */ }
+                            return (
+                              <span key={url} className="flex items-center gap-1 text-xs bg-gray-700/60 text-gray-300 px-2 py-0.5 rounded-full">
+                                <Link size={10} className="text-yellow-400 shrink-0" />
+                                <span className="truncate max-w-[180px]" title={url}>{display}</span>
+                                <span className="text-yellow-400 font-semibold ml-1">{count}×</span>
+                              </span>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -363,7 +638,7 @@ export function CampaignMetricsPanel({ metrics, recipientEngagement = [] }: { me
               ))}
             </div>
             <div className="mt-3 pt-3 border-t border-gray-700 text-xs text-gray-500">
-              <p>📍 Métricas por país/cidade disponíveis numa próxima versão (requer rastreamento de IP na abertura).</p>
+              <p>Métricas por país/cidade disponíveis numa próxima versão (requer rastreamento de IP na abertura).</p>
             </div>
           </div>
         )}

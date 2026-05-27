@@ -164,7 +164,7 @@ export function ContactDetailClient({ id, isAdmin }: Props) {
                     <Link href={`/deals/${deal.id}`} className="text-primary hover:underline">
                       {deal.title}
                     </Link>
-                    <span className="ml-2 text-gray-500">• {deal.stage.name}</span>
+                    {deal.stage?.name && <span className="ml-2 text-gray-500">• {deal.stage.name}</span>}
                   </li>
                 ))}
               </ul>
