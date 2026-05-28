@@ -47,6 +47,7 @@ function extractBouncedEmail(body: string | undefined): string | undefined {
     new RegExp(`não foi entregue para\\s+(${ep})`, "i"),
     new RegExp(`não foi entregue a\\s+(${ep})`, "i"),
     new RegExp(`entregar a mensagem a\\s+(${ep})`, "i"),
+    new RegExp(`entrega da mensagem para\\s+(${ep})`, "i"),
     new RegExp(`address(?:es)?\\s+failed[:\\s]+(${ep})`, "i"),
     new RegExp(`fatal errors.*?-*\\s*<?(${ep})`, "i"),
     new RegExp(`failed.*?(?:to|recipients?)[:\\s]+(${ep})`, "i"),
@@ -127,7 +128,7 @@ async function main() {
   // Get all Google tokens (one per user)
   const tokens = await prisma.googleToken.findMany({
     select: { id: true, refreshToken: true },
-    where: { refreshToken: { not: null } },
+    where: { refreshToken: { not: undefined } },
   });
 
   if (tokens.length === 0) {
@@ -216,6 +217,37 @@ async function main() {
             createdAt: new Date(),
           },
         });
+      }
+
+      // Mark linked campaign_email activities as failed
+      const bouncedRecipients = await prisma.emailCampaignRecipient.findMany({
+        where: { email: bouncedEmail, campaignId: { in: campaignIds } },
+        select: { id: true },
+      });
+      if (bouncedRecipients.length > 0) {
+        const recipientIds = bouncedRecipients.map(r => r.id);
+        const sends = await prisma.emailCampaignSend.findMany({
+          where: { recipientId: { in: recipientIds } },
+          select: { id: true },
+        });
+        if (sends.length > 0) {
+          const sendIds = sends.map(s => s.id);
+          const activityUpdateResult = await prisma.activity.updateMany({
+            where: {
+              emailCampaignSendId: { in: sendIds },
+              failedAt: null,
+            },
+            data: {
+              completed: false,
+              completedAt: null,
+              failedAt: new Date(),
+              failReason: "Email retornou (bounce)",
+            },
+          });
+          if (activityUpdateResult.count > 0) {
+            console.log(`    📝 ${activityUpdateResult.count} atividade(s) marcada(s) como falha`);
+          }
+        }
       }
 
       if (updated.count > 0) {
