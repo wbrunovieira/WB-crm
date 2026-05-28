@@ -955,3 +955,122 @@ describe("SendCampaignStep — campaign_email activity creation", () => {
     expect(activities.items[0].emailCampaignSendId).toBe(sends.items[0].id.toString());
   });
 });
+
+// ─── Bug fix: invalid email pre-validation ────────────────────────────────────
+describe("SendCampaignStep — invalid email pre-validation", () => {
+  async function makeBase() {
+    const campaigns = new InMemoryEmailCampaignsRepository();
+    const steps = new InMemoryEmailCampaignStepsRepository();
+    const recipients = new InMemoryEmailCampaignRecipientsRepository();
+    const sends = new InMemoryEmailCampaignSendsRepository();
+    const suppressions = new InMemoryEmailSuppressionsRepository();
+    const gmail = new FakeGmailPortForCampaigns();
+    const resolver = new VariableResolverService();
+    const activities = new InMemoryActivitiesRepository();
+    const recipientContext = new FakeRecipientContextPort();
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, activities, recipientContext);
+
+    const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const campaignId = (created.value as { id: string }).id;
+    const campaign = await campaigns.findById(campaignId);
+    campaign!.start();
+    await campaigns.save(campaign!);
+
+    const step = EmailCampaignStep.create({ campaignId, order: 0, subject: "Assunto Campanha", bodyHtml: "<p>Body</p>", delayDays: 0 });
+    await steps.save(step);
+
+    return { campaigns, steps, recipients, sends, suppressions, gmail, activities, recipientContext, sut, campaignId };
+  }
+
+  it("should NOT call Gmail when recipient email is a compound string (multi-email field)", async () => {
+    const { recipients, gmail, sut, campaignId } = await makeBase();
+
+    const r = EmailCampaignRecipient.create({
+      campaignId, recipientType: "LEAD", recipientId: "lead-1",
+      email: "a@empresa.com / b@empresa.com / c@degema.pt",
+    });
+    await recipients.save(r);
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(gmail.sentEmails).toHaveLength(0);
+  });
+
+  it("should mark recipient BOUNCED without creating a send record when email is invalid", async () => {
+    const { recipients, sends, sut, campaignId } = await makeBase();
+
+    const r = EmailCampaignRecipient.create({
+      campaignId, recipientType: "LEAD", recipientId: "lead-1",
+      email: "a@empresa.com / b@empresa.com / c@degema.pt",
+    });
+    await recipients.save(r);
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(recipients.items[0].status).toBe("BOUNCED");
+    expect(sends.items).toHaveLength(0);
+  });
+
+  it("should create bounce activity linked to lead when email is invalid, with no emailCampaignSendId", async () => {
+    const { recipients, activities, recipientContext, sut, campaignId } = await makeBase();
+
+    recipientContext.register("LEAD", "lead-1", { leadId: "lead-1" });
+
+    const r = EmailCampaignRecipient.create({
+      campaignId, recipientType: "LEAD", recipientId: "lead-1",
+      email: "a@empresa.com / b@empresa.com / c@degema.pt",
+    });
+    await recipients.save(r);
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(activities.items).toHaveLength(1);
+    const act = activities.items[0];
+    expect(act.type).toBe("campaign_email");
+    expect(act.failedAt).toBeDefined();
+    expect(act.completed).toBe(false);
+    expect(act.leadId).toBe("lead-1");
+    expect(act.emailCampaignId).toBe(campaignId);
+    expect(act.emailCampaignSendId).toBeUndefined();
+  });
+
+  it("should create bounce activity without emailCampaignSendId when Gmail rejects the send (550)", async () => {
+    const { recipients, sends, activities, recipientContext, gmail, sut, campaignId } = await makeBase();
+
+    recipientContext.register("LEAD", "lead-2", { leadId: "lead-2" });
+    gmail.failWith = new Error("Gmail API send error: 550 User unknown");
+
+    const r = EmailCampaignRecipient.create({
+      campaignId, recipientType: "LEAD", recipientId: "lead-2",
+      email: "unknown@validdomain.com",
+    });
+    await recipients.save(r);
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(recipients.items[0].status).toBe("BOUNCED");
+    expect(sends.items).toHaveLength(0);
+    expect(activities.items).toHaveLength(1);
+    expect(activities.items[0].failedAt).toBeDefined();
+    expect(activities.items[0].emailCampaignSendId).toBeUndefined();
+  });
+
+  it("should still create sent activity with emailCampaignSendId when send succeeds (regression)", async () => {
+    const { recipients, sends, activities, recipientContext, sut, campaignId } = await makeBase();
+
+    recipientContext.register("LEAD", "lead-ok", { leadId: "lead-ok" });
+
+    const r = EmailCampaignRecipient.create({
+      campaignId, recipientType: "LEAD", recipientId: "lead-ok",
+      email: "valid@domain.com",
+    });
+    await recipients.save(r);
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(sends.items).toHaveLength(1);
+    expect(activities.items).toHaveLength(1);
+    expect(activities.items[0].completed).toBe(true);
+    expect(activities.items[0].emailCampaignSendId).toBe(sends.items[0].id.toString());
+  });
+});

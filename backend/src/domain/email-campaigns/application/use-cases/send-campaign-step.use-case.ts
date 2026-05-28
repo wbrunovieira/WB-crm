@@ -92,6 +92,18 @@ export class SendCampaignStepUseCase {
         continue;
       }
 
+      // Pre-validate email before touching Gmail — catches compound fields like "a@x.com / b@y.com"
+      if (!this.isValidEmail(recipient.email)) {
+        failed++;
+        const reason = `Email inválido: ${recipient.email}`;
+        this.logger.warn(`SendCampaignStep: invalid email, skipping Gmail call — ${reason}`);
+        recipient.markBounced();
+        await this.recipients.save(recipient);
+        const subject = this.resolver.resolve(step.subject, recipient);
+        await this.createBounceActivity(campaign.ownerId, input.campaignId, subject, undefined, reason, recipient.recipientType, recipient.recipientId);
+        continue;
+      }
+
       const send = EmailCampaignSend.create({ recipientId: recipient.id.toString(), stepId: step.id.toString() });
 
       let subject = this.resolver.resolve(step.subject, recipient);
@@ -133,14 +145,13 @@ export class SendCampaignStepUseCase {
         this.logger.error(
           `Failed to send email to ${recipient.email} for campaign ${input.campaignId} step ${input.stepOrder}: ${msg}`,
         );
-        // If Gmail rejected the address as invalid, mark BOUNCED so it won't be retried
-        const isInvalidAddress =
-          /invalid.*address|recipient.*invalid|bad.*recipient|does not exist|550|551|553/i.test(msg) ||
-          !/^[^\s@,;/\\]+@[^\s@,;/\\]+\.[^\s@,;/\\]{2,}$/.test(recipient.email.trim());
-        if (isInvalidAddress) {
+        // Gmail-level permanent rejections (address exists but server rejects it)
+        const isGmailRejection = /invalid.*address|recipient.*invalid|bad.*recipient|does not exist|550|551|553/i.test(msg);
+        if (isGmailRejection) {
           recipient.markBounced();
           await this.recipients.save(recipient);
-          await this.createBounceActivity(campaign.ownerId, input.campaignId, subject, send.id.toString(), msg, recipient.recipientType, recipient.recipientId);
+          // No sendId — the send was never persisted (Gmail rejected before delivery)
+          await this.createBounceActivity(campaign.ownerId, input.campaignId, subject, undefined, msg, recipient.recipientType, recipient.recipientId);
         }
       }
     }
@@ -184,11 +195,15 @@ export class SendCampaignStepUseCase {
     await this.activitiesRepo.save(activity);
   }
 
+  private isValidEmail(email: string): boolean {
+    return /^[^\s@,;/\\]+@[^\s@,;/\\]+\.[^\s@,;/\\]{2,}$/.test(email.trim());
+  }
+
   private async createBounceActivity(
     ownerId: string,
     campaignId: string,
     subject: string,
-    sendId: string,
+    sendId: string | undefined,
     bounceReason: string,
     recipientType: string,
     recipientId: string,
