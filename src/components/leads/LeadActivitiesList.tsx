@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AlertTriangle, ArrowDownUp, Calendar, Check, Eye, GripVertical, Loader2, MessageCircleReply, MousePointerClick, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock, Search, RefreshCcw } from "lucide-react";
+import { AlertTriangle, ArrowDownUp, Calendar, Check, Eye, EyeOff, GripVertical, Loader2, MessageCircleReply, MousePointerClick, RotateCcw, SkipForward, UserPlus, Users, X, XCircle, Phone, Mail, Users2, ClipboardList, MapPin, Reply, Clock, Search, RefreshCcw } from "lucide-react";
 import dynamic from "next/dynamic";
 const GmailComposeModal = dynamic(() => import("@/components/gmail/GmailComposeModal"), { ssr: false });
 const GoToCallPlayer = dynamic(() => import("@/components/activities/GoToCallPlayer"), { ssr: false });
@@ -465,19 +465,31 @@ function SortableActivityItem({
                   {(activity.emailOpenCount ?? 0) === 1 ? "Aberto" : `Aberto ${activity.emailOpenCount}×`}
                 </span>
               )}
+              {(activity.type === "email" || activity.type === "campaign_email") && !activity.emailFromAddress && !activity.failedAt && !activity.skippedAt && (activity.emailOpenCount ?? 0) === 0 && activity.completed && (
+                <span className="inline-flex items-center gap-1 rounded bg-gray-500/10 px-2 py-0.5 text-xs font-medium text-gray-400 border border-gray-500/20">
+                  <EyeOff className="h-3 w-3" />
+                  Não abriu
+                </span>
+              )}
               {(activity.type === "email" || activity.type === "campaign_email") && !activity.emailFromAddress && (activity.emailLinkClickCount ?? 0) > 0 && (
                 <span className="inline-flex items-center gap-1 rounded bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-300 border border-teal-500/30">
                   <MousePointerClick className="h-3 w-3" />
                   {(activity.emailLinkClickCount ?? 0) === 1 ? "Link clicado" : `${activity.emailLinkClickCount} cliques`}
                 </span>
               )}
-              {activity.type === "campaign_email" && activity.failedAt && (
+              {(activity.type === "email" || activity.type === "campaign_email") && !activity.emailFromAddress && !activity.failedAt && !activity.skippedAt && (activity.emailLinkClickCount ?? 0) === 0 && activity.completed && (
+                <span className="inline-flex items-center gap-1 rounded bg-gray-500/10 px-2 py-0.5 text-xs font-medium text-gray-400 border border-gray-500/20">
+                  <MousePointerClick className="h-3 w-3" />
+                  Sem cliques
+                </span>
+              )}
+              {(activity.type === "email" || activity.type === "campaign_email") && activity.failedAt && (
                 <span className="inline-flex items-center gap-1 rounded bg-red-500/10 px-2 py-0.5 text-xs font-medium text-red-300 border border-red-500/30">
                   <XCircle className="h-3 w-3" />
                   Bounce
                 </span>
               )}
-              {activity.type === "campaign_email" && activity.skippedAt && (
+              {(activity.type === "email" || activity.type === "campaign_email") && activity.skippedAt && (
                 <span className="inline-flex items-center gap-1 rounded bg-amber-500/10 px-2 py-0.5 text-xs font-medium text-amber-300 border border-amber-500/30">
                   <SkipForward className="h-3 w-3" />
                   Descadastrou
