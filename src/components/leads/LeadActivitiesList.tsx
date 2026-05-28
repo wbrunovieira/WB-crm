@@ -271,6 +271,7 @@ type Activity = {
   emailOpenedAt?: string | null;
   emailLinkClickCount?: number | null;
   emailLinkClickedAt?: string | null;
+  emailToAddress?: string | null;
   clickUrls?: Array<{ url: string; count: number }> | null;
 };
 
@@ -457,6 +458,13 @@ function SortableActivityItem({
                 <span className="inline-flex items-center gap-1 rounded bg-blue-500/10 px-2 py-0.5 text-xs font-medium text-blue-300 border border-blue-500/30">
                   <Reply className="h-3 w-3" />
                   Resposta enviada
+                </span>
+              )}
+              {/* Destinatário do e-mail de campanha */}
+              {(activity.type === "email" || activity.type === "campaign_email") && activity.emailToAddress && !activity.emailFromAddress && (
+                <span className="inline-flex items-center gap-1 rounded bg-gray-500/10 px-2 py-0.5 text-xs font-medium text-gray-400 border border-gray-500/20">
+                  <Mail className="h-3 w-3" />
+                  {activity.emailToAddress}
                 </span>
               )}
               {/* Email tracking badges — outbound emails and campaign emails */}

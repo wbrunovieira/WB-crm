@@ -292,14 +292,22 @@ export class PrismaLeadsRepository extends LeadsRepository {
       .filter((sid): sid is string => !!sid);
 
     const clickDataMap = new Map<string, Record<string, number>>();
+    const recipientEmailMap = new Map<string, string>();
     if (campaignSendIds.length > 0) {
       const sends = await this.prisma.emailCampaignSend.findMany({
         where: { id: { in: campaignSendIds } },
-        select: { id: true, clickData: true },
+        select: {
+          id: true,
+          clickData: true,
+          recipient: { select: { email: true } },
+        },
       });
       for (const send of sends) {
         if (send.clickData) {
           try { clickDataMap.set(send.id, JSON.parse(send.clickData)); } catch { /* ignore */ }
+        }
+        if (send.recipient?.email) {
+          recipientEmailMap.set(send.id, send.recipient.email);
         }
       }
     }
@@ -437,6 +445,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
         const clickUrls = Object.entries(rawClickData)
           .map(([url, count]) => ({ url, count }))
           .sort((x, y) => y.count - x.count);
+        const emailToAddress = sendId ? (recipientEmailMap.get(sendId) ?? null) : null;
         return {
           id: a.id,
           type: a.type,
@@ -468,6 +477,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
           emailOpenedAt: a.emailOpenedAt,
           emailLinkClickCount: a.emailLinkClickCount,
           emailLinkClickedAt: a.emailLinkClickedAt,
+          emailToAddress,
           clickUrls,
         };
       }),

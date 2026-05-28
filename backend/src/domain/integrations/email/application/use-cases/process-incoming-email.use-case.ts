@@ -271,6 +271,10 @@ export class ProcessIncomingEmailUseCase {
     const entregarA = bodyText.match(new RegExp(`entregar a mensagem a\\s+(${emailPattern})`, "i"));
     if (entregarA) return entregarA[1].toLowerCase();
 
+    // Gmail PT-BR soft/DNS bounce: "entrega da mensagem para email@domain" (inclui "Entrega incompleta" DNS SERVFAIL)
+    const entregaPara = bodyText.match(new RegExp(`entrega da mensagem para\\s+(${emailPattern})`, "i"));
+    if (entregaPara) return entregaPara[1].toLowerCase();
+
     // cPanel/Exim: "The following address(es) failed: email@domain"
     const cpanelFailed = bodyText.match(new RegExp(`address(?:es)?\\s+failed[:\\s]+(${emailPattern})`, "i"));
     if (cpanelFailed) return cpanelFailed[1].toLowerCase();

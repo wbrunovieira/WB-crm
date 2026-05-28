@@ -87,6 +87,7 @@ export interface LeadActivity {
   emailOpenedAt: Date | null;
   emailLinkClickCount: number;
   emailLinkClickedAt: Date | null;
+  emailToAddress: string | null;
   clickUrls: Array<{ url: string; count: number }>;
 }
 

@@ -447,6 +447,39 @@ describe("ProcessIncomingEmailUseCase — bounce updates linked campaign_email a
     expect(afterUpdate.failedAt!.getTime()).toBe(originalFailedAt.getTime());
   });
 
+  it("trata 'Entrega incompleta' do Gmail PT-BR (DNS SERVFAIL) como bounce permanente", async () => {
+    const sendId = "send-dns-fail-001";
+    const activity = makeCampaignActivity(sendId);
+    activitiesRepo.items.push(activity);
+
+    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([{ id: sendId }]);
+
+    const message = makeMessage({
+      from: "Mail Delivery Subsystem <mailer-daemon@googlemail.com>",
+      subject: "Entrega incompleta",
+      bodyText:
+        "Ocorreu um problema temporário na entrega da mensagem para neumannmkt@temtudopetropolis.com.br. " +
+        "O Gmail tentará novamente por mais 44 horas. Você será notificado se a falha na entrega da mensagem for permanente. " +
+        "A resposta foi: DNS Error: DNS type 'mx' lookup of temtudopetropolis.com.br responded with code SERVFAIL",
+    });
+
+    const result = await useCase.execute(message, OWNER_ID);
+
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().bounced).toBe(true);
+    expect(fakePrisma.emailCampaignRecipient.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({ data: { status: "BOUNCED" } }),
+    );
+    expect(fakePrisma.emailSuppression.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ email: "neumannmkt@temtudopetropolis.com.br" }),
+      }),
+    );
+    const updated = activitiesRepo.items.find((a) => a.emailCampaignSendId === sendId)!;
+    expect(updated.failedAt).toBeDefined();
+    expect(updated.failReason).toBe("Email retornou (bounce)");
+  });
+
   it("does not update activity when no send record is linked to the bounce", async () => {
     const activity = makeCampaignActivity("send-unrelated");
     activitiesRepo.items.push(activity);
