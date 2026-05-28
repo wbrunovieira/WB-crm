@@ -34,6 +34,10 @@ export class PrismaRecipientContextAdapter extends RecipientContextPort {
         };
       }
 
+      // LeadContact enrolled as CONTACT (created from compound email split or manual enroll)
+      const lc = await this.prisma.leadContact.findUnique({ where: { id: recipientId }, select: { leadId: true } });
+      if (lc) return { leadId: lc.leadId };
+
       // Organization enrolled as CONTACT (org's own email)
       const org = await this.prisma.organization.findUnique({ where: { id: recipientId }, select: { id: true } });
       if (org) return { organizationId: recipientId };
