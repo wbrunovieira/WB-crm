@@ -127,7 +127,7 @@ async function main() {
 
   // Get all Google tokens (one per user)
   const tokens = await prisma.googleToken.findMany({
-    select: { id: true, refreshToken: true },
+    select: { id: true, email: true, refreshToken: true },
     where: { refreshToken: { not: undefined } },
   });
 
@@ -141,8 +141,17 @@ async function main() {
   let totalSkipped = 0;
 
   for (const googleToken of tokens) {
-    const ownerId = googleToken.id;
-    console.log(`\n👤 Owner: ${ownerId}`);
+    // Resolve real user.id from the connected Google account email
+    const user = await prisma.user.findFirst({
+      where: { email: googleToken.email },
+      select: { id: true },
+    });
+    if (!user) {
+      console.log(`  ⚠️  Nenhum usuário encontrado para ${googleToken.email} — pulando`);
+      continue;
+    }
+    const ownerId = user.id;
+    console.log(`\n👤 Owner: ${ownerId} (${googleToken.email})`);
 
     let accessToken: string;
     try {
