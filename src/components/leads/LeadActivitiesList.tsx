@@ -271,6 +271,7 @@ type Activity = {
   emailOpenedAt?: string | null;
   emailLinkClickCount?: number | null;
   emailLinkClickedAt?: string | null;
+  clickUrls?: Array<{ url: string; count: number }> | null;
 };
 
 type CallAnalysisSummary = { id: string; score: number | null; status: string };
@@ -494,6 +495,21 @@ function SortableActivityItem({
                   <SkipForward className="h-3 w-3" />
                   Descadastrou
                 </span>
+              )}
+              {(activity.type === "email" || activity.type === "campaign_email") && (activity.clickUrls ?? []).length > 0 && (
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {(activity.clickUrls ?? []).map((cu) => (
+                    <span
+                      key={cu.url}
+                      className="inline-flex items-center gap-1 rounded bg-teal-500/10 px-2 py-0.5 text-xs font-medium text-teal-300 border border-teal-500/20 max-w-[260px]"
+                      title={cu.url}
+                    >
+                      <MousePointerClick className="h-3 w-3 flex-shrink-0" />
+                      <span className="truncate">{cu.url.replace(/^https?:\/\//, "")}</span>
+                      <span className="ml-0.5 font-bold">{cu.count}×</span>
+                    </span>
+                  ))}
+                </div>
               )}
               {!activity.gotoCallId && (
                 <>

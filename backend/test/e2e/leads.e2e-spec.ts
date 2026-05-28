@@ -721,3 +721,118 @@ describe("GET /leads?sortBy=starRating", () => {
     expect(names.indexOf("Rating 1")).toBeLessThan(names.indexOf("Sem Rating"));
   });
 });
+
+describe("GET /leads/:id — email tracking nos activities", () => {
+  let trackApp: INestApplication;
+  let trackPrisma: PrismaService;
+  let trackToken: string;
+  let trackOwnerId: string;
+  let leadId: string;
+
+  beforeAll(async () => {
+    trackApp = await Test.createTestingModule({ imports: [AppModule] })
+      .compile()
+      .then((m) => m.createNestApplication().init());
+    trackPrisma = trackApp.get(PrismaService);
+    const trackJwt = trackApp.get(JwtService);
+
+    const user = await trackPrisma.user.create({
+      data: { name: "Track User", email: `track-${Date.now()}@test.com`, password: "x", role: "sdr" },
+    });
+    trackOwnerId = user.id;
+    trackToken = trackJwt.sign({ sub: user.id, email: user.email, role: user.role });
+
+    const lead = await trackPrisma.lead.create({
+      data: { businessName: "Lead Track Email", ownerId: trackOwnerId, status: "new" },
+    });
+    leadId = lead.id;
+
+    // Cria cadeia de campanha para ter EmailCampaignSend com clickData
+    const campaign = await trackPrisma.emailCampaign.create({
+      data: { name: "Campanha Teste", fromEmail: "test@wb.com", status: "ACTIVE", ownerId: trackOwnerId },
+    });
+    const step = await trackPrisma.emailCampaignStep.create({
+      data: { campaignId: campaign.id, order: 1, subject: "Assunto Teste", bodyHtml: "<p>Teste</p>", delayDays: 0 },
+    });
+    const recipient = await trackPrisma.emailCampaignRecipient.create({
+      data: {
+        campaignId: campaign.id,
+        recipientType: "LEAD",
+        recipientId: leadId,
+        email: "lead@track.com",
+        name: "Lead Track",
+        status: "ACTIVE",
+      },
+    });
+    const campaignSend = await trackPrisma.emailCampaignSend.create({
+      data: {
+        recipientId: recipient.id,
+        stepId: step.id,
+        openedAt: new Date("2026-05-27T10:00:00Z"),
+        openCount: 2,
+        clickedAt: new Date("2026-05-27T10:05:00Z"),
+        clickedUrl: "https://exemplo.com/produto",
+        clickData: JSON.stringify({ "https://exemplo.com/produto": 3, "https://exemplo.com/preco": 1 }),
+      },
+    });
+
+    // Activity de campanha vinculada ao lead
+    await trackPrisma.activity.create({
+      data: {
+        type: "campaign_email",
+        subject: "IA que amplifica vence",
+        leadId: lead.id,
+        ownerId: trackOwnerId,
+        completed: true,
+        completedAt: new Date("2026-05-27T23:50:00Z"),
+        emailCampaignSendId: campaignSend.id,
+        emailOpenCount: 2,
+        emailOpenedAt: new Date("2026-05-27T10:00:00Z"),
+        emailLinkClickCount: 4,
+        emailLinkClickedAt: new Date("2026-05-27T10:05:00Z"),
+      },
+    });
+  });
+
+  afterAll(async () => {
+    await trackPrisma.activity.deleteMany({ where: { leadId } });
+    await trackPrisma.emailCampaignSend.deleteMany({ where: { recipient: { campaignId: { not: undefined } } } });
+    await trackPrisma.emailCampaignRecipient.deleteMany({ where: { recipientId: leadId } });
+    await trackPrisma.emailCampaignStep.deleteMany({ where: { campaign: { ownerId: trackOwnerId } } });
+    await trackPrisma.emailCampaign.deleteMany({ where: { ownerId: trackOwnerId } });
+    await trackPrisma.lead.deleteMany({ where: { ownerId: trackOwnerId } });
+    await trackPrisma.user.delete({ where: { id: trackOwnerId } });
+    await trackApp.close();
+  });
+
+  it("retorna emailOpenCount e emailLinkClickCount nas activities do lead", async () => {
+    const res = await request(trackApp.getHttpServer())
+      .get(`/leads/${leadId}`)
+      .set("Authorization", `Bearer ${trackToken}`)
+      .expect(200);
+
+    const act = res.body.activities?.[0];
+    expect(act).toBeDefined();
+    expect(act.emailOpenCount).toBe(2);
+    expect(act.emailLinkClickCount).toBe(4);
+    expect(act.emailOpenedAt).toBeTruthy();
+    expect(act.emailLinkClickedAt).toBeTruthy();
+  });
+
+  it("retorna clickUrls com url e quantidade de cliques por link", async () => {
+    const res = await request(trackApp.getHttpServer())
+      .get(`/leads/${leadId}`)
+      .set("Authorization", `Bearer ${trackToken}`)
+      .expect(200);
+
+    const act = res.body.activities?.[0];
+    expect(act).toBeDefined();
+    expect(Array.isArray(act.clickUrls)).toBe(true);
+    expect(act.clickUrls.length).toBe(2);
+
+    const produto = act.clickUrls.find((u: { url: string; count: number }) => u.url === "https://exemplo.com/produto");
+    const preco   = act.clickUrls.find((u: { url: string; count: number }) => u.url === "https://exemplo.com/preco");
+    expect(produto?.count).toBe(3);
+    expect(preco?.count).toBe(1);
+  });
+});

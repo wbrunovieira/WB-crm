@@ -249,6 +249,11 @@ export class PrismaLeadsRepository extends LeadsRepository {
             emailFromAddress: true,
             emailFromName: true,
             emailReplied: true,
+            emailOpenCount: true,
+            emailOpenedAt: true,
+            emailLinkClickCount: true,
+            emailLinkClickedAt: true,
+            emailCampaignSendId: true,
           },
           orderBy: { createdAt: "desc" },
           take: 50,
@@ -279,6 +284,24 @@ export class PrismaLeadsRepository extends LeadsRepository {
         where: { entityType: "lead", entityId: id, sharedWithUserId: requesterId },
       });
       if (!shared) return null;
+    }
+
+    // Fetch clickData for campaign activities in one extra query
+    const campaignSendIds = row.activities
+      .map((a) => (a as unknown as { emailCampaignSendId?: string | null }).emailCampaignSendId)
+      .filter((sid): sid is string => !!sid);
+
+    const clickDataMap = new Map<string, Record<string, number>>();
+    if (campaignSendIds.length > 0) {
+      const sends = await this.prisma.emailCampaignSend.findMany({
+        where: { id: { in: campaignSendIds } },
+        select: { id: true, clickData: true },
+      });
+      for (const send of sends) {
+        if (send.clickData) {
+          try { clickDataMap.set(send.id, JSON.parse(send.clickData)); } catch { /* ignore */ }
+        }
+      }
     }
 
     return {
@@ -408,34 +431,46 @@ export class PrismaLeadsRepository extends LeadsRepository {
         phoneValid: lc.phoneValid,
         phoneType: lc.phoneType,
       })),
-      activities: row.activities.map((a) => ({
-        id: a.id,
-        type: a.type,
-        subject: a.subject,
-        completed: a.completed,
-        completedAt: a.completedAt,
-        dueDate: a.dueDate,
-        createdAt: a.createdAt,
-        description: a.description,
-        failedAt: a.failedAt,
-        failReason: a.failReason,
-        skippedAt: a.skippedAt,
-        skipReason: a.skipReason,
-        contactId: a.contactId,
-        leadContactIds: a.leadContactIds,
-        callContactType: a.callContactType,
-        gotoCallId: a.gotoCallId,
-        gotoCallOutcome: a.gotoCallOutcome,
-        gotoDuration: a.gotoDuration,
-        gotoRecordingUrl: a.gotoRecordingUrl,
-        gotoRecordingUrl2: a.gotoRecordingUrl2,
-        gotoTranscriptText: a.gotoTranscriptText,
-        emailThreadId: a.emailThreadId,
-        emailSubject: a.emailSubject,
-        emailFromAddress: a.emailFromAddress,
-        emailFromName: a.emailFromName,
-        emailReplied: a.emailReplied,
-      })),
+      activities: row.activities.map((a) => {
+        const sendId = (a as unknown as { emailCampaignSendId?: string | null }).emailCampaignSendId;
+        const rawClickData = sendId ? (clickDataMap.get(sendId) ?? {}) : {};
+        const clickUrls = Object.entries(rawClickData)
+          .map(([url, count]) => ({ url, count }))
+          .sort((x, y) => y.count - x.count);
+        return {
+          id: a.id,
+          type: a.type,
+          subject: a.subject,
+          description: a.description,
+          completed: a.completed,
+          completedAt: a.completedAt,
+          dueDate: a.dueDate,
+          createdAt: a.createdAt,
+          failedAt: a.failedAt,
+          failReason: a.failReason,
+          skippedAt: a.skippedAt,
+          skipReason: a.skipReason,
+          contactId: a.contactId,
+          leadContactIds: a.leadContactIds,
+          callContactType: a.callContactType,
+          gotoCallId: a.gotoCallId,
+          gotoCallOutcome: a.gotoCallOutcome,
+          gotoDuration: a.gotoDuration,
+          gotoRecordingUrl: a.gotoRecordingUrl,
+          gotoRecordingUrl2: a.gotoRecordingUrl2,
+          gotoTranscriptText: a.gotoTranscriptText,
+          emailThreadId: a.emailThreadId,
+          emailSubject: a.emailSubject,
+          emailFromAddress: a.emailFromAddress,
+          emailFromName: a.emailFromName,
+          emailReplied: a.emailReplied,
+          emailOpenCount: a.emailOpenCount,
+          emailOpenedAt: a.emailOpenedAt,
+          emailLinkClickCount: a.emailLinkClickCount,
+          emailLinkClickedAt: a.emailLinkClickedAt,
+          clickUrls,
+        };
+      }),
       secondaryCNAEs: row.secondaryCNAEs.map((sc) => ({
         id: sc.cnae.id,
         code: sc.cnae.code,
