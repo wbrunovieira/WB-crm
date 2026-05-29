@@ -5,6 +5,25 @@ import { FakeEmailMessagesRepository } from "../../fakes/fake-email-messages.rep
 import { FakeActivitiesRepository } from "@test/unit/domain/integrations/whatsapp/fakes/fake-activities.repository";
 import type { GmailMessage } from "@/domain/integrations/email/application/ports/gmail.port";
 import { ProcessIncomingEmailUseCase } from "@/domain/integrations/email/application/use-cases/process-incoming-email.use-case";
+import { GoogleTokenRepository, type GoogleTokenRecord } from "@/domain/integrations/email/application/repositories/google-token.repository";
+
+// In-memory fake for the singleton Google token
+class FakeGoogleTokenRepository extends GoogleTokenRepository {
+  public record: GoogleTokenRecord | null = null;
+  public savedHistoryIds: string[] = [];
+  public findError: Error | null = null;
+
+  async findFirst(): Promise<GoogleTokenRecord | null> {
+    if (this.findError) throw this.findError;
+    return this.record;
+  }
+  async updateHistoryId(historyId: string): Promise<void> {
+    this.savedHistoryIds.push(historyId);
+    if (this.record) this.record.gmailHistoryId = historyId;
+  }
+  async save(): Promise<GoogleTokenRecord> { throw new Error("not used in tests"); }
+  async delete(): Promise<void> {}
+}
 
 const OWNER_ID = "owner-001";
 const USER_ID = "user-001";
@@ -27,13 +46,11 @@ let gmailPort: FakeGmailPort;
 let emailMessagesRepo: FakeEmailMessagesRepository;
 let activitiesRepo: FakeActivitiesRepository;
 let processIncomingEmail: ProcessIncomingEmailUseCase;
+let googleTokenRepo: FakeGoogleTokenRepository;
 let useCase: PollGmailUseCase;
 
+// ProcessIncomingEmailUseCase still uses Prisma (next use case to refactor).
 const fakePrisma = {
-  googleToken: {
-    findFirst: vi.fn(),
-    updateMany: vi.fn().mockResolvedValue({}),
-  },
   contact: {
     findFirst: vi.fn(),
   },
@@ -55,6 +72,7 @@ beforeEach(() => {
   gmailPort = new FakeGmailPort();
   emailMessagesRepo = new FakeEmailMessagesRepository();
   activitiesRepo = new FakeActivitiesRepository();
+  googleTokenRepo = new FakeGoogleTokenRepository();
 
   processIncomingEmail = new ProcessIncomingEmailUseCase(
     emailMessagesRepo,
@@ -65,13 +83,25 @@ beforeEach(() => {
   useCase = new PollGmailUseCase(
     gmailPort,
     processIncomingEmail,
-    fakePrisma as never,
+    googleTokenRepo,
   );
 });
 
+function tokenWithHistory(gmailHistoryId: string | null): GoogleTokenRecord {
+  return {
+    id: "google-token-singleton",
+    accessToken: "a",
+    refreshToken: "r",
+    expiresAt: new Date(),
+    scope: "s",
+    email: "me@company.com",
+    gmailHistoryId,
+  };
+}
+
 describe("PollGmailUseCase", () => {
   it("returns processed=0 on first run (no historyId)", async () => {
-    fakePrisma.googleToken.findFirst.mockResolvedValueOnce(null);
+    googleTokenRepo.record = null;
 
     const result = await useCase.execute({ userId: USER_ID, ownerId: OWNER_ID });
 
@@ -79,13 +109,11 @@ describe("PollGmailUseCase", () => {
     expect(result.unwrap().processed).toBe(0);
 
     // Should have stored the initial historyId
-    expect(fakePrisma.googleToken.updateMany).toHaveBeenCalledOnce();
+    expect(googleTokenRepo.savedHistoryIds).toHaveLength(1);
   });
 
   it("processes new messages from history", async () => {
-    fakePrisma.googleToken.findFirst.mockResolvedValueOnce({
-      gmailHistoryId: "history-001",
-    });
+    googleTokenRepo.record = tokenWithHistory("history-001");
 
     const msg1 = makeGmailMessage({ messageId: "gmail-001" });
     const msg2 = makeGmailMessage({ messageId: "gmail-002" });
@@ -99,9 +127,7 @@ describe("PollGmailUseCase", () => {
   });
 
   it("skips already-processed messages (idempotency)", async () => {
-    fakePrisma.googleToken.findFirst.mockResolvedValueOnce({
-      gmailHistoryId: "history-001",
-    });
+    googleTokenRepo.record = tokenWithHistory("history-001");
 
     const msg = makeGmailMessage({ messageId: "gmail-001" });
     gmailPort.historyMessages = [msg, msg]; // same message twice
@@ -115,9 +141,7 @@ describe("PollGmailUseCase", () => {
   });
 
   it("returns processed=0 when no new messages in history", async () => {
-    fakePrisma.googleToken.findFirst.mockResolvedValueOnce({
-      gmailHistoryId: "history-current",
-    });
+    googleTokenRepo.record = tokenWithHistory("history-current");
     gmailPort.historyMessages = [];
 
     const result = await useCase.execute({ userId: USER_ID, ownerId: OWNER_ID });
@@ -125,28 +149,22 @@ describe("PollGmailUseCase", () => {
     expect(result.isRight()).toBe(true);
     expect(result.unwrap().processed).toBe(0);
     // historyId is always advanced to prevent stale IDs from getting stuck
-    expect(fakePrisma.googleToken.updateMany).toHaveBeenCalled();
+    expect(googleTokenRepo.savedHistoryIds.length).toBeGreaterThan(0);
   });
 
   it("updates historyId after processing messages", async () => {
-    fakePrisma.googleToken.findFirst.mockResolvedValueOnce({
-      gmailHistoryId: "history-old",
-    });
+    googleTokenRepo.record = tokenWithHistory("history-old");
 
     gmailPort.profileHistoryId = "history-new";
     gmailPort.historyMessages = [makeGmailMessage()];
 
     await useCase.execute({ userId: USER_ID, ownerId: OWNER_ID });
 
-    expect(fakePrisma.googleToken.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ gmailHistoryId: "history-new" }),
-      }),
-    );
+    expect(googleTokenRepo.savedHistoryIds).toContain("history-new");
   });
 
   it("returns left on infrastructure error", async () => {
-    fakePrisma.googleToken.findFirst.mockRejectedValueOnce(new Error("DB error"));
+    googleTokenRepo.findError = new Error("DB error");
 
     const result = await useCase.execute({ userId: USER_ID, ownerId: OWNER_ID });
 

@@ -30,6 +30,7 @@ const fakeGoogleOAuthPort = {
 
 let app: INestApplication;
 let token: string;
+let prisma: PrismaService;
 
 beforeAll(async () => {
   const module = await Test.createTestingModule({
@@ -44,7 +45,7 @@ beforeAll(async () => {
   app = module.createNestApplication();
   await app.init();
 
-  const prisma = module.get(PrismaService);
+  prisma = module.get(PrismaService);
   const jwt = module.get(JwtService);
 
   const user = await prisma.user.upsert({
@@ -58,10 +59,22 @@ beforeAll(async () => {
     },
   });
 
+  // Singleton Google token with no history yet (first-run sync scenario)
+  await prisma.googleToken.upsert({
+    where: { id: "google-token-singleton" },
+    update: { gmailHistoryId: null },
+    create: {
+      id: "google-token-singleton",
+      accessToken: "a", refreshToken: "r", expiresAt: new Date(Date.now() + 3600_000),
+      scope: "s", email: "e2e-email@test.com", gmailHistoryId: null,
+    },
+  });
+
   token = jwt.sign({ sub: user.id, name: user.name, email: user.email, role: user.role });
 });
 
 afterAll(async () => {
+  await prisma.googleToken.deleteMany({ where: { id: "google-token-singleton" } });
   await app.close();
 });
 
@@ -187,5 +200,24 @@ describe("GET /track/click/:token (public — redirects)", () => {
     return request(app.getHttpServer())
       .get(`/track/click/${VALID_TRACKING_TOKEN}`)
       .expect(302);
+  });
+});
+
+describe("POST /email/sync (manual Gmail poll)", () => {
+  it("requires authentication", () => {
+    return request(app.getHttpServer()).post("/email/sync").expect(401);
+  });
+
+  it("on first run stores the initial historyId and returns processed=0", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/email/sync")
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(res.body.processed).toBe(0);
+
+    // The singleton token now carries the historyId from the Gmail profile fake
+    const tokenRow = await prisma.googleToken.findUnique({ where: { id: "google-token-singleton" } });
+    expect(tokenRow?.gmailHistoryId).toBe("12345");
   });
 });

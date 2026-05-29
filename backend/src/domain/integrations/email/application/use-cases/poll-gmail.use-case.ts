@@ -2,7 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { Either, right, left } from "@/core/either";
 import { GmailPort } from "../ports/gmail.port";
 import { ProcessIncomingEmailUseCase } from "./process-incoming-email.use-case";
-import { PrismaService } from "@/infra/database/prisma.service";
+import { GoogleTokenRepository } from "../repositories/google-token.repository";
 
 export interface PollGmailInput {
   userId: string;
@@ -20,37 +20,31 @@ export class PollGmailUseCase {
   constructor(
     private readonly gmailPort: GmailPort,
     private readonly processIncomingEmail: ProcessIncomingEmailUseCase,
-    private readonly prisma: PrismaService,
+    private readonly googleToken: GoogleTokenRepository,
   ) {}
 
   async execute(input: PollGmailInput): Promise<Either<Error, PollGmailOutput>> {
     const { userId, ownerId } = input;
 
     try {
-      // 1. Get current historyId from GoogleToken
-      const googleToken = await this.prisma.googleToken.findFirst({
-        where: { id: userId },
-        select: { gmailHistoryId: true },
-      });
+      // 1. Get current historyId from the (singleton) GoogleToken
+      const token = await this.googleToken.findFirst();
 
       let historyId: string;
 
-      if (!googleToken?.gmailHistoryId) {
+      if (!token?.gmailHistoryId) {
         // Fetch profile to get initial historyId
         const profile = await this.gmailPort.getProfile(userId);
         historyId = profile.historyId;
 
         // Store initial historyId
-        await this.prisma.googleToken.updateMany({
-          where: { id: userId },
-          data: { gmailHistoryId: historyId },
-        });
+        await this.googleToken.updateHistoryId(historyId);
 
         // No messages to process on first run
         return right({ processed: 0 });
       }
 
-      historyId = googleToken.gmailHistoryId;
+      historyId = token.gmailHistoryId;
 
       // 2. Poll for new messages
       const messages = await this.gmailPort.pollHistory(userId, historyId);
@@ -68,10 +62,7 @@ export class PollGmailUseCase {
 
       // 4. Always advance historyId so expired/stale IDs don't get stuck
       const profile = await this.gmailPort.getProfile(userId);
-      await this.prisma.googleToken.updateMany({
-        where: { id: userId },
-        data: { gmailHistoryId: profile.historyId },
-      });
+      await this.googleToken.updateHistoryId(profile.historyId);
 
       return right({ processed });
     } catch (err) {
