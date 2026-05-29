@@ -177,4 +177,45 @@ describe("POST /email/verify/lead-contact/:id (e2e)", () => {
     const saved = await prisma.leadContact.findUnique({ where: { id: CONTACT_ID } });
     expect((saved?.emailVerificationReason ?? "").trim().length).toBeGreaterThan(0);
   });
+
+  // ── Sibling endpoint: POST /email/verify/lead/:id ──────────────────────────────
+
+  it("verifies the owner's lead email and persists the result (200)", async () => {
+    await prisma.lead.update({ where: { id: LEAD_ID }, data: { email: "lead@empresa.com" } });
+
+    const res = await request(app.getHttpServer())
+      .post(`/email/verify/lead/${LEAD_ID}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    expect(res.body.valid).toBe(true);
+    const saved = await prisma.lead.findUnique({ where: { id: LEAD_ID } });
+    expect(saved?.emailVerified).toBe(true);
+    expect(saved?.emailVerificationStatus).toBe("valid");
+  });
+
+  it("denies verifying a lead owned by someone else (403)", async () => {
+    await prisma.lead.update({ where: { id: FOREIGN_LEAD_ID }, data: { email: "x@empresa.com" } });
+
+    await request(app.getHttpServer())
+      .post(`/email/verify/lead/${FOREIGN_LEAD_ID}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(403);
+  });
+
+  it("returns 422 when the lead has no email", async () => {
+    await prisma.lead.update({ where: { id: LEAD_ID }, data: { email: null } });
+
+    await request(app.getHttpServer())
+      .post(`/email/verify/lead/${LEAD_ID}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(422);
+  });
+
+  it("returns 404 when the lead does not exist", async () => {
+    await request(app.getHttpServer())
+      .post(`/email/verify/lead/ghost-lead`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(404);
+  });
 });

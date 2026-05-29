@@ -4,9 +4,12 @@ import { Lead } from "@/domain/leads/enterprise/entities/lead";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 import { EmailVerifierPort, EmailVerificationResult } from "@/domain/integrations/email/application/ports/email-verifier.port";
 import { VerifyLeadEmailUseCase } from "@/domain/integrations/email/application/use-cases/verify-lead-email.use-case";
+import { InvalidEmailVerificationError } from "@/domain/integrations/email/enterprise/value-objects/email-verification.vo";
 
 class FakeEmailVerifier extends EmailVerifierPort {
   public lastVerifiedEmail: string | null = null;
+  public callCount = 0;
+  public error: Error | null = null;
   public resultToReturn: EmailVerificationResult = {
     valid: true,
     status: "valid",
@@ -14,7 +17,9 @@ class FakeEmailVerifier extends EmailVerifierPort {
   };
 
   async verify(email: string): Promise<EmailVerificationResult> {
+    this.callCount++;
     this.lastVerifiedEmail = email;
+    if (this.error) throw this.error;
     return this.resultToReturn;
   }
 }
@@ -110,5 +115,69 @@ describe("VerifyLeadEmailUseCase", () => {
     expect(value.valid).toBe(true);
     expect(value.status).toBe("valid");
     expect(value.reason).toBe("Email válido");
+  });
+
+  // ── Authorization / data isolation ────────────────────────────────────────────
+
+  it("denies access when the requester does not own the lead", async () => {
+    leadsRepo.items.push(makeLead({ email: "c@e.com" })); // owned by owner-1
+
+    const result = await sut.execute({ leadId: "lead-1", requesterId: "another-user", requesterRole: "sdr" });
+
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).message).toBe("Não autorizado");
+    expect(emailVerifier.callCount).toBe(0);
+    expect(leadsRepo.items[0].emailVerificationStatus).toBeUndefined();
+  });
+
+  it("allows an admin to verify a lead they do not own", async () => {
+    leadsRepo.items.push(makeLead({ email: "c@e.com" }));
+    const result = await sut.execute({ leadId: "lead-1", requesterId: "another-user", requesterRole: "admin" });
+    expect(result.isRight()).toBe(true);
+  });
+
+  // ── Edge cases ───────────────────────────────────────────────────────────────
+
+  it("returns left and persists nothing when the verifier yields an unknown status (VO guard)", async () => {
+    leadsRepo.items.push(makeLead({ email: "c@e.com" }));
+    emailVerifier.resultToReturn = { valid: false, status: "garbage" as never, reason: "x" };
+
+    const result = await sut.execute({ leadId: "lead-1", requesterId: "owner-1", requesterRole: "sdr" });
+
+    expect(result.isLeft()).toBe(true);
+    expect(result.value).toBeInstanceOf(InvalidEmailVerificationError);
+    expect(leadsRepo.items[0].emailVerificationStatus).toBeUndefined();
+  });
+
+  it("falls back to a status-derived reason when the verifier returns an empty reason", async () => {
+    leadsRepo.items.push(makeLead({ email: "c@e.com" }));
+    emailVerifier.resultToReturn = { valid: false, status: "invalid", reason: "   " };
+
+    const result = await sut.execute({ leadId: "lead-1", requesterId: "owner-1", requesterRole: "sdr" });
+    expect(result.isRight()).toBe(true);
+    expect((leadsRepo.items[0].emailVerificationReason ?? "").trim().length).toBeGreaterThan(0);
+  });
+
+  it("propagates a verifier failure as left without persisting", async () => {
+    leadsRepo.items.push(makeLead({ email: "c@e.com" }));
+    emailVerifier.error = new Error("verifier offline");
+
+    const result = await sut.execute({ leadId: "lead-1", requesterId: "owner-1", requesterRole: "sdr" });
+
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).message).toContain("verifier offline");
+    expect(leadsRepo.items[0].emailVerificationStatus).toBeUndefined();
+  });
+
+  it("returns left (does not throw) when the repository save fails", async () => {
+    leadsRepo.items.push(makeLead({ email: "c@e.com" }));
+    leadsRepo.saveEmailVerification = async () => {
+      throw new Error("db down");
+    };
+
+    const result = await sut.execute({ leadId: "lead-1", requesterId: "owner-1", requesterRole: "sdr" });
+
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).message).toContain("db down");
   });
 });

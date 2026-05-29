@@ -233,7 +233,11 @@ export class EmailController {
     });
 
     if (result.isLeft()) {
-      throw new NotFoundException(result.value.message);
+      const msg = result.value.message;
+      if (msg.includes("Não autorizado")) throw new ForbiddenException(msg);
+      if (msg.includes("não encontrado")) throw new NotFoundException(msg);
+      if (msg.includes("não possui email")) throw new UnprocessableEntityException(msg);
+      throw new BadGatewayException(msg);
     }
 
     return { ok: true, ...result.value };
