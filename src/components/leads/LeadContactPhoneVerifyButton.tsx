@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, ApiError } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 
 interface PhoneResult {
@@ -28,6 +28,22 @@ interface VerifyResponse {
 }
 
 type Status = "idle" | "checking" | "done" | "error";
+
+/** Maps a failed verification request to a friendly pt-BR message by HTTP status. */
+function messageForError(err: unknown): string {
+  if (err instanceof ApiError) {
+    switch (err.status) {
+      case 403:
+        return "Você não tem permissão para verificar este contato";
+      case 404:
+        return "Contato não encontrado";
+      case 502:
+      case 503:
+        return "Serviço de verificação indisponível. Tente novamente.";
+    }
+  }
+  return err instanceof Error ? err.message : "Erro ao verificar telefone";
+}
 
 function PhoneBadge({ result }: { result: PhoneResult }) {
   if (result.valid) {
@@ -94,7 +110,7 @@ export function LeadContactPhoneVerifyButton({
       router.refresh();
     } catch (err) {
       setUiStatus("error");
-      setErrorMsg(err instanceof Error ? err.message : "Erro ao verificar telefone");
+      setErrorMsg(messageForError(err));
     }
   }
 

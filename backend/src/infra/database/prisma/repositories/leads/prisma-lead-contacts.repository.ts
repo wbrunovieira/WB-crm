@@ -102,6 +102,13 @@ export class PrismaLeadContactsRepository extends LeadContactsRepository {
     return row?.leadId ?? null;
   }
 
+  async savePhoneVerification(id: string, data: { phoneValid: boolean; phoneType: string }): Promise<void> {
+    await this.prisma.leadContact.update({
+      where: { id },
+      data: { phoneValid: data.phoneValid, phoneType: data.phoneType },
+    });
+  }
+
   private toRecord(row: {
     id: string;
     leadId: string;

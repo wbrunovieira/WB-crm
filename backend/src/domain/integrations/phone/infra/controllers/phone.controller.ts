@@ -9,6 +9,7 @@ import {
   HttpCode,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
   Res,
 } from "@nestjs/common";
 import type { Response } from "express";
@@ -180,10 +181,13 @@ export class PhoneController {
     const result = await this.verifyLeadContactPhones.execute({
       leadContactId: id,
       requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
     });
 
     if (result.isLeft()) {
-      throw new NotFoundException(result.value.message);
+      const msg = result.value.message;
+      if (msg.includes("Não autorizado")) throw new ForbiddenException(msg);
+      throw new NotFoundException(msg);
     }
 
     return { ok: true, ...result.value };

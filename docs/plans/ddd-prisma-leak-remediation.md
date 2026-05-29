@@ -136,7 +136,7 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 | 2 | trigger-campaign-send-now | ⚠️ wrapper de lock `sendingInProgress` (sem Prisma/validação) — unit test opcional, baixo valor |
 | 3 | funnel.use-cases (+ `WeeklyGoalsRepository` + unit) | ⏳ |
 | 3 | upload-proposal · update-proposal-with-file | ⏳ |
-| 3 | verify-lead-contact-phones | ⏳ |
+| 3 | verify-lead-contact-phones | ✅ 2026-05-29 — `LeadContactsRepository`(+`savePhoneVerification`)+`LeadsRepository`; owner-scoping + 403/404; frontend `ApiError`; unit 8 + e2e 5; senior (paridade c/ email) |
 | 4 | guardrail lint/CI + regra no CLAUDE.md | ⏳ |
 | 5 | VO: operations enum · `InstagramHandle` · (opcional) name VOs | ⏳ |
 | 6 | unit backfill: warming, admin, auth, bot-flows, dashboard, deals, activities | ⏳ |
