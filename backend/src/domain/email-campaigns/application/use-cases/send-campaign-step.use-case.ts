@@ -10,6 +10,7 @@ import { VariableResolverService } from "../services/variable-resolver.service";
 import { EmailSuppressionsRepository } from "../repositories/email-suppressions.repository";
 import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
 import { Activity } from "@/domain/activities/enterprise/entities/activity";
+import { EmailAddress } from "@/domain/integrations/email/enterprise/value-objects/email-address.vo";
 import { RecipientContextPort } from "../ports/recipient-context.port";
 
 function sleep(ms: number): Promise<void> {
@@ -196,7 +197,9 @@ export class SendCampaignStepUseCase {
   }
 
   private isValidEmail(email: string): boolean {
-    return /^[^\s@,;/\\]+@[^\s@,;/\\]+\.[^\s@,;/\\]{2,}$/.test(email.trim());
+    // Validation lives in the EmailAddress VO. Compound/dirty fields like
+    // "a@x.com / b@y.com" carry a second "@" and are rejected by the VO.
+    return EmailAddress.create(email).isRight();
   }
 
   private async createBounceActivity(

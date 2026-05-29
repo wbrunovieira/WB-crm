@@ -131,8 +131,9 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 | 2 | get-campaign-progress | ✅ 2026-05-29 — Prisma removido (stepOrderMap do `allSteps`); unit 8; senior |
 | 2 | enroll-entity | ✅ 2026-05-29 — `EnrollmentSourceRepository` (read-model port + adapter); unit 9; senior |
 | 2 | bulk-enroll (+ EMAIL_REGEX→`EmailAddress`) | ✅ 2026-05-29 — `findBulkEnrollmentCandidates` no adapter (8 queries); VO `EmailAddress`; unit 10; e2e; senior |
-| 2 | send-campaign-step (EMAIL_REGEX→`EmailAddress` + unit) | ⏳ |
-| 2 | unit: handle-gmail-bounce, get-campaign-stats, add-recipients, trigger-campaign-send-now | ⏳ |
+| 2 | send-campaign-step (EMAIL_REGEX→`EmailAddress`) | ✅ 2026-05-29 — `isValidEmail` agora delega ao VO `EmailAddress`; teste de campo composto (`a@x / b@y`) preservado no spec combinado |
+| 2 | unit: handle-gmail-bounce, get-campaign-stats, add-recipients | ✅ já cobertos no spec combinado `email-campaigns.spec.ts` (falso-positivo da auditoria por heurística de nome) |
+| 2 | trigger-campaign-send-now | ⚠️ wrapper de lock `sendingInProgress` (sem Prisma/validação) — unit test opcional, baixo valor |
 | 3 | funnel.use-cases (+ `WeeklyGoalsRepository` + unit) | ⏳ |
 | 3 | upload-proposal · update-proposal-with-file | ⏳ |
 | 3 | verify-lead-contact-phones | ⏳ |
