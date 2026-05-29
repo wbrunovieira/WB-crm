@@ -1,7 +1,7 @@
 # Plano: Aderência DDD da Camada de Aplicação (Prisma · VOs · Testes)
 
 **Data de Criação:** 2026-05-29
-**Status:** Fase 1 concluída (4/4) + trilha de segurança · Fases 2–6 pendentes
+**Status:** Fases 1–3 concluídas — **ZERO Prisma em use cases** · trilha de segurança concluída · Fases 4–6 (guardrail, VOs, backfill de testes) pendentes
 **Prioridade:** Alta — dívida cresce em código novo de integração
 **Origem:** Análise de aderência a DDD + auditoria de **todos os 205 use cases** (2026-05-29)
 
@@ -134,8 +134,8 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 | 2 | send-campaign-step (EMAIL_REGEX→`EmailAddress`) | ✅ 2026-05-29 — `isValidEmail` agora delega ao VO `EmailAddress`; teste de campo composto (`a@x / b@y`) preservado no spec combinado |
 | 2 | unit: handle-gmail-bounce, get-campaign-stats, add-recipients | ✅ já cobertos no spec combinado `email-campaigns.spec.ts` (falso-positivo da auditoria por heurística de nome) |
 | 2 | trigger-campaign-send-now | ⚠️ wrapper de lock `sendingInProgress` (sem Prisma/validação) — unit test opcional, baixo valor |
-| 3 | funnel.use-cases (+ `WeeklyGoalsRepository` + unit) | ⏳ |
-| 3 | upload-proposal · update-proposal-with-file | ⏳ |
+| 3 | funnel.use-cases (+ `FunnelRepository` + unit) | ✅ 2026-05-29 — read-model port `FunnelRepository` (4 métodos, 16 queries no adapter); use cases viraram orquestradores finos; owner-scoping preservado (equivalência verificada pelo senior); unit 7 + e2e; senior |
+| 3 | upload-proposal · update-proposal-with-file | ✅ 2026-05-29 — `LeadsRepository.findDriveFolder/setDriveFolder`; unit 37 + e2e 10 |
 | 3 | verify-lead-contact-phones | ✅ 2026-05-29 — `LeadContactsRepository`(+`savePhoneVerification`)+`LeadsRepository`; owner-scoping + 403/404; frontend `ApiError`; unit 8 + e2e 5; senior (paridade c/ email) |
 | 4 | guardrail lint/CI + regra no CLAUDE.md | ⏳ |
 | 5 | VO: operations enum · `InstagramHandle` · (opcional) name VOs | ⏳ |
