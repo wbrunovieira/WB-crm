@@ -97,7 +97,7 @@ Adicionar verificação automática para impedir novos vazamentos:
 | Fase | Use case | Status |
 |------|----------|--------|
 | 1 | process-whatsapp-message | ✅ feito (2026-05-29) — injeta `CreateNotificationUseCase` (não Prisma); link via VO `EntityLink`; unit TDD + e2e |
-| 1 | verify-lead-contact-email | ✅ feito (2026-05-29) — injeta `LeadContactsRepository`; VO `EmailVerification`; unit (34) + e2e (7); revisão senior. ⚠️ achado pendente: `requesterId` não usado → sem owner-scoping (gap de isolamento **pré-existente**, decisão de escopo) |
+| 1 | verify-lead-contact-email | ✅ feito (2026-05-29) — injeta `LeadContactsRepository` + `LeadsRepository`; VO `EmailVerification`; **owner-scoping via lead pai** (admin bypass) + erros HTTP discriminados (403/404/422/502) no controller + frontend interpretando status (`ApiError`); unit (21) + VO (14) + e2e (8); revisão senior |
 | 1 | poll-gmail | ⏳ |
 | 1 | process-incoming-email | ⏳ |
 | 2 | get-campaign-progress | ⏳ |

@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useSession } from "next-auth/react";
-import { apiFetch } from "@/lib/api-client";
+import { apiFetch, ApiError } from "@/lib/api-client";
 import { useRouter } from "next/navigation";
 
 interface LeadContactEmailVerifyButtonProps {
@@ -37,6 +37,24 @@ function statusToUiStatus(status: string, valid: boolean): Status {
   if (status === "risky") return "risky";
   if (status === "unknown") return "unknown";
   return "invalid";
+}
+
+/** Maps a failed verification request to a friendly pt-BR message by HTTP status. */
+function messageForError(err: unknown): string {
+  if (err instanceof ApiError) {
+    switch (err.status) {
+      case 403:
+        return "Você não tem permissão para verificar este contato";
+      case 404:
+        return "Contato não encontrado";
+      case 422:
+        return "Este contato não possui email";
+      case 502:
+      case 503:
+        return "Serviço de verificação indisponível. Tente novamente.";
+    }
+  }
+  return err instanceof Error ? err.message : "Erro ao verificar email";
 }
 
 export function LeadContactEmailVerifyButton({
@@ -82,7 +100,7 @@ export function LeadContactEmailVerifyButton({
       router.refresh();
     } catch (err) {
       setUiStatus("error");
-      setErrorMsg(err instanceof Error ? err.message : "Erro ao verificar email");
+      setErrorMsg(messageForError(err));
     }
   }
 

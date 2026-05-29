@@ -8,6 +8,18 @@
 export const BACKEND_URL =
   process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3010";
 
+/** Error thrown by apiFetch on a non-2xx response. Carries the HTTP status so
+ *  callers can interpret failures (403/404/422/5xx) without parsing messages. */
+export class ApiError extends Error {
+  constructor(
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+    this.name = "ApiError";
+  }
+}
+
 export async function apiFetch<T>(
   path: string,
   token: string,
@@ -24,7 +36,7 @@ export async function apiFetch<T>(
 
   if (!res.ok) {
     const body = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(body?.message ?? `Backend error ${res.status}`);
+    throw new ApiError(res.status, body?.message ?? `Backend error ${res.status}`);
   }
 
   if (res.status === 204) return undefined as T;

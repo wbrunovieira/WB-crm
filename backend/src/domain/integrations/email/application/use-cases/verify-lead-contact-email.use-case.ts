@@ -2,11 +2,13 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { EmailVerifierPort } from "../ports/email-verifier.port";
 import { LeadContactsRepository } from "@/domain/leads/application/repositories/lead-contacts.repository";
+import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
 import { EmailVerification } from "../../enterprise/value-objects/email-verification.vo";
 
 export interface VerifyLeadContactEmailInput {
   leadContactId: string;
   requesterId: string;
+  requesterRole: string;
 }
 
 export interface VerifyLeadContactEmailResult {
@@ -24,6 +26,7 @@ export class VerifyLeadContactEmailUseCase {
   constructor(
     private readonly emailVerifier: EmailVerifierPort,
     private readonly leadContacts: LeadContactsRepository,
+    private readonly leads: LeadsRepository,
   ) {}
 
   async execute(input: VerifyLeadContactEmailInput): Promise<Output> {
@@ -31,6 +34,15 @@ export class VerifyLeadContactEmailUseCase {
 
     if (!leadContact) {
       return left(new Error("LeadContact não encontrado"));
+    }
+
+    // Data isolation: access is governed by the parent lead's owner.
+    const lead = await this.leads.findByIdRaw(leadContact.leadId);
+    if (!lead) {
+      return left(new Error("Lead não encontrado"));
+    }
+    if (input.requesterRole !== "admin" && lead.ownerId !== input.requesterId) {
+      return left(new Error("Não autorizado"));
     }
 
     if (!leadContact.email) {

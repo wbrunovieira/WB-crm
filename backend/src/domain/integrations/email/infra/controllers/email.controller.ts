@@ -12,6 +12,9 @@ import {
   HttpCode,
   BadRequestException,
   NotFoundException,
+  ForbiddenException,
+  UnprocessableEntityException,
+  BadGatewayException,
   Res,
 } from "@nestjs/common";
 import type { Response } from "express";
@@ -246,10 +249,16 @@ export class EmailController {
     const result = await this.verifyLeadContactEmail.execute({
       leadContactId: id,
       requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
     });
 
     if (result.isLeft()) {
-      throw new NotFoundException(result.value.message);
+      const msg = result.value.message;
+      if (msg.includes("Não autorizado")) throw new ForbiddenException(msg);
+      if (msg.includes("não encontrado")) throw new NotFoundException(msg);
+      if (msg.includes("não possui email")) throw new UnprocessableEntityException(msg);
+      // Verifier offline / malformed verifier output → upstream failure
+      throw new BadGatewayException(msg);
     }
 
     return { ok: true, ...result.value };

@@ -11,6 +11,10 @@ const OWNER_ID = "e2e-vlce-owner";
 const LEAD_ID = "e2e-vlce-lead";
 const CONTACT_ID = "e2e-vlce-contact";
 const CONTACT_NO_EMAIL_ID = "e2e-vlce-contact-noemail";
+// A second owner's data — used to assert cross-owner access is denied
+const FOREIGN_OWNER_ID = "e2e-vlce-foreign-owner";
+const FOREIGN_LEAD_ID = "e2e-vlce-foreign-lead";
+const FOREIGN_CONTACT_ID = "e2e-vlce-foreign-contact";
 
 // Deterministic verifier — picks its verdict from the email domain
 const fakeVerifier = {
@@ -62,13 +66,30 @@ describe("POST /email/verify/lead-contact/:id (e2e)", () => {
       create: { id: CONTACT_NO_EMAIL_ID, leadId: LEAD_ID, name: "Contato Sem Email", email: null },
     });
 
+    // Second owner + their lead/contact (for the cross-owner 403 case)
+    await prisma.user.upsert({
+      where: { id: FOREIGN_OWNER_ID },
+      update: {},
+      create: { id: FOREIGN_OWNER_ID, email: "e2e-vlce-foreign@test.com", name: "Foreign", password: "hashed", role: "sdr" },
+    });
+    await prisma.lead.upsert({
+      where: { id: FOREIGN_LEAD_ID },
+      update: {},
+      create: { id: FOREIGN_LEAD_ID, businessName: "Foreign Lead", ownerId: FOREIGN_OWNER_ID },
+    });
+    await prisma.leadContact.upsert({
+      where: { id: FOREIGN_CONTACT_ID },
+      update: { email: "x@foreign.test" },
+      create: { id: FOREIGN_CONTACT_ID, leadId: FOREIGN_LEAD_ID, name: "Foreign Contact", email: "x@foreign.test" },
+    });
+
     token = jwt.sign({ sub: OWNER_ID, name: "E2E VLCE", email: "e2e-vlce@test.com", role: "sdr" });
   });
 
   afterAll(async () => {
-    await prisma.leadContact.deleteMany({ where: { leadId: LEAD_ID } });
-    await prisma.lead.deleteMany({ where: { id: LEAD_ID } });
-    await prisma.user.deleteMany({ where: { id: OWNER_ID } });
+    await prisma.leadContact.deleteMany({ where: { leadId: { in: [LEAD_ID, FOREIGN_LEAD_ID] } } });
+    await prisma.lead.deleteMany({ where: { id: { in: [LEAD_ID, FOREIGN_LEAD_ID] } } });
+    await prisma.user.deleteMany({ where: { id: { in: [OWNER_ID, FOREIGN_OWNER_ID] } } });
     await app.close();
   });
 
@@ -110,11 +131,18 @@ describe("POST /email/verify/lead-contact/:id (e2e)", () => {
     expect(saved?.emailVerificationStatus).toBe("invalid");
   });
 
-  it("returns 404 when the contact has no email", async () => {
+  it("returns 422 when the contact has no email", async () => {
     await request(app.getHttpServer())
       .post(`/email/verify/lead-contact/${CONTACT_NO_EMAIL_ID}`)
       .set("Authorization", `Bearer ${token}`)
-      .expect(404);
+      .expect(422);
+  });
+
+  it("returns 403 when the requester does not own the parent lead", async () => {
+    await request(app.getHttpServer())
+      .post(`/email/verify/lead-contact/${FOREIGN_CONTACT_ID}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(403);
   });
 
   it("returns 404 when the contact does not exist", async () => {
