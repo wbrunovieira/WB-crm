@@ -43,3 +43,6 @@ next-env.d.ts
 deploy/ansible/.vault_pass
 deploy/ansible/*.retry
 *.retry
+
+# Claude Code (internal worktrees, locks, etc.)
+.claude/
