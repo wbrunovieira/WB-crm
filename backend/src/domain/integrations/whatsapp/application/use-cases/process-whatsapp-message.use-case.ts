@@ -164,6 +164,14 @@ export class ProcessWhatsAppMessageUseCase {
 
       // Notify only when the CLIENT initiates (not outgoing messages)
       if (!fromMe) {
+        // Link the notification to the matched entity page so the bell is clickable
+        const link = leadId
+          ? `/leads/${leadId}`
+          : contactId
+            ? `/contacts/${contactId}`
+            : partnerId
+              ? `/partners/${partnerId}`
+              : undefined;
         try {
           await this.prisma.notification.create({
             data: {
@@ -171,7 +179,7 @@ export class ProcessWhatsAppMessageUseCase {
               status: "pending",
               title: `Nova mensagem WhatsApp — ${pushName ?? phone}`,
               summary: text ?? mediaLabel ?? "(mídia)",
-              payload: JSON.stringify({ activityId, remoteJid, messageId }),
+              payload: JSON.stringify({ activityId, remoteJid, messageId, link }),
               read: false,
               userId: ownerId,
             },

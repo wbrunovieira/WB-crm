@@ -159,6 +159,14 @@ export class ProcessIncomingEmailUseCase {
       activityId = activity.id.toString();
 
       // 5. Create EMAIL_RECEIVED notification
+      // Link the notification to the matched entity page so the bell is clickable
+      const link = leadId
+        ? `/leads/${leadId}`
+        : organizationId
+          ? `/organizations/${organizationId}`
+          : contactId
+            ? `/contacts/${contactId}`
+            : undefined;
       try {
         await this.prisma.notification.create({
           data: {
@@ -170,6 +178,7 @@ export class ProcessIncomingEmailUseCase {
               activityId,
               fromEmail: message.from,
               receivedToEmail: message.to,
+              link,
             }),
             read: false,
             userId: ownerId,

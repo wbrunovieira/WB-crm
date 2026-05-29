@@ -27,14 +27,19 @@ let whatsAppRepo: FakeWhatsAppMessagesRepository;
 let activitiesRepo: FakeActivitiesRepository;
 let phoneMatcher: FakePhoneMatcherService;
 let useCase: ProcessWhatsAppMessageUseCase;
+const createdNotifications: Record<string, unknown>[] = [];
 const fakePrisma = {
   notification: {
-    create: vi.fn().mockResolvedValue({}),
+    create: vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => {
+      createdNotifications.push(data);
+      return Promise.resolve(data);
+    }),
   },
 };
 
 beforeEach(() => {
   vi.clearAllMocks();
+  createdNotifications.length = 0;
   whatsAppRepo = new FakeWhatsAppMessagesRepository();
   activitiesRepo = new FakeActivitiesRepository();
   phoneMatcher = new FakePhoneMatcherService();
@@ -181,6 +186,34 @@ describe("ProcessWhatsAppMessageUseCase", () => {
 
     const activity = activitiesRepo.items[0];
     expect(activity.description).toContain("Você: Bom dia!");
+  });
+
+  it("includes a link to the lead page in the notification payload when phone matches a lead", async () => {
+    phoneMatcher.addMatch(PHONE, { entityType: "lead", leadId: "lead-xyz" });
+
+    await useCase.execute(makeInput());
+
+    expect(createdNotifications).toHaveLength(1);
+    const payload = JSON.parse(createdNotifications[0].payload as string);
+    expect(payload.link).toBe("/leads/lead-xyz");
+  });
+
+  it("includes a link to the contact page in the notification payload when phone matches a contact", async () => {
+    phoneMatcher.addMatch(PHONE, { entityType: "contact", contactId: "contact-abc" });
+
+    await useCase.execute(makeInput());
+
+    const payload = JSON.parse(createdNotifications[0].payload as string);
+    expect(payload.link).toBe("/contacts/contact-abc");
+  });
+
+  it("includes a link to the partner page in the notification payload when phone matches a partner", async () => {
+    phoneMatcher.addMatch(PHONE, { entityType: "partner", partnerId: "partner-123" });
+
+    await useCase.execute(makeInput());
+
+    const payload = JSON.parse(createdNotifications[0].payload as string);
+    expect(payload.link).toBe("/partners/partner-123");
   });
 
   it("returns whatsAppMessageId (DB record id) in output", async () => {

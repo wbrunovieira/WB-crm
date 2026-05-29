@@ -243,6 +243,39 @@ describe("ProcessIncomingEmailUseCase", () => {
     expect(payload.receivedToEmail).toBe("bruno@saltoup.com");
   });
 
+  it("includes a link to the lead page in the notification payload when a lead matches", async () => {
+    fakePrisma.contact.findFirst.mockResolvedValue(null);
+    fakePrisma.leadContact.findFirst.mockResolvedValue({ leadId: "lead-xyz" });
+
+    await useCase.execute(makeMessage({ from: "lead-contact@example.com" }), OWNER_ID);
+
+    const notif = createdNotifications[0] as Record<string, unknown>;
+    const payload = JSON.parse(notif.payload as string);
+    expect(payload.link).toBe("/leads/lead-xyz");
+  });
+
+  it("includes a link to the organization page in the notification payload when an organization matches", async () => {
+    fakePrisma.contact.findFirst.mockResolvedValue(null);
+    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
+    fakePrisma.organization.findFirst.mockResolvedValue({ id: "org-999" });
+
+    await useCase.execute(makeMessage({ from: "contact@organization.com" }), OWNER_ID);
+
+    const notif = createdNotifications[0] as Record<string, unknown>;
+    const payload = JSON.parse(notif.payload as string);
+    expect(payload.link).toBe("/organizations/org-999");
+  });
+
+  it("includes a link to the contact page in the notification payload when a contact matches", async () => {
+    fakePrisma.contact.findFirst.mockResolvedValue({ id: "contact-abc" });
+
+    await useCase.execute(makeMessage({ from: "contact@example.com" }), OWNER_ID);
+
+    const notif = createdNotifications[0] as Record<string, unknown>;
+    const payload = JSON.parse(notif.payload as string);
+    expect(payload.link).toBe("/contacts/contact-abc");
+  });
+
   it("does NOT create notification when sender is unknown (skipped)", async () => {
     fakePrisma.contact.findFirst.mockResolvedValue(null);
     fakePrisma.leadContact.findFirst.mockResolvedValue(null);
