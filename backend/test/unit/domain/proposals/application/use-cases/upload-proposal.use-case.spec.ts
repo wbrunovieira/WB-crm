@@ -11,8 +11,10 @@ const mockDrive = {
 
 const mockFindLead = vi.fn();
 const mockUpdateLead = vi.fn();
-const mockPrisma = {
-  lead: { findUnique: mockFindLead, update: mockUpdateLead },
+// Fake LeadsRepository — only the drive-folder methods the use case calls.
+const mockLeads = {
+  findDriveFolder: mockFindLead,
+  setDriveFolder: mockUpdateLead,
 };
 
 describe("UploadProposalUseCase", () => {
@@ -22,7 +24,7 @@ describe("UploadProposalUseCase", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     repo = new InMemoryProposalsRepository();
-    uc = new UploadProposalUseCase(repo, mockDrive as any, mockPrisma as any);
+    uc = new UploadProposalUseCase(repo, mockDrive as any, mockLeads as any);
   });
 
   it("creates proposal without file when no fileBase64 provided", async () => {
@@ -99,10 +101,7 @@ describe("UploadProposalUseCase", () => {
     expect(mockGetOrCreateFolder).toHaveBeenNthCalledWith(1, "WB-CRM", undefined);
     expect(mockGetOrCreateFolder).toHaveBeenNthCalledWith(2, "Propostas", "root-id");
     expect(mockGetOrCreateFolder).toHaveBeenNthCalledWith(3, "Empresa X", "proposals-id");
-    expect(mockUpdateLead).toHaveBeenCalledWith(expect.objectContaining({
-      where: { id: "lead-1" },
-      data: { driveFolderId: "lead-folder" },
-    }));
+    expect(mockUpdateLead).toHaveBeenCalledWith("lead-1", "lead-folder");
   });
 
   it("returns left on empty title", async () => {

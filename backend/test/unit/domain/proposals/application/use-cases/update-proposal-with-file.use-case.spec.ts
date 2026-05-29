@@ -14,8 +14,9 @@ const mockDrive = {
 
 const mockFindLead = vi.fn();
 const mockUpdateLead = vi.fn();
-const mockPrisma = {
-  lead: { findUnique: mockFindLead, update: mockUpdateLead },
+const mockLeads = {
+  findDriveFolder: mockFindLead,
+  setDriveFolder: mockUpdateLead,
 };
 
 describe("UpdateProposalWithFileUseCase", () => {
@@ -27,7 +28,7 @@ describe("UpdateProposalWithFileUseCase", () => {
     vi.clearAllMocks();
     repo = new InMemoryProposalsRepository();
     create = new CreateProposalUseCase(repo);
-    uc = new UpdateProposalWithFileUseCase(repo, mockDrive as any, mockPrisma as any);
+    uc = new UpdateProposalWithFileUseCase(repo, mockDrive as any, mockLeads as any);
   });
 
   it("returns left when proposal not found", async () => {

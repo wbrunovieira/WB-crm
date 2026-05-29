@@ -220,4 +220,14 @@ export class InMemoryLeadsRepository extends LeadsRepository {
     const lead = this.items.find(l => l.id.toString() === leadId);
     if (lead) lead.update({ metaAds: metaAdsJson });
   }
+
+  public driveFolders: Record<string, string> = {};
+  async findDriveFolder(leadId: string): Promise<{ driveFolderId: string | null; businessName: string | null } | null> {
+    const lead = this.items.find(l => l.id.toString() === leadId);
+    if (!lead) return null;
+    return { driveFolderId: this.driveFolders[leadId] ?? null, businessName: lead.businessName ?? null };
+  }
+  async setDriveFolder(leadId: string, driveFolderId: string): Promise<void> {
+    this.driveFolders[leadId] = driveFolderId;
+  }
 }

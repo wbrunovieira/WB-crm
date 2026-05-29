@@ -4,7 +4,7 @@ import { Proposal } from "../../enterprise/entities/proposal";
 import { ProposalsRepository } from "../repositories/proposals.repository";
 import { ProposalNotFoundError, ProposalForbiddenError } from "./proposals.use-cases";
 import { GoogleDrivePort } from "@/domain/integrations/whatsapp/application/ports/google-drive.port";
-import { PrismaService } from "@/infra/database/prisma.service";
+import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
 
 export interface UpdateProposalWithFileInput {
   id: string;
@@ -25,7 +25,7 @@ export class UpdateProposalWithFileUseCase {
   constructor(
     private readonly repo: ProposalsRepository,
     private readonly drive: GoogleDrivePort,
-    private readonly prisma: PrismaService,
+    private readonly leads: LeadsRepository,
   ) {}
 
   async execute(input: UpdateProposalWithFileInput): Promise<Either<Error, Proposal>> {
@@ -83,10 +83,7 @@ export class UpdateProposalWithFileUseCase {
   }
 
   private async getOrCreateLeadFolder(leadId: string): Promise<string> {
-    const lead = await this.prisma.lead.findUnique({
-      where: { id: leadId },
-      select: { driveFolderId: true, businessName: true },
-    });
+    const lead = await this.leads.findDriveFolder(leadId);
 
     if (lead?.driveFolderId) return lead.driveFolderId;
 
@@ -94,7 +91,7 @@ export class UpdateProposalWithFileUseCase {
     const proposalsId = await this.drive.getOrCreateFolder("Propostas", rootId);
     const folderId = await this.drive.getOrCreateFolder(lead?.businessName ?? leadId, proposalsId);
 
-    await this.prisma.lead.update({ where: { id: leadId }, data: { driveFolderId: folderId } });
+    await this.leads.setDriveFolder(leadId, folderId);
     return folderId;
   }
 }

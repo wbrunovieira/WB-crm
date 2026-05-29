@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "@/infra/auth/auth.module";
+import { LeadsModule } from "@/domain/leads/leads.module";
 import { ProposalsRepository } from "./application/repositories/proposals.repository";
 import {
   GetProposalsUseCase, GetProposalByIdUseCase,
@@ -12,7 +13,7 @@ import { ProposalsController } from "./infra/controllers/proposals.controller";
 import { ProposalsFileController } from "./infra/controllers/proposals-file.controller";
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, LeadsModule],
   controllers: [ProposalsController, ProposalsFileController],
   providers: [
     GetProposalsUseCase, GetProposalByIdUseCase,

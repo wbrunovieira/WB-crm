@@ -670,4 +670,17 @@ export class PrismaLeadsRepository extends LeadsRepository {
       data: { metaAds: metaAdsJson },
     });
   }
+
+  async findDriveFolder(leadId: string): Promise<{ driveFolderId: string | null; businessName: string | null } | null> {
+    const lead = await this.prisma.lead.findUnique({
+      where: { id: leadId },
+      select: { driveFolderId: true, businessName: true },
+    });
+    if (!lead) return null;
+    return { driveFolderId: lead.driveFolderId ?? null, businessName: lead.businessName ?? null };
+  }
+
+  async setDriveFolder(leadId: string, driveFolderId: string): Promise<void> {
+    await this.prisma.lead.update({ where: { id: leadId }, data: { driveFolderId } });
+  }
 }
