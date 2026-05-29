@@ -47,6 +47,7 @@ class FakeEnrollmentSource extends EnrollmentSourceRepository {
   orgs: Record<string, OrgEnrollmentView> = {};
   async findLeadEnrollment(id: string) { return this.leads[id] ?? null; }
   async findOrgEnrollment(id: string) { return this.orgs[id] ?? null; }
+  async findBulkEnrollmentCandidates() { return []; }
 }
 
 describe("EnrollEntityUseCase", () => {

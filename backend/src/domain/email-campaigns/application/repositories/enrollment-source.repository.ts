@@ -30,7 +30,26 @@ export interface OrgEnrollmentView {
   contacts: EnrollableContact[]; // contacts with a non-null email
 }
 
+/**
+ * A pre-shaped enrollment candidate for bulk enrollment. The adapter resolves
+ * the (many) source tables and returns a flat list; the use case only dedups,
+ * validates the email (via the EmailAddress VO) and creates recipients.
+ */
+export interface EnrollmentCandidate {
+  /** Exact dedup key, e.g. "LEAD:<id>", "LEAD_CONTACT:<id>", "CONTACT:<id>". */
+  dedupKey: string;
+  recipientType: "LEAD" | "CONTACT";
+  recipientId: string;
+  email: string;
+  name?: string;
+  company?: string;
+  role?: string;
+  customVars?: Record<string, string>;
+}
+
 export abstract class EnrollmentSourceRepository {
   abstract findLeadEnrollment(leadId: string): Promise<LeadEnrollmentView | null>;
   abstract findOrgEnrollment(orgId: string): Promise<OrgEnrollmentView | null>;
+  /** All enrollment candidates owned by `ownerId`, optionally filtered by sourceGroup. */
+  abstract findBulkEnrollmentCandidates(ownerId: string, sourceGroup?: string): Promise<EnrollmentCandidate[]>;
 }
