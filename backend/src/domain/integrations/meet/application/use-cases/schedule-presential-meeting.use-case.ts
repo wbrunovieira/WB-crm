@@ -108,7 +108,7 @@ export class SchedulePresentialMeetingUseCase {
     if (sendImmediate) {
       if ((method === "whatsapp" || input.reminderChannels?.includes("whatsapp")) && confirmationPhone && this.whatsApp) {
         try {
-          const text = this.buildWhatsAppText(meeting, input.location);
+          const text = this.buildWhatsAppText(meeting, input.location, input.contactName);
           await this.whatsApp.sendText(confirmationPhone, text);
           confirmationSent = true;
         } catch (err) {
@@ -208,7 +208,11 @@ export class SchedulePresentialMeetingUseCase {
     return right(meeting);
   }
 
-  private buildWhatsAppText(meeting: MeetingRecord & { location?: string | null }, location?: string): string {
+  private buildWhatsAppText(
+    meeting: MeetingRecord & { location?: string | null },
+    location?: string,
+    contactName?: string,
+  ): string {
     const loc = location ?? meeting.location;
     const dateStr = meeting.startAt.toLocaleDateString("pt-BR", {
       day: "2-digit", month: "2-digit", year: "numeric",
@@ -218,12 +222,20 @@ export class SchedulePresentialMeetingUseCase {
       hour: "2-digit", minute: "2-digit",
       timeZone: "America/Sao_Paulo",
     });
+
+    const firstName = contactName?.trim().split(/\s+/)[0];
+    const greeting = firstName ? `Olá, ${firstName}! 😊` : "Olá! 😊";
+
     const lines = [
-      `📅 *Reunião agendada: ${meeting.title}*`,
+      greeting,
+      ``,
+      `Conforme combinamos, deixo aqui registrado os detalhes da nossa reunião:`,
+      ``,
+      `📅 *${meeting.title}*`,
       `🗓 ${dateStr} às ${timeStr}`,
     ];
     if (loc) lines.push(`📍 ${loc}`);
-    lines.push("Aguardamos sua confirmação. ✅");
+    lines.push(``, `Qualquer imprevisto, é só me avisar. Até lá! 🤝`);
     return lines.join("\n");
   }
 }

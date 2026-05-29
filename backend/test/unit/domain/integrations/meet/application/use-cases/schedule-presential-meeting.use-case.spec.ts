@@ -139,6 +139,54 @@ describe("SchedulePresentialMeetingUseCase", () => {
       expect(repo.items[0].confirmationSentAt).not.toBeNull();
     });
 
+    it("monta confirmação amigável saudando o contato pelo primeiro nome, sem perguntar horário", async () => {
+      const sendText = vi.fn().mockResolvedValue({ messageId: "msg-1" });
+      const whatsApp = makeWhatsAppPort({ sendText });
+      const sut2 = new SchedulePresentialMeetingUseCase(repo, whatsApp as any, null, null, null);
+
+      await sut2.execute({
+        title: "Apresentação WB Digital Solutions - Website | Tem Tudo",
+        startAt: new Date("2026-05-29T21:00:00Z"),
+        attendeeEmails: [],
+        requesterId: "owner-1",
+        isPresential: true,
+        confirmationMethod: "whatsapp",
+        confirmationPhone: "+5524999990000",
+        location: "R. Gen. Rondon, 1010 - Petrópolis - RJ",
+        contactName: "João Silva",
+      });
+
+      const [, text] = sendText.mock.calls[0];
+      expect(text).toContain("Olá, João!");
+      expect(text).toContain("Conforme combinamos");
+      expect(text).toContain("Apresentação WB Digital Solutions - Website | Tem Tudo");
+      expect(text).toContain("R. Gen. Rondon, 1010 - Petrópolis - RJ");
+      expect(text).toContain("Qualquer imprevisto, é só me avisar. Até lá!");
+      // Copy antigo não pode mais aparecer
+      expect(text).not.toContain("Reunião agendada:");
+      expect(text).not.toContain("Aguardamos sua confirmação");
+    });
+
+    it("usa saudação genérica quando o nome do contato não é informado", async () => {
+      const sendText = vi.fn().mockResolvedValue({ messageId: "msg-1" });
+      const whatsApp = makeWhatsAppPort({ sendText });
+      const sut2 = new SchedulePresentialMeetingUseCase(repo, whatsApp as any, null, null, null);
+
+      await sut2.execute({
+        title: "Reunião Tem Tudo",
+        startAt: new Date("2026-05-29T21:00:00Z"),
+        attendeeEmails: [],
+        requesterId: "owner-1",
+        isPresential: true,
+        confirmationMethod: "whatsapp",
+        confirmationPhone: "+5524999990000",
+      });
+
+      const [, text] = sendText.mock.calls[0];
+      expect(text).toContain("Olá! 😊");
+      expect(text).not.toContain("Olá,");
+    });
+
     it("não envia WhatsApp quando confirmationPhone não fornecido", async () => {
       const sendText = vi.fn().mockResolvedValue({ messageId: "msg-1" });
       const whatsApp = makeWhatsAppPort({ sendText });
