@@ -317,7 +317,7 @@ export default function SchedulePresentialMeetingModal({
 
             {/* Steps */}
             <div className="mb-3 space-y-2">
-              {(["immediate", "morning_reminder", "one_hour_reminder", "on_time_reminder"] as ReminderStep[]).map((step) => (
+              {(["immediate", "morning_reminder"] as ReminderStep[]).map((step) => (
                 <label key={step} className="flex cursor-pointer items-center gap-2.5">
                   <div
                     onClick={() => toggleStep(step)}

@@ -5,12 +5,6 @@ import { GmailPort } from "@/domain/integrations/email/application/ports/gmail.p
 import { EvolutionApiPort } from "@/domain/integrations/whatsapp/application/ports/evolution-api.port";
 import { buildReminderEmail, ReminderType } from "../../infra/email-templates/meeting-reminder.templates";
 
-const REMINDER_TYPE_LABELS: Record<string, string> = {
-  morning_reminder: "Lembrete do dia",
-  one_hour_reminder: "Faltam 1 hora",
-  on_time_reminder: "Agora é a hora",
-};
-
 @Injectable()
 export class SendScheduledEmailsUseCase {
   private readonly logger = new Logger(SendScheduledEmailsUseCase.name);
@@ -88,27 +82,25 @@ export class SendScheduledEmailsUseCase {
       throw new Error("EvolutionApiPort not available for WhatsApp channel");
     }
 
-    const dateStr = record.meetingStartAt.toLocaleDateString("pt-BR", {
-      day: "2-digit",
-      month: "2-digit",
-      year: "numeric",
-      timeZone: "America/Sao_Paulo",
-    });
     const timeStr = record.meetingStartAt.toLocaleTimeString("pt-BR", {
       hour: "2-digit",
       minute: "2-digit",
       timeZone: "America/Sao_Paulo",
     });
-    const typeLabel = REMINDER_TYPE_LABELS[record.type] ?? record.type;
+
+    const firstName = record.contactName?.trim().split(/\s+/)[0];
+    const greeting = firstName ? `Bom dia, ${firstName}! 👋` : "Bom dia! 👋";
 
     const lines = [
+      greeting,
+      ``,
+      `Passando só para confirmar que hoje teremos a nossa reunião. 😊`,
+      ``,
       `📅 *${record.meetingTitle}*`,
-      `🔔 ${typeLabel}`,
-      `🗓 ${dateStr} às ${timeStr}`,
+      `🗓 Hoje às ${timeStr}`,
+      ``,
+      `Abraços! 🤝`,
     ];
-    if (record.meetingDescription) {
-      lines.push(record.meetingDescription);
-    }
 
     await this.whatsApp.sendText(record.recipientPhone!, lines.join("\n"));
   }
