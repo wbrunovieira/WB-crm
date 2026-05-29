@@ -3,6 +3,16 @@ import { ProcessWhatsAppMessageUseCase } from "@/domain/integrations/whatsapp/ap
 import { FakeWhatsAppMessagesRepository } from "../../fakes/fake-whatsapp-messages.repository";
 import { FakeActivitiesRepository } from "../../fakes/fake-activities.repository";
 import { FakePhoneMatcherService } from "../../fakes/fake-phone-matcher.service";
+import { right } from "@/core/either";
+
+// Fake do port canônico CreateNotificationUseCase — captura os inputs recebidos
+class FakeCreateNotificationUseCase {
+  public calls: { type: string; title: string; summary: string; userId: string; payload?: string }[] = [];
+  execute = vi.fn(async (input: { type: string; title: string; summary: string; userId: string; payload?: string }) => {
+    this.calls.push(input);
+    return right({ id: { toString: () => "notif-fake-id" } });
+  });
+}
 
 const OWNER_ID = "owner-001";
 const PHONE = "5511999998888";
@@ -26,30 +36,22 @@ function makeInput(overrides: Partial<Parameters<ProcessWhatsAppMessageUseCase["
 let whatsAppRepo: FakeWhatsAppMessagesRepository;
 let activitiesRepo: FakeActivitiesRepository;
 let phoneMatcher: FakePhoneMatcherService;
+let createNotification: FakeCreateNotificationUseCase;
 let useCase: ProcessWhatsAppMessageUseCase;
-const createdNotifications: Record<string, unknown>[] = [];
-const fakePrisma = {
-  notification: {
-    create: vi.fn().mockImplementation(({ data }: { data: Record<string, unknown> }) => {
-      createdNotifications.push(data);
-      return Promise.resolve(data);
-    }),
-  },
-};
 
 beforeEach(() => {
   vi.clearAllMocks();
-  createdNotifications.length = 0;
   whatsAppRepo = new FakeWhatsAppMessagesRepository();
   activitiesRepo = new FakeActivitiesRepository();
   phoneMatcher = new FakePhoneMatcherService();
   phoneMatcher.addMatch(PHONE, { entityType: "contact", contactId: "contact-001" });
+  createNotification = new FakeCreateNotificationUseCase();
 
   useCase = new ProcessWhatsAppMessageUseCase(
     whatsAppRepo,
     activitiesRepo,
     phoneMatcher as never,
-    fakePrisma as never,
+    createNotification as never,
   );
 });
 
@@ -97,7 +99,7 @@ describe("ProcessWhatsAppMessageUseCase", () => {
     expect(whatsAppRepo.items).toHaveLength(1);
     expect(whatsAppRepo.items[0].messageId).toBe("msg-001");
 
-    expect(fakePrisma.notification.create).toHaveBeenCalledOnce();
+    expect(createNotification.execute).toHaveBeenCalledOnce();
   });
 
   it("appends to existing activity when within 2h session window", async () => {
@@ -124,7 +126,7 @@ describe("ProcessWhatsAppMessageUseCase", () => {
     expect(activity.description).toContain("Segunda mensagem");
 
     // Notification only created once (for new session)
-    expect(fakePrisma.notification.create).toHaveBeenCalledOnce();
+    expect(createNotification.execute).toHaveBeenCalledOnce();
   });
 
   it("creates new session when outside 2h window", async () => {
@@ -193,8 +195,8 @@ describe("ProcessWhatsAppMessageUseCase", () => {
 
     await useCase.execute(makeInput());
 
-    expect(createdNotifications).toHaveLength(1);
-    const payload = JSON.parse(createdNotifications[0].payload as string);
+    expect(createNotification.calls).toHaveLength(1);
+    const payload = JSON.parse(createNotification.calls[0].payload as string);
     expect(payload.link).toBe("/leads/lead-xyz");
   });
 
@@ -203,7 +205,7 @@ describe("ProcessWhatsAppMessageUseCase", () => {
 
     await useCase.execute(makeInput());
 
-    const payload = JSON.parse(createdNotifications[0].payload as string);
+    const payload = JSON.parse(createNotification.calls[0].payload as string);
     expect(payload.link).toBe("/contacts/contact-abc");
   });
 
@@ -212,7 +214,7 @@ describe("ProcessWhatsAppMessageUseCase", () => {
 
     await useCase.execute(makeInput());
 
-    const payload = JSON.parse(createdNotifications[0].payload as string);
+    const payload = JSON.parse(createNotification.calls[0].payload as string);
     expect(payload.link).toBe("/partners/partner-123");
   });
 

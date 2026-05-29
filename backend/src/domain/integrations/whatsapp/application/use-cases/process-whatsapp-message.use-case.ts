@@ -4,7 +4,8 @@ import { ActivitiesRepository } from "@/domain/activities/application/repositori
 import { Activity } from "@/domain/activities/enterprise/entities/activity";
 import { IPhoneMatcherService } from "@/infra/shared/phone-matcher/phone-matcher.service";
 import { WhatsAppMessagesRepository } from "../repositories/whatsapp-messages.repository";
-import { PrismaService } from "@/infra/database/prisma.service";
+import { CreateNotificationUseCase } from "@/domain/notifications/application/use-cases/notifications.use-cases";
+import { EntityLink } from "@/domain/notifications/enterprise/value-objects/entity-link.vo";
 
 export interface ProcessWhatsAppMessageInput {
   messageId: string;
@@ -58,7 +59,7 @@ export class ProcessWhatsAppMessageUseCase {
     private readonly whatsAppRepo: WhatsAppMessagesRepository,
     private readonly activitiesRepo: ActivitiesRepository,
     private readonly phoneMatcher: IPhoneMatcherService,
-    private readonly prisma: PrismaService,
+    private readonly createNotification: CreateNotificationUseCase,
   ) {}
 
   async execute(
@@ -164,29 +165,24 @@ export class ProcessWhatsAppMessageUseCase {
 
       // Notify only when the CLIENT initiates (not outgoing messages)
       if (!fromMe) {
-        // Link the notification to the matched entity page so the bell is clickable
-        const link = leadId
-          ? `/leads/${leadId}`
-          : contactId
-            ? `/contacts/${contactId}`
-            : partnerId
-              ? `/partners/${partnerId}`
-              : undefined;
-        try {
-          await this.prisma.notification.create({
-            data: {
-              type: "WHATSAPP_MESSAGE",
-              status: "pending",
-              title: `Nova mensagem WhatsApp — ${pushName ?? phone}`,
-              summary: text ?? mediaLabel ?? "(mídia)",
-              payload: JSON.stringify({ activityId, remoteJid, messageId, link }),
-              read: false,
-              userId: ownerId,
-            },
-          });
-        } catch (err) {
+        // Link the notification to the matched entity page so the bell is clickable.
+        // Priority is orchestration; the route format/validation lives in EntityLink.
+        const link = EntityLink.firstOf([
+          { type: "lead", id: leadId },
+          { type: "contact", id: contactId },
+          { type: "partner", id: partnerId },
+        ])?.value;
+
+        const notifResult = await this.createNotification.execute({
+          type: "WHATSAPP_MESSAGE",
+          title: `Nova mensagem WhatsApp — ${pushName ?? phone}`,
+          summary: text ?? mediaLabel ?? "(mídia)",
+          payload: JSON.stringify({ activityId, remoteJid, messageId, link }),
+          userId: ownerId,
+        });
+        if (notifResult.isLeft()) {
           this.logger.warn("Failed to create WhatsApp notification", {
-            error: err instanceof Error ? err.message : String(err),
+            error: notifResult.value.message,
           });
         }
       }

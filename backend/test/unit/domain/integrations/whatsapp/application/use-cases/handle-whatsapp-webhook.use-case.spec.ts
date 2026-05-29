@@ -16,10 +16,9 @@ const OWNER_ID = "owner-001";
 const PHONE = "5511999998888";
 const JID = `${PHONE}@s.whatsapp.net`;
 
-const fakePrisma = {
-  notification: {
-    create: vi.fn().mockResolvedValue({}),
-  },
+// Fake do port canônico CreateNotificationUseCase (substitui o antigo acesso a Prisma)
+const fakeCreateNotification = {
+  execute: vi.fn().mockResolvedValue(right({ id: { toString: () => "notif-fake" } })),
 };
 
 let whatsAppRepo: FakeWhatsAppMessagesRepository;
@@ -46,7 +45,7 @@ beforeEach(() => {
     whatsAppRepo,
     activitiesRepo,
     phoneMatcher as never,
-    fakePrisma as never,
+    fakeCreateNotification as never,
   );
 
   processMedia = new ProcessWhatsAppMediaUseCase(
