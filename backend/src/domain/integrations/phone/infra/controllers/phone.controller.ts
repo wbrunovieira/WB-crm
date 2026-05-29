@@ -57,6 +57,7 @@ export class PhoneController {
   @ApiOperation({ summary: "Verifica telefones em lote para um sourceGroup de leads (SSE)" })
   async batchVerifyLeadPhonesHandler(
     @Body() body: { sourceGroup: string },
+    @CurrentUser() user: AuthenticatedUser,
     @Res() res: Response,
   ): Promise<void> {
     if (!body.sourceGroup) {
@@ -70,6 +71,8 @@ export class PhoneController {
 
     const result = await this.batchVerifyLeadPhones.execute({
       sourceGroup: body.sourceGroup,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
       onProgress: (progress) => {
         res.write(`data: ${JSON.stringify({ type: "progress", ...progress })}\n\n`);
       },

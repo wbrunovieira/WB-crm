@@ -45,6 +45,7 @@ export class MetaAdsController {
   @ApiOperation({ summary: "Verificar anúncios Meta em lote por sourceGroup (SSE)" })
   async batchVerifyHandler(
     @Body() body: { sourceGroup: string },
+    @CurrentUser() user: AuthenticatedUser,
     @Res() res: Response,
   ): Promise<void> {
     if (!body.sourceGroup) {
@@ -58,6 +59,8 @@ export class MetaAdsController {
 
     const result = await this.batchVerifyLeadMetaAds.execute({
       sourceGroup: body.sourceGroup,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
       onProgress: (progress) => {
         res.write(`data: ${JSON.stringify({ type: "progress", ...progress })}\n\n`);
       },

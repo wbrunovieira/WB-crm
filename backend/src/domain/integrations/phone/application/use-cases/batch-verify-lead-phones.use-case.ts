@@ -5,6 +5,9 @@ import { LeadsRepository } from "@/domain/leads/application/repositories/leads.r
 
 export interface BatchVerifyLeadPhonesInput {
   sourceGroup: string;
+  /** Requester identity — used to scope the batch to the requester's own leads. */
+  requesterId: string;
+  requesterRole: string;
   onProgress?: (progress: BatchVerifyLeadPhonesProgress) => void;
 }
 
@@ -43,7 +46,13 @@ export class BatchVerifyLeadPhonesUseCase {
       return left(new Error("sourceGroup é obrigatório"));
     }
 
-    const leads = await this.leadsRepo.findBySourceGroup(input.sourceGroup.trim());
+    const allLeads = await this.leadsRepo.findBySourceGroup(input.sourceGroup.trim());
+
+    // Data isolation: a non-admin only acts on their own leads within the group.
+    const leads =
+      input.requesterRole === "admin"
+        ? allLeads
+        : allLeads.filter((l) => l.ownerId === input.requesterId);
 
     if (leads.length === 0) {
       return left(new Error(`Nenhum lead encontrado para o sourceGroup: ${input.sourceGroup}`));

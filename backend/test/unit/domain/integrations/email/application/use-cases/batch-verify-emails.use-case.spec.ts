@@ -178,4 +178,27 @@ describe("BatchVerifyEmailsUseCase", () => {
     expect(result.isLeft()).toBe(true);
     expect(emailVerifier.callCount).toBe(0);
   });
+
+  it("counts a malformed verifier status as a per-lead error without aborting the batch (VO guard)", async () => {
+    leadsRepo.items.push(makeLead("bad", "bad@test.com"));
+    leadsRepo.items.push(makeLead("good", "good@test.com"));
+
+    let n = 0;
+    emailVerifier.verify = async (email: string) => {
+      emailVerifier.callCount++;
+      emailVerifier.emailsVerified.push(email);
+      n++;
+      return n === 1
+        ? { valid: false, status: "garbage" as never, reason: "x" } // malformed → VO rejects this lead
+        : { valid: true, status: "valid", reason: "ok" };
+    };
+
+    const result = await runBatch({ sourceGroup: "GroupA" });
+    expect(result.isRight()).toBe(true);
+
+    const value = result.value as { total: number; checked: number; errors: number };
+    expect(value.total).toBe(2);
+    expect(value.errors).toBe(1);   // the malformed lead
+    expect(value.checked).toBe(1);  // the good lead still processed
+  });
 });

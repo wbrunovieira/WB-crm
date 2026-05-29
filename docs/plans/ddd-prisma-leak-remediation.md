@@ -107,3 +107,9 @@ Adicionar verificação automática para impedir novos vazamentos:
 | 3 | upload-proposal | ⏳ |
 | 3 | update-proposal-with-file | ⏳ |
 | 4 | guardrail lint/CI | ⏳ |
+
+### Trilha de segurança (spin-off da revisão senior — autorização em verificações por sourceGroup/lead)
+Fechada a classe "qualquer usuário verifica/grava em leads de qualquer dono":
+- ✅ `verify/lead-contact/:id`, `verify/lead/:id`, `verify/batch` (email) — owner-or-admin + erros HTTP discriminados + frontend
+- ✅ batch **phone**, **whatsapp**, **meta-ads** — owner-filter no use case (admin bypass), `@CurrentUser` no controller, unit + e2e; whatsapp ganhou guard de grupo vazio
+- ✅ email batch alinhado ao VO `EmailVerification` (status malformado vira erro por-lead, não aborta o lote)

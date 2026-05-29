@@ -13,9 +13,11 @@ class FakePhoneValidator extends PhoneValidatorPort {
   }
 }
 
-function makeLead(id: string, overrides: Partial<{ phone: string; phone2: string; whatsapp: string; sourceGroup: string }> = {}) {
+const OWNER = "owner-1";
+
+function makeLead(id: string, overrides: Partial<{ phone: string; phone2: string; whatsapp: string; sourceGroup: string; ownerId: string }> = {}) {
   return Lead.create({
-    ownerId: "owner-1",
+    ownerId: overrides.ownerId ?? OWNER,
     businessName: `Empresa ${id}`,
     phone: overrides.phone,
     phone2: overrides.phone2,
@@ -29,6 +31,10 @@ describe("BatchVerifyLeadPhonesUseCase", () => {
   let phoneValidator: FakePhoneValidator;
   let sut: BatchVerifyLeadPhonesUseCase;
 
+  function runBatch(input: Partial<Parameters<BatchVerifyLeadPhonesUseCase["execute"]>[0]> & { sourceGroup: string }) {
+    return sut.execute({ requesterId: OWNER, requesterRole: "sdr", ...input });
+  }
+
   beforeEach(() => {
     leadsRepo = new InMemoryLeadsRepository();
     phoneValidator = new FakePhoneValidator();
@@ -36,13 +42,13 @@ describe("BatchVerifyLeadPhonesUseCase", () => {
   });
 
   it("returns left when no leads found for sourceGroup", async () => {
-    const result = await sut.execute({ sourceGroup: "grupo-vazio" });
+    const result = await runBatch({ sourceGroup: "grupo-vazio" });
     expect(result.isLeft()).toBe(true);
     expect((result.value as Error).message).toContain("Nenhum lead encontrado");
   });
 
   it("returns left when sourceGroup is empty", async () => {
-    const result = await sut.execute({ sourceGroup: "" });
+    const result = await runBatch({ sourceGroup: "" });
     expect(result.isLeft()).toBe(true);
   });
 
@@ -51,7 +57,7 @@ describe("BatchVerifyLeadPhonesUseCase", () => {
     const lead2 = makeLead("lead-2", { phone: "+5511999998888" });
     leadsRepo.items.push(lead1, lead2);
 
-    const result = await sut.execute({ sourceGroup: "grupo-teste" });
+    const result = await runBatch({ sourceGroup: "grupo-teste" });
     expect(result.isRight()).toBe(true);
 
     const value = result.value as { total: number; checked: number; skipped: number; errors: number };
@@ -73,7 +79,7 @@ describe("BatchVerifyLeadPhonesUseCase", () => {
         : { valid: false, type: "UNKNOWN", country: "" };
     };
 
-    const result = await sut.execute({ sourceGroup: "grupo-teste" });
+    const result = await runBatch({ sourceGroup: "grupo-teste" });
     expect(result.isRight()).toBe(true);
 
     const value = result.value as { total: number; checked: number; valid: number; invalid: number; skipped: number; errors: number };
@@ -90,11 +96,41 @@ describe("BatchVerifyLeadPhonesUseCase", () => {
     leadsRepo.items.push(lead1, lead2);
 
     const progressEvents: unknown[] = [];
-    await sut.execute({
+    await runBatch({
       sourceGroup: "grupo-teste",
       onProgress: (p) => progressEvents.push(p),
     });
 
     expect(progressEvents).toHaveLength(2);
+  });
+
+  // ── Authorization / data isolation ────────────────────────────────────────────
+
+  it("only processes leads owned by the requester (skips other owners')", async () => {
+    leadsRepo.items.push(makeLead("mine", { phone: "+5511999998888" }));
+    leadsRepo.items.push(makeLead("theirs", { phone: "+5511888887777", ownerId: "another-user" }));
+
+    let calls = 0;
+    phoneValidator.validate = () => { calls++; return { valid: true, type: "MOBILE", country: "BR" }; };
+
+    const result = await runBatch({ sourceGroup: "grupo-teste" });
+    expect(result.isRight()).toBe(true);
+    expect((result.value as { total: number }).total).toBe(1);
+    expect(calls).toBe(1); // the foreign lead's phone was never validated
+  });
+
+  it("lets an admin process every lead regardless of owner", async () => {
+    leadsRepo.items.push(makeLead("a", { phone: "+5511999998888" }));
+    leadsRepo.items.push(makeLead("b", { phone: "+5511888887777", ownerId: "another-user" }));
+
+    const result = await runBatch({ sourceGroup: "grupo-teste", requesterRole: "admin", requesterId: "admin-user" });
+    expect((result.value as { total: number }).total).toBe(2);
+  });
+
+  it("returns left when the requester owns none of the leads", async () => {
+    leadsRepo.items.push(makeLead("theirs", { phone: "+5511888887777", ownerId: "another-user" }));
+
+    const result = await runBatch({ sourceGroup: "grupo-teste" });
+    expect(result.isLeft()).toBe(true);
   });
 });

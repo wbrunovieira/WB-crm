@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { EmailVerifierPort } from "../ports/email-verifier.port";
 import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
+import { EmailVerification } from "../../enterprise/value-objects/email-verification.vo";
 
 export interface BatchVerifyEmailsInput {
   sourceGroup: string;
@@ -89,15 +90,27 @@ export class BatchVerifyEmailsUseCase {
       try {
         const verificationResult = await this.emailVerifier.verify(lead.email);
 
+        // VO owns the invariant (known status + non-empty reason). A malformed
+        // verifier result fails just this lead, not the whole batch.
+        const verificationOrError = EmailVerification.create({
+          valid: verificationResult.valid,
+          status: verificationResult.status,
+          reason: verificationResult.reason,
+        });
+        if (verificationOrError.isLeft()) {
+          throw verificationOrError.value;
+        }
+        const verification = verificationOrError.value;
+
         await this.leadsRepo.saveEmailVerification(lead.id.toString(), {
-          emailVerified: verificationResult.valid,
-          emailVerifiedAt: new Date(),
-          emailVerificationStatus: verificationResult.status,
-          emailVerificationReason: verificationResult.reason,
+          emailVerified: verification.valid,
+          emailVerifiedAt: verification.verifiedAt,
+          emailVerificationStatus: verification.status,
+          emailVerificationReason: verification.reason,
         });
 
         result.checked++;
-        if (verificationResult.valid) result.valid++;
+        if (verification.valid) result.valid++;
         else result.invalid++;
 
         input.onProgress?.({
@@ -105,9 +118,9 @@ export class BatchVerifyEmailsUseCase {
           total: leads.length,
           leadId: lead.id.toString(),
           businessName: lead.businessName,
-          valid: verificationResult.valid,
-          status: verificationResult.status,
-          reason: verificationResult.reason,
+          valid: verification.valid,
+          status: verification.status,
+          reason: verification.reason,
         });
       } catch (err) {
         result.errors++;

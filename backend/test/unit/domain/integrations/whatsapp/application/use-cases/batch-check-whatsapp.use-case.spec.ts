@@ -24,9 +24,11 @@ class InMemoryBatchCheckRepository {
   }
 }
 
-const makeLead = (overrides: Partial<{ phone: string; whatsapp: string; sourceGroup: string }> = {}) =>
+const OWNER = "user-1";
+
+const makeLead = (overrides: Partial<{ phone: string; whatsapp: string; sourceGroup: string; ownerId: string }> = {}) =>
   Lead.create({
-    ownerId: "user-1",
+    ownerId: overrides.ownerId ?? OWNER,
     businessName: "Empresa Teste",
     ...overrides,
   });
@@ -34,6 +36,10 @@ const makeLead = (overrides: Partial<{ phone: string; whatsapp: string; sourceGr
 let evolutionApi: FakeEvolutionApiPort;
 let repo: InMemoryBatchCheckRepository;
 let sut: BatchCheckWhatsAppUseCase;
+
+function runBatch(input: Partial<Parameters<BatchCheckWhatsAppUseCase["execute"]>[0]> & { sourceGroup: string }) {
+  return sut.execute({ requesterId: OWNER, requesterRole: "sdr", ...input });
+}
 
 beforeEach(() => {
   evolutionApi = new FakeEvolutionApiPort();
@@ -43,21 +49,15 @@ beforeEach(() => {
 
 describe("BatchCheckWhatsAppUseCase", () => {
   it("retorna erro quando sourceGroup está vazio", async () => {
-    const result = await sut.execute({ sourceGroup: "" });
+    const result = await runBatch({ sourceGroup: "" });
     expect(result.isLeft()).toBe(true);
     expect(result.value).toBeInstanceOf(Error);
   });
 
-  it("retorna resultado vazio quando nenhum lead encontrado no grupo", async () => {
-    const result = await sut.execute({ sourceGroup: "GrupoInexistente" });
-    expect(result.isRight()).toBe(true);
-    if (result.isRight()) {
-      expect(result.value.total).toBe(0);
-      expect(result.value.checked).toBe(0);
-      expect(result.value.found).toBe(0);
-      expect(result.value.notFound).toBe(0);
-      expect(result.value.skipped).toBe(0);
-    }
+  it("retorna left quando nenhum lead encontrado no grupo", async () => {
+    const result = await runBatch({ sourceGroup: "GrupoInexistente" });
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).message).toContain("Nenhum lead encontrado");
   });
 
   it("verifica leads com phone no grupo e salva resultado", async () => {
@@ -67,7 +67,7 @@ describe("BatchCheckWhatsAppUseCase", () => {
 
     evolutionApi.checkNumberResult = { exists: true, number: "552422226134" };
 
-    const result = await sut.execute({ sourceGroup: "Lote1", delayMs: 0 });
+    const result = await runBatch({ sourceGroup: "Lote1", delayMs: 0 });
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
@@ -85,7 +85,7 @@ describe("BatchCheckWhatsAppUseCase", () => {
 
     evolutionApi.checkNumberResult = { exists: true, number: "552422226134" };
 
-    const result = await sut.execute({ sourceGroup: "Lote1", delayMs: 0 });
+    const result = await runBatch({ sourceGroup: "Lote1", delayMs: 0 });
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
@@ -97,7 +97,7 @@ describe("BatchCheckWhatsAppUseCase", () => {
     const lead = makeLead({ sourceGroup: "Lote1" });
     repo.leads.push(lead);
 
-    const result = await sut.execute({ sourceGroup: "Lote1", delayMs: 0 });
+    const result = await runBatch({ sourceGroup: "Lote1", delayMs: 0 });
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
@@ -114,7 +114,7 @@ describe("BatchCheckWhatsAppUseCase", () => {
 
     evolutionApi.checkNumberResult = { exists: false };
 
-    const result = await sut.execute({ sourceGroup: "Lote1", delayMs: 0 });
+    const result = await runBatch({ sourceGroup: "Lote1", delayMs: 0 });
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
@@ -137,12 +137,44 @@ describe("BatchCheckWhatsAppUseCase", () => {
       return { exists: true, number: "552499999999" };
     };
 
-    const result = await sut.execute({ sourceGroup: "Lote1", delayMs: 0 });
+    const result = await runBatch({ sourceGroup: "Lote1", delayMs: 0 });
 
     expect(result.isRight()).toBe(true);
     if (result.isRight()) {
       expect(result.value.errors).toBe(1);
       expect(result.value.found).toBe(1);
     }
+  });
+
+  // ── Authorization / data isolation ────────────────────────────────────────────
+
+  it("só verifica leads do próprio requester (ignora de outros donos)", async () => {
+    repo.leads.push(makeLead({ phone: "+552422226134", sourceGroup: "Lote1" }));
+    repo.leads.push(makeLead({ phone: "+552499999999", sourceGroup: "Lote1", ownerId: "another-user" }));
+
+    evolutionApi.checkNumberResult = { exists: true, number: "x" };
+
+    const result = await runBatch({ sourceGroup: "Lote1", delayMs: 0 });
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) expect(result.value.total).toBe(1);
+    expect(repo.savedVerifications).toHaveLength(1);
+  });
+
+  it("admin verifica todos os leads do grupo independente do dono", async () => {
+    repo.leads.push(makeLead({ phone: "+552422226134", sourceGroup: "Lote1" }));
+    repo.leads.push(makeLead({ phone: "+552499999999", sourceGroup: "Lote1", ownerId: "another-user" }));
+
+    evolutionApi.checkNumberResult = { exists: true, number: "x" };
+
+    const result = await runBatch({ sourceGroup: "Lote1", delayMs: 0, requesterRole: "admin", requesterId: "admin-user" });
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) expect(result.value.total).toBe(2);
+  });
+
+  it("retorna left quando o requester não possui nenhum lead do grupo", async () => {
+    repo.leads.push(makeLead({ phone: "+552499999999", sourceGroup: "Lote1", ownerId: "another-user" }));
+
+    const result = await runBatch({ sourceGroup: "Lote1", delayMs: 0 });
+    expect(result.isLeft()).toBe(true);
   });
 });
