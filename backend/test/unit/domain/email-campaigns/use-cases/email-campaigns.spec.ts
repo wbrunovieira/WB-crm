@@ -457,10 +457,12 @@ describe("SendCampaignStep — duplicate send guard", () => {
     await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
     expect(gmail.sentEmails).toHaveLength(1);
 
-    // Reset recipient to PENDING/step 0 to simulate a re-trigger
-    r.props.currentStep = 0;
-    r.props.status = "PENDING";
-    await recipients.save(r);
+    // Reset recipient to PENDING/step 0 to simulate a re-trigger (same id)
+    const reset = EmailCampaignRecipient.reconstitute(
+      { campaignId, recipientType: "LEAD", recipientId: "l1", email: "a@b.com", currentStep: 0, status: "PENDING" },
+      r.id,
+    );
+    await recipients.save(reset);
 
     // Second trigger — should be blocked by duplicate guard
     await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });

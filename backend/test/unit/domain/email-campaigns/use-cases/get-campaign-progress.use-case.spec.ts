@@ -8,6 +8,7 @@ import { CreateEmailCampaignUseCase } from "@/domain/email-campaigns/application
 import { EmailCampaignStep } from "@/domain/email-campaigns/enterprise/entities/email-campaign-step.entity";
 import { EmailCampaignRecipient } from "@/domain/email-campaigns/enterprise/entities/email-campaign-recipient.entity";
 import { EmailCampaignSend } from "@/domain/email-campaigns/enterprise/entities/email-campaign-send.entity";
+import { UniqueEntityID } from "@/core/unique-entity-id";
 
 const OWNER = "owner-1";
 const FROM = "bruno@wbdigitalsolutions.com";
@@ -150,7 +151,7 @@ describe("GetCampaignProgressUseCase", () => {
     const early = new Date("2026-05-01T10:00:00Z");
     const late  = new Date("2026-05-02T10:00:00Z");
 
-    const { UniqueEntityID: UID } = await import("@/core/unique-entity-id");
+    const UID = UniqueEntityID;
     const send0 = EmailCampaignSend.reconstitute(
       { recipientId: r.id.toString(), stepId: step0.id.toString(), sentAt: early, openedAt: late },
       new UID(),
@@ -186,7 +187,6 @@ describe("GetCampaignProgressUseCase", () => {
     const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "a@b.com" });
     await recipients.save(r);
 
-    const { UniqueEntityID } = await import("@/core/unique-entity-id");
 
     // Step 0 send: opened 2x, clicked landing 1x
     const send0 = EmailCampaignSend.reconstitute(
@@ -238,7 +238,6 @@ describe("GetCampaignProgressUseCase", () => {
     });
     await recipients.save(r);
 
-    const { UniqueEntityID } = await import("@/core/unique-entity-id");
 
     const firstClick = new Date("2026-05-01T10:00:00Z");
     const secondClick = new Date("2026-05-01T12:00:00Z");
