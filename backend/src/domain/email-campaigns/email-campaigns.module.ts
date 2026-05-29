@@ -27,6 +27,8 @@ import { EmailCampaignStepsRepository } from "./application/repositories/email-c
 import { EmailCampaignRecipientsRepository } from "./application/repositories/email-campaign-recipients.repository";
 import { EmailCampaignSendsRepository } from "./application/repositories/email-campaign-sends.repository";
 import { EmailSuppressionsRepository } from "./application/repositories/email-suppressions.repository";
+import { EnrollmentSourceRepository } from "./application/repositories/enrollment-source.repository";
+import { PrismaEnrollmentSourceRepository } from "@/infra/database/prisma/repositories/email-campaigns/prisma-enrollment-source.repository";
 
 import { PrismaEmailCampaignsRepository } from "@/infra/database/prisma/repositories/email-campaigns/prisma-email-campaigns.repository";
 import { PrismaEmailCampaignStepsRepository } from "@/infra/database/prisma/repositories/email-campaigns/prisma-email-campaign-steps.repository";
@@ -63,6 +65,7 @@ import { PrismaRecipientContextAdapter } from "@/infra/database/prisma/adapters/
     { provide: EmailCampaignRecipientsRepository, useClass: PrismaEmailCampaignRecipientsRepository },
     { provide: EmailCampaignSendsRepository, useClass: PrismaEmailCampaignSendsRepository },
     { provide: EmailSuppressionsRepository, useClass: PrismaEmailSuppressionsRepository },
+    { provide: EnrollmentSourceRepository, useClass: PrismaEnrollmentSourceRepository },
     { provide: RecipientContextPort, useClass: PrismaRecipientContextAdapter },
   ],
   exports: [

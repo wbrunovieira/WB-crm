@@ -1,6 +1,5 @@
 import { Injectable } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
-import { PrismaService } from "@/infra/database/prisma.service";
 import { EmailCampaignsRepository } from "../repositories/email-campaigns.repository";
 import { EmailCampaignStepsRepository } from "../repositories/email-campaign-steps.repository";
 import { EmailCampaignRecipientsRepository } from "../repositories/email-campaign-recipients.repository";
@@ -42,7 +41,6 @@ export class GetCampaignProgressUseCase {
     private readonly recipientsRepo: EmailCampaignRecipientsRepository,
     private readonly sendsRepo: EmailCampaignSendsRepository,
     private readonly stepsRepo: EmailCampaignStepsRepository,
-    private readonly prisma: PrismaService,
   ) {}
 
   async execute(input: Input): Promise<Either<Error, CampaignProgressOutput>> {
@@ -56,12 +54,8 @@ export class GetCampaignProgressUseCase {
       this.stepsRepo.findByCampaign(campaignId),
     ]);
 
-    // Build a map of stepId → stepOrder using Prisma for efficiency
-    const stepRows = await this.prisma.emailCampaignStep.findMany({
-      where: { campaignId },
-      select: { id: true, order: true },
-    });
-    const stepOrderMap = new Map<string, number>(stepRows.map((s) => [s.id, s.order]));
+    // Build a map of stepId → stepOrder from the steps already loaded above
+    const stepOrderMap = new Map<string, number>(allSteps.map((s) => [s.id.toString(), s.order]));
 
     // For each recipient, fetch their sends and resolve step orders
     const recipientProgresses: RecipientProgress[] = await Promise.all(

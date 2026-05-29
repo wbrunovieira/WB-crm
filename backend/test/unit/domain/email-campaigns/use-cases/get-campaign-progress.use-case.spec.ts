@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { GetCampaignProgressUseCase } from "@/domain/email-campaigns/application/use-cases/get-campaign-progress.use-case";
 import { InMemoryEmailCampaignsRepository } from "../fakes/in-memory-email-campaigns.repository";
 import { InMemoryEmailCampaignStepsRepository } from "../fakes/in-memory-email-campaign-steps.repository";
@@ -12,14 +12,6 @@ import { UniqueEntityID } from "@/core/unique-entity-id";
 
 const OWNER = "owner-1";
 const FROM = "bruno@wbdigitalsolutions.com";
-
-function makePrismaStub(stepRows: { id: string; order: number }[]) {
-  return {
-    emailCampaignStep: {
-      findMany: vi.fn().mockResolvedValue(stepRows),
-    },
-  } as any;
-}
 
 describe("GetCampaignProgressUseCase", () => {
   let campaigns: InMemoryEmailCampaignsRepository;
@@ -42,7 +34,7 @@ describe("GetCampaignProgressUseCase", () => {
 
   it("should return campaign not found for unknown id", async () => {
     const sut = new GetCampaignProgressUseCase(
-      campaigns, recipients, sends, steps, makePrismaStub([]),
+      campaigns, recipients, sends, steps,
     );
     const result = await sut.execute({ campaignId: "non-existent" });
     expect(result.isLeft()).toBe(true);
@@ -54,7 +46,6 @@ describe("GetCampaignProgressUseCase", () => {
 
     const sut = new GetCampaignProgressUseCase(
       campaigns, recipients, sends, steps,
-      makePrismaStub([{ id: step.id.toString(), order: 0 }]),
     );
 
     const result = await sut.execute({ campaignId });
@@ -82,10 +73,6 @@ describe("GetCampaignProgressUseCase", () => {
 
     const sut = new GetCampaignProgressUseCase(
       campaigns, recipients, sends, steps,
-      makePrismaStub([
-        { id: step0.id.toString(), order: 0 },
-        { id: step1.id.toString(), order: 1 },
-      ]),
     );
 
     const result = await sut.execute({ campaignId });
@@ -121,7 +108,6 @@ describe("GetCampaignProgressUseCase", () => {
 
     const sut = new GetCampaignProgressUseCase(
       campaigns, recipients, sends, steps,
-      makePrismaStub([{ id: step.id.toString(), order: 0 }]),
     );
 
     const result = await sut.execute({ campaignId });
@@ -165,10 +151,6 @@ describe("GetCampaignProgressUseCase", () => {
 
     const sut = new GetCampaignProgressUseCase(
       campaigns, recipients, sends, steps,
-      makePrismaStub([
-        { id: step0.id.toString(), order: 0 },
-        { id: step1.id.toString(), order: 1 },
-      ]),
     );
 
     const result = await sut.execute({ campaignId });
@@ -211,10 +193,6 @@ describe("GetCampaignProgressUseCase", () => {
 
     const sut = new GetCampaignProgressUseCase(
       campaigns, recipients, sends, steps,
-      makePrismaStub([
-        { id: step0.id.toString(), order: 0 },
-        { id: step1.id.toString(), order: 1 },
-      ]),
     );
 
     const result = await sut.execute({ campaignId });
@@ -263,10 +241,6 @@ describe("GetCampaignProgressUseCase", () => {
 
     const sut = new GetCampaignProgressUseCase(
       campaigns, recipients, sends, steps,
-      makePrismaStub([
-        { id: step0.id.toString(), order: 0 },
-        { id: step1.id.toString(), order: 1 },
-      ]),
     );
 
     const result = await sut.execute({ campaignId });

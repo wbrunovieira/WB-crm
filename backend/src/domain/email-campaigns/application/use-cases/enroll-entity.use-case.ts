@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
-import { PrismaService } from "@/infra/database/prisma.service";
+import { EnrollmentSourceRepository } from "../repositories/enrollment-source.repository";
 import { EmailCampaignsRepository } from "../repositories/email-campaigns.repository";
 import { EmailCampaignRecipientsRepository } from "../repositories/email-campaign-recipients.repository";
 import { EmailCampaignRecipient } from "../../enterprise/entities/email-campaign-recipient.entity";
@@ -15,7 +15,7 @@ interface Input {
 @Injectable()
 export class EnrollEntityUseCase {
   constructor(
-    private readonly prisma: PrismaService,
+    private readonly source: EnrollmentSourceRepository,
     private readonly campaigns: EmailCampaignsRepository,
     private readonly recipients: EmailCampaignRecipientsRepository,
   ) {}
@@ -31,20 +31,7 @@ export class EnrollEntityUseCase {
     let skipped = 0;
 
     if (input.entityType === "lead") {
-      const lead = await this.prisma.lead.findUnique({
-        where: { id: input.entityId },
-        select: {
-          id: true,
-          businessName: true,
-          email: true,
-          segment: true,
-          sourceGroup: true,
-          leadContacts: {
-            where: { email: { not: null } },
-            select: { id: true, name: true, email: true, role: true },
-          },
-        },
-      });
+      const lead = await this.source.findLeadEnrollment(input.entityId);
 
       if (!lead) return left(new Error("Lead not found"));
 
@@ -73,7 +60,7 @@ export class EnrollEntityUseCase {
       }
 
       // Enroll each leadContact with an email
-      for (const lc of lead.leadContacts) {
+      for (const lc of lead.contacts) {
         if (!lc.email) continue;
         const key = `LEAD:${lc.id}`;
         if (existingKeys.has(key)) {
@@ -99,20 +86,7 @@ export class EnrollEntityUseCase {
       }
     } else {
       // organization
-      const org = await this.prisma.organization.findUnique({
-        where: { id: input.entityId },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          segment: true,
-          sourceGroup: true,
-          contacts: {
-            where: { email: { not: null } },
-            select: { id: true, name: true, email: true, role: true },
-          },
-        },
-      });
+      const org = await this.source.findOrgEnrollment(input.entityId);
 
       if (!org) return left(new Error("Organization not found"));
 
