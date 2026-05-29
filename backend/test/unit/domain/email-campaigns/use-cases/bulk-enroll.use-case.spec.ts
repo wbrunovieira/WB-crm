@@ -108,6 +108,19 @@ describe("BulkEnrollUseCase", () => {
     expect(r.unwrap().skipped).toBe(1);
   });
 
+  it("skips a candidate whose email matches a recipient already persisted in the campaign (different source)", async () => {
+    // First enroll a contact
+    source.candidates = [candidate({ recipientId: "c1", email: "dup@x.com", dedupKey: "CONTACT:c1" })];
+    await sut.execute({ campaignId, ownerId: OWNER, mode: "all" });
+
+    // Now a DIFFERENT entity (different dedupKey) surfaces the SAME email
+    source.candidates = [candidate({ recipientId: "l9", email: "dup@x.com", recipientType: "LEAD", dedupKey: "LEAD:l9" })];
+    const r = await sut.execute({ campaignId, ownerId: OWNER, mode: "all" });
+
+    expect(r.unwrap().enrolled).toBe(0);
+    expect(r.unwrap().skipped).toBe(1); // deduped by email against the persisted recipient
+  });
+
   it("passes the sourceGroup filter through to the source in sourceGroup mode", async () => {
     source.candidates = [];
     await sut.execute({ campaignId, ownerId: OWNER, mode: "sourceGroup", sourceGroup: "G-2026" });

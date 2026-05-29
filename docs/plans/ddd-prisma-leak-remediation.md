@@ -128,9 +128,9 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 | seg. | verify/lead-contact, verify/lead, verify/batch (email) | ✅ owner-or-admin + erros HTTP discriminados + frontend |
 | seg. | batch phone / whatsapp / meta-ads | ✅ owner-filter no use case + `@CurrentUser`; unit + e2e; whatsapp ganhou guard de grupo vazio |
 | seg. | email batch | ✅ alinhado ao VO `EmailVerification` (status malformado = erro por-lead) |
-| 2 | get-campaign-progress | ⏳ |
-| 2 | enroll-entity | ⏳ |
-| 2 | bulk-enroll (+ EMAIL_REGEX→`EmailAddress`) | ⏳ |
+| 2 | get-campaign-progress | ✅ 2026-05-29 — Prisma removido (stepOrderMap do `allSteps`); unit 8; senior |
+| 2 | enroll-entity | ✅ 2026-05-29 — `EnrollmentSourceRepository` (read-model port + adapter); unit 9; senior |
+| 2 | bulk-enroll (+ EMAIL_REGEX→`EmailAddress`) | ✅ 2026-05-29 — `findBulkEnrollmentCandidates` no adapter (8 queries); VO `EmailAddress`; unit 10; e2e; senior |
 | 2 | send-campaign-step (EMAIL_REGEX→`EmailAddress` + unit) | ⏳ |
 | 2 | unit: handle-gmail-bounce, get-campaign-stats, add-recipients, trigger-campaign-send-now | ⏳ |
 | 3 | funnel.use-cases (+ `WeeklyGoalsRepository` + unit) | ⏳ |
