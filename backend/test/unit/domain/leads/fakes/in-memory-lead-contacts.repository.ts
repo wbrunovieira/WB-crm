@@ -1,8 +1,10 @@
-import { LeadContactsRepository, LeadContactRecord, CreateLeadContactData, UpdateLeadContactData } from "@/domain/leads/application/repositories/lead-contacts.repository";
+import { LeadContactsRepository, LeadContactRecord, CreateLeadContactData, UpdateLeadContactData, EmailVerificationData } from "@/domain/leads/application/repositories/lead-contacts.repository";
 import { randomUUID } from "crypto";
 
 export class InMemoryLeadContactsRepository extends LeadContactsRepository {
   public items: LeadContactRecord[] = [];
+  /** Captured email verifications keyed by lead contact id (for test assertions). */
+  public verifications: Record<string, EmailVerificationData> = {};
 
   async findByLead(leadId: string): Promise<LeadContactRecord[]> {
     return this.items.filter((c) => c.leadId === leadId);
@@ -64,5 +66,11 @@ export class InMemoryLeadContactsRepository extends LeadContactsRepository {
 
   async delete(id: string): Promise<void> {
     this.items = this.items.filter((c) => c.id !== id);
+  }
+
+  async saveEmailVerification(id: string, data: EmailVerificationData): Promise<void> {
+    this.verifications[id] = data;
+    const idx = this.items.findIndex((c) => c.id === id);
+    if (idx >= 0) this.items[idx] = { ...this.items[idx], updatedAt: new Date() };
   }
 }

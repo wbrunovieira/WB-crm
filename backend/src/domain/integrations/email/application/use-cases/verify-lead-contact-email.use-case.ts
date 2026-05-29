@@ -1,7 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { EmailVerifierPort } from "../ports/email-verifier.port";
-import { PrismaService } from "@/infra/database/prisma.service";
+import { LeadContactsRepository } from "@/domain/leads/application/repositories/lead-contacts.repository";
+import { EmailVerification } from "../../enterprise/value-objects/email-verification.vo";
 
 export interface VerifyLeadContactEmailInput {
   leadContactId: string;
@@ -22,14 +23,11 @@ type Output = Either<Error, VerifyLeadContactEmailResult>;
 export class VerifyLeadContactEmailUseCase {
   constructor(
     private readonly emailVerifier: EmailVerifierPort,
-    private readonly prisma: PrismaService,
+    private readonly leadContacts: LeadContactsRepository,
   ) {}
 
   async execute(input: VerifyLeadContactEmailInput): Promise<Output> {
-    const leadContact = await this.prisma.leadContact.findUnique({
-      where: { id: input.leadContactId },
-      select: { id: true, email: true },
-    });
+    const leadContact = await this.leadContacts.findById(input.leadContactId);
 
     if (!leadContact) {
       return left(new Error("LeadContact não encontrado"));
@@ -39,24 +37,41 @@ export class VerifyLeadContactEmailUseCase {
       return left(new Error("LeadContact não possui email"));
     }
 
-    const verificationResult = await this.emailVerifier.verify(leadContact.email);
+    let result;
+    try {
+      result = await this.emailVerifier.verify(leadContact.email);
+    } catch (err) {
+      return left(err instanceof Error ? err : new Error(String(err)));
+    }
 
-    await this.prisma.leadContact.update({
-      where: { id: input.leadContactId },
-      data: {
-        emailVerified: verificationResult.valid,
-        emailVerifiedAt: new Date(),
-        emailVerificationStatus: verificationResult.status,
-        emailVerificationReason: verificationResult.reason,
-      },
+    // VO owns the invariant (known status + non-empty reason). Use case only orchestrates.
+    const verificationOrError = EmailVerification.create({
+      valid: result.valid,
+      status: result.status,
+      reason: result.reason,
     });
+    if (verificationOrError.isLeft()) {
+      return left(verificationOrError.value);
+    }
+    const verification = verificationOrError.value;
+
+    try {
+      await this.leadContacts.saveEmailVerification(leadContact.id, {
+        valid: verification.valid,
+        status: verification.status,
+        reason: verification.reason,
+        verifiedAt: verification.verifiedAt,
+      });
+    } catch (err) {
+      return left(err instanceof Error ? err : new Error(String(err)));
+    }
 
     return right({
       leadContactId: leadContact.id,
       email: leadContact.email,
-      valid: verificationResult.valid,
-      status: verificationResult.status,
-      reason: verificationResult.reason,
+      valid: verification.valid,
+      status: verification.status,
+      reason: verification.reason,
     });
   }
 }

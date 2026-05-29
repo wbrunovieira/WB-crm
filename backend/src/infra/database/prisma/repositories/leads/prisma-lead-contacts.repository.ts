@@ -5,6 +5,7 @@ import {
   LeadContactRecord,
   CreateLeadContactData,
   UpdateLeadContactData,
+  EmailVerificationData,
 } from "@/domain/leads/application/repositories/lead-contacts.repository";
 
 @Injectable()
@@ -79,6 +80,18 @@ export class PrismaLeadContactsRepository extends LeadContactsRepository {
 
   async delete(id: string): Promise<void> {
     await this.prisma.leadContact.delete({ where: { id } });
+  }
+
+  async saveEmailVerification(id: string, data: EmailVerificationData): Promise<void> {
+    await this.prisma.leadContact.update({
+      where: { id },
+      data: {
+        emailVerified: data.valid,
+        emailVerifiedAt: data.verifiedAt,
+        emailVerificationStatus: data.status,
+        emailVerificationReason: data.reason,
+      },
+    });
   }
 
   private toRecord(row: {

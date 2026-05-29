@@ -41,6 +41,13 @@ export interface UpdateLeadContactData {
   languages?: string;
 }
 
+export interface EmailVerificationData {
+  valid: boolean;
+  status: string;
+  reason: string;
+  verifiedAt: Date;
+}
+
 export abstract class LeadContactsRepository {
   abstract findByLead(leadId: string): Promise<LeadContactRecord[]>;
   abstract findById(id: string): Promise<LeadContactRecord | null>;
@@ -48,4 +55,6 @@ export abstract class LeadContactsRepository {
   abstract update(id: string, data: UpdateLeadContactData): Promise<LeadContactRecord>;
   abstract toggleActive(id: string): Promise<LeadContactRecord>;
   abstract delete(id: string): Promise<void>;
+  /** Persist the outcome of an email verification on the lead contact. */
+  abstract saveEmailVerification(id: string, data: EmailVerificationData): Promise<void>;
 }
