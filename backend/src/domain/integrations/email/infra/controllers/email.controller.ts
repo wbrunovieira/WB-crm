@@ -273,6 +273,7 @@ export class EmailController {
   @ApiOperation({ summary: "Verifica emails em lote para um sourceGroup de leads (SSE)" })
   async batchVerifyEmailsHandler(
     @Body() body: { sourceGroup: string },
+    @CurrentUser() user: AuthenticatedUser,
     @Res() res: Response,
   ): Promise<void> {
     if (!body.sourceGroup) {
@@ -286,6 +287,8 @@ export class EmailController {
 
     const result = await this.batchVerifyEmails.execute({
       sourceGroup: body.sourceGroup,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
       onProgress: (progress) => {
         res.write(`data: ${JSON.stringify({ type: "progress", ...progress })}\n\n`);
       },

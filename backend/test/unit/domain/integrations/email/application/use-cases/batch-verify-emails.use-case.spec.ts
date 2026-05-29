@@ -21,9 +21,11 @@ class FakeEmailVerifier extends EmailVerifierPort {
   }
 }
 
-function makeLead(id: string, email?: string, sourceGroup = "GroupA") {
+const OWNER = "owner-1";
+
+function makeLead(id: string, email?: string, sourceGroup = "GroupA", ownerId = OWNER) {
   return Lead.create({
-    ownerId: "owner-1",
+    ownerId,
     businessName: `Empresa ${id}`,
     email,
     sourceGroup,
@@ -35,6 +37,11 @@ describe("BatchVerifyEmailsUseCase", () => {
   let emailVerifier: FakeEmailVerifier;
   let sut: BatchVerifyEmailsUseCase;
 
+  // Defaults requester to the owner of the seeded leads unless overridden.
+  function runBatch(input: Partial<Parameters<BatchVerifyEmailsUseCase["execute"]>[0]> & { sourceGroup: string }) {
+    return sut.execute({ requesterId: OWNER, requesterRole: "sdr", delayMs: 0, ...input });
+  }
+
   beforeEach(() => {
     leadsRepo = new InMemoryLeadsRepository();
     emailVerifier = new FakeEmailVerifier();
@@ -42,7 +49,7 @@ describe("BatchVerifyEmailsUseCase", () => {
   });
 
   it("returns left when no leads found for sourceGroup", async () => {
-    const result = await sut.execute({ sourceGroup: "NonExistentGroup", delayMs: 0 });
+    const result = await runBatch({ sourceGroup: "NonExistentGroup", delayMs: 0 });
     expect(result.isLeft()).toBe(true);
     expect((result.value as Error).message).toContain("sourceGroup");
   });
@@ -52,7 +59,7 @@ describe("BatchVerifyEmailsUseCase", () => {
     leadsRepo.items.push(makeLead("lead-2", "b@test.com"));
     leadsRepo.items.push(makeLead("lead-3", "c@test.com"));
 
-    const result = await sut.execute({ sourceGroup: "GroupA", delayMs: 0 });
+    const result = await runBatch({ sourceGroup: "GroupA", delayMs: 0 });
     expect(result.isRight()).toBe(true);
     expect(emailVerifier.callCount).toBe(3);
     expect(emailVerifier.emailsVerified).toContain("a@test.com");
@@ -65,7 +72,7 @@ describe("BatchVerifyEmailsUseCase", () => {
     leadsRepo.items.push(makeLead("lead-2", "b@test.com"));
 
     const progressEvents: BatchVerifyEmailsProgress[] = [];
-    await sut.execute({
+    await runBatch({
       sourceGroup: "GroupA",
       delayMs: 0,
       onProgress: (p) => progressEvents.push(p),
@@ -88,7 +95,7 @@ describe("BatchVerifyEmailsUseCase", () => {
     leadsRepo.items.push(makeLead("lead-3", "c@test.com"));
 
     const progressEvents: BatchVerifyEmailsProgress[] = [];
-    const result = await sut.execute({
+    const result = await runBatch({
       sourceGroup: "GroupA",
       delayMs: 0,
       onProgress: (p) => progressEvents.push(p),
@@ -112,7 +119,7 @@ describe("BatchVerifyEmailsUseCase", () => {
     leadsRepo.items.push(makeLead("lead-2")); // skipped
     leadsRepo.items.push(makeLead("lead-3", "c@test.com"));
 
-    const result = await sut.execute({ sourceGroup: "GroupA", delayMs: 0 });
+    const result = await runBatch({ sourceGroup: "GroupA", delayMs: 0 });
     expect(result.isRight()).toBe(true);
 
     const value = result.value as { total: number; checked: number; valid: number; invalid: number; skipped: number; errors: number };
@@ -129,10 +136,46 @@ describe("BatchVerifyEmailsUseCase", () => {
     leadsRepo.items.push(makeLead("lead-2", "b@test.com"));
 
     const start = Date.now();
-    await sut.execute({ sourceGroup: "GroupA", delayMs: 0 });
+    await runBatch({ sourceGroup: "GroupA", delayMs: 0 });
     const elapsed = Date.now() - start;
 
     // With delayMs=0, should be very fast (under 500ms)
     expect(elapsed).toBeLessThan(500);
+  });
+
+  // ── Authorization / data isolation ────────────────────────────────────────────
+
+  it("only verifies leads owned by the requester (skips other owners' leads)", async () => {
+    leadsRepo.items.push(makeLead("mine", "mine@test.com", "GroupA", OWNER));
+    leadsRepo.items.push(makeLead("theirs", "theirs@test.com", "GroupA", "another-user"));
+
+    const result = await runBatch({ sourceGroup: "GroupA" });
+
+    expect(result.isRight()).toBe(true);
+    expect(emailVerifier.callCount).toBe(1);
+    expect(emailVerifier.emailsVerified).toEqual(["mine@test.com"]);
+    const value = result.value as { total: number };
+    expect(value.total).toBe(1);
+    // The other owner's lead was never persisted
+    expect(leadsRepo.items.find(l => l.id.toString() === "theirs")!.emailVerificationStatus).toBeUndefined();
+  });
+
+  it("lets an admin verify every lead in the sourceGroup regardless of owner", async () => {
+    leadsRepo.items.push(makeLead("a", "a@test.com", "GroupA", OWNER));
+    leadsRepo.items.push(makeLead("b", "b@test.com", "GroupA", "another-user"));
+
+    const result = await runBatch({ sourceGroup: "GroupA", requesterRole: "admin", requesterId: "admin-user" });
+
+    expect(result.isRight()).toBe(true);
+    expect(emailVerifier.callCount).toBe(2);
+  });
+
+  it("returns left when the requester owns none of the leads in the sourceGroup", async () => {
+    leadsRepo.items.push(makeLead("theirs", "theirs@test.com", "GroupA", "another-user"));
+
+    const result = await runBatch({ sourceGroup: "GroupA" });
+
+    expect(result.isLeft()).toBe(true);
+    expect(emailVerifier.callCount).toBe(0);
   });
 });

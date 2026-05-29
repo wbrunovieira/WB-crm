@@ -218,4 +218,28 @@ describe("POST /email/verify/lead-contact/:id (e2e)", () => {
       .set("Authorization", `Bearer ${token}`)
       .expect(404);
   });
+
+  // ── Batch endpoint: POST /email/verify/batch (SSE) — owner-scoped ──────────────
+
+  it("batch only verifies the requester's own leads in the sourceGroup", async () => {
+    const GROUP = "E2EBatchGroup";
+    await prisma.lead.update({ where: { id: LEAD_ID }, data: { sourceGroup: GROUP, email: "mine@empresa.com" } });
+    await prisma.lead.update({ where: { id: FOREIGN_LEAD_ID }, data: { sourceGroup: GROUP, email: "theirs@empresa.com" } });
+
+    const res = await request(app.getHttpServer())
+      .post(`/email/verify/batch`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ sourceGroup: GROUP })
+      .expect(200);
+
+    // SSE body: parse the final "done" event
+    const doneLine = res.text.split("\n").find((l) => l.includes('"type":"done"'));
+    expect(doneLine).toBeDefined();
+    const done = JSON.parse(doneLine!.replace(/^data: /, ""));
+    expect(done.total).toBe(1); // only the owner's lead, not the foreign one
+
+    // Foreign lead must remain untouched
+    const foreign = await prisma.lead.findUnique({ where: { id: FOREIGN_LEAD_ID } });
+    expect(foreign?.emailVerificationStatus).toBeNull();
+  });
 });
