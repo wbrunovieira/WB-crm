@@ -88,6 +88,29 @@ describe("GetCampaignProgressUseCase", () => {
     }
   });
 
+  it("omits a send whose stepId has no matching step (order undefined → skipped)", async () => {
+    const step0 = EmailCampaignStep.create({ campaignId, order: 0, subject: "S0", bodyHtml: "B0", delayDays: 0 });
+    await steps.save(step0);
+
+    const r = EmailCampaignRecipient.create({
+      campaignId, recipientType: "LEAD", recipientId: "l1", email: "a@b.com", name: "Alice",
+    });
+    await recipients.save(r);
+
+    // One send for the known step, one for a stepId that isn't in this campaign's steps
+    await sends.save(EmailCampaignSend.create({ recipientId: r.id.toString(), stepId: step0.id.toString() }));
+    await sends.save(EmailCampaignSend.create({ recipientId: r.id.toString(), stepId: "ghost-step-id" }));
+
+    const sut = new GetCampaignProgressUseCase(campaigns, recipients, sends, steps);
+    const result = await sut.execute({ campaignId });
+
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      // Only the matched step's order appears; the ghost send is skipped
+      expect(result.value.recipients[0].stepsSent).toEqual([0]);
+    }
+  });
+
   it("should return openCount and clickData when send is tracked", async () => {
     const step = EmailCampaignStep.create({ campaignId, order: 0, subject: "S", bodyHtml: "B", delayDays: 0 });
     await steps.save(step);

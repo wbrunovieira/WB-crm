@@ -3,10 +3,10 @@ import { EnrollEntityUseCase } from "@/domain/email-campaigns/application/use-ca
 import { InMemoryEmailCampaignsRepository } from "../fakes/in-memory-email-campaigns.repository";
 import { InMemoryEmailCampaignRecipientsRepository } from "../fakes/in-memory-email-campaign-recipients.repository";
 import { CreateEmailCampaignUseCase } from "@/domain/email-campaigns/application/use-cases/create-email-campaign.use-case";
-import type {
+import {
   EnrollmentSourceRepository,
-  LeadEnrollmentView,
-  OrgEnrollmentView,
+  type LeadEnrollmentView,
+  type OrgEnrollmentView,
 } from "@/domain/email-campaigns/application/repositories/enrollment-source.repository";
 
 const OWNER = "owner-1";
@@ -42,7 +42,7 @@ const ORG_WITH_EMAIL: OrgEnrollmentView = {
   ],
 };
 
-class FakeEnrollmentSource implements EnrollmentSourceRepository {
+class FakeEnrollmentSource extends EnrollmentSourceRepository {
   leads: Record<string, LeadEnrollmentView> = {};
   orgs: Record<string, OrgEnrollmentView> = {};
   async findLeadEnrollment(id: string) { return this.leads[id] ?? null; }
@@ -60,7 +60,7 @@ describe("EnrollEntityUseCase", () => {
     campaigns = new InMemoryEmailCampaignsRepository();
     recipients = new InMemoryEmailCampaignRecipientsRepository();
     source = new FakeEnrollmentSource();
-    sut = new EnrollEntityUseCase(source as never, campaigns, recipients);
+    sut = new EnrollEntityUseCase(source, campaigns, recipients);
 
     const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "Test Campaign", fromEmail: FROM, ownerId: OWNER });
     campaignId = (created.value as { id: string }).id;
@@ -125,5 +125,16 @@ describe("EnrollEntityUseCase", () => {
     const result = await sut.execute({ campaignId, entityType: "lead", entityId: "lead-3", ownerId: OWNER });
     expect(result.isRight()).toBe(true);
     if (result.isRight()) { expect(result.value.enrolled).toBe(2); expect(result.value.skipped).toBe(0); }
+  });
+
+  it("propagates segment (setor) and sourceGroup into the recipient customVars", async () => {
+    source.leads["lead-cv"] = {
+      id: "lead-cv", businessName: "ACME", email: "acme@x.com", segment: "tecnologia", sourceGroup: "G-2026",
+      contacts: [],
+    };
+    await sut.execute({ campaignId, entityType: "lead", entityId: "lead-cv", ownerId: OWNER });
+
+    const rec = (await recipients.findByCampaign(campaignId)).find((r) => r.email === "acme@x.com")!;
+    expect(rec.customVars).toMatchObject({ setor: "tecnologia", sourceGroup: "G-2026" });
   });
 });
