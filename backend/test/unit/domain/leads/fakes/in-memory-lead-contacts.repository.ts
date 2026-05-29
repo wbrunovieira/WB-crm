@@ -5,6 +5,8 @@ export class InMemoryLeadContactsRepository extends LeadContactsRepository {
   public items: LeadContactRecord[] = [];
   /** Captured email verifications keyed by lead contact id (for test assertions). */
   public verifications: Record<string, EmailVerificationData> = {};
+  /** Optional leadId -> ownerId map so findLeadIdByContactEmailForOwner can enforce scoping. */
+  public leadOwners: Record<string, string> = {};
 
   async findByLead(leadId: string): Promise<LeadContactRecord[]> {
     return this.items.filter((c) => c.leadId === leadId);
@@ -72,5 +74,14 @@ export class InMemoryLeadContactsRepository extends LeadContactsRepository {
     this.verifications[id] = data;
     const idx = this.items.findIndex((c) => c.id === id);
     if (idx >= 0) this.items[idx] = { ...this.items[idx], updatedAt: new Date() };
+  }
+
+  async findLeadIdByContactEmailForOwner(email: string, ownerId: string): Promise<string | null> {
+    const lc = this.items.find(
+      (c) =>
+        (c.email ?? "").toLowerCase() === email.toLowerCase() &&
+        (this.leadOwners[c.leadId] === undefined || this.leadOwners[c.leadId] === ownerId),
+    );
+    return lc?.leadId ?? null;
   }
 }

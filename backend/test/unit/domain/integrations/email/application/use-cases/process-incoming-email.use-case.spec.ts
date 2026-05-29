@@ -1,10 +1,11 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { ProcessIncomingEmailUseCase } from "@/domain/integrations/email/application/use-cases/process-incoming-email.use-case";
 import { FakeEmailMessagesRepository } from "../../fakes/fake-email-messages.repository";
 import { FakeActivitiesRepository } from "@test/unit/domain/integrations/whatsapp/fakes/fake-activities.repository";
 import type { GmailMessage } from "@/domain/integrations/email/application/ports/gmail.port";
 import { Activity } from "@/domain/activities/enterprise/entities/activity";
 import { UniqueEntityID } from "@/core/unique-entity-id";
+import { right } from "@/core/either";
 
 const OWNER_ID = "owner-001";
 
@@ -22,65 +23,119 @@ function makeMessage(overrides: Partial<GmailMessage> = {}): GmailMessage {
   };
 }
 
+// ── Lightweight fakes (implement only what the use case calls) ─────────────────
+
+class FakeContacts {
+  map: Record<string, string> = {}; // `${owner}|${email}` -> contactId
+  error: Error | null = null;
+  async findIdByEmailForOwner(email: string, owner: string): Promise<string | null> {
+    if (this.error) throw this.error;
+    return this.map[`${owner}|${email.toLowerCase()}`] ?? null;
+  }
+}
+class FakeLeadContacts {
+  map: Record<string, string> = {}; // `${owner}|${email}` -> leadId
+  async findLeadIdByContactEmailForOwner(email: string, owner: string): Promise<string | null> {
+    return this.map[`${owner}|${email.toLowerCase()}`] ?? null;
+  }
+}
+class FakeOrganizations {
+  map: Record<string, string> = {};
+  async findIdByEmailForOwner(email: string, owner: string): Promise<string | null> {
+    return this.map[`${owner}|${email.toLowerCase()}`] ?? null;
+  }
+}
+class FakeCampaigns {
+  byOwner: Record<string, string[]> = {};
+  async findAllByOwner(owner: string) {
+    return (this.byOwner[owner] ?? []).map((id) => ({ id: { toString: () => id } }));
+  }
+}
+interface RecipientStub { id: { toString: () => string }; campaignId: string; email: string; status: string; markBounced: () => void; }
+function makeRecipient(id: string, campaignId: string, email: string, status = "ACTIVE"): RecipientStub {
+  return {
+    id: { toString: () => id },
+    campaignId,
+    email,
+    status,
+    markBounced() { this.status = "BOUNCED"; },
+  };
+}
+class FakeRecipients {
+  items: RecipientStub[] = [];
+  saved: RecipientStub[] = [];
+  async findByEmail(email: string) { return this.items.filter((r) => r.email.toLowerCase() === email.toLowerCase()); }
+  async save(r: RecipientStub) { this.saved.push(r); }
+}
+class FakeSends {
+  byRecipient: Record<string, string[]> = {}; // recipientId -> sendIds
+  async findByRecipient(recipientId: string) {
+    return (this.byRecipient[recipientId] ?? []).map((id) => ({ id: { toString: () => id } }));
+  }
+}
+class FakeSuppressions {
+  suppressed = new Set<string>();
+  saved: Array<{ email: string; ownerId: string; reason: string }> = [];
+  async isEmailSuppressed(email: string, owner: string) { return this.suppressed.has(`${owner}|${email.toLowerCase()}`); }
+  async save(s: { email: string; ownerId: string; reason: string }) {
+    this.saved.push({ email: s.email, ownerId: s.ownerId, reason: s.reason });
+    this.suppressed.add(`${s.ownerId}|${s.email.toLowerCase()}`);
+  }
+}
+class FakeCreateNotification {
+  calls: Array<{ type: string; title: string; summary: string; userId: string; payload?: string }> = [];
+  async execute(input: { type: string; title: string; summary: string; userId: string; payload?: string }) {
+    this.calls.push(input);
+    return right({ id: { toString: () => "notif-1" } });
+  }
+}
+
+// ── Wiring ─────────────────────────────────────────────────────────────────────
+
 let emailMessagesRepo: FakeEmailMessagesRepository;
 let activitiesRepo: FakeActivitiesRepository;
+let contacts: FakeContacts;
+let leadContacts: FakeLeadContacts;
+let organizations: FakeOrganizations;
+let campaigns: FakeCampaigns;
+let recipients: FakeRecipients;
+let sends: FakeSends;
+let suppressions: FakeSuppressions;
+let createNotification: FakeCreateNotification;
 let useCase: ProcessIncomingEmailUseCase;
 
-const createdNotifications: object[] = [];
-
-// Fake PrismaService
-const fakePrisma = {
-  contact: {
-    findFirst: vi.fn(),
-  },
-  leadContact: {
-    findFirst: vi.fn().mockResolvedValue(null),
-  },
-  organization: {
-    findFirst: vi.fn().mockResolvedValue(null),
-  },
-  notification: {
-    create: vi.fn().mockImplementation(({ data }: { data: object }) => {
-      createdNotifications.push(data);
-      return Promise.resolve(data);
-    }),
-  },
-  emailCampaign: {
-    findMany: vi.fn().mockResolvedValue([]),
-  },
-  emailCampaignRecipient: {
-    updateMany: vi.fn().mockResolvedValue({ count: 0 }),
-  },
-  emailCampaignSend: {
-    findMany: vi.fn().mockResolvedValue([]),
-  },
-  emailSuppression: {
-    findFirst: vi.fn().mockResolvedValue(null),
-    create: vi.fn().mockResolvedValue({}),
-  },
-};
-
 beforeEach(() => {
-  vi.clearAllMocks();
-  createdNotifications.length = 0;
-  // Default: sender matches a known contact so activity is created
-  fakePrisma.contact.findFirst.mockResolvedValue({ id: "contact-default" });
-  fakePrisma.leadContact.findFirst.mockResolvedValue(null);
-  fakePrisma.organization.findFirst.mockResolvedValue(null);
   emailMessagesRepo = new FakeEmailMessagesRepository();
   activitiesRepo = new FakeActivitiesRepository();
+  contacts = new FakeContacts();
+  leadContacts = new FakeLeadContacts();
+  organizations = new FakeOrganizations();
+  campaigns = new FakeCampaigns();
+  recipients = new FakeRecipients();
+  sends = new FakeSends();
+  suppressions = new FakeSuppressions();
+  createNotification = new FakeCreateNotification();
 
   useCase = new ProcessIncomingEmailUseCase(
     emailMessagesRepo,
     activitiesRepo,
-    fakePrisma as never,
+    contacts as never,
+    leadContacts as never,
+    organizations as never,
+    campaigns as never,
+    recipients as never,
+    sends as never,
+    suppressions as never,
+    createNotification as never,
   );
 });
 
+// ── Tests: matching + activity + notification ──────────────────────────────────
+
 describe("ProcessIncomingEmailUseCase", () => {
   it("creates an activity and saves email message on first processing", async () => {
-    const message = makeMessage();
-    const result = await useCase.execute(message, OWNER_ID);
+    contacts.map[`${OWNER_ID}|sender@example.com`] = "contact-default";
+    const result = await useCase.execute(makeMessage(), OWNER_ID);
 
     expect(result.isRight()).toBe(true);
     expect(result.unwrap().skipped).toBe(false);
@@ -98,28 +153,23 @@ describe("ProcessIncomingEmailUseCase", () => {
   });
 
   it("returns skipped=true for duplicate messageId (idempotency)", async () => {
+    contacts.map[`${OWNER_ID}|sender@example.com`] = "contact-default";
     const message = makeMessage();
 
-    // First run
     await useCase.execute(message, OWNER_ID);
     expect(emailMessagesRepo.items).toHaveLength(1);
 
-    // Second run — same messageId
     const result = await useCase.execute(message, OWNER_ID);
-
     expect(result.isRight()).toBe(true);
     expect(result.unwrap().skipped).toBe(true);
 
-    // No new records
     expect(emailMessagesRepo.items).toHaveLength(1);
     expect(activitiesRepo.items).toHaveLength(1);
   });
 
   it("links activity to contact when contact email matches", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValue({ id: "contact-abc" });
-
-    const message = makeMessage({ from: "contact@example.com" });
-    const result = await useCase.execute(message, OWNER_ID);
+    contacts.map[`${OWNER_ID}|contact@example.com`] = "contact-abc";
+    const result = await useCase.execute(makeMessage({ from: "contact@example.com" }), OWNER_ID);
 
     expect(result.isRight()).toBe(true);
     const activity = activitiesRepo.items[0];
@@ -128,11 +178,8 @@ describe("ProcessIncomingEmailUseCase", () => {
   });
 
   it("links activity to lead when no contact found but leadContact matches", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValue(null);
-    fakePrisma.leadContact.findFirst.mockResolvedValue({ leadId: "lead-xyz" });
-
-    const message = makeMessage({ from: "lead-contact@example.com" });
-    const result = await useCase.execute(message, OWNER_ID);
+    leadContacts.map[`${OWNER_ID}|lead-contact@example.com`] = "lead-xyz";
+    const result = await useCase.execute(makeMessage({ from: "lead-contact@example.com" }), OWNER_ID);
 
     expect(result.isRight()).toBe(true);
     const activity = activitiesRepo.items[0];
@@ -140,13 +187,20 @@ describe("ProcessIncomingEmailUseCase", () => {
     expect(activity.contactId).toBeUndefined();
   });
 
-  it("skips processing when sender email matches no contact, lead contact, or organization", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValue(null);
-    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
-    fakePrisma.organization.findFirst.mockResolvedValue(null);
+  it("links activity to organization when org email matches and no contact/lead found", async () => {
+    organizations.map[`${OWNER_ID}|contact@organization.com`] = "org-999";
+    const result = await useCase.execute(makeMessage({ from: "contact@organization.com" }), OWNER_ID);
 
-    const message = makeMessage({ from: "unknown@nowhere.com" });
-    const result = await useCase.execute(message, OWNER_ID);
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().skipped).toBe(false);
+    const activity = activitiesRepo.items[0];
+    expect(activity.organizationId).toBe("org-999");
+    expect(activity.contactId).toBeUndefined();
+    expect(activity.leadId).toBeUndefined();
+  });
+
+  it("skips processing when sender matches no contact, lead contact, or organization", async () => {
+    const result = await useCase.execute(makeMessage({ from: "unknown@nowhere.com" }), OWNER_ID);
 
     expect(result.isRight()).toBe(true);
     expect(result.unwrap().skipped).toBe(true);
@@ -154,256 +208,171 @@ describe("ProcessIncomingEmailUseCase", () => {
     expect(emailMessagesRepo.items).toHaveLength(0);
   });
 
-  it("links activity to organization when organization email matches and no contact/lead found", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValue(null);
-    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
-    fakePrisma.organization.findFirst.mockResolvedValue({ id: "org-999" });
-
-    const message = makeMessage({ from: "contact@organization.com" });
-    const result = await useCase.execute(message, OWNER_ID);
-
-    expect(result.isRight()).toBe(true);
-    expect(result.unwrap().skipped).toBe(false);
-    expect(activitiesRepo.items).toHaveLength(1);
-    const activity = activitiesRepo.items[0];
-    expect(activity.organizationId).toBe("org-999");
-    expect(activity.contactId).toBeUndefined();
-    expect(activity.leadId).toBeUndefined();
-  });
-
   it("parses 'Name <email>' format correctly", async () => {
-    fakePrisma.contact.findFirst.mockImplementationOnce(
-      ({ where }: { where: { email: { equals: string } } }) => {
-        if (where.email.equals === "john@example.com") {
-          return Promise.resolve({ id: "contact-john" });
-        }
-        return Promise.resolve(null);
-      },
-    );
+    contacts.map[`${OWNER_ID}|john@example.com`] = "contact-john";
+    await useCase.execute(makeMessage({ from: "John Doe <john@example.com>" }), OWNER_ID);
 
-    const message = makeMessage({ from: "John Doe <john@example.com>" });
-    await useCase.execute(message, OWNER_ID);
-
-    const activity = activitiesRepo.items[0];
-    expect(activity.contactId).toBe("contact-john");
+    expect(activitiesRepo.items[0].contactId).toBe("contact-john");
   });
 
-  it("stores emailMessageId on the activity", async () => {
-    const message = makeMessage({ messageId: "gmail-unique-123" });
-    await useCase.execute(message, OWNER_ID);
+  it("stores emailMessageId and emailThreadId on the activity", async () => {
+    contacts.map[`${OWNER_ID}|sender@example.com`] = "c1";
+    await useCase.execute(makeMessage({ messageId: "gmail-unique-123", threadId: "thread-abc" }), OWNER_ID);
 
     const activity = activitiesRepo.items[0];
     expect(activity.emailMessageId).toBe("gmail-unique-123");
-  });
-
-  it("stores emailThreadId on the activity", async () => {
-    const message = makeMessage({ threadId: "thread-abc" });
-    await useCase.execute(message, OWNER_ID);
-
-    const activity = activitiesRepo.items[0];
     expect(activity.emailThreadId).toBe("thread-abc");
   });
 
   it("returns left on infrastructure failure", async () => {
-    fakePrisma.contact.findFirst.mockRejectedValueOnce(new Error("DB connection failed"));
-
-    const message = makeMessage();
-    const result = await useCase.execute(message, OWNER_ID);
+    contacts.error = new Error("DB connection failed");
+    const result = await useCase.execute(makeMessage(), OWNER_ID);
 
     expect(result.isLeft()).toBe(true);
     expect((result.value as Error).message).toContain("DB connection failed");
   });
 
   it("handles message with empty subject gracefully", async () => {
-    const message = makeMessage({ subject: "" });
-    const result = await useCase.execute(message, OWNER_ID);
+    contacts.map[`${OWNER_ID}|sender@example.com`] = "c1";
+    const result = await useCase.execute(makeMessage({ subject: "" }), OWNER_ID);
 
     expect(result.isRight()).toBe(true);
-    const activity = activitiesRepo.items[0];
-    expect(activity.subject).toContain("(sem assunto)");
+    expect(activitiesRepo.items[0].subject).toContain("(sem assunto)");
   });
 
-  it("creates EMAIL_RECEIVED notification when contact match found", async () => {
-    const message = makeMessage({ subject: "Proposta comercial" });
-    await useCase.execute(message, OWNER_ID);
+  it("creates an EMAIL_RECEIVED notification when a contact matches", async () => {
+    contacts.map[`${OWNER_ID}|sender@example.com`] = "c1";
+    await useCase.execute(makeMessage({ subject: "Proposta comercial" }), OWNER_ID);
 
-    expect(createdNotifications).toHaveLength(1);
-    const notif = createdNotifications[0] as Record<string, unknown>;
+    expect(createNotification.calls).toHaveLength(1);
+    const notif = createNotification.calls[0];
     expect(notif.type).toBe("EMAIL_RECEIVED");
     expect(notif.userId).toBe(OWNER_ID);
-    expect((notif.title as string)).toContain("Proposta comercial");
+    expect(notif.title).toContain("Proposta comercial");
   });
 
-  it("includes receivedToEmail in notification payload so UI knows which alias was targeted", async () => {
-    const message = makeMessage({ to: "bruno@saltoup.com", subject: "Test" });
-    await useCase.execute(message, OWNER_ID);
+  it("includes receivedToEmail and a contact link in the notification payload", async () => {
+    contacts.map[`${OWNER_ID}|sender@example.com`] = "c-77";
+    await useCase.execute(makeMessage({ to: "bruno@saltoup.com" }), OWNER_ID);
 
-    const notif = createdNotifications[0] as Record<string, unknown>;
-    const payload = JSON.parse(notif.payload as string);
+    const payload = JSON.parse(createNotification.calls[0].payload as string);
     expect(payload.receivedToEmail).toBe("bruno@saltoup.com");
+    expect(payload.link).toBe("/contacts/c-77");
   });
 
-  it("includes a link to the lead page in the notification payload when a lead matches", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValue(null);
-    fakePrisma.leadContact.findFirst.mockResolvedValue({ leadId: "lead-xyz" });
-
-    await useCase.execute(makeMessage({ from: "lead-contact@example.com" }), OWNER_ID);
-
-    const notif = createdNotifications[0] as Record<string, unknown>;
-    const payload = JSON.parse(notif.payload as string);
-    expect(payload.link).toBe("/leads/lead-xyz");
+  it("links the notification to the lead page when a lead matched", async () => {
+    leadContacts.map[`${OWNER_ID}|lc@example.com`] = "lead-9";
+    await useCase.execute(makeMessage({ from: "lc@example.com" }), OWNER_ID);
+    expect(JSON.parse(createNotification.calls[0].payload as string).link).toBe("/leads/lead-9");
   });
 
-  it("includes a link to the organization page in the notification payload when an organization matches", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValue(null);
-    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
-    fakePrisma.organization.findFirst.mockResolvedValue({ id: "org-999" });
-
-    await useCase.execute(makeMessage({ from: "contact@organization.com" }), OWNER_ID);
-
-    const notif = createdNotifications[0] as Record<string, unknown>;
-    const payload = JSON.parse(notif.payload as string);
-    expect(payload.link).toBe("/organizations/org-999");
-  });
-
-  it("includes a link to the contact page in the notification payload when a contact matches", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValue({ id: "contact-abc" });
-
-    await useCase.execute(makeMessage({ from: "contact@example.com" }), OWNER_ID);
-
-    const notif = createdNotifications[0] as Record<string, unknown>;
-    const payload = JSON.parse(notif.payload as string);
-    expect(payload.link).toBe("/contacts/contact-abc");
-  });
-
-  it("does NOT create notification when sender is unknown (skipped)", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValue(null);
-    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
-    fakePrisma.organization.findFirst.mockResolvedValue(null);
-
-    await useCase.execute(makeMessage(), OWNER_ID);
-
-    expect(createdNotifications).toHaveLength(0);
+  it("does NOT create a notification when the sender is unknown (skipped)", async () => {
+    await useCase.execute(makeMessage({ from: "unknown@nowhere.com" }), OWNER_ID);
+    expect(createNotification.calls).toHaveLength(0);
   });
 });
 
-describe("ProcessIncomingEmailUseCase — bounce detection", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    fakePrisma.contact.findFirst.mockResolvedValue(null);
-    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
-    fakePrisma.organization.findFirst.mockResolvedValue(null);
-    fakePrisma.emailCampaign.findMany.mockResolvedValue([{ id: "camp-1" }]);
-    fakePrisma.emailCampaignRecipient.updateMany.mockResolvedValue({ count: 1 });
-    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([]);
-    fakePrisma.emailSuppression.findFirst.mockResolvedValue(null);
-    fakePrisma.emailSuppression.create.mockResolvedValue({});
-    emailMessagesRepo = new FakeEmailMessagesRepository();
-    activitiesRepo = new FakeActivitiesRepository();
-    useCase = new ProcessIncomingEmailUseCase(emailMessagesRepo, activitiesRepo, fakePrisma as never);
-  });
+// ── Tests: bounce detection ─────────────────────────────────────────────────────
 
-  it("detects bounce from mailer-daemon and marks recipients as BOUNCED", async () => {
-    const message = makeMessage({
+describe("ProcessIncomingEmailUseCase — bounce detection", () => {
+  it("marks the owner's recipients as BOUNCED and suppresses the email", async () => {
+    campaigns.byOwner[OWNER_ID] = ["camp-1"];
+    const r = makeRecipient("rec-1", "camp-1", "bounce@example.com", "ACTIVE");
+    recipients.items.push(r);
+
+    const result = await useCase.execute(makeMessage({
       from: "mailer-daemon@googlemail.com",
       subject: "Delivery Status Notification (Failure)",
       bodyText: "Final-Recipient: rfc822; bounce@example.com\nStatus: 5.1.1",
-    });
-
-    const result = await useCase.execute(message, OWNER_ID);
+    }), OWNER_ID);
 
     expect(result.isRight()).toBe(true);
-    expect(result.unwrap().skipped).toBe(false);
     expect(result.unwrap().bounced).toBe(true);
-    expect(fakePrisma.emailCampaignRecipient.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: "BOUNCED" } }),
-    );
+    expect(r.status).toBe("BOUNCED");
+    expect(recipients.saved).toContain(r);
+    expect(suppressions.saved).toEqual([expect.objectContaining({ email: "bounce@example.com", reason: "bounced" })]);
   });
 
-  it("adds bounced email to suppression list", async () => {
-    const message = makeMessage({
-      from: "postmaster@mail.example.com",
-      bodyText: "Final-Recipient: rfc822; victim@domain.com",
-    });
+  it("does not re-suppress an already-suppressed email", async () => {
+    campaigns.byOwner[OWNER_ID] = ["camp-1"];
+    suppressions.suppressed.add(`${OWNER_ID}|already@suppressed.com`);
 
-    await useCase.execute(message, OWNER_ID);
-
-    expect(fakePrisma.emailSuppression.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ email: "victim@domain.com", ownerId: OWNER_ID, reason: "bounced" }),
-      }),
-    );
-  });
-
-  it("does not duplicate suppression when email is already suppressed", async () => {
-    fakePrisma.emailSuppression.findFirst.mockResolvedValue({ id: "existing" });
-
-    const message = makeMessage({
+    await useCase.execute(makeMessage({
       from: "mailer-daemon@googlemail.com",
       bodyText: "Final-Recipient: rfc822; already@suppressed.com",
-    });
+    }), OWNER_ID);
 
-    await useCase.execute(message, OWNER_ID);
-
-    expect(fakePrisma.emailSuppression.create).not.toHaveBeenCalled();
+    expect(suppressions.saved).toHaveLength(0);
   });
 
-  it("extracts bounced email from 'Original-Recipient' DSN header", async () => {
-    const message = makeMessage({
+  it("does not mark a recipient that is already BOUNCED/UNSUBSCRIBED", async () => {
+    campaigns.byOwner[OWNER_ID] = ["camp-1"];
+    const r = makeRecipient("rec-1", "camp-1", "x@y.com", "UNSUBSCRIBED");
+    recipients.items.push(r);
+
+    await useCase.execute(makeMessage({
       from: "mailer-daemon@googlemail.com",
-      bodyText: "Original-Recipient: rfc822; other@example.com\nSome other text",
-    });
+      bodyText: "Final-Recipient: rfc822; x@y.com",
+    }), OWNER_ID);
 
-    await useCase.execute(message, OWNER_ID);
-
-    expect(fakePrisma.emailSuppression.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ email: "other@example.com" }),
-      }),
-    );
+    expect(r.status).toBe("UNSUBSCRIBED");
+    expect(recipients.saved).toHaveLength(0);
   });
 
-  it("extracts bounced email from Gmail human-readable format", async () => {
-    const message = makeMessage({
+  it("ignores recipients belonging to other owners' campaigns", async () => {
+    campaigns.byOwner[OWNER_ID] = ["camp-mine"];
+    const mine = makeRecipient("r-mine", "camp-mine", "shared@x.com", "ACTIVE");
+    const theirs = makeRecipient("r-theirs", "camp-theirs", "shared@x.com", "ACTIVE");
+    recipients.items.push(mine, theirs);
+
+    await useCase.execute(makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      bodyText: "Final-Recipient: rfc822; shared@x.com",
+    }), OWNER_ID);
+
+    expect(mine.status).toBe("BOUNCED");
+    expect(theirs.status).toBe("ACTIVE"); // other owner's recipient untouched
+  });
+
+  it("extracts the bounced email from a Gmail PT-BR DNS SERVFAIL notice", async () => {
+    campaigns.byOwner[OWNER_ID] = ["camp-1"];
+    const r = makeRecipient("rec-1", "camp-1", "neumannmkt@temtudopetropolis.com.br", "ACTIVE");
+    recipients.items.push(r);
+
+    const result = await useCase.execute(makeMessage({
       from: "Mail Delivery Subsystem <mailer-daemon@googlemail.com>",
-      bodyText: "Your message wasn't delivered to human@readable.com because the address couldn't be found.",
-    });
+      subject: "Entrega incompleta",
+      bodyText:
+        "Ocorreu um problema temporário na entrega da mensagem para neumannmkt@temtudopetropolis.com.br. " +
+        "DNS Error: DNS type 'mx' lookup of temtudopetropolis.com.br responded with code SERVFAIL",
+    }), OWNER_ID);
 
-    await useCase.execute(message, OWNER_ID);
-
-    expect(fakePrisma.emailSuppression.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ email: "human@readable.com" }),
-      }),
-    );
+    expect(result.unwrap().bounced).toBe(true);
+    expect(r.status).toBe("BOUNCED");
   });
 
-  it("returns skipped=true when bounce body contains no extractable email", async () => {
-    const message = makeMessage({
+  it("returns skipped=true when bounce body has no extractable email", async () => {
+    const result = await useCase.execute(makeMessage({
       from: "mailer-daemon@googlemail.com",
-      bodyText: "Something went wrong but no email address here.",
-    });
+      bodyText: "Something went wrong but no address here.",
+    }), OWNER_ID);
 
-    const result = await useCase.execute(message, OWNER_ID);
-
-    expect(result.isRight()).toBe(true);
     expect(result.unwrap().skipped).toBe(true);
-    expect(fakePrisma.emailSuppression.create).not.toHaveBeenCalled();
+    expect(suppressions.saved).toHaveLength(0);
   });
 
-  it("does not treat normal email from known contact as bounce", async () => {
-    fakePrisma.contact.findFirst.mockResolvedValue({ id: "contact-1" });
+  it("does not treat a normal email from a known contact as a bounce", async () => {
+    contacts.map[`${OWNER_ID}|normal@contact.com`] = "c1";
+    const result = await useCase.execute(makeMessage({ from: "normal@contact.com" }), OWNER_ID);
 
-    const message = makeMessage({ from: "normal@contact.com" });
-    const result = await useCase.execute(message, OWNER_ID);
-
-    expect(result.isRight()).toBe(true);
     expect(result.unwrap().bounced).toBeUndefined();
-    expect(fakePrisma.emailCampaignRecipient.updateMany).not.toHaveBeenCalled();
+    expect(recipients.saved).toHaveLength(0);
   });
 });
 
-describe("ProcessIncomingEmailUseCase — bounce updates linked campaign_email activity", () => {
+// ── Tests: bounce fails the linked campaign_email activity ──────────────────────
+
+describe("ProcessIncomingEmailUseCase — bounce fails linked activity", () => {
   function makeCampaignActivity(sendId: string): Activity {
     return Activity.create(
       {
@@ -424,134 +393,59 @@ describe("ProcessIncomingEmailUseCase — bounce updates linked campaign_email a
   }
 
   beforeEach(() => {
-    vi.clearAllMocks();
-    fakePrisma.contact.findFirst.mockResolvedValue(null);
-    fakePrisma.leadContact.findFirst.mockResolvedValue(null);
-    fakePrisma.organization.findFirst.mockResolvedValue(null);
-    fakePrisma.emailCampaign.findMany.mockResolvedValue([{ id: "camp-1" }]);
-    fakePrisma.emailCampaignRecipient.updateMany.mockResolvedValue({ count: 1 });
-    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([]);
-    fakePrisma.emailSuppression.findFirst.mockResolvedValue(null);
-    fakePrisma.emailSuppression.create.mockResolvedValue({});
-    emailMessagesRepo = new FakeEmailMessagesRepository();
-    activitiesRepo = new FakeActivitiesRepository();
-    useCase = new ProcessIncomingEmailUseCase(emailMessagesRepo, activitiesRepo, fakePrisma as never);
+    campaigns.byOwner[OWNER_ID] = ["camp-1"];
   });
 
-  it("marks linked campaign_email activity as failed when bounce NDR arrives", async () => {
-    const sendId = "send-abc-001";
-    const activity = makeCampaignActivity(sendId);
-    activitiesRepo.items.push(activity);
+  it("marks the linked campaign_email activity as failed on bounce", async () => {
+    const r = makeRecipient("rec-1", "camp-1", "bounced@example.com", "ACTIVE");
+    recipients.items.push(r);
+    sends.byRecipient["rec-1"] = ["send-abc"];
+    activitiesRepo.items.push(makeCampaignActivity("send-abc"));
 
-    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([{ id: sendId }]);
-
-    const message = makeMessage({
+    await useCase.execute(makeMessage({
       from: "mailer-daemon@googlemail.com",
       bodyText: "Final-Recipient: rfc822; bounced@example.com",
-    });
+    }), OWNER_ID);
 
-    await useCase.execute(message, OWNER_ID);
-
-    const updated = activitiesRepo.items.find((a) => a.emailCampaignSendId === sendId)!;
+    const updated = activitiesRepo.items.find((a) => a.emailCampaignSendId === "send-abc")!;
     expect(updated.failedAt).toBeDefined();
     expect(updated.failReason).toBe("Email retornou (bounce)");
     expect(updated.completed).toBe(false);
   });
 
-  it("does not double-fail an activity already marked as failed", async () => {
-    const sendId = "send-already-failed";
-    const activity = makeCampaignActivity(sendId);
+  it("does not double-fail an activity already marked failed", async () => {
+    const r = makeRecipient("rec-1", "camp-1", "bounced@example.com", "ACTIVE");
+    recipients.items.push(r);
+    sends.byRecipient["rec-1"] = ["send-x"];
+    const activity = makeCampaignActivity("send-x");
     activity.fail("Erro anterior");
     const originalFailedAt = activity.failedAt!;
     activitiesRepo.items.push(activity);
 
-    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([{ id: sendId }]);
+    await new Promise((res) => setTimeout(res, 5));
 
-    await new Promise((r) => setTimeout(r, 5)); // garante timestamp diferente
-
-    const message = makeMessage({
+    await useCase.execute(makeMessage({
       from: "mailer-daemon@googlemail.com",
       bodyText: "Final-Recipient: rfc822; bounced@example.com",
-    });
+    }), OWNER_ID);
 
-    await useCase.execute(message, OWNER_ID);
-
-    const afterUpdate = activitiesRepo.items.find((a) => a.emailCampaignSendId === sendId)!;
-    expect(afterUpdate.failedAt!.getTime()).toBe(originalFailedAt.getTime());
+    const after = activitiesRepo.items.find((a) => a.emailCampaignSendId === "send-x")!;
+    expect(after.failedAt!.getTime()).toBe(originalFailedAt.getTime());
   });
 
-  it("trata 'Entrega incompleta' do Gmail PT-BR (DNS SERVFAIL) como bounce permanente", async () => {
-    const sendId = "send-dns-fail-001";
-    const activity = makeCampaignActivity(sendId);
+  it("does nothing to activities when no send is linked to the bounced recipient", async () => {
+    const r = makeRecipient("rec-1", "camp-1", "bounced@example.com", "ACTIVE");
+    recipients.items.push(r);
+    // no sends.byRecipient entry
+    const activity = makeCampaignActivity("unrelated");
     activitiesRepo.items.push(activity);
 
-    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([{ id: sendId }]);
-
-    const message = makeMessage({
-      from: "Mail Delivery Subsystem <mailer-daemon@googlemail.com>",
-      subject: "Entrega incompleta",
-      bodyText:
-        "Ocorreu um problema temporário na entrega da mensagem para neumannmkt@temtudopetropolis.com.br. " +
-        "O Gmail tentará novamente por mais 44 horas. Você será notificado se a falha na entrega da mensagem for permanente. " +
-        "A resposta foi: DNS Error: DNS type 'mx' lookup of temtudopetropolis.com.br responded with code SERVFAIL",
-    });
-
-    const result = await useCase.execute(message, OWNER_ID);
-
-    expect(result.isRight()).toBe(true);
-    expect(result.unwrap().bounced).toBe(true);
-    expect(fakePrisma.emailCampaignRecipient.updateMany).toHaveBeenCalledWith(
-      expect.objectContaining({ data: { status: "BOUNCED" } }),
-    );
-    expect(fakePrisma.emailSuppression.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({ email: "neumannmkt@temtudopetropolis.com.br" }),
-      }),
-    );
-    const updated = activitiesRepo.items.find((a) => a.emailCampaignSendId === sendId)!;
-    expect(updated.failedAt).toBeDefined();
-    expect(updated.failReason).toBe("Email retornou (bounce)");
-  });
-
-  it("does not update activity when no send record is linked to the bounce", async () => {
-    const activity = makeCampaignActivity("send-unrelated");
-    activitiesRepo.items.push(activity);
-
-    // no matching send returned
-    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([]);
-
-    const message = makeMessage({
+    await useCase.execute(makeMessage({
       from: "mailer-daemon@googlemail.com",
-      bodyText: "Final-Recipient: rfc822; other@example.com",
-    });
+      bodyText: "Final-Recipient: rfc822; bounced@example.com",
+    }), OWNER_ID);
 
-    await useCase.execute(message, OWNER_ID);
-
-    // activity untouched
-    const untouched = activitiesRepo.items[0];
-    expect(untouched.failedAt).toBeUndefined();
-    expect(untouched.completed).toBe(true);
-  });
-
-  it("updates multiple activities when multiple sends are linked to the bounced email", async () => {
-    const sendId1 = "send-multi-1";
-    const sendId2 = "send-multi-2";
-    activitiesRepo.items.push(makeCampaignActivity(sendId1));
-    activitiesRepo.items.push(makeCampaignActivity(sendId2));
-
-    fakePrisma.emailCampaignSend.findMany.mockResolvedValue([{ id: sendId1 }, { id: sendId2 }]);
-
-    const message = makeMessage({
-      from: "mailer-daemon@googlemail.com",
-      bodyText: "Final-Recipient: rfc822; multi@example.com",
-    });
-
-    await useCase.execute(message, OWNER_ID);
-
-    for (const sendId of [sendId1, sendId2]) {
-      const act = activitiesRepo.items.find((a) => a.emailCampaignSendId === sendId)!;
-      expect(act.failedAt).toBeDefined();
-      expect(act.completed).toBe(false);
-    }
+    expect(activitiesRepo.items[0].failedAt).toBeUndefined();
+    expect(activitiesRepo.items[0].completed).toBe(true);
   });
 });

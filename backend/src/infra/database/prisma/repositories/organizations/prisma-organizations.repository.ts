@@ -328,6 +328,14 @@ export class PrismaOrganizationsRepository extends OrganizationsRepository {
     return raw ? OrganizationMapper.toDomain(raw) : null;
   }
 
+  async findIdByEmailForOwner(email: string, ownerId: string): Promise<string | null> {
+    const row = await this.prisma.organization.findFirst({
+      where: { email: { equals: email, mode: "insensitive" }, ownerId },
+      select: { id: true },
+    });
+    return row?.id ?? null;
+  }
+
   async save(organization: Organization): Promise<void> {
     const data = OrganizationMapper.toPrisma(organization);
     const { ...prismaData } = data as Record<string, unknown>;

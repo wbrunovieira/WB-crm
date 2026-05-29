@@ -1,11 +1,22 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach } from "vitest";
 import { PollGmailUseCase } from "@/domain/integrations/email/application/use-cases/poll-gmail.use-case";
 import { FakeGmailPort } from "../../fakes/fake-gmail.port";
-import { FakeEmailMessagesRepository } from "../../fakes/fake-email-messages.repository";
-import { FakeActivitiesRepository } from "@test/unit/domain/integrations/whatsapp/fakes/fake-activities.repository";
 import type { GmailMessage } from "@/domain/integrations/email/application/ports/gmail.port";
-import { ProcessIncomingEmailUseCase } from "@/domain/integrations/email/application/use-cases/process-incoming-email.use-case";
+import { right } from "@/core/either";
 import { GoogleTokenRepository, type GoogleTokenRecord } from "@/domain/integrations/email/application/repositories/google-token.repository";
+
+// Stub of ProcessIncomingEmailUseCase — poll-gmail is unit-tested in isolation.
+// Dedups by messageId so the idempotency test still holds.
+class FakeProcessIncomingEmail {
+  public seen = new Set<string>();
+  public processedCount = 0;
+  async execute(message: GmailMessage, _ownerId: string) {
+    if (this.seen.has(message.messageId)) return right({ skipped: true });
+    this.seen.add(message.messageId);
+    this.processedCount++;
+    return right({ activityId: message.messageId, skipped: false });
+  }
+}
 
 // In-memory fake for the singleton Google token
 class FakeGoogleTokenRepository extends GoogleTokenRepository {
@@ -43,46 +54,18 @@ function makeGmailMessage(overrides: Partial<GmailMessage> = {}): GmailMessage {
 }
 
 let gmailPort: FakeGmailPort;
-let emailMessagesRepo: FakeEmailMessagesRepository;
-let activitiesRepo: FakeActivitiesRepository;
-let processIncomingEmail: ProcessIncomingEmailUseCase;
+let processIncomingEmail: FakeProcessIncomingEmail;
 let googleTokenRepo: FakeGoogleTokenRepository;
 let useCase: PollGmailUseCase;
 
-// ProcessIncomingEmailUseCase still uses Prisma (next use case to refactor).
-const fakePrisma = {
-  contact: {
-    findFirst: vi.fn(),
-  },
-  leadContact: {
-    findFirst: vi.fn().mockResolvedValue(null),
-  },
-  organization: {
-    findFirst: vi.fn().mockResolvedValue(null),
-  },
-  notification: {
-    create: vi.fn().mockResolvedValue({}),
-  },
-};
-
 beforeEach(() => {
-  vi.clearAllMocks();
-  // Default: sender matches a contact so messages are processed
-  fakePrisma.contact.findFirst.mockResolvedValue({ id: "contact-default" });
   gmailPort = new FakeGmailPort();
-  emailMessagesRepo = new FakeEmailMessagesRepository();
-  activitiesRepo = new FakeActivitiesRepository();
   googleTokenRepo = new FakeGoogleTokenRepository();
-
-  processIncomingEmail = new ProcessIncomingEmailUseCase(
-    emailMessagesRepo,
-    activitiesRepo,
-    fakePrisma as never,
-  );
+  processIncomingEmail = new FakeProcessIncomingEmail();
 
   useCase = new PollGmailUseCase(
     gmailPort,
-    processIncomingEmail,
+    processIncomingEmail as never,
     googleTokenRepo,
   );
 });
@@ -123,7 +106,7 @@ describe("PollGmailUseCase", () => {
 
     expect(result.isRight()).toBe(true);
     expect(result.unwrap().processed).toBe(2);
-    expect(activitiesRepo.items).toHaveLength(2);
+    expect(processIncomingEmail.processedCount).toBe(2);
   });
 
   it("skips already-processed messages (idempotency)", async () => {
@@ -137,7 +120,7 @@ describe("PollGmailUseCase", () => {
     expect(result.isRight()).toBe(true);
     // Second is a duplicate — skipped
     expect(result.unwrap().processed).toBe(1);
-    expect(activitiesRepo.items).toHaveLength(1);
+    expect(processIncomingEmail.processedCount).toBe(1);
   });
 
   it("returns processed=0 when no new messages in history", async () => {

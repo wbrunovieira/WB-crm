@@ -12,6 +12,8 @@ export abstract class OrganizationsRepository {
   abstract findMany(requesterId: string, requesterRole: string, filters?: Omit<OrganizationFilters, "ownerId">): Promise<OrganizationSummary[]>;
   abstract findById(id: string, requesterId: string, requesterRole: string): Promise<OrganizationDetail | null>;
   abstract findByIdRaw(id: string): Promise<Organization | null>;
+  /** Returns the id of the owner's organization matching this email (case-insensitive), or null. */
+  abstract findIdByEmailForOwner(email: string, ownerId: string): Promise<string | null>;
   abstract save(organization: Organization): Promise<void>;
   abstract saveWithLabels(organization: Organization, labelIds: string[]): Promise<void>;
   abstract delete(id: string): Promise<void>;

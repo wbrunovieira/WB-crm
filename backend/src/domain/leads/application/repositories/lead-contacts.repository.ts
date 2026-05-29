@@ -57,4 +57,6 @@ export abstract class LeadContactsRepository {
   abstract delete(id: string): Promise<void>;
   /** Persist the outcome of an email verification on the lead contact. */
   abstract saveEmailVerification(id: string, data: EmailVerificationData): Promise<void>;
+  /** Returns the leadId of the owner's lead contact matching this email (case-insensitive), or null. */
+  abstract findLeadIdByContactEmailForOwner(email: string, ownerId: string): Promise<string | null>;
 }

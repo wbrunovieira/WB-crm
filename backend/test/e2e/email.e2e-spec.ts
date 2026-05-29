@@ -30,6 +30,7 @@ const fakeGoogleOAuthPort = {
 
 let app: INestApplication;
 let token: string;
+let userId: string;
 let prisma: PrismaService;
 
 beforeAll(async () => {
@@ -70,6 +71,7 @@ beforeAll(async () => {
     },
   });
 
+  userId = user.id;
   token = jwt.sign({ sub: user.id, name: user.name, email: user.email, role: user.role });
 });
 
@@ -219,5 +221,94 @@ describe("POST /email/sync (manual Gmail poll)", () => {
     // The singleton token now carries the historyId from the Gmail profile fake
     const tokenRow = await prisma.googleToken.findUnique({ where: { id: "google-token-singleton" } });
     expect(tokenRow?.gmailHistoryId).toBe("12345");
+  });
+
+  it("processes a new inbound email from a known contact into an Activity (full wiring)", async () => {
+    // Seed a contact owned by the e2e user so the inbound email matches
+    const contact = await prisma.contact.create({
+      data: { name: "Cliente Sync", email: "cliente-sync@empresa.com", ownerId: userId },
+    });
+    // Ensure we're past the first-run branch so pollHistory is consulted
+    await prisma.googleToken.update({ where: { id: "google-token-singleton" }, data: { gmailHistoryId: "prev-1" } });
+
+    const inbound = {
+      messageId: "gmail-inbound-e2e-1",
+      threadId: "thread-inbound-1",
+      from: "Cliente Sync <cliente-sync@empresa.com>",
+      to: "e2e-email@test.com",
+      subject: "Tenho interesse",
+      bodyText: "Olá, gostaria de saber mais.",
+      bodyHtml: "<p>Olá</p>",
+      receivedAt: new Date(),
+    };
+    const originalPoll = fakeGmailPort.pollHistory;
+    fakeGmailPort.pollHistory = async () => [inbound] as never;
+
+    try {
+      const res = await request(app.getHttpServer())
+        .post("/email/sync")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+      expect(res.body.processed).toBe(1);
+
+      const activity = await prisma.activity.findFirst({ where: { emailMessageId: "gmail-inbound-e2e-1" } });
+      expect(activity).not.toBeNull();
+      expect(activity?.type).toBe("email");
+      expect(activity?.contactId).toBe(contact.id);
+
+      // Notification was created and links to the contact page
+      const notif = await prisma.notification.findFirst({ where: { userId, type: "EMAIL_RECEIVED" } });
+      expect(notif).not.toBeNull();
+      expect(JSON.parse(notif!.payload ?? "{}").link).toBe(`/contacts/${contact.id}`);
+    } finally {
+      fakeGmailPort.pollHistory = originalPoll;
+      await prisma.notification.deleteMany({ where: { userId, type: "EMAIL_RECEIVED" } });
+      await prisma.emailMessage.deleteMany({ where: { ownerId: userId } }).catch(() => {});
+      await prisma.activity.deleteMany({ where: { emailMessageId: "gmail-inbound-e2e-1" } });
+      await prisma.contact.deleteMany({ where: { id: contact.id } });
+    }
+  });
+
+  it("processes a bounce: marks the recipient BOUNCED and suppresses the email (full wiring)", async () => {
+    const bouncedEmail = "bounce-e2e@empresa.com";
+    const campaign = await prisma.emailCampaign.create({
+      data: { name: "Camp Bounce E2E", fromEmail: "e2e-email@test.com", ownerId: userId },
+    });
+    const recipient = await prisma.emailCampaignRecipient.create({
+      data: { campaignId: campaign.id, recipientType: "LEAD", recipientId: "lead-x", email: bouncedEmail, status: "ACTIVE" },
+    });
+    await prisma.googleToken.update({ where: { id: "google-token-singleton" }, data: { gmailHistoryId: "prev-2" } });
+
+    const bounceMsg = {
+      messageId: "gmail-bounce-e2e-1",
+      threadId: "thread-bounce-1",
+      from: "Mail Delivery Subsystem <mailer-daemon@googlemail.com>",
+      to: "e2e-email@test.com",
+      subject: "Delivery Status Notification (Failure)",
+      bodyText: `Final-Recipient: rfc822; ${bouncedEmail}\nStatus: 5.1.1`,
+      bodyHtml: "",
+      receivedAt: new Date(),
+    };
+    const originalPoll = fakeGmailPort.pollHistory;
+    fakeGmailPort.pollHistory = async () => [bounceMsg] as never;
+
+    try {
+      await request(app.getHttpServer())
+        .post("/email/sync")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const updatedRecipient = await prisma.emailCampaignRecipient.findUnique({ where: { id: recipient.id } });
+      expect(updatedRecipient?.status).toBe("BOUNCED");
+
+      const suppression = await prisma.emailSuppression.findFirst({ where: { email: bouncedEmail, ownerId: userId } });
+      expect(suppression).not.toBeNull();
+      expect(suppression?.reason).toBe("bounced");
+    } finally {
+      fakeGmailPort.pollHistory = originalPoll;
+      await prisma.emailSuppression.deleteMany({ where: { ownerId: userId, email: bouncedEmail } });
+      await prisma.emailCampaignRecipient.deleteMany({ where: { campaignId: campaign.id } });
+      await prisma.emailCampaign.deleteMany({ where: { id: campaign.id } });
+    }
   });
 });

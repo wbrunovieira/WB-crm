@@ -126,6 +126,13 @@ export class InMemoryOrganizationsRepository extends OrganizationsRepository {
     return this.items.find((o) => o.id.toString() === id) ?? null;
   }
 
+  async findIdByEmailForOwner(email: string, ownerId: string): Promise<string | null> {
+    const o = this.items.find(
+      (o) => o.ownerId === ownerId && (o.email ?? "").toLowerCase() === email.toLowerCase(),
+    );
+    return o ? o.id.toString() : null;
+  }
+
   async save(organization: Organization): Promise<void> {
     const idx = this.items.findIndex((o) => o.id.equals(organization.id));
     if (idx >= 0) this.items[idx] = organization;

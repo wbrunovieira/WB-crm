@@ -258,6 +258,14 @@ export class PrismaContactsRepository extends ContactsRepository {
     await this.prisma.contact.delete({ where: { id } });
   }
 
+  async findIdByEmailForOwner(email: string, ownerId: string): Promise<string | null> {
+    const row = await this.prisma.contact.findFirst({
+      where: { email: { equals: email, mode: "insensitive" }, ownerId },
+      select: { id: true },
+    });
+    return row?.id ?? null;
+  }
+
   async findByOwnerId(ownerId: string): Promise<Contact[]> {
     const rows = await this.prisma.contact.findMany({
       where: { ownerId },

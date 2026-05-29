@@ -1,7 +1,7 @@
 # Plano: Eliminar Vazamento de Prisma na Camada de Aplicação (DDD)
 
 **Data de Criação:** 2026-05-29
-**Status:** Em andamento
+**Status:** Fase 1 concluída (4/4 use cases de integração) — Fases 2–4 pendentes
 **Prioridade:** Alta — está crescendo em código novo (integrações em desenvolvimento ativo)
 **Origem:** Análise de aderência a DDD do backend (`/backend`)
 
@@ -99,7 +99,7 @@ Adicionar verificação automática para impedir novos vazamentos:
 | 1 | process-whatsapp-message | ✅ feito (2026-05-29) — injeta `CreateNotificationUseCase` (não Prisma); link via VO `EntityLink`; unit TDD + e2e |
 | 1 | verify-lead-contact-email | ✅ feito (2026-05-29) — injeta `LeadContactsRepository` + `LeadsRepository`; VO `EmailVerification`; **owner-scoping via lead pai** (admin bypass) + erros HTTP discriminados (403/404/422/502) no controller + frontend interpretando status (`ApiError`); unit (21) + VO (14) + e2e (8); revisão senior |
 | 1 | poll-gmail | ✅ feito (2026-05-29) — injeta `GoogleTokenRepository` (singleton) no lugar de Prisma; unit (6) + e2e `/email/sync`; revisão senior (ship it) |
-| 1 | process-incoming-email | ⏳ |
+| 1 | process-incoming-email | ✅ feito (2026-05-29) — injeta 8 ports + `CreateNotificationUseCase` (não Prisma); 3 métodos novos `findIdByEmailForOwner`/`findLeadIdByContactEmailForOwner`; VO `EntityLink`; ciclo EmailModule↔EmailCampaignsModule resolvido com forwardRef; unit (24) + e2e inbound + e2e bounce; revisão senior (ship it, fidelidade exata) |
 | 2 | get-campaign-progress | ⏳ |
 | 2 | enroll-entity | ⏳ |
 | 2 | bulk-enroll | ⏳ |

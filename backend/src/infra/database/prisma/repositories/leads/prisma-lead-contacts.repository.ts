@@ -94,6 +94,14 @@ export class PrismaLeadContactsRepository extends LeadContactsRepository {
     });
   }
 
+  async findLeadIdByContactEmailForOwner(email: string, ownerId: string): Promise<string | null> {
+    const row = await this.prisma.leadContact.findFirst({
+      where: { email: { equals: email, mode: "insensitive" }, lead: { ownerId } },
+      select: { leadId: true },
+    });
+    return row?.leadId ?? null;
+  }
+
   private toRecord(row: {
     id: string;
     leadId: string;

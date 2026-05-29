@@ -1,8 +1,12 @@
-import { Module } from "@nestjs/common";
+import { Module, forwardRef } from "@nestjs/common";
 import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
 import { ActivitiesModule } from "@/domain/activities/activities.module";
 import { AuthModule } from "@/infra/auth/auth.module";
 import { LeadsModule } from "@/domain/leads/leads.module";
+import { ContactsModule } from "@/domain/contacts/contacts.module";
+import { OrganizationsModule } from "@/domain/organizations/organizations.module";
+import { EmailCampaignsModule } from "@/domain/email-campaigns/email-campaigns.module";
+import { NotificationsModule } from "@/domain/notifications/notifications.module";
 
 // Ports
 import { GmailPort } from "./application/ports/gmail.port";
@@ -44,7 +48,7 @@ import { GmailPollCronService } from "./infra/scheduled/gmail-poll-cron.service"
 import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.repository";
 
 @Module({
-  imports: [SharedInfraModule, ActivitiesModule, AuthModule, LeadsModule],
+  imports: [SharedInfraModule, ActivitiesModule, AuthModule, LeadsModule, ContactsModule, OrganizationsModule, forwardRef(() => EmailCampaignsModule), NotificationsModule],
   controllers: [EmailWebhookController, EmailController, GoogleOAuthController],
   providers: [
     // Use Cases

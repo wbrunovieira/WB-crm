@@ -23,6 +23,8 @@ export abstract class ContactsRepository {
   abstract save(contact: Contact): Promise<void>;
   abstract delete(id: string): Promise<void>;
   abstract findByOwnerId(ownerId: string): Promise<Contact[]>;
+  /** Returns the id of the owner's contact matching this email (case-insensitive), or null. */
+  abstract findIdByEmailForOwner(email: string, ownerId: string): Promise<string | null>;
   abstract savePhoneVerification(contactId: string, data: { phoneValid?: boolean; phoneType?: string; whatsappPhoneValid?: boolean; whatsappPhoneType?: string }): Promise<void>;
   abstract saveEmailVerification(contactId: string, data: { emailVerified: boolean; emailVerifiedAt: Date; emailVerificationStatus: string; emailVerificationReason: string }): Promise<void>;
 }

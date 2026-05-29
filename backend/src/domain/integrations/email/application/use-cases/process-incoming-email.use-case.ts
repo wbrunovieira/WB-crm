@@ -4,7 +4,16 @@ import { GmailMessage } from "../ports/gmail.port";
 import { EmailMessagesRepository, EmailMessage } from "../repositories/email-messages.repository";
 import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
 import { Activity } from "@/domain/activities/enterprise/entities/activity";
-import { PrismaService } from "@/infra/database/prisma.service";
+import { ContactsRepository } from "@/domain/contacts/application/repositories/contacts.repository";
+import { LeadContactsRepository } from "@/domain/leads/application/repositories/lead-contacts.repository";
+import { OrganizationsRepository } from "@/domain/organizations/application/repositories/organizations.repository";
+import { EmailCampaignsRepository } from "@/domain/email-campaigns/application/repositories/email-campaigns.repository";
+import { EmailCampaignRecipientsRepository } from "@/domain/email-campaigns/application/repositories/email-campaign-recipients.repository";
+import { EmailCampaignSendsRepository } from "@/domain/email-campaigns/application/repositories/email-campaign-sends.repository";
+import { EmailSuppressionsRepository } from "@/domain/email-campaigns/application/repositories/email-suppressions.repository";
+import { EmailSuppression } from "@/domain/email-campaigns/enterprise/entities/email-suppression.entity";
+import { CreateNotificationUseCase } from "@/domain/notifications/application/use-cases/notifications.use-cases";
+import { EntityLink } from "@/domain/notifications/enterprise/value-objects/entity-link.vo";
 
 export interface ProcessIncomingEmailOutput {
   activityId?: string;
@@ -19,7 +28,14 @@ export class ProcessIncomingEmailUseCase {
   constructor(
     private readonly emailMessagesRepo: EmailMessagesRepository,
     private readonly activitiesRepo: ActivitiesRepository,
-    private readonly prisma: PrismaService,
+    private readonly contacts: ContactsRepository,
+    private readonly leadContacts: LeadContactsRepository,
+    private readonly organizations: OrganizationsRepository,
+    private readonly emailCampaigns: EmailCampaignsRepository,
+    private readonly recipients: EmailCampaignRecipientsRepository,
+    private readonly sends: EmailCampaignSendsRepository,
+    private readonly suppressions: EmailSuppressionsRepository,
+    private readonly createNotification: CreateNotificationUseCase,
   ) {}
 
   async execute(
@@ -38,86 +54,24 @@ export class ProcessIncomingEmailUseCase {
         const bouncedEmail = this.extractBouncedEmail(message.bodyText) ?? this.extractBouncedEmail(message.bodyHtml);
         if (!bouncedEmail) return right({ skipped: true });
 
-        const campaigns = await this.prisma.emailCampaign.findMany({
-          where: { ownerId },
-          select: { id: true },
-        });
-        const campaignIds = campaigns.map((c: { id: string }) => c.id);
-
-        if (campaignIds.length > 0) {
-          // Exclude only already-bounced or unsubscribed — COMPLETED recipients can still bounce
-          await this.prisma.emailCampaignRecipient.updateMany({
-            where: { email: bouncedEmail, campaignId: { in: campaignIds }, status: { notIn: ["BOUNCED", "UNSUBSCRIBED"] } },
-            data: { status: "BOUNCED" },
-          });
-
-          // Update the linked campaign_email Activity to reflect the bounce
-          const bouncedSends = await this.prisma.emailCampaignSend.findMany({
-            where: { recipient: { email: bouncedEmail, campaignId: { in: campaignIds } } },
-            select: { id: true },
-          });
-          for (const send of bouncedSends) {
-            const activity = await this.activitiesRepo.findByCampaignSendId(send.id);
-            if (activity && !activity.failedAt) {
-              activity.update({
-                completed: false,
-                completedAt: undefined,
-                failedAt: new Date(),
-                failReason: "Email retornou (bounce)",
-              });
-              await this.activitiesRepo.save(activity);
-            }
-          }
-        }
-
-        const alreadySuppressed = await this.prisma.emailSuppression.findFirst({
-          where: { email: bouncedEmail, ownerId },
-        });
-        if (!alreadySuppressed) {
-          await this.prisma.emailSuppression.create({
-            data: { id: crypto.randomUUID(), email: bouncedEmail, ownerId, reason: "bounced", createdAt: new Date() },
-          });
-        }
-
+        await this.handleBounce(bouncedEmail, ownerId);
         return right({ skipped: false, bounced: true });
       }
 
       // 3. Extract sender email (strip display name if present: "Name <email@example.com>")
       const fromEmail = this.extractEmail(message.from);
 
-      // 3. Find matching contact/lead/organization by email
+      // 4. Find matching contact/lead/organization by email (scoped to the mailbox owner)
       let contactId: string | undefined;
       let leadId: string | undefined;
       let organizationId: string | undefined;
 
       if (fromEmail) {
-        const contact = await this.prisma.contact.findFirst({
-          where: { email: { equals: fromEmail, mode: "insensitive" }, ownerId },
-          select: { id: true },
-        });
-
-        if (contact) {
-          contactId = contact.id;
-        } else {
-          const leadContact = await this.prisma.leadContact.findFirst({
-            where: {
-              email: { equals: fromEmail, mode: "insensitive" },
-              lead: { ownerId },
-            },
-            select: { leadId: true },
-          });
-
-          if (leadContact) {
-            leadId = leadContact.leadId;
-          } else {
-            const organization = await this.prisma.organization.findFirst({
-              where: { email: { equals: fromEmail, mode: "insensitive" }, ownerId },
-              select: { id: true },
-            });
-
-            if (organization) {
-              organizationId = organization.id;
-            }
+        contactId = (await this.contacts.findIdByEmailForOwner(fromEmail, ownerId)) ?? undefined;
+        if (!contactId) {
+          leadId = (await this.leadContacts.findLeadIdByContactEmailForOwner(fromEmail, ownerId)) ?? undefined;
+          if (!leadId) {
+            organizationId = (await this.organizations.findIdByEmailForOwner(fromEmail, ownerId)) ?? undefined;
           }
         }
       }
@@ -127,9 +81,7 @@ export class ProcessIncomingEmailUseCase {
         return right({ skipped: true });
       }
 
-      // 4. Create Activity of type 'email'
-      let activityId: string | undefined;
-
+      // 5. Create Activity of type 'email'
       const subject = message.subject || "(sem assunto)";
       const snippet = message.bodyText?.slice(0, 500) || "";
       const description = snippet ? `${subject}\n\n${snippet}` : subject;
@@ -156,41 +108,33 @@ export class ProcessIncomingEmailUseCase {
       });
 
       await this.activitiesRepo.save(activity);
-      activityId = activity.id.toString();
+      const activityId = activity.id.toString();
 
-      // 5. Create EMAIL_RECEIVED notification
-      // Link the notification to the matched entity page so the bell is clickable
-      const link = leadId
-        ? `/leads/${leadId}`
-        : organizationId
-          ? `/organizations/${organizationId}`
-          : contactId
-            ? `/contacts/${contactId}`
-            : undefined;
-      try {
-        await this.prisma.notification.create({
-          data: {
-            type: "EMAIL_RECEIVED",
-            status: "pending",
-            title: `Email recebido — ${subject}`,
-            summary: fromEmail ? `De: ${message.from}` : `De: ${message.from}`,
-            payload: JSON.stringify({
-              activityId,
-              fromEmail: message.from,
-              receivedToEmail: message.to,
-              link,
-            }),
-            read: false,
-            userId: ownerId,
-          },
-        });
-      } catch (err) {
+      // 6. Create EMAIL_RECEIVED notification linked to the matched entity page
+      const link = EntityLink.firstOf([
+        { type: "lead", id: leadId },
+        { type: "organization", id: organizationId },
+        { type: "contact", id: contactId },
+      ])?.value;
+      const notifResult = await this.createNotification.execute({
+        type: "EMAIL_RECEIVED",
+        title: `Email recebido — ${subject}`,
+        summary: `De: ${message.from}`,
+        payload: JSON.stringify({
+          activityId,
+          fromEmail: message.from,
+          receivedToEmail: message.to,
+          link,
+        }),
+        userId: ownerId,
+      });
+      if (notifResult.isLeft()) {
         this.logger.warn("ProcessIncomingEmailUseCase: failed to create notification", {
-          error: err instanceof Error ? err.message : String(err),
+          error: notifResult.value.message,
         });
       }
 
-      // 6. Save EmailMessage record
+      // 7. Save EmailMessage record
       const emailRecord: EmailMessage = {
         id: activityId, // use same ID for simplicity
         gmailMessageId: message.messageId,
@@ -215,6 +159,54 @@ export class ProcessIncomingEmailUseCase {
         error: err instanceof Error ? err.message : String(err),
       });
       return left(err instanceof Error ? err : new Error(String(err)));
+    }
+  }
+
+  /**
+   * Marks the bounced email's campaign recipients (owned by `ownerId`) as BOUNCED,
+   * fails their linked campaign_email activities, and adds the email to the
+   * suppression list.
+   */
+  private async handleBounce(bouncedEmail: string, ownerId: string): Promise<void> {
+    const campaigns = await this.emailCampaigns.findAllByOwner(ownerId);
+    const campaignIds = new Set(campaigns.map((c) => c.id.toString()));
+
+    if (campaignIds.size > 0) {
+      const recipientsForEmail = (await this.recipients.findByEmail(bouncedEmail)).filter((r) =>
+        campaignIds.has(r.campaignId),
+      );
+
+      // Mark as BOUNCED (skip already-bounced / unsubscribed)
+      for (const recipient of recipientsForEmail) {
+        if (recipient.status !== "BOUNCED" && recipient.status !== "UNSUBSCRIBED") {
+          recipient.markBounced();
+          await this.recipients.save(recipient);
+        }
+      }
+
+      // Fail the linked campaign_email Activity for every send of these recipients
+      for (const recipient of recipientsForEmail) {
+        const recipientSends = await this.sends.findByRecipient(recipient.id.toString());
+        for (const send of recipientSends) {
+          const activity = await this.activitiesRepo.findByCampaignSendId(send.id.toString());
+          if (activity && !activity.failedAt) {
+            activity.update({
+              completed: false,
+              completedAt: undefined,
+              failedAt: new Date(),
+              failReason: "Email retornou (bounce)",
+            });
+            await this.activitiesRepo.save(activity);
+          }
+        }
+      }
+    }
+
+    const alreadySuppressed = await this.suppressions.isEmailSuppressed(bouncedEmail, ownerId);
+    if (!alreadySuppressed) {
+      await this.suppressions.save(
+        EmailSuppression.create({ email: bouncedEmail, ownerId, reason: "bounced" }),
+      );
     }
   }
 

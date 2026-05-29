@@ -155,6 +155,13 @@ export class InMemoryContactsRepository extends ContactsRepository {
     return this.items.filter(c => c.ownerId === ownerId);
   }
 
+  async findIdByEmailForOwner(email: string, ownerId: string): Promise<string | null> {
+    const c = this.items.find(
+      (c) => c.ownerId === ownerId && (c.email ?? "").toLowerCase() === email.toLowerCase(),
+    );
+    return c ? c.id.toString() : null;
+  }
+
   async savePhoneVerification(contactId: string, data: { phoneValid?: boolean; phoneType?: string; whatsappPhoneValid?: boolean; whatsappPhoneType?: string }): Promise<void> {
     const contact = this.items.find(c => c.id.toString() === contactId);
     if (contact) contact.update(data);
