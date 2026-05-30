@@ -1,4 +1,4 @@
-import { Controller, Post, Body, UseGuards, UnprocessableEntityException } from "@nestjs/common";
+import { Controller, Post, Body, UseGuards, UnprocessableEntityException, HttpCode } from "@nestjs/common";
 import { ApiTags, ApiBearerAuth } from "@nestjs/swagger";
 import { Left } from "@/core/either";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
@@ -18,6 +18,7 @@ export class LeadDuplicatesController {
   constructor(private readonly checkDuplicates: CheckLeadDuplicatesUseCase) {}
 
   @Post("check-duplicates")
+  @HttpCode(200)
   async check(@Body() body: { cnpj?: string; name?: string; phone?: string; email?: string; address?: string }, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.checkDuplicates.execute({ ...body, ownerId: user.id });
     if (result.isLeft()) handleError(result);

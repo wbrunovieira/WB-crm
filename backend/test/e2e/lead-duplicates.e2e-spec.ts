@@ -12,6 +12,10 @@ let jwt: JwtService;
 let token: string;
 let ownerId: string;
 
+// Distinct from leads.e2e's CNPJ so the two specs never collide on the global
+// unique constraint, even if vitest runs them in parallel.
+const DUP_CNPJ = "98.765.432/0001-11";
+
 beforeAll(async () => {
   const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
   app = module.createNestApplication();
@@ -26,6 +30,10 @@ beforeAll(async () => {
   });
   ownerId = user.id;
   token = jwt.sign({ sub: user.id, name: user.name, email: user.email, role: user.role });
+
+  // Clean leftovers from prior crashed runs (owner reused; CNPJ globally unique).
+  await prisma.lead.deleteMany({ where: { ownerId } });
+  await prisma.lead.deleteMany({ where: { companyRegistrationID: DUP_CNPJ } });
 });
 
 afterEach(async () => {
@@ -54,7 +62,7 @@ describe("POST /leads/check-duplicates (e2e)", () => {
     const res = await request(app.getHttpServer())
       .post("/leads/check-duplicates")
       .set("Authorization", `Bearer ${token}`)
-      .send({ cnpj: "12.345.678/0001-99" })
+      .send({ cnpj: DUP_CNPJ })
       .expect(200);
 
     expect(res.body.hasDuplicates).toBe(false);
@@ -63,13 +71,13 @@ describe("POST /leads/check-duplicates (e2e)", () => {
 
   it("detecta duplicata por CNPJ", async () => {
     await prisma.lead.create({
-      data: { ownerId, businessName: "Acme Tech", companyRegistrationID: "12.345.678/0001-99", status: "new" },
+      data: { ownerId, businessName: "Acme Tech", companyRegistrationID: DUP_CNPJ, status: "new" },
     });
 
     const res = await request(app.getHttpServer())
       .post("/leads/check-duplicates")
       .set("Authorization", `Bearer ${token}`)
-      .send({ cnpj: "12.345.678/0001-99" })
+      .send({ cnpj: DUP_CNPJ })
       .expect(200);
 
     expect(res.body.hasDuplicates).toBe(true);
@@ -97,13 +105,13 @@ describe("POST /leads/check-duplicates (e2e)", () => {
       create: { email: "e2e-dup-other@test.com", name: "Other", password: "hashed", role: "sdr" },
     });
     await prisma.lead.create({
-      data: { ownerId: other.id, businessName: "Acme Tech", companyRegistrationID: "12.345.678/0001-99", status: "new" },
+      data: { ownerId: other.id, businessName: "Acme Tech", companyRegistrationID: DUP_CNPJ, status: "new" },
     });
 
     const res = await request(app.getHttpServer())
       .post("/leads/check-duplicates")
       .set("Authorization", `Bearer ${token}`)
-      .send({ cnpj: "12.345.678/0001-99" })
+      .send({ cnpj: DUP_CNPJ })
       .expect(200);
 
     expect(res.body.hasDuplicates).toBe(false);

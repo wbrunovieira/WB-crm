@@ -68,6 +68,11 @@ beforeAll(async () => {
   ownerId = user.id;
 
   token = jwt.sign({ sub: user.id, name: user.name, email: user.email, role: user.role });
+
+  // Clean leftovers from prior crashed runs: owner is reused (stable upsert),
+  // and the ALL_FIELDS CNPJ is globally unique so a stale row blocks re-creation.
+  await prisma.lead.deleteMany({ where: { ownerId } });
+  await prisma.lead.deleteMany({ where: { companyRegistrationID: ALL_FIELDS_PAYLOAD.companyRegistrationID } });
 });
 
 afterEach(async () => {
@@ -94,8 +99,9 @@ describe("Leads API (e2e)", () => {
         .set("Authorization", `Bearer ${token}`)
         .expect(200);
 
-      expect(res.body).toBeInstanceOf(Array);
-      expect(res.body).toHaveLength(0);
+      expect(res.body.leads).toBeInstanceOf(Array);
+      expect(res.body.leads).toHaveLength(0);
+      expect(res.body.total).toBe(0);
     });
 
     it("retorna leads com campos de relação presentes", async () => {
@@ -110,8 +116,8 @@ describe("Leads API (e2e)", () => {
         .set("Authorization", `Bearer ${token}`)
         .expect(200);
 
-      expect(res.body.length).toBeGreaterThan(0);
-      const item = res.body[0];
+      expect(res.body.leads.length).toBeGreaterThan(0);
+      const item = res.body.leads[0];
       expect(item).toHaveProperty("owner");
       expect(item).toHaveProperty("labels");
       expect(item).toHaveProperty("referredByPartner");
@@ -136,8 +142,8 @@ describe("Leads API (e2e)", () => {
         .set("Authorization", `Bearer ${token}`)
         .expect(200);
 
-      expect(res.body.length).toBeGreaterThan(0);
-      expect(res.body.every((l: { status: string }) => l.status === "contacted")).toBe(true);
+      expect(res.body.leads.length).toBeGreaterThan(0);
+      expect(res.body.leads.every((l: { status: string }) => l.status === "contacted")).toBe(true);
     });
 
     it("filtra por quality", async () => {
@@ -158,8 +164,8 @@ describe("Leads API (e2e)", () => {
         .set("Authorization", `Bearer ${token}`)
         .expect(200);
 
-      expect(res.body.length).toBeGreaterThan(0);
-      expect(res.body.every((l: { quality: string }) => l.quality === "hot")).toBe(true);
+      expect(res.body.leads.length).toBeGreaterThan(0);
+      expect(res.body.leads.every((l: { quality: string }) => l.quality === "hot")).toBe(true);
     });
 
     it("filtra por search (businessName)", async () => {
@@ -180,8 +186,8 @@ describe("Leads API (e2e)", () => {
         .set("Authorization", `Bearer ${token}`)
         .expect(200);
 
-      expect(res.body.length).toBeGreaterThan(0);
-      expect(res.body[0].businessName).toContain("Busca Especifica");
+      expect(res.body.leads.length).toBeGreaterThan(0);
+      expect(res.body.leads[0].businessName).toContain("Busca Especifica");
     });
 
     it("filtra isArchived=false retorna apenas ativos", async () => {
@@ -210,8 +216,8 @@ describe("Leads API (e2e)", () => {
         .set("Authorization", `Bearer ${token}`)
         .expect(200);
 
-      expect(res.body.every((l: { isArchived: boolean }) => l.isArchived === false)).toBe(true);
-      const ids = res.body.map((l: { id: string }) => l.id);
+      expect(res.body.leads.every((l: { isArchived: boolean }) => l.isArchived === false)).toBe(true);
+      const ids = res.body.leads.map((l: { id: string }) => l.id);
       expect(ids).not.toContain(archived.body.id);
     });
   });
@@ -244,8 +250,9 @@ describe("Leads API (e2e)", () => {
       expect(res.body.city).toBe(ALL_FIELDS_PAYLOAD.city);
       expect(res.body.state).toBe(ALL_FIELDS_PAYLOAD.state);
       expect(res.body.country).toBe(ALL_FIELDS_PAYLOAD.country);
-      expect(res.body.phone).toBe(ALL_FIELDS_PAYLOAD.phone);
-      expect(res.body.whatsapp).toBe(ALL_FIELDS_PAYLOAD.whatsapp);
+      // Phone fields are normalized to E.164 (spaces/dashes stripped) in the use case.
+      expect(res.body.phone).toBe("+551134567890");
+      expect(res.body.whatsapp).toBe("+5511987654321");
       expect(res.body.website).toBe(ALL_FIELDS_PAYLOAD.website);
       expect(res.body.email).toBe(ALL_FIELDS_PAYLOAD.email);
       expect(res.body.quality).toBe("warm");
@@ -508,7 +515,7 @@ describe("Leads API (e2e)", () => {
         .set("Authorization", `Bearer ${token}`)
         .expect(200);
 
-      const found = list.body.find((l: { id: string }) => l.id === created.body.id);
+      const found = list.body.leads.find((l: { id: string }) => l.id === created.body.id);
       expect(found).toBeUndefined();
     });
   });

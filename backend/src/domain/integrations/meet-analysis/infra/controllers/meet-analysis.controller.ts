@@ -25,6 +25,18 @@ import { GetMeetAnalysisUseCase } from "../../application/use-cases/get-meet-ana
 import { ListMeetAnalysesUseCase } from "../../application/use-cases/list-meet-analyses.use-case";
 import type { MeetAnalysis } from "../../enterprise/entities/meet-analysis.entity";
 
+// Diag fields are stored JSON-stringified by the webhook use case. Legacy or
+// partially-written rows may hold plain strings — fall back to the raw value
+// instead of throwing a 500 on JSON.parse.
+function parseJson(value: string | null | undefined): unknown {
+  if (!value) return null; // null/undefined/"" → null (parity with prior `x ? parse : null`)
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
 function serializeAnalysis(analysis: MeetAnalysis) {
   return {
     id: analysis.id.toString(),
@@ -37,14 +49,14 @@ function serializeAnalysis(analysis: MeetAnalysis) {
     status: analysis.status,
     errorMsg: analysis.errorMsg ?? null,
     jobId: analysis.jobId ?? null,
-    diagBusiness: analysis.diagBusiness ? JSON.parse(analysis.diagBusiness) : null,
-    diagGaps: analysis.diagGaps ? JSON.parse(analysis.diagGaps) : null,
-    diagUrgency: analysis.diagUrgency ? JSON.parse(analysis.diagUrgency) : null,
-    diagDecisionPower: analysis.diagDecisionPower ? JSON.parse(analysis.diagDecisionPower) : null,
-    diagEngagement: analysis.diagEngagement ? JSON.parse(analysis.diagEngagement) : null,
-    diagClosing: analysis.diagClosing ? JSON.parse(analysis.diagClosing) : null,
-    positivePoints: analysis.positivePoints ? JSON.parse(analysis.positivePoints) : null,
-    improvementPoints: analysis.improvementPoints ? JSON.parse(analysis.improvementPoints) : null,
+    diagBusiness: parseJson(analysis.diagBusiness),
+    diagGaps: parseJson(analysis.diagGaps),
+    diagUrgency: parseJson(analysis.diagUrgency),
+    diagDecisionPower: parseJson(analysis.diagDecisionPower),
+    diagEngagement: parseJson(analysis.diagEngagement),
+    diagClosing: parseJson(analysis.diagClosing),
+    positivePoints: parseJson(analysis.positivePoints),
+    improvementPoints: parseJson(analysis.improvementPoints),
     createdAt: analysis.createdAt,
     updatedAt: analysis.updatedAt,
   };
@@ -130,19 +142,14 @@ export class MeetAnalysisController {
 
     this.logger.log(`Webhook received: jobId=${body.jobId} status=${body.status}`);
 
-    setImmediate(() => {
-      this.handleWebhook.execute(body).then((result) => {
-        if (result.isLeft()) {
-          this.logger.error(`Webhook processing error: ${result.value.message}`);
-        } else {
-          this.logger.log(`MeetAnalysis ${result.value.analysisId} updated to ${body.status}`);
-        }
-      }).catch((err: unknown) => {
-        this.logger.error(`Webhook processing exception: ${String(err)}`);
-      });
-    });
+    const result = await this.handleWebhook.execute(body);
+    if (result.isLeft()) {
+      this.logger.error(`Webhook processing error: ${result.value.message}`);
+      throw new NotFoundException(result.value.message);
+    }
 
-    return { ok: true, queued: true };
+    this.logger.log(`MeetAnalysis ${result.value.analysisId} updated to ${body.status}`);
+    return { ok: true, analysisId: result.value.analysisId };
   }
 
   @Get("meet-analysis")

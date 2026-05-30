@@ -25,11 +25,20 @@ beforeAll(async () => {
     create: { email: "e2e-admin@test.com", name: "E2E Admin User", password: "hashed", role: "admin" },
   });
   token = jwt.sign({ sub: user.id, name: user.name, email: user.email, role: user.role });
+
+  // Clear any leftover "e2e-" rows from prior crashed runs (unique slug collisions).
+  await prisma.product.deleteMany({ where: { slug: { startsWith: "e2e-" } } });
+  await prisma.businessLine.deleteMany({ where: { slug: { startsWith: "e2e-" } } });
+  await prisma.techCategory.deleteMany({ where: { slug: { startsWith: "e2e-" } } });
+  await prisma.techLanguage.deleteMany({ where: { slug: { startsWith: "e2e-" } } });
+  await prisma.techFramework.deleteMany({ where: { slug: { startsWith: "e2e-" } } });
 });
 
 afterEach(async () => {
   await prisma.product.deleteMany({ where: { slug: { startsWith: "e2e-" } } });
-  await prisma.businessLine.deleteMany({ where: { slug: { startsWith: "e2e-" } } });
+  // Exclude the shared business line created once by the "Product CRUD" block —
+  // deleting it mid-suite breaks subsequent product creates (FK violation).
+  await prisma.businessLine.deleteMany({ where: { slug: { startsWith: "e2e-", not: "e2e-bl-for-products" } } });
   await prisma.techCategory.deleteMany({ where: { slug: { startsWith: "e2e-" } } });
   await prisma.techLanguage.deleteMany({ where: { slug: { startsWith: "e2e-" } } });
   await prisma.techFramework.deleteMany({ where: { slug: { startsWith: "e2e-" } } });

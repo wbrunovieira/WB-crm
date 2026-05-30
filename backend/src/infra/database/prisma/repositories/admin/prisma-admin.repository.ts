@@ -29,6 +29,12 @@ const TECH_PRISMA_MODEL: Record<TechOptionType, keyof PrismaService> = {
   "profile-ecommerce":  "techProfileEcommerce",
 };
 
+// Not all tech models share the same columns. tech_languages and tech_frameworks
+// have no `order` column, and only tech_categories has a `description` column.
+// Guarding these prevents PrismaClientValidationError ("Unknown argument").
+const TECH_MODELS_WITHOUT_ORDER = new Set<TechOptionType>(["tech-language", "tech-framework"]);
+const TECH_MODELS_WITH_DESCRIPTION = new Set<TechOptionType>(["tech-category"]);
+
 // ─── Mappers ──────────────────────────────────────────────────────────────────
 
 function toBusinessLineDomain(row: {
@@ -171,7 +177,10 @@ export class PrismaAdminRepository extends AdminRepository {
   // ─── TechOption (generic) ────────────────────────────────────────────────
 
   async findTechOptions(type: TechOptionType): Promise<AdminTechOption[]> {
-    const rows = await this.techModel(type).findMany({ orderBy: [{ order: "asc" }, { name: "asc" }] } as unknown) as Record<string, unknown>[];
+    const orderBy = TECH_MODELS_WITHOUT_ORDER.has(type)
+      ? [{ name: "asc" }]
+      : [{ order: "asc" }, { name: "asc" }];
+    const rows = await this.techModel(type).findMany({ orderBy } as unknown) as Record<string, unknown>[];
     return rows.map((r) => toTechOptionDomain(type, r));
   }
 
@@ -191,8 +200,8 @@ export class PrismaAdminRepository extends AdminRepository {
 
     if (option.color !== undefined) data.color = option.color ?? null;
     if (option.icon !== undefined) data.icon = option.icon ?? null;
-    if (option.order !== undefined) data.order = option.order ?? 0;
-    if (option.description !== undefined) data.description = option.description ?? null;
+    if (!TECH_MODELS_WITHOUT_ORDER.has(type) && option.order !== undefined) data.order = option.order ?? 0;
+    if (TECH_MODELS_WITH_DESCRIPTION.has(type) && option.description !== undefined) data.description = option.description ?? null;
 
     // type-specific fields
     if (type === "tech-framework" && option.languageSlug !== undefined) {

@@ -31,6 +31,18 @@ import { GatekeeperBatchRepository } from "../../application/repositories/gateke
 import type { GatekeeperAnalysis } from "../../enterprise/entities/gatekeeper-analysis.entity";
 import type { GatekeeperBatch } from "../../enterprise/entities/gatekeeper-batch.entity";
 
+// raport/diag fields are stored JSON-stringified by the webhook use case.
+// Legacy or partially-written rows may hold plain strings — fall back to the
+// raw value instead of throwing a 500 on JSON.parse.
+function parseJson(value: string | null | undefined): unknown {
+  if (!value) return null; // null/undefined/"" → null (parity with prior `x ? parse : null`)
+  try {
+    return JSON.parse(value);
+  } catch {
+    return value;
+  }
+}
+
 function serializeAnalysis(a: GatekeeperAnalysis) {
   return {
     id: a.id.toString(),
@@ -41,14 +53,14 @@ function serializeAnalysis(a: GatekeeperAnalysis) {
     status: a.status,
     errorMsg: a.errorMsg ?? null,
     jobId: a.jobId ?? null,
-    raportRecepcao: a.raportRecepcao ? JSON.parse(a.raportRecepcao) : null,
-    raportAlianca: a.raportAlianca ? JSON.parse(a.raportAlianca) : null,
-    raportPerguntas: a.raportPerguntas ? JSON.parse(a.raportPerguntas) : null,
-    raportObjecoes: a.raportObjecoes ? JSON.parse(a.raportObjecoes) : null,
-    raportResultado: a.raportResultado ? JSON.parse(a.raportResultado) : null,
-    raportTecnicas: a.raportTecnicas ? JSON.parse(a.raportTecnicas) : null,
-    positivePoints: a.positivePoints ? JSON.parse(a.positivePoints) : null,
-    improvementPoints: a.improvementPoints ? JSON.parse(a.improvementPoints) : null,
+    raportRecepcao: parseJson(a.raportRecepcao),
+    raportAlianca: parseJson(a.raportAlianca),
+    raportPerguntas: parseJson(a.raportPerguntas),
+    raportObjecoes: parseJson(a.raportObjecoes),
+    raportResultado: parseJson(a.raportResultado),
+    raportTecnicas: parseJson(a.raportTecnicas),
+    positivePoints: parseJson(a.positivePoints),
+    improvementPoints: parseJson(a.improvementPoints),
     createdAt: a.createdAt,
     updatedAt: a.updatedAt,
   };
@@ -61,16 +73,16 @@ function serializeBatch(b: GatekeeperBatch) {
     status: b.status,
     jobId: b.jobId ?? null,
     errorMsg: b.errorMsg ?? null,
-    analysisIds: b.analysisIds ? JSON.parse(b.analysisIds) : null,
+    analysisIds: parseJson(b.analysisIds),
     overallScore: b.overallScore ?? null,
-    dimensionAverages: b.dimensionAverages ? JSON.parse(b.dimensionAverages) : null,
-    patterns: b.patterns ? JSON.parse(b.patterns) : null,
-    comparisonWithHistory: b.comparisonWithHistory ? JSON.parse(b.comparisonWithHistory) : null,
-    individualHighlights: b.individualHighlights ? JSON.parse(b.individualHighlights) : null,
-    recommendations: b.recommendations ? JSON.parse(b.recommendations) : null,
+    dimensionAverages: parseJson(b.dimensionAverages),
+    patterns: parseJson(b.patterns),
+    comparisonWithHistory: parseJson(b.comparisonWithHistory),
+    individualHighlights: parseJson(b.individualHighlights),
+    recommendations: parseJson(b.recommendations),
     newSummary: b.newSummary ?? null,
-    positivePoints: b.positivePoints ? JSON.parse(b.positivePoints) : null,
-    improvementPoints: b.improvementPoints ? JSON.parse(b.improvementPoints) : null,
+    positivePoints: parseJson(b.positivePoints),
+    improvementPoints: parseJson(b.improvementPoints),
     createdAt: b.createdAt,
     updatedAt: b.updatedAt,
   };
@@ -176,16 +188,14 @@ export class GatekeeperAnalysisController {
 
     this.logger.log(`GK analysis webhook: jobId=${body.jobId} status=${body.status}`);
 
-    setImmediate(() => {
-      this.handleAnalysisWebhook.execute(body).then((result) => {
-        if (result.isLeft()) this.logger.error(`GK analysis webhook error: ${result.value.message}`);
-        else this.logger.log(`GatekeeperAnalysis updated: ${result.value.analysisId}`);
-      }).catch((err: unknown) => {
-        this.logger.error(`GK analysis webhook exception: ${String(err)}`);
-      });
-    });
+    const result = await this.handleAnalysisWebhook.execute(body);
+    if (result.isLeft()) {
+      this.logger.error(`GK analysis webhook error: ${result.value.message}`);
+      throw new NotFoundException(result.value.message);
+    }
 
-    return { ok: true, queued: true };
+    this.logger.log(`GatekeeperAnalysis updated: ${result.value.analysisId}`);
+    return { ok: true, analysisId: result.value.analysisId };
   }
 
   @Post("webhooks/gatekeeper-batch")

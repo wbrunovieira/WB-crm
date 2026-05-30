@@ -16,6 +16,8 @@ let leadId: string;
 let meetingId: string;
 
 beforeAll(async () => {
+  process.env.WEBHOOK_SECRET = "e2e-webhook-secret";
+
   const module = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
@@ -33,6 +35,12 @@ beforeAll(async () => {
   });
   ownerId = user.id;
   token = jwt.sign({ sub: user.id, name: user.name, email: user.email, role: user.role });
+
+  // Clean any leftovers from a prior crashed run (owner is reused via upsert).
+  await prisma.meetAnalysis.deleteMany({ where: { ownerId } });
+  await prisma.meeting.deleteMany({ where: { ownerId } });
+  await prisma.activity.deleteMany({ where: { ownerId } });
+  await prisma.lead.deleteMany({ where: { ownerId } });
 
   const lead = await prisma.lead.create({
     data: { businessName: "Lead Meet E2E", ownerId, status: "new" },
@@ -141,7 +149,14 @@ describe("Meet Analysis API (e2e)", () => {
   });
 
   describe("POST /webhooks/meet-analysis", () => {
-    it("salva análise via webhook e retorna 201", async () => {
+    it("retorna 403 sem secret de webhook", async () => {
+      await request(app.getHttpServer())
+        .post("/webhooks/meet-analysis")
+        .send({ jobId: "qualquer", status: "completed", score: 3 })
+        .expect(403);
+    });
+
+    it("salva análise via webhook e retorna 200", async () => {
       const meetAnalysis = await prisma.meetAnalysis.create({
         data: { activityId, ownerId, status: "pending", jobId: "meet-job-e2e-001" },
       });
@@ -151,30 +166,31 @@ describe("Meet Analysis API (e2e)", () => {
         status: "completed",
         score: 4.0,
         summary: "Reunião diagnóstico completa",
-        diagBusiness: "Varejo online",
-        diagGaps: "Logística ruim",
-        diagUrgency: "Urgência moderada",
-        diagDecisionPower: "Decisor parcial",
-        diagEngagement: "Médio engajamento",
-        diagClosing: "Proposta a enviar",
-        positivePoints: "Cliente engajado",
-        improvementPoints: "Aprofundar dores",
+        diag: {
+          business: { model: "Varejo online", text: "Loja online de roupas" },
+          gaps: { text: "Logística ruim" },
+        },
+        positivePoints: ["Cliente engajado"],
+        improvementPoints: ["Aprofundar dores"],
       };
 
       await request(app.getHttpServer())
         .post("/webhooks/meet-analysis")
+        .set("x-webhook-secret", process.env.WEBHOOK_SECRET!)
         .send(payload)
-        .expect(201);
+        .expect(200);
 
       const updated = await prisma.meetAnalysis.findUnique({ where: { id: meetAnalysis.id } });
       expect(updated?.status).toBe("completed");
       expect(updated?.score).toBe(4.0);
-      expect(updated?.diagBusiness).toBe("Varejo online");
+      // diag fields are persisted JSON-stringified
+      expect(JSON.parse(updated!.diagBusiness!).model).toBe("Varejo online");
     });
 
     it("retorna 404 quando jobId não existe", async () => {
       await request(app.getHttpServer())
         .post("/webhooks/meet-analysis")
+        .set("x-webhook-secret", process.env.WEBHOOK_SECRET!)
         .send({ jobId: "job-inexistente", status: "completed", score: 3 })
         .expect(404);
     });

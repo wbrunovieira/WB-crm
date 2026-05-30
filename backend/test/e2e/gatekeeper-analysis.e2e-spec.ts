@@ -15,6 +15,8 @@ let activityId: string;
 let leadId: string;
 
 beforeAll(async () => {
+  process.env.WEBHOOK_SECRET = "e2e-webhook-secret";
+
   const module = await Test.createTestingModule({
     imports: [AppModule],
   }).compile();
@@ -32,6 +34,11 @@ beforeAll(async () => {
   });
   ownerId = user.id;
   token = jwt.sign({ sub: user.id, name: user.name, email: user.email, role: user.role });
+
+  // Clean any leftovers from a prior crashed run (owner is reused via upsert).
+  await prisma.gatekeeperAnalysis.deleteMany({ where: { ownerId } });
+  await prisma.activity.deleteMany({ where: { ownerId } });
+  await prisma.lead.deleteMany({ where: { ownerId } });
 
   const lead = await prisma.lead.create({
     data: { businessName: "Lead GK E2E", ownerId, status: "new" },
@@ -133,7 +140,14 @@ describe("Gatekeeper Analysis API (e2e)", () => {
   });
 
   describe("POST /webhooks/gatekeeper-analysis", () => {
-    it("salva análise via webhook e retorna 201", async () => {
+    it("retorna 403 sem secret de webhook", async () => {
+      await request(app.getHttpServer())
+        .post("/webhooks/gatekeeper-analysis")
+        .send({ jobId: "qualquer", status: "completed", score: 3 })
+        .expect(403);
+    });
+
+    it("salva análise via webhook e retorna 200", async () => {
       const gkAnalysis = await prisma.gatekeeperAnalysis.create({
         data: { activityId, ownerId, status: "pending", jobId: "gk-job-e2e-001" },
       });
@@ -143,30 +157,32 @@ describe("Gatekeeper Analysis API (e2e)", () => {
         status: "completed",
         score: 3.8,
         summary: "Ligação com gatekeeper difícil",
-        raportRecepcao: "Recepção fria",
-        raportAlianca: "Aliança não estabelecida",
-        raportPerguntas: "Poucas perguntas",
-        raportObjecoes: "Várias objeções",
-        raportResultado: "Não transferiu",
-        raportTecnicas: "Técnicas limitadas",
-        positivePoints: "Tom amigável",
-        improvementPoints: "Precisa de mais rapport",
+        raport: {
+          recepcao: { text: "Recepção fria", score: 2 },
+          alianca: { text: "Aliança não estabelecida" },
+          resultado: { outcome: "Não transferiu", text: "Não transferiu" },
+        },
+        positivePoints: ["Tom amigável"],
+        improvementPoints: ["Precisa de mais rapport"],
       };
 
       await request(app.getHttpServer())
         .post("/webhooks/gatekeeper-analysis")
+        .set("x-webhook-secret", process.env.WEBHOOK_SECRET!)
         .send(payload)
-        .expect(201);
+        .expect(200);
 
       const updated = await prisma.gatekeeperAnalysis.findUnique({ where: { id: gkAnalysis.id } });
       expect(updated?.status).toBe("completed");
       expect(updated?.score).toBe(3.8);
-      expect(updated?.raportRecepcao).toBe("Recepção fria");
+      // raport dimensions are persisted JSON-stringified
+      expect(JSON.parse(updated!.raportRecepcao!).text).toBe("Recepção fria");
     });
 
     it("retorna 404 quando jobId não existe", async () => {
       await request(app.getHttpServer())
         .post("/webhooks/gatekeeper-analysis")
+        .set("x-webhook-secret", process.env.WEBHOOK_SECRET!)
         .send({ jobId: "job-inexistente", status: "completed", score: 3 })
         .expect(404);
     });
