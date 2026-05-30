@@ -8,6 +8,8 @@ import { GetMeetAnalysisUseCase } from "./application/use-cases/get-meet-analysi
 import { ListMeetAnalysesUseCase } from "./application/use-cases/list-meet-analyses.use-case";
 import { HttpMeetAnalysisAgentClient } from "./infra/http-meet-analysis-agent.client";
 import { PrismaMeetAnalysisRepository } from "@/infra/database/prisma/repositories/meet-analysis/prisma-meet-analysis.repository";
+import { MeetingsRepository } from "@/domain/integrations/meet/application/repositories/meetings.repository";
+import { PrismaMeetingsRepository } from "@/domain/integrations/meet/infra/prisma-meetings.repository";
 import { MeetAnalysisController } from "./infra/controllers/meet-analysis.controller";
 
 @Module({
@@ -20,6 +22,7 @@ import { MeetAnalysisController } from "./infra/controllers/meet-analysis.contro
     ListMeetAnalysesUseCase,
     { provide: MeetAnalysisRepository, useClass: PrismaMeetAnalysisRepository },
     { provide: MeetAnalysisAgentPort, useClass: HttpMeetAnalysisAgentClient },
+    { provide: MeetingsRepository, useClass: PrismaMeetingsRepository },
   ],
   exports: [TriggerMeetAnalysisUseCase, GetMeetAnalysisUseCase, ListMeetAnalysesUseCase],
 })

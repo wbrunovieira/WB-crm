@@ -193,4 +193,5 @@ export class FakeMeetingsRepository extends MeetingsRepository {
       ...meeting,
     } as any);
   }
+  async findMeetAnalysisContext() { return null; }
 }

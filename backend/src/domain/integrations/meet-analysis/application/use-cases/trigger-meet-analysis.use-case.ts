@@ -1,25 +1,16 @@
 import { Injectable } from "@nestjs/common";
-import { Either, right } from "@/core/either";
+import { Either, left, right } from "@/core/either";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 import { MeetAnalysis } from "../../enterprise/entities/meet-analysis.entity";
 import { MeetAnalysisRepository } from "../repositories/meet-analysis.repository";
 import { MeetAnalysisAgentPort } from "../ports/meet-analysis-agent.port";
+import { MeetingsRepository } from "@/domain/integrations/meet/application/repositories/meetings.repository";
+
+export class MeetingNotFoundError extends Error { name = "MeetingNotFoundError"; }
+export class MissingTranscriptError extends Error { name = "MissingTranscriptError"; }
 
 type Input = {
   activityId: string;
-  activitySubject: string;
-  activityNotes?: string;
-  transcript: string;
-  meetingDurationSeconds?: number;
-  meetingDate?: Date;
-  meetingTitle?: string;
-  leadId?: string;
-  leadBusinessName?: string;
-  leadDescription?: string;
-  leadSegment?: string;
-  leadCity?: string;
-  contactName?: string;
-  contactRole?: string;
   ownerId: string;
   webhookUrl: string;
 };
@@ -31,9 +22,14 @@ export class TriggerMeetAnalysisUseCase {
   constructor(
     private readonly repo: MeetAnalysisRepository,
     private readonly agentPort: MeetAnalysisAgentPort,
+    private readonly meetings: MeetingsRepository,
   ) {}
 
   async execute(input: Input): Promise<Output> {
+    const ctx = await this.meetings.findMeetAnalysisContext(input.activityId);
+    if (!ctx) return left(new MeetingNotFoundError("Reunião não encontrada para esta atividade"));
+    if (!ctx.transcriptText) return left(new MissingTranscriptError("Reunião ainda não possui transcrição"));
+
     const existing = await this.repo.findByActivityId(input.activityId);
     if (existing && existing.status !== "error") {
       return right({ analysisId: existing.id.toString() });
@@ -43,7 +39,7 @@ export class TriggerMeetAnalysisUseCase {
 
     const analysis = MeetAnalysis.create({
       activityId: input.activityId,
-      leadId: input.leadId,
+      leadId: ctx.lead?.id,
       ownerId: input.ownerId,
       status: "pending",
       jobId,
@@ -54,25 +50,25 @@ export class TriggerMeetAnalysisUseCase {
     await this.agentPort.request({
       jobId,
       webhookUrl: input.webhookUrl,
-      transcript: input.transcript,
-      meetingDurationSeconds: input.meetingDurationSeconds,
-      meetingDate: input.meetingDate?.toISOString(),
-      meetingTitle: input.meetingTitle,
+      transcript: ctx.transcriptText,
+      meetingDurationSeconds: ctx.durationSeconds ?? undefined,
+      meetingDate: ctx.meetingDate?.toISOString(),
+      meetingTitle: ctx.title,
       lead: {
-        id: input.leadId ?? "",
-        businessName: input.leadBusinessName ?? "",
-        description: input.leadDescription,
-        segment: input.leadSegment,
-        city: input.leadCity,
+        id: ctx.lead?.id ?? "",
+        businessName: ctx.lead?.businessName ?? "",
+        description: ctx.lead?.description ?? undefined,
+        segment: ctx.lead?.segment ?? undefined,
+        city: ctx.lead?.city ?? undefined,
       },
       contact: {
-        name: input.contactName,
-        role: input.contactRole,
+        name: ctx.contact?.name ?? undefined,
+        role: ctx.contact?.role ?? undefined,
       },
       activity: {
         id: input.activityId,
-        subject: input.activitySubject,
-        notes: input.activityNotes,
+        subject: ctx.title,
+        notes: undefined,
       },
     });
 

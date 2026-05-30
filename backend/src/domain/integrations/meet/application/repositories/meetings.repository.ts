@@ -124,4 +124,15 @@ export abstract class MeetingsRepository {
   abstract markConfirmationSent(id: string): Promise<void>;
   abstract saveGoogleEventId(id: string, googleEventId: string): Promise<void>;
   abstract findRelatedNames(meetingId: string): Promise<{ contactName?: string; companyName?: string }>;
+  /** Read-model for the meet (DIAG) analysis trigger — meeting + lead + contact by activityId. */
+  abstract findMeetAnalysisContext(activityId: string): Promise<MeetAnalysisContext | null>;
+}
+
+export interface MeetAnalysisContext {
+  title: string;
+  transcriptText: string | null;
+  durationSeconds: number | null;
+  meetingDate: Date | null;
+  lead: { id: string; businessName: string | null; description: string | null; segment: string | null; city: string | null } | null;
+  contact: { name: string; role: string | null } | null;
 }

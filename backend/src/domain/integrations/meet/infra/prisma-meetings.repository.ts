@@ -10,6 +10,7 @@ import {
   SaveUploadedRecordingData,
   CreateMeetingData,
   UpdateMeetingData,
+  MeetAnalysisContext,
 } from "../application/repositories/meetings.repository";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 
@@ -310,6 +311,30 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
     return {
       contactName: row.contact?.name ?? undefined,
       companyName: row.organization?.name ?? row.lead?.businessName ?? undefined,
+    };
+  }
+
+  async findMeetAnalysisContext(activityId: string): Promise<MeetAnalysisContext | null> {
+    const m = await this.prisma.meeting.findUnique({
+      where: { activityId },
+      include: {
+        lead: { select: { id: true, businessName: true, description: true, segment: true, city: true } },
+        contact: { select: { name: true, role: true } },
+      },
+    });
+    if (!m) return null;
+    const durationSeconds = m.actualStartAt && m.actualEndAt
+      ? Math.round((m.actualEndAt.getTime() - m.actualStartAt.getTime()) / 1000)
+      : null;
+    return {
+      title: m.title,
+      transcriptText: m.transcriptText ?? null,
+      durationSeconds,
+      meetingDate: m.actualStartAt ?? m.startAt ?? null,
+      lead: m.lead
+        ? { id: m.lead.id, businessName: m.lead.businessName ?? null, description: m.lead.description ?? null, segment: m.lead.segment ?? null, city: m.lead.city ?? null }
+        : null,
+      contact: m.contact ? { name: m.contact.name, role: m.contact.role ?? null } : null,
     };
   }
 
