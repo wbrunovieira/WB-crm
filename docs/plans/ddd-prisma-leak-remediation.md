@@ -197,4 +197,6 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 | 5 | **Adiado (mudança de comportamento / decisão de produto):** slugs admin (hoje só não-vazio; `Slug` com regex kebab rejeitaria input aceito), enums `PartnerType`/`ActivityType` (sem conjunto canônico no código — VO estrito adicionaria validação) | ⏳ confirmar com produto |
 | 5 | Batch 3: `CnaeEntry` VO (lead-import) · register-user valida email com `EmailAddress` (aprovado pelo usuário; +6 unit, backfill Fase 6) | ✅ 2026-05-30 — 1829 unit + 450 e2e verdes; tsc; guardrail. Mudança de comportamento: cadastro rejeita email malformado (→ 400) |
 | 5 | status→métodos de entidade (fase "modelo rico", não-VO) · slugs admin / enums (decisão de produto) | ⏳ |
-| 6 | unit backfill: warming, admin, auth, bot-flows, dashboard, deals, activities | ⏳ |
+| 7 Tier 2 | 11/11 controllers HTTP-only (5 sub-batches) | ✅ 2026-05-30 — repos fora de controllers; guardrail com allowlist vazia; senior em cada sub-batch |
+| 6 | Batch 1: `deal-tech-stack` (8 use cases) + `get-warming-status` | ✅ 2026-05-30 — 15 unit (auth owner-or-admin, args, branch not-found); 1885 unit; tsc; senior "ship" |
+| 6 | Restante backfill: `run-warming-cycle` (precisa randomness/timer atrás de porta), `dashboard` (fake de DashboardRepository), `bot-flows`, `admin` bundles, `mark-thread-replied`, `update-stage-history-date` | ⏳ |
