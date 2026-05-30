@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "@/infra/auth/auth.module";
+import { ActivitiesModule } from "@/domain/activities/activities.module";
 import { GatekeeperAnalysisRepository } from "./application/repositories/gatekeeper-analysis.repository";
 import { GatekeeperBatchRepository } from "./application/repositories/gatekeeper-batch.repository";
 import { GatekeeperAnalysisAgentPort } from "./application/ports/gatekeeper-analysis-agent.port";
@@ -15,7 +16,7 @@ import { PrismaGatekeeperBatchRepository } from "@/infra/database/prisma/reposit
 import { GatekeeperAnalysisController } from "./infra/controllers/gatekeeper-analysis.controller";
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, ActivitiesModule],
   controllers: [GatekeeperAnalysisController],
   providers: [
     TriggerGatekeeperAnalysisUseCase,

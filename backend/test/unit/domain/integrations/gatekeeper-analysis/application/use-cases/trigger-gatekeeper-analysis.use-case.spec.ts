@@ -3,33 +3,52 @@ import { InMemoryGatekeeperAnalysisRepository } from "../../fakes/in-memory-gate
 import { FakeGatekeeperAnalysisAgentPort } from "../../fakes/fake-gatekeeper-analysis-agent.port";
 import { TriggerGatekeeperAnalysisUseCase } from "@/domain/integrations/gatekeeper-analysis/application/use-cases/trigger-gatekeeper-analysis.use-case";
 import { GatekeeperAnalysis } from "@/domain/integrations/gatekeeper-analysis/enterprise/entities/gatekeeper-analysis.entity";
+import type { ActivityAnalysisContext } from "@/domain/activities/application/repositories/activities.repository";
 
 const makeInput = (overrides = {}) => ({
   activityId: "activity-1",
-  activitySubject: "Ligação gatekeeper",
-  transcript: "Bom dia, aqui é Bruno da Salto...",
-  callDurationSeconds: 120,
-  callDate: new Date("2026-05-01T10:00:00Z"),
-  leadId: "lead-1",
-  leadBusinessName: "Empresa X LTDA",
-  leadSegment: "Varejo",
-  leadCity: "São Paulo",
-  contactName: "Maria Santos",
-  contactRole: "Recepcionista",
   ownerId: "user-1",
   webhookUrl: "https://api.crm.wbdigitalsolutions.com/webhooks/gatekeeper-analysis",
   ...overrides,
 });
 
+class FakeActivities {
+  ctx: ActivityAnalysisContext | null = {
+    subject: "Ligação gatekeeper",
+    gotoTranscriptText: "Bom dia, aqui é Bruno da Salto...",
+    gotoDuration: 120,
+    dueDate: new Date("2026-05-01T10:00:00Z"),
+    lead: { id: "lead-1", businessName: "Empresa X LTDA", segment: "Varejo", city: "São Paulo" },
+    contact: { name: "Maria Santos", role: "Recepcionista" },
+  };
+  async findAnalysisContext() { return this.ctx; }
+}
+
 describe("TriggerGatekeeperAnalysisUseCase", () => {
   let repo: InMemoryGatekeeperAnalysisRepository;
   let agentPort: FakeGatekeeperAnalysisAgentPort;
+  let activities: FakeActivities;
   let sut: TriggerGatekeeperAnalysisUseCase;
 
   beforeEach(() => {
     repo = new InMemoryGatekeeperAnalysisRepository();
     agentPort = new FakeGatekeeperAnalysisAgentPort();
-    sut = new TriggerGatekeeperAnalysisUseCase(repo, agentPort);
+    activities = new FakeActivities();
+    sut = new TriggerGatekeeperAnalysisUseCase(repo, agentPort, activities as never);
+  });
+
+  it("returns left when the activity does not exist", async () => {
+    activities.ctx = null;
+    const result = await sut.execute(makeInput());
+    expect(result.isLeft()).toBe(true);
+    expect(agentPort.calls).toHaveLength(0);
+  });
+
+  it("returns left when the activity has no transcript", async () => {
+    activities.ctx = { ...activities.ctx!, gotoTranscriptText: null };
+    const result = await sut.execute(makeInput());
+    expect(result.isLeft()).toBe(true);
+    expect(agentPort.calls).toHaveLength(0);
   });
 
   it("creates analysis with pending status and calls agent", async () => {

@@ -16,7 +16,6 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
-import { PrismaService } from "@/infra/database/prisma.service";
 import { TriggerGatekeeperAnalysisUseCase } from "../../application/use-cases/trigger-gatekeeper-analysis.use-case";
 import {
   HandleGatekeeperAnalysisWebhookUseCase,
@@ -118,7 +117,6 @@ export class GatekeeperAnalysisController {
     private readonly handleBatchWebhook: HandleGatekeeperBatchWebhookUseCase,
     private readonly analysisRepo: GatekeeperAnalysisRepository,
     private readonly batchRepo: GatekeeperBatchRepository,
-    private readonly prisma: PrismaService,
   ) {}
 
   @Post("gatekeeper-analysis/trigger-by-activity/:activityId")
@@ -129,36 +127,19 @@ export class GatekeeperAnalysisController {
     @Param("activityId") activityId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const activity = await this.prisma.activity.findUnique({
-      where: { id: activityId },
-      include: {
-        lead: { select: { id: true, businessName: true, segment: true, city: true } },
-        contact: { select: { name: true, role: true } },
-      },
-    });
-
-    if (!activity) throw new NotFoundException("Atividade não encontrada");
-    if (!activity.gotoTranscriptText) throw new BadRequestException("Atividade ainda não possui transcrição");
-
     const webhookUrl = `${process.env.BACKEND_PUBLIC_URL ?? "https://crm.wbdigitalsolutions.com"}/webhooks/gatekeeper-analysis`;
 
     const result = await this.triggerAnalysis.execute({
       activityId,
-      activitySubject: activity.subject,
-      transcript: activity.gotoTranscriptText,
-      callDurationSeconds: activity.gotoDuration ?? undefined,
-      callDate: activity.dueDate ?? undefined,
-      leadId: activity.lead?.id,
-      leadBusinessName: activity.lead?.businessName,
-      leadSegment: activity.lead?.segment ?? undefined,
-      leadCity: activity.lead?.city ?? undefined,
-      contactName: activity.contact?.name ?? undefined,
-      contactRole: activity.contact?.role ?? undefined,
       ownerId: user.id,
       webhookUrl,
     });
 
-    if (result.isLeft()) throw new BadRequestException(result.value.message);
+    if (result.isLeft()) {
+      const msg = result.value.message;
+      if (msg.includes("não encontrada")) throw new NotFoundException(msg);
+      throw new BadRequestException(msg);
+    }
     return { analysisId: result.value.analysisId };
   }
 
