@@ -30,6 +30,16 @@ const FORBIDDEN_IMPORTS = [
 // único; é a allowlist explícita da regra de controllers.
 const CONTROLLER_ALLOWLIST = [join("infra", "controllers", "health.controller.ts")];
 
+// Tier 2: controller = só HTTP, não injeta repository (delega a use case).
+// Ratchet — email-campaigns.controller é o último controller pendente do Tier 2
+// (ainda injeta 4 repos). Removê-lo da allowlist quando for convertido.
+const REPO_INJECTION = /(?:private|public|protected|readonly)\s+\w+\s*:\s*\w*Repository\b/;
+const CONTROLLER_REPO_ALLOWLIST = [join("infra", "controllers", "email-campaigns.controller.ts")];
+
+function injectsRepository(file: string): boolean {
+  return REPO_INJECTION.test(readFileSync(file, "utf8"));
+}
+
 function collectTsFiles(dir: string): string[] {
   const out: string[] = [];
   for (const entry of readdirSync(dir)) {
@@ -80,6 +90,27 @@ describe("Architecture: no Prisma leak (Fase 4 guardrail)", () => {
       const match = allFiles.find((f) => f.endsWith(allowed));
       expect(match, `Allowlist aponta para arquivo inexistente: ${allowed}`).toBeDefined();
       expect(importsPrisma(match!), `Allowlist desnecessária (não usa Prisma): ${allowed}`).toBe(true);
+    }
+  });
+
+  it("nenhum controller injeta um Repository (Tier 2 — exceto allowlist pendente)", () => {
+    const offenders = allFiles
+      .filter((f) => f.endsWith(".controller.ts"))
+      .filter((f) => !CONTROLLER_REPO_ALLOWLIST.some((allowed) => f.endsWith(allowed)))
+      .filter(injectsRepository)
+      .map((f) => relative(process.cwd(), f));
+
+    expect(
+      offenders,
+      `Controller = só HTTP; delegue a leitura/comando a um use case (Tier 2). Violações:\n  ${offenders.join("\n  ")}`,
+    ).toEqual([]);
+  });
+
+  it("a allowlist de repo-injection é mínima/viva", () => {
+    for (const allowed of CONTROLLER_REPO_ALLOWLIST) {
+      const match = allFiles.find((f) => f.endsWith(allowed));
+      expect(match, `Allowlist aponta para arquivo inexistente: ${allowed}`).toBeDefined();
+      expect(injectsRepository(match!), `Allowlist desnecessária (não injeta Repository): ${allowed}`).toBe(true);
     }
   });
 });

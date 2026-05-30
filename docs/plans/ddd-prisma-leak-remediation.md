@@ -1,7 +1,7 @@
 # Plano: Aderência DDD da Camada de Aplicação (Prisma · VOs · Testes)
 
 **Data de Criação:** 2026-05-29
-**Status:** Fases 1–5 + Tier 1 + **Tier 2 (11/11 controllers HTTP-only)** concluídas · pendentes: Fase 6 (backfill de testes), track "modelo rico" (status→métodos de entidade), e decisões de produto (slugs admin / enums)
+**Status:** Fases 1–5 + Tier 1 concluídas · **Tier 2: 10/11 controllers HTTP-only** (travado por guardrail; falta `email-campaigns.controller`, na allowlist ratchet) · pendentes: email-campaigns Tier 2, Fase 6 (backfill de testes), track "modelo rico" (status→métodos de entidade), decisões de produto (slugs admin / enums)
 **Prioridade:** Alta — dívida cresce em código novo de integração
 **Origem:** Análise de aderência a DDD + auditoria de **todos os 205 use cases** (2026-05-29)
 
@@ -150,7 +150,7 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 - `lead-deep-research`: `cancelBulkSession` → `CancelActiveResearchSessionsUseCase` (command).
 - 10 unit + 1854 unit total + 450 e2e; senior "ship it".
 
-**Resultado Tier 2: 11/11 controllers HTTP-only — ZERO repository injetado em controllers.**
+**Resultado Tier 2: 10/11 controllers HTTP-only.** Travado por guardrail (teste de arquitetura falha o CI se um `*.controller.ts` injetar `*Repository`). ⏳ **Pendente:** `email-campaigns.controller` (422 linhas, ~17 acessos a 4 repos — campaigns/suppressions/sends/activities — com lógica de mutação) → na allowlist do guardrail (ratchet); precisa de vários command/query use cases (sub-batch próprio).
 
 ---
 
