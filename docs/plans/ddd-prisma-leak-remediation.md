@@ -199,4 +199,5 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 | 5 | status→métodos de entidade (fase "modelo rico", não-VO) · slugs admin / enums (decisão de produto) | ⏳ |
 | 7 Tier 2 | 11/11 controllers HTTP-only (5 sub-batches) | ✅ 2026-05-30 — repos fora de controllers; guardrail com allowlist vazia; senior em cada sub-batch |
 | 6 | Batch 1: `deal-tech-stack` (8 use cases) + `get-warming-status` | ✅ 2026-05-30 — 15 unit (auth owner-or-admin, args, branch not-found); 1885 unit; tsc; senior "ship" |
-| 6 | Restante backfill: `run-warming-cycle` (precisa randomness/timer atrás de porta), `dashboard` (fake de DashboardRepository), `bot-flows`, `admin` bundles, `mark-thread-replied`, `update-stage-history-date` | ⏳ |
+| 6 | Batch 2: `bot-flows` CRUD (6 use cases, foco em auth owner) · `mark-thread-replied` · `update-stage-history-date` | ✅ 2026-05-30 — 16 unit (auth real: não salva/deleta sem dono); 1902 unit; tsc; senior "ship" |
+| 6 | Restante backfill: `run-warming-cycle` (randomness/timer atrás de porta antes), `dashboard` (fake de DashboardRepository), `admin` bundles | ⏳ |
