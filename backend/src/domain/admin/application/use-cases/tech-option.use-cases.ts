@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { AdminRepository } from "../repositories/admin.repository";
 import { AdminTechOption, type TechOptionType } from "../../enterprise/entities/admin-tech-option";
+import { TechOptionName } from "../../enterprise/value-objects/tech-option-name.vo";
 
 // ─── List ─────────────────────────────────────────────────────────────────────
 
@@ -35,8 +36,9 @@ export class CreateTechOptionUseCase {
   constructor(private readonly repo: AdminRepository) {}
 
   async execute(input: CreateTechOptionInput): Promise<Either<Error, { item: AdminTechOption }>> {
-    const name = (input.name ?? "").trim();
-    if (!name) return left(new Error("Nome é obrigatório"));
+    const nameResult = TechOptionName.create(input.name);
+    if (nameResult.isLeft()) return left(nameResult.value);
+    const name = nameResult.value.value;
 
     const slug = (input.slug ?? "").trim();
     if (!slug) return left(new Error("Slug é obrigatório"));

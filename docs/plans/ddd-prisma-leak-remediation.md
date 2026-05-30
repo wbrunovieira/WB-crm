@@ -171,5 +171,7 @@ Ação: envolver cada leitura num "query use case" fino. Respeitam os ports (sem
 | 4 | guardrail lint/CI + regra no CLAUDE.md | ✅ 2026-05-30 — teste de arquitetura (application + controllers, allowlist health); sanity-check de violação plantada; regra + exemplo no CLAUDE.md |
 | 5 | Batch 1: `InstagramHandle` (meta-ads ×2) · `OperationsEntityType` · `isValidSharedEntityType` guard | ✅ 2026-05-30 — VO specs (10+6) + 2 skip-tests no batch; senior "ship it"; tsc + 1784 unit verdes |
 | 5 | Batch 2a: `DealTitle` · `ContactName` · `PartnerName` · `PipelineName` · `StageName` · `ActivitySubject` (create-* delegam aos VOs) | ✅ 2026-05-30 — 6 VOs (padrão OrganizationName), msgs idênticas; 21 specs; 1807 unit verdes; tsc; guardrail; senior "ship it" |
-| 5 | Batch 2b (lead businessName · admin name/slug · enums PartnerType/ActivityType) · Batch 3 (CNAE, register-user email) · status→métodos de entidade | ⏳ |
+| 5 | Batch 2b: `BusinessName` (lead) · `BusinessLineName`/`ProductName`/`TechOptionName` (admin) — create-* delegam | ✅ 2026-05-30 — 4 VOs name; msgs idênticas; specs (3+9); 1819 unit + admin/leads e2e verdes; tsc; guardrail |
+| 5 | **Adiado (mudança de comportamento / decisão de produto):** slugs admin (hoje só não-vazio; `Slug` com regex kebab rejeitaria input aceito), enums `PartnerType`/`ActivityType` (sem conjunto canônico no código — VO estrito adicionaria validação) | ⏳ confirmar com produto |
+| 5 | Batch 3 (CNAE parsing → `CnaeCode`, register-user email → `EmailAddress`) · status→métodos de entidade (fase "modelo rico") | ⏳ |
 | 6 | unit backfill: warming, admin, auth, bot-flows, dashboard, deals, activities | ⏳ |

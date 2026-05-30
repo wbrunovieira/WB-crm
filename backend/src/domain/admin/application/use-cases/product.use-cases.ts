@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { AdminRepository } from "../repositories/admin.repository";
 import { Product } from "../../enterprise/entities/product";
+import { ProductName } from "../../enterprise/value-objects/product-name.vo";
 
 // ─── List ─────────────────────────────────────────────────────────────────────
 
@@ -48,8 +49,9 @@ export class CreateProductUseCase {
   constructor(private readonly repo: AdminRepository) {}
 
   async execute(input: CreateProductInput): Promise<Either<Error, { item: Product }>> {
-    const name = (input.name ?? "").trim();
-    if (!name) return left(new Error("Nome do produto é obrigatório"));
+    const nameResult = ProductName.create(input.name);
+    if (nameResult.isLeft()) return left(nameResult.value);
+    const name = nameResult.value.value;
 
     const slug = (input.slug ?? "").trim();
     if (!slug) return left(new Error("Slug é obrigatório"));

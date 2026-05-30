@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { LeadsRepository, type LeadContactInput } from "../repositories/leads.repository";
 import { Lead } from "../../enterprise/entities/lead";
+import { BusinessName } from "../../enterprise/value-objects/business-name.vo";
 import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
 
 export interface CreateLeadInput {
@@ -90,13 +91,12 @@ export class CreateLeadUseCase {
   constructor(private readonly leads: LeadsRepository) {}
 
   async execute(input: CreateLeadInput): Promise<Output> {
-    if (!input.businessName?.trim()) {
-      return left(new Error("Nome da empresa é obrigatório"));
-    }
+    const businessNameResult = BusinessName.create(input.businessName);
+    if (businessNameResult.isLeft()) return left(businessNameResult.value);
 
     const lead = Lead.create({
       ownerId: input.ownerId,
-      businessName: input.businessName.trim(),
+      businessName: businessNameResult.value.value,
       registeredName: input.registeredName,
       foundationDate: input.foundationDate,
       companyRegistrationID: input.companyRegistrationID,

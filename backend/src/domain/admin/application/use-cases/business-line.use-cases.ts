@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { AdminRepository } from "../repositories/admin.repository";
 import { BusinessLine } from "../../enterprise/entities/business-line";
+import { BusinessLineName } from "../../enterprise/value-objects/business-line-name.vo";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 
 // ─── List ─────────────────────────────────────────────────────────────────────
@@ -47,8 +48,9 @@ export class CreateBusinessLineUseCase {
   constructor(private readonly repo: AdminRepository) {}
 
   async execute(input: CreateBusinessLineInput): Promise<Either<Error, { item: BusinessLine }>> {
-    const name = (input.name ?? "").trim();
-    if (!name) return left(new Error("Nome da linha de negócio é obrigatório"));
+    const nameResult = BusinessLineName.create(input.name);
+    if (nameResult.isLeft()) return left(nameResult.value);
+    const name = nameResult.value.value;
 
     const slug = (input.slug ?? "").trim();
     if (!slug) return left(new Error("Slug é obrigatório"));
