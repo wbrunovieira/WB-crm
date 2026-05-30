@@ -16,7 +16,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
-import { TriggerGatekeeperAnalysisUseCase } from "../../application/use-cases/trigger-gatekeeper-analysis.use-case";
+import { TriggerGatekeeperAnalysisUseCase, ActivityNotFoundError } from "../../application/use-cases/trigger-gatekeeper-analysis.use-case";
 import {
   HandleGatekeeperAnalysisWebhookUseCase,
   type GatekeeperAnalysisWebhookPayload,
@@ -136,9 +136,8 @@ export class GatekeeperAnalysisController {
     });
 
     if (result.isLeft()) {
-      const msg = result.value.message;
-      if (msg.includes("não encontrada")) throw new NotFoundException(msg);
-      throw new BadRequestException(msg);
+      if (result.value instanceof ActivityNotFoundError) throw new NotFoundException(result.value.message);
+      throw new BadRequestException(result.value.message);
     }
     return { analysisId: result.value.analysisId };
   }

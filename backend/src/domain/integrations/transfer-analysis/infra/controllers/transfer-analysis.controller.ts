@@ -11,7 +11,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
-import { TriggerTransferAnalysisUseCase } from "../../application/use-cases/trigger-transfer-analysis.use-case";
+import { TriggerTransferAnalysisUseCase, ActivityNotFoundError } from "../../application/use-cases/trigger-transfer-analysis.use-case";
 
 @ApiTags("Transfer Analysis")
 @Controller()
@@ -40,9 +40,8 @@ export class TransferAnalysisController {
     });
 
     if (result.isLeft()) {
-      const msg = result.value.message;
-      if (msg.includes("não encontrada")) throw new NotFoundException(msg);
-      throw new BadRequestException(msg);
+      if (result.value instanceof ActivityNotFoundError) throw new NotFoundException(result.value.message);
+      throw new BadRequestException(result.value.message);
     }
     return { gkAnalysisId: result.value.gkAnalysisId, spicedAnalysisId: result.value.spicedAnalysisId };
   }
