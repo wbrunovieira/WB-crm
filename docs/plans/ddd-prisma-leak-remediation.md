@@ -103,6 +103,21 @@ Autorização owner-or-admin em todas as verificações por lead/sourceGroup. Ve
 ### Fase 6 — Backfill de unit tests (não-triviais sem spec)
 Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados nas fases anteriores: `warming` (run-warming-cycle, get-warming-status), `admin` (bundles), `auth` (register-user), `bot-flows` (6), `dashboard` (3), `deals` (deal-tech-stack, update-stage-history-date), `activities` (mark-thread-replied).
 
+### Fase 7 — Controllers HTTP-only (investigação 2026-05-29)
+"Controller = só HTTP" — não deve acessar Prisma nem repositório (delega a use case).
+
+**Tier 1 — Prisma direto no controller (alta prioridade):**
+- ✅ `transfer-analysis.controller` — load+validação movidos para o use case via `ActivitiesRepository.findAnalysisContext`; controller fino; unit 10; senior pendente.
+- ⏳ `gatekeeper-analysis.controller` — mesmo padrão (reusa `findAnalysisContext`).
+- ⏳ `meet-analysis.controller` — `prisma.meeting.findUnique` → método de contexto no `MeetingsRepository`.
+- ⏳ `infra/controllers/email-campaigns.controller` — 8 queries Prisma + 4 repos + 560 linhas (fat controller) → extrair use cases.
+- 🟢 `health.controller` — `$queryRaw SELECT 1` (liveness) — **aceitável**, não mexer.
+
+**Tier 2 — Controller injeta Repository (leitura direta em vez de use case) — média prioridade:**
+11 controllers, padrão dominante de leitura fina (dropdown/listagem/findById):
+`findDistinctSourceGroups` (phone, whatsapp, meta-ads, email) · `emailMessagesRepo.findByOwnerId` (email) · `goto-recordings` (`activities.findByIdRaw`) · `warming` (poolEmails/sends findAll) · `auth` (oauthRepo) · `lead-deep-research` (sessionRepo) · `gatekeeper-analysis` (analysis/batch repos) · `meetings-crud` (meetingsRepo).
+Ação: envolver cada leitura num "query use case" fino. Respeitam os ports (sem Prisma) — severidade menor.
+
 ---
 
 ## 5. Riscos & Mitigações

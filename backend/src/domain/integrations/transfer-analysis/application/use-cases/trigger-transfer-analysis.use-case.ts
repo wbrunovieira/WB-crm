@@ -1,24 +1,18 @@
 import { Injectable } from "@nestjs/common";
-import { Either, right } from "@/core/either";
+import { Either, left, right } from "@/core/either";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 import { GatekeeperAnalysis } from "@/domain/integrations/gatekeeper-analysis/enterprise/entities/gatekeeper-analysis.entity";
 import { GatekeeperAnalysisRepository } from "@/domain/integrations/gatekeeper-analysis/application/repositories/gatekeeper-analysis.repository";
 import { CallAnalysis } from "@/domain/integrations/call-analysis/enterprise/entities/call-analysis.entity";
 import { CallAnalysisRepository } from "@/domain/integrations/call-analysis/application/repositories/call-analysis.repository";
+import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
 import { TransferAnalysisAgentPort } from "../ports/transfer-analysis-agent.port";
+
+export class ActivityNotFoundError extends Error { name = "ActivityNotFoundError"; }
+export class MissingTranscriptError extends Error { name = "MissingTranscriptError"; }
 
 type Input = {
   activityId: string;
-  activitySubject: string;
-  transcript: string;
-  callDurationSeconds?: number;
-  callDate?: Date;
-  leadId?: string;
-  leadBusinessName?: string;
-  leadSegment?: string;
-  leadCity?: string;
-  contactName?: string;
-  contactRole?: string;
   ownerId: string;
   gkWebhookUrl: string;
   spicedWebhookUrl: string;
@@ -32,9 +26,14 @@ export class TriggerTransferAnalysisUseCase {
     private readonly gkRepo: GatekeeperAnalysisRepository,
     private readonly callRepo: CallAnalysisRepository,
     private readonly agentPort: TransferAnalysisAgentPort,
+    private readonly activities: ActivitiesRepository,
   ) {}
 
   async execute(input: Input): Promise<Output> {
+    const ctx = await this.activities.findAnalysisContext(input.activityId);
+    if (!ctx) return left(new ActivityNotFoundError("Atividade não encontrada"));
+    if (!ctx.gotoTranscriptText) return left(new MissingTranscriptError("Atividade ainda não possui transcrição"));
+
     const [existingGk, existingSpiced] = await Promise.all([
       this.gkRepo.findByActivityId(input.activityId),
       this.callRepo.findByActivityId(input.activityId),
@@ -78,22 +77,22 @@ export class TriggerTransferAnalysisUseCase {
         spicedJobId: spicedAnalysis.jobId!,
         gkWebhookUrl: input.gkWebhookUrl,
         spicedWebhookUrl: input.spicedWebhookUrl,
-        transcript: input.transcript,
-        callDurationSeconds: input.callDurationSeconds,
-        callDate: input.callDate?.toISOString(),
+        transcript: ctx.gotoTranscriptText,
+        callDurationSeconds: ctx.gotoDuration ?? undefined,
+        callDate: ctx.dueDate?.toISOString(),
         lead: {
-          id: input.leadId ?? "",
-          businessName: input.leadBusinessName ?? "",
-          segment: input.leadSegment,
-          city: input.leadCity,
+          id: ctx.lead?.id ?? "",
+          businessName: ctx.lead?.businessName ?? "",
+          segment: ctx.lead?.segment ?? undefined,
+          city: ctx.lead?.city ?? undefined,
         },
         contact: {
-          name: input.contactName,
-          role: input.contactRole,
+          name: ctx.contact?.name ?? undefined,
+          role: ctx.contact?.role ?? undefined,
         },
         activity: {
           id: input.activityId,
-          subject: input.activitySubject,
+          subject: ctx.subject,
         },
       });
     }

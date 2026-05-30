@@ -79,4 +79,5 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
     this.items.push(activity);
     return activity;
   }
+  async findAnalysisContext(): Promise<null> { return null; }
 }

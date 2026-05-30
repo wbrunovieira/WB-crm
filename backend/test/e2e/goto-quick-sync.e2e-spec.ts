@@ -65,6 +65,7 @@ class FakeActivitiesRepo extends ActivitiesRepository {
   async findById() { return null; }
   async findByIdRaw() { return null; }
   async findByIdForTranscription() { return null; }
+  async findAnalysisContext() { return null; }
   async findByTranscriptionJobId() { return null; }
   async findAnsweredCallsMissingRecordingId() { return []; }
   async save(activity: any) { this.savedIds.push(activity.gotoCallId ?? activity.id?.toString()); }

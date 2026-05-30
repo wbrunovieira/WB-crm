@@ -31,4 +31,5 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
   async delete(id: string) {
     this.items = this.items.filter((a) => a.id.toString() !== id);
   }
+  async findAnalysisContext(): Promise<null> { return null; }
 }

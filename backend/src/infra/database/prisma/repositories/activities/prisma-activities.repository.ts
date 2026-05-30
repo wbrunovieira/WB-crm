@@ -4,6 +4,7 @@ import {
   ActivitiesRepository,
   type ActivityFilters,
   type ActivityWithNames,
+  type ActivityAnalysisContext,
 } from "@/domain/activities/application/repositories/activities.repository";
 import type { Activity } from "@/domain/activities/enterprise/entities/activity";
 import type { ActivitySummary, ActivityDetail } from "@/domain/activities/enterprise/read-models/activity-read-models";
@@ -275,6 +276,27 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     const row = await this.prisma.activity.findUnique({ where: { id } });
     if (!row) return null;
     return ActivityMapper.toDomain(row);
+  }
+
+  async findAnalysisContext(activityId: string): Promise<ActivityAnalysisContext | null> {
+    const a = await this.prisma.activity.findUnique({
+      where: { id: activityId },
+      include: {
+        lead: { select: { id: true, businessName: true, segment: true, city: true } },
+        contact: { select: { name: true, role: true } },
+      },
+    });
+    if (!a) return null;
+    return {
+      subject: a.subject,
+      gotoTranscriptText: a.gotoTranscriptText ?? null,
+      gotoDuration: a.gotoDuration ?? null,
+      dueDate: a.dueDate ?? null,
+      lead: a.lead
+        ? { id: a.lead.id, businessName: a.lead.businessName ?? null, segment: a.lead.segment ?? null, city: a.lead.city ?? null }
+        : null,
+      contact: a.contact ? { name: a.contact.name, role: a.contact.role ?? null } : null,
+    };
   }
 
   async findByIdForTranscription(id: string): Promise<ActivityWithNames | null> {

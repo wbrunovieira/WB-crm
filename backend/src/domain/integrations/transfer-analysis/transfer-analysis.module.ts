@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "@/infra/auth/auth.module";
+import { ActivitiesModule } from "@/domain/activities/activities.module";
 import { TransferAnalysisAgentPort } from "./application/ports/transfer-analysis-agent.port";
 import { TriggerTransferAnalysisUseCase } from "./application/use-cases/trigger-transfer-analysis.use-case";
 import { HttpTransferAnalysisAgentClient } from "./infra/http-transfer-analysis-agent.client";
@@ -10,7 +11,7 @@ import { PrismaGatekeeperAnalysisRepository } from "@/infra/database/prisma/repo
 import { PrismaCallAnalysisRepository } from "@/infra/database/prisma/repositories/call-analysis/prisma-call-analysis.repository";
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, ActivitiesModule],
   controllers: [TransferAnalysisController],
   providers: [
     TriggerTransferAnalysisUseCase,

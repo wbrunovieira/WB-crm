@@ -202,4 +202,5 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
   async findByCampaignSendId(sendId: string): Promise<Activity | null> {
     return this.items.find((a) => a.emailCampaignSendId === sendId) ?? null;
   }
+  async findAnalysisContext(): Promise<null> { return null; }
 }

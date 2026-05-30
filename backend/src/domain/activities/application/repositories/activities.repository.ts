@@ -22,11 +22,22 @@ export interface ActivityWithNames {
   clientName: string;
 }
 
+/** Read-model for call/transfer/gatekeeper analysis triggers (activity + lead + contact). */
+export interface ActivityAnalysisContext {
+  subject: string;
+  gotoTranscriptText: string | null;
+  gotoDuration: number | null;
+  dueDate: Date | null;
+  lead: { id: string; businessName: string | null; segment: string | null; city: string | null } | null;
+  contact: { name: string; role: string | null } | null;
+}
+
 export abstract class ActivitiesRepository {
   abstract findMany(requesterId: string, requesterRole: string, filters?: ActivityFilters): Promise<ActivitySummary[]>;
   abstract findById(id: string, requesterId: string, requesterRole: string): Promise<ActivityDetail | null>;
   abstract findByIdRaw(id: string): Promise<Activity | null>;
   abstract findByIdForTranscription(id: string): Promise<ActivityWithNames | null>;
+  abstract findAnalysisContext(activityId: string): Promise<ActivityAnalysisContext | null>;
   abstract findByTranscriptionJobId(jobId: string): Promise<Activity | null>;
   abstract findFirst(where: { gotoCallId?: string }): Promise<Activity | null>;
   abstract findByCampaignSendId(sendId: string): Promise<Activity | null>;
