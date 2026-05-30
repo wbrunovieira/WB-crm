@@ -6,7 +6,7 @@ import { ApiTags, ApiBearerAuth } from "@nestjs/swagger";
 import { SseJwtAuthGuard } from "@/infra/auth/guards/sse-jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
-import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
+import { GetCallRecordingKeyUseCase, RecordingNotFoundError } from "../../application/use-cases/get-call-recording-key.use-case";
 import { S3StoragePort } from "../../application/ports/s3-storage.port";
 
 @ApiTags("GoTo")
@@ -17,7 +17,7 @@ export class GoToRecordingsController {
   private readonly logger = new Logger(GoToRecordingsController.name);
 
   constructor(
-    private readonly activities: ActivitiesRepository,
+    private readonly getRecordingKey: GetCallRecordingKeyUseCase,
     private readonly s3: S3StoragePort,
   ) {}
 
@@ -27,20 +27,18 @@ export class GoToRecordingsController {
     @Query("track") track: string,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<StreamableFile> {
-    const activity = await this.activities.findByIdRaw(activityId);
-
-    if (!activity) throw new NotFoundException("Recording not found");
-    if (user.role !== "admin" && activity.ownerId !== user.id) {
-      throw new ForbiddenException("Acesso negado");
+    const result = await this.getRecordingKey.execute({
+      activityId,
+      track,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) {
+      if (result.value instanceof RecordingNotFoundError) throw new NotFoundException(result.value.message);
+      throw new ForbiddenException(result.value.message);
     }
 
-    const s3Key = track === "client"
-      ? activity.gotoRecordingUrl2
-      : activity.gotoRecordingUrl;
-
-    if (!s3Key) throw new NotFoundException("Recording not found");
-
-    const buffer = await this.s3.download(s3Key);
+    const buffer = await this.s3.download(result.value.s3Key);
 
     return new StreamableFile(buffer, {
       type: "audio/mpeg",

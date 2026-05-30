@@ -11,7 +11,7 @@ import {
   DisconnectGoogleUseCase,
   StoreGoToTokensUseCase,
 } from "@/domain/auth/application/use-cases/oauth.use-cases";
-import { OAuthRepository } from "@/domain/auth/application/repositories/oauth.repository";
+import { GetGoToConnectionStatusUseCase } from "@/domain/auth/application/use-cases/get-goto-connection-status.use-case";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
@@ -64,7 +64,7 @@ export class AuthController {
     private readonly storeGoogleTokens: StoreGoogleTokensUseCase,
     private readonly disconnectGoogle: DisconnectGoogleUseCase,
     private readonly storeGoToTokens: StoreGoToTokensUseCase,
-    private readonly oauthRepo: OAuthRepository,
+    private readonly getGotoStatus: GetGoToConnectionStatusUseCase,
   ) {}
 
   @Post("register")
@@ -195,15 +195,6 @@ export class AuthController {
   @Get("goto/status")
   @ApiOperation({ summary: "Status da integração GoTo — retorna se há tokens válidos" })
   async gotoStatus() {
-    const tokens = await this.oauthRepo.loadGoToTokens();
-    if (!tokens) return { connected: false };
-    const now = Date.now();
-    return {
-      connected: true,
-      hasRefreshToken: !!tokens.refreshToken,
-      expiresAt: tokens.expiresAt,
-      isExpired: tokens.expiresAt < now,
-      expiresInMs: tokens.expiresAt - now,
-    };
+    return this.getGotoStatus.execute(Date.now());
   }
 }

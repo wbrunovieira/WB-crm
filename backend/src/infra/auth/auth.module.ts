@@ -11,6 +11,7 @@ import {
   DisconnectGoogleUseCase,
   StoreGoToTokensUseCase,
 } from "@/domain/auth/application/use-cases/oauth.use-cases";
+import { GetGoToConnectionStatusUseCase } from "@/domain/auth/application/use-cases/get-goto-connection-status.use-case";
 import { PrismaUsersRepository } from "@/infra/database/prisma/repositories/auth/prisma-users.repository";
 import { PrismaOAuthRepository } from "@/infra/database/prisma/repositories/auth/prisma-oauth.repository";
 import { AuthController } from "@/infra/controllers/auth.controller";
@@ -34,6 +35,7 @@ import { GetUsersUseCase } from "@/domain/auth/application/use-cases/get-users.u
     StoreGoogleTokensUseCase,
     DisconnectGoogleUseCase,
     StoreGoToTokensUseCase,
+    GetGoToConnectionStatusUseCase,
     { provide: UsersRepository, useClass: PrismaUsersRepository },
     { provide: OAuthRepository, useClass: PrismaOAuthRepository },
   ],

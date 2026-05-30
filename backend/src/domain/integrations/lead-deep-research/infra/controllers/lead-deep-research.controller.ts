@@ -22,7 +22,7 @@ import { RequestLeadDeepResearchUseCase } from "../../application/use-cases/requ
 import { HandleLeadDeepResearchWebhookUseCase, type LeadDeepResearchWebhookPayload } from "../../application/use-cases/handle-lead-deep-research-webhook.use-case";
 import { StartBulkLeadResearchUseCase } from "../../application/use-cases/start-bulk-lead-research.use-case";
 import { GetActiveBulkResearchUseCase } from "../../application/use-cases/get-active-bulk-research.use-case";
-import { BulkResearchSessionRepository } from "../../application/repositories/bulk-research-session.repository";
+import { CancelActiveResearchSessionsUseCase } from "../../application/use-cases/cancel-active-research-sessions.use-case";
 
 function isLocalIp(ip: string): boolean {
   return (
@@ -44,7 +44,7 @@ export class LeadDeepResearchController {
     private readonly handleWebhook: HandleLeadDeepResearchWebhookUseCase,
     private readonly startBulk: StartBulkLeadResearchUseCase,
     private readonly getActiveBulk: GetActiveBulkResearchUseCase,
-    private readonly sessionRepo: BulkResearchSessionRepository,
+    private readonly cancelSessions: CancelActiveResearchSessionsUseCase,
   ) {}
 
   @Post("leads/:id/deep-research")
@@ -165,7 +165,7 @@ export class LeadDeepResearchController {
   @HttpCode(204)
   @ApiOperation({ summary: "Cancela sessão de pesquisa em lote ativa" })
   async cancelBulkSession(@CurrentUser() user: AuthenticatedUser) {
-    await this.sessionRepo.cancelAllActiveForUser(user.id);
+    await this.cancelSessions.execute(user.id);
   }
 
   private isAuthorized(headers: Record<string, string | undefined>): boolean {

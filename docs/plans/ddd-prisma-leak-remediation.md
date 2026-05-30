@@ -1,7 +1,7 @@
 # Plano: Aderência DDD da Camada de Aplicação (Prisma · VOs · Testes)
 
 **Data de Criação:** 2026-05-29
-**Status:** Fases 1–4 + Tier 1 concluídas · **Fase 5 Batch 1 concluído** (InstagramHandle, OperationsEntityType, shared-entities guard) · pendentes: Fase 5 Batch 2–3 (name/slug VOs, CNAE, register-user), status→métodos de entidade, Fase 6 (backfill testes), Tier 2
+**Status:** Fases 1–5 + Tier 1 + **Tier 2 (11/11 controllers HTTP-only)** concluídas · pendentes: Fase 6 (backfill de testes), track "modelo rico" (status→métodos de entidade), e decisões de produto (slugs admin / enums)
 **Prioridade:** Alta — dívida cresce em código novo de integração
 **Origem:** Análise de aderência a DDD + auditoria de **todos os 205 use cases** (2026-05-29)
 
@@ -144,7 +144,13 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 - `email`: `listMessages` → `GetEmailMessagesUseCase`.
 - 6 unit + 450 e2e; senior "ship it". Controllers repo-free (warming, email).
 
-⏳ **Restante:** `goto-recordings` (`activities.findByIdRaw`) · `auth` (`oauthRepo.loadGoToTokens`) · `lead-deep-research` (`sessionRepo.cancelAllActiveForUser` — é **comando**, vira command use case).
+✅ **Sub-batch 4 (2026-05-30) — FECHA O TIER 2:**
+- `goto-recordings`: `streamRecording` → `GetCallRecordingKeyUseCase` (resolve s3Key + not-found + owner-or-admin); S3 download/stream fica no controller.
+- `auth`: `gotoStatus` → `GetGoToConnectionStatusUseCase` (load tokens + cálculo de expiração; `now` injetado pelo controller).
+- `lead-deep-research`: `cancelBulkSession` → `CancelActiveResearchSessionsUseCase` (command).
+- 10 unit + 1854 unit total + 450 e2e; senior "ship it".
+
+**Resultado Tier 2: 11/11 controllers HTTP-only — ZERO repository injetado em controllers.**
 
 ---
 

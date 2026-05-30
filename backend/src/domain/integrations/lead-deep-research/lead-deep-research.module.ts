@@ -7,6 +7,7 @@ import { RequestLeadDeepResearchUseCase } from "./application/use-cases/request-
 import { HandleLeadDeepResearchWebhookUseCase } from "./application/use-cases/handle-lead-deep-research-webhook.use-case";
 import { StartBulkLeadResearchUseCase } from "./application/use-cases/start-bulk-lead-research.use-case";
 import { GetActiveBulkResearchUseCase } from "./application/use-cases/get-active-bulk-research.use-case";
+import { CancelActiveResearchSessionsUseCase } from "./application/use-cases/cancel-active-research-sessions.use-case";
 import { AgentDeepResearchPort } from "./application/ports/agent-deep-research.port";
 import { LeadAgentResearchLogRepository } from "./application/repositories/lead-agent-research-log.repository";
 import { BulkResearchSessionRepository } from "./application/repositories/bulk-research-session.repository";
@@ -23,6 +24,7 @@ import { LeadDeepResearchController } from "./infra/controllers/lead-deep-resear
     HandleLeadDeepResearchWebhookUseCase,
     StartBulkLeadResearchUseCase,
     GetActiveBulkResearchUseCase,
+    CancelActiveResearchSessionsUseCase,
     { provide: AgentDeepResearchPort, useClass: AgentDeepResearchHttpAdapter },
     { provide: LeadAgentResearchLogRepository, useClass: PrismaLeadAgentResearchLogRepository },
     { provide: BulkResearchSessionRepository, useClass: PrismaBulkResearchSessionRepository },
