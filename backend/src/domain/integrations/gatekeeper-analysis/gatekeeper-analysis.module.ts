@@ -9,6 +9,13 @@ import { TriggerGatekeeperAnalysisUseCase } from "./application/use-cases/trigge
 import { HandleGatekeeperAnalysisWebhookUseCase } from "./application/use-cases/handle-gatekeeper-analysis-webhook.use-case";
 import { TriggerGatekeeperBatchUseCase } from "./application/use-cases/trigger-gatekeeper-batch.use-case";
 import { HandleGatekeeperBatchWebhookUseCase } from "./application/use-cases/handle-gatekeeper-batch-webhook.use-case";
+import {
+  GetGatekeeperAnalysesUseCase,
+  GetGatekeeperAnalysisByActivityUseCase,
+  GetGatekeeperAnalysisByIdUseCase,
+  GetGatekeeperBatchesUseCase,
+  GetGatekeeperBatchByIdUseCase,
+} from "./application/use-cases/query-gatekeeper.use-cases";
 import { HttpGatekeeperAnalysisAgentClient } from "./infra/http-gatekeeper-analysis-agent.client";
 import { HttpGatekeeperBatchAgentClient } from "./infra/http-gatekeeper-batch-agent.client";
 import { PrismaGatekeeperAnalysisRepository } from "@/infra/database/prisma/repositories/gatekeeper-analysis/prisma-gatekeeper-analysis.repository";
@@ -23,6 +30,11 @@ import { GatekeeperAnalysisController } from "./infra/controllers/gatekeeper-ana
     HandleGatekeeperAnalysisWebhookUseCase,
     TriggerGatekeeperBatchUseCase,
     HandleGatekeeperBatchWebhookUseCase,
+    GetGatekeeperAnalysesUseCase,
+    GetGatekeeperAnalysisByActivityUseCase,
+    GetGatekeeperAnalysisByIdUseCase,
+    GetGatekeeperBatchesUseCase,
+    GetGatekeeperBatchByIdUseCase,
     { provide: GatekeeperAnalysisRepository, useClass: PrismaGatekeeperAnalysisRepository },
     { provide: GatekeeperBatchRepository, useClass: PrismaGatekeeperBatchRepository },
     { provide: GatekeeperAnalysisAgentPort, useClass: HttpGatekeeperAnalysisAgentClient },

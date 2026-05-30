@@ -26,8 +26,14 @@ import {
   type GatekeeperBatchWebhookPayload,
 } from "../../application/use-cases/handle-gatekeeper-batch-webhook.use-case";
 import { TriggerGatekeeperBatchUseCase } from "../../application/use-cases/trigger-gatekeeper-batch.use-case";
-import { GatekeeperAnalysisRepository } from "../../application/repositories/gatekeeper-analysis.repository";
-import { GatekeeperBatchRepository } from "../../application/repositories/gatekeeper-batch.repository";
+import {
+  GetGatekeeperAnalysesUseCase,
+  GetGatekeeperAnalysisByActivityUseCase,
+  GetGatekeeperAnalysisByIdUseCase,
+  GetGatekeeperBatchesUseCase,
+  GetGatekeeperBatchByIdUseCase,
+  GatekeeperNotFoundError,
+} from "../../application/use-cases/query-gatekeeper.use-cases";
 import type { GatekeeperAnalysis } from "../../enterprise/entities/gatekeeper-analysis.entity";
 import type { GatekeeperBatch } from "../../enterprise/entities/gatekeeper-batch.entity";
 
@@ -127,8 +133,11 @@ export class GatekeeperAnalysisController {
     private readonly handleAnalysisWebhook: HandleGatekeeperAnalysisWebhookUseCase,
     private readonly triggerBatch: TriggerGatekeeperBatchUseCase,
     private readonly handleBatchWebhook: HandleGatekeeperBatchWebhookUseCase,
-    private readonly analysisRepo: GatekeeperAnalysisRepository,
-    private readonly batchRepo: GatekeeperBatchRepository,
+    private readonly getAnalyses: GetGatekeeperAnalysesUseCase,
+    private readonly getAnalysisByActivity: GetGatekeeperAnalysisByActivityUseCase,
+    private readonly getAnalysisById: GetGatekeeperAnalysisByIdUseCase,
+    private readonly getBatches: GetGatekeeperBatchesUseCase,
+    private readonly getBatchById: GetGatekeeperBatchByIdUseCase,
   ) {}
 
   @Post("gatekeeper-analysis/trigger-by-activity/:activityId")
@@ -229,7 +238,7 @@ export class GatekeeperAnalysisController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Lista análises RAPORT individuais do usuário" })
   async list(@CurrentUser() user: AuthenticatedUser) {
-    const analyses = await this.analysisRepo.findByOwner(user.id);
+    const analyses = await this.getAnalyses.execute(user.id);
     return analyses.map(serializeAnalysis);
   }
 
@@ -241,10 +250,12 @@ export class GatekeeperAnalysisController {
     @Param("activityId") activityId: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const analysis = await this.analysisRepo.findByActivityId(activityId);
-    if (!analysis) throw new NotFoundException("Análise não encontrada");
-    if (analysis.ownerId !== user.id && user.role !== "admin") throw new ForbiddenException();
-    return serializeAnalysis(analysis);
+    const result = await this.getAnalysisByActivity.execute({ activityId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (result.isLeft()) {
+      if (result.value instanceof GatekeeperNotFoundError) throw new NotFoundException(result.value.message);
+      throw new ForbiddenException(result.value.message);
+    }
+    return serializeAnalysis(result.value);
   }
 
   @Get("gatekeeper-analysis/:id")
@@ -255,10 +266,12 @@ export class GatekeeperAnalysisController {
     @Param("id") id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const analysis = await this.analysisRepo.findById(id);
-    if (!analysis) throw new NotFoundException("Análise não encontrada");
-    if (analysis.ownerId !== user.id && user.role !== "admin") throw new ForbiddenException();
-    return serializeAnalysis(analysis);
+    const result = await this.getAnalysisById.execute({ id, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (result.isLeft()) {
+      if (result.value instanceof GatekeeperNotFoundError) throw new NotFoundException(result.value.message);
+      throw new ForbiddenException(result.value.message);
+    }
+    return serializeAnalysis(result.value);
   }
 
   @Get("gatekeeper-batches")
@@ -266,7 +279,7 @@ export class GatekeeperAnalysisController {
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: "Lista lotes de análise gatekeeper do usuário" })
   async listBatches(@CurrentUser() user: AuthenticatedUser) {
-    const batches = await this.batchRepo.findByOwner(user.id);
+    const batches = await this.getBatches.execute(user.id);
     return batches.map(serializeBatch);
   }
 
@@ -278,9 +291,11 @@ export class GatekeeperAnalysisController {
     @Param("id") id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const batch = await this.batchRepo.findById(id);
-    if (!batch) throw new NotFoundException("Lote não encontrado");
-    if (batch.ownerId !== user.id && user.role !== "admin") throw new ForbiddenException();
-    return serializeBatch(batch);
+    const result = await this.getBatchById.execute({ id, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (result.isLeft()) {
+      if (result.value instanceof GatekeeperNotFoundError) throw new NotFoundException(result.value.message);
+      throw new ForbiddenException(result.value.message);
+    }
+    return serializeBatch(result.value);
   }
 }

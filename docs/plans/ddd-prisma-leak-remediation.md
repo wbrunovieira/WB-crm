@@ -136,7 +136,10 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 - `meetings-crud`: `MeetingsRepository` era injeção **morta** (nunca chamada) → removida.
 - `findDistinctSourceGroups` (phone, whatsapp, meta-ads, email): passaram a injetar o `GetLeadSourceGroupsUseCase` existente (exportado do `LeadsModule`) em vez de `LeadsRepository`. Full e2e (450) valida o DI.
 
-⏳ **Restante:** `email` (`emailMessagesRepo.findByOwnerId`) · `goto-recordings` (`activities.findByIdRaw`) · `warming` (poolEmails/sends findAll) · `auth` (`oauthRepo.loadGoToTokens`) · `lead-deep-research` (`sessionRepo.cancelAllActiveForUser` — é **comando**, vira command use case) · `gatekeeper-analysis` (5 reads: analysis/batch).
+✅ **Sub-batch 2 (2026-05-30):**
+- `gatekeeper-analysis`: 5 reads → 5 query use cases (`GetGatekeeperAnalyses/ByActivity/ById`, `GetGatekeeperBatches/ById`) com auth (owner-or-admin) + not-found via `Either`; controller só serializa + mapeia 404/403. 12 unit + 8 e2e; senior "ship it". Controller agora 100% repo-free.
+
+⏳ **Restante:** `email` (`emailMessagesRepo.findByOwnerId`) · `goto-recordings` (`activities.findByIdRaw`) · `warming` (poolEmails/sends findAll) · `auth` (`oauthRepo.loadGoToTokens`) · `lead-deep-research` (`sessionRepo.cancelAllActiveForUser` — é **comando**, vira command use case).
 
 ---
 
