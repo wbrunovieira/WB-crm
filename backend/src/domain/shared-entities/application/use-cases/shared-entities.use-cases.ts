@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { SharedEntitiesRepository, type SharedUserInfo } from "../repositories/shared-entities.repository";
-import { SharedEntity, type SharedEntityType, SHARED_ENTITY_TYPES } from "../../enterprise/entities/shared-entity";
+import { SharedEntity, type SharedEntityType, isValidSharedEntityType } from "../../enterprise/entities/shared-entity";
 
 // ─── Share ────────────────────────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ export class ShareEntityUseCase {
       return left(new Error("Apenas administradores podem compartilhar entidades"));
     }
 
-    if (!SHARED_ENTITY_TYPES.includes(input.entityType)) {
+    if (!isValidSharedEntityType(input.entityType)) {
       return left(new Error(`Tipo inválido: ${input.entityType}`));
     }
 
@@ -131,7 +131,7 @@ export class TransferEntityUseCase {
       return left(new Error("Apenas administradores podem transferir entidades"));
     }
 
-    if (!SHARED_ENTITY_TYPES.includes(input.entityType)) {
+    if (!isValidSharedEntityType(input.entityType)) {
       return left(new Error(`Tipo inválido: ${input.entityType}`));
     }
 

@@ -1,7 +1,7 @@
 # Plano: Aderência DDD da Camada de Aplicação (Prisma · VOs · Testes)
 
 **Data de Criação:** 2026-05-29
-**Status:** Fases 1–3 concluídas — **ZERO Prisma em use cases** · trilha de segurança concluída · Fases 4–6 (guardrail, VOs, backfill de testes) pendentes
+**Status:** Fases 1–4 + Tier 1 concluídas · **Fase 5 Batch 1 concluído** (InstagramHandle, OperationsEntityType, shared-entities guard) · pendentes: Fase 5 Batch 2–3 (name/slug VOs, CNAE, register-user), status→métodos de entidade, Fase 6 (backfill testes), Tier 2
 **Prioridade:** Alta — dívida cresce em código novo de integração
 **Origem:** Análise de aderência a DDD + auditoria de **todos os 205 use cases** (2026-05-29)
 
@@ -90,15 +90,29 @@ Autorização owner-or-admin em todas as verificações por lead/sourceGroup. Ve
 3. `phone/verify-lead-contact-phones` → `LeadContactsRepository` (espelhar o de email; mesmo padrão owner-scoping + VO de verificação se aplicável).
 4. **Testes:** unit dos 4 use cases do funnel.
 
-### Fase 4 — Guardrail anti-regressão (após zerar os vazamentos)
-- Teste/regra de lint que **falha o CI** se um arquivo em `domain/**/application/use-cases/**` importar `PrismaService` ou `@/infra/database`.
-- Tornar a regra explícita no `CLAUDE.md` com exemplo.
-- *Alternativa para antecipar:* adicionar já com allowlist dos vazamentos restantes e ir apertando a cada fase (ratchet).
+### ✅ Fase 4 — Guardrail anti-regressão (CONCLUÍDA)
+- Teste de arquitetura `test/unit/architecture/no-prisma-in-application.spec.ts` que **falha o CI** se um arquivo em `domain/**/application/**` OU um `*.controller.ts` importar `infra/database`/`prisma.service`. Allowlist: só `health.controller` (liveness `$queryRaw`). Sanity-check confirmou que pega violação plantada.
+- Regra explícita no `CLAUDE.md` (seção DDD → Key patterns) com exemplo ❌/✅.
+- Não precisou de ratchet/allowlist de dívida — Fases 1–3 + Tier 1 já tinham zerado os vazamentos.
 
-### Fase 5 — Extração de VOs (validação inline → Value Object)
-1. `operations`: `entityType` enum → VO/guard tipado.
-2. `meta-ads`: handle Instagram → VO `InstagramHandle` (usado por `verify-lead-meta-ads` e `batch-verify-lead-meta-ads`).
-3. *(Opcional)* avaliar guards de "nome vazio" nos `create-*` — extrair `Name` VO só onde a entidade ainda não valida.
+### ▶️ Fase 5 — Extração de VOs (validação inline → Value Object)
+
+Varredura 2026-05-30 de **todos** os use cases (não só a auditoria original). Categorizado por tipo de validação, com a regra de corte: **VO = valor auto-contido com invariante própria; transição de estado de agregado = método de entidade, não VO** (confirmado pelo revisor senior).
+
+**✅ Batch 1 (CONCLUÍDO) — format/normalização/enum (valor claro):**
+1. `meta-ads`: `InstagramHandle` VO (trim + strip `@` + não-vazio) — usado em `verify-lead-meta-ads` e `batch-verify-lead-meta-ads`. Consolidou o skip de "sem instagram" + "handle vazio" no batch (antes chamava o checker com `""`).
+2. `operations`: `validateType` inline → VO `OperationsEntityType` (+ `InvalidEntityTypeError` re-exportado p/ compat).
+3. `shared-entities`: enum inline → guard de domínio `isValidSharedEntityType` no arquivo da entidade (union usada como primitivo em repos/controller → guard é proporcional, VO seria fricção).
+
+**Batch 2 (proposto) — `*Name`/`*Title`/`*Slug` VOs (consistência com o padrão já existente: `OrganizationName`, `LabelName`, `SectorName`, `CadenceName`, `ProposalTitle`):**
+guards `.trim()`/não-vazio inline em: `activities`(subject), `deals`(title), `contacts`(name), `partners`(name), `pipelines`(name), `stages`(name), `leads`(businessName), `admin`(product/business-line/tech-option name+slug). **Antes de extrair, verificar caso a caso se a entidade já valida no `create()`** — se sim, o guard do use case é redundância (per §2.2) e o end-state limpo é a entidade consumir o VO. Fazer um por entidade, commit pequeno.
+
+**Batch 3 (proposto) — parsing/format específico:**
+- `lead-import`: regex CNAE `/^(\d{4,7})\s*[-–]\s*(.+)$/` → VO `CnaeCode`/`CnaeEntry`.
+- `auth/register-user`: validar email com `EmailAddress` VO (hoje não valida — é **adicionar** validação, não só mover; confirmar intenção).
+
+**FORA do escopo "validação→VO" (tratar como modelo rico, fase futura):**
+checagens de **transição de status** (`campaign.status !== "ACTIVE"`, `recipient.status !== "BOUNCED"`, deal `open|won|lost`, icp status) espalhadas em campaigns/email-campaigns/deals/icp → **métodos de entidade/agregado** (`campaign.canSend()`, `deal.close()`), não VOs. Validar o *valor* do enum pode virar VO; a *regra de transição* é invariante do agregado.
 
 ### Fase 6 — Backfill de unit tests (não-triviais sem spec)
 Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados nas fases anteriores: `warming` (run-warming-cycle, get-warming-status), `admin` (bundles), `auth` (register-user), `bot-flows` (6), `dashboard` (3), `deals` (deal-tech-stack, update-stage-history-date), `activities` (mark-thread-replied).
@@ -154,6 +168,7 @@ Ação: envolver cada leitura num "query use case" fino. Respeitam os ports (sem
 | 3 | funnel.use-cases (+ `FunnelRepository` + unit) | ✅ 2026-05-29 — read-model port `FunnelRepository` (4 métodos, 16 queries no adapter); use cases viraram orquestradores finos; owner-scoping preservado (equivalência verificada pelo senior); unit 7 + e2e; senior |
 | 3 | upload-proposal · update-proposal-with-file | ✅ 2026-05-29 — `LeadsRepository.findDriveFolder/setDriveFolder`; unit 37 + e2e 10 |
 | 3 | verify-lead-contact-phones | ✅ 2026-05-29 — `LeadContactsRepository`(+`savePhoneVerification`)+`LeadsRepository`; owner-scoping + 403/404; frontend `ApiError`; unit 8 + e2e 5; senior (paridade c/ email) |
-| 4 | guardrail lint/CI + regra no CLAUDE.md | ⏳ |
-| 5 | VO: operations enum · `InstagramHandle` · (opcional) name VOs | ⏳ |
+| 4 | guardrail lint/CI + regra no CLAUDE.md | ✅ 2026-05-30 — teste de arquitetura (application + controllers, allowlist health); sanity-check de violação plantada; regra + exemplo no CLAUDE.md |
+| 5 | Batch 1: `InstagramHandle` (meta-ads ×2) · `OperationsEntityType` · `isValidSharedEntityType` guard | ✅ 2026-05-30 — VO specs (10+6) + 2 skip-tests no batch; senior "ship it"; tsc + 1784 unit verdes |
+| 5 | Batch 2 (name/title/slug VOs) · Batch 3 (CNAE, register-user email) · status→métodos de entidade | ⏳ |
 | 6 | unit backfill: warming, admin, auth, bot-flows, dashboard, deals, activities | ⏳ |

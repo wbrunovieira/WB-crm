@@ -7,6 +7,11 @@ export const SHARED_ENTITY_TYPES: SharedEntityType[] = [
   "lead", "contact", "organization", "partner", "deal",
 ];
 
+/** Guard de domínio: valida (em runtime) se uma string é um SharedEntityType. */
+export function isValidSharedEntityType(raw: string): raw is SharedEntityType {
+  return (SHARED_ENTITY_TYPES as readonly string[]).includes(raw);
+}
+
 export interface SharedEntityProps {
   entityType: SharedEntityType;
   entityId: string;

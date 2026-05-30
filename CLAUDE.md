@@ -357,6 +357,17 @@ backend/src/
 - **Prisma Mappers** — explicit domain↔DB conversion; handles JSON fields and Date casting
 - **In-memory fakes** — `test/unit/domain/{entity}/fakes/in-memory-*.repository.ts` used in unit tests instead of mocks
 - **JWT compatibility** — same `NEXTAUTH_SECRET` used by NextAuth and NestJS for transparent token sharing
+- **No Prisma in `application` or controllers (enforced)** — the `application` layer (use cases, ports) and controllers must NEVER import `PrismaService` or `@/infra/database`. Depend on a repository port instead (e.g. `LeadsRepository`); controllers delegate to use cases. This is enforced by an architecture test (`test/unit/architecture/no-prisma-in-application.spec.ts`) that fails CI on any leak. The only allowed exception is `health.controller` (`$queryRaw SELECT 1` liveness probe), listed in that test's allowlist.
+
+  ```typescript
+  // ❌ wrong — Prisma in a use case
+  constructor(private readonly prisma: PrismaService) {}
+  const lead = await this.prisma.lead.findUnique({ where: { id } });
+
+  // ✅ right — depend on the port; add a domain method if one is missing
+  constructor(private readonly leads: LeadsRepository) {}
+  const lead = await this.leads.findByIdRaw(id);
+  ```
 
 ### Implemented Modules
 

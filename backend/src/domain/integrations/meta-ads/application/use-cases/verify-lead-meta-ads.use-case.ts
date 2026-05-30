@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { MetaAdsCheckerPort, type MetaAdsResult } from "../ports/meta-ads-checker.port";
 import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
+import { InstagramHandle } from "@/domain/integrations/meta-ads/enterprise/value-objects/instagram-handle.vo";
 
 export interface VerifyLeadMetaAdsInput {
   leadId: string;
@@ -29,11 +30,11 @@ export class VerifyLeadMetaAdsUseCase {
     const lead = await this.leadsRepo.findByIdRaw(input.leadId);
     if (!lead) return left(new Error("Lead não encontrado"));
 
-    const instagram = lead.instagram;
-    if (!instagram) return left(new Error("Lead não possui Instagram"));
+    if (!lead.instagram) return left(new Error("Lead não possui Instagram"));
 
-    const handle = instagram.replace(/^@/, "").trim();
-    if (!handle) return left(new Error("Handle do Instagram inválido"));
+    const handleResult = InstagramHandle.create(lead.instagram);
+    if (handleResult.isLeft()) return left(handleResult.value);
+    const handle = handleResult.value.value;
 
     let result: MetaAdsResult;
     try {

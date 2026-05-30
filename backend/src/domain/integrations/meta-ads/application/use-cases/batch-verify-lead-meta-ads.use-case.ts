@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { MetaAdsCheckerPort } from "../ports/meta-ads-checker.port";
 import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
+import { InstagramHandle } from "@/domain/integrations/meta-ads/enterprise/value-objects/instagram-handle.vo";
 
 export interface BatchVerifyLeadMetaAdsInput {
   sourceGroup: string;
@@ -69,7 +70,9 @@ export class BatchVerifyLeadMetaAdsUseCase {
     for (let i = 0; i < leads.length; i++) {
       const lead = leads[i];
 
-      if (!lead.instagram) {
+      const handleResult = InstagramHandle.create(lead.instagram);
+      if (handleResult.isLeft()) {
+        // sem instagram ou handle inválido → pula
         result.skipped++;
         input.onProgress?.({
           current: i + 1,
@@ -83,7 +86,7 @@ export class BatchVerifyLeadMetaAdsUseCase {
         continue;
       }
 
-      const handle = lead.instagram.replace(/^@/, "").trim();
+      const handle = handleResult.value.value;
 
       try {
         const ads = await this.metaAdsChecker.check(handle);

@@ -76,6 +76,29 @@ describe("BatchVerifyLeadMetaAdsUseCase", () => {
     }
   });
 
+  it("pula lead sem instagram (skipped++, não chama o checker)", async () => {
+    repo.leads.push(makeLead("sem-ig", { instagram: undefined }));
+
+    const result = await runBatch({ sourceGroup: GROUP });
+    expect(result.isRight()).toBe(true);
+    expect(checker.callCount).toBe(0);
+    expect(repo.saved).toHaveLength(0);
+    if (result.isRight()) {
+      expect(result.value.total).toBe(1);
+      expect(result.value.skipped).toBe(1);
+      expect(result.value.checked).toBe(0);
+    }
+  });
+
+  it("pula lead cujo handle normaliza para vazio (instagram = '@')", async () => {
+    repo.leads.push(makeLead("ig-vazio", { instagram: "@" }));
+
+    const result = await runBatch({ sourceGroup: GROUP });
+    expect(result.isRight()).toBe(true);
+    expect(checker.callCount).toBe(0); // não chama o checker com handle vazio
+    if (result.isRight()) expect(result.value.skipped).toBe(1);
+  });
+
   // ── Authorization / data isolation ────────────────────────────────────────────
 
   it("only checks leads owned by the requester (skips other owners')", async () => {

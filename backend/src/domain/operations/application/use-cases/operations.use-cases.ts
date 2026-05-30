@@ -1,28 +1,21 @@
 import { Injectable } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { OperationsRepository, OperationsEntityType, OperationsSearchResult } from "../repositories/operations.repository";
+import { OperationsEntityType as OperationsEntityTypeVO, InvalidEntityTypeError } from "../../enterprise/value-objects/operations-entity-type.vo";
 
 export class OperationsEntityNotFoundError extends Error { name = "OperationsEntityNotFoundError"; }
 export class OperationsForbiddenError extends Error { name = "OperationsForbiddenError"; }
-export class InvalidEntityTypeError extends Error { name = "InvalidEntityTypeError"; }
-
-const VALID_ENTITY_TYPES: OperationsEntityType[] = ["lead", "organization"];
-
-function validateType(type: string): Either<InvalidEntityTypeError, OperationsEntityType> {
-  if (!VALID_ENTITY_TYPES.includes(type as OperationsEntityType)) {
-    return left(new InvalidEntityTypeError(`Tipo de entidade inválido: ${type}. Use: lead ou organization`));
-  }
-  return right(type as OperationsEntityType);
-}
+// Re-export para consumidores existentes (controller mapeia por mensagem; specs por name).
+export { InvalidEntityTypeError };
 
 @Injectable()
 export class TransferToOperationsUseCase {
   constructor(private readonly repo: OperationsRepository) {}
 
   async execute(input: { entityType: string; entityId: string; requesterId: string; requesterRole: string }): Promise<Either<Error, { entityId: string; transferredAt: Date }>> {
-    const typeResult = validateType(input.entityType);
+    const typeResult = OperationsEntityTypeVO.create(input.entityType);
     if (typeResult.isLeft()) return left(typeResult.value);
-    const entityType = typeResult.value as OperationsEntityType;
+    const entityType: OperationsEntityType = typeResult.value.value;
 
     const entity = await this.repo.findById(entityType, input.entityId);
     if (!entity) return left(new OperationsEntityNotFoundError(`${entityType} não encontrado`));
@@ -51,9 +44,9 @@ export class RevertFromOperationsUseCase {
   constructor(private readonly repo: OperationsRepository) {}
 
   async execute(input: { entityType: string; entityId: string; requesterId: string; requesterRole: string }): Promise<Either<Error, void>> {
-    const typeResult = validateType(input.entityType);
+    const typeResult = OperationsEntityTypeVO.create(input.entityType);
     if (typeResult.isLeft()) return left(typeResult.value);
-    const entityType = typeResult.value as OperationsEntityType;
+    const entityType: OperationsEntityType = typeResult.value.value;
 
     const entity = await this.repo.findById(entityType, input.entityId);
     if (!entity) return left(new OperationsEntityNotFoundError(`${entityType} não encontrado`));
