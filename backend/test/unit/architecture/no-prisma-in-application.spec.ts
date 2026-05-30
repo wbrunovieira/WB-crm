@@ -31,10 +31,9 @@ const FORBIDDEN_IMPORTS = [
 const CONTROLLER_ALLOWLIST = [join("infra", "controllers", "health.controller.ts")];
 
 // Tier 2: controller = só HTTP, não injeta repository (delega a use case).
-// Ratchet — email-campaigns.controller é o último controller pendente do Tier 2
-// (ainda injeta 4 repos). Removê-lo da allowlist quando for convertido.
+// Allowlist VAZIA — Tier 2 está completo (11/11 controllers HTTP-only).
 const REPO_INJECTION = /(?:private|public|protected|readonly)\s+\w+\s*:\s*\w*Repository\b/;
-const CONTROLLER_REPO_ALLOWLIST = [join("infra", "controllers", "email-campaigns.controller.ts")];
+const CONTROLLER_REPO_ALLOWLIST: string[] = [];
 
 function injectsRepository(file: string): boolean {
   return REPO_INJECTION.test(readFileSync(file, "utf8"));

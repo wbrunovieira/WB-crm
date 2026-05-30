@@ -21,6 +21,9 @@ import { TriggerCampaignSendNowUseCase } from "./application/use-cases/trigger-c
 import { GetCampaignProgressUseCase } from "./application/use-cases/get-campaign-progress.use-case";
 import { ClearCampaignRecipientsUseCase } from "./application/use-cases/clear-campaign-recipients.use-case";
 import { GetCampaignSourceGroupsUseCase, SearchEnrollableRecipientsUseCase, ListSuppressionsWithNamesUseCase } from "./application/use-cases/campaign-recipient-queries.use-cases";
+import { ListEmailCampaignsUseCase, DeleteEmailCampaignUseCase, StartEmailCampaignUseCase, PauseEmailCampaignUseCase, ActivateCampaignForSendNowUseCase } from "./application/use-cases/email-campaign-lifecycle.use-cases";
+import { RemoveSuppressionUseCase } from "./application/use-cases/remove-suppression.use-case";
+import { TrackEmailOpenUseCase, TrackEmailClickUseCase } from "./application/use-cases/email-tracking.use-cases";
 import { VariableResolverService } from "./application/services/variable-resolver.service";
 
 import { EmailCampaignsRepository } from "./application/repositories/email-campaigns.repository";
@@ -63,6 +66,14 @@ import { PrismaRecipientContextAdapter } from "@/infra/database/prisma/adapters/
     GetCampaignSourceGroupsUseCase,
     SearchEnrollableRecipientsUseCase,
     ListSuppressionsWithNamesUseCase,
+    ListEmailCampaignsUseCase,
+    DeleteEmailCampaignUseCase,
+    StartEmailCampaignUseCase,
+    PauseEmailCampaignUseCase,
+    ActivateCampaignForSendNowUseCase,
+    RemoveSuppressionUseCase,
+    TrackEmailOpenUseCase,
+    TrackEmailClickUseCase,
 
     { provide: EmailCampaignsRepository, useClass: PrismaEmailCampaignsRepository },
     { provide: EmailCampaignStepsRepository, useClass: PrismaEmailCampaignStepsRepository },

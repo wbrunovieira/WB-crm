@@ -20,10 +20,15 @@ import { TriggerCampaignSendNowUseCase, sendingInProgress } from "@/domain/email
 import { GetCampaignProgressUseCase } from "@/domain/email-campaigns/application/use-cases/get-campaign-progress.use-case";
 import { ClearCampaignRecipientsUseCase } from "@/domain/email-campaigns/application/use-cases/clear-campaign-recipients.use-case";
 import { GetCampaignSourceGroupsUseCase, SearchEnrollableRecipientsUseCase, ListSuppressionsWithNamesUseCase } from "@/domain/email-campaigns/application/use-cases/campaign-recipient-queries.use-cases";
-import { EmailCampaignsRepository } from "@/domain/email-campaigns/application/repositories/email-campaigns.repository";
-import { EmailSuppressionsRepository } from "@/domain/email-campaigns/application/repositories/email-suppressions.repository";
-import { EmailCampaignSendsRepository } from "@/domain/email-campaigns/application/repositories/email-campaign-sends.repository";
-import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
+import {
+  ListEmailCampaignsUseCase,
+  DeleteEmailCampaignUseCase,
+  StartEmailCampaignUseCase,
+  PauseEmailCampaignUseCase,
+  ActivateCampaignForSendNowUseCase,
+} from "@/domain/email-campaigns/application/use-cases/email-campaign-lifecycle.use-cases";
+import { RemoveSuppressionUseCase } from "@/domain/email-campaigns/application/use-cases/remove-suppression.use-case";
+import { TrackEmailOpenUseCase, TrackEmailClickUseCase } from "@/domain/email-campaigns/application/use-cases/email-tracking.use-cases";
 
 const TRACKING_BASE_URL = process.env.BACKEND_URL ?? "https://api.crm.wbdigitalsolutions.com";
 
@@ -47,10 +52,14 @@ export class EmailCampaignsController {
     private readonly getSourceGroups: GetCampaignSourceGroupsUseCase,
     private readonly searchRecipientsUC: SearchEnrollableRecipientsUseCase,
     private readonly listSuppressionsUC: ListSuppressionsWithNamesUseCase,
-    private readonly campaigns: EmailCampaignsRepository,
-    private readonly suppressions: EmailSuppressionsRepository,
-    private readonly sends: EmailCampaignSendsRepository,
-    private readonly activitiesRepo: ActivitiesRepository,
+    private readonly listCampaigns: ListEmailCampaignsUseCase,
+    private readonly deleteCampaignUC: DeleteEmailCampaignUseCase,
+    private readonly startCampaignUC: StartEmailCampaignUseCase,
+    private readonly pauseCampaignUC: PauseEmailCampaignUseCase,
+    private readonly activateForSendNow: ActivateCampaignForSendNowUseCase,
+    private readonly removeSuppressionUC: RemoveSuppressionUseCase,
+    private readonly trackOpenUC: TrackEmailOpenUseCase,
+    private readonly trackClickUC: TrackEmailClickUseCase,
   ) {}
 
   // ─── Campaigns ──────────────────────────────────────────────────────────────
@@ -59,7 +68,7 @@ export class EmailCampaignsController {
   @Get()
   @ApiOperation({ summary: "List email campaigns" })
   async list(@CurrentUser() user: AuthenticatedUser) {
-    const list = await this.campaigns.findAllByOwner(user.id);
+    const list = await this.listCampaigns.execute(user.id);
     return list.map((c) => ({
       id: c.id.toString(), name: c.name, description: c.description,
       fromEmail: c.fromEmail, status: c.status, createdAt: c.createdAt,
@@ -90,7 +99,7 @@ export class EmailCampaignsController {
   @HttpCode(204)
   @ApiOperation({ summary: "Delete campaign" })
   async deleteCampaign(@Param("id") id: string) {
-    await this.campaigns.delete(id);
+    await this.deleteCampaignUC.execute(id);
   }
 
   // ─── Steps ──────────────────────────────────────────────────────────────────
@@ -140,24 +149,20 @@ export class EmailCampaignsController {
   @HttpCode(200)
   @ApiOperation({ summary: "Start campaign (set ACTIVE and send step 0)" })
   async startCampaign(@Param("id") id: string) {
-    const campaign = await this.campaigns.findById(id);
-    if (!campaign) throw new Error("Campaign not found");
-    campaign.start();
-    await this.campaigns.save(campaign);
+    const result = await this.startCampaignUC.execute(id);
+    if (result.isLeft()) throw new NotFoundException(result.value.message);
     this.sendStep.execute({ campaignId: id, stepOrder: 0, trackingBaseUrl: TRACKING_BASE_URL })
       .catch((err) => console.error("[email-campaign/start] error:", err));
-    return { status: campaign.status };
+    return { status: result.value.status };
   }
 
   @UseGuards(JwtAuthGuard)
   @Post(":id/pause")
   @HttpCode(200)
   async pauseCampaign(@Param("id") id: string) {
-    const campaign = await this.campaigns.findById(id);
-    if (!campaign) throw new Error("Campaign not found");
-    campaign.pause();
-    await this.campaigns.save(campaign);
-    return { status: campaign.status };
+    const result = await this.pauseCampaignUC.execute(id);
+    if (result.isLeft()) throw new NotFoundException(result.value.message);
+    return { status: result.value.status };
   }
 
   // ─── Bulk enroll ────────────────────────────────────────────────────────────
@@ -197,13 +202,9 @@ export class EmailCampaignsController {
       throw new ConflictException("Campaign send already in progress");
     }
 
-    // Auto-activate if DRAFT so send-now works without requiring manual start
-    const campaign = await this.campaigns.findById(id);
-    if (!campaign) throw new NotFoundException("Campaign not found");
-    if (campaign.status === "DRAFT" || campaign.status === "PAUSED") {
-      campaign.start();
-      await this.campaigns.save(campaign);
-    }
+    // Auto-activate if DRAFT/PAUSED so send-now works without requiring manual start
+    const activation = await this.activateForSendNow.execute(id);
+    if (activation.isLeft()) throw new NotFoundException(activation.value.message);
 
     // Fire-and-forget: do not await
     this.triggerSendNow.execute({ campaignId: id })
@@ -326,7 +327,7 @@ export class EmailCampaignsController {
   @HttpCode(204)
   @ApiOperation({ summary: "Remove email from suppression list" })
   async removeSuppression(@CurrentUser() user: AuthenticatedUser, @Param("email") email: string) {
-    await this.suppressions.delete(email, user.id);
+    await this.removeSuppressionUC.execute(email, user.id);
   }
 
   // ─── Webhooks (public — secret-validated) ───────────────────────────────────
@@ -366,21 +367,7 @@ export class EmailCampaignsController {
   @Get("tracking/open/:sendId")
   @ApiOperation({ summary: "Track email open (1x1 pixel)" })
   async trackOpen(@Param("sendId") sendId: string, @Res() res: Response) {
-    const send = await this.sends.findById(sendId);
-    if (send) {
-      send.markOpened();
-      await this.sends.save(send);
-      // Sync stats to linked Activity
-      const activity = await this.activitiesRepo.findByCampaignSendId(sendId);
-      if (activity) {
-        activity.update({
-          emailOpenCount: send.openCount,
-          emailOpenedAt: activity.emailOpenedAt ?? send.openedAt,
-          emailLastOpenedAt: send.openedAt,
-        });
-        await this.activitiesRepo.save(activity);
-      }
-    }
+    await this.trackOpenUC.execute(sendId);
     // Return 1x1 transparent GIF
     const pixel = Buffer.from("R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7", "base64");
     res.set({ "Content-Type": "image/gif", "Cache-Control": "no-cache, no-store" });
@@ -390,22 +377,7 @@ export class EmailCampaignsController {
   @Get("tracking/click/:sendId")
   @ApiOperation({ summary: "Track link click and redirect" })
   async trackClick(@Param("sendId") sendId: string, @Query("url") url: string, @Res() res: Response) {
-    const send = await this.sends.findById(sendId);
-    if (send) {
-      send.markClicked(url || undefined);
-      await this.sends.save(send);
-      // Sync stats to linked Activity
-      const activity = await this.activitiesRepo.findByCampaignSendId(sendId);
-      if (activity) {
-        const totalClicks = Object.values(send.clickData).reduce((sum, c) => sum + c, 0);
-        activity.update({
-          emailLinkClickCount: totalClicks,
-          emailLinkClickedAt: activity.emailLinkClickedAt ?? send.clickedAt,
-          emailLastLinkClickedAt: send.clickedAt,
-        });
-        await this.activitiesRepo.save(activity);
-      }
-    }
+    await this.trackClickUC.execute({ sendId, url });
     res.redirect(url || "/");
   }
 
