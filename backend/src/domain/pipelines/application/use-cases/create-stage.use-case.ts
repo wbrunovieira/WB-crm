@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { PipelinesRepository } from "../repositories/pipelines.repository";
 import { Stage } from "../../enterprise/entities/stage";
+import { StageName } from "../../enterprise/value-objects/stage-name.vo";
 
 export interface CreateStageInput {
   name: string;
@@ -17,8 +18,9 @@ export class CreateStageUseCase {
   constructor(private readonly repo: PipelinesRepository) {}
 
   async execute(input: CreateStageInput): Promise<Output> {
-    const name = (input.name ?? "").trim();
-    if (!name) return left(new Error("Nome do estágio é obrigatório"));
+    const nameResult = StageName.create(input.name);
+    if (nameResult.isLeft()) return left(nameResult.value);
+    const name = nameResult.value.value;
 
     const pipeline = await this.repo.findByIdRaw(input.pipelineId);
     if (!pipeline) return left(new Error("Pipeline não encontrado"));

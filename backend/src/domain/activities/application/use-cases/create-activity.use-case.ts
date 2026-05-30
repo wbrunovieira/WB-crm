@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { ActivitiesRepository } from "../repositories/activities.repository";
 import { Activity } from "../../enterprise/entities/activity";
+import { ActivitySubject } from "../../enterprise/value-objects/activity-subject.vo";
 
 export interface CreateActivityInput {
   ownerId: string;
@@ -37,7 +38,8 @@ export class CreateActivityUseCase {
 
   async execute(input: CreateActivityInput): Promise<Output> {
     if (!input.type?.trim()) return left(new Error("Tipo da atividade é obrigatório"));
-    if (!input.subject?.trim()) return left(new Error("Assunto da atividade é obrigatório"));
+    const subjectResult = ActivitySubject.create(input.subject);
+    if (subjectResult.isLeft()) return left(subjectResult.value);
 
     const contactIds = input.contactIds && input.contactIds.length > 0
       ? input.contactIds
@@ -46,7 +48,7 @@ export class CreateActivityUseCase {
     const activity = Activity.create({
       ownerId: input.ownerId,
       type: input.type,
-      subject: input.subject.trim(),
+      subject: subjectResult.value.value,
       description: input.description,
       dueDate: input.dueDate,
       completed: input.completed ?? false,

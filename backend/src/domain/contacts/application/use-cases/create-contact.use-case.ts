@@ -3,6 +3,7 @@ import { left, right, type Either } from "@/core/either";
 import { ContactsRepository } from "../repositories/contacts.repository";
 import { Contact } from "../../enterprise/entities/contact";
 import type { ContactStatus } from "../../enterprise/entities/contact";
+import { ContactName } from "../../enterprise/value-objects/contact-name.vo";
 
 export interface CreateContactInput {
   ownerId: string;
@@ -33,7 +34,8 @@ export class CreateContactUseCase {
   constructor(private readonly contacts: ContactsRepository) {}
 
   async execute(input: CreateContactInput): Promise<Output> {
-    if (!input.name.trim()) return left(new Error("Nome é obrigatório"));
+    const nameResult = ContactName.create(input.name);
+    if (nameResult.isLeft()) return left(nameResult.value);
 
     const leadId = input.companyType === "lead" ? input.companyId : undefined;
     const organizationId = input.companyType === "organization" ? input.companyId : undefined;
@@ -41,7 +43,7 @@ export class CreateContactUseCase {
 
     const contact = Contact.create({
       ownerId: input.ownerId,
-      name: input.name.trim(),
+      name: nameResult.value.value,
       email: input.email,
       phone: input.phone,
       whatsapp: input.whatsapp,

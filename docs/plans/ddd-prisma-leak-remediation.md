@@ -170,5 +170,6 @@ Ação: envolver cada leitura num "query use case" fino. Respeitam os ports (sem
 | 3 | verify-lead-contact-phones | ✅ 2026-05-29 — `LeadContactsRepository`(+`savePhoneVerification`)+`LeadsRepository`; owner-scoping + 403/404; frontend `ApiError`; unit 8 + e2e 5; senior (paridade c/ email) |
 | 4 | guardrail lint/CI + regra no CLAUDE.md | ✅ 2026-05-30 — teste de arquitetura (application + controllers, allowlist health); sanity-check de violação plantada; regra + exemplo no CLAUDE.md |
 | 5 | Batch 1: `InstagramHandle` (meta-ads ×2) · `OperationsEntityType` · `isValidSharedEntityType` guard | ✅ 2026-05-30 — VO specs (10+6) + 2 skip-tests no batch; senior "ship it"; tsc + 1784 unit verdes |
-| 5 | Batch 2 (name/title/slug VOs) · Batch 3 (CNAE, register-user email) · status→métodos de entidade | ⏳ |
+| 5 | Batch 2a: `DealTitle` · `ContactName` · `PartnerName` · `PipelineName` · `StageName` · `ActivitySubject` (create-* delegam aos VOs) | ✅ 2026-05-30 — 6 VOs (padrão OrganizationName), msgs idênticas; 21 specs; 1807 unit verdes; tsc; guardrail; senior "ship it" |
+| 5 | Batch 2b (lead businessName · admin name/slug · enums PartnerType/ActivityType) · Batch 3 (CNAE, register-user email) · status→métodos de entidade | ⏳ |
 | 6 | unit backfill: warming, admin, auth, bot-flows, dashboard, deals, activities | ⏳ |

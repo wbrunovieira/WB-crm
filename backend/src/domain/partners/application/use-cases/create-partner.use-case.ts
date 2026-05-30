@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { PartnersRepository } from "../repositories/partners.repository";
 import { Partner } from "../../enterprise/entities/partner";
+import { PartnerName } from "../../enterprise/value-objects/partner-name.vo";
 
 export interface CreatePartnerInput {
   ownerId: string;
@@ -37,12 +38,13 @@ export class CreatePartnerUseCase {
   constructor(private readonly partners: PartnersRepository) {}
 
   async execute(input: CreatePartnerInput): Promise<Output> {
-    if (!input.name?.trim()) return left(new Error("Nome do parceiro é obrigatório"));
+    const nameResult = PartnerName.create(input.name);
+    if (nameResult.isLeft()) return left(nameResult.value);
     if (!input.partnerType?.trim()) return left(new Error("Tipo de parceria é obrigatório"));
 
     const partner = Partner.create({
       ownerId: input.ownerId,
-      name: input.name.trim(),
+      name: nameResult.value.value,
       partnerType: input.partnerType,
       legalName: input.legalName,
       foundationDate: input.foundationDate,

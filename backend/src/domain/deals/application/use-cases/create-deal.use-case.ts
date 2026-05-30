@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { DealsRepository } from "../repositories/deals.repository";
 import { Deal } from "../../enterprise/entities/deal";
+import { DealTitle } from "../../enterprise/value-objects/deal-title.vo";
 
 export interface CreateDealInput {
   ownerId: string;
@@ -23,7 +24,8 @@ export class CreateDealUseCase {
   constructor(private readonly deals: DealsRepository) {}
 
   async execute(input: CreateDealInput): Promise<Output> {
-    if (!input.title?.trim()) return left(new Error("Título do deal é obrigatório"));
+    const titleResult = DealTitle.create(input.title);
+    if (titleResult.isLeft()) return left(titleResult.value);
     if (!input.stageId?.trim()) return left(new Error("Etapa do deal é obrigatória"));
 
     const stage = await this.deals.findStageById(input.stageId);
@@ -31,7 +33,7 @@ export class CreateDealUseCase {
 
     const deal = Deal.create({
       ownerId: input.ownerId,
-      title: input.title.trim(),
+      title: titleResult.value.value,
       description: input.description,
       value: input.value ?? 0,
       currency: input.currency ?? "BRL",
