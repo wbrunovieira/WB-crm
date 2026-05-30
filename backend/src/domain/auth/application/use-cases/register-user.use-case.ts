@@ -3,6 +3,7 @@ import * as bcrypt from "bcryptjs";
 import { left, right, type Either } from "@/core/either";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 import { UsersRepository } from "../repositories/users.repository";
+import { EmailAddress } from "@/domain/integrations/email/enterprise/value-objects/email-address.vo";
 
 interface Input {
   name: string;
@@ -21,6 +22,9 @@ export class RegisterUserUseCase {
   constructor(private readonly users: UsersRepository) {}
 
   async execute({ name, email, password }: Input): Promise<Output> {
+    const emailResult = EmailAddress.create(email);
+    if (emailResult.isLeft()) return left(emailResult.value);
+
     const existing = await this.users.findByEmail(email);
     if (existing) return left(new UserAlreadyExistsError());
 

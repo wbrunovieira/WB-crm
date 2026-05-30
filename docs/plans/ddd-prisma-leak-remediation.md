@@ -173,5 +173,6 @@ Ação: envolver cada leitura num "query use case" fino. Respeitam os ports (sem
 | 5 | Batch 2a: `DealTitle` · `ContactName` · `PartnerName` · `PipelineName` · `StageName` · `ActivitySubject` (create-* delegam aos VOs) | ✅ 2026-05-30 — 6 VOs (padrão OrganizationName), msgs idênticas; 21 specs; 1807 unit verdes; tsc; guardrail; senior "ship it" |
 | 5 | Batch 2b: `BusinessName` (lead) · `BusinessLineName`/`ProductName`/`TechOptionName` (admin) — create-* delegam | ✅ 2026-05-30 — 4 VOs name; msgs idênticas; specs (3+9); 1819 unit + admin/leads e2e verdes; tsc; guardrail |
 | 5 | **Adiado (mudança de comportamento / decisão de produto):** slugs admin (hoje só não-vazio; `Slug` com regex kebab rejeitaria input aceito), enums `PartnerType`/`ActivityType` (sem conjunto canônico no código — VO estrito adicionaria validação) | ⏳ confirmar com produto |
-| 5 | Batch 3 (CNAE parsing → `CnaeCode`, register-user email → `EmailAddress`) · status→métodos de entidade (fase "modelo rico") | ⏳ |
+| 5 | Batch 3: `CnaeEntry` VO (lead-import) · register-user valida email com `EmailAddress` (aprovado pelo usuário; +6 unit, backfill Fase 6) | ✅ 2026-05-30 — 1829 unit + 450 e2e verdes; tsc; guardrail. Mudança de comportamento: cadastro rejeita email malformado (→ 400) |
+| 5 | status→métodos de entidade (fase "modelo rico", não-VO) · slugs admin / enums (decisão de produto) | ⏳ |
 | 6 | unit backfill: warming, admin, auth, bot-flows, dashboard, deals, activities | ⏳ |
