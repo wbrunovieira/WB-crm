@@ -106,12 +106,14 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 ### Fase 7 — Controllers HTTP-only (investigação 2026-05-29)
 "Controller = só HTTP" — não deve acessar Prisma nem repositório (delega a use case).
 
-**Tier 1 — Prisma direto no controller (alta prioridade):**
-- ✅ `transfer-analysis.controller` — load+validação movidos para o use case via `ActivitiesRepository.findAnalysisContext`; controller fino; unit 10; senior pendente.
-- ⏳ `gatekeeper-analysis.controller` — mesmo padrão (reusa `findAnalysisContext`).
-- ⏳ `meet-analysis.controller` — `prisma.meeting.findUnique` → método de contexto no `MeetingsRepository`.
-- ⏳ `infra/controllers/email-campaigns.controller` — 8 queries Prisma + 4 repos + 560 linhas (fat controller) → extrair use cases.
+**Tier 1 — Prisma direto no controller — ✅ CONCLUÍDO (todos com revisão senior):**
+- ✅ `transfer-analysis.controller` — load+validação no use case via `ActivitiesRepository.findAnalysisContext`; unit 10.
+- ✅ `gatekeeper-analysis.controller` — reusa `findAnalysisContext`; unit 7.
+- ✅ `meet-analysis.controller` — `MeetingsRepository.findMeetAnalysisContext`; unit 6.
+- ✅ `infra/controllers/email-campaigns.controller` — 3 endpoints de leitura (source-groups, recipient-search, suppressions) → query use cases + 3 métodos no `EnrollmentSourceRepository`; unit 5. (Endpoints restantes injetam repos = Tier 2.)
 - 🟢 `health.controller` — `$queryRaw SELECT 1` (liveness) — **aceitável**, não mexer.
+
+**Resultado: ZERO Prisma em controllers** (exceto o health liveness). Gap menor (senior): os métodos de query do adapter de email-campaigns não têm teste de integração dedicado — opcional.
 
 **Tier 2 — Controller injeta Repository (leitura direta em vez de use case) — média prioridade:**
 11 controllers, padrão dominante de leitura fina (dropdown/listagem/findById):

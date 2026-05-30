@@ -5,6 +5,8 @@ import {
   LeadEnrollmentView,
   OrgEnrollmentView,
   EnrollmentCandidate,
+  RecipientSearchResult,
+  EmailEntityNames,
 } from "@/domain/email-campaigns/application/repositories/enrollment-source.repository";
 
 function customVars(segment?: string | null, sourceGroup?: string | null): Record<string, string> | undefined {
@@ -197,5 +199,99 @@ export class PrismaEnrollmentSourceRepository extends EnrollmentSourceRepository
     }
 
     return out;
+  }
+
+  async findSourceGroups(ownerId: string): Promise<string[]> {
+    const [leadGroups, orgGroups] = await Promise.all([
+      this.prisma.lead.findMany({
+        where: { ownerId, sourceGroup: { not: null } },
+        select: { sourceGroup: true },
+        distinct: ["sourceGroup"],
+      }),
+      this.prisma.organization.findMany({
+        where: { ownerId, sourceGroup: { not: null } },
+        select: { sourceGroup: true },
+        distinct: ["sourceGroup"],
+      }),
+    ]);
+    const all = new Set([
+      ...leadGroups.map((r) => r.sourceGroup!),
+      ...orgGroups.map((r) => r.sourceGroup!),
+    ]);
+    return [...all].sort();
+  }
+
+  async searchEnrollable(ownerId: string, term: string): Promise<RecipientSearchResult[]> {
+    const contains = { contains: term, mode: "insensitive" as const };
+    const [leads, orgs] = await Promise.all([
+      this.prisma.lead.findMany({
+        where: {
+          ownerId,
+          OR: [
+            { businessName: contains },
+            { email: contains },
+            { leadContacts: { some: { email: contains } } },
+            { leadContacts: { some: { name: contains } } },
+          ],
+        },
+        select: { id: true, businessName: true, email: true, leadContacts: { where: { email: { not: null } }, select: { email: true } } },
+        take: 20,
+      }),
+      this.prisma.organization.findMany({
+        where: {
+          ownerId,
+          OR: [
+            { name: contains },
+            { email: contains },
+            { contacts: { some: { email: contains } } },
+            { contacts: { some: { name: contains } } },
+          ],
+        },
+        select: { id: true, name: true, email: true, contacts: { where: { email: { not: null } }, select: { email: true } } },
+        take: 20,
+      }),
+    ]);
+
+    const results: RecipientSearchResult[] = [];
+    for (const lead of leads) {
+      const emails: string[] = [];
+      if (lead.email) emails.push(lead.email);
+      for (const lc of lead.leadContacts) if (lc.email) emails.push(lc.email);
+      results.push({
+        key: `lead:${lead.id}`, entityType: "lead", entityId: lead.id, name: lead.businessName ?? null,
+        email: lead.email ?? undefined, emailCount: emails.length, previewEmails: emails.slice(0, 5),
+      });
+    }
+    for (const org of orgs) {
+      const emails: string[] = [];
+      if (org.email) emails.push(org.email);
+      for (const c of org.contacts) if (c.email) emails.push(c.email);
+      results.push({
+        key: `org:${org.id}`, entityType: "organization", entityId: org.id, name: org.name ?? null,
+        email: org.email ?? undefined, emailCount: emails.length, previewEmails: emails.slice(0, 5),
+      });
+    }
+    return results;
+  }
+
+  async resolveEmailEntityNames(ownerId: string, email: string): Promise<EmailEntityNames> {
+    const [lead, leadContact, contact] = await Promise.all([
+      this.prisma.lead.findFirst({
+        where: { email: { equals: email, mode: "insensitive" }, ownerId },
+        select: { businessName: true },
+      }),
+      this.prisma.leadContact.findFirst({
+        where: { email: { equals: email, mode: "insensitive" }, lead: { ownerId } },
+        select: { name: true, lead: { select: { businessName: true } } },
+      }),
+      this.prisma.contact.findFirst({
+        where: { email: { equals: email, mode: "insensitive" }, ownerId },
+        select: { name: true },
+      }),
+    ]);
+    return {
+      leadName: lead?.businessName ?? leadContact?.lead?.businessName ?? contact?.name ?? null,
+      contactName: leadContact?.name ?? contact?.name ?? null,
+    };
   }
 }

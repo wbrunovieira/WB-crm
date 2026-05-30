@@ -19,11 +19,11 @@ import { HandleGmailBounceUseCase } from "@/domain/email-campaigns/application/u
 import { TriggerCampaignSendNowUseCase, sendingInProgress } from "@/domain/email-campaigns/application/use-cases/trigger-campaign-send-now.use-case";
 import { GetCampaignProgressUseCase } from "@/domain/email-campaigns/application/use-cases/get-campaign-progress.use-case";
 import { ClearCampaignRecipientsUseCase } from "@/domain/email-campaigns/application/use-cases/clear-campaign-recipients.use-case";
+import { GetCampaignSourceGroupsUseCase, SearchEnrollableRecipientsUseCase, ListSuppressionsWithNamesUseCase } from "@/domain/email-campaigns/application/use-cases/campaign-recipient-queries.use-cases";
 import { EmailCampaignsRepository } from "@/domain/email-campaigns/application/repositories/email-campaigns.repository";
 import { EmailSuppressionsRepository } from "@/domain/email-campaigns/application/repositories/email-suppressions.repository";
 import { EmailCampaignSendsRepository } from "@/domain/email-campaigns/application/repositories/email-campaign-sends.repository";
 import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
-import { PrismaService } from "@/infra/database/prisma.service";
 
 const TRACKING_BASE_URL = process.env.BACKEND_URL ?? "https://api.crm.wbdigitalsolutions.com";
 
@@ -44,11 +44,13 @@ export class EmailCampaignsController {
     private readonly triggerSendNow: TriggerCampaignSendNowUseCase,
     private readonly getProgress: GetCampaignProgressUseCase,
     private readonly clearRecipients: ClearCampaignRecipientsUseCase,
+    private readonly getSourceGroups: GetCampaignSourceGroupsUseCase,
+    private readonly searchRecipientsUC: SearchEnrollableRecipientsUseCase,
+    private readonly listSuppressionsUC: ListSuppressionsWithNamesUseCase,
     private readonly campaigns: EmailCampaignsRepository,
     private readonly suppressions: EmailSuppressionsRepository,
     private readonly sends: EmailCampaignSendsRepository,
     private readonly activitiesRepo: ActivitiesRepository,
-    private readonly prisma: PrismaService,
   ) {}
 
   // ─── Campaigns ──────────────────────────────────────────────────────────────
@@ -270,115 +272,14 @@ export class EmailCampaignsController {
   @Get("source-groups")
   @ApiOperation({ summary: "List distinct sourceGroups for the current user" })
   async listSourceGroups(@CurrentUser() user: AuthenticatedUser) {
-    const [leadGroups, orgGroups] = await Promise.all([
-      this.prisma.lead.findMany({
-        where: { ownerId: user.id, sourceGroup: { not: null } },
-        select: { sourceGroup: true },
-        distinct: ["sourceGroup"],
-      }),
-      this.prisma.organization.findMany({
-        where: { ownerId: user.id, sourceGroup: { not: null } },
-        select: { sourceGroup: true },
-        distinct: ["sourceGroup"],
-      }),
-    ]);
-    const all = new Set([
-      ...leadGroups.map((r) => r.sourceGroup!),
-      ...orgGroups.map((r) => r.sourceGroup!),
-    ]);
-    return [...all].sort();
+    return this.getSourceGroups.execute(user.id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get("recipient-search")
   @ApiOperation({ summary: "Search leads/orgs as enrollable entities (returns email count + preview)" })
   async searchRecipients(@CurrentUser() user: AuthenticatedUser, @Query("q") q: string) {
-    if (!q || q.trim().length < 2) return [];
-    const term = q.trim();
-    const contains = { contains: term, mode: "insensitive" as const };
-
-    const [leads, orgs] = await Promise.all([
-      this.prisma.lead.findMany({
-        where: {
-          ownerId: user.id,
-          OR: [
-            { businessName: contains },
-            { email: contains },
-            { leadContacts: { some: { email: contains } } },
-            { leadContacts: { some: { name: contains } } },
-          ],
-        },
-        select: {
-          id: true,
-          businessName: true,
-          email: true,
-          leadContacts: {
-            where: { email: { not: null } },
-            select: { email: true },
-          },
-        },
-        take: 20,
-      }),
-      this.prisma.organization.findMany({
-        where: {
-          ownerId: user.id,
-          OR: [
-            { name: contains },
-            { email: contains },
-            { contacts: { some: { email: contains } } },
-            { contacts: { some: { name: contains } } },
-          ],
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          contacts: {
-            where: { email: { not: null } },
-            select: { email: true },
-          },
-        },
-        take: 20,
-      }),
-    ]);
-
-    const results: object[] = [];
-
-    for (const lead of leads) {
-      const allEmails: string[] = [];
-      if (lead.email) allEmails.push(lead.email);
-      for (const lc of lead.leadContacts) {
-        if (lc.email) allEmails.push(lc.email);
-      }
-      results.push({
-        key: `lead:${lead.id}`,
-        entityType: "lead" as const,
-        entityId: lead.id,
-        name: lead.businessName,
-        email: lead.email ?? undefined,
-        emailCount: allEmails.length,
-        previewEmails: allEmails.slice(0, 5),
-      });
-    }
-
-    for (const org of orgs) {
-      const allEmails: string[] = [];
-      if (org.email) allEmails.push(org.email);
-      for (const c of org.contacts) {
-        if (c.email) allEmails.push(c.email);
-      }
-      results.push({
-        key: `org:${org.id}`,
-        entityType: "organization" as const,
-        entityId: org.id,
-        name: org.name,
-        email: org.email ?? undefined,
-        emailCount: allEmails.length,
-        previewEmails: allEmails.slice(0, 5),
-      });
-    }
-
-    return results;
+    return this.searchRecipientsUC.execute({ ownerId: user.id, query: q });
   }
 
   // ─── Enroll entity (lead or organization) ───────────────────────────────────
@@ -408,46 +309,7 @@ export class EmailCampaignsController {
   @Get("suppressions")
   @ApiOperation({ summary: "List suppressed emails with lead/contact name" })
   async listSuppressions(@CurrentUser() user: AuthenticatedUser) {
-    const list = await this.suppressions.findAllByOwner(user.id);
-
-    const enriched = await Promise.all(
-      list.map(async (s) => {
-        // Try to find the lead name by matching email across sources
-        const [lead, leadContact, contact] = await Promise.all([
-          this.prisma.lead.findFirst({
-            where: { email: { equals: s.email, mode: "insensitive" }, ownerId: user.id },
-            select: { businessName: true },
-          }),
-          this.prisma.leadContact.findFirst({
-            where: { email: { equals: s.email, mode: "insensitive" }, lead: { ownerId: user.id } },
-            select: { name: true, lead: { select: { businessName: true } } },
-          }),
-          this.prisma.contact.findFirst({
-            where: { email: { equals: s.email, mode: "insensitive" }, ownerId: user.id },
-            select: { name: true },
-          }),
-        ]);
-
-        const leadName =
-          lead?.businessName ??
-          leadContact?.lead?.businessName ??
-          contact?.name ??
-          null;
-
-        const contactName = leadContact?.name ?? contact?.name ?? null;
-
-        return {
-          id: s.id.toString(),
-          email: s.email,
-          reason: s.reason,
-          createdAt: s.createdAt,
-          leadName,
-          contactName,
-        };
-      }),
-    );
-
-    return enriched.sort((a, b) => new Date(b.createdAt ?? 0).getTime() - new Date(a.createdAt ?? 0).getTime());
+    return this.listSuppressionsUC.execute(user.id);
   }
 
   @UseGuards(JwtAuthGuard)

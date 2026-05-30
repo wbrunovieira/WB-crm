@@ -48,6 +48,9 @@ class FakeEnrollmentSource extends EnrollmentSourceRepository {
   async findLeadEnrollment(id: string) { return this.leads[id] ?? null; }
   async findOrgEnrollment(id: string) { return this.orgs[id] ?? null; }
   async findBulkEnrollmentCandidates() { return []; }
+  async findSourceGroups() { return []; }
+  async searchEnrollable() { return []; }
+  async resolveEmailEntityNames() { return { leadName: null, contactName: null }; }
 }
 
 describe("EnrollEntityUseCase", () => {

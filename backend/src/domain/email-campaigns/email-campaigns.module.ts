@@ -20,6 +20,7 @@ import { EnrollEntityUseCase } from "./application/use-cases/enroll-entity.use-c
 import { TriggerCampaignSendNowUseCase } from "./application/use-cases/trigger-campaign-send-now.use-case";
 import { GetCampaignProgressUseCase } from "./application/use-cases/get-campaign-progress.use-case";
 import { ClearCampaignRecipientsUseCase } from "./application/use-cases/clear-campaign-recipients.use-case";
+import { GetCampaignSourceGroupsUseCase, SearchEnrollableRecipientsUseCase, ListSuppressionsWithNamesUseCase } from "./application/use-cases/campaign-recipient-queries.use-cases";
 import { VariableResolverService } from "./application/services/variable-resolver.service";
 
 import { EmailCampaignsRepository } from "./application/repositories/email-campaigns.repository";
@@ -59,6 +60,9 @@ import { PrismaRecipientContextAdapter } from "@/infra/database/prisma/adapters/
     TriggerCampaignSendNowUseCase,
     GetCampaignProgressUseCase,
     ClearCampaignRecipientsUseCase,
+    GetCampaignSourceGroupsUseCase,
+    SearchEnrollableRecipientsUseCase,
+    ListSuppressionsWithNamesUseCase,
 
     { provide: EmailCampaignsRepository, useClass: PrismaEmailCampaignsRepository },
     { provide: EmailCampaignStepsRepository, useClass: PrismaEmailCampaignStepsRepository },

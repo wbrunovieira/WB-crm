@@ -47,9 +47,32 @@ export interface EnrollmentCandidate {
   customVars?: Record<string, string>;
 }
 
+/** A lead/org surfaced by the recipient search (with an email count + preview). */
+export interface RecipientSearchResult {
+  key: string;
+  entityType: "lead" | "organization";
+  entityId: string;
+  name: string | null;
+  email?: string;
+  emailCount: number;
+  previewEmails: string[];
+}
+
+/** Names resolved for a (suppressed) email across the owner's leads/contacts. */
+export interface EmailEntityNames {
+  leadName: string | null;
+  contactName: string | null;
+}
+
 export abstract class EnrollmentSourceRepository {
   abstract findLeadEnrollment(leadId: string): Promise<LeadEnrollmentView | null>;
   abstract findOrgEnrollment(orgId: string): Promise<OrgEnrollmentView | null>;
   /** All enrollment candidates owned by `ownerId`, optionally filtered by sourceGroup. */
   abstract findBulkEnrollmentCandidates(ownerId: string, sourceGroup?: string): Promise<EnrollmentCandidate[]>;
+  /** Distinct, sorted sourceGroups across the owner's leads and organizations. */
+  abstract findSourceGroups(ownerId: string): Promise<string[]>;
+  /** Search the owner's leads/orgs (by name/email/contact) as enrollable entities. */
+  abstract searchEnrollable(ownerId: string, term: string): Promise<RecipientSearchResult[]>;
+  /** Resolve a lead/contact name for an email (used to enrich the suppression list). */
+  abstract resolveEmailEntityNames(ownerId: string, email: string): Promise<EmailEntityNames>;
 }

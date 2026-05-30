@@ -17,6 +17,9 @@ class FakeEnrollmentSource extends EnrollmentSourceRepository {
     this.lastArgs = { ownerId, sourceGroup };
     return this.candidates;
   }
+  async findSourceGroups() { return []; }
+  async searchEnrollable() { return []; }
+  async resolveEmailEntityNames() { return { leadName: null, contactName: null }; }
 }
 
 function candidate(over: Partial<EnrollmentCandidate> & { recipientId: string; email: string }): EnrollmentCandidate {
