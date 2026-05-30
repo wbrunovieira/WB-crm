@@ -129,10 +129,14 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 
 **Resultado: ZERO Prisma em controllers** (exceto o health liveness). Gap menor (senior): os métodos de query do adapter de email-campaigns não têm teste de integração dedicado — opcional.
 
-**Tier 2 — Controller injeta Repository (leitura direta em vez de use case) — média prioridade:**
-11 controllers, padrão dominante de leitura fina (dropdown/listagem/findById):
-`findDistinctSourceGroups` (phone, whatsapp, meta-ads, email) · `emailMessagesRepo.findByOwnerId` (email) · `goto-recordings` (`activities.findByIdRaw`) · `warming` (poolEmails/sends findAll) · `auth` (oauthRepo) · `lead-deep-research` (sessionRepo) · `gatekeeper-analysis` (analysis/batch repos) · `meetings-crud` (meetingsRepo).
-Ação: envolver cada leitura num "query use case" fino. Respeitam os ports (sem Prisma) — severidade menor.
+**Tier 2 — Controller injeta Repository (leitura direta em vez de use case) — EM ANDAMENTO:**
+11 controllers, padrão dominante de leitura fina (dropdown/listagem/findById). Ação: envolver cada leitura num "query use case" fino.
+
+✅ **Sub-batch 1 (2026-05-30):**
+- `meetings-crud`: `MeetingsRepository` era injeção **morta** (nunca chamada) → removida.
+- `findDistinctSourceGroups` (phone, whatsapp, meta-ads, email): passaram a injetar o `GetLeadSourceGroupsUseCase` existente (exportado do `LeadsModule`) em vez de `LeadsRepository`. Full e2e (450) valida o DI.
+
+⏳ **Restante:** `email` (`emailMessagesRepo.findByOwnerId`) · `goto-recordings` (`activities.findByIdRaw`) · `warming` (poolEmails/sends findAll) · `auth` (`oauthRepo.loadGoToTokens`) · `lead-deep-research` (`sessionRepo.cancelAllActiveForUser` — é **comando**, vira command use case) · `gatekeeper-analysis` (5 reads: analysis/batch).
 
 ---
 

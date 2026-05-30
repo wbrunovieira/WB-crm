@@ -18,7 +18,7 @@ import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { VerifyLeadMetaAdsUseCase } from "../../application/use-cases/verify-lead-meta-ads.use-case";
 import { BatchVerifyLeadMetaAdsUseCase } from "../../application/use-cases/batch-verify-lead-meta-ads.use-case";
-import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
+import { GetLeadSourceGroupsUseCase } from "@/domain/leads/application/use-cases/get-lead-source-groups.use-case";
 
 @ApiTags("Meta Ads")
 @ApiBearerAuth()
@@ -28,7 +28,7 @@ export class MetaAdsController {
   constructor(
     private readonly verifyLeadMetaAds: VerifyLeadMetaAdsUseCase,
     private readonly batchVerifyLeadMetaAds: BatchVerifyLeadMetaAdsUseCase,
-    private readonly leadsRepo: LeadsRepository,
+    private readonly getSourceGroups: GetLeadSourceGroupsUseCase,
   ) {}
 
   @Get("source-groups")
@@ -36,7 +36,7 @@ export class MetaAdsController {
   async listSourceGroups(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<{ sourceGroups: string[] }> {
-    const groups = await this.leadsRepo.findDistinctSourceGroups(user.id, user.role ?? "sdr");
+    const groups = await this.getSourceGroups.execute(user.id, user.role ?? "sdr");
     return { sourceGroups: groups };
   }
 

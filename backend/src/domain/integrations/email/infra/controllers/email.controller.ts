@@ -31,7 +31,7 @@ import { GetSendAsAliasesUseCase } from "../../application/use-cases/get-send-as
 import { VerifyLeadEmailUseCase } from "../../application/use-cases/verify-lead-email.use-case";
 import { VerifyLeadContactEmailUseCase } from "../../application/use-cases/verify-lead-contact-email.use-case";
 import { BatchVerifyEmailsUseCase } from "../../application/use-cases/batch-verify-emails.use-case";
-import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
+import { GetLeadSourceGroupsUseCase } from "@/domain/leads/application/use-cases/get-lead-source-groups.use-case";
 
 interface SendEmailAttachment {
   filename: string;
@@ -71,7 +71,7 @@ export class EmailController {
     private readonly verifyLeadEmail: VerifyLeadEmailUseCase,
     private readonly verifyLeadContactEmail: VerifyLeadContactEmailUseCase,
     private readonly batchVerifyEmails: BatchVerifyEmailsUseCase,
-    private readonly leadsRepo: LeadsRepository,
+    private readonly getSourceGroups: GetLeadSourceGroupsUseCase,
   ) {}
 
   @Post("send")
@@ -215,7 +215,7 @@ export class EmailController {
   async listEmailSourceGroups(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<{ sourceGroups: string[] }> {
-    const groups = await this.leadsRepo.findDistinctSourceGroups(user.id, user.role ?? "sdr");
+    const groups = await this.getSourceGroups.execute(user.id, user.role ?? "sdr");
     return { sourceGroups: groups };
   }
 

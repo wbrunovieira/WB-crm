@@ -24,7 +24,7 @@ import { BatchVerifyContactPhonesUseCase } from "../../application/use-cases/bat
 import { VerifyContactEmailUseCase } from "../../application/use-cases/verify-contact-email.use-case";
 import { BatchVerifyContactEmailsUseCase } from "../../application/use-cases/batch-verify-contact-emails.use-case";
 import { VerifyLeadContactPhonesUseCase } from "../../application/use-cases/verify-lead-contact-phones.use-case";
-import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
+import { GetLeadSourceGroupsUseCase } from "@/domain/leads/application/use-cases/get-lead-source-groups.use-case";
 
 @ApiTags("Phone Verification")
 @ApiBearerAuth()
@@ -41,7 +41,7 @@ export class PhoneController {
     private readonly verifyContactEmail: VerifyContactEmailUseCase,
     private readonly batchVerifyContactEmails: BatchVerifyContactEmailsUseCase,
     private readonly verifyLeadContactPhones: VerifyLeadContactPhonesUseCase,
-    private readonly leadsRepo: LeadsRepository,
+    private readonly getSourceGroups: GetLeadSourceGroupsUseCase,
   ) {}
 
   @Get("verify/lead/source-groups")
@@ -49,7 +49,7 @@ export class PhoneController {
   async listPhoneSourceGroups(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<{ sourceGroups: string[] }> {
-    const groups = await this.leadsRepo.findDistinctSourceGroups(user.id, user.role ?? "sdr");
+    const groups = await this.getSourceGroups.execute(user.id, user.role ?? "sdr");
     return { sourceGroups: groups };
   }
 

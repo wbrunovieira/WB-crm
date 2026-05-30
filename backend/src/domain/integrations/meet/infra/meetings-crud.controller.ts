@@ -17,7 +17,6 @@ import { SchedulePresentialMeetingUseCase } from "../application/use-cases/sched
 import { UploadPresentialRecordingUseCase } from "../application/use-cases/upload-presential-recording.use-case";
 import { EndMeetingUseCase } from "../application/use-cases/end-meeting.use-case";
 import { ResendMeetingConfirmationUseCase } from "../application/use-cases/resend-meeting-confirmation.use-case";
-import { MeetingsRepository } from "../application/repositories/meetings.repository";
 
 function serialize(m: any) {
   return {
@@ -63,7 +62,6 @@ export class MeetingsCrudController {
     private readonly uploadRecording: UploadPresentialRecordingUseCase,
     private readonly endMeeting: EndMeetingUseCase,
     private readonly resendConfirmation: ResendMeetingConfirmationUseCase,
-    private readonly meetingsRepo: MeetingsRepository,
   ) {}
 
   @Get()

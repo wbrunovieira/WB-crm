@@ -76,6 +76,6 @@ import { GooglePlacesClient } from "./infra/google-places.client";
     CheckLeadGoogleIdExistsUseCase,
     { provide: GooglePlacesPort, useClass: GooglePlacesClient },
   ],
-  exports: [LeadsRepository, LeadContactsRepository],
+  exports: [LeadsRepository, LeadContactsRepository, GetLeadSourceGroupsUseCase],
 })
 export class LeadsModule {}

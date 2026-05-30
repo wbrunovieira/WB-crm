@@ -34,7 +34,7 @@ import { EvolutionApiPort } from "@/domain/integrations/whatsapp/application/por
 import { GetWhatsAppTemplatesUseCase, CreateWhatsAppTemplateUseCase, UpdateWhatsAppTemplateUseCase, DeleteWhatsAppTemplateUseCase } from "@/domain/integrations/whatsapp/application/use-cases/whatsapp-templates.use-cases";
 import { GetWhatsAppMessageByIdUseCase } from "@/domain/integrations/whatsapp/application/use-cases/get-whatsapp-message-by-id.use-case";
 import { BatchCheckWhatsAppUseCase, BatchCheckWhatsAppResult } from "@/domain/integrations/whatsapp/application/use-cases/batch-check-whatsapp.use-case";
-import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
+import { GetLeadSourceGroupsUseCase } from "@/domain/leads/application/use-cases/get-lead-source-groups.use-case";
 
 interface SendMessageBody {
   to: string;
@@ -97,7 +97,7 @@ export class WhatsAppController {
     private readonly deleteTemplate: DeleteWhatsAppTemplateUseCase,
     private readonly getMessageById: GetWhatsAppMessageByIdUseCase,
     private readonly batchCheck: BatchCheckWhatsAppUseCase,
-    private readonly leadsRepo: LeadsRepository,
+    private readonly getSourceGroups: GetLeadSourceGroupsUseCase,
   ) {}
 
   @Post("send")
@@ -319,7 +319,7 @@ export class WhatsAppController {
   async listSourceGroups(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<{ sourceGroups: string[] }> {
-    const groups = await this.leadsRepo.findDistinctSourceGroups(user.id, user.role ?? "sdr");
+    const groups = await this.getSourceGroups.execute(user.id, user.role ?? "sdr");
     return { sourceGroups: groups };
   }
 
