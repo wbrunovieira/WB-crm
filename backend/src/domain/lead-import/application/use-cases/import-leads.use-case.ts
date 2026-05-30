@@ -3,12 +3,7 @@ import { Either, right } from "@/core/either";
 import { Lead } from "@/domain/leads/enterprise/entities/lead";
 import { LeadImportRepository, ImportLeadRowData, ImportResult, ImportContactData } from "../repositories/lead-import.repository";
 import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
-
-function parseCnaeEntry(raw: string): { code: string; description: string } | null {
-  const match = raw.trim().match(/^(\d{4,7})\s*[-–]\s*(.+)$/);
-  if (!match) return null;
-  return { code: match[1].trim(), description: match[2].trim() };
-}
+import { CnaeEntry } from "../../enterprise/value-objects/cnae-entry.vo";
 
 @Injectable()
 export class ImportLeadsUseCase {
@@ -47,7 +42,7 @@ export class ImportLeadsUseCase {
       const row = rows[i];
 
       if (row.cnaePrincipal?.trim()) {
-        const parsed = parseCnaeEntry(row.cnaePrincipal);
+        const parsed = CnaeEntry.parse(row.cnaePrincipal);
         if (parsed) {
           const idx = i;
           cnaeResolutionTasks.push(
@@ -60,7 +55,7 @@ export class ImportLeadsUseCase {
 
       if (row.cnaesSecundarios?.trim()) {
         const parts = row.cnaesSecundarios.split("|").map(s => s.trim()).filter(Boolean);
-        const parsedParts = parts.map(parseCnaeEntry).filter((p): p is { code: string; description: string } => p !== null);
+        const parsedParts = parts.map((s) => CnaeEntry.parse(s)).filter((p): p is CnaeEntry => p !== null);
         if (parsedParts.length > 0) {
           const idx = i;
           cnaeResolutionTasks.push(
