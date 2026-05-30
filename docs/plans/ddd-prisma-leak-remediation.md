@@ -139,7 +139,12 @@ Cobrir, por domínio, os não-triviais listados em §2.3 que não foram tocados 
 ✅ **Sub-batch 2 (2026-05-30):**
 - `gatekeeper-analysis`: 5 reads → 5 query use cases (`GetGatekeeperAnalyses/ByActivity/ById`, `GetGatekeeperBatches/ById`) com auth (owner-or-admin) + not-found via `Either`; controller só serializa + mapeia 404/403. 12 unit + 8 e2e; senior "ship it". Controller agora 100% repo-free.
 
-⏳ **Restante:** `email` (`emailMessagesRepo.findByOwnerId`) · `goto-recordings` (`activities.findByIdRaw`) · `warming` (poolEmails/sends findAll) · `auth` (`oauthRepo.loadGoToTokens`) · `lead-deep-research` (`sessionRepo.cancelAllActiveForUser` — é **comando**, vira command use case).
+✅ **Sub-batch 3 (2026-05-30):**
+- `warming`: `listPool`/`history` → `GetWarmingPoolEmailsUseCase` + `GetWarmingHistoryUseCase`.
+- `email`: `listMessages` → `GetEmailMessagesUseCase`.
+- 6 unit + 450 e2e; senior "ship it". Controllers repo-free (warming, email).
+
+⏳ **Restante:** `goto-recordings` (`activities.findByIdRaw`) · `auth` (`oauthRepo.loadGoToTokens`) · `lead-deep-research` (`sessionRepo.cancelAllActiveForUser` — é **comando**, vira command use case).
 
 ---
 

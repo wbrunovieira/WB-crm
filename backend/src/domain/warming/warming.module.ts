@@ -13,6 +13,8 @@ import { AddPoolEmailUseCase } from "./application/use-cases/add-pool-email.use-
 import { RemovePoolEmailUseCase } from "./application/use-cases/remove-pool-email.use-case";
 import { GetWarmingStatusUseCase } from "./application/use-cases/get-warming-status.use-case";
 import { RunWarmingCycleUseCase } from "./application/use-cases/run-warming-cycle.use-case";
+import { GetWarmingPoolEmailsUseCase } from "./application/use-cases/get-warming-pool-emails.use-case";
+import { GetWarmingHistoryUseCase } from "./application/use-cases/get-warming-history.use-case";
 import { WarmingController } from "@/infra/controllers/warming.controller";
 import { WarmingCronService } from "@/infra/scheduled/warming-cron.service";
 
@@ -31,6 +33,8 @@ import { WarmingCronService } from "@/infra/scheduled/warming-cron.service";
     RemovePoolEmailUseCase,
     GetWarmingStatusUseCase,
     RunWarmingCycleUseCase,
+    GetWarmingPoolEmailsUseCase,
+    GetWarmingHistoryUseCase,
     // Cron
     WarmingCronService,
   ],

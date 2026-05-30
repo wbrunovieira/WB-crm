@@ -24,7 +24,7 @@ import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { SendEmailUseCase } from "../../application/use-cases/send-email.use-case";
 import { PollGmailUseCase } from "../../application/use-cases/poll-gmail.use-case";
-import { EmailMessagesRepository } from "../../application/repositories/email-messages.repository";
+import { GetEmailMessagesUseCase } from "../../application/use-cases/get-email-messages.use-case";
 import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTemplateUseCase, DeleteGmailTemplateUseCase } from "../../application/use-cases/gmail-templates.use-cases";
 import { GetGoogleTokenUseCase, SaveGoogleTokenUseCase, DeleteGoogleTokenUseCase, UpdateTokenHistoryIdUseCase } from "../../application/use-cases/google-token.use-cases";
 import { GetSendAsAliasesUseCase } from "../../application/use-cases/get-send-as-aliases.use-case";
@@ -58,7 +58,7 @@ export class EmailController {
   constructor(
     private readonly sendEmail: SendEmailUseCase,
     private readonly pollGmail: PollGmailUseCase,
-    private readonly emailMessagesRepo: EmailMessagesRepository,
+    private readonly getEmailMessages: GetEmailMessagesUseCase,
     private readonly getTemplates: GetGmailTemplatesUseCase,
     private readonly createTemplate: CreateGmailTemplateUseCase,
     private readonly updateTemplate: UpdateGmailTemplateUseCase,
@@ -120,7 +120,7 @@ export class EmailController {
   async listMessages(
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<unknown[]> {
-    return this.emailMessagesRepo.findByOwnerId(user.id);
+    return this.getEmailMessages.execute(user.id);
   }
 
   @Post("sync")

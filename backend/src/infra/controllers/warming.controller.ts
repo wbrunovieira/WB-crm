@@ -26,8 +26,8 @@ import { AddPoolEmailUseCase } from "@/domain/warming/application/use-cases/add-
 import { RemovePoolEmailUseCase } from "@/domain/warming/application/use-cases/remove-pool-email.use-case";
 import { GetWarmingStatusUseCase } from "@/domain/warming/application/use-cases/get-warming-status.use-case";
 import { RunWarmingCycleUseCase } from "@/domain/warming/application/use-cases/run-warming-cycle.use-case";
-import { WarmingPoolEmailsRepository } from "@/domain/warming/application/repositories/warming-pool-emails.repository";
-import { WarmingSendsRepository } from "@/domain/warming/application/repositories/warming-sends.repository";
+import { GetWarmingPoolEmailsUseCase } from "@/domain/warming/application/use-cases/get-warming-pool-emails.use-case";
+import { GetWarmingHistoryUseCase } from "@/domain/warming/application/use-cases/get-warming-history.use-case";
 
 @ApiTags("warming")
 @ApiBearerAuth()
@@ -41,8 +41,8 @@ export class WarmingController {
     private readonly removePool: RemovePoolEmailUseCase,
     private readonly getStatus: GetWarmingStatusUseCase,
     private readonly runCycle: RunWarmingCycleUseCase,
-    private readonly poolEmailsRepo: WarmingPoolEmailsRepository,
-    private readonly sendsRepo: WarmingSendsRepository,
+    private readonly getPoolEmails: GetWarmingPoolEmailsUseCase,
+    private readonly getHistory: GetWarmingHistoryUseCase,
   ) {}
 
   @Get("status")
@@ -75,7 +75,7 @@ export class WarmingController {
   @Get("pool")
   @ApiOperation({ summary: "Lista emails do pool externo" })
   async listPool(@CurrentUser() user: AuthenticatedUser) {
-    const emails = await this.poolEmailsRepo.findAll(user.id);
+    const emails = await this.getPoolEmails.execute(user.id);
     return emails.map((e) => ({
       id: e.id.toString(),
       email: e.email,
@@ -111,7 +111,7 @@ export class WarmingController {
     @Query("page") page = "1",
     @Query("pageSize") pageSize = "20",
   ) {
-    const { sends, total } = await this.sendsRepo.findAll(user.id, Number(page), Number(pageSize));
+    const { sends, total } = await this.getHistory.execute(user.id, Number(page), Number(pageSize));
     return {
       total,
       page: Number(page),
