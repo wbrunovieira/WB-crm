@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { TrendingUp, Plus, Trophy, ExternalLink, Tag, Layers, Pencil, X, Loader2, Check } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
+import { usePipelines } from "@/hooks/pipelines/use-pipelines";
 
 interface DealItem {
   id: string;
@@ -38,13 +39,23 @@ function DealEditModal({ deal, onClose }: { deal: DealItem; onClose: () => void 
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const router = useRouter();
+  const { data: pipelines = [], isLoading: pipelinesLoading } = usePipelines();
   const [saving, setSaving] = useState(false);
+  const initialStageId = deal.stage?.id ?? "";
   const [form, setForm] = useState({
     title: deal.title,
     value: String(deal.value ?? 0),
     currency: deal.currency || "BRL",
     status: deal.status || "open",
+    stageId: initialStageId,
   });
+
+  // Etapas escopadas ao pipeline do negócio (fallback: todas as etapas).
+  const stageOptions = useMemo(() => {
+    const pipelineId = deal.stage?.pipeline?.id;
+    const ownPipeline = pipelineId ? pipelines.find((p) => p.id === pipelineId) : undefined;
+    return ownPipeline ? ownPipeline.stages : pipelines.flatMap((p) => p.stages);
+  }, [pipelines, deal.stage?.pipeline?.id]);
 
   async function handleSave() {
     if (!form.title.trim()) {
@@ -62,6 +73,15 @@ function DealEditModal({ deal, onClose }: { deal: DealItem; onClose: () => void 
           status: form.status,
         }),
       });
+      // Troca de etapa usa a rota dedicada (mesma do kanban) e é aplicada por
+      // último: a etapa pode definir o status automaticamente (prob 0=perdido,
+      // 100=ganho), prevalecendo sobre o status do formulário.
+      if (form.stageId && form.stageId !== initialStageId) {
+        await apiFetch(`/deals/${deal.id}/stage`, token, {
+          method: "PATCH",
+          body: JSON.stringify({ stageId: form.stageId }),
+        });
+      }
       toast.success("Negócio atualizado.");
       onClose();
       router.refresh();
@@ -101,18 +121,32 @@ function DealEditModal({ deal, onClose }: { deal: DealItem; onClose: () => void 
             </div>
           </div>
           <div>
+            <label className="mb-1 block text-xs font-medium text-gray-400">Etapa</label>
+            <select
+              className={selectCls}
+              value={form.stageId}
+              disabled={pipelinesLoading || stageOptions.length === 0}
+              onChange={(e) => setForm({ ...form, stageId: e.target.value })}
+            >
+              {pipelinesLoading && <option value={form.stageId}>Carregando…</option>}
+              {!pipelinesLoading && stageOptions.length === 0 && <option value="">Nenhuma etapa disponível</option>}
+              {stageOptions.map((s) => (
+                <option key={s.id} value={s.id}>{s.name}</option>
+              ))}
+            </select>
+            {deal.stage?.pipeline?.name && (
+              <p className="mt-1 text-xs text-gray-500">Pipeline: {deal.stage.pipeline.name}</p>
+            )}
+          </div>
+          <div>
             <label className="mb-1 block text-xs font-medium text-gray-400">Status</label>
             <select className={selectCls} value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value })}>
               <option value="open">Aberto</option>
               <option value="won">Ganho</option>
               <option value="lost">Perdido</option>
             </select>
+            <p className="mt-1 text-xs text-gray-500">Mover para uma etapa de 0% ou 100% define o status automaticamente.</p>
           </div>
-          {deal.stage && (
-            <p className="text-xs text-gray-500">
-              Etapa atual: {deal.stage.pipeline?.name} › {deal.stage.name}. Para mover de etapa, use o pipeline ou a página do negócio.
-            </p>
-          )}
         </div>
         <div className="flex justify-end gap-2 border-t border-[#3d2b4d] px-5 py-4 flex-shrink-0">
           <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white">
