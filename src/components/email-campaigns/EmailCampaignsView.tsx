@@ -908,8 +908,10 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
             <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5 space-y-4">
               <p className="text-sm text-gray-300">
                 Adiciona todos os <span className="text-white font-medium">contactos de leads</span>,{" "}
-                <span className="text-white font-medium">contactos de organizações</span> e{" "}
-                <span className="text-white font-medium">emails de organizações</span> da sua conta (apenas com email preenchido).
+                <span className="text-white font-medium">contactos de organizações</span>,{" "}
+                <span className="text-white font-medium">emails de organizações</span>,{" "}
+                <span className="text-white font-medium">contactos de partners</span> e{" "}
+                <span className="text-white font-medium">emails de partners</span> da sua conta (apenas com email preenchido).
               </p>
               <button
                 onClick={() => handleBulkEnroll("all")}
