@@ -480,7 +480,7 @@ export function mapRowToLeadData(
     }
   }
 
-  const sorted = [...additionalMap.entries()]
+  const sorted = Array.from(additionalMap.entries())
     .sort(([a], [b]) => a - b)
     .filter(([, e]) => e.name)
     .map(([, e]) => e);
