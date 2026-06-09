@@ -19,13 +19,15 @@ export type ContactImportField =
   | "contactWhatsapp"
   | "contactLinkedin"
   | "contactInstagram"
-  | "additionalContactName";
+  | "additionalContactName"
+  | "additionalContactRole";
 
 export type ColumnMapping = Record<string, keyof LeadFormData | ContactImportField | "ignore">;
 
 // Data shape sent to the backend (lead fields + optional contact fields)
 export type ImportRowData = Partial<LeadFormData> & Partial<Record<ContactImportField, string>> & {
   additionalContactNames?: string[];
+  additionalContactRoles?: (string | undefined)[];
 };
 
 export interface ImportableField {
@@ -88,6 +90,7 @@ export const IMPORTABLE_FIELDS: ImportableField[] = [
   { value: "contactLinkedin",       label: "LinkedIn do responsável",          group: "Contato do Responsável" },
   { value: "contactInstagram",       label: "Instagram do responsável",         group: "Contato do Responsável" },
   { value: "additionalContactName", label: "Sócio / contato adicional",        group: "Contato do Responsável" },
+  { value: "additionalContactRole", label: "Cargo do sócio / contato adicional", group: "Contato do Responsável" },
   // Metadados de importação
   { value: "source",                label: "Fonte (ex: B2BLeads)",             group: "Importação" },
   { value: "searchTerm",            label: "Termo de busca",                   group: "Importação" },
@@ -344,6 +347,17 @@ const AUTO_SUGGEST_MAP: Record<string, string> = {
   "contact 5 name": "additionalContactName",
   "contato adicional": "additionalContactName",
   "socio adicional": "additionalContactName",
+  // additionalContactRole
+  "contact2role": "additionalContactRole",
+  "contact3role": "additionalContactRole",
+  "contact4role": "additionalContactRole",
+  "contact5role": "additionalContactRole",
+  "contact 2 role": "additionalContactRole",
+  "contact 3 role": "additionalContactRole",
+  "contact 4 role": "additionalContactRole",
+  "contact 5 role": "additionalContactRole",
+  "cargo socio adicional": "additionalContactRole",
+  "cargo contato adicional": "additionalContactRole",
   // quality
   "quality": "quality",
   "qualidade": "quality",
@@ -362,8 +376,10 @@ const AUTO_SUGGEST_MAP: Record<string, string> = {
 export function autoSuggestField(header: string): string {
   const normalized = normalizeHeader(header);
   if (AUTO_SUGGEST_MAP[normalized]) return AUTO_SUGGEST_MAP[normalized];
-  // contactNName (qualquer N) → additionalContactName; o use-case trata o primeiro como primary
+  // contactNName (qualquer N) → additionalContactName
   if (/^contact\s*\d+\s*name$/.test(normalized)) return "additionalContactName";
+  // contactNRole (qualquer N) → additionalContactRole
+  if (/^contact\s*\d+\s*role$/.test(normalized)) return "additionalContactRole";
   return "ignore";
 }
 
@@ -408,6 +424,12 @@ const CONTACT_IMPORT_FIELDS = new Set<string>([
   "contactWhatsapp", "contactLinkedin", "contactInstagram",
 ]);
 
+// Extracts a numeric index from a column name like "contact3Name" \u2192 3
+function extractContactIndex(coluna: string): number | null {
+  const m = coluna.match(/(\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
 /**
  * Converte uma linha do arquivo em ImportRowData conforme o mapeamento definido.
  */
@@ -416,15 +438,21 @@ export function mapRowToLeadData(
   mapping: ColumnMapping
 ): ImportRowData {
   const result: ImportRowData = {};
-  const additionalContactNames: string[] = [];
+  // Map keyed by numeric index (from column name) or a high fallback counter for unindexed columns
+  const additionalMap = new Map<number, { name?: string; role?: string }>();
+  let unindexedCounter = 100000;
 
   for (const [coluna, campo] of Object.entries(mapping)) {
     if (campo === "ignore") continue;
     const raw = row[coluna];
     if (raw === undefined || raw === null || raw.trim() === "") continue;
 
-    if (campo === "additionalContactName") {
-      additionalContactNames.push(raw.trim());
+    if (campo === "additionalContactName" || campo === "additionalContactRole") {
+      const idx = extractContactIndex(coluna) ?? unindexedCounter++;
+      const entry = additionalMap.get(idx) ?? {};
+      if (campo === "additionalContactName") entry.name = raw.trim();
+      else entry.role = raw.trim();
+      additionalMap.set(idx, entry);
       continue;
     }
 
@@ -452,8 +480,14 @@ export function mapRowToLeadData(
     }
   }
 
-  if (additionalContactNames.length > 0) {
-    result.additionalContactNames = additionalContactNames;
+  const sorted = [...additionalMap.entries()]
+    .sort(([a], [b]) => a - b)
+    .filter(([, e]) => e.name)
+    .map(([, e]) => e);
+
+  if (sorted.length > 0) {
+    result.additionalContactNames = sorted.map(e => e.name!);
+    result.additionalContactRoles = sorted.map(e => e.role);
   }
 
   return result;

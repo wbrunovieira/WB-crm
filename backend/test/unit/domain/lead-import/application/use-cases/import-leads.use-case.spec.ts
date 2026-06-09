@@ -412,12 +412,39 @@ describe("ImportLeadsUseCase", () => {
       expect(repo.contacts.map(c => c.name)).toEqual(["Socio 1", "Socio 2"]);
     });
 
-    it("uses 'Sócio' as default role for additional contacts", async () => {
+    it("leaves role undefined for additional contacts when additionalContactRoles not provided", async () => {
       await uc.execute({
         rows: [{ businessName: "Empresa", contactName: "Dono", additionalContactNames: ["Socio 2"] }],
         ...base,
       });
-      expect(repo.contacts[1].role).toBe("Sócio");
+      expect(repo.contacts[1].role).toBeUndefined();
+    });
+
+    it("uses additionalContactRoles when provided (paired by position)", async () => {
+      await uc.execute({
+        rows: [{
+          businessName: "Empresa",
+          contactName: "Dono",
+          additionalContactNames: ["Contato 2", "Contato 3"],
+          additionalContactRoles: ["Diretor", "Gerente"],
+        }],
+        ...base,
+      });
+      expect(repo.contacts[1].role).toBe("Diretor");
+      expect(repo.contacts[2].role).toBe("Gerente");
+    });
+
+    it("uses role from additionalContactRoles for contacts without primary when roles are provided", async () => {
+      await uc.execute({
+        rows: [{
+          businessName: "Empresa",
+          additionalContactNames: ["Socio 1", "Socio 2"],
+          additionalContactRoles: ["Sócio", undefined],
+        }],
+        ...base,
+      });
+      expect(repo.contacts[0].role).toBe("Sócio");
+      expect(repo.contacts[1].role).toBeUndefined();
     });
 
     it("does not create additional contacts for skipped (duplicate) leads", async () => {

@@ -37,6 +37,8 @@ export interface ImportLeadRowData {
   contactInstagram?: string;
   // Additional contacts — each name creates a separate non-primary LeadContact
   additionalContactNames?: string[];
+  // Role per additional contact (parallel array, undefined means no role set)
+  additionalContactRoles?: (string | undefined)[];
   companySize?: string;
   revenue?: number;
   revenueRange?: string;

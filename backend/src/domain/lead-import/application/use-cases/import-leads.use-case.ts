@@ -152,6 +152,7 @@ export class ImportLeadsUseCase {
         const primaryName = row.contactName?.trim() || row.companyOwner?.trim();
         const additionals = (row.additionalContactNames ?? []).filter(n => n.trim());
 
+        const roles = row.additionalContactRoles ?? [];
         if (primaryName) {
           contactItems.push({
             leadId,
@@ -164,12 +165,12 @@ export class ImportLeadsUseCase {
             instagram: row.contactInstagram?.trim() || undefined,
             isPrimary: true,
           });
-          for (const name of additionals) {
-            contactItems.push({ leadId, name: name.trim(), role: "Sócio", isPrimary: false });
+          for (let k = 0; k < additionals.length; k++) {
+            contactItems.push({ leadId, name: additionals[k].trim(), role: roles[k]?.trim() || undefined, isPrimary: false });
           }
         } else {
           for (let k = 0; k < additionals.length; k++) {
-            contactItems.push({ leadId, name: additionals[k].trim(), role: "Sócio", isPrimary: k === 0 });
+            contactItems.push({ leadId, name: additionals[k].trim(), role: roles[k]?.trim() || undefined, isPrimary: k === 0 });
           }
         }
       }
