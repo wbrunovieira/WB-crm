@@ -371,6 +371,78 @@ describe("ImportLeadsUseCase", () => {
     });
   });
 
+  // additionalContactNames — múltiplos sócios
+  describe("additionalContactNames — múltiplos sócios", () => {
+    it("creates one contact per name in additionalContactNames", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa Socios", contactName: "Socio 1", additionalContactNames: ["Socio 2", "Socio 3"] }],
+        ...base,
+      });
+      expect(repo.contacts).toHaveLength(3);
+      expect(repo.contacts.map(c => c.name)).toEqual(["Socio 1", "Socio 2", "Socio 3"]);
+    });
+
+    it("primary contact is isPrimary true, additional contacts are isPrimary false", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa Socios", contactName: "Socio 1", additionalContactNames: ["Socio 2", "Socio 3"] }],
+        ...base,
+      });
+      expect(repo.contacts[0].isPrimary).toBe(true);
+      expect(repo.contacts[1].isPrimary).toBe(false);
+      expect(repo.contacts[2].isPrimary).toBe(false);
+    });
+
+    it("first additionalContactName becomes primary when contactName and companyOwner are absent", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa Socios", additionalContactNames: ["Socio 1", "Socio 2"] }],
+        ...base,
+      });
+      expect(repo.contacts).toHaveLength(2);
+      expect(repo.contacts[0].name).toBe("Socio 1");
+      expect(repo.contacts[0].isPrimary).toBe(true);
+      expect(repo.contacts[1].isPrimary).toBe(false);
+    });
+
+    it("filters empty strings from additionalContactNames", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa Socios", additionalContactNames: ["Socio 1", "", "  ", "Socio 2"] }],
+        ...base,
+      });
+      expect(repo.contacts).toHaveLength(2);
+      expect(repo.contacts.map(c => c.name)).toEqual(["Socio 1", "Socio 2"]);
+    });
+
+    it("uses 'Sócio' as default role for additional contacts", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa", contactName: "Dono", additionalContactNames: ["Socio 2"] }],
+        ...base,
+      });
+      expect(repo.contacts[1].role).toBe("Sócio");
+    });
+
+    it("does not create additional contacts for skipped (duplicate) leads", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Existente", additionalContactNames: ["Socio 1"] }],
+        ...base,
+      });
+      await uc.execute({
+        rows: [{ businessName: "Existente", additionalContactNames: ["Socio 2"] }],
+        ...base,
+      });
+      expect(repo.contacts).toHaveLength(1);
+      expect(repo.contacts[0].name).toBe("Socio 1");
+    });
+
+    it("handles undefined additionalContactNames gracefully", async () => {
+      await uc.execute({
+        rows: [{ businessName: "Empresa Sem Adicionais", contactName: "Dono" }],
+        ...base,
+      });
+      expect(repo.contacts).toHaveLength(1);
+      expect(repo.contacts[0].name).toBe("Dono");
+    });
+  });
+
   // CNAE tests
   it("sets primaryCNAEId when cnaePrincipal is provided", async () => {
     const r = (await uc.execute({

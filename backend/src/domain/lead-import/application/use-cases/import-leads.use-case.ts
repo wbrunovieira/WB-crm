@@ -144,23 +144,34 @@ export class ImportLeadsUseCase {
       await this.repo.batchCreate(toCreate);
       result.imported = toCreate.length;
 
-      // Create LeadContacts for leads that have a companyOwner
+      // Create LeadContacts for leads that have a contactName, companyOwner, or additionalContactNames
       const contactItems: ImportContactData[] = [];
       for (let j = 0; j < toCreate.length; j++) {
         const row = rows[toCreateRowIndices[j]];
-        const contactName = row.contactName?.trim() || row.companyOwner?.trim();
-        if (!contactName) continue;
-        contactItems.push({
-          leadId: toCreate[j].id.toString(),
-          name: contactName,
-          role: row.contactRole?.trim() || "Responsável",
-          email: row.contactEmail?.trim() || undefined,
-          phone: row.contactPhone?.trim() || undefined,
-          whatsapp: row.contactWhatsapp?.trim() || undefined,
-          linkedin: row.contactLinkedin?.trim() || undefined,
-          instagram: row.contactInstagram?.trim() || undefined,
-          isPrimary: true,
-        });
+        const leadId = toCreate[j].id.toString();
+        const primaryName = row.contactName?.trim() || row.companyOwner?.trim();
+        const additionals = (row.additionalContactNames ?? []).filter(n => n.trim());
+
+        if (primaryName) {
+          contactItems.push({
+            leadId,
+            name: primaryName,
+            role: row.contactRole?.trim() || "Responsável",
+            email: row.contactEmail?.trim() || undefined,
+            phone: row.contactPhone?.trim() || undefined,
+            whatsapp: row.contactWhatsapp?.trim() || undefined,
+            linkedin: row.contactLinkedin?.trim() || undefined,
+            instagram: row.contactInstagram?.trim() || undefined,
+            isPrimary: true,
+          });
+          for (const name of additionals) {
+            contactItems.push({ leadId, name: name.trim(), role: "Sócio", isPrimary: false });
+          }
+        } else {
+          for (let k = 0; k < additionals.length; k++) {
+            contactItems.push({ leadId, name: additionals[k].trim(), role: "Sócio", isPrimary: k === 0 });
+          }
+        }
       }
       if (contactItems.length > 0) {
         await this.repo.batchCreateContacts(contactItems);

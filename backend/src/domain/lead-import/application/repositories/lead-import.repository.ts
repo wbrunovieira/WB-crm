@@ -35,6 +35,8 @@ export interface ImportLeadRowData {
   contactWhatsapp?: string;
   contactLinkedin?: string;
   contactInstagram?: string;
+  // Additional contacts — each name creates a separate non-primary LeadContact
+  additionalContactNames?: string[];
   companySize?: string;
   revenue?: number;
   revenueRange?: string;

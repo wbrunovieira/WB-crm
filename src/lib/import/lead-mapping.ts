@@ -18,12 +18,15 @@ export type ContactImportField =
   | "contactPhone"
   | "contactWhatsapp"
   | "contactLinkedin"
-  | "contactInstagram";
+  | "contactInstagram"
+  | "additionalContactName";
 
 export type ColumnMapping = Record<string, keyof LeadFormData | ContactImportField | "ignore">;
 
 // Data shape sent to the backend (lead fields + optional contact fields)
-export type ImportRowData = Partial<LeadFormData> & Partial<Record<ContactImportField, string>>;
+export type ImportRowData = Partial<LeadFormData> & Partial<Record<ContactImportField, string>> & {
+  additionalContactNames?: string[];
+};
 
 export interface ImportableField {
   value: keyof LeadFormData | ContactImportField | "ignore";
@@ -83,7 +86,8 @@ export const IMPORTABLE_FIELDS: ImportableField[] = [
   { value: "contactPhone",          label: "Telefone do responsável",          group: "Contato do Responsável" },
   { value: "contactWhatsapp",       label: "WhatsApp do responsável",          group: "Contato do Responsável" },
   { value: "contactLinkedin",       label: "LinkedIn do responsável",          group: "Contato do Responsável" },
-  { value: "contactInstagram",      label: "Instagram do responsável",         group: "Contato do Responsável" },
+  { value: "contactInstagram",       label: "Instagram do responsável",         group: "Contato do Responsável" },
+  { value: "additionalContactName", label: "Sócio / contato adicional",        group: "Contato do Responsável" },
   // Metadados de importação
   { value: "source",                label: "Fonte (ex: B2BLeads)",             group: "Importação" },
   { value: "searchTerm",            label: "Termo de busca",                   group: "Importação" },
@@ -325,6 +329,21 @@ const AUTO_SUGGEST_MAP: Record<string, string> = {
   // contactInstagram
   "instagram responsavel": "contactInstagram",
   "instagram do responsavel": "contactInstagram",
+  // additionalContactName
+  "socio 2": "additionalContactName",
+  "socio 3": "additionalContactName",
+  "socio 4": "additionalContactName",
+  "socio 5": "additionalContactName",
+  "contact2name": "additionalContactName",
+  "contact3name": "additionalContactName",
+  "contact4name": "additionalContactName",
+  "contact5name": "additionalContactName",
+  "contact 2 name": "additionalContactName",
+  "contact 3 name": "additionalContactName",
+  "contact 4 name": "additionalContactName",
+  "contact 5 name": "additionalContactName",
+  "contato adicional": "additionalContactName",
+  "socio adicional": "additionalContactName",
   // quality
   "quality": "quality",
   "qualidade": "quality",
@@ -342,7 +361,10 @@ const AUTO_SUGGEST_MAP: Record<string, string> = {
 
 export function autoSuggestField(header: string): string {
   const normalized = normalizeHeader(header);
-  return AUTO_SUGGEST_MAP[normalized] ?? "ignore";
+  if (AUTO_SUGGEST_MAP[normalized]) return AUTO_SUGGEST_MAP[normalized];
+  // contactNName (qualquer N) → additionalContactName; o use-case trata o primeiro como primary
+  if (/^contact\s*\d+\s*name$/.test(normalized)) return "additionalContactName";
+  return "ignore";
 }
 
 export function buildInitialMapping(headers: string[]): ColumnMapping {
@@ -394,11 +416,17 @@ export function mapRowToLeadData(
   mapping: ColumnMapping
 ): ImportRowData {
   const result: ImportRowData = {};
+  const additionalContactNames: string[] = [];
 
   for (const [coluna, campo] of Object.entries(mapping)) {
     if (campo === "ignore") continue;
     const raw = row[coluna];
     if (raw === undefined || raw === null || raw.trim() === "") continue;
+
+    if (campo === "additionalContactName") {
+      additionalContactNames.push(raw.trim());
+      continue;
+    }
 
     if (campo === "employeesCount") {
       const n = parseInt(raw.replace(/\D/g, ""), 10);
@@ -422,6 +450,10 @@ export function mapRowToLeadData(
     } else {
       (result as Record<string, unknown>)[campo] = raw.trim();
     }
+  }
+
+  if (additionalContactNames.length > 0) {
+    result.additionalContactNames = additionalContactNames;
   }
 
   return result;
