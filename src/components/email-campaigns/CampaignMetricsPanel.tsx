@@ -376,18 +376,37 @@ export function CampaignMetricsPanel({ metrics, recipientEngagement = [] }: { me
                 </h4>
                 <div className="space-y-2">
                   {highlights.topOpeners.map((r, i) => (
-                    <div key={r.id} className="flex items-center gap-3">
-                      <span className="text-xs font-bold text-gray-500 w-4 shrink-0">{i + 1}</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-xs text-white truncate">{r.name ?? r.email}</div>
-                        {r.name && <div className="text-xs text-gray-500 truncate">{r.company ?? r.email}</div>}
+                    <div key={r.id} className="flex flex-col gap-1">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-bold text-gray-500 w-4 shrink-0">{i + 1}</span>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-white truncate">{r.name ?? r.email}</div>
+                          {r.name && <div className="text-xs text-gray-500 truncate">{r.company ?? r.email}</div>}
+                        </div>
+                        <div className="shrink-0 flex items-center gap-1">
+                          <div
+                            className="h-2 rounded-full bg-green-500/70"
+                            style={{ width: `${Math.max(8, Math.round(((r.openCount ?? 0) / (highlights.topOpeners[0]?.openCount ?? 1)) * 64))}px` }}
+                          />
+                          <span className="text-xs font-semibold text-green-400 w-8 text-right">{r.openCount}×</span>
+                        </div>
                       </div>
-                      <div className="shrink-0 flex items-center gap-1">
-                        <div
-                          className="h-2 rounded-full bg-green-500/70"
-                          style={{ width: `${Math.max(8, Math.round(((r.openCount ?? 0) / (highlights.topOpeners[0]?.openCount ?? 1)) * 64))}px` }}
-                        />
-                        <span className="text-xs font-semibold text-green-400 w-8 text-right">{r.openCount}×</span>
+                      <div className="flex flex-wrap gap-1.5 pl-7">
+                        {Object.entries(r.clickData ?? {}).length > 0 ? (
+                          Object.entries(r.clickData).map(([url, count]) => {
+                            let display = url;
+                            try { display = new URL(url).hostname.replace(/^www\./, "") + new URL(url).pathname; } catch { /* keep url */ }
+                            return (
+                              <span key={url} className="flex items-center gap-1 text-xs bg-gray-700/60 text-gray-300 px-1.5 py-0.5 rounded-full">
+                                <Link size={10} className="text-yellow-400 shrink-0" />
+                                <span className="truncate max-w-[160px]" title={url}>{display}</span>
+                                <span className="text-yellow-400 font-semibold">{count}×</span>
+                              </span>
+                            );
+                          })
+                        ) : (
+                          <span className="text-xs text-gray-600">sem cliques</span>
+                        )}
                       </div>
                     </div>
                   ))}
