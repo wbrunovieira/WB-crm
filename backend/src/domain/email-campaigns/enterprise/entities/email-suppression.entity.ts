@@ -17,7 +17,8 @@ export class EmailSuppression extends Entity<EmailSuppressionProps> {
   get createdAt() { return this.props.createdAt; }
 
   static create(props: Omit<EmailSuppressionProps, "createdAt">, id?: UniqueEntityID) {
-    return new EmailSuppression({ ...props, createdAt: new Date() }, id);
+    // Normalize so lookups by (email, ownerId) match regardless of input casing
+    return new EmailSuppression({ ...props, email: props.email.trim().toLowerCase(), createdAt: new Date() }, id);
   }
 
   static reconstitute(props: EmailSuppressionProps, id: UniqueEntityID) {

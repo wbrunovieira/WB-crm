@@ -570,6 +570,94 @@ describe("SendCampaignStep — suppression check", () => {
   });
 });
 
+describe("SendCampaignStep — send failures go to suppression list", () => {
+  async function makeBase() {
+    const campaigns = new InMemoryEmailCampaignsRepository();
+    const steps = new InMemoryEmailCampaignStepsRepository();
+    const recipients = new InMemoryEmailCampaignRecipientsRepository();
+    const sends = new InMemoryEmailCampaignSendsRepository();
+    const suppressions = new InMemoryEmailSuppressionsRepository();
+    const gmail = new FakeGmailPortForCampaigns();
+    const resolver = new VariableResolverService();
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
+
+    const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const campaignId = (created.value as { id: string }).id;
+    const campaign = await campaigns.findById(campaignId);
+    campaign!.start();
+    await campaigns.save(campaign!);
+
+    const step = EmailCampaignStep.create({ campaignId, order: 0, subject: "S", bodyHtml: "B", delayDays: 0 });
+    await steps.save(step);
+
+    return { campaigns, steps, recipients, sends, suppressions, gmail, sut, campaignId };
+  }
+
+  it("should add invalid emails to the suppression list", async () => {
+    const { recipients, suppressions, gmail, sut, campaignId } = await makeBase();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "a@x.com / b@y.com" });
+    await recipients.save(r);
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(gmail.sentEmails).toHaveLength(0);
+    const saved = await recipients.findById(r.id.toString());
+    expect(saved!.status).toBe("BOUNCED");
+    expect(suppressions.items).toHaveLength(1);
+    expect(suppressions.items[0].email).toBe("a@x.com / b@y.com");
+    expect(suppressions.items[0].reason).toBe("bounced");
+  });
+
+  it("should add Gmail permanent rejections (550) to the suppression list", async () => {
+    const { recipients, suppressions, gmail, sut, campaignId } = await makeBase();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "gone@nxdomain.com" });
+    await recipients.save(r);
+
+    gmail.failWith = new Error("550 5.1.1 The email account that you tried to reach does not exist");
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    const saved = await recipients.findById(r.id.toString());
+    expect(saved!.status).toBe("BOUNCED");
+    expect(suppressions.items).toHaveLength(1);
+    expect(suppressions.items[0].email).toBe("gone@nxdomain.com");
+    expect(suppressions.items[0].reason).toBe("bounced");
+  });
+
+  it("should NOT suppress on transient Gmail errors", async () => {
+    const { recipients, suppressions, gmail, sut, campaignId } = await makeBase();
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "ok@acme.com" });
+    await recipients.save(r);
+
+    gmail.failWith = new Error("socket hang up");
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    const saved = await recipients.findById(r.id.toString());
+    expect(saved!.status).toBe("PENDING");
+    expect(suppressions.items).toHaveLength(0);
+  });
+
+  it("should match suppressions case-insensitively (stored lowercase)", async () => {
+    const { recipients, suppressions, gmail, sut, campaignId } = await makeBase();
+
+    suppressions.items.push(EmailSuppression.create({ email: "Info@Acme.com", ownerId: OWNER, reason: "bounced" }));
+    expect(suppressions.items[0].email).toBe("info@acme.com");
+
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "INFO@ACME.COM" });
+    await recipients.save(r);
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(gmail.sentEmails).toHaveLength(0);
+    const saved = await recipients.findById(r.id.toString());
+    expect(saved!.status).toBe("BOUNCED");
+  });
+});
+
 describe("EmailCampaignSend — markOpened", () => {
   it("should set openedAt on first call and start openCount at 1", () => {
     const send = EmailCampaignSend.create({ recipientId: "r1", stepId: "s1" });

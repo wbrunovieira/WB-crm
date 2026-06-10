@@ -52,7 +52,18 @@ export class ProcessIncomingEmailUseCase {
       // 2. Detect bounce messages from mailer-daemon / postmaster
       if (this.isBounceMessage(message.from, message.subject)) {
         const bouncedEmail = this.extractBouncedEmail(message.bodyText) ?? this.extractBouncedEmail(message.bodyHtml);
-        if (!bouncedEmail) return right({ skipped: true });
+        if (!bouncedEmail) {
+          // An unparseable NDR means a bounce we cannot suppress — the address
+          // WILL be retried by future campaigns. Loud log so the format gets
+          // added to extractBouncedEmail.
+          this.logger.warn("ProcessIncomingEmailUseCase: bounce NDR detected but recipient email could not be extracted", {
+            messageId: message.messageId,
+            from: message.from,
+            subject: message.subject,
+            bodySnippet: (message.bodyText ?? message.bodyHtml ?? "").slice(0, 300),
+          });
+          return right({ skipped: true });
+        }
 
         await this.handleBounce(bouncedEmail, ownerId);
         return right({ skipped: false, bounced: true });

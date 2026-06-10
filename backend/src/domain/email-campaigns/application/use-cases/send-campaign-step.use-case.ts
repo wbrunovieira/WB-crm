@@ -8,6 +8,7 @@ import { EmailCampaignSend } from "../../enterprise/entities/email-campaign-send
 import { GmailPort } from "@/domain/integrations/email/application/ports/gmail.port";
 import { VariableResolverService } from "../services/variable-resolver.service";
 import { EmailSuppressionsRepository } from "../repositories/email-suppressions.repository";
+import { EmailSuppression } from "../../enterprise/entities/email-suppression.entity";
 import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
 import { Activity } from "@/domain/activities/enterprise/entities/activity";
 import { EmailAddress } from "@/domain/integrations/email/enterprise/value-objects/email-address.vo";
@@ -68,7 +69,7 @@ export class SendCampaignStepUseCase {
     let suppressed = 0;
 
     for (const recipient of pending) {
-      const suppression = await this.suppressions.findByEmail(recipient.email, campaign.ownerId);
+      const suppression = await this.suppressions.findByEmail(recipient.email.trim().toLowerCase(), campaign.ownerId);
       if (suppression) {
         suppressed++;
         if (suppression.reason === "unsubscribed") {
@@ -100,6 +101,7 @@ export class SendCampaignStepUseCase {
         this.logger.warn(`SendCampaignStep: invalid email, skipping Gmail call — ${reason}`);
         recipient.markBounced();
         await this.recipients.save(recipient);
+        await this.addBounceSuppression(recipient.email, campaign.ownerId);
         const subject = this.resolver.resolve(step.subject, recipient);
         await this.createBounceActivity(campaign.ownerId, input.campaignId, subject, undefined, reason, recipient.recipientType, recipient.recipientId);
         continue;
@@ -151,6 +153,7 @@ export class SendCampaignStepUseCase {
         if (isGmailRejection) {
           recipient.markBounced();
           await this.recipients.save(recipient);
+          await this.addBounceSuppression(recipient.email, campaign.ownerId);
           // No sendId — the send was never persisted (Gmail rejected before delivery)
           await this.createBounceActivity(campaign.ownerId, input.campaignId, subject, undefined, msg, recipient.recipientType, recipient.recipientId);
         }
@@ -194,6 +197,16 @@ export class SendCampaignStepUseCase {
     });
 
     await this.activitiesRepo.save(activity);
+  }
+
+  // Any permanent send failure must land on the suppression list so future
+  // campaigns never retry the address (transient errors are NOT suppressed)
+  private async addBounceSuppression(email: string, ownerId: string) {
+    const normalized = email.trim().toLowerCase();
+    const existing = await this.suppressions.findByEmail(normalized, ownerId);
+    if (!existing) {
+      await this.suppressions.save(EmailSuppression.create({ email: normalized, ownerId, reason: "bounced" }));
+    }
   }
 
   private isValidEmail(email: string): boolean {
