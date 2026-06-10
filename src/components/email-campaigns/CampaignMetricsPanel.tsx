@@ -155,12 +155,19 @@ export function CampaignMetricsPanel({ metrics, recipientEngagement = [] }: { me
     return { topOpeners, topUrls, hotLeads, coldLeads, cto, bestStep };
   }, [recipientEngagement, totals, steps]);
 
-  // ── Filtered engagement list ──────────────────────────────────────────────
+  // ── Filtered engagement list (most engaged first) ─────────────────────────
 
   const filteredEngagement = useMemo(() => {
+    const totalClicks = (r: RecipientProgress) =>
+      Object.values(r.clickData ?? {}).reduce((a, b) => a + b, 0);
+    const sorted = [...recipientEngagement].sort((a, b) => {
+      const clickDiff = totalClicks(b) - totalClicks(a);
+      if (clickDiff !== 0) return clickDiff;
+      return (b.openCount ?? 0) - (a.openCount ?? 0);
+    });
     const q = searchQuery.toLowerCase().trim();
-    if (!q) return recipientEngagement;
-    return recipientEngagement.filter(
+    if (!q) return sorted;
+    return sorted.filter(
       (r) =>
         (r.name ?? "").toLowerCase().includes(q) ||
         (r.email ?? "").toLowerCase().includes(q) ||
