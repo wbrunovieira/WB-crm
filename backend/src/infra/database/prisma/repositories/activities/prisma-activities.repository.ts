@@ -155,7 +155,29 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
 
     // Default sort applies the "completed sinks to end of its day" rule in JS
     // because Prisma cannot ORDER BY DATE_TRUNC('day', dueDate).
-    return filters.sortBy ? mapped : sortActivitiesDefaultOrder(mapped);
+    if (filters.sortBy) return mapped;
+
+    // Seed the "already attempted today" set from completed call activities
+    // (last 14 days), independent of the current status filter — so the default
+    // pending view can still sink leads that already had a call attempt that day.
+    const since = new Date();
+    since.setUTCDate(since.getUTCDate() - 14);
+    const attemptedRows = await this.prisma.activity.findMany({
+      where: {
+        ...ownerFilter,
+        type: "call",
+        completed: true,
+        leadId: { not: null },
+        completedAt: { gte: since },
+      },
+      select: { leadId: true, completedAt: true, dueDate: true },
+    });
+    const attemptedLeadDays = new Set<string>();
+    for (const r of attemptedRows as Array<{ leadId: string | null; completedAt: Date | null; dueDate: Date | null }>) {
+      const d = r.completedAt ?? r.dueDate;
+      if (r.leadId && d) attemptedLeadDays.add(`${r.leadId}|${d.toISOString().slice(0, 10)}`);
+    }
+    return sortActivitiesDefaultOrder(mapped, attemptedLeadDays);
   }
 
   async findById(id: string, requesterId: string, requesterRole: string): Promise<ActivityDetail | null> {

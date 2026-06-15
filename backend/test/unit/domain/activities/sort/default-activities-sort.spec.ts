@@ -155,6 +155,64 @@ describe("sortActivitiesDefaultOrder", () => {
     expect(activities).toEqual(original);
   });
 
+  it("within the same day — a lead already attempted today (completed call) sinks below not-yet-attempted leads", () => {
+    const activities = [
+      // lead L1: pending call early in the day + a completed GoTo call (voicemail) today
+      act("p-attempted", "2026-05-05T08:00:00Z", false, { leadId: "L1", lead: { id: "L1", businessName: "Attempted", isArchived: false, starRating: 0 } }),
+      act("c-voicemail", "2026-05-05T10:00:00Z", true,  { leadId: "L1", type: "call", gotoCallId: "goto-1", gotoCallOutcome: "voicemail", completedAt: new Date("2026-05-05T10:00:00Z") }),
+      // lead L2: pending call later in the day, not attempted yet
+      act("p-fresh", "2026-05-05T09:00:00Z", false, { leadId: "L2", lead: { id: "L2", businessName: "Fresh", isArchived: false, starRating: 0 } }),
+    ];
+
+    const result = sortActivitiesDefaultOrder(activities);
+    const ids = result.map((a) => a.id);
+    // Without the rule, p-attempted (08:00) would precede p-fresh (09:00).
+    // With the rule, the already-attempted lead sinks to the bottom of the day.
+    expect(ids.indexOf("p-fresh")).toBeLessThan(ids.indexOf("p-attempted"));
+  });
+
+  it("a completed call on a DIFFERENT day does not sink today's pending activity", () => {
+    const activities = [
+      act("p-today",     "2026-05-05T08:00:00Z", false, { leadId: "L1", lead: { id: "L1", businessName: "L1", isArchived: false, starRating: 0 } }),
+      act("c-yesterday", "2026-05-04T10:00:00Z", true,  { leadId: "L1", type: "call", gotoCallId: "g0", completedAt: new Date("2026-05-04T10:00:00Z") }),
+      act("p-fresh",     "2026-05-05T09:00:00Z", false, { leadId: "L2", lead: { id: "L2", businessName: "L2", isArchived: false, starRating: 0 } }),
+    ];
+
+    const result = sortActivitiesDefaultOrder(activities);
+    const ids = result.map((a) => a.id);
+    // Yesterday's attempt must not affect today's order → p-today (08:00) before p-fresh (09:00)
+    expect(ids.indexOf("p-today")).toBeLessThan(ids.indexOf("p-fresh"));
+  });
+
+  it("attempted-today rule takes precedence over star rating", () => {
+    const activities = [
+      // high-star lead already attempted today
+      act("p-high-attempted", "2026-05-05T08:00:00Z", false, { leadId: "H", lead: { id: "H", businessName: "High", isArchived: false, starRating: 5 } }),
+      act("c-call",           "2026-05-05T10:00:00Z", true,  { leadId: "H", type: "call", gotoCallId: "g1", completedAt: new Date("2026-05-05T10:00:00Z") }),
+      // low-star lead not attempted yet
+      act("p-low-fresh", "2026-05-05T09:00:00Z", false, { leadId: "L", lead: { id: "L", businessName: "Low", isArchived: false, starRating: 1 } }),
+    ];
+
+    const result = sortActivitiesDefaultOrder(activities);
+    const ids = result.map((a) => a.id);
+    // Even with higher star, the attempted-today lead sinks below the fresh low-star one.
+    expect(ids.indexOf("p-low-fresh")).toBeLessThan(ids.indexOf("p-high-attempted"));
+  });
+
+  it("uses an externally-provided attempted set (pending-only list, completed call not present)", () => {
+    // In the default /activities view (filter = pending) the completed "Caixa postal"
+    // is NOT in the list, so the rule relies on the externally-provided set.
+    const activities = [
+      act("p-attempted", "2026-05-05T08:00:00Z", false, { leadId: "L1", lead: { id: "L1", businessName: "Attempted", isArchived: false, starRating: 0 } }),
+      act("p-fresh",     "2026-05-05T09:00:00Z", false, { leadId: "L2", lead: { id: "L2", businessName: "Fresh", isArchived: false, starRating: 0 } }),
+    ];
+    const attempted = new Set<string>(["L1|2026-05-05"]);
+
+    const result = sortActivitiesDefaultOrder(activities, attempted);
+    const ids = result.map((a) => a.id);
+    expect(ids.indexOf("p-fresh")).toBeLessThan(ids.indexOf("p-attempted"));
+  });
+
   it("real-world scenario: 3 days, mix of call types completed and pending", () => {
     const activities = [
       // Day 1
