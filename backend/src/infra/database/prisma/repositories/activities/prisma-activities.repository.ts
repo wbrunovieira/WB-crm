@@ -157,27 +157,26 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     // because Prisma cannot ORDER BY DATE_TRUNC('day', dueDate).
     if (filters.sortBy) return mapped;
 
-    // Seed the "already attempted today" set from completed call activities
-    // (last 14 days), independent of the current status filter — so the default
-    // pending view can still sink leads that already had a call attempt that day.
-    const since = new Date();
-    since.setUTCDate(since.getUTCDate() - 14);
+    // Leads already CALLED TODAY → their pending activities (even overdue ones)
+    // sink to the bottom of the queue. Computed independent of the status filter,
+    // so the default pending view still drops a lead the rep already tried today.
+    const startOfToday = new Date();
+    startOfToday.setUTCHours(0, 0, 0, 0);
     const attemptedRows = await this.prisma.activity.findMany({
       where: {
         ...ownerFilter,
         type: "call",
         completed: true,
         leadId: { not: null },
-        completedAt: { gte: since },
+        completedAt: { gte: startOfToday },
       },
-      select: { leadId: true, completedAt: true, dueDate: true },
+      select: { leadId: true },
     });
-    const attemptedLeadDays = new Set<string>();
-    for (const r of attemptedRows as Array<{ leadId: string | null; completedAt: Date | null; dueDate: Date | null }>) {
-      const d = r.completedAt ?? r.dueDate;
-      if (r.leadId && d) attemptedLeadDays.add(`${r.leadId}|${d.toISOString().slice(0, 10)}`);
+    const attemptedLeadIds = new Set<string>();
+    for (const r of attemptedRows as Array<{ leadId: string | null }>) {
+      if (r.leadId) attemptedLeadIds.add(r.leadId);
     }
-    return sortActivitiesDefaultOrder(mapped, attemptedLeadDays);
+    return sortActivitiesDefaultOrder(mapped, attemptedLeadIds);
   }
 
   async findById(id: string, requesterId: string, requesterRole: string): Promise<ActivityDetail | null> {

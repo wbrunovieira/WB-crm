@@ -155,60 +155,70 @@ describe("sortActivitiesDefaultOrder", () => {
     expect(activities).toEqual(original);
   });
 
-  it("within the same day — a lead already attempted today (completed call) sinks below not-yet-attempted leads", () => {
+  it("a lead already attempted today sinks its pending activity below not-yet-attempted leads (same day)", () => {
     const activities = [
-      // lead L1: pending call early in the day + a completed GoTo call (voicemail) today
       act("p-attempted", "2026-05-05T08:00:00Z", false, { leadId: "L1", lead: { id: "L1", businessName: "Attempted", isArchived: false, starRating: 0 } }),
-      act("c-voicemail", "2026-05-05T10:00:00Z", true,  { leadId: "L1", type: "call", gotoCallId: "goto-1", gotoCallOutcome: "voicemail", completedAt: new Date("2026-05-05T10:00:00Z") }),
-      // lead L2: pending call later in the day, not attempted yet
-      act("p-fresh", "2026-05-05T09:00:00Z", false, { leadId: "L2", lead: { id: "L2", businessName: "Fresh", isArchived: false, starRating: 0 } }),
+      act("p-fresh",     "2026-05-05T09:00:00Z", false, { leadId: "L2", lead: { id: "L2", businessName: "Fresh", isArchived: false, starRating: 0 } }),
     ];
+    const attemptedToday = new Set<string>(["L1"]);
 
-    const result = sortActivitiesDefaultOrder(activities);
+    const result = sortActivitiesDefaultOrder(activities, attemptedToday);
     const ids = result.map((a) => a.id);
     // Without the rule, p-attempted (08:00) would precede p-fresh (09:00).
-    // With the rule, the already-attempted lead sinks to the bottom of the day.
     expect(ids.indexOf("p-fresh")).toBeLessThan(ids.indexOf("p-attempted"));
   });
 
-  it("a completed call on a DIFFERENT day does not sink today's pending activity", () => {
+  it("OVERDUE task of a lead attempted today sinks below today's task of a fresh lead (Clínica Petrus case)", () => {
+    // Real bug: "Ligação 1" overdue (yesterday) + a call attempt made TODAY.
+    // The overdue task must drop below a not-yet-attempted lead's task of today,
+    // overriding day grouping.
     const activities = [
-      act("p-today",     "2026-05-05T08:00:00Z", false, { leadId: "L1", lead: { id: "L1", businessName: "L1", isArchived: false, starRating: 0 } }),
-      act("c-yesterday", "2026-05-04T10:00:00Z", true,  { leadId: "L1", type: "call", gotoCallId: "g0", completedAt: new Date("2026-05-04T10:00:00Z") }),
-      act("p-fresh",     "2026-05-05T09:00:00Z", false, { leadId: "L2", lead: { id: "L2", businessName: "L2", isArchived: false, starRating: 0 } }),
+      act("petrus-lig1", "2026-06-15T08:00:00Z", false, { leadId: "PETRUS", lead: { id: "PETRUS", businessName: "Clínica Petrus", isArchived: false, starRating: 0 } }),
+      act("fresh-today", "2026-06-16T08:00:00Z", false, { leadId: "FRESH",  lead: { id: "FRESH",  businessName: "Fresh", isArchived: false, starRating: 0 } }),
     ];
+    const attemptedToday = new Set<string>(["PETRUS"]); // called Petrus today
 
-    const result = sortActivitiesDefaultOrder(activities);
+    const result = sortActivitiesDefaultOrder(activities, attemptedToday);
     const ids = result.map((a) => a.id);
-    // Yesterday's attempt must not affect today's order → p-today (08:00) before p-fresh (09:00)
-    expect(ids.indexOf("p-today")).toBeLessThan(ids.indexOf("p-fresh"));
+    // Even though petrus-lig1 is overdue (older day), it must sink below fresh-today.
+    expect(ids.indexOf("fresh-today")).toBeLessThan(ids.indexOf("petrus-lig1"));
+  });
+
+  it("a lead NOT attempted today keeps normal day order", () => {
+    const activities = [
+      act("overdue", "2026-06-15T08:00:00Z", false, { leadId: "L1", lead: { id: "L1", businessName: "L1", isArchived: false, starRating: 0 } }),
+      act("today",   "2026-06-16T08:00:00Z", false, { leadId: "L2", lead: { id: "L2", businessName: "L2", isArchived: false, starRating: 0 } }),
+    ];
+    const attemptedToday = new Set<string>(); // nobody attempted
+
+    const result = sortActivitiesDefaultOrder(activities, attemptedToday);
+    const ids = result.map((a) => a.id);
+    // No attempts → earlier (overdue) day first, as usual.
+    expect(ids.indexOf("overdue")).toBeLessThan(ids.indexOf("today"));
   });
 
   it("attempted-today rule takes precedence over star rating", () => {
     const activities = [
-      // high-star lead already attempted today
       act("p-high-attempted", "2026-05-05T08:00:00Z", false, { leadId: "H", lead: { id: "H", businessName: "High", isArchived: false, starRating: 5 } }),
-      act("c-call",           "2026-05-05T10:00:00Z", true,  { leadId: "H", type: "call", gotoCallId: "g1", completedAt: new Date("2026-05-05T10:00:00Z") }),
-      // low-star lead not attempted yet
-      act("p-low-fresh", "2026-05-05T09:00:00Z", false, { leadId: "L", lead: { id: "L", businessName: "Low", isArchived: false, starRating: 1 } }),
+      act("p-low-fresh",      "2026-05-05T09:00:00Z", false, { leadId: "L", lead: { id: "L", businessName: "Low",  isArchived: false, starRating: 1 } }),
     ];
+    const attemptedToday = new Set<string>(["H"]);
 
-    const result = sortActivitiesDefaultOrder(activities);
+    const result = sortActivitiesDefaultOrder(activities, attemptedToday);
     const ids = result.map((a) => a.id);
     // Even with higher star, the attempted-today lead sinks below the fresh low-star one.
     expect(ids.indexOf("p-low-fresh")).toBeLessThan(ids.indexOf("p-high-attempted"));
   });
 
-  it("uses an externally-provided attempted set (pending-only list, completed call not present)", () => {
-    // In the default /activities view (filter = pending) the completed "Caixa postal"
-    // is NOT in the list, so the rule relies on the externally-provided set.
+  it("falls back to deriving attempted leads from completed calls in the list", () => {
+    // "Todas" view: completed call present in the list, no external set passed.
     const activities = [
       act("p-attempted", "2026-05-05T08:00:00Z", false, { leadId: "L1", lead: { id: "L1", businessName: "Attempted", isArchived: false, starRating: 0 } }),
+      act("c-call",      "2026-05-05T10:00:00Z", true,  { leadId: "L1", type: "call", gotoCallId: "g1", completedAt: new Date("2026-05-05T10:00:00Z") }),
       act("p-fresh",     "2026-05-05T09:00:00Z", false, { leadId: "L2", lead: { id: "L2", businessName: "Fresh", isArchived: false, starRating: 0 } }),
     ];
-    const attempted = new Set<string>(["L1|2026-05-05"]);
 
-    const result = sortActivitiesDefaultOrder(activities, attempted);
+    const result = sortActivitiesDefaultOrder(activities); // no external set
     const ids = result.map((a) => a.id);
     expect(ids.indexOf("p-fresh")).toBeLessThan(ids.indexOf("p-attempted"));
   });
