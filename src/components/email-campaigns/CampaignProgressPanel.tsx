@@ -44,6 +44,7 @@ const STATUS_CONFIG: Record<string, { label: string; className: string }> = {
   COMPLETED:    { label: "Concluído",     className: "bg-green-500/20 text-green-400" },
   UNSUBSCRIBED: { label: "Descadastrado", className: "bg-yellow-500/20 text-yellow-400" },
   BOUNCED:      { label: "Bounce",        className: "bg-red-500/20 text-red-400" },
+  SUPPRESSED:   { label: "Suprimido",     className: "bg-orange-500/20 text-orange-400" },
 };
 
 function RecipientStatusBadge({ status }: { status: string }) {

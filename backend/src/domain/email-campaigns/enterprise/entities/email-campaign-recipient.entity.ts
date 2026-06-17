@@ -2,7 +2,7 @@ import { Entity } from "@/core/entity";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 
 export type RecipientType = "LEAD" | "CONTACT";
-export type RecipientStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "UNSUBSCRIBED" | "BOUNCED";
+export type RecipientStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "UNSUBSCRIBED" | "BOUNCED" | "SUPPRESSED";
 
 interface EmailCampaignRecipientProps {
   campaignId: string;
@@ -45,6 +45,16 @@ export class EmailCampaignRecipient extends Entity<EmailCampaignRecipientProps> 
 
   markBounced() {
     this.props.status = "BOUNCED";
+  }
+
+  /**
+   * Skipped at send time because the email is already on the suppression list
+   * (e.g. a prior bounce). It was NEVER sent — distinct from BOUNCED, which
+   * means we sent and the message came back. Keeps suppressed contacts out of
+   * the bounce rate.
+   */
+  markSuppressed() {
+    this.props.status = "SUPPRESSED";
   }
 
   unsubscribe() {

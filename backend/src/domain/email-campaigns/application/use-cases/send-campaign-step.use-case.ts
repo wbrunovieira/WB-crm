@@ -75,7 +75,10 @@ export class SendCampaignStepUseCase {
         if (suppression.reason === "unsubscribed") {
           recipient.unsubscribe();
         } else {
-          recipient.markBounced();
+          // Already on the suppression list (e.g. a prior bounce). We are NOT
+          // sending — so this is a suppression, not a bounce. Marking it BOUNCED
+          // would inflate the campaign's bounce rate with contacts we never sent to.
+          recipient.markSuppressed();
         }
         await this.recipients.save(recipient);
         continue;

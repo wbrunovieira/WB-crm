@@ -321,6 +321,45 @@ describe("SendCampaignStepUseCase", () => {
     const updated = recipients.items[0];
     expect(updated.status).toBe("COMPLETED");
   });
+
+  it("should mark a recipient suppressed by a PRIOR bounce as SUPPRESSED (not BOUNCED) without sending", async () => {
+    const createSut = new CreateEmailCampaignUseCase(campaigns);
+    const created = await createSut.execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const campaignId = (created.value as { id: string }).id;
+    const campaign = await campaigns.findById(campaignId);
+    campaign!.start();
+    await campaigns.save(campaign!);
+    const step = EmailCampaignStep.create({ campaignId, order: 0, subject: "S", bodyHtml: "B", delayDays: 0 });
+    await steps.save(step);
+    // email already on the suppression list from a prior bounce
+    await suppressions.save(EmailSuppression.create({ email: "bounced@x.com", ownerId: OWNER, reason: "bounced" }));
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "bounced@x.com" });
+    await recipients.save(r);
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(gmail.sentEmails).toHaveLength(0);               // never sent — suppression worked
+    expect(recipients.items[0].status).toBe("SUPPRESSED");  // not BOUNCED — it's not a real bounce
+  });
+
+  it("should mark a recipient suppressed by unsubscribe as UNSUBSCRIBED", async () => {
+    const createSut = new CreateEmailCampaignUseCase(campaigns);
+    const created = await createSut.execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const campaignId = (created.value as { id: string }).id;
+    const campaign = await campaigns.findById(campaignId);
+    campaign!.start();
+    await campaigns.save(campaign!);
+    const step = EmailCampaignStep.create({ campaignId, order: 0, subject: "S", bodyHtml: "B", delayDays: 0 });
+    await steps.save(step);
+    await suppressions.save(EmailSuppression.create({ email: "unsub@x.com", ownerId: OWNER, reason: "unsubscribed" }));
+    const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "unsub@x.com" });
+    await recipients.save(r);
+
+    await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    expect(gmail.sentEmails).toHaveLength(0);
+    expect(recipients.items[0].status).toBe("UNSUBSCRIBED");
+  });
 });
 
 describe("GetCampaignStatsUseCase", () => {
@@ -360,6 +399,28 @@ describe("GetCampaignStatsUseCase", () => {
       expect(result.value.steps[0].sent).toBe(1);
       expect(result.value.steps[0].opened).toBe(1);
       expect(result.value.steps[0].clicked).toBe(0);
+    }
+  });
+
+  it("counts SUPPRESSED apart from BOUNCED and keeps suppressed OUT of the bounce rate", async () => {
+    const createSut = new CreateEmailCampaignUseCase(campaigns);
+    const created = await createSut.execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const campaignId = (created.value as { id: string }).id;
+
+    const mk = (id: string, email: string) =>
+      EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: id, email });
+    const b = mk("l1", "bounce@x.com"); b.markBounced(); await recipients.save(b);     // 1 REAL bounce
+    const s = mk("l2", "supp@x.com"); s.markSuppressed(); await recipients.save(s);     // 1 suppressed (never sent)
+    const c1 = mk("l3", "c1@x.com"); c1.markCompleted(); await recipients.save(c1);
+    const c2 = mk("l4", "c2@x.com"); c2.markCompleted(); await recipients.save(c2);
+
+    const result = await sut.execute({ campaignId });
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.recipients.bounced).toBe(1);
+      expect(result.value.recipients.suppressed).toBe(1);
+      // 1 real bounce / 4 total = 25% — NOT 50% (suppressed must not inflate the rate)
+      expect(result.value.totals.bounceRate).toBe(25);
     }
   });
 });
@@ -541,7 +602,7 @@ describe("SendCampaignStep — suppression check", () => {
     expect(gmail.sentEmails).toHaveLength(0);
   });
 
-  it("should mark recipient as BOUNCED when suppressed due to bounce", async () => {
+  it("should mark recipient as SUPPRESSED (not BOUNCED) when already on the suppression list from a prior bounce", async () => {
     const { recipients, suppressions, gmail, sut, campaignId } = await makeBase();
 
     const r = EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l1", email: "bad@nxdomain.com" });
@@ -552,7 +613,9 @@ describe("SendCampaignStep — suppression check", () => {
     await sut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
     expect(gmail.sentEmails).toHaveLength(0);
     const saved = await recipients.findById(r.id.toString());
-    expect(saved!.status).toBe("BOUNCED");
+    // We never sent — this is a suppression, not a bounce. Marking it BOUNCED
+    // would inflate the bounce rate with contacts we deliberately skipped.
+    expect(saved!.status).toBe("SUPPRESSED");
   });
 
   it("should mark recipient as UNSUBSCRIBED when suppressed due to unsubscribe", async () => {
@@ -654,7 +717,8 @@ describe("SendCampaignStep — send failures go to suppression list", () => {
 
     expect(gmail.sentEmails).toHaveLength(0);
     const saved = await recipients.findById(r.id.toString());
-    expect(saved!.status).toBe("BOUNCED");
+    // matched the suppression list before sending → SUPPRESSED, not a real bounce
+    expect(saved!.status).toBe("SUPPRESSED");
   });
 });
 

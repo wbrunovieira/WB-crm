@@ -2655,7 +2655,7 @@ model EmailCampaignRecipient {
   role          String?
   customVars    String? // JSON key-value
   currentStep     Int       @default(0)
-  status          String    @default("PENDING") // PENDING | ACTIVE | COMPLETED | UNSUBSCRIBED | BOUNCED
+  status          String    @default("PENDING") // PENDING | ACTIVE | COMPLETED | UNSUBSCRIBED | BOUNCED | SUPPRESSED
   unsubscribedAt  DateTime?
 
   campaign EmailCampaign      @relation(fields: [campaignId], references: [id], onDelete: Cascade)

@@ -26,6 +26,7 @@ export interface CampaignMetrics {
     completed: number;
     unsubscribed: number;
     bounced: number;
+    suppressed: number;
   };
   totals: {
     sent: number;
@@ -183,6 +184,7 @@ export function CampaignMetricsPanel({ metrics, recipientEngagement = [] }: { me
     { name: "Pendentes", value: recipients.pending },
     { name: "Descadastros", value: recipients.unsubscribed },
     { name: "Bounces", value: recipients.bounced },
+    { name: "Suprimidos", value: recipients.suppressed },
   ].filter((d) => d.value > 0);
 
   const stepChartData = steps.map((s) => ({
