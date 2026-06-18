@@ -2,7 +2,7 @@ import { Entity } from "@/core/entity";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 
 export type RecipientType = "LEAD" | "CONTACT";
-export type RecipientStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "UNSUBSCRIBED" | "BOUNCED" | "SUPPRESSED";
+export type RecipientStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "UNSUBSCRIBED" | "BOUNCED" | "SUPPRESSED" | "DELAYED";
 
 interface EmailCampaignRecipientProps {
   campaignId: string;
@@ -55,6 +55,16 @@ export class EmailCampaignRecipient extends Entity<EmailCampaignRecipientProps> 
    */
   markSuppressed() {
     this.props.status = "SUPPRESSED";
+  }
+
+  /**
+   * The mail server reported a TEMPORARY delay (e.g. Gmail "(Delay)", DNS SERVFAIL,
+   * greylisting) and is still retrying. NOT a bounce — the message may still be
+   * delivered. Surfaced separately so it neither inflates the bounce rate nor counts
+   * as delivered. If delivery ultimately fails, a definitive NDR flips it to BOUNCED.
+   */
+  markDelayed() {
+    this.props.status = "DELAYED";
   }
 
   unsubscribe() {

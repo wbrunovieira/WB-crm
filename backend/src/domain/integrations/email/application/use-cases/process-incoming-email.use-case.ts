@@ -19,6 +19,7 @@ export interface ProcessIncomingEmailOutput {
   activityId?: string;
   skipped: boolean;
   bounced?: boolean;
+  delayed?: boolean;
 }
 
 @Injectable()
@@ -63,6 +64,19 @@ export class ProcessIncomingEmailUseCase {
             bodySnippet: (message.bodyText ?? message.bodyHtml ?? "").slice(0, 300),
           });
           return right({ skipped: true });
+        }
+
+        // Transient delays (Gmail "(Delay)", "problema temporário", DSN 4.x.x) are
+        // NOT bounces — the server keeps retrying and may still deliver. Surface them
+        // as DELAYED (no suppression, no failed activity). If delivery ultimately
+        // fails, a definitive Failure NDR arrives later and flips DELAYED → BOUNCED.
+        if (this.isTransientBounce(message.subject, message.bodyText, message.bodyHtml)) {
+          await this.handleDelay(bouncedEmail, ownerId);
+          this.logger.log("ProcessIncomingEmailUseCase: transient delay NDR — marked DELAYED, not suppressed", {
+            messageId: message.messageId,
+            email: bouncedEmail,
+          });
+          return right({ skipped: false, delayed: true });
         }
 
         await this.handleBounce(bouncedEmail, ownerId);
@@ -187,9 +201,16 @@ export class ProcessIncomingEmailUseCase {
         campaignIds.has(r.campaignId),
       );
 
-      // Mark as BOUNCED (skip already-bounced / unsubscribed)
+      // Mark as BOUNCED (skip already-bounced / unsubscribed / suppressed).
+      // SUPPRESSED recipients were never sent (skipped pre-send) — flipping them to
+      // BOUNCED would re-inflate the bounce rate with contacts we deliberately skipped.
+      // DELAYED is intentionally NOT skipped: a definitive failure must override it.
       for (const recipient of recipientsForEmail) {
-        if (recipient.status !== "BOUNCED" && recipient.status !== "UNSUBSCRIBED") {
+        if (
+          recipient.status !== "BOUNCED" &&
+          recipient.status !== "UNSUBSCRIBED" &&
+          recipient.status !== "SUPPRESSED"
+        ) {
           recipient.markBounced();
           await this.recipients.save(recipient);
         }
@@ -221,6 +242,34 @@ export class ProcessIncomingEmailUseCase {
     }
   }
 
+  /**
+   * Marks the email's campaign recipients (owned by `ownerId`) as DELAYED for a
+   * TRANSIENT NDR. Unlike handleBounce: no suppression, and the linked activity is
+   * left intact (the send may still complete). Skips terminal states so we never
+   * downgrade a real bounce/unsubscribe/suppression back to DELAYED.
+   */
+  private async handleDelay(email: string, ownerId: string): Promise<void> {
+    const campaigns = await this.emailCampaigns.findAllByOwner(ownerId);
+    const campaignIds = new Set(campaigns.map((c) => c.id.toString()));
+    if (campaignIds.size === 0) return;
+
+    const recipientsForEmail = (await this.recipients.findByEmail(email)).filter((r) =>
+      campaignIds.has(r.campaignId),
+    );
+
+    for (const recipient of recipientsForEmail) {
+      if (
+        recipient.status !== "BOUNCED" &&
+        recipient.status !== "UNSUBSCRIBED" &&
+        recipient.status !== "SUPPRESSED" &&
+        recipient.status !== "DELAYED"
+      ) {
+        recipient.markDelayed();
+        await this.recipients.save(recipient);
+      }
+    }
+  }
+
   private extractEmail(from: string): string | undefined {
     const angleMatch = from.match(/<([^>]+)>/);
     if (angleMatch) return angleMatch[1].trim().toLowerCase();
@@ -247,6 +296,34 @@ export class ProcessIncomingEmailUseCase {
     }
 
     return false;
+  }
+
+  /**
+   * Distinguishes a TEMPORARY delay (server still retrying) from a permanent failure.
+   * Returns true for transient NDRs (Gmail "(Delay)", "problema temporário",
+   * "tentará novamente", DSN Action: delayed / Status 4.x.x). A definitive permanent
+   * marker (Action: failed / Status 5.x.x) always wins, so a real bounce is never
+   * mistaken for a delay.
+   */
+  private isTransientBounce(subject?: string, bodyText?: string, bodyHtml?: string): boolean {
+    const stripped = (bodyHtml ?? "").replace(/<[^>]+>/g, " ");
+    const haystack = `${subject ?? ""}\n${bodyText ?? ""}\n${stripped}`.toLowerCase();
+
+    // Definitive permanent failure overrides any transient-looking wording.
+    if (/action:\s*failed/.test(haystack) || /status:\s*5\.\d{1,3}\.\d{1,3}/.test(haystack)) {
+      return false;
+    }
+
+    return (
+      /\(delay\)/.test(haystack) ||
+      /action:\s*delayed/.test(haystack) ||
+      /status:\s*4\.\d{1,3}\.\d{1,3}/.test(haystack) ||
+      /problema tempor[áa]rio/.test(haystack) ||
+      /tentar[áa] novamente/.test(haystack) ||
+      /will (?:be )?retr(?:y|ied|ying)/.test(haystack) ||
+      /temporarily (?:deferred|delayed|rejected|unavailable)/.test(haystack) ||
+      /aviso de atraso/.test(haystack)
+    );
   }
 
   private extractBouncedEmail(body: string | undefined): string | undefined {

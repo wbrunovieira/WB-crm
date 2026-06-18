@@ -51,7 +51,7 @@ class FakeCampaigns {
     return (this.byOwner[owner] ?? []).map((id) => ({ id: { toString: () => id } }));
   }
 }
-interface RecipientStub { id: { toString: () => string }; campaignId: string; email: string; status: string; markBounced: () => void; }
+interface RecipientStub { id: { toString: () => string }; campaignId: string; email: string; status: string; markBounced: () => void; markDelayed: () => void; }
 function makeRecipient(id: string, campaignId: string, email: string, status = "ACTIVE"): RecipientStub {
   return {
     id: { toString: () => id },
@@ -59,6 +59,7 @@ function makeRecipient(id: string, campaignId: string, email: string, status = "
     email,
     status,
     markBounced() { this.status = "BOUNCED"; },
+    markDelayed() { this.status = "DELAYED"; },
   };
 }
 class FakeRecipients {
@@ -334,7 +335,7 @@ describe("ProcessIncomingEmailUseCase — bounce detection", () => {
     expect(theirs.status).toBe("ACTIVE"); // other owner's recipient untouched
   });
 
-  it("extracts the bounced email from a Gmail PT-BR DNS SERVFAIL notice", async () => {
+  it("marks a transient 'problema temporário' SERVFAIL as DELAYED, not bounced/suppressed", async () => {
     campaigns.byOwner[OWNER_ID] = ["camp-1"];
     const r = makeRecipient("rec-1", "camp-1", "neumannmkt@temtudopetropolis.com.br", "ACTIVE");
     recipients.items.push(r);
@@ -347,8 +348,11 @@ describe("ProcessIncomingEmailUseCase — bounce detection", () => {
         "DNS Error: DNS type 'mx' lookup of temtudopetropolis.com.br responded with code SERVFAIL",
     }), OWNER_ID);
 
-    expect(result.unwrap().bounced).toBe(true);
-    expect(r.status).toBe("BOUNCED");
+    // Temporary delay — surfaced as DELAYED, never suppressed (may still deliver)
+    expect(result.unwrap().delayed).toBe(true);
+    expect(result.unwrap().bounced).toBeUndefined();
+    expect(r.status).toBe("DELAYED");
+    expect(suppressions.saved).toHaveLength(0);
   });
 
   it("returns skipped=true when bounce body has no extractable email", async () => {
@@ -367,6 +371,97 @@ describe("ProcessIncomingEmailUseCase — bounce detection", () => {
 
     expect(result.unwrap().bounced).toBeUndefined();
     expect(recipients.saved).toHaveLength(0);
+  });
+
+  it("does not flip a SUPPRESSED recipient to BOUNCED on a permanent bounce", async () => {
+    campaigns.byOwner[OWNER_ID] = ["camp-1"];
+    const r = makeRecipient("rec-1", "camp-1", "supp@x.com", "SUPPRESSED");
+    recipients.items.push(r);
+
+    await useCase.execute(makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      subject: "Delivery Status Notification (Failure)",
+      bodyText: "Final-Recipient: rfc822; supp@x.com\nStatus: 5.1.1",
+    }), OWNER_ID);
+
+    // Never sent (suppression skip) — must stay SUPPRESSED, not re-counted as a bounce
+    expect(r.status).toBe("SUPPRESSED");
+    expect(recipients.saved).toHaveLength(0);
+  });
+});
+
+// ── Tests: transient delay (Correction B) ──────────────────────────────────────
+
+describe("ProcessIncomingEmailUseCase — transient delay", () => {
+  it("marks recipients DELAYED (not bounced/suppressed) for a Gmail '(Delay)' NDR", async () => {
+    campaigns.byOwner[OWNER_ID] = ["camp-1"];
+    const r = makeRecipient("rec-1", "camp-1", "slow@x.com", "ACTIVE");
+    recipients.items.push(r);
+
+    const result = await useCase.execute(makeMessage({
+      from: "Mail Delivery Subsystem <mailer-daemon@googlemail.com>",
+      subject: "Delivery Status Notification (Delay)",
+      bodyText: "wasn't delivered to slow@x.com. The server will retry. Action: delayed\nStatus: 4.4.1",
+    }), OWNER_ID);
+
+    expect(result.unwrap().delayed).toBe(true);
+    expect(result.unwrap().bounced).toBeUndefined();
+    expect(r.status).toBe("DELAYED");
+    expect(suppressions.saved).toHaveLength(0);
+  });
+
+  it("treats 'tentará novamente' PT-BR body as a delay", async () => {
+    campaigns.byOwner[OWNER_ID] = ["camp-1"];
+    const r = makeRecipient("rec-1", "camp-1", "x@y.com", "ACTIVE");
+    recipients.items.push(r);
+
+    const result = await useCase.execute(makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      subject: "Aviso de atraso",
+      bodyText: "A entrega da mensagem para x@y.com está atrasada; o servidor tentará novamente nas próximas 24 horas.",
+    }), OWNER_ID);
+
+    expect(result.unwrap().delayed).toBe(true);
+    expect(r.status).toBe("DELAYED");
+    expect(suppressions.saved).toHaveLength(0);
+  });
+
+  it("does NOT fail the linked campaign_email activity on a delay", async () => {
+    campaigns.byOwner[OWNER_ID] = ["camp-1"];
+    const r = makeRecipient("rec-1", "camp-1", "slow@x.com", "ACTIVE");
+    recipients.items.push(r);
+    sends.byRecipient["rec-1"] = ["send-1"];
+    const activity = Activity.create({
+      ownerId: OWNER_ID, type: "campaign_email", subject: "S", completed: true,
+      meetingNoShow: false, emailReplied: false, emailOpenCount: 0, emailLinkClickCount: 0,
+      emailCampaignSendId: "send-1", emailCampaignId: "camp-1",
+    }, new UniqueEntityID("act-send-1"));
+    activitiesRepo.items.push(activity);
+
+    await useCase.execute(makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      subject: "Delivery Status Notification (Delay)",
+      bodyText: "problema temporário na entrega da mensagem para slow@x.com",
+    }), OWNER_ID);
+
+    expect(activity.failedAt).toBeUndefined();
+    expect(activity.completed).toBe(true);
+  });
+
+  it("still suppresses a definitive Failure even if a delay was seen earlier (DELAYED → BOUNCED)", async () => {
+    campaigns.byOwner[OWNER_ID] = ["camp-1"];
+    const r = makeRecipient("rec-1", "camp-1", "dead@x.com", "DELAYED");
+    recipients.items.push(r);
+
+    const result = await useCase.execute(makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      subject: "Delivery Status Notification (Failure)",
+      bodyText: "wasn't delivered to dead@x.com. Status: 5.4.1",
+    }), OWNER_ID);
+
+    expect(result.unwrap().bounced).toBe(true);
+    expect(r.status).toBe("BOUNCED");
+    expect(suppressions.saved).toEqual([expect.objectContaining({ email: "dead@x.com", reason: "bounced" })]);
   });
 });
 

@@ -423,6 +423,28 @@ describe("GetCampaignStatsUseCase", () => {
       expect(result.value.totals.bounceRate).toBe(25);
     }
   });
+
+  it("counts DELAYED apart and keeps delayed OUT of the bounce rate", async () => {
+    const createSut = new CreateEmailCampaignUseCase(campaigns);
+    const created = await createSut.execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const campaignId = (created.value as { id: string }).id;
+
+    const mk = (id: string, email: string) =>
+      EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: id, email });
+    const b = mk("l1", "bounce@x.com"); b.markBounced(); await recipients.save(b);     // 1 REAL bounce
+    const d = mk("l2", "slow@x.com"); d.markDelayed(); await recipients.save(d);       // 1 delayed (in retry)
+    const c1 = mk("l3", "c1@x.com"); c1.markCompleted(); await recipients.save(c1);
+    const c2 = mk("l4", "c2@x.com"); c2.markCompleted(); await recipients.save(c2);
+
+    const result = await sut.execute({ campaignId });
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.recipients.bounced).toBe(1);
+      expect(result.value.recipients.delayed).toBe(1);
+      // 1 real bounce / 4 total = 25% — delayed must not inflate the rate
+      expect(result.value.totals.bounceRate).toBe(25);
+    }
+  });
 });
 
 describe("AddToSuppressionUseCase", () => {

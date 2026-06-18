@@ -27,6 +27,7 @@ export interface Output {
     unsubscribed: number;
     bounced: number;
     suppressed: number;
+    delayed: number;
   };
   totals: {
     sent: number;
@@ -63,7 +64,7 @@ export class GetCampaignStatsUseCase {
     ]);
 
     // ── Recipient status breakdown ──────────────────────────────────────────
-    const statusCount = { pending: 0, active: 0, completed: 0, unsubscribed: 0, bounced: 0, suppressed: 0 };
+    const statusCount = { pending: 0, active: 0, completed: 0, unsubscribed: 0, bounced: 0, suppressed: 0, delayed: 0 };
     const segmentMap = new Map<string, number>();
     const roleMap = new Map<string, number>();
     const typeMap = new Map<string, number>();
