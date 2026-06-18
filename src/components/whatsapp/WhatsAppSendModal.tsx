@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { X, Send, Loader2, Smile, Paperclip, FileText, ChevronDown, ChevronUp, Mic, Square } from "lucide-react";
+import { X, Send, Loader2, Smile, Paperclip, FileText, ChevronDown, ChevronUp, Mic, Square, Maximize2, Minimize2 } from "lucide-react";
 import { toast } from "sonner";
 import { useSession } from "next-auth/react";
 import { apiFetch, BACKEND_URL } from "@/lib/api-client";
@@ -143,6 +143,7 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
   const token = session?.user?.accessToken ?? "";
   const [text, setText] = useState("");
   const [sending, setSending] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Emoji
@@ -402,7 +403,7 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
       onClick={(e) => e.target === e.currentTarget && !isRecordingActive && onClose()}
     >
-      <div className="w-full max-w-md rounded-2xl bg-white shadow-2xl flex flex-col max-h-[90vh]">
+      <div className={`bg-white shadow-2xl flex flex-col rounded-2xl ${expanded ? "w-[92vw] max-w-2xl h-[90vh]" : "w-full max-w-md max-h-[90vh]"}`}>
 
         {/* Header */}
         <div className="flex items-center gap-3 rounded-t-2xl bg-[#25D366] px-5 py-4 shrink-0">
@@ -413,13 +414,20 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
             <p className="font-semibold text-white truncate">{name}</p>
             <p className="text-xs text-white/80 font-mono">{to}</p>
           </div>
+          <button
+            onClick={() => setExpanded((v) => !v)}
+            title={expanded ? "Recolher" : "Expandir"}
+            className="rounded-full p-1 text-white/80 hover:bg-white/20 hover:text-white transition-colors"
+          >
+            {expanded ? <Minimize2 className="h-5 w-5" /> : <Maximize2 className="h-5 w-5" />}
+          </button>
           <button onClick={onClose} className="rounded-full p-1 text-white/80 hover:bg-white/20 hover:text-white transition-colors">
             <X className="h-5 w-5" />
           </button>
         </div>
 
         {/* Scrollable body */}
-        <div className="flex-1 overflow-y-auto">
+        <div className={`flex-1 overflow-y-auto ${expanded ? "flex flex-col" : ""}`}>
 
           {/* Templates panel */}
           {showTemplates && (
@@ -526,7 +534,7 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
 
           {/* Textarea — oculto durante gravação */}
           {!isRecordingActive && recordingState !== "preview" && (
-            <div className="p-5">
+            <div className={`p-5 ${expanded ? "flex-1 flex flex-col min-h-0" : ""}`}>
               <textarea
                 ref={textareaRef}
                 value={text}
@@ -534,10 +542,10 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
                 onKeyDown={handleKeyDown}
                 rows={4}
                 placeholder={attachment ? "Legenda (opcional)..." : "Digite sua mensagem..."}
-                className="w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#25D366] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#25D366]/20 transition-colors"
+                className={`w-full rounded-xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:border-[#25D366] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#25D366]/20 transition-colors ${expanded ? "flex-1 min-h-0 resize-none" : "resize-y"}`}
                 disabled={sending}
               />
-              <p className="mt-1.5 text-xs text-gray-400">Ctrl+Enter para enviar</p>
+              <p className="mt-1.5 text-xs text-gray-400 shrink-0">Ctrl+Enter para enviar</p>
             </div>
           )}
         </div>
