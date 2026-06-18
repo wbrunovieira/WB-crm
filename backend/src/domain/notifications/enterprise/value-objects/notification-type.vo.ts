@@ -7,6 +7,8 @@ export type NotificationTypeValue =
   | "WHATSAPP_TRANSCRIBED"
   | "WHATSAPP_MESSAGE"
   | "EMAIL_RECEIVED"
+  | "EMAIL_OPENED"
+  | "EMAIL_CLICKED"
   | "MEETING_ENDED"
   | "GENERIC";
 
@@ -17,6 +19,8 @@ const VALID: NotificationTypeValue[] = [
   "WHATSAPP_TRANSCRIBED",
   "WHATSAPP_MESSAGE",
   "EMAIL_RECEIVED",
+  "EMAIL_OPENED",
+  "EMAIL_CLICKED",
   "MEETING_ENDED",
   "GENERIC",
 ];

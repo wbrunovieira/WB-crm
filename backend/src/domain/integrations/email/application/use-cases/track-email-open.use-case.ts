@@ -3,6 +3,9 @@ import { Either, left, right } from "@/core/either";
 import { EmailTrackingRepository } from "../repositories/email-tracking.repository";
 import { EmailTrackingToken } from "../../enterprise/value-objects/email-tracking-token.vo";
 import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
+import { EmailEngagementReadPort, EmailEngagementContext } from "../ports/email-engagement-read.port";
+import { CreateNotificationUseCase } from "@/domain/notifications/application/use-cases/notifications.use-cases";
+import { notifyEmailEngagement } from "./email-engagement-notifier";
 
 export interface TrackEmailOpenInput {
   token: string;
@@ -38,6 +41,8 @@ export class TrackEmailOpenUseCase {
   constructor(
     private readonly emailTrackingRepo: EmailTrackingRepository,
     private readonly activitiesRepo: ActivitiesRepository,
+    private readonly engagementRead: EmailEngagementReadPort,
+    private readonly createNotification: CreateNotificationUseCase,
   ) {}
 
   async execute(input: TrackEmailOpenInput): Promise<Either<Error, TrackEmailOpenOutput>> {
@@ -67,7 +72,18 @@ export class TrackEmailOpenUseCase {
       return right({ tracked: false });
     }
 
-    // 4. Record open and mirror stats onto the Activity
+    // 4. Resolve engagement context (owner, recipient, campaign flag). Best-effort.
+    let context: EmailEngagementContext | null = null;
+    try {
+      context = await this.engagementRead.findContextByToken(validToken);
+    } catch (err) {
+      this.logger.debug("TrackEmailOpenUseCase: failed to resolve engagement context", {
+        token: validToken,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // 5. Record open and mirror stats onto the Activity
     const now = new Date();
     try {
       await this.emailTrackingRepo.recordOpen(validToken, userAgent, ip);
@@ -85,6 +101,12 @@ export class TrackEmailOpenUseCase {
         token: validToken,
         error: err instanceof Error ? err.message : String(err),
       });
+    }
+
+    // 6. Notify the owner on every open of a NON-campaign email (campaigns are
+    //    excluded to avoid notification noise). Never let this break tracking.
+    if (context && !context.isCampaign) {
+      await notifyEmailEngagement(this.createNotification, context, "opened", this.logger);
     }
 
     return right({ tracked: true });

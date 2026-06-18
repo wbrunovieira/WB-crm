@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { TrackEmailOpenUseCase } from "@/domain/integrations/email/application/use-cases/track-email-open.use-case";
 import { FakeEmailTrackingRepository } from "../../fakes/fake-email-tracking.repository";
+import { FakeEmailEngagementReadPort } from "../../fakes/fake-email-engagement-read.port";
+import { FakeCreateNotificationUseCase } from "../../fakes/fake-create-notification.use-case";
 import type { EmailTrackingRecord } from "@/domain/integrations/email/application/repositories/email-tracking.repository";
+import type { EmailEngagementContext } from "@/domain/integrations/email/application/ports/email-engagement-read.port";
 
 const VALID_TOKEN = "validTrackingToken12345";
 
@@ -17,11 +20,27 @@ function makeRecord(overrides: Partial<EmailTrackingRecord> = {}): EmailTracking
 }
 
 let trackingRepo: FakeEmailTrackingRepository;
+let engagementRead: FakeEmailEngagementReadPort;
+let createNotification: FakeCreateNotificationUseCase;
 let useCase: TrackEmailOpenUseCase;
+
+function makeContext(overrides: Partial<EmailEngagementContext> = {}): EmailEngagementContext {
+  return {
+    activityId: "act-1",
+    ownerId: "owner-001",
+    isCampaign: false,
+    subject: "Proposta comercial",
+    recipientName: "Cunha e Fintelman Advogados",
+    leadId: "lead-1",
+    ...overrides,
+  };
+}
 
 beforeEach(() => {
   trackingRepo = new FakeEmailTrackingRepository();
-  useCase = new TrackEmailOpenUseCase(trackingRepo, {} as any);
+  engagementRead = new FakeEmailEngagementReadPort();
+  createNotification = new FakeCreateNotificationUseCase();
+  useCase = new TrackEmailOpenUseCase(trackingRepo, {} as any, engagementRead, createNotification as any);
 });
 
 describe("TrackEmailOpenUseCase", () => {
@@ -156,5 +175,51 @@ describe("TrackEmailOpenUseCase", () => {
     const event = trackingRepo.getOpenEvents()[0];
     expect(event.userAgent).toBe("Mozilla/5.0");
     expect(event.ip).toBe("10.0.0.1");
+  });
+});
+
+describe("TrackEmailOpenUseCase — engagement notification", () => {
+  it("notifies the owner when a direct (non-campaign) email is opened", async () => {
+    await trackingRepo.save(makeRecord());
+    engagementRead.context = makeContext({ isCampaign: false });
+
+    await useCase.execute({ token: VALID_TOKEN, userAgent: "Mozilla/5.0" });
+
+    expect(createNotification.calls).toHaveLength(1);
+    const n = createNotification.calls[0];
+    expect(n.type).toBe("EMAIL_OPENED");
+    expect(n.userId).toBe("owner-001");
+    expect(n.title).toContain("Cunha e Fintelman Advogados");
+    expect(n.summary).toBe("Proposta comercial");
+    expect(JSON.parse(n.payload!).leadId).toBe("lead-1");
+    expect(JSON.parse(n.payload!).link).toBe("/leads/lead-1");
+  });
+
+  it("notifies on every open, including re-opens", async () => {
+    await trackingRepo.save(makeRecord());
+    engagementRead.context = makeContext();
+
+    await useCase.execute({ token: VALID_TOKEN, userAgent: "Mozilla/5.0" });
+    await useCase.execute({ token: VALID_TOKEN, userAgent: "Mozilla/5.0" });
+
+    expect(createNotification.calls).toHaveLength(2);
+  });
+
+  it("does NOT notify for campaign emails (isCampaign)", async () => {
+    await trackingRepo.save(makeRecord());
+    engagementRead.context = makeContext({ isCampaign: true });
+
+    await useCase.execute({ token: VALID_TOKEN, userAgent: "Mozilla/5.0" });
+
+    expect(createNotification.calls).toHaveLength(0);
+  });
+
+  it("does NOT notify when a bot triggers the open", async () => {
+    await trackingRepo.save(makeRecord());
+    engagementRead.context = makeContext();
+
+    await useCase.execute({ token: VALID_TOKEN, userAgent: "Googlebot/2.1" });
+
+    expect(createNotification.calls).toHaveLength(0);
   });
 });

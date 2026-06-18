@@ -16,6 +16,8 @@ import { EmailVerifierPort } from "./application/ports/email-verifier.port";
 // Repositories (abstract)
 import { EmailMessagesRepository } from "./application/repositories/email-messages.repository";
 import { EmailTrackingRepository } from "./application/repositories/email-tracking.repository";
+import { EmailEngagementReadPort } from "./application/ports/email-engagement-read.port";
+import { PrismaEmailEngagementReadAdapter } from "./infra/prisma-email-engagement-read.adapter";
 
 // Use Cases
 import { ProcessIncomingEmailUseCase } from "./application/use-cases/process-incoming-email.use-case";
@@ -82,6 +84,7 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     { provide: EmailMessagesRepository, useClass: PrismaEmailMessagesRepository },
     PrismaEmailTrackingRepository,
     { provide: EmailTrackingRepository, useClass: PrismaEmailTrackingRepository },
+    { provide: EmailEngagementReadPort, useClass: PrismaEmailEngagementReadAdapter },
 
     // Gmail templates
     PrismaGmailTemplatesRepository,

@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { TrackEmailOpenUseCase } from "@/domain/integrations/email/application/use-cases/track-email-open.use-case";
 import { TrackEmailClickUseCase } from "@/domain/integrations/email/application/use-cases/track-email-click.use-case";
 import { FakeEmailTrackingRepository } from "../../fakes/fake-email-tracking.repository";
+import { FakeEmailEngagementReadPort } from "../../fakes/fake-email-engagement-read.port";
+import { FakeCreateNotificationUseCase } from "../../fakes/fake-create-notification.use-case";
 import { InMemoryActivitiesRepository } from "../../../../activities/repositories/in-memory-activities.repository";
 import { Activity } from "@/domain/activities/enterprise/entities/activity";
 import type { EmailTrackingRecord } from "@/domain/integrations/email/application/repositories/email-tracking.repository";
@@ -42,7 +44,7 @@ describe("TrackEmailOpenUseCase — activity sync", () => {
   beforeEach(() => {
     trackingRepo = new FakeEmailTrackingRepository();
     activitiesRepo = new InMemoryActivitiesRepository();
-    sut = new TrackEmailOpenUseCase(trackingRepo, activitiesRepo);
+    sut = new TrackEmailOpenUseCase(trackingRepo, activitiesRepo, new FakeEmailEngagementReadPort(), new FakeCreateNotificationUseCase() as any);
   });
 
   it("increments Activity.emailOpenCount when a human opens the email", async () => {
@@ -120,7 +122,7 @@ describe("TrackEmailClickUseCase — activity sync", () => {
   beforeEach(() => {
     trackingRepo = new FakeEmailTrackingRepository();
     activitiesRepo = new InMemoryActivitiesRepository();
-    sut = new TrackEmailClickUseCase(trackingRepo, activitiesRepo);
+    sut = new TrackEmailClickUseCase(trackingRepo, activitiesRepo, new FakeEmailEngagementReadPort(), new FakeCreateNotificationUseCase() as any);
   });
 
   it("increments Activity.emailLinkClickCount on click", async () => {
