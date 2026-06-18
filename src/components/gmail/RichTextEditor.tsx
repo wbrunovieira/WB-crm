@@ -18,7 +18,25 @@ import {
   AlignLeft,
   AlignCenter,
   AlignRight,
+  Type,
 } from "lucide-react";
+
+// Common web-safe / system fonts available before loading the machine's full set.
+const DEFAULT_FONTS = [
+  "Arial",
+  "Helvetica",
+  "Calibri",
+  "Verdana",
+  "Tahoma",
+  "Trebuchet MS",
+  "Georgia",
+  "Times New Roman",
+  "Cambria",
+  "Garamond",
+  "Courier New",
+  "Roboto",
+  "Open Sans",
+];
 
 export interface RichTextEditorHandle {
   getHTML: () => string;
@@ -32,15 +50,41 @@ interface RichTextEditorProps {
   placeholder?: string;
   onKeyDown?: (e: React.KeyboardEvent<HTMLDivElement>) => void;
   minHeight?: number;
+  /** When true the editable area grows to fill the parent's height (used in expanded modal). */
+  fillHeight?: boolean;
 }
 
 const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
-  ({ placeholder = "Escreva sua mensagem...", onKeyDown, minHeight = 220 }, ref) => {
+  ({ placeholder = "Escreva sua mensagem...", onKeyDown, minHeight = 220, fillHeight = false }, ref) => {
     const editorRef = useRef<HTMLDivElement>(null);
     const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
     const [showLink, setShowLink] = useState(false);
     const [linkUrl, setLinkUrl] = useState("");
     const savedRange = useRef<Range | null>(null);
+    const [fonts, setFonts] = useState<string[]>(DEFAULT_FONTS);
+    const [loadingFonts, setLoadingFonts] = useState(false);
+
+    // Loads the fonts installed on the user's machine via the Local Font Access API
+    // (Chromium 103+, requires a user gesture + permission). Falls back silently
+    // to DEFAULT_FONTS on unsupported browsers or denied permission.
+    const loadSystemFonts = useCallback(async () => {
+      const w = window as unknown as { queryLocalFonts?: () => Promise<Array<{ family: string }>> };
+      if (typeof w.queryLocalFonts !== "function") return;
+      setLoadingFonts(true);
+      try {
+        const available = await w.queryLocalFonts();
+        const families = Array.from(new Set(available.map((f) => f.family))).sort((a, b) =>
+          a.localeCompare(b),
+        );
+        if (families.length > 0) {
+          setFonts(Array.from(new Set([...DEFAULT_FONTS, ...families])));
+        }
+      } catch {
+        // permission denied / unsupported — keep the default list
+      } finally {
+        setLoadingFonts(false);
+      }
+    }, []);
 
     useImperativeHandle(ref, () => ({
       getHTML: () => editorRef.current?.innerHTML ?? "",
@@ -136,7 +180,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
     }
 
     return (
-      <div className="flex flex-col overflow-hidden rounded-lg border border-gray-300 bg-white focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition-all">
+      <div className={`flex flex-col overflow-hidden rounded-lg border border-gray-300 bg-white focus-within:border-blue-400 focus-within:ring-1 focus-within:ring-blue-400 transition-all ${fillHeight ? "h-full" : ""}`}>
         {/* ── Toolbar ─────────────────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center gap-0.5 border-b bg-gray-50 px-2 py-1.5">
           {/* Text style */}
@@ -172,6 +216,39 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
             <option value="h2">Grande</option>
             <option value="h1">Enorme</option>
           </select>
+
+          <Divider />
+
+          {/* Font family — applies via fontName; load machine fonts on first open */}
+          <div className="flex items-center gap-1">
+            <Type className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+            <select
+              title="Fonte"
+              onMouseDown={(e) => {
+                e.stopPropagation();
+                loadSystemFonts(); // lazy-load installed fonts on first interaction
+              }}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (!val) return;
+                editorRef.current?.focus();
+                document.execCommand("fontName", false, val);
+                syncFormats();
+                e.target.value = "";
+              }}
+              defaultValue=""
+              className="max-w-[120px] cursor-pointer rounded border border-gray-200 bg-white py-0.5 pl-1 pr-4 text-xs text-gray-700 outline-none"
+            >
+              <option value="" disabled>
+                {loadingFonts ? "Carregando…" : "Fonte"}
+              </option>
+              {fonts.map((f) => (
+                <option key={f} value={f} style={{ fontFamily: f }}>
+                  {f}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <Divider />
 
@@ -250,9 +327,10 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
           onClick={syncFormats}
           onFocus={syncFormats}
           data-placeholder={placeholder}
-          style={{ minHeight }}
+          style={fillHeight ? undefined : { minHeight }}
           className={[
             "px-3 py-3 text-sm text-gray-900 outline-none overflow-y-auto",
+            fillHeight ? "flex-1 min-h-0" : "",
             // placeholder when empty
             "empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:pointer-events-none",
             // list styling

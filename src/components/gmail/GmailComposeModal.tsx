@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { X, Send, Loader2, Paperclip, FileText, ChevronDown, LayoutTemplate } from "lucide-react";
+import { X, Send, Loader2, Paperclip, FileText, ChevronDown, LayoutTemplate, Maximize2, Minimize2 } from "lucide-react";
 import { applyVariables } from "@/lib/gmail-variables";
 import { apiFetch } from "@/lib/api-client";
 import RichTextEditor, { RichTextEditorHandle } from "@/components/gmail/RichTextEditor";
@@ -90,6 +90,7 @@ export default function GmailComposeModal({
   const [showTemplates, setShowTemplates] = useState(false);
   const [aliases, setAliases] = useState<SendAsAlias[]>([]);
   const [fromEmail, setFromEmail] = useState<string>("");
+  const [expanded, setExpanded] = useState(false);
   const editorRef = useRef<RichTextEditorHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -259,20 +260,39 @@ export default function GmailComposeModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-end p-4 sm:p-6">
+    <div
+      className={`fixed inset-0 z-50 flex p-4 ${
+        expanded ? "items-center justify-center" : "items-end justify-end sm:p-6"
+      }`}
+    >
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/30" onClick={onClose} />
 
-      {/* Modal — estilo Gmail (canto inferior direito) */}
-      <div className="relative z-10 flex w-full max-w-lg flex-col rounded-t-xl bg-white shadow-2xl ring-1 ring-gray-200">
+      {/* Modal — estilo Gmail (canto inferior direito) ou expandido (centralizado) */}
+      <div
+        className={`relative z-10 flex flex-col bg-white shadow-2xl ring-1 ring-gray-200 ${
+          expanded
+            ? "h-[88vh] w-[92vw] max-w-3xl rounded-xl"
+            : "w-full max-w-xl rounded-t-xl"
+        }`}
+      >
         {/* Header */}
         <div className="flex items-center justify-between rounded-t-xl bg-gray-800 px-4 py-2">
-          <span className="text-sm font-medium text-white">
+          <span className="text-sm font-medium text-white truncate">
             Nova mensagem para <span className="text-blue-300">{name}</span>
           </span>
-          <button onClick={onClose} className="text-gray-300 hover:text-white transition-colors">
-            <X className="h-4 w-4" />
-          </button>
+          <div className="flex items-center gap-1 shrink-0">
+            <button
+              onClick={() => setExpanded((v) => !v)}
+              title={expanded ? "Recolher" : "Expandir"}
+              className="text-gray-300 hover:text-white transition-colors p-0.5"
+            >
+              {expanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </button>
+            <button onClick={onClose} className="text-gray-300 hover:text-white transition-colors p-0.5">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* De (alias selector — só mostra se houver mais de 1) */}
@@ -331,11 +351,12 @@ export default function GmailComposeModal({
         </div>
 
         {/* Body */}
-        <div className="flex-1 px-3 py-2">
+        <div className={`px-3 py-2 ${expanded ? "flex-1 min-h-0" : ""}`}>
           <RichTextEditor
             ref={editorRef}
             onKeyDown={handleKeyDown}
-            minHeight={200}
+            minHeight={expanded ? undefined : 240}
+            fillHeight={expanded}
           />
         </div>
 
