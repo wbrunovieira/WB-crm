@@ -29,7 +29,10 @@ services:
     container_name: wb-crm-backend
     restart: unless-stopped
     ports:
-      - "3010:3010"
+      # Bind to localhost only — nginx (api.crm.wbdigitalsolutions.com) proxies to it.
+      # Publishing on 0.0.0.0 would expose the API directly to the internet, bypassing
+      # nginx (Docker port publishing also bypasses UFW).
+      - "127.0.0.1:3010:3010"
     environment:
       NODE_ENV: production
       PORT: 3010
