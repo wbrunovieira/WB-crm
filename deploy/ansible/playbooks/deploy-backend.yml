@@ -62,9 +62,9 @@
 
     # ── 3. Health check ────────────────────────────────────────────────────────
 
-    - name: Aguardar backend inicializar (até 30s)
+    - name: Aguardar backend inicializar (até 120s — boot frio do NestJS)
       raw: |
-        for i in $(seq 1 6); do
+        for i in $(seq 1 24); do
           result=$(curl -sf http://localhost:{{ backend_port }}/health 2>/dev/null)
           if echo "$result" | grep -q '"ok":true'; then
             echo "HEALTHY: $result"

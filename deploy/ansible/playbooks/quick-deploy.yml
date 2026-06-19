@@ -146,10 +146,10 @@
       delay: 5
       until: health_check.stdout | trim == "200" or health_check.stdout | trim == "307"
 
-    - name: Health check (NestJS backend)
+    - name: Health check (NestJS backend) — até ~120s (boot frio do NestJS)
       raw: curl -s -o /dev/null -w "%{http_code}" http://localhost:3010/health || echo "000"
       register: backend_health
-      retries: 5
+      retries: 24
       delay: 5
       until: backend_health.stdout | trim == "200"
 
