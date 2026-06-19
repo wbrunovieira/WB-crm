@@ -110,6 +110,26 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
       setActiveFormats(active);
     }, []);
 
+    // Pasting plain text into a contentEditable collapses its line breaks into
+    // spaces, turning a multi-paragraph email into one wall of text. Intercept the
+    // paste, escape the text, and preserve the breaks: blank lines become paragraph
+    // spacing (double <br>), single newlines become <br>.
+    const handlePaste = useCallback((e: React.ClipboardEvent<HTMLDivElement>) => {
+      const text = e.clipboardData.getData("text/plain");
+      if (!text) return; // let the browser handle non-text (e.g. images)
+      e.preventDefault();
+      const normalized = text.replace(/\r\n?/g, "\n"); // CRLF/CR → LF
+      const escaped = normalized
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+      const html = escaped
+        .split(/\n{2,}/) // blank line → paragraph break
+        .map((para) => para.replace(/\n/g, "<br>")) // single newline → line break
+        .join("<br><br>");
+      document.execCommand("insertHTML", false, html);
+    }, []);
+
     // Runs a document.execCommand keeping focus inside the editor
     const exec = useCallback(
       (cmd: string, value?: string) => {
@@ -322,6 +342,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
           ref={editorRef}
           contentEditable
           suppressContentEditableWarning
+          onPaste={handlePaste}
           onKeyDown={onKeyDown}
           onKeyUp={syncFormats}
           onClick={syncFormats}
