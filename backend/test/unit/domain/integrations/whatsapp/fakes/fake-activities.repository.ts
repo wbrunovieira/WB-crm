@@ -74,6 +74,12 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
     return this.items.find((a) => a.emailCampaignSendId === sendId) ?? null;
   }
 
+  async findOutboundEmailByThreadId(threadId: string, ownerId: string): Promise<Activity[]> {
+    return this.items.filter(
+      (a) => a.type === "email" && a.emailThreadId === threadId && a.ownerId === ownerId && !a.emailFromAddress,
+    );
+  }
+
   createAndAdd(props: Parameters<typeof Activity.create>[0]): Activity {
     const activity = Activity.create(props, new UniqueEntityID());
     this.items.push(activity);

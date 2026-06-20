@@ -435,6 +435,13 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     return raw ? ActivityMapper.toDomain(raw) : null;
   }
 
+  async findOutboundEmailByThreadId(threadId: string, ownerId: string): Promise<Activity[]> {
+    const rows = await this.prisma.activity.findMany({
+      where: { type: "email", emailThreadId: threadId, ownerId, emailFromAddress: null },
+    });
+    return rows.map((r) => ActivityMapper.toDomain(r));
+  }
+
   private buildOrderBy(sortBy?: string): Record<string, any>[] {
     switch (sortBy) {
       case "dueDate-asc":

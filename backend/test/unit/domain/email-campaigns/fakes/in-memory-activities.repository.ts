@@ -22,6 +22,12 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
     return this.items.find((a) => a.emailCampaignSendId === sendId) ?? null;
   }
 
+  async findOutboundEmailByThreadId(threadId: string, ownerId: string) {
+    return this.items.filter(
+      (a) => a.type === "email" && a.emailThreadId === threadId && a.ownerId === ownerId && !a.emailFromAddress,
+    );
+  }
+
   async save(activity: Activity) {
     const idx = this.items.findIndex((a) => a.id.equals(activity.id));
     if (idx >= 0) this.items[idx] = activity;

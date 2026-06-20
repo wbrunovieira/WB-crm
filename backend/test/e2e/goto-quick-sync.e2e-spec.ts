@@ -75,6 +75,7 @@ class FakeActivitiesRepo extends ActivitiesRepository {
   async updateEmailOpenStats() {}
   async updateEmailClickStats() {}
   async findByCampaignSendId() { return null; }
+  async findOutboundEmailByThreadId() { return []; }
 }
 
 // ── Suite ─────────────────────────────────────────────────────────────────────

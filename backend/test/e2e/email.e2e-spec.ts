@@ -311,4 +311,65 @@ describe("POST /email/sync (manual Gmail poll)", () => {
       await prisma.emailCampaign.deleteMany({ where: { id: campaign.id } });
     }
   });
+
+  it("processes a bounce of a 1:1 send: fails the outbound activity and notifies (full wiring)", async () => {
+    const bouncedEmail = "compras-1to1-e2e@cliente.com.br";
+    const threadId = "thread-1to1-e2e-1";
+
+    // A lead owned by the e2e user, with an outbound 1:1 email activity (as the
+    // frontend creates it: type "email", emailThreadId set, completed, no emailFromAddress)
+    const lead = await prisma.lead.create({
+      data: { businessName: "Cliente 1:1 E2E", ownerId: userId },
+    });
+    const activity = await prisma.activity.create({
+      data: {
+        ownerId: userId,
+        type: "email",
+        subject: "Apresentação WB",
+        emailSubject: "Apresentação WB",
+        emailThreadId: threadId,
+        emailMessageId: "gmail-sent-1to1-e2e-1",
+        completed: true,
+        completedAt: new Date(),
+        leadId: lead.id,
+      },
+    });
+    await prisma.googleToken.update({ where: { id: "google-token-singleton" }, data: { gmailHistoryId: "prev-3" } });
+
+    const bounceMsg = {
+      messageId: "gmail-bounce-1to1-e2e-1",
+      threadId, // Gmail threads the NDR with the original send
+      from: "Mail Delivery Subsystem <mailer-daemon@googlemail.com>",
+      to: "e2e-email@test.com",
+      subject: "Delivery Status Notification (Failure)",
+      bodyText: `Final-Recipient: rfc822; ${bouncedEmail}\nAction: failed\nStatus: 5.7.0\nDiagnostic-Code: smtp; 554 Rejected by URIBL.`,
+      bodyHtml: "",
+      receivedAt: new Date(),
+    };
+    const originalPoll = fakeGmailPort.pollHistory;
+    fakeGmailPort.pollHistory = async () => [bounceMsg] as never;
+
+    try {
+      await request(app.getHttpServer())
+        .post("/email/sync")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const updated = await prisma.activity.findUnique({ where: { id: activity.id } });
+      expect(updated?.failedAt).not.toBeNull();
+      expect(updated?.completed).toBe(false);
+      expect(updated?.failReason).toContain("554 Rejected by URIBL");
+
+      const notif = await prisma.notification.findFirst({ where: { userId, type: "EMAIL_BOUNCED" } });
+      expect(notif).not.toBeNull();
+      expect(JSON.parse(notif!.payload ?? "{}").link).toBe(`/leads/${lead.id}`);
+    } finally {
+      fakeGmailPort.pollHistory = originalPoll;
+      await prisma.notification.deleteMany({ where: { userId, type: "EMAIL_BOUNCED" } });
+      await prisma.emailSuppression.deleteMany({ where: { ownerId: userId, email: bouncedEmail } });
+      await prisma.emailMessage.deleteMany({ where: { ownerId: userId } }).catch(() => {});
+      await prisma.activity.deleteMany({ where: { id: activity.id } });
+      await prisma.lead.deleteMany({ where: { id: lead.id } });
+    }
+  });
 });

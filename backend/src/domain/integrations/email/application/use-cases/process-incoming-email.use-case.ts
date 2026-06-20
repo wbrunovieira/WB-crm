@@ -80,6 +80,10 @@ export class ProcessIncomingEmailUseCase {
         }
 
         await this.handleBounce(bouncedEmail, ownerId);
+        // Reconcile 1:1 (non-campaign) outbound sends: the campaign path above only
+        // touches campaign_email activities. A user-composed email lives as a plain
+        // "email" activity, matched here by the DSN's thread.
+        await this.failOutboundEmailActivity(message.threadId, bouncedEmail, ownerId, message.bodyText, message.bodyHtml);
         return right({ skipped: false, bounced: true });
       }
 
@@ -240,6 +244,76 @@ export class ProcessIncomingEmailUseCase {
         EmailSuppression.create({ email: bouncedEmail, ownerId, reason: "bounced" }),
       );
     }
+  }
+
+  /**
+   * Reconciles a 1:1 (non-campaign) outbound email send with its bounce. The
+   * activity is found by the DSN's Gmail thread (Gmail threads the NDR with the
+   * original send). Marks it failed, captures the SMTP diagnostic into failReason,
+   * and notifies the owner so the failure is visible on the lead/contact page.
+   * No-op when no matching outbound activity exists (e.g. pure campaign bounce).
+   */
+  private async failOutboundEmailActivity(
+    threadId: string | undefined,
+    bouncedEmail: string,
+    ownerId: string,
+    bodyText?: string,
+    bodyHtml?: string,
+  ): Promise<void> {
+    if (!threadId) return;
+
+    const activities = await this.activitiesRepo.findOutboundEmailByThreadId(threadId, ownerId);
+    if (activities.length === 0) return;
+
+    const diagnostic = this.extractDiagnostic(bodyText, bodyHtml);
+    const reason = diagnostic
+      ? `Email rejeitado pelo servidor remoto: ${diagnostic}`
+      : "Email retornou (bounce)";
+
+    for (const activity of activities) {
+      if (activity.failedAt) continue; // don't re-fail / re-notify
+
+      activity.update({ completed: false, completedAt: undefined, failedAt: new Date(), failReason: reason });
+      await this.activitiesRepo.save(activity);
+
+      const link = EntityLink.firstOf([
+        { type: "lead", id: activity.leadId },
+        { type: "organization", id: activity.organizationId },
+        { type: "contact", id: activity.contactId },
+        { type: "partner", id: activity.partnerId },
+      ])?.value;
+
+      const notifResult = await this.createNotification.execute({
+        type: "EMAIL_BOUNCED",
+        title: `Email não entregue — ${activity.emailSubject ?? activity.subject}`,
+        summary: `Para ${bouncedEmail}: ${reason}`,
+        payload: JSON.stringify({ activityId: activity.id.toString(), bouncedEmail, reason, link }),
+        userId: ownerId,
+      });
+      if (notifResult.isLeft()) {
+        this.logger.warn("ProcessIncomingEmailUseCase: failed to create EMAIL_BOUNCED notification", {
+          error: notifResult.value.message,
+        });
+      }
+    }
+  }
+
+  /**
+   * Pulls the human-readable SMTP failure out of a DSN body: the RFC 3464
+   * `Diagnostic-Code: smtp; <text>` first, then any bare `5xx ...` status line.
+   * Returns undefined when nothing usable is present.
+   */
+  private extractDiagnostic(bodyText?: string, bodyHtml?: string): string | undefined {
+    const stripped = (bodyHtml ?? "").replace(/<[^>]+>/g, " ");
+    const haystack = `${bodyText ?? ""}\n${stripped}`;
+
+    const diag = haystack.match(/Diagnostic-Code:\s*(?:smtp;\s*)?([^\n\r]+)/i);
+    if (diag) return diag[1].trim().replace(/\.\s*$/, "");
+
+    const code = haystack.match(/\b(5\d{2}\s+[^\n\r]+)/);
+    if (code) return code[1].trim().replace(/\.\s*$/, "");
+
+    return undefined;
   }
 
   /**

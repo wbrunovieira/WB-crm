@@ -41,6 +41,13 @@ export abstract class ActivitiesRepository {
   abstract findByTranscriptionJobId(jobId: string): Promise<Activity | null>;
   abstract findFirst(where: { gotoCallId?: string }): Promise<Activity | null>;
   abstract findByCampaignSendId(sendId: string): Promise<Activity | null>;
+  /**
+   * Outbound 1:1 email activities (type "email", composed by the user — i.e. with
+   * no `emailFromAddress`) that belong to the given Gmail thread and owner. Used to
+   * reconcile a bounce DSN (which Gmail threads with the original send) back to the
+   * activity it failed. Returns all matches; the caller decides which to fail.
+   */
+  abstract findOutboundEmailByThreadId(threadId: string, ownerId: string): Promise<Activity[]>;
   abstract findAnsweredCallsMissingRecordingId(since: Date): Promise<Activity[]>;
   abstract save(activity: Activity): Promise<void>;
   abstract delete(id: string): Promise<void>;

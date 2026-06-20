@@ -544,3 +544,134 @@ describe("ProcessIncomingEmailUseCase — bounce fails linked activity", () => {
     expect(activitiesRepo.items[0].completed).toBe(true);
   });
 });
+
+// ── Tests: bounce fails the 1:1 (non-campaign) outbound email activity ───────────
+
+describe("ProcessIncomingEmailUseCase — bounce fails 1:1 outbound activity", () => {
+  function makeOutboundActivity(threadId: string, links: Partial<{ leadId: string; contactId: string; organizationId: string }> = {}): Activity {
+    return Activity.create(
+      {
+        ownerId: OWNER_ID,
+        type: "email",
+        subject: "Apresentação WB",
+        completed: true,
+        completedAt: new Date("2024-01-10T08:00:00Z"),
+        meetingNoShow: false,
+        emailReplied: false,
+        emailOpenCount: 0,
+        emailLinkClickCount: 0,
+        emailThreadId: threadId,
+        emailSubject: "Apresentação WB",
+        // outbound has NO emailFromAddress (that's how the UI distinguishes sent from received)
+        ...links,
+      },
+      new UniqueEntityID(),
+    );
+  }
+
+  const URIBL_DSN = (email: string) =>
+    `Final-Recipient: rfc822; ${email}\nAction: failed\nStatus: 5.7.0\nDiagnostic-Code: smtp; 554 Rejected by URIBL.`;
+
+  it("marks the 1:1 outbound activity failed (matched by threadId) on a permanent bounce", async () => {
+    const activity = makeOutboundActivity("thread-1to1", { leadId: "lead-1" });
+    activitiesRepo.items.push(activity);
+
+    const result = await useCase.execute(makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      threadId: "thread-1to1",
+      subject: "Delivery Status Notification (Failure)",
+      bodyText: URIBL_DSN("compras@cliente.com.br"),
+    }), OWNER_ID);
+
+    expect(result.unwrap().bounced).toBe(true);
+    const updated = activitiesRepo.items.find((a) => a.emailThreadId === "thread-1to1")!;
+    expect(updated.failedAt).toBeDefined();
+    expect(updated.completed).toBe(false);
+    // diagnostic from the DSN is captured into failReason
+    expect(updated.failReason).toContain("554 Rejected by URIBL");
+  });
+
+  it("creates an EMAIL_BOUNCED notification linked to the matched lead", async () => {
+    const activity = makeOutboundActivity("thread-notify", { leadId: "lead-77" });
+    activitiesRepo.items.push(activity);
+
+    await useCase.execute(makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      threadId: "thread-notify",
+      bodyText: URIBL_DSN("x@cliente.com"),
+    }), OWNER_ID);
+
+    const notif = createNotification.calls.find((c) => c.type === "EMAIL_BOUNCED");
+    expect(notif).toBeDefined();
+    expect(notif!.userId).toBe(OWNER_ID);
+    expect(JSON.parse(notif!.payload as string).link).toBe("/leads/lead-77");
+  });
+
+  it("falls back to a generic reason when the DSN has no diagnostic code", async () => {
+    const activity = makeOutboundActivity("thread-nodiag", { contactId: "c-1" });
+    activitiesRepo.items.push(activity);
+
+    await useCase.execute(makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      threadId: "thread-nodiag",
+      bodyText: "Final-Recipient: rfc822; y@cliente.com\nStatus: 5.1.1",
+    }), OWNER_ID);
+
+    const updated = activitiesRepo.items.find((a) => a.emailThreadId === "thread-nodiag")!;
+    expect(updated.failedAt).toBeDefined();
+    expect(updated.failReason).toBe("Email retornou (bounce)");
+  });
+
+  it("does not touch an inbound activity (has emailFromAddress) in the same thread", async () => {
+    const inbound = Activity.create({
+      ownerId: OWNER_ID, type: "email", subject: "Re: oi", completed: true,
+      meetingNoShow: false, emailReplied: false, emailOpenCount: 0, emailLinkClickCount: 0,
+      emailThreadId: "thread-shared", emailFromAddress: "cliente@x.com",
+    }, new UniqueEntityID());
+    activitiesRepo.items.push(inbound);
+
+    await useCase.execute(makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      threadId: "thread-shared",
+      bodyText: URIBL_DSN("cliente@x.com"),
+    }), OWNER_ID);
+
+    expect(inbound.failedAt).toBeUndefined();
+    expect(inbound.completed).toBe(true);
+    expect(createNotification.calls.some((c) => c.type === "EMAIL_BOUNCED")).toBe(false);
+  });
+
+  it("does not re-fail a 1:1 activity already marked failed", async () => {
+    const activity = makeOutboundActivity("thread-already", { leadId: "lead-1" });
+    activity.fail("Erro anterior");
+    const originalFailedAt = activity.failedAt!;
+    activitiesRepo.items.push(activity);
+    await new Promise((res) => setTimeout(res, 5));
+
+    await useCase.execute(makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      threadId: "thread-already",
+      bodyText: URIBL_DSN("z@cliente.com"),
+    }), OWNER_ID);
+
+    const after = activitiesRepo.items.find((a) => a.emailThreadId === "thread-already")!;
+    expect(after.failedAt!.getTime()).toBe(originalFailedAt.getTime());
+    expect(createNotification.calls.some((c) => c.type === "EMAIL_BOUNCED")).toBe(false);
+  });
+
+  it("does not fail any 1:1 activity on a transient delay", async () => {
+    const activity = makeOutboundActivity("thread-delay", { leadId: "lead-1" });
+    activitiesRepo.items.push(activity);
+
+    const result = await useCase.execute(makeMessage({
+      from: "mailer-daemon@googlemail.com",
+      threadId: "thread-delay",
+      subject: "Delivery Status Notification (Delay)",
+      bodyText: "wasn't delivered to z@cliente.com. The server will retry. Action: delayed\nStatus: 4.4.1",
+    }), OWNER_ID);
+
+    expect(result.unwrap().delayed).toBe(true);
+    expect(activity.failedAt).toBeUndefined();
+    expect(activity.completed).toBe(true);
+  });
+});

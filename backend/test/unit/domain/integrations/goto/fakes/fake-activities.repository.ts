@@ -101,6 +101,8 @@ export class FakeActivitiesRepository extends ActivitiesRepository {
 
   async findByCampaignSendId(_sendId: string): Promise<Activity | null> { return null; }
 
+  async findOutboundEmailByThreadId(_threadId: string, _ownerId: string): Promise<Activity[]> { return []; }
+
   // Helper for tests
   createAndAdd(props: Parameters<typeof Activity.create>[0]): Activity {
     const activity = Activity.create(props, new UniqueEntityID());
