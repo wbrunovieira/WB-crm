@@ -107,8 +107,10 @@ export default function GmailComposeModal({
     apiFetch<{ aliases: SendAsAlias[] }>("/email/aliases", token)
       .then(({ aliases: list }) => {
         setAliases(list);
-        const defaultAlias = list.find((a) => a.isDefault) ?? list[0];
-        if (defaultAlias) setFromEmail(defaultAlias.email);
+        // Não selecionar conta automaticamente quando há mais de uma — o
+        // usuário precisa escolher de propósito para não enviar pela conta
+        // errada. Com uma única conta não há ambiguidade, então pré-seleciona.
+        if (list.length === 1) setFromEmail(list[0].email);
       })
       .catch(() => {});
   }, [token]);
@@ -173,6 +175,11 @@ export default function GmailComposeModal({
     const bodyEmpty = editorRef.current?.isEmpty() ?? true;
     if (!subject.trim() || bodyEmpty) {
       setError("Preencha o assunto e o corpo do e-mail.");
+      return;
+    }
+
+    if (aliases.length > 0 && !fromEmail) {
+      setError('Selecione a conta de envio no campo "De" antes de enviar.');
       return;
     }
 
@@ -297,21 +304,44 @@ export default function GmailComposeModal({
 
         {/* De (alias selector — só mostra se houver mais de 1) */}
         {aliases.length > 1 && (
-          <div className="flex items-center gap-2 border-b px-3 py-2 text-sm">
-            <span className="text-gray-500 w-8">De</span>
-            <select
-              value={fromEmail}
-              onChange={(e) => setFromEmail(e.target.value)}
-              disabled={sending || sent}
-              className="flex-1 bg-transparent text-sm text-gray-900 outline-none cursor-pointer"
+          <>
+            <div
+              className={`flex items-center gap-2 border-b px-3 py-2 text-sm ${
+                !fromEmail ? "bg-red-50" : ""
+              }`}
             >
-              {aliases.map((a) => (
-                <option key={a.email} value={a.email}>
-                  {a.displayName ? `${a.displayName} <${a.email}>` : a.email}
+              <span
+                className={`w-8 ${
+                  !fromEmail ? "font-semibold text-red-600" : "text-gray-500"
+                }`}
+              >
+                De
+              </span>
+              <select
+                value={fromEmail}
+                onChange={(e) => setFromEmail(e.target.value)}
+                disabled={sending || sent}
+                className={`flex-1 bg-transparent text-sm outline-none cursor-pointer ${
+                  !fromEmail ? "font-semibold text-red-600" : "text-gray-900"
+                }`}
+              >
+                <option value="" disabled>
+                  Selecione a conta de envio…
                 </option>
-              ))}
-            </select>
-          </div>
+                {aliases.map((a) => (
+                  <option key={a.email} value={a.email}>
+                    {a.displayName ? `${a.displayName} <${a.email}>` : a.email}
+                  </option>
+                ))}
+              </select>
+            </div>
+            {!fromEmail && (
+              <div className="border-b border-red-200 bg-red-50 px-3 py-1.5 text-xs font-semibold text-red-600">
+                ⚠️ Nenhuma conta selecionada — escolha de qual e-mail você vai
+                enviar antes de continuar.
+              </div>
+            )}
+          </>
         )}
 
         {/* To */}
