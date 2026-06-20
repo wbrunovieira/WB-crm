@@ -190,7 +190,10 @@ export default function GmailComposeModal({
       const rawHtml = editorRef.current?.getHTML() ?? "";
       const html = `<div style="font-family: sans-serif; font-size: 14px; line-height: 1.5;">${rawHtml}</div>`;
 
-      const result = await apiFetch<{ ok: boolean; messageId: string; threadId: string; trackingToken: string; error?: string }>(
+      // The backend creates the outbound activity itself (single source of truth
+      // for the send log, so a later bounce can be reconciled to it). Pass the
+      // entity refs so the activity links to the right lead/contact/org/deal.
+      const result = await apiFetch<{ ok: boolean; messageId: string; threadId: string; trackingToken: string; activityId?: string; error?: string }>(
         "/email/send",
         token,
         {
@@ -202,6 +205,10 @@ export default function GmailComposeModal({
             fromEmail: fromEmail || undefined,
             threadId,
             attachments: attachments.length > 0 ? attachments : undefined,
+            contactIds: contactId ? [contactId] : undefined,
+            leadId,
+            organizationId,
+            dealId,
           }),
         },
       );
@@ -218,33 +225,6 @@ export default function GmailComposeModal({
           body: JSON.stringify({ threadId }),
         }).catch(() => {});
       }
-
-      // Create activity record (await so router.refresh picks up the new activity)
-      const bodyPreview = html
-        .replace(/<[^>]+>/g, " ")
-        .replace(/\s+/g, " ")
-        .trim()
-        .slice(0, 500);
-      await apiFetch("/activities", token, {
-        method: "POST",
-        body: JSON.stringify({
-          type: "email",
-          subject: subject.trim(),
-          description: bodyPreview,
-          emailMessageId: result.messageId,
-          emailThreadId: result.threadId,
-          emailSubject: subject.trim(),
-          emailTrackingToken: result.trackingToken,
-          completed: true,
-          completedAt: new Date().toISOString(),
-          contactIds: contactId ? [contactId] : undefined,
-          leadId,
-          organizationId,
-          dealId,
-        }),
-      }).catch((err) => {
-        console.error("Failed to create email activity:", err);
-      });
 
       setSent(true);
       router.refresh();

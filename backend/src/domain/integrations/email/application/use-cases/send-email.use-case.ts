@@ -5,6 +5,7 @@ import { GoogleOAuthPort } from "../ports/google-oauth.port";
 import { EmailMessagesRepository, EmailMessage } from "../repositories/email-messages.repository";
 import { EmailTrackingRepository, EmailTrackingRecord } from "../repositories/email-tracking.repository";
 import { EmailAddress } from "../../enterprise/value-objects/email-address.vo";
+import { CreateActivityUseCase } from "@/domain/activities/application/use-cases/create-activity.use-case";
 
 export interface SendEmailInput {
   userId: string;
@@ -15,12 +16,18 @@ export interface SendEmailInput {
   threadId?: string;
   attachments?: GmailAttachment[];
   ownerId: string;
+  // Entity refs — the activity logged for this send is linked to these
+  leadId?: string;
+  contactIds?: string[];
+  organizationId?: string;
+  dealId?: string;
 }
 
 export interface SendEmailOutput {
   messageId: string;
   threadId: string;
   trackingToken: string;
+  activityId?: string;
 }
 
 /** Generates a URL-safe random token without external dependencies */
@@ -64,10 +71,11 @@ export class SendEmailUseCase {
     private readonly oauthPort: GoogleOAuthPort,
     private readonly emailMessagesRepo: EmailMessagesRepository,
     private readonly emailTrackingRepo: EmailTrackingRepository,
+    private readonly createActivity: CreateActivityUseCase,
   ) {}
 
   async execute(input: SendEmailInput): Promise<Either<Error, SendEmailOutput>> {
-    const { userId, to, subject, bodyHtml, fromEmail, threadId, attachments, ownerId } = input;
+    const { userId, to, subject, bodyHtml, fromEmail, threadId, attachments, ownerId, leadId, contactIds, organizationId, dealId } = input;
 
     // 1. Validate email address
     const emailResult = EmailAddress.create(to);
@@ -117,8 +125,46 @@ export class SendEmailUseCase {
       return left(err instanceof Error ? err : new Error("Failed to send email"));
     }
 
-    // 5. Save EmailMessage record
+    // 5. Create the outbound activity (single source of truth for the send log).
+    // Done in the backend so send + activity + delivery status stay consistent and
+    // a bounce can be reconciled back to this activity by thread (see
+    // ProcessIncomingEmailUseCase). Failure here must not fail the send (it's out).
     const now = new Date();
+    let activityId: string | undefined;
+    try {
+      const bodyPreview = bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 500);
+      const activityResult = await this.createActivity.execute({
+        ownerId,
+        type: "email",
+        subject,
+        description: bodyPreview,
+        completed: true,
+        completedAt: now,
+        emailMessageId: messageId,
+        emailThreadId: resultThreadId,
+        emailSubject: subject,
+        emailTrackingToken: trackingToken,
+        contactIds,
+        leadId,
+        organizationId,
+        dealId,
+      });
+      if (activityResult.isRight()) {
+        activityId = activityResult.value.activity.id.toString();
+      } else {
+        this.logger.warn("SendEmailUseCase: failed to create outbound activity", {
+          messageId,
+          error: activityResult.value.message,
+        });
+      }
+    } catch (err) {
+      this.logger.warn("SendEmailUseCase: failed to create outbound activity", {
+        messageId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+
+    // 6. Save EmailMessage record (linked to the activity)
     const emailRecord: EmailMessage = {
       id: `em-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       gmailMessageId: messageId,
@@ -126,6 +172,7 @@ export class SendEmailUseCase {
       from: fromEmail ?? userId,
       to: validatedEmail,
       subject,
+      activityId,
       ownerId,
       sentAt: now,
       trackingToken,
@@ -142,7 +189,7 @@ export class SendEmailUseCase {
       });
     }
 
-    // 6. Save EmailTracking record for open tracking
+    // 7. Save EmailTracking record for open tracking
     const trackingRecord: EmailTrackingRecord = {
       id: `et-${Date.now()}-${Math.random().toString(36).slice(2)}`,
       token: trackingToken,
@@ -160,6 +207,6 @@ export class SendEmailUseCase {
       });
     }
 
-    return right({ messageId, threadId: resultThreadId, trackingToken });
+    return right({ messageId, threadId: resultThreadId, trackingToken, activityId });
   }
 }

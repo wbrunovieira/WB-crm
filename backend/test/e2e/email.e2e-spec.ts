@@ -76,6 +76,9 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+  // Sends now create activities + email messages — clean what this suite leaked
+  await prisma.emailMessage.deleteMany({ where: { ownerId: userId } }).catch(() => {});
+  await prisma.activity.deleteMany({ where: { ownerId: userId, type: "email" } }).catch(() => {});
   await prisma.googleToken.deleteMany({ where: { id: "google-token-singleton" } });
   await app.close();
 });
@@ -127,6 +130,47 @@ describe("POST /email/send", () => {
       .expect((res) => {
         expect(res.body.ok).toBe(true);
       });
+  });
+
+  it("creates an outbound 'email' activity linked to the lead (backend owns the send log)", async () => {
+    const lead = await prisma.lead.create({
+      data: { businessName: "Lead Send E2E", ownerId: userId },
+    });
+    // Gmail returns a globally-unique id per message; the constant fake would clash
+    // with the unique emailMessageId column across the suite's other sends.
+    const originalSend = fakeGmailPort.send;
+    fakeGmailPort.send = async () => ({ messageId: "gmail-send-activity-e2e", threadId: "thread-send-activity-e2e" });
+    try {
+      const res = await request(app.getHttpServer())
+        .post("/email/send")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          to: "destinatario@example.com",
+          subject: "Apresentação E2E",
+          bodyHtml: "<p>Olá</p>",
+          leadId: lead.id,
+        })
+        .expect(201);
+
+      expect(res.body.ok).toBe(true);
+      expect(res.body.activityId).toBeDefined();
+
+      const activity = await prisma.activity.findUnique({ where: { id: res.body.activityId } });
+      expect(activity?.type).toBe("email");
+      expect(activity?.completed).toBe(true);
+      expect(activity?.leadId).toBe(lead.id);
+      expect(activity?.emailThreadId).toBe("thread-send-activity-e2e");
+      expect(activity?.emailFromAddress).toBeNull(); // outbound
+
+      // EmailMessage is linked to the activity
+      const emailMsg = await prisma.emailMessage.findFirst({ where: { gmailMessageId: "gmail-send-activity-e2e" } });
+      expect(emailMsg?.activityId).toBe(res.body.activityId);
+    } finally {
+      fakeGmailPort.send = originalSend;
+      await prisma.emailMessage.deleteMany({ where: { ownerId: userId } }).catch(() => {});
+      await prisma.activity.deleteMany({ where: { leadId: lead.id } });
+      await prisma.lead.deleteMany({ where: { id: lead.id } });
+    }
   });
 
   it("missing required field 'to' → 400", () => {

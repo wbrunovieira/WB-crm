@@ -47,6 +47,6 @@ import { ActivitiesController } from "@/infra/controllers/activities.controller"
     { provide: GmailPort, useClass: GmailClient },
     { provide: GoogleOAuthPort, useClass: GoogleOAuthService },
   ],
-  exports: [ActivitiesRepository],
+  exports: [ActivitiesRepository, CreateActivityUseCase],
 })
 export class ActivitiesModule {}

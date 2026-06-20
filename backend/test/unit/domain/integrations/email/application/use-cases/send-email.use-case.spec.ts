@@ -4,6 +4,8 @@ import { FakeGmailPort } from "../../fakes/fake-gmail.port";
 import { FakeGoogleOAuthPort, GOOGLE_TOKEN_SINGLETON } from "../../fakes/fake-google-oauth.port";
 import { FakeEmailMessagesRepository } from "../../fakes/fake-email-messages.repository";
 import { FakeEmailTrackingRepository } from "../../fakes/fake-email-tracking.repository";
+import { CreateActivityUseCase } from "@/domain/activities/application/use-cases/create-activity.use-case";
+import { FakeActivitiesRepository } from "@test/unit/domain/integrations/whatsapp/fakes/fake-activities.repository";
 
 const OWNER_ID = "owner-001";
 
@@ -22,6 +24,8 @@ let gmailPort: FakeGmailPort;
 let oauthPort: FakeGoogleOAuthPort;
 let emailMessagesRepo: FakeEmailMessagesRepository;
 let emailTrackingRepo: FakeEmailTrackingRepository;
+let activitiesRepo: FakeActivitiesRepository;
+let createActivity: CreateActivityUseCase;
 let useCase: SendEmailUseCase;
 
 beforeEach(() => {
@@ -29,12 +33,15 @@ beforeEach(() => {
   oauthPort = new FakeGoogleOAuthPort();
   emailMessagesRepo = new FakeEmailMessagesRepository();
   emailTrackingRepo = new FakeEmailTrackingRepository();
+  activitiesRepo = new FakeActivitiesRepository();
+  createActivity = new CreateActivityUseCase(activitiesRepo);
 
   useCase = new SendEmailUseCase(
     gmailPort,
     oauthPort,
     emailMessagesRepo,
     emailTrackingRepo,
+    createActivity,
   );
 });
 
@@ -157,6 +164,62 @@ describe("SendEmailUseCase", () => {
 
     const saved = emailMessagesRepo.items[0];
     expect(saved.from).toBe("bruno@saltoup.com");
+  });
+});
+
+// ── Outbound activity creation (backend owns the send log) ──────────────────────
+// Item #1: the activity is created here, not by the frontend, so send + activity
+// + delivery status share a single source of truth and stay consistent.
+describe("SendEmailUseCase — creates the outbound activity", () => {
+  it("creates an 'email' activity on successful send and returns its id", async () => {
+    const result = await useCase.execute(makeInput({ leadId: "lead-1", subject: "Apresentação" }));
+
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().activityId).toBeDefined();
+
+    expect(activitiesRepo.items).toHaveLength(1);
+    const activity = activitiesRepo.items[0];
+    expect(activity.type).toBe("email");
+    expect(activity.ownerId).toBe(OWNER_ID);
+    expect(activity.completed).toBe(true);
+    expect(activity.completedAt).toBeDefined();
+    expect(activity.leadId).toBe("lead-1");
+    // outbound — NO emailFromAddress (that's how bounce reconciliation tells sent from received)
+    expect(activity.emailFromAddress).toBeUndefined();
+  });
+
+  it("stores the gmail thread/message ids + tracking token on the activity (join keys)", async () => {
+    const result = await useCase.execute(makeInput());
+    const activity = activitiesRepo.items[0];
+
+    expect(activity.emailMessageId).toBe(result.unwrap().messageId);
+    expect(activity.emailThreadId).toBe(result.unwrap().threadId);
+    expect(activity.emailTrackingToken).toBe(result.unwrap().trackingToken);
+    expect(activity.emailSubject).toBe("Hello World");
+  });
+
+  it("links the entity refs (contact/org/deal) onto the activity", async () => {
+    await useCase.execute(makeInput({ contactIds: ["c-1"], organizationId: "org-1", dealId: "deal-1" }));
+    const activity = activitiesRepo.items[0];
+
+    expect(activity.contactId).toBe("c-1");
+    expect(activity.organizationId).toBe("org-1");
+    expect(activity.dealId).toBe("deal-1");
+  });
+
+  it("links the EmailMessage record to the created activity", async () => {
+    await useCase.execute(makeInput({ leadId: "lead-1" }));
+
+    const activity = activitiesRepo.items[0];
+    expect(emailMessagesRepo.items[0].activityId).toBe(activity.id.toString());
+  });
+
+  it("does NOT create an activity when the send fails", async () => {
+    gmailPort.shouldFailSend = true;
+    const result = await useCase.execute(makeInput({ leadId: "lead-1" }));
+
+    expect(result.isLeft()).toBe(true);
+    expect(activitiesRepo.items).toHaveLength(0);
   });
 });
 

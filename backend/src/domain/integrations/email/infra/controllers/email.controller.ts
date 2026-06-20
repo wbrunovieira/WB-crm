@@ -46,6 +46,11 @@ interface SendEmailBody {
   fromEmail?: string;
   threadId?: string;
   attachments?: SendEmailAttachment[];
+  // Entity refs for the activity logged with this send
+  leadId?: string;
+  contactIds?: string[];
+  organizationId?: string;
+  dealId?: string;
 }
 
 @ApiTags("Email")
@@ -80,7 +85,7 @@ export class EmailController {
   async send(
     @Body() body: SendEmailBody,
     @CurrentUser() user: AuthenticatedUser,
-  ): Promise<{ ok: boolean; messageId?: string; threadId?: string; trackingToken?: string; error?: string }> {
+  ): Promise<{ ok: boolean; messageId?: string; threadId?: string; trackingToken?: string; activityId?: string; error?: string }> {
     if (!body.to || !body.subject || !body.bodyHtml) {
       throw new BadRequestException("Missing required fields: to, subject, bodyHtml");
     }
@@ -94,6 +99,10 @@ export class EmailController {
       threadId: body.threadId,
       attachments: body.attachments,
       ownerId: user.id,
+      leadId: body.leadId,
+      contactIds: body.contactIds,
+      organizationId: body.organizationId,
+      dealId: body.dealId,
     });
 
     if (result.isLeft()) {
