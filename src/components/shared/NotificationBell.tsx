@@ -19,6 +19,7 @@ interface NotificationItem {
 export function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [open, setOpen] = useState(false);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
   const { data: session, update: updateSession } = useSession();
@@ -205,30 +206,64 @@ export function NotificationBell() {
                 Nenhuma notificação
               </div>
             ) : (
-              notifications.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => handleNotificationClick(n)}
-                  className="w-full flex items-start gap-3 px-4 py-3 text-left transition-colors hover:bg-white/5 border-b last:border-b-0"
-                  style={{ borderColor: "#2a0033" }}
-                >
-                  <div className="mt-0.5">{getIcon(n.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className={`text-sm truncate ${n.read ? "text-gray-400" : "text-white font-medium"}`}>
-                      {n.title}
-                    </p>
-                    {n.summary && (
-                      <p className="text-xs text-gray-500 truncate mt-0.5">{n.summary}</p>
-                    )}
+              notifications.map((n) => {
+                const isExpanded = expandedId === n.id;
+                return (
+                  <div
+                    key={n.id}
+                    className="w-full flex items-start gap-3 px-4 py-3 transition-colors hover:bg-white/5 border-b last:border-b-0"
+                    style={{ borderColor: "#2a0033" }}
+                  >
+                    <div className="mt-0.5">{getIcon(n.type)}</div>
+                    <button
+                      onClick={() => handleNotificationClick(n)}
+                      className="flex-1 min-w-0 text-left"
+                    >
+                      <p
+                        title={n.title}
+                        className={`text-sm ${isExpanded ? "whitespace-normal break-words" : "truncate"} ${n.read ? "text-gray-400" : "text-white font-medium"}`}
+                      >
+                        {n.title}
+                      </p>
+                      {n.summary && (
+                        <p
+                          title={n.summary}
+                          className={`text-xs text-gray-500 mt-0.5 ${isExpanded ? "whitespace-pre-wrap break-words" : "truncate"}`}
+                        >
+                          {n.summary}
+                        </p>
+                      )}
+                    </button>
+                    <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-[10px] text-gray-600">{formatTime(n.createdAt)}</span>
+                        {!n.read && (
+                          <span className="block h-2 w-2 rounded-full bg-purple-500" />
+                        )}
+                      </div>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setExpandedId(isExpanded ? null : n.id);
+                        }}
+                        className="text-gray-500 hover:text-gray-300 transition-colors p-0.5"
+                        aria-label={isExpanded ? "Recolher" : "Expandir"}
+                        title={isExpanded ? "Recolher" : "Expandir"}
+                      >
+                        <svg
+                          className={`h-3.5 w-3.5 transition-transform ${isExpanded ? "rotate-180" : ""}`}
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          strokeWidth={2}
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                    <span className="text-[10px] text-gray-600">{formatTime(n.createdAt)}</span>
-                    {!n.read && (
-                      <span className="block h-2 w-2 rounded-full bg-purple-500" />
-                    )}
-                  </div>
-                </button>
-              ))
+                );
+              })
             )}
           </div>
         </div>
