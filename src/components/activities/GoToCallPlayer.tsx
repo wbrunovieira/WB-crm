@@ -3,16 +3,14 @@
 /**
  * GoToCallPlayer
  *
- * Plays two GoTo call tracks (agent + client) simultaneously, synced by the
- * timestamp embedded in each S3 key. Renders an attributed transcript with
+ * Plays the GoTo call recording (the agent leg) and renders its transcript with
  * active-segment highlighting.
  *
- * Audio sync strategy:
- *   S3 key format: {yyyy}/{MM}/{dd}/{isoTimestamp}~{callId}~...
- *   The ISO timestamp tells us when each recording started. If the client track
- *   started 4 s after the agent track, we delay starting the client audio by 4 s.
- *   On seek, both elements are repositioned to keep the invariant:
- *     clientTime = agentTime - offsetSeconds   (clamped to 0)
+ * Each GoTo "leg" actually records the FULL duplex conversation (both voices),
+ * so playing the agent and client legs together produced a ~2 s echo. We now
+ * play a single leg. `offset` (derived from the ISO timestamp in each S3 key)
+ * is kept only to realign legacy two-speaker transcripts onto the agent leg
+ * when seeking; current transcripts are a single neutral stream.
  */
 
 import { useRef, useState, useEffect, useCallback } from "react";
@@ -81,8 +79,6 @@ export default function GoToCallPlayer({
   const token = encodeURIComponent(session?.user?.accessToken ?? "");
 
   const agentAudio = useRef<HTMLAudioElement>(null);
-  const clientAudio = useRef<HTMLAudioElement>(null);
-  const clientDelayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
@@ -109,83 +105,30 @@ export default function GoToCallPlayer({
     };
   }, []);
 
-  // ── Clear pending timers on unmount ───────────────────────────────────────
-  useEffect(() => () => {
-    if (clientDelayTimer.current) clearTimeout(clientDelayTimer.current);
-  }, []);
-
   // ── Play / Pause ──────────────────────────────────────────────────────────
   const handlePlayPause = useCallback(() => {
     const agent = agentAudio.current;
-    const client = clientAudio.current;
+    if (!agent) return;
 
     if (playing) {
-      agent?.pause();
-      client?.pause();
-      if (clientDelayTimer.current) {
-        clearTimeout(clientDelayTimer.current);
-        clientDelayTimer.current = null;
-      }
+      agent.pause();
       setPlaying(false);
       return;
     }
 
-    if (!agent) return;
-    const agentTime = agent.currentTime;
     agent.play();
-
-    if (client && clientKey) {
-      const clientTime = agentTime - offset;
-      if (clientTime >= 0) {
-        // We're past the client start — play it from the right position
-        client.currentTime = clientTime;
-        client.play();
-      } else {
-        // Agent hasn't reached client start yet — delay
-        const delayMs = Math.max(0, -clientTime * 1000);
-        clientDelayTimer.current = setTimeout(() => {
-          client.currentTime = 0;
-          client.play();
-        }, delayMs);
-      }
-    }
     setPlaying(true);
-  }, [playing, clientKey, offset]);
+  }, [playing]);
 
   // ── Seek ─────────────────────────────────────────────────────────────────
   const handleSeek = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     const agent = agentAudio.current;
     if (!agent || !duration) return;
 
-    if (clientDelayTimer.current) {
-      clearTimeout(clientDelayTimer.current);
-      clientDelayTimer.current = null;
-    }
-
     const rect = e.currentTarget.getBoundingClientRect();
     const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const newAgentTime = ratio * duration;
-    agent.currentTime = newAgentTime;
-
-    const client = clientAudio.current;
-    if (client && clientKey) {
-      const clientTime = newAgentTime - offset;
-      if (clientTime >= 0) {
-        client.currentTime = clientTime;
-        if (playing) client.play();
-      } else {
-        client.currentTime = 0;
-        client.pause();
-        if (playing) {
-          const delayMs = -clientTime * 1000;
-          clientDelayTimer.current = setTimeout(() => {
-            client.currentTime = 0;
-            client.play();
-          }, delayMs);
-        }
-      }
-    }
-  }, [duration, clientKey, offset, playing]);
+    agent.currentTime = ratio * duration;
+  }, [duration]);
 
   // ── Active segment for highlight ─────────────────────────────────────────
   const activeIdx = segments.findIndex(
@@ -196,19 +139,12 @@ export default function GoToCallPlayer({
 
   return (
     <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
-      {/* Hidden audio elements */}
+      {/* Hidden audio element — single leg (each leg holds the full call) */}
       <audio
         ref={agentAudio}
         preload="metadata"
         src={`${BACKEND_URL}/goto/recordings/${activityId}?track=agent&token=${token}`}
       />
-      {clientKey && (
-        <audio
-          ref={clientAudio}
-          preload="metadata"
-          src={`${BACKEND_URL}/goto/recordings/${activityId}?track=client&token=${token}`}
-        />
-      )}
 
       {/* Player bar */}
       <div className="flex items-center gap-2 rounded-md border border-blue-200 bg-blue-50 px-3 py-2">
@@ -299,11 +235,13 @@ export default function GoToCallPlayer({
                   }}
                 >
                   <div className="flex items-baseline gap-2">
-                    <span className={`text-xs font-semibold ${
-                      isActive ? "text-white" : isAgent ? "text-blue-700" : "text-violet-700"
-                    }`}>
-                      {seg.speakerName}
-                    </span>
+                    {seg.speakerName && (
+                      <span className={`text-xs font-semibold ${
+                        isActive ? "text-white" : isAgent ? "text-blue-700" : "text-violet-700"
+                      }`}>
+                        {seg.speakerName}
+                      </span>
+                    )}
                     <span className={`text-xs ${isActive ? "text-white/70" : "text-gray-500"}`}>
                       {fmt(seg.start)}
                     </span>

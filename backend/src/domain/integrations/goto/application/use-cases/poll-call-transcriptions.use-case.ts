@@ -13,6 +13,21 @@ export interface TranscriptSegment extends TranscriptionSegment {
   speakerName: string;
 }
 
+/**
+ * Reads the recording start time encoded in an S3 key filename
+ * (`{yyyy}/{MM}/{dd}/{isoTimestamp}~{callId}~...mp3`) and returns the seconds
+ * the client leg started after the agent leg. Used to realign a fallback
+ * client-leg transcript onto the agent recording the player streams.
+ */
+function legOffsetSeconds(agentKey?: string, clientKey?: string): number {
+  if (!agentKey || !clientKey) return 0;
+  const iso = (k: string) => Date.parse((k.split("/").pop() ?? "").split("~")[0]);
+  const ag = iso(agentKey);
+  const cl = iso(clientKey);
+  if (isNaN(ag) || isNaN(cl)) return 0;
+  return (cl - ag) / 1000;
+}
+
 export interface PollCallTranscriptionsOutput {
   saved?: boolean;
   pending?: boolean;
@@ -36,7 +51,7 @@ export class PollCallTranscriptionsUseCase {
     const found = await this.activitiesRepository.findByIdForTranscription(activityId);
     if (!found) return right({ skipped: true });
 
-    const { activity, ownerName, clientName } = found;
+    const { activity } = found;
 
     // Skip if already has transcript or no jobs
     if (activity.gotoTranscriptText) return right({ skipped: true });
@@ -66,26 +81,39 @@ export class PollCallTranscriptionsUseCase {
         ? await this.transcriber.getResult(jobB)
         : null;
 
-      // Build interleaved segments
-      const segmentsAgent: TranscriptSegment[] = (resultA?.segments ?? []).map((s) => ({
-        ...s,
-        speaker: "agent",
-        speakerName: ownerName,
-      }));
-      const segmentsClient: TranscriptSegment[] = (resultB?.segments ?? []).map((s) => ({
-        ...s,
-        speaker: "client",
-        speakerName: clientName,
-      }));
+      // Each GoTo "leg" records the FULL duplex conversation (both voices), so
+      // transcribing both legs and interleaving duplicated every line with the
+      // wrong speaker. Emit a SINGLE stream from the agent leg — the audio the
+      // player streams — falling back to the client leg only if the agent leg
+      // produced nothing. The transcriber does not diarize, so we attach no
+      // speaker attribution (single neutral stream).
+      const segsAgent = resultA?.segments ?? [];
+      const segsClient = resultB?.segments ?? [];
+      const useAgentLeg = segsAgent.length > 0;
+      const chosen = useAgentLeg ? segsAgent : segsClient;
 
-      const interleaved = [...segmentsAgent, ...segmentsClient].sort(
-        (a, b) => a.start - b.start,
-      );
+      // When falling back to the client leg, realign its timeline onto the
+      // agent recording so transcript highlights still match playback.
+      const shift = useAgentLeg
+        ? 0
+        : legOffsetSeconds(activity.gotoRecordingUrl, activity.gotoRecordingUrl2);
 
-      const transcriptJson = JSON.stringify(interleaved);
+      const segments: TranscriptSegment[] = chosen
+        .map((s) => ({
+          start: s.start + shift,
+          end: s.end + shift,
+          text: s.text,
+          speaker: "agent" as const,
+          speakerName: "",
+        }))
+        .sort((a, b) => a.start - b.start);
 
-      // Auto-reclassify based on transcript content
-      const fullText = interleaved.map((s) => s.text).join(" ").toLowerCase();
+      const transcriptJson = JSON.stringify(segments);
+
+      // Outcome detection still scans BOTH legs — voicemail / "invalid number"
+      // prompts are often clearer on the far-end leg — even though only the
+      // single stream is saved.
+      const fullText = [...segsAgent, ...segsClient].map((s) => s.text).join(" ").toLowerCase();
 
       const isInvalidNumber =
         fullText.includes("número de telefone não existe") ||

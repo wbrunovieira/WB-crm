@@ -60,7 +60,10 @@ describe("PollCallTranscriptionsUseCase", () => {
     expect(saved.gotoTranscriptText).toBeUndefined();
   });
 
-  it("interleaves segments by timestamp when both done", async () => {
+  it("emits a single stream from the agent leg (no duplication across legs)", async () => {
+    // Both GoTo legs record the full duplex conversation, so the client leg is
+    // a near-duplicate of the agent leg. We must NOT interleave both — only the
+    // agent leg is saved, with no speaker attribution.
     const activity = makeActivity();
     repo.items.push(activity);
 
@@ -78,14 +81,15 @@ describe("PollCallTranscriptionsUseCase", () => {
       ],
     });
 
+    // Client leg captured the same conversation (would be duplicates) — ignored.
     transcriber.addJobResult("job-client-001", {
       jobId: "job-client-001",
       text: "Client text",
       language: "pt",
       durationSeconds: 60,
       segments: [
-        { start: 6, end: 9, text: "Hi there!" },
-        { start: 16, end: 20, text: "I'm fine!" },
+        { start: 2, end: 6, text: "Hello" },
+        { start: 12, end: 16, text: "How are you?" },
       ],
     });
 
@@ -98,17 +102,49 @@ describe("PollCallTranscriptionsUseCase", () => {
     expect(saved.gotoTranscriptText).toBeDefined();
 
     const transcript = JSON.parse(saved.gotoTranscriptText!);
-    expect(transcript).toHaveLength(4);
+    // Only the agent leg — no duplication from the client leg.
+    expect(transcript).toHaveLength(2);
+    expect(transcript.map((s: { text: string }) => s.text)).toEqual(["Hello", "How are you?"]);
+    // Single neutral stream — no per-leg speaker attribution.
+    expect(transcript.every((s: { speaker: string }) => s.speaker === "agent")).toBe(true);
+    expect(transcript.every((s: { speakerName: string }) => s.speakerName === "")).toBe(true);
+  });
 
-    // Verify interleaved by timestamp
-    expect(transcript[0].start).toBe(0);
+  it("falls back to the client leg, realigned by the leg offset, when the agent leg is empty", async () => {
+    // Agent leg started at 13:40:30Z, client leg 12s later at 13:40:42Z.
+    const activity = makeActivity({
+      gotoRecordingUrl: "2026/06/19/2026-06-19T13:40:30Z~call~a.mp3",
+      gotoRecordingUrl2: "2026/06/19/2026-06-19T13:40:42Z~call~b.mp3",
+    });
+    repo.items.push(activity);
+
+    transcriber.addJobStatus("job-agent-001", { jobId: "job-agent-001", status: "done" });
+    transcriber.addJobStatus("job-client-001", { jobId: "job-client-001", status: "done" });
+
+    transcriber.addJobResult("job-agent-001", {
+      jobId: "job-agent-001",
+      text: "",
+      language: "pt",
+      durationSeconds: 60,
+      segments: [],
+    });
+    transcriber.addJobResult("job-client-001", {
+      jobId: "job-client-001",
+      text: "Client text",
+      language: "pt",
+      durationSeconds: 60,
+      segments: [{ start: 5, end: 9, text: "Oi" }],
+    });
+
+    await useCase.execute({ activityId: "activity-001" });
+
+    const transcript = JSON.parse(repo.items[0].gotoTranscriptText!);
+    expect(transcript).toHaveLength(1);
+    // 5s within the client recording → 5 + 12 = 17s on the agent timeline.
+    expect(transcript[0].start).toBe(17);
+    expect(transcript[0].end).toBe(21);
     expect(transcript[0].speaker).toBe("agent");
-    expect(transcript[1].start).toBe(6);
-    expect(transcript[1].speaker).toBe("client");
-    expect(transcript[2].start).toBe(10);
-    expect(transcript[2].speaker).toBe("agent");
-    expect(transcript[3].start).toBe(16);
-    expect(transcript[3].speaker).toBe("client");
+    expect(transcript[0].speakerName).toBe("");
   });
 
   it("handles one track failed (uses only successful one)", async () => {
@@ -191,20 +227,9 @@ describe("PollCallTranscriptionsUseCase", () => {
     expect(result.value).toMatchObject({ skipped: true });
   });
 
-  it("uses resolved owner name as agent speakerName", async () => {
-    const activity = makeActivity({ contactId: "contact-001" });
-    repo.items.push(activity);
-    repo.setNames("activity-001", { ownerName: "Bruno Vieira", clientName: "Cliente Teste" });
-    setupDoneJobs();
-
-    await useCase.execute({ activityId: "activity-001" });
-
-    const transcript = JSON.parse(repo.items[0].gotoTranscriptText!);
-    const agentSegment = transcript.find((s: { speaker: string }) => s.speaker === "agent");
-    expect(agentSegment.speakerName).toBe("Bruno Vieira");
-  });
-
-  it("uses resolved client name as client speakerName", async () => {
+  it("does not attribute speakers — single neutral stream without names", async () => {
+    // The transcriber does not diarize, and each leg holds both voices, so we
+    // never label segments with a resolved owner/client name.
     const activity = makeActivity({ contactId: "contact-001" });
     repo.items.push(activity);
     repo.setNames("activity-001", { ownerName: "Bruno Vieira", clientName: "João Silva" });
@@ -213,20 +238,9 @@ describe("PollCallTranscriptionsUseCase", () => {
     await useCase.execute({ activityId: "activity-001" });
 
     const transcript = JSON.parse(repo.items[0].gotoTranscriptText!);
-    const clientSegment = transcript.find((s: { speaker: string }) => s.speaker === "client");
-    expect(clientSegment.speakerName).toBe("João Silva");
-  });
-
-  it("falls back to 'Agente'/'Cliente' when names not resolved", async () => {
-    const activity = makeActivity();
-    repo.items.push(activity);
-    // No setNames call — no resolution available
-    setupDoneJobs();
-
-    await useCase.execute({ activityId: "activity-001" });
-
-    const transcript = JSON.parse(repo.items[0].gotoTranscriptText!);
-    expect(transcript.find((s: { speaker: string }) => s.speaker === "agent").speakerName).toBe("Agente");
-    expect(transcript.find((s: { speaker: string }) => s.speaker === "client").speakerName).toBe("Cliente");
+    expect(transcript.length).toBeGreaterThan(0);
+    expect(transcript.every((s: { speakerName: string }) => s.speakerName === "")).toBe(true);
+    expect(transcript.some((s: { speakerName: string }) => s.speakerName === "Bruno Vieira")).toBe(false);
+    expect(transcript.some((s: { speakerName: string }) => s.speakerName === "João Silva")).toBe(false);
   });
 });
