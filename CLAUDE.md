@@ -410,12 +410,14 @@ TDD order: Value Objects → Entities → Use Cases (with fakes) → E2E (with t
 **GoTo call pipeline** (end-to-end):
 1. GoTo softphone call ends → `POST /webhooks/goto/calls` (webhook, secret-validated) → `HandleGotoWebhookUseCase` → `CreateCallActivityUseCase` → Activity saved with `gotoRecordingId`
 2. Internal cron Pass 1 → `ProcessCallRecordingUseCase` → find agent+client MP3 keys in S3 (`AWS_S3_GOTO_BUCKET`) → submit each separately to transcriber → save job IDs on activity
-3. Internal cron Pass 2 → `PollCallTranscriptionsUseCase` → poll both jobs → when done: interleave segments by `start` timestamp → resolve real owner name (User.name) and client name (Contact/Lead/Partner.name) → save JSON to `gotoTranscriptText`
-4. Playback: `GET /goto/recordings/:activityId?track=agent|client` → streams MP3 from S3 (JWT-protected)
+3. Internal cron Pass 2 → `PollCallTranscriptionsUseCase` → poll both jobs → when done: emit a **single stream from the agent leg** (no speaker attribution — `speakerName: ""`), falling back to the client leg realigned by the S3-timestamp offset if the agent leg is empty → save JSON to `gotoTranscriptText`. Outcome auto-reclassification (voicemail / invalid number) still scans **both** legs' text.
+4. Playback: `GET /goto/recordings/:activityId?track=agent|client` → streams MP3 from S3 (JWT-protected). The player plays a **single leg** (`track=agent`).
+
+**Why single-leg** (fixed 2026-06-21): each GoTo "leg" actually records the **FULL duplex conversation** (both voices), not one speaker per leg. Transcribing both legs and interleaving them duplicated every line with the wrong speaker; playing both legs together produced a ~2 s echo. The transcriber (faster-whisper) does **not** diarize, so the saved transcript is a single neutral stream with no speaker labels. Real "you vs client" labels would require adding diarization (WhisperX/pyannote) to the `transcritor` service.
 
 **Important**: GoTo saves recordings directly to S3 (configured in GoTo portal). The system reads from S3, never uploads. No Google Drive involved.
 
-**`ActivitiesRepository.findByIdForTranscription(id)`**: returns `{ activity, ownerName, clientName }` by JOINing User/Contact/Lead/Partner — used by `PollCallTranscriptionsUseCase` to resolve real speaker names.
+**`ActivitiesRepository.findByIdForTranscription(id)`**: returns `{ activity, ownerName, clientName }` by JOINing User/Contact/Lead/Partner. The owner/client names are no longer used for transcript speaker labels (single-leg, no attribution) but the JOIN is retained for other consumers.
 
 ### Backend Deploy (Ansible)
 
