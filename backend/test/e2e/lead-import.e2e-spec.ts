@@ -213,4 +213,42 @@ describe("POST /lead-import (e2e)", () => {
     expect(codes).toContain("4742300");
     expect(codes).toContain("4744001");
   });
+
+  it("importa lote com o MESMO CNAE novo repetido sem 500 — todos apontam para o mesmo CNAE", async () => {
+    // Regression for the P2002 race: rows sharing the same not-yet-existing
+    // CNAE used to crash the whole import. Use a fake code and self-clean so
+    // the import actually creates it (shared dev DB).
+    const code = "9999801";
+    const names = ["Pousada Race A", "Pousada Race B", "Pousada Race C"];
+    await prisma.lead.deleteMany({ where: { ownerId, businessName: { in: names } } });
+    await prisma.cNAE.deleteMany({ where: { code } });
+
+    const res = await request(app.getHttpServer())
+      .post("/lead-import")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        rows: names.map(businessName => ({ businessName, cnaePrincipal: `${code} - Hotéis e similares` })),
+      })
+      .expect(201);
+
+    expect(res.body.imported).toBe(3);
+    expect(res.body.errors).toHaveLength(0);
+
+    const leads = await prisma.lead.findMany({ where: { ownerId, businessName: { in: names } } });
+    expect(leads).toHaveLength(3);
+
+    // Every lead points to the SAME CNAE id, and the code was created exactly once.
+    const cnaeIds = new Set(leads.map(l => l.primaryCNAEId));
+    expect(cnaeIds.size).toBe(1);
+    const onlyId = [...cnaeIds][0];
+    expect(onlyId).toBeTruthy();
+
+    const cnaes = await prisma.cNAE.findMany({ where: { code } });
+    expect(cnaes).toHaveLength(1);
+    expect(cnaes[0].id).toBe(onlyId);
+
+    // cleanup: drop the leads (FK), then the global CNAE we created
+    await prisma.lead.deleteMany({ where: { ownerId, businessName: { in: names } } });
+    await prisma.cNAE.deleteMany({ where: { code } });
+  });
 });

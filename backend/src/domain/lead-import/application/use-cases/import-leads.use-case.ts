@@ -37,6 +37,21 @@ export class ImportLeadsUseCase {
     const primaryCnaeMap = new Map<number, string>(); // rowIndex → cnaeId
     const secondaryCnaeMap = new Map<number, string[]>(); // rowIndex → cnaeId[]
 
+    // Resolve each DISTINCT CNAE code only once. Rows in a batch frequently
+    // share a code; resolving them concurrently raced on the unique(code)
+    // constraint (P2002) because Prisma's upsert is a non-atomic
+    // select-then-insert. Memoizing the promise per code means one upsert per
+    // code, shared across every row that references it.
+    const cnaeByCode = new Map<string, Promise<string>>();
+    const resolveCnae = (entry: CnaeEntry): Promise<string> => {
+      let pending = cnaeByCode.get(entry.code);
+      if (!pending) {
+        pending = this.repo.findOrCreateCnaeByCode(entry.code, entry.description);
+        cnaeByCode.set(entry.code, pending);
+      }
+      return pending;
+    };
+
     const cnaeResolutionTasks: Promise<void>[] = [];
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -46,7 +61,7 @@ export class ImportLeadsUseCase {
         if (parsed) {
           const idx = i;
           cnaeResolutionTasks.push(
-            this.repo.findOrCreateCnaeByCode(parsed.code, parsed.description).then(id => {
+            resolveCnae(parsed).then(id => {
               primaryCnaeMap.set(idx, id);
             }),
           );
@@ -59,7 +74,7 @@ export class ImportLeadsUseCase {
         if (parsedParts.length > 0) {
           const idx = i;
           cnaeResolutionTasks.push(
-            Promise.all(parsedParts.map(p => this.repo.findOrCreateCnaeByCode(p.code, p.description))).then(ids => {
+            Promise.all(parsedParts.map(p => resolveCnae(p))).then(ids => {
               secondaryCnaeMap.set(idx, ids);
             }),
           );

@@ -3,6 +3,11 @@ import { PrismaService } from "@/infra/database/prisma.service";
 import { LeadImportRepository, ImportContactData } from "../../application/repositories/lead-import.repository";
 import { Lead } from "@/domain/leads/enterprise/entities/lead";
 
+/** Prisma "Unique constraint failed" error (P2002), detected without a value import. */
+function isUniqueViolation(err: unknown): boolean {
+  return typeof err === "object" && err !== null && (err as { code?: unknown }).code === "P2002";
+}
+
 @Injectable()
 export class PrismaLeadImportRepository extends LeadImportRepository {
   constructor(private readonly prisma: PrismaService) { super(); }
@@ -26,13 +31,24 @@ export class PrismaLeadImportRepository extends LeadImportRepository {
   }
 
   async findOrCreateCnaeByCode(code: string, description: string): Promise<string> {
-    const record = await this.prisma.cNAE.upsert({
-      where: { code },
-      create: { code, description },
-      update: {},
-      select: { id: true },
-    });
-    return record.id;
+    try {
+      const record = await this.prisma.cNAE.upsert({
+        where: { code },
+        create: { code, description },
+        update: {},
+        select: { id: true },
+      });
+      return record.id;
+    } catch (err) {
+      // Prisma's upsert is a non-atomic select-then-insert, so two concurrent
+      // inserts of the same NEW code can violate unique(code) (P2002). Recover
+      // by reading the row the other writer just created.
+      if (isUniqueViolation(err)) {
+        const existing = await this.prisma.cNAE.findUnique({ where: { code }, select: { id: true } });
+        if (existing) return existing.id;
+      }
+      throw err;
+    }
   }
 
   async batchCreateContacts(contacts: ImportContactData[]): Promise<void> {

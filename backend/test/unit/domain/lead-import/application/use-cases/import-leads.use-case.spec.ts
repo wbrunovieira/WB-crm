@@ -519,4 +519,69 @@ describe("ImportLeadsUseCase", () => {
     expect(repo.leads[0].primaryCNAEId).toBeUndefined();
     expect(repo.cnaes).toHaveLength(0);
   });
+
+  // Regression: a batch with several rows sharing the SAME new CNAE used to 500
+  // because findOrCreateCnaeByCode ran in parallel (Promise.all) and Prisma's
+  // non-atomic upsert raced on the unique(code) constraint (P2002).
+  describe("CNAE race condition (same new code repeated in a batch)", () => {
+    // Repo whose findOrCreateCnaeByCode reproduces Prisma's non-atomic
+    // select-then-insert: concurrent inserts of the same new code throw P2002.
+    class RacingCnaeRepo extends InMemoryLeadImportRepository {
+      cnaeInsertCalls = 0;
+      async findOrCreateCnaeByCode(code: string, description: string): Promise<string> {
+        const seenBefore = this.cnaes.find(c => c.code === code); // SELECT
+        await Promise.resolve();                                  // network gap → interleave
+        if (seenBefore) return seenBefore.id;
+        this.cnaeInsertCalls++;
+        if (this.cnaes.find(c => c.code === code)) {
+          const err = new Error("Unique constraint failed on the fields: (`code`)") as Error & { code?: string };
+          err.code = "P2002";
+          throw err;
+        }
+        const rec = { id: `cnae-${code}`, code, description };
+        this.cnaes.push(rec);
+        return rec.id;
+      }
+    }
+
+    it("resolves the shared code once and imports every lead (no 500)", async () => {
+      const racing = new RacingCnaeRepo();
+      const uc2 = new ImportLeadsUseCase(racing);
+
+      const r = (await uc2.execute({
+        rows: [
+          { businessName: "Pousada A", cnaePrincipal: "5510801 - Hotéis" },
+          { businessName: "Pousada B", cnaePrincipal: "5510801 - Hotéis" },
+          { businessName: "Pousada C", cnaePrincipal: "5510801 - Hotéis" },
+        ],
+        ...base,
+      })).unwrap();
+
+      expect(r.imported).toBe(3);
+      expect(r.errors).toHaveLength(0);
+      // All three leads point to the same CNAE id
+      expect(new Set(racing.leads.map(l => l.primaryCNAEId))).toEqual(new Set(["cnae-5510801"]));
+      // The new code was resolved exactly once — no redundant concurrent insert
+      expect(racing.cnaeInsertCalls).toBe(1);
+    });
+
+    it("deduplicates a shared code across primary and secondary positions", async () => {
+      const racing = new RacingCnaeRepo();
+      const uc2 = new ImportLeadsUseCase(racing);
+
+      const r = (await uc2.execute({
+        rows: [
+          { businessName: "X", cnaePrincipal: "6920601 - Contabilidade" },
+          { businessName: "Y", cnaesSecundarios: "6920601 - Contabilidade|4120400 - Construção" },
+        ],
+        ...base,
+      })).unwrap();
+
+      expect(r.imported).toBe(2);
+      expect(r.errors).toHaveLength(0);
+      // 6920601 resolved once even though it appears as primary AND secondary
+      expect(racing.cnaes.filter(c => c.code === "6920601")).toHaveLength(1);
+      expect(racing.cnaeInsertCalls).toBe(2); // 6920601 + 4120400
+    });
+  });
 });
