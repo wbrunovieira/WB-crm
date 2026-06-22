@@ -14,8 +14,9 @@
  */
 
 import { useRef, useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { BACKEND_URL } from "@/lib/api-client";
+import { BACKEND_URL, apiFetch } from "@/lib/api-client";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -75,18 +76,62 @@ export default function GoToCallPlayer({
   transcriptText,
   compact = false,
 }: Props) {
+  const router = useRouter();
   const { data: session } = useSession();
-  const token = encodeURIComponent(session?.user?.accessToken ?? "");
+  const rawToken = session?.user?.accessToken ?? "";
+  const token = encodeURIComponent(rawToken);
 
   const agentAudio = useRef<HTMLAudioElement>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const [playing, setPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [showTranscript, setShowTranscript] = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
 
   const offset = clientKey ? offsetSeconds(agentKey, clientKey) : 0;
   const segments = parseTranscript(transcriptText);
+
+  // ── "Transcrever agora": trigger immediate transcription, then poll the
+  //    server (router.refresh) until the transcript prop arrives. ────────────
+  function stopPolling() {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+  }
+
+  // Stop polling once the transcript shows up (prop refreshed) or on unmount.
+  useEffect(() => {
+    if (transcriptText) {
+      stopPolling();
+      setTranscribing(false);
+    }
+    return stopPolling;
+  }, [transcriptText]);
+
+  const handleTranscribeNow = useCallback(async () => {
+    if (transcribing || !rawToken) return;
+    setTranscribing(true);
+    try {
+      await apiFetch(`/goto/recordings/${activityId}/transcribe`, rawToken, { method: "POST" });
+    } catch {
+      setTranscribing(false);
+      return;
+    }
+    // Poll for the transcript to be saved (background poller does the work).
+    stopPolling();
+    let elapsed = 0;
+    pollRef.current = setInterval(() => {
+      elapsed += 6;
+      router.refresh();
+      if (elapsed >= 180) {
+        stopPolling();
+        setTranscribing(false);
+      }
+    }, 6000);
+  }, [transcribing, rawToken, activityId, router]);
 
   // ── Sync currentTime display from agent track ──────────────────────────────
   useEffect(() => {
@@ -199,11 +244,17 @@ export default function GoToCallPlayer({
           </button>
         )}
 
-        {/* Pending indicator (has recording but no transcript yet) */}
+        {/* No transcript yet — let the user force it now instead of waiting
+            for the cron. While running, show a pending state. */}
         {!transcriptText && (
-          <span className="flex-shrink-0 text-xs text-blue-400">
-            ⏳ Transcrevendo...
-          </span>
+          <button
+            onClick={handleTranscribeNow}
+            disabled={transcribing}
+            className="flex-shrink-0 text-xs font-medium text-blue-600 hover:text-blue-800 transition-colors disabled:cursor-default disabled:text-blue-400"
+            title={transcribing ? "Transcrevendo…" : "Transcrever esta ligação agora"}
+          >
+            {transcribing ? "⏳ Transcrevendo…" : "Transcrever agora"}
+          </button>
         )}
       </div>
 

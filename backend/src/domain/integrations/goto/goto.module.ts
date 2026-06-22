@@ -25,6 +25,7 @@ import { S3RecordingClient } from "./infra/s3-recording.client";
 import { GoToWebhookController } from "./infra/controllers/goto-webhook.controller";
 import { GoToRecordingsController } from "./infra/controllers/goto-recordings.controller";
 import { GetCallRecordingKeyUseCase } from "./application/use-cases/get-call-recording-key.use-case";
+import { TriggerCallTranscriptionUseCase } from "./application/use-cases/trigger-call-transcription.use-case";
 import { GoToSyncController } from "./infra/controllers/goto-sync.controller";
 import { TranscriptionWebhookController } from "./infra/controllers/transcription-webhook.controller";
 import { GoToRecordingCronService } from "./infra/scheduled/goto-recording-cron.service";
@@ -47,6 +48,7 @@ import { GotoTranscriptionPollerListener } from "./infra/listeners/goto-transcri
     },
     ProcessCallRecordingUseCase,
     PollCallTranscriptionsUseCase,
+    TriggerCallTranscriptionUseCase,
     HandleTranscriptionCallbackUseCase,
     RefreshCallRecordingIdsUseCase,
     // Port implementations
