@@ -131,6 +131,7 @@ export class PrismaLeadImportRepository extends LeadImportRepository {
         source: lead.source ?? null,
         quality: lead.quality ?? null,
         searchTerm: lead.searchTerm ?? null,
+        sourceGroup: lead.sourceGroup ?? null,
         primaryCNAEId: lead.primaryCNAEId ?? null,
         status: lead.status,
         ownerId: lead.ownerId,

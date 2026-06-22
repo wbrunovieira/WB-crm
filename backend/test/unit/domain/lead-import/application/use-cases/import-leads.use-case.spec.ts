@@ -510,6 +510,26 @@ describe("ImportLeadsUseCase", () => {
     expect(repo.cnaes.find(c => c.code === "1234567")?.description).toBe("Descrição do CNAE");
   });
 
+  it("normalizes lead AND contact phones to E.164 (+55) from raw spreadsheet formats", async () => {
+    await uc.execute({
+      rows: [{
+        businessName: "Empresa Tel",
+        phone: "(24) 98286-4581",
+        whatsapp: "24982864581",
+        contactName: "Contato Tel",
+        contactPhone: "024982864581",
+        contactWhatsapp: "+55 (24) 98286-4581",
+      }],
+      ...base,
+    });
+
+    expect(repo.leads[0].phone).toBe("+5524982864581");
+    expect(repo.leads[0].whatsapp).toBe("+5524982864581");
+    const contact = repo.contacts.find(c => c.name === "Contato Tel");
+    expect(contact?.phone).toBe("+5524982864581");
+    expect(contact?.whatsapp).toBe("+5524982864581");
+  });
+
   it("handles empty cnaePrincipal gracefully", async () => {
     const r = (await uc.execute({
       rows: [{ businessName: "Empresa Sem CNAE", cnaePrincipal: "" }],
