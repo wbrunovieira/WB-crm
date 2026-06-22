@@ -57,7 +57,6 @@ import {
   Search,
   ShieldCheck,
   Package,
-  Cpu,
   Layers,
   Target,
   CalendarClock,
@@ -277,9 +276,8 @@ export default async function LeadDetailPage({
             { href: "#negocios",  icon: <TrendingUp size={11} />,   label: "Negócios" },
             { href: "#propostas", icon: <FileText size={11} />,     label: "Propostas" },
             { href: "#produtos",  icon: <Package size={11} />,      label: "Produtos" },
-            { href: "#tech",      icon: <Cpu size={11} />,          label: "Tech" },
+            { href: "#google-places", icon: <MapPin size={11} />,   label: "Google" },
             { href: "#cadencia",  icon: <CalendarClock size={11} />,label: "Cadência" },
-            { href: "#cnae",      icon: <BarChart2 size={11} />,    label: "CNAE" },
           ].map(({ href, icon, label }) => (
             <a
               key={href}
