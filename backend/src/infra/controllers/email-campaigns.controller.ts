@@ -29,6 +29,7 @@ import {
 } from "@/domain/email-campaigns/application/use-cases/email-campaign-lifecycle.use-cases";
 import { RemoveSuppressionUseCase } from "@/domain/email-campaigns/application/use-cases/remove-suppression.use-case";
 import { TrackEmailOpenUseCase, TrackEmailClickUseCase } from "@/domain/email-campaigns/application/use-cases/email-tracking.use-cases";
+import { extractTemplateSubject } from "@/domain/email-campaigns/templates/template-subject";
 
 const TRACKING_BASE_URL = process.env.BACKEND_URL ?? "https://api.crm.wbdigitalsolutions.com";
 
@@ -264,7 +265,8 @@ export class EmailCampaignsController {
     const safe = path.basename(name.replace(/\//g, "")) + ".html";
     const filePath = path.join(this.templatesDir, safe);
     if (!fs.existsSync(filePath)) throw new Error("Template not found");
-    return { content: fs.readFileSync(filePath, "utf8") };
+    const content = fs.readFileSync(filePath, "utf8");
+    return { content, subject: extractTemplateSubject(content) };
   }
 
   // ─── Source groups & recipient search ───────────────────────────────────────

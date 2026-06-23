@@ -211,8 +211,10 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
   const applyTemplate = async (stepIdx: number, templateName: string) => {
     setOpenTemplatePicker(null);
     try {
-      const { content } = await apiFetch<{ content: string }>(`/email-campaigns/templates/${templateName}`, token);
-      setSteps((p) => p.map((s, i) => i === stepIdx ? { ...s, bodyHtml: content } : s));
+      const { content, subject } = await apiFetch<{ content: string; subject?: string }>(`/email-campaigns/templates/${templateName}`, token);
+      setSteps((p) => p.map((s, i) => i === stepIdx
+        ? { ...s, bodyHtml: content, ...(subject ? { subject } : {}) }
+        : s));
     } catch {
       toast.error("Erro ao carregar template");
     }
