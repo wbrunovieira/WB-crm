@@ -1483,6 +1483,17 @@ export function LeadActivitiesList({
               Registrar Resposta
             </button>
           )}
+          <button
+            onClick={handleGoToSync}
+            disabled={syncingGoTo}
+            title="Sincronizar ligações recentes do GoTo"
+            className="inline-flex items-center gap-2 rounded-lg border-2 border-purple-500/40 bg-purple-500/10 px-4 py-2 text-sm font-semibold text-purple-300 hover:bg-purple-500/20 hover:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
+          >
+            {syncingGoTo
+              ? <Loader2 className="h-4 w-4 animate-spin" />
+              : <RefreshCcw className="h-4 w-4" />}
+            Sincronizar GoTo
+          </button>
           <Link
             href={`/activities/new?leadId=${leadId}&returnTo=/leads/${leadId}`}
             className="inline-flex items-center gap-2 rounded-lg bg-[#792990] px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
@@ -1636,17 +1647,6 @@ export function LeadActivitiesList({
               <span className="rounded-full bg-blue-500/15 border border-blue-500/30 px-2 py-0.5 text-xs font-semibold text-blue-300">
                 {pendingFiltered.length}
               </span>
-              <button
-                onClick={handleGoToSync}
-                disabled={syncingGoTo}
-                title="Sincronizar ligações recentes do GoTo"
-                className="ml-auto flex items-center gap-1 rounded-md border border-purple-500/40 bg-purple-500/10 px-2 py-0.5 text-xs font-medium text-purple-300 hover:bg-purple-500/20 hover:border-purple-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-              >
-                {syncingGoTo
-                  ? <Loader2 className="h-3 w-3 animate-spin" />
-                  : <RefreshCcw className="h-3 w-3" />}
-                GoTo
-              </button>
             </div>
             {pendingFiltered.length === 0 ? (
               <p className="py-6 text-center text-sm text-gray-500">Nenhuma atividade pendente.</p>
