@@ -15,87 +15,8 @@ import { CampaignProgressPanel } from "./CampaignProgressPanel";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
-interface Campaign {
-  id: string;
-  name: string;
-  description?: string;
-  fromEmail: string;
-  status: string;
-  createdAt: string;
-}
-
-interface CampaignStep {
-  id?: string;
-  order: number;
-  subject: string;
-  bodyHtml: string;
-  delayDays: number;
-}
-
-interface CampaignStats {
-  campaignId: string;
-  steps: {
-    order: number;
-    subject: string;
-    sent: number;
-    opened: number;
-    clicked: number;
-    openRate: number;
-    clickRate: number;
-  }[];
-  recipients: { total: number; pending: number; active: number; completed: number; unsubscribed: number; bounced: number };
-  totals: { sent: number; uniqueOpened: number; uniqueClicked: number; openRate: number; clickRate: number; bounceRate: number; unsubscribeRate: number };
-  bySegment: { segment: string; total: number }[];
-  byRole: { role: string; total: number }[];
-  byRecipientType: { type: string; total: number }[];
-}
-
-interface Suppression {
-  id: string;
-  email: string;
-  reason: string;
-  createdAt: string;
-  leadName?: string | null;
-  contactName?: string | null;
-}
-
-interface EmailTemplate {
-  name: string;
-  label: string;
-}
-
-interface RecipientCandidate {
-  key: string;
-  entityType: "lead" | "organization";
-  entityId: string;
-  name: string;
-  email?: string;
-  emailCount: number;
-  previewEmails: string[];
-}
-
-interface Props {
-  campaigns: Campaign[];
-  suppressions: Suppression[];
-}
-
-type Tab = "campanhas" | "metricas" | "criar" | "suppressions" | "progresso";
-type EnrollMode = "todos" | "sourceGroup" | "buscar";
-
-// ── Status badge ──────────────────────────────────────────────────────────────
-
-function StatusBadge({ status }: { status: string }) {
-  const map: Record<string, { label: string; className: string }> = {
-    DRAFT: { label: "Rascunho", className: "bg-gray-500/20 text-gray-300" },
-    ACTIVE: { label: "Ativa", className: "bg-green-500/20 text-green-400" },
-    PAUSED: { label: "Pausada", className: "bg-yellow-500/20 text-yellow-400" },
-    FINISHED: { label: "Finalizada", className: "bg-blue-500/20 text-blue-400" },
-  };
-  const s = map[status] ?? { label: status, className: "bg-gray-500/20 text-gray-400" };
-  return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.className}`}>{s.label}</span>
-  );
-}
+import type { Campaign, CampaignStep, CampaignStats, Suppression, EmailTemplate, RecipientCandidate, Props, Tab, EnrollMode } from "./email-campaigns-types";
+import { StatusBadge } from "./StatusBadge";
 
 // ── Main view ─────────────────────────────────────────────────────────────────
 
