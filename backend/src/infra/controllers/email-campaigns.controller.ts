@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as fs from "fs";
-import { Body, ConflictException, Controller, Delete, Get, HttpCode, HttpStatus, NotFoundException, Param, Post, Query, Res, UseGuards } from "@nestjs/common";
+import { Body, ConflictException, Controller, Delete, ForbiddenException, Get, HttpCode, HttpStatus, NotFoundException, Param, Patch, Post, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
@@ -30,6 +30,13 @@ import {
 import { RemoveSuppressionUseCase } from "@/domain/email-campaigns/application/use-cases/remove-suppression.use-case";
 import { TrackEmailOpenUseCase, TrackEmailClickUseCase } from "@/domain/email-campaigns/application/use-cases/email-tracking.use-cases";
 import { extractTemplateSubject } from "@/domain/email-campaigns/templates/template-subject";
+import {
+  UpdateEmailCampaignUseCase,
+  UpdateCampaignStepUseCase,
+  GetCampaignStepsUseCase,
+  CampaignNotFoundError,
+  CampaignStepNotFoundError,
+} from "@/domain/email-campaigns/application/use-cases/update-campaign.use-cases";
 
 const TRACKING_BASE_URL = process.env.BACKEND_URL ?? "https://api.crm.wbdigitalsolutions.com";
 
@@ -61,6 +68,9 @@ export class EmailCampaignsController {
     private readonly removeSuppressionUC: RemoveSuppressionUseCase,
     private readonly trackOpenUC: TrackEmailOpenUseCase,
     private readonly trackClickUC: TrackEmailClickUseCase,
+    private readonly updateCampaignUC: UpdateEmailCampaignUseCase,
+    private readonly updateStepUC: UpdateCampaignStepUseCase,
+    private readonly getSteps: GetCampaignStepsUseCase,
   ) {}
 
   // ─── Campaigns ──────────────────────────────────────────────────────────────
@@ -116,6 +126,50 @@ export class EmailCampaignsController {
     const result = await this.addStep.execute({ campaignId, ...body });
     if (result.isLeft()) throw new Error(result.value.message);
     return result.value;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(":id/steps")
+  @ApiOperation({ summary: "List a campaign's steps (to pre-fill the edit form)" })
+  async listSteps(@Param("id") id: string) {
+    const steps = await this.getSteps.execute(id);
+    return steps.map((s) => ({
+      id: s.id.toString(), order: s.order, subject: s.subject, bodyHtml: s.bodyHtml, delayDays: s.delayDays,
+    }));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(":id")
+  @ApiOperation({ summary: "Edit campaign (name / description / fromEmail)" })
+  async updateCampaign(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("id") id: string,
+    @Body() body: { name?: string; description?: string; fromEmail?: string },
+  ) {
+    const r = await this.updateCampaignUC.execute({ campaignId: id, ownerId: user.id, ...body });
+    if (r.isLeft()) {
+      if (r.value instanceof CampaignNotFoundError) throw new NotFoundException(r.value.message);
+      throw new ForbiddenException(r.value.message);
+    }
+    const c = r.value;
+    return { id: c.id.toString(), name: c.name, description: c.description, fromEmail: c.fromEmail, status: c.status };
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(":id/steps/:stepId")
+  @ApiOperation({ summary: "Edit a campaign step (subject / bodyHtml / delayDays)" })
+  async updateStep(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("stepId") stepId: string,
+    @Body() body: { subject?: string; bodyHtml?: string; delayDays?: number },
+  ) {
+    const r = await this.updateStepUC.execute({ stepId, ownerId: user.id, ...body });
+    if (r.isLeft()) {
+      if (r.value instanceof CampaignStepNotFoundError) throw new NotFoundException(r.value.message);
+      throw new ForbiddenException(r.value.message);
+    }
+    const s = r.value;
+    return { id: s.id.toString(), order: s.order, subject: s.subject, bodyHtml: s.bodyHtml, delayDays: s.delayDays };
   }
 
   // ─── Recipients ─────────────────────────────────────────────────────────────

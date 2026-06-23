@@ -69,6 +69,18 @@ export class SendCampaignStepUseCase {
     let suppressed = 0;
 
     for (const recipient of pending) {
+      // Stop promptly if the campaign was paused/finished mid-run. The status is
+      // only checked once before the loop, so without this a long send keeps
+      // going after the user hits "Pause". Re-read each iteration (cheap next to
+      // the 8–25s delay between sends).
+      const live = await this.campaigns.findById(input.campaignId);
+      if (!live || live.status !== "ACTIVE") {
+        this.logger.log(
+          `SendCampaignStep: campaign ${input.campaignId} is no longer ACTIVE (status=${live?.status ?? "deleted"}) — stopping after ${sent} sent, ${failed} failed`,
+        );
+        break;
+      }
+
       const suppression = await this.suppressions.findByEmail(recipient.email.trim().toLowerCase(), campaign.ownerId);
       if (suppression) {
         suppressed++;

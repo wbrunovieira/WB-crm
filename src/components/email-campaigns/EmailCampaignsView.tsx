@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import {
   Mail, Plus, Play, Pause, BarChart2, Trash2, Users, ShieldOff,
   ChevronDown, ChevronUp, Send, ArrowRight, CheckCircle, Clock, XCircle,
-  FileCode, Search, Group, UserPlus, Zap, ListChecks,
+  FileCode, Search, Group, UserPlus, Zap, ListChecks, Pencil,
 } from "lucide-react";
 import { CampaignMetricsPanel, type CampaignMetrics } from "./CampaignMetricsPanel";
 import { CampaignProgressPanel } from "./CampaignProgressPanel";
@@ -25,6 +25,7 @@ interface Campaign {
 }
 
 interface CampaignStep {
+  id?: string;
   order: number;
   subject: string;
   bodyHtml: string;
@@ -123,6 +124,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
     { order: 0, subject: "", bodyHtml: "", delayDays: 0 },
   ]);
   const [creating, setCreating] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   // ── Template picker ──
   const [templates, setTemplates] = useState<EmailTemplate[] | null>(null);
@@ -383,6 +385,24 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
     setSteps((p) => p.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
   };
 
+  const resetForm = () => {
+    setForm({ name: "", description: "", fromEmail: "bruno@wbdigitalsolutions.com" });
+    setSteps([{ order: 0, subject: "", bodyHtml: "", delayDays: 0 }]);
+    setEditingId(null);
+  };
+
+  const startEdit = async (c: Campaign) => {
+    try {
+      const stepsData = await apiFetch<CampaignStep[]>(`/email-campaigns/${c.id}/steps`, token);
+      setForm({ name: c.name, description: c.description ?? "", fromEmail: c.fromEmail });
+      setSteps(stepsData.length ? stepsData : [{ order: 0, subject: "", bodyHtml: "", delayDays: 0 }]);
+      setEditingId(c.id);
+      setActiveTab("criar");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Erro ao carregar campanha para edição");
+    }
+  };
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name || steps.some((s) => !s.subject || !s.bodyHtml)) {
@@ -391,6 +411,32 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
     }
     setCreating(true);
     try {
+      if (editingId) {
+        // ── Edit mode: PATCH campaign + each step ──
+        await apiFetch(`/email-campaigns/${editingId}`, token, {
+          method: "PATCH",
+          body: JSON.stringify(form),
+        });
+        for (const step of steps) {
+          if (step.id) {
+            await apiFetch(`/email-campaigns/${editingId}/steps/${step.id}`, token, {
+              method: "PATCH",
+              body: JSON.stringify({ subject: step.subject, bodyHtml: step.bodyHtml, delayDays: step.delayDays }),
+            });
+          } else {
+            await apiFetch(`/email-campaigns/${editingId}/steps`, token, {
+              method: "POST",
+              body: JSON.stringify(step),
+            });
+          }
+        }
+        toast.success("Campanha atualizada!");
+        resetForm();
+        await refreshCampaigns();
+        setActiveTab("campanhas");
+        return;
+      }
+
       const campaign = await apiFetch<Campaign>("/email-campaigns", token, {
         method: "POST",
         body: JSON.stringify(form),
@@ -402,12 +448,11 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
         });
       }
       toast.success("Campanha criada! Agora adicione os destinatários.");
-      setForm({ name: "", description: "", fromEmail: "bruno@wbdigitalsolutions.com" });
-      setSteps([{ order: 0, subject: "", bodyHtml: "", delayDays: 0 }]);
+      resetForm();
       await refreshCampaigns();
       await enterEnrollPhase(campaign.id);
     } catch (err: unknown) {
-      toast.error(err instanceof Error ? err.message : "Erro ao criar campanha");
+      toast.error(err instanceof Error ? err.message : "Erro ao salvar campanha");
     } finally {
       setCreating(false);
     }
@@ -529,6 +574,13 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                     ) : (
                       <BarChart2 size={16} />
                     )}
+                  </button>
+                  <button
+                    onClick={() => startEdit(c)}
+                    className="p-2 text-gray-400 hover:text-amber-400 hover:bg-amber-500/10 rounded-lg transition-colors"
+                    title="Editar campanha (assunto e corpo)"
+                  >
+                    <Pencil size={16} />
                   </button>
                   {c.status === "DRAFT" || c.status === "PAUSED" ? (
                     <button
@@ -691,7 +743,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
       {activeTab === "criar" && !enrollCampaignId && (
         <form onSubmit={handleCreate} className="space-y-6 max-w-3xl">
           <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-6 space-y-4">
-            <h2 className="text-white font-semibold text-lg">Informações da Campanha</h2>
+            <h2 className="text-white font-semibold text-lg">{editingId ? "Editar Campanha" : "Informações da Campanha"}</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm text-gray-300 mb-1">Nome *</label>
@@ -848,11 +900,13 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
               className="flex items-center gap-2 px-6 py-2.5 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 disabled:opacity-50 transition-colors"
             >
               {creating ? <Clock size={16} className="animate-spin" /> : <Mail size={16} />}
-              {creating ? "Criando..." : "Criar Campanha"}
+              {creating
+                ? (editingId ? "Salvando..." : "Criando...")
+                : (editingId ? "Salvar alterações" : "Criar Campanha")}
             </button>
             <button
               type="button"
-              onClick={() => setActiveTab("campanhas")}
+              onClick={() => { resetForm(); setActiveTab("campanhas"); }}
               className="px-6 py-2.5 text-gray-400 hover:text-white transition-colors"
             >
               Cancelar
