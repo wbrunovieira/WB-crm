@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { apiFetch } from "@/lib/api-client";
 import { Eye, MousePointer } from "lucide-react";
+import { computeProgressStats, formatDuration } from "@/lib/email-campaigns/progress-stats";
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -123,12 +124,13 @@ export function CampaignProgressPanel({ campaignId, token, totalSteps }: Props) 
     );
   }
 
-  const sentCount = data.recipients.filter(
-    (r) => r.status === "COMPLETED" || r.stepsSent.length > 0,
-  ).length;
+  // "Enviados" reais excluem bounces; ETA recalculado a cada refresh (5s).
+  const { delivered, bounced, pending, etaMs, avgIntervalMs } = computeProgressStats(data.recipients);
   const progressPct = data.totalRecipients > 0
-    ? Math.round((sentCount / data.totalRecipients) * 100)
+    ? Math.round((delivered / data.totalRecipients) * 100)
     : 0;
+  const etaText = etaMs !== null ? formatDuration(etaMs) : null;
+  const avgSecText = avgIntervalMs !== null ? (avgIntervalMs / 1000).toFixed(0) : null;
 
   const steps = totalSteps > 0 ? totalSteps : data.totalSteps;
 
@@ -139,7 +141,7 @@ export function CampaignProgressPanel({ campaignId, token, totalSteps }: Props) 
         <div className="flex items-center justify-between flex-wrap gap-3">
           <div className="flex items-center gap-3">
             <h3 className="text-white font-semibold text-lg">
-              {sentCount} de {data.totalRecipients} enviados
+              {delivered} de {data.totalRecipients} enviados
             </h3>
             {data.sendingInProgress && (
               <span className="flex items-center gap-1.5 text-xs font-medium text-green-400 bg-green-500/10 px-2.5 py-1 rounded-full">
@@ -156,6 +158,22 @@ export function CampaignProgressPanel({ campaignId, token, totalSteps }: Props) 
                 minute: "2-digit",
                 second: "2-digit",
               })}
+            </span>
+          )}
+        </div>
+
+        {/* Breakdown + tempo previsto */}
+        <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+          <span className="text-green-400">✓ {delivered} entregues</span>
+          {bounced > 0 && (
+            <span className="text-red-400">⚠ {bounced} bounce{bounced !== 1 ? "s" : ""}</span>
+          )}
+          {pending > 0 && (
+            <span className="text-gray-400">⏳ {pending} pendente{pending !== 1 ? "s" : ""}</span>
+          )}
+          {etaText && (
+            <span className="text-purple-300">
+              ⏱ Tempo previsto: ~{etaText}{avgSecText ? ` (~${avgSecText}s por envio)` : ""}
             </span>
           )}
         </div>
