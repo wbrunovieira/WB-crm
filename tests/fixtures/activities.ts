@@ -12,6 +12,8 @@ export const mockActivity: Activity = {
   failReason: null,
   skippedAt: null,
   skipReason: null,
+  remindAt: null,
+  remindedAt: null,
   dealId: 'deal-test-1',
   additionalDealIds: null,
   contactId: 'contact-test-1',

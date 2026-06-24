@@ -28,6 +28,8 @@ export interface ActivityPayload {
   callContactType?: string | null;
   meetingNoShow?: boolean;
   gotoCallOutcome?: string | null;
+  organizationId?: string | null;
+  remindAt?: string | null;
 }
 
 export type UpdateActivityPayload = Partial<ActivityPayload>;

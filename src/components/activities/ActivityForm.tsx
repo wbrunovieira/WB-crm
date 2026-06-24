@@ -42,6 +42,7 @@ type Activity = {
   subject: string;
   description?: string | null;
   dueDate?: string | Date | null;
+  remindAt?: string | Date | null;
   completed: boolean;
   dealId?: string | null;
   contactId?: string | null;
@@ -206,6 +207,13 @@ export default function ActivityForm({
     organizationId: activity?.organizationId || searchParams.get("organizationId") || "",
     callContactType: activity?.callContactType || "gatekeeper",
     meetingNoShow: activity?.meetingNoShow || false,
+    remindEnabled: !!activity?.remindAt,
+    remindDate: activity?.remindAt
+      ? new Date(activity.remindAt).toISOString().split("T")[0]
+      : "",
+    remindTime: activity?.remindAt
+      ? (() => { const d = new Date(activity.remindAt!); return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; })()
+      : "",
   });
 
   const [selectedContactIds, setSelectedContactIds] = useState<string[]>(getInitialContactIds());
@@ -249,6 +257,9 @@ export default function ActivityForm({
       organizationId: formData.organizationId || null,
       callContactType: formData.type === "call" ? formData.callContactType : null,
       meetingNoShow: formData.type === "meeting" ? formData.meetingNoShow : false,
+      remindAt: formData.remindEnabled && formData.remindDate
+        ? new Date(formData.remindDate + "T" + (formData.remindTime || "09:00") + ":00").toISOString()
+        : null,
     };
 
     const returnTo = searchParams.get("returnTo") || "/activities";
@@ -402,6 +413,59 @@ export default function ActivityForm({
             className="w-32 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary disabled:opacity-40 [color-scheme:light]"
           />
         </div>
+      </div>
+
+      {/* Notificar-me (lembrete no sino) */}
+      <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
+        <label className="flex cursor-pointer items-center gap-2">
+          <input
+            type="checkbox"
+            checked={formData.remindEnabled}
+            onChange={(e) =>
+              setFormData((p) => ({
+                ...p,
+                remindEnabled: e.target.checked,
+                // Ao ligar, sugere a data/hora de vencimento (se houver)
+                remindDate: e.target.checked && !p.remindDate ? p.dueDate : p.remindDate,
+                remindTime: e.target.checked && !p.remindTime ? p.dueTime : p.remindTime,
+              }))
+            }
+            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+          />
+          <span className="text-sm font-medium text-gray-700">🔔 Notificar-me</span>
+        </label>
+
+        {formData.remindEnabled && (
+          <div className="mt-3 space-y-2">
+            <div className="flex gap-2">
+              <input
+                type="date"
+                value={formData.remindDate}
+                onChange={(e) => setFormData({ ...formData, remindDate: e.target.value })}
+                className="flex-1 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary [color-scheme:light]"
+              />
+              <input
+                type="time"
+                value={formData.remindTime}
+                disabled={!formData.remindDate}
+                onChange={(e) => setFormData({ ...formData, remindTime: e.target.value })}
+                className="w-32 rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary disabled:opacity-40 [color-scheme:light]"
+              />
+            </div>
+            {formData.dueDate && (
+              <button
+                type="button"
+                onClick={() => setFormData((p) => ({ ...p, remindDate: p.dueDate, remindTime: p.dueTime || "09:00" }))}
+                className="text-xs font-medium text-primary hover:underline"
+              >
+                Usar a data/hora de vencimento
+              </button>
+            )}
+            <p className="text-xs text-gray-500">
+              No horário escolhido, aparece um aviso no sino 🔔 do topo da página.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Negócio */}

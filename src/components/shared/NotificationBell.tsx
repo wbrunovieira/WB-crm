@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { Bell, Mail, MailOpen, MailX, MousePointerClick, MessageCircle, CheckCheck } from "lucide-react";
+import { Bell, BellRing, Mail, MailOpen, MailX, MousePointerClick, MessageCircle, CheckCheck } from "lucide-react";
 import { apiFetch } from "@/lib/api-client";
 
 interface NotificationItem {
@@ -149,6 +149,7 @@ export function NotificationBell() {
     if (type === "EMAIL_CLICKED") return <MousePointerClick className="h-4 w-4 text-emerald-400 flex-shrink-0" />;
     if (type === "EMAIL_BOUNCED") return <MailX className="h-4 w-4 text-red-400 flex-shrink-0" />;
     if (type === "WHATSAPP_RECEIVED") return <MessageCircle className="h-4 w-4 text-green-400 flex-shrink-0" />;
+    if (type === "ACTIVITY_REMINDER") return <BellRing className="h-4 w-4 text-amber-400 flex-shrink-0" />;
     return <Bell className="h-4 w-4 text-purple-400 flex-shrink-0" />;
   }
 
