@@ -21,6 +21,7 @@ export interface UpdateActivityInput {
   callContactType?: string | null;
   meetingNoShow?: boolean;
   gotoCallOutcome?: string | null;
+  remindAt?: Date | null;
 }
 
 type Output = Either<Error, { activity: Activity }>;
@@ -55,6 +56,11 @@ export class UpdateActivityUseCase {
     if (input.callContactType !== undefined) updates.callContactType = input.callContactType ?? undefined;
     if (input.meetingNoShow !== undefined)   updates.meetingNoShow = input.meetingNoShow;
     if (input.gotoCallOutcome !== undefined) updates.gotoCallOutcome = input.gotoCallOutcome ?? undefined;
+    if (input.remindAt !== undefined) {
+      updates.remindAt = input.remindAt ?? undefined;
+      // Changing/clearing the reminder re-arms it so it can fire at the new time.
+      updates.remindedAt = undefined;
+    }
 
     if (input.contactIds !== undefined) {
       const ids = input.contactIds ?? [];

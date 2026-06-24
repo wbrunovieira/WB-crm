@@ -145,6 +145,17 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
     return null;
   }
 
+  async findDueReminders(now: Date): Promise<Activity[]> {
+    return this.items.filter(
+      (a) => a.remindAt != null && a.remindAt <= now && a.remindedAt == null && !a.completed,
+    );
+  }
+
+  async markAsReminded(activityId: string, remindedAt: Date): Promise<void> {
+    const activity = this.items.find((a) => a.id.toString() === activityId);
+    if (activity) activity.update({ remindedAt });
+  }
+
   async save(activity: Activity): Promise<void> {
     const idx = this.items.findIndex((a) => a.id.equals(activity.id));
     if (idx >= 0) this.items[idx] = activity;

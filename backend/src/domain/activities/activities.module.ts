@@ -24,12 +24,17 @@ import { UnlinkActivityFromDealUseCase } from "./application/use-cases/unlink-ac
 import { MarkThreadRepliedUseCase } from "./application/use-cases/mark-thread-replied.use-case";
 import { PurgeActivityUseCase } from "./application/use-cases/purge-activity.use-case";
 import { ActivitiesController } from "@/infra/controllers/activities.controller";
+import { NotificationsModule } from "@/domain/notifications/notifications.module";
+import { ProcessActivityRemindersUseCase } from "./application/use-cases/process-activity-reminders.use-case";
+import { ActivityRemindersCronService } from "./infra/scheduled/activity-reminders-cron.service";
 
 @Module({
-  imports: [AuthModule, SharedInfraModule, CallAnalysisModule],
+  imports: [AuthModule, SharedInfraModule, CallAnalysisModule, NotificationsModule],
   controllers: [ActivitiesController],
   providers: [
     { provide: ActivitiesRepository, useClass: PrismaActivitiesRepository },
+    ProcessActivityRemindersUseCase,
+    ActivityRemindersCronService,
     GetActivitiesUseCase,
     GetActivityByIdUseCase,
     CreateActivityUseCase,

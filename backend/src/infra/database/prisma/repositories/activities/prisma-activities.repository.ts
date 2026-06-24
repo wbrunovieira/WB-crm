@@ -378,6 +378,26 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
     return rows.map((r) => ActivityMapper.toDomain(r));
   }
 
+  async findDueReminders(now: Date): Promise<Activity[]> {
+    const rows = await this.prisma.activity.findMany({
+      where: {
+        remindAt: { not: null, lte: now },
+        remindedAt: null,
+        completed: false,
+      },
+      orderBy: { remindAt: "asc" },
+      take: 200,
+    });
+    return rows.map((r) => ActivityMapper.toDomain(r));
+  }
+
+  async markAsReminded(activityId: string, remindedAt: Date): Promise<void> {
+    await this.prisma.activity.update({
+      where: { id: activityId },
+      data: { remindedAt },
+    });
+  }
+
   async save(activity: Activity): Promise<void> {
     const data = ActivityMapper.toPrisma(activity);
     await this.prisma.activity.upsert({

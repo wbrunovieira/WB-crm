@@ -20,6 +20,7 @@ export interface CreateActivityInput {
   partnerId?: string;
   callContactType?: string;
   meetingNoShow?: boolean;
+  remindAt?: Date;
   // Campaign email fields
   emailCampaignSendId?: string;
   emailCampaignId?: string;
@@ -53,6 +54,7 @@ export class CreateActivityUseCase {
       dueDate: input.dueDate,
       completed: input.completed ?? false,
       completedAt: input.completedAt,
+      remindAt: input.remindAt,
       meetingNoShow: input.meetingNoShow ?? false,
       emailReplied: false,
       emailOpenCount: 0,

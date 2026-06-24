@@ -11,6 +11,7 @@ export type NotificationTypeValue =
   | "EMAIL_CLICKED"
   | "EMAIL_BOUNCED"
   | "MEETING_ENDED"
+  | "ACTIVITY_REMINDER"
   | "GENERIC";
 
 const VALID: NotificationTypeValue[] = [
@@ -24,6 +25,7 @@ const VALID: NotificationTypeValue[] = [
   "EMAIL_CLICKED",
   "EMAIL_BOUNCED",
   "MEETING_ENDED",
+  "ACTIVITY_REMINDER",
   "GENERIC",
 ];
 

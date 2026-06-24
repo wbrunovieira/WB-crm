@@ -16,6 +16,11 @@ export interface ActivityProps {
   skippedAt?: Date;
   skipReason?: string;
 
+  // Reminder ("notificar-me"): remindAt = quando lembrar; remindedAt = quando a
+  // notificação já foi criada (evita lembrar duas vezes).
+  remindAt?: Date;
+  remindedAt?: Date;
+
   // Links
   dealId?: string;
   additionalDealIds?: string; // JSON string
@@ -75,6 +80,8 @@ export class Activity extends AggregateRoot<ActivityProps> {
   get failReason()           { return this.props.failReason; }
   get skippedAt()            { return this.props.skippedAt; }
   get skipReason()           { return this.props.skipReason; }
+  get remindAt()             { return this.props.remindAt; }
+  get remindedAt()           { return this.props.remindedAt; }
   get dealId()               { return this.props.dealId; }
   get additionalDealIds()    { return this.props.additionalDealIds; }
   get contactId()            { return this.props.contactId; }

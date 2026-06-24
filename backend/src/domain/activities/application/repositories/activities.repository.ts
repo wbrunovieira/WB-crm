@@ -49,6 +49,10 @@ export abstract class ActivitiesRepository {
    */
   abstract findOutboundEmailByThreadId(threadId: string, ownerId: string): Promise<Activity[]>;
   abstract findAnsweredCallsMissingRecordingId(since: Date): Promise<Activity[]>;
+  /** Activities whose reminder is due: remindAt <= now, not yet reminded, not completed. */
+  abstract findDueReminders(now: Date): Promise<Activity[]>;
+  /** Stamp remindedAt so the reminder is not fired again. */
+  abstract markAsReminded(activityId: string, remindedAt: Date): Promise<void>;
   abstract save(activity: Activity): Promise<void>;
   abstract delete(id: string): Promise<void>;
   abstract markThreadReplied(threadId: string): Promise<void>;

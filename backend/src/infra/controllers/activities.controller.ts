@@ -42,6 +42,7 @@ class CreateActivityDto {
   @ApiPropertyOptional() meetingNoShow?: boolean;
   @ApiPropertyOptional() completed?: boolean;
   @ApiPropertyOptional() completedAt?: string;
+  @ApiPropertyOptional({ description: "Data/hora ISO para o lembrete (notificar-me)" }) remindAt?: string;
   // Email-specific fields
   @ApiPropertyOptional() emailMessageId?: string;
   @ApiPropertyOptional() emailThreadId?: string;
@@ -63,6 +64,7 @@ class UpdateActivityDto {
   @ApiPropertyOptional() callContactType?: string;
   @ApiPropertyOptional() meetingNoShow?: boolean;
   @ApiPropertyOptional() gotoCallOutcome?: string;
+  @ApiPropertyOptional({ description: "Data/hora ISO para o lembrete (notificar-me); null limpa" }) remindAt?: string | null;
 }
 
 class OutcomeReasonDto {
@@ -86,6 +88,8 @@ function serializeActivity(a: Activity) {
     subject: a.subject,
     description: a.description ?? null,
     dueDate: a.dueDate ?? null,
+    remindAt: a.remindAt ?? null,
+    remindedAt: a.remindedAt ?? null,
     completed: a.completed,
     completedAt: a.completedAt ?? null,
     failedAt: a.failedAt ?? null,
@@ -203,6 +207,7 @@ export class ActivitiesController {
       ownerId: user.id,
       dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
       completedAt: body.completedAt ? new Date(body.completedAt) : undefined,
+      remindAt: body.remindAt ? new Date(body.remindAt) : undefined,
     });
     if (result.isLeft()) handleError(result);
     return serializeActivity(result.value.activity);
@@ -225,6 +230,9 @@ export class ActivitiesController {
       requesterRole: user.role ?? "sdr",
       dueDate: body.dueDate !== undefined
         ? body.dueDate ? new Date(body.dueDate) : null
+        : undefined,
+      remindAt: body.remindAt !== undefined
+        ? body.remindAt ? new Date(body.remindAt) : null
         : undefined,
     });
     if (result.isLeft()) handleError(result);

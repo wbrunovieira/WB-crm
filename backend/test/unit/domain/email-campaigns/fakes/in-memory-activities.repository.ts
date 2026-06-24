@@ -2,6 +2,8 @@ import { ActivitiesRepository } from "@/domain/activities/application/repositori
 import type { Activity } from "@/domain/activities/enterprise/entities/activity";
 
 export class InMemoryActivitiesRepository extends ActivitiesRepository {
+  async findDueReminders() { return []; }
+  async markAsReminded() {}
   items: Activity[] = [];
 
   async findMany() { return []; }

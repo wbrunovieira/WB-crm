@@ -52,6 +52,8 @@ const fakeS3 = { upload: async () => "key", download: async () => Buffer.from(""
 
 // Minimal activities repo stub — createCallActivity will upsert via save()
 class FakeActivitiesRepo extends ActivitiesRepository {
+  async findDueReminders() { return []; }
+  async markAsReminded() {}
   public savedIds: string[] = [];
 
   async findFirst(where: { gotoCallId?: string }) {

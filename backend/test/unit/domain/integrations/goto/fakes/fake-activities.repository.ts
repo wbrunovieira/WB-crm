@@ -4,6 +4,8 @@ import type { ActivitySummary, ActivityDetail } from "@/domain/activities/enterp
 import { UniqueEntityID } from "@/core/unique-entity-id";
 
 export class FakeActivitiesRepository extends ActivitiesRepository {
+  async findDueReminders() { return []; }
+  async markAsReminded() {}
   public items: Activity[] = [];
   private nameMap: Map<string, { ownerName: string; clientName: string }> = new Map();
 
