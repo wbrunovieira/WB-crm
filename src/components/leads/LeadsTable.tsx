@@ -244,9 +244,11 @@ export function LeadsTable({ leads, sharedUsersMap, currentUserId, contactSearch
                 onClick={(e) => {
                   const tag = (e.target as HTMLElement).tagName;
                   if (tag === "INPUT" || tag === "A" || tag === "BUTTON" || tag === "SVG" || tag === "PATH") return;
+                  // Permite copiar: se o usuário está selecionando texto, não alterna a linha.
+                  if (window.getSelection()?.toString()) return;
                   toggleOne(lead.id, index, e.shiftKey);
                 }}
-                className={`cursor-pointer select-none hover:bg-gray-50 ${selectedIds.has(lead.id) ? "bg-purple-50/50" : ""}`}
+                className={`cursor-pointer hover:bg-gray-50 ${selectedIds.has(lead.id) ? "bg-purple-50/50" : ""}`}
               >
                 <td className="w-12 px-4 py-4">
                   <input
