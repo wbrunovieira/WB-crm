@@ -760,6 +760,9 @@ model Activity {
   skippedAt   DateTime?
   skipReason  String?
 
+  remindAt    DateTime?
+  remindedAt  DateTime?
+
   dealId             String?
   additionalDealIds  String?   // JSON array of secondary deal IDs (same pattern as contactIds)
   contactId       String?   // Primary contact (for backwards compatibility)
