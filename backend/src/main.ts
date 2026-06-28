@@ -23,6 +23,7 @@ async function bootstrap() {
   const allowedOrigins = [
     process.env.CRM_URL ?? "http://localhost:3000",
     "https://crm.wbdigitalsolutions.com",
+    "https://agenda.wbdigitalsolutions.com",
     "http://localhost:3000",
   ];
   app.enableCors({

@@ -24,7 +24,7 @@ export class GenerateBookingLinkUseCase {
       token, ownerId: input.ownerId, bookingTypeId: input.bookingTypeId,
       leadId: input.leadId ?? null, contactId: input.contactId ?? null, label: input.label ?? null,
     });
-    const base = process.env.BOOKING_PUBLIC_BASE_URL ?? "https://agenda.wbdigitalsolutions.com";
+    const base = process.env.BOOKING_PUBLIC_BASE_URL ?? "https://agenda.wbdigitalsolutions.com/book";
     return right({ token, link: `${base}/${token}` });
   }
 }
