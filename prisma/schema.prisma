@@ -2227,6 +2227,10 @@ model Meeting {
   // One-to-one with Activity (pending when scheduled, completed when ended)
   activityId  String?  @unique
 
+  // Auto-agendamento (self-booking)
+  manageToken   String?  @unique // lead remarca/cancela pelo link
+  bookingLinkId String?          // origem (BookingLink) quando veio do self-booking
+
   ownerId    String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
@@ -2762,4 +2766,43 @@ model BotFlowSession {
   updatedAt     DateTime  @updatedAt
 
   @@index([phone, instanceName, status])
+}
+model BookingType {
+  id               String   @id @default(cuid())
+  ownerId          String
+  name             String
+  slug             String
+  durationMinutes  Int      @default(30)
+  bufferMinutes    Int      @default(15)
+  minNoticeHours   Int      @default(4)
+  maxAdvanceDays   Int      @default(14)
+  timeZone         String   @default("America/Sao_Paulo")
+  weeklyHours      String   @default("[]") // JSON [{weekday,start,end}]
+  presentialCities String   @default("[]") // JSON [{city,state}]
+  active           Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  @@unique([ownerId, slug])
+  @@index([ownerId])
+  @@map("booking_types")
+}
+
+model BookingLink {
+  id            String    @id @default(cuid())
+  token         String    @unique
+  ownerId       String
+  bookingTypeId String
+  leadId        String?
+  contactId     String?
+  label         String?
+  active        Boolean   @default(true)
+  expiresAt     DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  @@index([ownerId])
+  @@index([leadId])
+  @@index([bookingTypeId])
+  @@map("booking_links")
 }
