@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Package, Briefcase, Code, Database, Target, Zap, MessageSquare, Mail, FileText, ArrowRightLeft, Building2, Phone } from "lucide-react";
+import { Package, Briefcase, Code, Database, Target, Zap, MessageSquare, Mail, FileText, ArrowRightLeft, Building2, Phone, CalendarClock } from "lucide-react";
 
 export default function AdminPage() {
   return (
@@ -29,6 +29,26 @@ export default function AdminPage() {
               </h3>
               <p className="mt-1 text-sm text-gray-600">
                 Gerencie as frentes de negócio da empresa
+              </p>
+            </div>
+          </div>
+        </Link>
+
+        {/* Scheduling Card */}
+        <Link
+          href="/admin/scheduling"
+          className="group block rounded-lg border border-gray-200 bg-white p-6 shadow-sm hover:shadow-md transition-all hover:border-primary"
+        >
+          <div className="flex items-center gap-4">
+            <div className="rounded-lg bg-purple-100 p-3 group-hover:bg-primary group-hover:text-white transition-colors">
+              <CalendarClock className="h-6 w-6 text-primary group-hover:text-white" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary">
+                Agendamento
+              </h3>
+              <p className="mt-1 text-sm text-gray-600">
+                Horários, duração e cidades de atendimento presencial
               </p>
             </div>
           </div>
