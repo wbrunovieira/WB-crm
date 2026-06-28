@@ -10,6 +10,7 @@ class CreateBookingDto {
   mode!: "online" | "presential";
   attendeeName?: string;
   attendeeEmail?: string;
+  address?: string;
 }
 class RescheduleDto { startISO!: string; }
 
@@ -44,7 +45,7 @@ export class PublicBookingController {
   async book(@Param("token") token: string, @Body() body: CreateBookingDto) {
     const r = await this.create.execute({
       token, startISO: body.startISO, mode: body.mode,
-      attendeeName: body.attendeeName, attendeeEmail: body.attendeeEmail,
+      attendeeName: body.attendeeName, attendeeEmail: body.attendeeEmail, address: body.address,
     });
     if (r.isLeft()) throw new BadRequestException(r.value.message);
     return r.value;

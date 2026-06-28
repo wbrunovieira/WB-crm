@@ -79,6 +79,12 @@ describe("CreateBookingUseCase", () => {
     expect(sched.scheduled?.location).toBe("Rua A, 100");
   });
 
+  it("presencial: lead pode confirmar/alterar o endereço", async () => {
+    const r = await create.execute({ token: "abc", startISO: SLOT_ONLINE, mode: "presential", address: "Rua Nova, 50 - Centro", now: NOW });
+    expect(r.isRight()).toBe(true);
+    expect(sched.scheduled?.location).toBe("Rua Nova, 50 - Centro");
+  });
+
   it("recusa presencial em cidade não atendida", async () => {
     const leads2 = new FakeLeads();
     (leads2 as any).findForBooking = async () => ({ ...LEAD, city: "São Paulo" });

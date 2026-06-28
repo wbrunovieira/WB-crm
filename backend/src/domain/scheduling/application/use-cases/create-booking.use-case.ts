@@ -36,6 +36,7 @@ export class CreateBookingUseCase {
     mode: "online" | "presential";
     attendeeName?: string;
     attendeeEmail?: string;
+    address?: string; // endereço confirmado/alterado pelo lead (presencial)
     now?: Date;
   }): Promise<Either<BookingError, CreateBookingResult>> {
     const now = input.now ?? new Date();
@@ -62,7 +63,7 @@ export class CreateBookingUseCase {
     if (input.mode === "presential") {
       const served = !!lead?.city && type.presentialCities.some((c) => norm(c.city) === norm(lead.city!));
       if (!served) return left(new BookingError("Atendimento presencial não disponível para esta cidade"));
-      location = lead?.address ?? null;
+      location = (input.address?.trim() || lead?.address) ?? null;
     }
 
     const endAt = new Date(startAt.getTime() + type.durationMinutes * 60_000);
