@@ -48,7 +48,7 @@ const WEEKLY = JSON.stringify([
 
 async function cleanup() {
   await prisma.meeting.deleteMany({ where: { ownerId } });
-  await prisma.bookingLink.deleteMany({ where: { token: TOKEN } });
+  await prisma.bookingLink.deleteMany({ where: { token: { in: [TOKEN, GEN_TOKEN] } } });
   await prisma.bookingType.deleteMany({ where: { ownerId } });
   await prisma.lead.deleteMany({ where: { ownerId } });
 }
@@ -70,7 +70,11 @@ beforeAll(async () => {
   const bt = await prisma.bookingType.create({ data: { ownerId, name: "Reunião 30min", slug: "e2e-30", weeklyHours: WEEKLY, presentialCities: JSON.stringify([{ city: "Teresópolis", state: "RJ" }]), active: true } });
   bookingTypeId = bt.id;
   await prisma.bookingLink.create({ data: { token: TOKEN, ownerId, bookingTypeId, leadId } });
+  await prisma.bookingLink.create({ data: { token: GEN_TOKEN, ownerId, bookingTypeId, leadId: null } });
 });
+
+const GEN_TOKEN = "e2e-sched-gen-001";
+const INBOUND_EMAIL = "inbound-e2e@x.com";
 
 afterAll(async () => { await cleanup(); await prisma.user.deleteMany({ where: { email: EMAIL } }); await app.close(); });
 
@@ -116,5 +120,34 @@ describe("Scheduling (e2e) — fluxo público de auto-agendamento", () => {
     await request(app.getHttpServer()).post(`/public/booking/manage/${manageToken}/cancel`).expect(200);
     const m = await prisma.meeting.findFirst({ where: { manageToken } });
     expect(m!.status).toBe("cancelled");
+  });
+});
+
+describe("Scheduling (e2e) — link genérico (sem lead)", () => {
+  it("agenda informando contato e CRIA um lead inbound", async () => {
+    const slotsRes = await request(app.getHttpServer()).get(`/public/booking/${GEN_TOKEN}`).expect(200);
+    expect(slotsRes.body.lead).toBeNull();
+    expect(slotsRes.body.locationModes).toEqual(["online"]);
+    const slot = slotsRes.body.slots[0].start;
+
+    const res = await request(app.getHttpServer()).post(`/public/booking/${GEN_TOKEN}`)
+      .send({ startISO: slot, mode: "online", attendeeName: "Cliente Inbound", attendeeEmail: INBOUND_EMAIL, attendeeWhatsapp: "(24) 99999-0000" })
+      .expect(201);
+    expect(res.body.manageToken).toBeTruthy();
+
+    const lead = await prisma.lead.findFirst({ where: { ownerId, email: INBOUND_EMAIL } });
+    expect(lead).toBeTruthy();
+    expect(lead!.businessName).toBe("Cliente Inbound");
+    expect(lead!.isProspect).toBe(false);
+    expect(lead!.whatsapp).toBe("+5524999990000"); // normalizado E.164
+
+    const meeting = await prisma.meeting.findFirst({ where: { manageToken: res.body.manageToken } });
+    expect(meeting!.leadId).toBe(lead!.id);
+  });
+
+  it("link genérico sem nome/e-mail → 400", async () => {
+    const slotsRes = await request(app.getHttpServer()).get(`/public/booking/${GEN_TOKEN}`).expect(200);
+    await request(app.getHttpServer()).post(`/public/booking/${GEN_TOKEN}`)
+      .send({ startISO: slotsRes.body.slots[0].start, mode: "online" }).expect(400);
   });
 });

@@ -38,6 +38,8 @@ class FakeFreeBusy extends CalendarFreeBusyPort {
 class FakeLeads extends SchedulingLeadsPort {
   constructor(public lead: BookingLead | null) { super(); }
   async findForBooking(id: string) { return this.lead && this.lead.id === id ? this.lead : null; }
+  async findByContact() { return null; }
+  async createLead(input: { ownerId: string; name: string; email?: string }) { return { id: "x", name: input.name, email: input.email ?? null, city: null, state: null, address: null }; }
 }
 
 function link(over: Partial<BookingLinkRecord> = {}): BookingLinkRecord {

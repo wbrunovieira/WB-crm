@@ -35,7 +35,17 @@ class FakeLinks extends BookingLinksRepository {
   async findById(id: string) { return this.links.find((l) => l.id === id) ?? null; }
 }
 class FakeFreeBusy extends CalendarFreeBusyPort { async getBusy() { return []; } }
-class FakeLeads extends SchedulingLeadsPort { async findForBooking(id: string) { return id === LEAD.id ? LEAD : null; } }
+class FakeLeads extends SchedulingLeadsPort {
+  byContact: BookingLead | null = null;
+  createdWith?: { ownerId: string; name: string; email?: string; whatsapp?: string };
+  async findForBooking(id: string) { return id === LEAD.id ? LEAD : null; }
+  async findByContact() { return this.byContact; }
+  async createLead(input: { ownerId: string; name: string; email?: string; whatsapp?: string }) {
+    this.createdWith = input;
+    return { id: "newlead", name: input.name, email: input.email ?? null, city: null, state: null, address: null };
+  }
+}
+const GENERIC_LINK: BookingLinkRecord = { id: "lg", token: "gen", ownerId: "owner1", bookingTypeId: "bt1", leadId: null, contactId: null, label: null, active: true, expiresAt: null };
 class FakeTokens extends TokenGeneratorPort { generate() { return "manage-tok"; } }
 class FakeScheduler extends MeetingSchedulerPort {
   meetings: (BookedMeetingRef & { manageToken: string; startAt: Date })[] = [];
@@ -100,6 +110,32 @@ describe("CreateBookingUseCase", () => {
 
   it("token inválido → left", async () => {
     const r = await create.execute({ token: "nope", startISO: SLOT_ONLINE, mode: "online", now: NOW });
+    expect(r.isLeft()).toBe(true);
+  });
+
+  it("link genérico (sem lead): cria lead novo quando não existe", async () => {
+    links.links.push(GENERIC_LINK);
+    leads.byContact = null;
+    const r = await create.execute({ token: "gen", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Maria Souza", attendeeEmail: "maria@x.com", attendeeWhatsapp: "+5524999990000", now: NOW });
+    expect(r.isRight()).toBe(true);
+    expect(leads.createdWith?.email).toBe("maria@x.com");
+    expect(leads.createdWith?.name).toBe("Maria Souza");
+    expect(sched.scheduled?.leadId).toBe("newlead");
+    expect(sched.scheduled?.attendeeEmail).toBe("maria@x.com");
+  });
+
+  it("link genérico: reusa lead existente por contato (não cria de novo)", async () => {
+    links.links.push(GENERIC_LINK);
+    leads.byContact = { id: "existing9", name: "Maria", email: "maria@x.com", city: null, state: null, address: null };
+    const r = await create.execute({ token: "gen", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Maria", attendeeEmail: "maria@x.com", now: NOW });
+    expect(r.isRight()).toBe(true);
+    expect(leads.createdWith).toBeUndefined();
+    expect(sched.scheduled?.leadId).toBe("existing9");
+  });
+
+  it("link genérico sem nome/e-mail → left", async () => {
+    links.links.push(GENERIC_LINK);
+    const r = await create.execute({ token: "gen", startISO: SLOT_ONLINE, mode: "online", now: NOW });
     expect(r.isLeft()).toBe(true);
   });
 });

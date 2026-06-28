@@ -7,7 +7,11 @@ export interface BookingLead {
   address: string | null;
 }
 
-/** Dados mínimos do lead necessários para o agendamento. */
+/** Resolução de lead para o agendamento (por id, por contato, ou criação). */
 export abstract class SchedulingLeadsPort {
   abstract findForBooking(leadId: string): Promise<BookingLead | null>;
+  /** Procura um lead do dono por e-mail ou WhatsApp (para o link genérico). */
+  abstract findByContact(input: { ownerId: string; email?: string; whatsapp?: string }): Promise<BookingLead | null>;
+  /** Cria um lead inbound a partir do auto-agendamento. */
+  abstract createLead(input: { ownerId: string; name: string; email?: string; whatsapp?: string }): Promise<BookingLead>;
 }

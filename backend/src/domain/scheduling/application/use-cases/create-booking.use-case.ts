@@ -36,6 +36,7 @@ export class CreateBookingUseCase {
     mode: "online" | "presential";
     attendeeName?: string;
     attendeeEmail?: string;
+    attendeeWhatsapp?: string;
     address?: string; // endereço confirmado/alterado pelo lead (presencial)
     now?: Date;
   }): Promise<Either<BookingError, CreateBookingResult>> {
@@ -54,7 +55,21 @@ export class CreateBookingUseCase {
       return left(new BookingError("Horário não está mais disponível"));
     }
 
-    const lead = link.leadId ? await this.leads.findForBooking(link.leadId) : null;
+    let lead = link.leadId ? await this.leads.findForBooking(link.leadId) : null;
+    let resolvedLeadId: string | null = link.leadId;
+
+    // Link genérico (sem lead): exige contato; acha lead existente por e-mail/WhatsApp ou cria um novo.
+    if (!link.leadId) {
+      const n = input.attendeeName?.trim();
+      const em = input.attendeeEmail?.trim();
+      const wa = input.attendeeWhatsapp?.trim();
+      if (!n || !em) return left(new BookingError("Para agendar, informe seu nome e e-mail."));
+      lead =
+        (await this.leads.findByContact({ ownerId: link.ownerId, email: em, whatsapp: wa })) ??
+        (await this.leads.createLead({ ownerId: link.ownerId, name: n, email: em, whatsapp: wa }));
+      resolvedLeadId = lead.id;
+    }
+
     const email = (lead?.email ?? input.attendeeEmail ?? "").trim();
     const name = (lead?.name ?? input.attendeeName ?? "").trim();
     if (!email) return left(new BookingError("E-mail do participante é obrigatório"));
@@ -76,7 +91,7 @@ export class CreateBookingUseCase {
       endAt,
       attendeeEmail: email,
       attendeeName: name || email,
-      leadId: link.leadId,
+      leadId: resolvedLeadId,
       contactId: link.contactId,
       mode: input.mode,
       location,

@@ -19,8 +19,12 @@ export function BookingClient({ token, backend, initial }: { token: string; back
   }, []);
   const presentialAvailable = !!initial?.locationModes.includes("presential");
 
+  const isGeneric = !initial?.lead;
   const [mode, setMode] = useState<"online" | "presential">("online");
   const [address, setAddress] = useState(initial?.lead?.address ?? "");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [whatsapp, setWhatsapp] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
@@ -47,7 +51,11 @@ export function BookingClient({ token, backend, initial }: { token: string; back
       const res = await fetch(`${backend}/public/booking/${encodeURIComponent(token)}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ startISO: selected, mode, ...(mode === "presential" ? { address } : {}) }),
+        body: JSON.stringify({
+          startISO: selected, mode,
+          ...(mode === "presential" ? { address } : {}),
+          ...(isGeneric ? { attendeeName: name, attendeeEmail: email, attendeeWhatsapp: whatsapp } : {}),
+        }),
       });
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
@@ -156,9 +164,21 @@ export function BookingClient({ token, backend, initial }: { token: string; back
         ))}
       </div>
 
+      {isGeneric && selected && (
+        <div className="mt-6 space-y-2 border-t border-white/10 pt-5">
+          <div className="text-sm font-medium text-white/80">Seus dados para a confirmação</div>
+          <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome"
+            className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/40 focus:border-white/50 focus:outline-none" />
+          <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Seu e-mail"
+            className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/40 focus:border-white/50 focus:outline-none" />
+          <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="WhatsApp (com DDD)"
+            className="w-full rounded-lg border border-white/20 bg-white/10 px-3 py-2 text-white placeholder-white/40 focus:border-white/50 focus:outline-none" />
+        </div>
+      )}
+
       {status === "error" && <p className="mt-4 rounded-lg bg-red-500/20 px-3 py-2 text-sm text-red-200">{errorMsg}</p>}
 
-      <button type="button" disabled={!selected || status === "submitting"} onClick={submit}
+      <button type="button" disabled={!selected || status === "submitting" || (isGeneric && (!name.trim() || !email.trim()))} onClick={submit}
         className="mt-6 w-full rounded-xl py-3 text-base font-semibold text-white transition disabled:opacity-40"
         style={{ background: ORANGE }}>
         {status === "submitting" ? "Agendando..." : selected ? `Confirmar ${fmtFull(selected)}` : "Selecione um horário"}
