@@ -22,6 +22,7 @@ import { CreateBookingTypeUseCase } from "./application/use-cases/create-booking
 import { UpdateBookingTypeUseCase } from "./application/use-cases/update-booking-type.use-case";
 import { ListBookingTypesUseCase } from "./application/use-cases/list-booking-types.use-case";
 import { GenerateBookingLinkUseCase } from "./application/use-cases/generate-booking-link.use-case";
+import { GetOrCreateDefaultBookingTypeUseCase } from "./application/use-cases/get-or-create-default-booking-type.use-case";
 
 import { PrismaBookingTypesRepository } from "./infra/prisma/prisma-booking-types.repository";
 import { PrismaBookingLinksRepository } from "./infra/prisma/prisma-booking-links.repository";
@@ -47,6 +48,7 @@ import { AdminSchedulingController } from "./infra/admin-scheduling.controller";
     UpdateBookingTypeUseCase,
     ListBookingTypesUseCase,
     GenerateBookingLinkUseCase,
+    GetOrCreateDefaultBookingTypeUseCase,
     { provide: BookingTypesRepository, useClass: PrismaBookingTypesRepository },
     { provide: BookingLinksRepository, useClass: PrismaBookingLinksRepository },
     { provide: BookingTypesAdminRepository, useClass: PrismaBookingTypesAdminRepository },

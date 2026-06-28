@@ -7,6 +7,7 @@ import { CreateBookingTypeUseCase } from "../application/use-cases/create-bookin
 import { UpdateBookingTypeUseCase } from "../application/use-cases/update-booking-type.use-case";
 import { ListBookingTypesUseCase } from "../application/use-cases/list-booking-types.use-case";
 import { GenerateBookingLinkUseCase } from "../application/use-cases/generate-booking-link.use-case";
+import { GetOrCreateDefaultBookingTypeUseCase } from "../application/use-cases/get-or-create-default-booking-type.use-case";
 
 interface WeeklyWindow { weekday: number; start: string; end: string }
 interface PresentialCity { city: string; state?: string }
@@ -34,7 +35,7 @@ class UpdateBookingTypeDto {
   active?: boolean;
 }
 class GenerateLinkDto {
-  bookingTypeId!: string;
+  bookingTypeId?: string; // opcional: se omitido usa (ou cria) o tipo padrão do dono
   leadId?: string;
   contactId?: string;
   label?: string;
@@ -50,6 +51,7 @@ export class AdminSchedulingController {
     private readonly updateType: UpdateBookingTypeUseCase,
     private readonly listTypes: ListBookingTypesUseCase,
     private readonly genLink: GenerateBookingLinkUseCase,
+    private readonly defaultType: GetOrCreateDefaultBookingTypeUseCase,
   ) {}
 
   @Get("booking-types")
@@ -80,7 +82,13 @@ export class AdminSchedulingController {
   @HttpCode(201)
   @ApiOperation({ summary: "Gerar link de agendamento (por lead ou genérico)" })
   async generate(@Body() body: GenerateLinkDto, @CurrentUser() user: AuthenticatedUser) {
-    const r = await this.genLink.execute({ ownerId: user.id, bookingTypeId: body.bookingTypeId, leadId: body.leadId, contactId: body.contactId, label: body.label });
+    let bookingTypeId = body.bookingTypeId;
+    if (!bookingTypeId) {
+      const def = await this.defaultType.execute({ ownerId: user.id });
+      if (def.isRight()) bookingTypeId = def.value.bookingType.id;
+    }
+    if (!bookingTypeId) throw new BadRequestException("Nenhum tipo de agendamento disponível");
+    const r = await this.genLink.execute({ ownerId: user.id, bookingTypeId, leadId: body.leadId, contactId: body.contactId, label: body.label });
     if (r.isLeft()) throw new BadRequestException(r.value.message);
     return r.value;
   }

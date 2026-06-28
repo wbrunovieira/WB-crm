@@ -17,6 +17,7 @@ import { LeadGoogleAdsInline } from "@/components/leads/LeadGoogleAdsInline";
 import { LeadDeepResearchButton } from "@/components/leads/LeadDeepResearchButton";
 import { LeadFocusedResearchButton } from "@/components/leads/LeadFocusedResearchButton";
 import { LeadGooglePlacesLinkButton } from "@/components/leads/LeadGooglePlacesLinkButton";
+import { CopyBookingLinkButton } from "@/components/leads/CopyBookingLinkButton";
 import { LeadStarRatingInline } from "@/components/leads/LeadStarRatingInline";
 import { LeadWebsiteAlertToast } from "@/components/leads/LeadWebsiteAlertToast";
 import {
@@ -248,6 +249,7 @@ export default async function LeadDetailPage({
                       <span className="hidden sm:inline">Editar</span>
                     </Link>
                     <ConvertLeadButton leadId={lead.id} hasContacts={(lead.leadContacts?.length ?? 0) > 0} />
+                    <CopyBookingLinkButton leadId={lead.id} />
                   </>
                 )}
                 <ArchiveLeadButton leadId={lead.id} isArchived={lead.isArchived} />
