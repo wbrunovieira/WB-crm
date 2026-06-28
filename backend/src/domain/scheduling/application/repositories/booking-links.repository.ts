@@ -12,4 +12,5 @@ export interface BookingLinkRecord {
 
 export abstract class BookingLinksRepository {
   abstract findByToken(token: string): Promise<BookingLinkRecord | null>;
+  abstract findById(id: string): Promise<BookingLinkRecord | null>;
 }

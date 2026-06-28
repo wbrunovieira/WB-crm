@@ -29,6 +29,7 @@ class FakeTypes extends BookingTypesRepository {
 class FakeLinks extends BookingLinksRepository {
   public links: BookingLinkRecord[] = [];
   async findByToken(token: string) { return this.links.find((l) => l.token === token) ?? null; }
+  async findById(id: string) { return this.links.find((l) => l.id === id) ?? null; }
 }
 class FakeFreeBusy extends CalendarFreeBusyPort {
   constructor(public busy: Interval[] = []) { super(); }
