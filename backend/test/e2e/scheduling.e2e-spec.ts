@@ -27,8 +27,8 @@ class FakeScheduler extends MeetingSchedulerPort {
     return { meetingId: m.id, meetLink: "https://meet.google.com/fake" };
   }
   async findByManageToken(t: string): Promise<BookedMeetingRef | null> {
-    const m = await this.prisma.meeting.findFirst({ where: { manageToken: t }, select: { id: true, bookingLinkId: true, status: true } });
-    return m ? { meetingId: m.id, bookingLinkId: m.bookingLinkId, status: m.status } : null;
+    const m = await this.prisma.meeting.findFirst({ where: { manageToken: t }, select: { id: true, bookingLinkId: true, status: true, startAt: true } });
+    return m ? { meetingId: m.id, bookingLinkId: m.bookingLinkId, status: m.status, startAt: m.startAt } : null;
   }
   async reschedule(id: string, startAt: Date, endAt: Date) { await this.prisma.meeting.update({ where: { id }, data: { startAt, endAt } }); }
   async cancel(id: string) { await this.prisma.meeting.update({ where: { id }, data: { status: "cancelled" } }); }

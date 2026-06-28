@@ -4,6 +4,7 @@ import { GetAvailableSlotsUseCase } from "../application/use-cases/get-available
 import { CreateBookingUseCase } from "../application/use-cases/create-booking.use-case";
 import { RescheduleBookingUseCase } from "../application/use-cases/reschedule-booking.use-case";
 import { CancelBookingUseCase } from "../application/use-cases/cancel-booking.use-case";
+import { GetBookingManageInfoUseCase } from "../application/use-cases/get-booking-manage-info.use-case";
 
 class CreateBookingDto {
   startISO!: string;
@@ -26,7 +27,18 @@ export class PublicBookingController {
     private readonly create: CreateBookingUseCase,
     private readonly reschedule: RescheduleBookingUseCase,
     private readonly cancel: CancelBookingUseCase,
+    private readonly manageInfo: GetBookingManageInfoUseCase,
   ) {}
+
+  @Get("manage/:manageToken")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Dados para gerenciar (remarcar/cancelar) — público" })
+  @ApiParam({ name: "manageToken" })
+  async getManage(@Param("manageToken") manageToken: string) {
+    const r = await this.manageInfo.execute({ manageToken });
+    if (r.isLeft()) throw new NotFoundException(r.value.message);
+    return r.value;
+  }
 
   @Get(":token")
   @HttpCode(200)

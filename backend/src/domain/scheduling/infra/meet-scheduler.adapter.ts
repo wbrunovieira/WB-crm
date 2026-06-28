@@ -51,9 +51,9 @@ export class MeetSchedulerAdapter extends MeetingSchedulerPort {
   async findByManageToken(manageToken: string): Promise<BookedMeetingRef | null> {
     const m = await this.prisma.meeting.findFirst({
       where: { manageToken },
-      select: { id: true, bookingLinkId: true, status: true },
+      select: { id: true, bookingLinkId: true, status: true, startAt: true },
     });
-    return m ? { meetingId: m.id, bookingLinkId: m.bookingLinkId, status: m.status } : null;
+    return m ? { meetingId: m.id, bookingLinkId: m.bookingLinkId, status: m.status, startAt: m.startAt } : null;
   }
 
   async reschedule(meetingId: string, startAt: Date, endAt: Date): Promise<void> {

@@ -17,6 +17,7 @@ export interface BookedMeetingRef {
   meetingId: string;
   bookingLinkId: string | null;
   status: string; // scheduled | ended | cancelled
+  startAt: Date;
 }
 
 /** Cria/remarca/cancela a reunião reutilizando o módulo `meet` (Google + confirmação). */

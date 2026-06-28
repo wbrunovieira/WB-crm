@@ -17,6 +17,7 @@ import { GetAvailableSlotsUseCase } from "./application/use-cases/get-available-
 import { CreateBookingUseCase } from "./application/use-cases/create-booking.use-case";
 import { RescheduleBookingUseCase } from "./application/use-cases/reschedule-booking.use-case";
 import { CancelBookingUseCase } from "./application/use-cases/cancel-booking.use-case";
+import { GetBookingManageInfoUseCase } from "./application/use-cases/get-booking-manage-info.use-case";
 import { CreateBookingTypeUseCase } from "./application/use-cases/create-booking-type.use-case";
 import { UpdateBookingTypeUseCase } from "./application/use-cases/update-booking-type.use-case";
 import { ListBookingTypesUseCase } from "./application/use-cases/list-booking-types.use-case";
@@ -41,6 +42,7 @@ import { AdminSchedulingController } from "./infra/admin-scheduling.controller";
     CreateBookingUseCase,
     RescheduleBookingUseCase,
     CancelBookingUseCase,
+    GetBookingManageInfoUseCase,
     CreateBookingTypeUseCase,
     UpdateBookingTypeUseCase,
     ListBookingTypesUseCase,
