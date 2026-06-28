@@ -98,5 +98,6 @@ import { AuthModule } from "@/infra/auth/auth.module";
     MeetingScheduledListener,
     MeetingCancelledListener,
   ],
+  exports: [ScheduleMeetingUseCase, UpdateMeetingUseCase, CancelMeetingUseCase],
 })
 export class MeetModule {}

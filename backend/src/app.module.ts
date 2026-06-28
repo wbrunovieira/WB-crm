@@ -20,6 +20,7 @@ import { EmailModule } from "./domain/integrations/email/email.module";
 import { PhoneModule } from "./domain/integrations/phone/phone.module";
 import { MetaAdsModule } from "./domain/integrations/meta-ads/meta-ads.module";
 import { MeetModule } from "./domain/integrations/meet/meet.module";
+import { SchedulingModule } from "./domain/scheduling/scheduling.module";
 import { LeadResearchModule } from "./domain/integrations/lead-research/lead-research.module";
 import { LeadDeepResearchModule } from "./domain/integrations/lead-deep-research/lead-deep-research.module";
 import { CallAnalysisModule } from "./domain/integrations/call-analysis/call-analysis.module";
@@ -49,7 +50,7 @@ import { EmailCampaignsModule } from "./domain/email-campaigns/email-campaigns.m
 import { BotFlowsModule } from "./domain/bot-flows/bot-flows.module";
 
 @Module({
-  imports: [EventEmitterModule.forRoot(), ScheduleModule.forRoot(), DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, PhoneModule, MetaAdsModule, MeetModule, LeadResearchModule, LeadDeepResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule, NotificationsModule, DashboardModule, FunnelModule, CallAnalysisModule, MeetAnalysisModule, GatekeeperAnalysisModule, TransferAnalysisModule, ProposalAgentModule, WarmingModule, EmailCampaignsModule, BotFlowsModule],
+  imports: [EventEmitterModule.forRoot(), ScheduleModule.forRoot(), DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, PhoneModule, MetaAdsModule, MeetModule, LeadResearchModule, LeadDeepResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule, NotificationsModule, DashboardModule, FunnelModule, CallAnalysisModule, MeetAnalysisModule, GatekeeperAnalysisModule, TransferAnalysisModule, ProposalAgentModule, WarmingModule, EmailCampaignsModule, BotFlowsModule, SchedulingModule],
   controllers: [HealthController],
   providers: [],
 })
