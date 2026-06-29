@@ -15,9 +15,9 @@ Integrar o WhatsApp (via Evolution API já rodando no servidor) ao CRM para:
 | Evolution API | `https://evolution.wbdigitalsolutions.com` (interno: `localhost:8080`) |
 | Instância | `wbdigital` |
 | Número conectado | `5511982864581` (Bruno — WB Digital Solutions) |
-| API Key | `EV0_984A52DF63B9CD6606C3C8ADE89A739FEB04E55E_2026` |
+| API Key | _(não versionado — ver `AUTHENTICATION_API_KEY` no container `evolution_api`)_ |
 | Webhook atual | `http://n8n:5678/webhook/evolution` (evento: `MESSAGES_UPSERT`) |
-| Secret atual | `WB_EVO_N8N_SECRET_2026` |
+| Secret atual | _(não versionado — ver no servidor)_ |
 
 ## Cobertura da integração
 
@@ -202,7 +202,7 @@ Migration: `add_whatsapp_message_table`
 
 ```
 EVOLUTION_API_URL=http://localhost:8080
-EVOLUTION_API_KEY=EV0_984A52DF63B9CD6606C3C8ADE89A739FEB04E55E_2026
+EVOLUTION_API_KEY=<ver no servidor — não versionar>
 EVOLUTION_INSTANCE=wbdigital
 EVOLUTION_WEBHOOK_SECRET=<gerar com openssl rand -hex 32>
 EVOLUTION_OWNER_ID=<id do usuário dono das atividades>
