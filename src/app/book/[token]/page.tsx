@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
+import { Bricolage_Grotesque, Hanken_Grotesk } from "next/font/google";
 import { BookingClient } from "@/components/booking/BookingClient";
+
+const display = Bricolage_Grotesque({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-display", display: "swap" });
+const body = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-body", display: "swap" });
 
 const BACKEND = process.env.NEXT_PUBLIC_BACKEND_URL ?? "http://localhost:3010";
 
@@ -31,5 +35,9 @@ export async function generateMetadata({ params }: { params: { token: string } }
 
 export default async function BookPage({ params }: { params: { token: string } }) {
   const data = await fetchBooking(params.token);
-  return <BookingClient token={params.token} backend={BACKEND} initial={data} />;
+  return (
+    <main className={`${display.variable} ${body.variable}`}>
+      <BookingClient token={params.token} backend={BACKEND} initial={data} />
+    </main>
+  );
 }
