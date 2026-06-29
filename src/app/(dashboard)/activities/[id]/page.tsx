@@ -167,6 +167,41 @@ export default async function ActivityDetailPage({
             </div>
 
             <div>
+              <dt className="text-sm font-medium text-gray-500">Organização</dt>
+              <dd className="mt-1 text-sm text-gray-900">
+                {activity.organization ? (
+                  <Link href={`/organizations/${activity.organization.id}`} className="text-primary hover:underline">
+                    {activity.organization.name}
+                  </Link>
+                ) : (
+                  "Nenhuma organização vinculada"
+                )}
+              </dd>
+            </div>
+
+            {activity.lead && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Lead</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  <Link href={`/leads/${activity.lead.id}`} className="text-primary hover:underline">
+                    {activity.lead.businessName}
+                  </Link>
+                </dd>
+              </div>
+            )}
+
+            {activity.partner && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Parceiro</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  <Link href={`/partners/${activity.partner.id}`} className="text-primary hover:underline">
+                    {activity.partner.name}
+                  </Link>
+                </dd>
+              </div>
+            )}
+
+            <div>
               <dt className="text-sm font-medium text-gray-500">
                 {activity.contacts && activity.contacts.length > 1 ? "Contatos" : "Contato"}
               </dt>

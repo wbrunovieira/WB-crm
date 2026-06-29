@@ -67,6 +67,7 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
       contact: null,
       lead: null,
       partner: null,
+      organization: null,
       cadenceActivity: null,
     }));
   }
@@ -128,6 +129,7 @@ export class InMemoryActivitiesRepository extends ActivitiesRepository {
       contact: null,
       lead: null,
       partner: null,
+      organization: null,
       cadenceActivity: null,
       contacts: [],
       whatsappMessages: [],

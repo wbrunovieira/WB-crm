@@ -59,6 +59,7 @@ export interface Activity {
   deal?: ActivityDeal | null;
   lead?: { id: string; businessName: string } | null;
   partner?: ActivityPartner | null;
+  organization?: { id: string; name: string } | null;
   callContactType?: string | null;
   meetingNoShow?: boolean;
   gotoCallId?: string | null;

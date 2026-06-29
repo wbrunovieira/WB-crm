@@ -40,6 +40,7 @@ const BASE: Omit<ActivitySummary, "id" | "dueDate" | "completed" | "lead"> = {
   deal: null,
   contact: null,
   partner: null,
+  organization: null,
   cadenceActivity: null,
 };
 

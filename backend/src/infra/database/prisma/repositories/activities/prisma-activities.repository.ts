@@ -89,6 +89,7 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
         contact: { select: { id: true, name: true, organization: { select: { id: true, name: true } }, partner: { select: { id: true, name: true } } } },
         lead: { select: { id: true, businessName: true, isArchived: true, starRating: true } },
         partner: { select: { id: true, name: true } },
+        organization: { select: { id: true, name: true } },
         cadenceActivity: {
           select: {
             id: true,
@@ -150,6 +151,7 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
       contact: r.contact,
       lead: r.lead,
       partner: r.partner,
+      organization: r.organization,
       cadenceActivity: r.cadenceActivity,
     }));
 
@@ -190,6 +192,7 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
         contact: { select: { id: true, name: true, organization: { select: { id: true, name: true } }, partner: { select: { id: true, name: true } } } },
         lead: { select: { id: true, businessName: true, isArchived: true, starRating: true } },
         partner: { select: { id: true, name: true } },
+        organization: { select: { id: true, name: true } },
         cadenceActivity: {
           select: {
             id: true,
@@ -287,6 +290,7 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
       contact: r.contact,
       lead: r.lead,
       partner: r.partner,
+      organization: r.organization,
       cadenceActivity: r.cadenceActivity,
       contacts,
       whatsappMessages: r.whatsappMessages ?? [],
