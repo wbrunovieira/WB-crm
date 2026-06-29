@@ -5,6 +5,10 @@ import { BookingTypesRepository } from "../repositories/booking-types.repository
 import { CalendarFreeBusyPort } from "../ports/calendar-freebusy.port";
 import { SchedulingLeadsPort } from "../ports/scheduling-leads.port";
 import { computeAvailableSlots } from "../../enterprise/services/availability.service";
+import { curateSlots } from "../../enterprise/services/slot-curation.service";
+
+/** Horários exibidos por turno (manhã/tarde) por dia — evita "agenda sempre vazia". */
+const MAX_SLOTS_PER_TURNO = 3;
 
 export class BookingLinkUnavailableError extends Error {
   constructor() { super("Link de agendamento inválido ou expirado"); this.name = "BookingLinkUnavailableError"; }
@@ -44,7 +48,7 @@ export class GetAvailableSlotsUseCase {
     const windowEnd = new Date(now.getTime() + type.maxAdvanceDays * DAY);
     const busy = await this.freebusy.getBusy(link.ownerId, windowStart, windowEnd);
 
-    const slots = computeAvailableSlots({
+    const allSlots = computeAvailableSlots({
       now,
       timeZone: type.timeZone,
       weeklyHours: type.weeklyHours,
@@ -54,6 +58,7 @@ export class GetAvailableSlotsUseCase {
       maxAdvanceDays: type.maxAdvanceDays,
       busy,
     });
+    const slots = curateSlots(allSlots, { maxPerTurno: MAX_SLOTS_PER_TURNO, timeZone: type.timeZone });
 
     const lead = link.leadId ? await this.leads.findForBooking(link.leadId) : null;
 

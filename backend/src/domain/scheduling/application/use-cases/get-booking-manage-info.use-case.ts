@@ -5,6 +5,7 @@ import { BookingLinksRepository } from "../repositories/booking-links.repository
 import { BookingTypesRepository } from "../repositories/booking-types.repository";
 import { CalendarFreeBusyPort } from "../ports/calendar-freebusy.port";
 import { computeAvailableSlots } from "../../enterprise/services/availability.service";
+import { curateSlots } from "../../enterprise/services/slot-curation.service";
 import { BookingError } from "./slot-check.helper";
 
 const DAY = 86_400_000;
@@ -41,11 +42,12 @@ export class GetBookingManageInfoUseCase {
     const windowStart = new Date(now.getTime() + type.minNoticeHours * 3600_000);
     const windowEnd = new Date(now.getTime() + type.maxAdvanceDays * DAY);
     const busy = await this.freebusy.getBusy(link!.ownerId, windowStart, windowEnd);
-    const slots = computeAvailableSlots({
+    const allSlots = computeAvailableSlots({
       now, timeZone: type.timeZone, weeklyHours: type.weeklyHours,
       slotMinutes: type.durationMinutes, bufferMinutes: type.bufferMinutes,
       minNoticeHours: type.minNoticeHours, maxAdvanceDays: type.maxAdvanceDays, busy,
     });
+    const slots = curateSlots(allSlots, { maxPerTurno: 3, timeZone: type.timeZone });
 
     return right({
       ...base,
