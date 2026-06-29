@@ -12,7 +12,7 @@ interface ManageData {
 
 const LOGO_WB_WHITE = "https://crm.wbdigitalsolutions.com/email-assets/logo-wb-white.svg";
 const LOGO_WB = "https://crm.wbdigitalsolutions.com/email-assets/logo-wb.svg";
-const LOGO_SALTO = "https://crm.wbdigitalsolutions.com/email-assets/logo-salto.svg";
+const LOGO_SALTO_DARK = "https://crm.wbdigitalsolutions.com/email-assets/logo-salto-dark.svg";
 const display = { fontFamily: "var(--font-display), Georgia, serif" } as const;
 const bodyFont = { fontFamily: "var(--font-body), system-ui, sans-serif" } as const;
 
@@ -61,20 +61,22 @@ export function ManageClient({ manageToken, backend, initial }: { manageToken: s
     <div style={bodyFont} className="relative min-h-screen text-white">
       <Atmosphere />
       <div className="relative mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 py-12 sm:py-16">
-        <div className="flex items-center justify-center">
+        <div className="flex flex-col items-center">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={LOGO_WB_WHITE} alt="WB Digital Solutions" height={28} style={{ height: 28, width: "auto" }} />
+          <img src={LOGO_WB_WHITE} alt="WB Digital Solutions" height={52} style={{ height: 52, width: "auto" }} />
         </div>
         <div className="mt-9">{children}</div>
-        <div className="mt-auto flex flex-col items-center gap-2 pt-10 text-center">
-          <span className="text-[11px] uppercase tracking-[0.2em] text-white/35">uma parceria</span>
-          <div className="flex items-center gap-3 rounded-full bg-white/90 px-5 py-2.5 shadow-lg">
+        <div className="mt-auto flex flex-col items-center gap-3 pt-10 text-center">
+          <div className="flex items-center gap-4 rounded-full bg-white px-6 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={LOGO_WB} alt="WB" height={18} style={{ height: 18, width: "auto" }} />
-            <span className="text-lg font-light text-[#350045]/40">×</span>
+            <img src={LOGO_WB} alt="WB Digital Solutions" height={26} style={{ height: 26, width: "auto" }} />
+            <span className="h-6 w-px bg-[#350045]/15" />
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={LOGO_SALTO} alt="Salto" height={18} style={{ height: 18, width: "auto" }} />
+            <img src={LOGO_SALTO_DARK} alt="Salto" height={24} style={{ height: 24, width: "auto" }} />
           </div>
+          <span className="max-w-sm text-[12.5px] leading-relaxed text-white/70">
+            WB Digital Solutions e Salto — <span className="font-medium text-white/85">a mesma equipe</span>.
+          </span>
         </div>
       </div>
     </div>
@@ -89,7 +91,7 @@ export function ManageClient({ manageToken, backend, initial }: { manageToken: s
   }
 
   if (status === "rescheduled" && newStart) {
-    return <Page><div className={`${card} text-center`}><div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8531e] text-2xl shadow-[0_8px_30px_rgba(232,83,30,0.45)]">✓</div><h1 style={display} className="text-xl font-bold">Reunião remarcada!</h1><p className="mt-2 capitalize text-white/80">{fmtFull(newStart)} <span className="text-white/50">({tzShort})</span></p><p className="mt-4 text-sm text-white/55">Atualizamos o convite no seu e-mail.</p></div></Page>;
+    return <Page><div className={`${card} text-center`}><div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#e8531e] text-2xl shadow-[0_8px_30px_rgba(232,83,30,0.45)]">✓</div><h1 style={display} className="text-xl font-bold">Reunião remarcada!</h1><p className="mt-2 capitalize text-white/80">{fmtFull(newStart)} <span className="text-white/70">({tzShort})</span></p><p className="mt-4 text-sm text-white/70">Atualizamos o convite no seu e-mail.</p></div></Page>;
   }
 
   if (view === "reschedule") {
@@ -97,21 +99,21 @@ export function ManageClient({ manageToken, backend, initial }: { manageToken: s
       <Page>
         <div className={card}>
           <h1 style={display} className="text-xl font-bold">Escolha um novo horário</h1>
-          <p className="mt-1 text-xs text-white/45">seu fuso · {tzShort}</p>
+          <p className="mt-1 text-xs text-white/65">seu fuso · {tzShort}</p>
           <div className="mt-5 max-h-[48vh] space-y-5 overflow-y-auto pr-1 [scrollbar-width:thin]">
             {days.length === 0 && <p className="text-white/60">Sem horários disponíveis.</p>}
             {days.map(([day, slots]) => (
               <div key={day}>
                 <div className="mb-2 flex items-center gap-2">
-                  <span className="h-px flex-1 bg-white/10" /><span className="text-xs font-semibold capitalize text-white/65">{day}</span><span className="h-px flex-1 bg-white/10" />
+                  <span className="h-px flex-1 bg-white/20" /><span className="text-xs font-semibold capitalize text-white/85">{day}</span><span className="h-px flex-1 bg-white/20" />
                 </div>
                 <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
                   {slots.map((s) => {
                     const on = selected === s.start;
                     return (
                       <button key={s.start} type="button" aria-pressed={on} onClick={() => setSelected(s.start)}
-                        className="rounded-xl border py-2.5 text-sm font-medium tabular-nums transition active:scale-[0.97]"
-                        style={on ? { borderColor: "#e8531e", background: "#e8531e" } : { borderColor: "rgba(255,255,255,0.12)", background: "rgba(255,255,255,0.03)" }}>
+                        className="rounded-xl border py-2.5 text-sm font-semibold tabular-nums text-white/90 transition active:scale-[0.97]"
+                        style={on ? { borderColor: "#e8531e", background: "#e8531e", boxShadow: "0 6px 20px rgba(232,83,30,0.4)" } : { borderColor: "rgba(255,255,255,0.22)", background: "rgba(255,255,255,0.08)" }}>
                         {fmtTime(s.start)}
                       </button>
                     );
@@ -137,10 +139,10 @@ export function ManageClient({ manageToken, backend, initial }: { manageToken: s
   return (
     <Page>
       <div className={card}>
-        <div className="text-xs uppercase tracking-wider text-white/45">Seu agendamento</div>
+        <div className="text-xs uppercase tracking-wider text-white/65">Seu agendamento</div>
         <h1 style={display} className="mt-1 text-2xl font-bold capitalize">{fmtFull(initial.currentStartAt)}</h1>
-        <p className="mt-1 text-sm text-white/50">no seu fuso ({tzShort})</p>
-        {initial.bookingType && <p className="mt-3 inline-block rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs text-white/65">{initial.bookingType.name} · {initial.bookingType.durationMinutes} min</p>}
+        <p className="mt-1 text-sm text-white/70">no seu fuso ({tzShort})</p>
+        {initial.bookingType && <p className="mt-3 inline-block rounded-full border border-white/15 bg-white/[0.07] px-3 py-1 text-xs text-white/80">{initial.bookingType.name} · {initial.bookingType.durationMinutes} min</p>}
         {status === "error" && <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/15 px-3.5 py-2.5 text-sm text-red-100">{errorMsg}</p>}
         <div className="mt-6 flex gap-2.5">
           <button type="button" onClick={() => setView("reschedule")} className="flex-1 rounded-2xl py-3 font-semibold text-white transition hover:brightness-110" style={{ background: "#792990" }}>Remarcar</button>
