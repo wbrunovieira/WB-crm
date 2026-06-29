@@ -36,14 +36,17 @@ class FakeLinks extends BookingLinksRepository {
 }
 class FakeFreeBusy extends CalendarFreeBusyPort { async getBusy() { return []; } }
 class FakeLeads extends SchedulingLeadsPort {
+  lead: BookingLead | null = LEAD; // ajustável por teste (ex.: e-mail null)
   byContact: BookingLead | null = null;
   createdWith?: { ownerId: string; name: string; email?: string; whatsapp?: string };
-  async findForBooking(id: string) { return id === LEAD.id ? LEAD : null; }
+  confirmedEmail?: string;
+  async findForBooking(id: string) { return this.lead && this.lead.id === id ? this.lead : null; }
   async findByContact() { return this.byContact; }
   async createLead(input: { ownerId: string; name: string; email?: string; whatsapp?: string }) {
     this.createdWith = input;
     return { id: "newlead", name: input.name, email: input.email ?? null, city: null, state: null, address: null };
   }
+  async confirmLeadEmail(_leadId: string, email: string) { this.confirmedEmail = email; }
 }
 const GENERIC_LINK: BookingLinkRecord = { id: "lg", token: "gen", ownerId: "owner1", bookingTypeId: "bt1", leadId: null, contactId: null, label: null, active: true, expiresAt: null };
 class FakeTokens extends TokenGeneratorPort { generate() { return "manage-tok"; } }
@@ -80,6 +83,19 @@ describe("CreateBookingUseCase", () => {
     expect(sched.scheduled?.leadId).toBe("lead1");
     expect(sched.scheduled?.location).toBeNull();         // online não tem endereço
     expect(sched.scheduled?.endAt.toISOString()).toBe("2026-07-01T19:30:00.000Z");
+  });
+
+  it("link por-lead: e-mail digitado tem prioridade e é salvo no lead", async () => {
+    const r = await create.execute({ token: "abc", startISO: SLOT_ONLINE, mode: "online", attendeeEmail: "novo@x.com", now: NOW });
+    expect(r.isRight()).toBe(true);
+    expect(sched.scheduled?.attendeeEmail).toBe("novo@x.com");
+    expect(leads.confirmedEmail).toBe("novo@x.com");
+  });
+
+  it("link por-lead sem e-mail no lead e sem digitar → left", async () => {
+    leads.lead = { ...LEAD, email: null };
+    const r = await create.execute({ token: "abc", startISO: SLOT_ONLINE, mode: "online", now: NOW });
+    expect(r.isLeft()).toBe(true);
   });
 
   it("presencial usa o endereço do lead", async () => {

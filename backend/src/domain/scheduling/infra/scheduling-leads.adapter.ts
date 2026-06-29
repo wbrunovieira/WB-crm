@@ -46,4 +46,9 @@ export class SchedulingLeadsAdapter extends SchedulingLeadsPort {
     });
     return toBookingLead(l);
   }
+
+  async confirmLeadEmail(leadId: string, email: string): Promise<void> {
+    // só preenche se o lead ainda não tinha e-mail próprio (não sobrescreve)
+    await this.prisma.lead.updateMany({ where: { id: leadId, email: null }, data: { email: email.trim() } });
+  }
 }

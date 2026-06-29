@@ -70,9 +70,12 @@ export class CreateBookingUseCase {
       resolvedLeadId = lead.id;
     }
 
-    const email = (lead?.email ?? input.attendeeEmail ?? "").trim();
+    // E-mail: o que o lead digitar tem prioridade (confirmação); cai pro do lead se já houver.
+    const email = (input.attendeeEmail?.trim() || lead?.email || "").trim();
     const name = (lead?.name ?? input.attendeeName ?? "").trim();
-    if (!email) return left(new BookingError("E-mail do participante é obrigatório"));
+    if (!email) return left(new BookingError("Informe seu e-mail para receber a confirmação."));
+    // Link por-lead: salva o e-mail no lead se ele ainda não tinha (não sobrescreve).
+    if (link.leadId) await this.leads.confirmLeadEmail(link.leadId, email);
 
     let location: string | null = null;
     if (input.mode === "presential") {

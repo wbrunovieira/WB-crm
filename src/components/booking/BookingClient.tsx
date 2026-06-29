@@ -6,7 +6,7 @@ interface Slot { start: string; end: string }
 interface BookingData {
   bookingType: { name: string; durationMinutes: number; timeZone: string };
   locationModes: ("online" | "presential")[];
-  lead: { name: string; address: string | null } | null;
+  lead: { name: string; address: string | null; email: string | null } | null;
   slots: Slot[];
 }
 
@@ -44,7 +44,7 @@ export function BookingClient({ token, backend, initial }: { token: string; back
   const [mode, setMode] = useState<"online" | "presential">("online");
   const [address, setAddress] = useState(initial?.lead?.address ?? "");
   const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [email, setEmail] = useState(initial?.lead?.email ?? "");
   const [whatsapp, setWhatsapp] = useState("");
   const [selected, setSelected] = useState<string | null>(null);
   const [status, setStatus] = useState<"idle" | "submitting" | "done" | "error">("idle");
@@ -77,8 +77,9 @@ export function BookingClient({ token, backend, initial }: { token: string; back
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           startISO: selected, mode,
+          attendeeEmail: email,
           ...(mode === "presential" ? { address } : {}),
-          ...(isGeneric ? { attendeeName: name, attendeeEmail: email, attendeeWhatsapp: whatsapp } : {}),
+          ...(isGeneric ? { attendeeName: name, attendeeWhatsapp: whatsapp } : {}),
         }),
       });
       if (!res.ok) {
@@ -192,7 +193,7 @@ export function BookingClient({ token, backend, initial }: { token: string; back
     );
   }
 
-  const confirmDisabled = !selected || status === "submitting" || (isGeneric && (!name.trim() || !email.trim()));
+  const confirmDisabled = !selected || status === "submitting" || !email.trim() || (isGeneric && !name.trim());
 
   // ── Booking ───────────────────────────────────────────────────────────────
   return (
@@ -301,16 +302,20 @@ export function BookingClient({ token, backend, initial }: { token: string; back
           ))}
         </div>
 
-        {isGeneric && selected && (
+        {selected && (
           <div className="mt-6 space-y-2.5 border-t border-white/10 pt-5">
-            <div className="text-sm font-semibold text-white/85">Seus dados</div>
-            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome"
-              className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]" />
+            <div className="text-sm font-semibold text-white/85">{isGeneric ? "Seus dados" : "Confirme seu e-mail"}</div>
+            {isGeneric && (
+              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome"
+                className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]" />
+            )}
             <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Seu e-mail"
               className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]" />
-            <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} inputMode="tel" placeholder="WhatsApp (com DDD)"
-              className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]" />
-            <p className="text-[11px] text-white/60">🔒 Usamos seus dados apenas para confirmar e lembrar da reunião.</p>
+            {isGeneric && (
+              <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} inputMode="tel" placeholder="WhatsApp (com DDD)"
+                className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]" />
+            )}
+            <p className="text-[11px] text-white/60">🔒 Usamos seu e-mail apenas para enviar a confirmação e o convite da reunião.</p>
           </div>
         )}
 

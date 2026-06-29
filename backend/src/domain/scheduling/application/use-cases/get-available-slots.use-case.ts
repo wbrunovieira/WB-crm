@@ -17,7 +17,7 @@ export class BookingLinkUnavailableError extends Error {
 export interface GetAvailableSlotsResult {
   bookingType: { name: string; durationMinutes: number; timeZone: string };
   locationModes: ("online" | "presential")[];
-  lead: { name: string; address: string | null } | null;
+  lead: { name: string; address: string | null; email: string | null } | null;
   slots: { start: string; end: string }[];
 }
 
@@ -70,7 +70,7 @@ export class GetAvailableSlotsUseCase {
     return right({
       bookingType: { name: type.name, durationMinutes: type.durationMinutes, timeZone: type.timeZone },
       locationModes,
-      lead: lead ? { name: lead.name, address: lead.address } : null,
+      lead: lead ? { name: lead.name, address: lead.address, email: lead.email } : null,
       slots: slots.map((s) => ({ start: s.start.toISOString(), end: s.end.toISOString() })),
     });
   }

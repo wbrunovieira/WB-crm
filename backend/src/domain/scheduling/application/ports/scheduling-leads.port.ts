@@ -1,7 +1,7 @@
 export interface BookingLead {
   id: string;
   name: string;
-  email: string | null;
+  email: string | null; // do lead OU do contato principal (resolvido)
   city: string | null;
   state: string | null;
   address: string | null;
@@ -14,4 +14,6 @@ export abstract class SchedulingLeadsPort {
   abstract findByContact(input: { ownerId: string; email?: string; whatsapp?: string }): Promise<BookingLead | null>;
   /** Cria um lead inbound a partir do auto-agendamento. */
   abstract createLead(input: { ownerId: string; name: string; email?: string; whatsapp?: string }): Promise<BookingLead>;
+  /** Salva o e-mail confirmado no lead se ele ainda não tinha e-mail próprio. */
+  abstract confirmLeadEmail(leadId: string, email: string): Promise<void>;
 }
