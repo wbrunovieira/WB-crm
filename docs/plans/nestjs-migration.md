@@ -1235,6 +1235,43 @@ Atualmente `/api/google/auth` e `/api/google/callback` são thin proxies no Next
 
 ---
 
+### ✅ M19 — Prisma 100% fora do frontend (backend = autoridade de migração)
+**Status**: Concluído em 2026-06-30 — fecha de fato o "frontend puro" do M14
+
+Quando o M14 foi declarado concluído (2026-04-22), o *código* do Next.js já não
+importava Prisma, mas o **repositório raiz ainda carregava todo o tooling de banco**:
+`@prisma/client` + `prisma` no `package.json`, a pasta `prisma/` (schema + 23
+migrations + `dev.db`), os seeds, e a migração de produção rodava **a partir da raiz**
+(`deploy-with-migrations.yml`). Para um observador (ex.: recrutador) o frontend ainda
+"parecia" dono do banco. Esta fase remove isso por completo.
+
+#### O que foi feito
+| Área | Antes | Depois |
+|------|-------|--------|
+| Schema Prisma | duplicado em `prisma/` (raiz) **e** `backend/prisma/`, sincronizado à mão (já tinha divergido) | **único** em `backend/prisma/schema.prisma` |
+| Migrations | copiadas nas duas pastas | só `backend/prisma/migrations/` |
+| Autoridade de migração | `deploy-with-migrations.yml` rodava `prisma migrate deploy` da raiz | `deploy-backend.yml`: backup → `compose run --rm backend npx prisma migrate deploy` (imagem nova, antes de trocar o container) → swap |
+| Seeds | `prisma/seed.ts`, `seed-cnaes.ts` na raiz | `backend/prisma/` (`npm run db:seed` / `db:seed:cnaes`) |
+| Dockerfile do backend | `COPY prisma ./prisma` (pasta da raiz) | `COPY backend/prisma ./prisma` (desacoplado da raiz) |
+| Deps da raiz | `@prisma/client`, `prisma`, `better-sqlite3`, `@types/better-sqlite3`, `tsx` | removidas |
+| `prisma generate` no build do frontend | `"build": "prisma generate && next build"` | `"build": "next build"` |
+| Playbooks | `deploy-with-migrations.yml` + passos prisma em quick-deploy/rollback/update/role app | `deploy-with-migrations.yml` **deletado**; passos prisma removidos dos demais |
+| Testes de frontend | mocks/fixtures Prisma + testes de auth/server-action obsoletos | removidos (293 testes válidos restantes) |
+
+#### Critério de conclusão — ✅ ATINGIDO (2026-06-30)
+- ✅ `prisma/` não existe mais na raiz; `grep -r @prisma/client src/` = 0; raiz sem `prisma`/`@prisma/client` no `package.json`
+- ✅ Build do frontend roda sem `prisma generate`; build do backend usa `backend/prisma`
+- ✅ Em produção: `deploy-backend.yml` rodou `prisma migrate deploy` (backup antes) → "No pending migrations" → container saudável (`db:ok`); servidor sem `/opt/wb-crm/prisma`
+- ✅ Frontend = UI pura; toda persistência é do NestJS
+
+#### Notas de manutenção (substituem regras antigas)
+- Mudança de schema: editar `backend/prisma/schema.prisma`, criar a migration em
+  `backend/prisma/migrations/`, e deployar com `deploy-backend.yml` (faz backup + migra).
+  **Não há mais cópia na raiz.**
+- A skill `integrations` e o `CLAUDE.md` foram atualizados para refletir isto.
+
+---
+
 ## Checklist por Fase
 
 ### M1–M9 (padrão legado — mantido como está)
