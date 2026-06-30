@@ -1,5 +1,16 @@
 # M14 — Migração do Frontend: Server Actions → NestJS
 
+> **✅ CONCLUÍDO (2026-06-30).** `src/actions/` foi **inteiramente deletado** (0 server
+> actions) e as API routes de dados (`contacts/`, `deals/`, `leads/`, `products/`,
+> `funnel/`, `activities/`, `organizations/`, `icps/`) também. Os marcadores
+> "(parcial)" e as listas de "mantidos como Server Action / rotas mantidas" abaixo são
+> **históricos** — descrevem estados intermediários; tudo o que estava pendente foi
+> finalizado depois desta doc. O fechamento (remoção do Prisma da raiz, backend como
+> autoridade de migração) está documentado em **M19** no `nestjs-migration.md`.
+>
+> Rotas Next.js que permanecem (legítimas, sem banco): `api/auth/[...nextauth]`,
+> `api/docs`, `api/google/auth`+`callback`, `api/goto/auth`, `api/webhooks/lead-deep-research`.
+
 **Objetivo**: Substituir todas as chamadas Next.js Server Actions por chamadas HTTP ao NestJS backend, depois deletar o backend Next.js (`src/actions/`, `src/app/api/`).
 
 **Produção**: cada fase é deployed antes de avançar para a próxima.
@@ -157,7 +168,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## ~~FASE 8 — Cadences~~ ✅ (parcial)
+## ~~FASE 8 — Cadences~~ ✅
 
 **Páginas**: `/admin/cadences`, `/admin/cadences/[id]`
 
@@ -237,7 +248,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## ~~FASE 12 — Organizations~~ ✅ (parcial)
+## ~~FASE 12 — Organizations~~ ✅
 
 **Páginas**: `/organizations`, `/organizations/[id]`
 
@@ -262,7 +273,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## ~~FASE 13 — Leads~~ ✅ (reads migrados; mutations em componentes pendentes)
+## ~~FASE 13 — Leads~~ ✅
 
 **Páginas**: `/leads`, `/leads/[id]`, `/leads/prospects`, `/leads/import`
 
@@ -379,7 +390,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## ~~FASE 19 — Integrações (Gmail, WhatsApp, GoTo)~~ ✅ (parcial)
+## ~~FASE 19 — Integrações (Gmail, WhatsApp, GoTo)~~ ✅
 
 **Páginas**: `/admin/google`, emails em leads/deals
 
@@ -412,7 +423,7 @@ Ambas as funções já injetam o JWT do NextAuth no header `Authorization: Beare
 
 ---
 
-## ~~FASE 21 — Limpeza final~~ ✅ (parcial)
+## ~~FASE 21 — Limpeza final~~ ✅
 
 Após todas as fases anteriores terem sido deployadas e verificadas:
 
@@ -461,7 +472,7 @@ ssh root@45.90.123.190 "docker logs wb-crm-backend --tail=20"
 | 5 | Admin: Tech Options | ✅ | `tech-categories.ts`, `tech-languages.ts`, `tech-frameworks.ts`, `tech-profile-options.ts` deletados |
 | 6 | Admin: Sectors | ✅ | `sectors.ts` deletado |
 | 7 | ICPs | ✅ | `icps.ts`, `icp-links.ts` deletados |
-| 8 | Cadences | ✅ | `cadences.ts`, `cadence-steps.ts` deletados. `lead-cadences.ts` **parcial**: `applyCadenceToLead`, `applyCadenceToBulkLeads`, `pauseLeadCadence`, `resumeLeadCadence`, `cancelLeadCadence` removidos; mantidos `getLeadCadences`, `completeLeadCadence`, `cancelAllActiveCadences`, `getAvailableCadencesForLead`, `registerLeadReply` (NestJS não retorna detalhes ricos de cadência por lead) |
+| 8 | Cadences | ✅ | `cadences.ts`, `cadence-steps.ts`, `lead-cadences.ts` deletados (as funções restantes que esta doc listava foram migradas depois — `src/actions/` vazio; ver M19). |
 | 9 | Contacts | ✅ | `contacts.ts` deletado; `activities/page.tsx` usa `backendFetch('/contacts')` |
 | 10 | Partners | ✅ | `partners.ts` deletado; `activities/page.tsx` e páginas de parceiros usam `backendFetch` |
 | 11 | Activities | ✅ | `activities.ts` deletado; todos os reads migrados para `backendFetch`; mutations já estavam em hooks |
@@ -472,6 +483,6 @@ ssh root@45.90.123.190 "docker logs wb-crm-backend --tail=20"
 | 16 | Campaigns | ✅ | `actions/campaigns.ts` já usava `backendFetch` internamente. Nenhuma mudança necessária. |
 | 17 | Shared Entities | ✅ | NestJS recebeu `GET /shared-entities/batch` e `GET /shared-entities/available-users`. Páginas de lista (`leads`, `contacts`, `deals`, `organizations`, `partners`) usam `backendFetch` para batch. `EntityManagementPanel`, `SharedUsersList`, `ShareDialog`, `TransferDialog` migrados para `apiFetch` com token via `useSession`. F15 tokens corrigidos em `ProposalsList`, `MeetingsList`, `ScheduleMeetingModal`. |
 | 18 | Dashboard & Funnel | ✅ | NestJS hosting-renewals extended with `hostingPlan`/`hostingValue`. `dashboard/page.tsx`: `backendFetch('/hosting-renewals')`. `admin/manager/page.tsx`: `backendFetch('/dashboard/stats')`. `ActivityCalendar`: `apiFetch('/dashboard/activity-calendar')` com `useSession` token. |
-| 19 | Integrações (Gmail, WhatsApp, GoTo) | ✅ (parcial) | `WhatsAppSendModal`: `sendWhatsAppMessage` → `apiFetch('/whatsapp/send')`. `WhatsAppCheckButton`: `checkWhatsApp` → `apiFetch('/whatsapp/check')`. **Mantidos como Server Action**: `sendGmailMessage` (tracking + Activity com entityIds + attachments), `sendWhatsAppMedia` (sem endpoint NestJS), templates gmail/whatsapp (sem endpoints NestJS), `syncGmailNow` (cron automático no NestJS). |
+| 19 | Integrações (Gmail, WhatsApp, GoTo) | ✅ | Migrado para `apiFetch` (`/whatsapp/send`, `/whatsapp/check`, `/email/send`, templates, etc.). Os itens que esta doc listava como "mantidos como Server Action" foram migrados depois e `src/actions/` foi deletado (ver M19). |
 | 20 | Notificações | ✅ | Backend: `type`/`limit`/`payload` adicionados ao controller. `NotificationBell` e `LeadResearchNotifications` migrados para `apiFetch`. SSE stream convertido em proxy NestJS (`/api/notifications/stream` → NestJS `/notifications/stream`). `src/app/api/notifications/route.ts` deletado. |
-| 21 | Limpeza final | ✅ (parcial) | Deletados: `entity-management.ts`, `hosting-renewals.ts`, `admin-manager.ts` (tipos movidos para `src/types/admin-manager.ts`). API routes deletadas: `activities/`, `organizations/`, `icps/`, `leads/[id]/`, `leads/by-icp/`. **Mantidos** (ainda usados): `contacts/`, `deals/`, `leads/route.ts`, `products/`, `funnel/` (DealCard/DealsListView/ToggleCompletedButtonWrapper ainda chamam via `/api/`). Actions ainda em uso: `leads.ts`, `deals.ts`, `proposals.ts`, `meetings.ts`, `whatsapp.ts`, `gmail.ts`, etc. |
+| 21 | Limpeza final | ✅ | `src/actions/` **inteiramente deletado** e as API routes de dados (`contacts/`, `deals/`, `leads/`, `products/`, `funnel/`, `activities/`, `organizations/`, `icps/`) removidas. (As listas de "mantidos" que esta doc registrava eram estados intermediários — concluídos depois; ver M19.) |

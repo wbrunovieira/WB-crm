@@ -344,8 +344,8 @@ _Lição_: Todo e2e de criação/atualização deve ter um teste com **todos os 
 
 ---
 
-### 🔄 M2 — Leads
-**Status**: Backend concluído em 2026-04-18 | Frontend parcial (mutações simples migradas)
+### ✅ M2 — Leads
+**Status**: Backend concluído em 2026-04-18 | Frontend concluído em **M2.5** (ver seção M2.5). O bloco "pendente" e o checklist abaixo são **históricos** — todos resolvidos: `src/actions/leads.ts` foi deletado.
 
 #### Backend — concluído ✅
 
@@ -366,7 +366,7 @@ _Lição_: Todo e2e de criação/atualização deve ter um teste com **todos os 
 - `archiveLead`, `unarchiveLead`, `deleteLead` removidos de `src/actions/leads.ts`
 - Confirmado nos logs do NestJS: `PATCH /leads/:id/archive` e `DELETE /leads/:id` ✅
 
-#### Frontend — pendente (create, update, lista, detalhe) 🔲
+#### Frontend — ~~pendente (create, update, lista, detalhe)~~ ✅ resolvido em M2.5 (histórico abaixo)
 
 - **`updateLead`** (`src/actions/leads.ts`): ainda via Next.js server action. Migração simples — apenas `PATCH /leads/:id` sem transação. Incluído no M2.5 junto com o create para não fragmentar o deploy.
 - **`createLeadWithContacts`** (`src/actions/leads.ts`): ainda via Next.js server action. Migração complexa — transação atômica (Lead + LeadContacts + junction tables + CNAE + tech profile + labels + ICP). Requer enriquecimento do `POST /leads` no NestJS.
@@ -1342,8 +1342,8 @@ migrations + `dev.db`), os seeds, e a migração de produção rodava **a partir
 ## Referências
 
 - Backend: `/backend/src/`
-- Hooks frontend: `/src/hooks/`
-- Actions legadas: `/src/actions/`
-- Deploy backend: `deploy/ansible/playbooks/deploy-backend.yml`
+- Hooks frontend (client): `/src/hooks/` (`apiFetch`) · Server Components: `src/lib/backend/client.ts` (`backendFetch`)
+- ~~Actions legadas: `/src/actions/`~~ — removido (M14/M19); não há mais server actions
+- Deploy backend (com migração): `deploy/ansible/playbooks/deploy-backend.yml`
 - Deploy frontend: `deploy/ansible/playbooks/quick-deploy.yml`
 - Logs produção: `ssh root@45.90.123.190 "tail -f /var/log/nginx/access.log | grep contacts"`
