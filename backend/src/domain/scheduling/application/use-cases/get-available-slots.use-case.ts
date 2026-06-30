@@ -6,6 +6,7 @@ import { CalendarFreeBusyPort } from "../ports/calendar-freebusy.port";
 import { SchedulingLeadsPort } from "../ports/scheduling-leads.port";
 import { computeAvailableSlots } from "../../enterprise/services/availability.service";
 import { curateSlots } from "../../enterprise/services/slot-curation.service";
+import { cityIsServed } from "../../enterprise/services/city-match";
 
 /** Horários exibidos por turno (manhã/tarde) por dia — evita "agenda sempre vazia". */
 const MAX_SLOTS_PER_TURNO = 3;
@@ -22,7 +23,6 @@ export interface GetAvailableSlotsResult {
 }
 
 const DAY = 86_400_000;
-const norm = (s: string) => s.trim().toLowerCase();
 
 @Injectable()
 export class GetAvailableSlotsUseCase {
@@ -63,7 +63,7 @@ export class GetAvailableSlotsUseCase {
     const lead = link.leadId ? await this.leads.findForBooking(link.leadId) : null;
 
     const locationModes: ("online" | "presential")[] = ["online"];
-    if (lead?.city && type.presentialCities.some((c) => norm(c.city) === norm(lead.city!))) {
+    if (cityIsServed(lead?.city, type.presentialCities)) {
       locationModes.push("presential");
     }
 

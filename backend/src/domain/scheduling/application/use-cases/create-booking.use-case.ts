@@ -7,6 +7,7 @@ import { SchedulingLeadsPort } from "../ports/scheduling-leads.port";
 import { MeetingSchedulerPort } from "../ports/meeting-scheduler.port";
 import { TokenGeneratorPort } from "../ports/token-generator.port";
 import { requestedSlotAvailable, BookingError } from "./slot-check.helper";
+import { cityIsServed } from "../../enterprise/services/city-match";
 
 export interface CreateBookingResult {
   manageToken: string;
@@ -16,8 +17,6 @@ export interface CreateBookingResult {
   endAt: string;
   mode: "online" | "presential";
 }
-
-const norm = (s: string) => s.trim().toLowerCase();
 
 @Injectable()
 export class CreateBookingUseCase {
@@ -84,7 +83,7 @@ export class CreateBookingUseCase {
 
     let location: string | null = null;
     if (input.mode === "presential") {
-      const served = !!lead?.city && type.presentialCities.some((c) => norm(c.city) === norm(lead.city!));
+      const served = cityIsServed(lead?.city, type.presentialCities);
       if (!served) return left(new BookingError("Atendimento presencial não disponível para esta cidade"));
       location = (input.address?.trim() || lead?.address) ?? null;
     }
