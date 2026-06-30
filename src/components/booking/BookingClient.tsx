@@ -33,6 +33,42 @@ function Atmosphere() {
   );
 }
 
+/* Footer co-marca (WB + Salto) — nível de módulo p/ não remontar a cada tecla. */
+function Footer() {
+  return (
+    <div className="mt-10 flex flex-col items-center gap-3 pb-2 text-center">
+      <div className="flex items-center gap-5">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={LOGO_WB_WHITE} alt="WB Digital Solutions" height={28} style={{ height: 28, width: "auto" }} />
+        <span className="h-7 w-px bg-white/25" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={LOGO_SALTO} alt="Salto" height={26} style={{ height: 26, width: "auto" }} />
+      </div>
+      <span className="max-w-sm text-[12.5px] leading-relaxed text-white/70">
+        WB Digital Solutions e Salto — <span className="font-medium text-white/90">a mesma equipe</span>. Você pode nos conhecer por qualquer um dos dois nomes.
+      </span>
+    </div>
+  );
+}
+
+/* Wrapper da página — nível de módulo (evita remontar/perder foco do input a cada render). */
+function Page({ children }: { children: React.ReactNode }) {
+  return (
+    <div style={bodyFont} className="relative min-h-screen text-white">
+      <style>{`
+        @keyframes slotIn { from { opacity: 0; transform: translateY(10px) scale(.94); } to { opacity: 1; transform: none; } }
+        @keyframes dayIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        @media (prefers-reduced-motion: reduce) { [data-anim] { animation: none !important; } }
+      `}</style>
+      <Atmosphere />
+      <div className="relative mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 py-10 sm:py-14">
+        {children}
+        <Footer />
+      </div>
+    </div>
+  );
+}
+
 export function BookingClient({ token, backend, initial }: { token: string; backend: string; initial: BookingData | null }) {
   const tz = useMemo(() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "America/Sao_Paulo"; }
@@ -94,35 +130,6 @@ export function BookingClient({ token, backend, initial }: { token: string; back
     }
   }
 
-  const Page = ({ children }: { children: React.ReactNode }) => (
-    <div style={bodyFont} className="relative min-h-screen text-white">
-      <style>{`
-        @keyframes slotIn { from { opacity: 0; transform: translateY(10px) scale(.94); } to { opacity: 1; transform: none; } }
-        @keyframes dayIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
-        @media (prefers-reduced-motion: reduce) { [data-anim] { animation: none !important; } }
-      `}</style>
-      <Atmosphere />
-      <div className="relative mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 py-10 sm:py-14">
-        {children}
-        <Footer />
-      </div>
-    </div>
-  );
-
-  const Footer = () => (
-    <div className="mt-10 flex flex-col items-center gap-3 pb-2 text-center">
-      <div className="flex items-center gap-5">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={LOGO_WB_WHITE} alt="WB Digital Solutions" height={28} style={{ height: 28, width: "auto" }} />
-        <span className="h-7 w-px bg-white/25" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={LOGO_SALTO} alt="Salto" height={26} style={{ height: 26, width: "auto" }} />
-      </div>
-      <span className="max-w-sm text-[12.5px] leading-relaxed text-white/70">
-        WB Digital Solutions e Salto — <span className="font-medium text-white/90">a mesma equipe</span>. Você pode nos conhecer por qualquer um dos dois nomes.
-      </span>
-    </div>
-  );
 
   const EASE = "cubic-bezier(0.22, 1, 0.36, 1)";
   const reveal = (i: number) => ({
