@@ -19,7 +19,15 @@ import {
   AlignCenter,
   AlignRight,
   Type,
+  Palette,
 } from "lucide-react";
+
+// Paleta de cores (marca WB/Salto + tons úteis) exibida como círculos clicáveis.
+const TEXT_COLORS = [
+  "#111827", "#374151", "#6b7280", "#9ca3af",
+  "#792990", "#9d3bc4", "#e8531e", "#dc2626",
+  "#ea580c", "#16a34a", "#0891b2", "#2563eb",
+];
 
 // Common web-safe / system fonts available before loading the machine's full set.
 const DEFAULT_FONTS = [
@@ -60,6 +68,8 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
     const [activeFormats, setActiveFormats] = useState<Set<string>>(new Set());
     const [showLink, setShowLink] = useState(false);
     const [linkUrl, setLinkUrl] = useState("");
+    const [showColor, setShowColor] = useState(false);
+    const [hexInput, setHexInput] = useState("#792990");
     const savedRange = useRef<Range | null>(null);
     const [fonts, setFonts] = useState<string[]>(DEFAULT_FONTS);
     const [loadingFonts, setLoadingFonts] = useState(false);
@@ -174,6 +184,21 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
       exec("createLink", url);
       setShowLink(false);
       setLinkUrl("");
+    };
+
+    const handleColorOpen = () => {
+      const sel = window.getSelection();
+      if (sel && sel.rangeCount > 0) savedRange.current = sel.getRangeAt(0).cloneRange();
+      setShowColor((v) => !v);
+    };
+
+    // Aplica a cor à seleção salva (texto OU link — sai do azul padrão).
+    const applyColor = (color: string) => {
+      if (!/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(color)) return;
+      const sel = window.getSelection();
+      if (savedRange.current) { sel?.removeAllRanges(); sel?.addRange(savedRange.current); }
+      exec("foreColor", color);
+      setShowColor(false);
     };
 
     // ─── Toolbar button ──────────────────────────────────────────────────────
@@ -309,6 +334,19 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
             <Link2 className="h-4 w-4" />
           </button>
 
+          {/* Cor do texto e dos links */}
+          <button
+            type="button"
+            title="Cor do texto e dos links"
+            onMouseDown={(e) => {
+              e.preventDefault();
+              handleColorOpen();
+            }}
+            className={`rounded p-1.5 transition-colors hover:bg-gray-200 ${showColor ? "bg-gray-200 text-[#792990]" : "text-gray-600"}`}
+          >
+            <Palette className="h-4 w-4" />
+          </button>
+
           <Divider />
 
           {/* Remove format */}
@@ -344,6 +382,60 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
               className="text-xs text-gray-400 hover:text-gray-600"
             >
               Cancelar
+            </button>
+          </div>
+        )}
+
+        {/* ── Color picker (texto e links) ─────────────────────────────────── */}
+        {showColor && (
+          <div className="flex flex-wrap items-center gap-2 border-b bg-purple-50 px-3 py-2">
+            <span className="text-xs text-gray-500">Cor:</span>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {TEXT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  title={c}
+                  onMouseDown={(e) => { e.preventDefault(); applyColor(c); }}
+                  className="h-5 w-5 rounded-full border border-black/10 shadow-sm transition hover:scale-110"
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+            <span className="mx-1 h-5 w-px bg-gray-300" />
+            <span className="text-xs text-gray-500">Código:</span>
+            <input
+              type="color"
+              value={/^#[0-9a-f]{6}$/i.test(hexInput) ? hexInput : "#792990"}
+              onChange={(e) => { setHexInput(e.target.value); applyColor(e.target.value); }}
+              title="Escolher cor"
+              className="h-6 w-7 cursor-pointer rounded border border-gray-200 bg-white p-0.5"
+            />
+            <input
+              type="text"
+              value={hexInput}
+              onChange={(e) => setHexInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") { e.preventDefault(); applyColor(hexInput); }
+                if (e.key === "Escape") setShowColor(false);
+              }}
+              placeholder="#792990"
+              maxLength={7}
+              className="w-24 rounded border border-gray-300 bg-white px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-purple-400"
+            />
+            <button
+              type="button"
+              onMouseDown={(e) => { e.preventDefault(); applyColor(hexInput); }}
+              className="rounded bg-[#792990] px-3 py-1 text-xs font-medium text-white hover:opacity-90"
+            >
+              Aplicar
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowColor(false)}
+              className="text-xs text-gray-400 hover:text-gray-600"
+            >
+              Fechar
             </button>
           </div>
         )}
