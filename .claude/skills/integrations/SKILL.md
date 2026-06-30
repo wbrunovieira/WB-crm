@@ -1,6 +1,6 @@
 ---
 name: integrations
-description: Blueprint para adicionar/entender QUALQUER integração externa no WB-crm (WhatsApp/Evolution, GoTo, Gmail, transcritor, e novas). Use sempre que o usuário pedir para integrar um serviço externo (enviar/receber dados, webhook, API de terceiro), investigar uma integração existente, ou precisar das credenciais/URLs de produção (ex.: Evolution/WhatsApp). Traz o padrão DDD (port→adapter→use case→controller/cron), as convenções obrigatórias (webhook com secret, env em 2 lugares, migração em 2 pastas, idempotência) e a referência viva da Evolution (endpoints, env vars, onde ficam as chaves em prod e como buscá-las).
+description: Blueprint para adicionar/entender QUALQUER integração externa no WB-crm (WhatsApp/Evolution, GoTo, Gmail, transcritor, e novas). Use sempre que o usuário pedir para integrar um serviço externo (enviar/receber dados, webhook, API de terceiro), investigar uma integração existente, ou precisar das credenciais/URLs de produção (ex.: Evolution/WhatsApp). Traz o padrão DDD (port→adapter→use case→controller/cron), as convenções obrigatórias (webhook com secret, env em 2 lugares, migração só no backend, idempotência) e a referência viva da Evolution (endpoints, env vars, onde ficam as chaves em prod e como buscá-las).
 ---
 
 # Integrações externas no WB-crm
@@ -28,7 +28,7 @@ Regras (ver memórias [[feedback_ddd_layers]], [[feedback_no_prisma_in_controlle
 3. **Webhook de entrada**: rota pública `POST /webhooks/<servico>`, valida header secret (`process.env.X_WEBHOOK_SECRET`) e responde `200` rápido; o processamento pesado é fire-and-forget ou cai num cron.
 4. **Idempotência**: ao gravar evento externo, use um ID único do provedor (ex.: `messageId @unique`) pra não duplicar.
 5. **Env vars em 2 lugares**: documente em `backend/.env.example` e configure no container de prod. Segredos nunca no repo.
-6. **Migração em 2 pastas**: se mexer no schema, criar em `backend/prisma/migrations/` **e** `prisma/migrations/` (ver [[feedback_backend_migrations]]). Deploy com schema usa `deploy-with-migrations.yml`.
+6. **Migração (só no backend)**: Prisma é backend-only — schema em `backend/prisma/schema.prisma` e migração só em `backend/prisma/migrations/` (não há mais cópia na raiz). Deploy com schema usa `deploy-backend.yml` (faz backup → `prisma migrate deploy` com a imagem nova → troca o container). Ver [[feedback_backend_migrations]].
 7. **Cron interno** (`@Cron("*/5 * * * *")`) faz catchup/polling do que o webhook perdeu. Precisa `ScheduleModule` (já global no AppModule).
 8. **TDD** pra código novo de backend (ver [[feedback_tdd_migration]], [[feedback_test_coverage_before_done]]): VO → use case (fakes in-memory) → e2e (DB de dev compartilhado, self-clean — [[feedback_e2e_shared_dev_db]]).
 9. **Frontend**: um modal/componente chama `apiFetch("/​<servico>/...", token, {...})`; o backend faz a chamada externa (segredos só no servidor).
