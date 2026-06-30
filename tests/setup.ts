@@ -1,14 +1,9 @@
-import { beforeAll, beforeEach, afterEach, afterAll, vi } from 'vitest';
-import { mockDeep, mockReset } from 'vitest-mock-extended';
-import type { PrismaClient } from '@prisma/client';
+import { beforeAll, afterEach, afterAll, vi } from 'vitest';
 
-// Mock Prisma Client
-export const prismaMock = mockDeep<PrismaClient>();
-
-// Mock do módulo @/lib/prisma
-vi.mock('@/lib/prisma', () => ({
-  prisma: prismaMock,
-}));
+// The frontend no longer talks to the database directly (data access moved to the
+// NestJS backend); these mocks cover the Next.js primitives the remaining unit
+// tests rely on. The old Prisma mock was removed with the obsolete server-action
+// tests — see CLAUDE.md ("no Prisma in src/").
 
 // Mock NextAuth getServerSession
 vi.mock('next-auth', () => ({
@@ -36,27 +31,13 @@ vi.mock('next/navigation', () => ({
 }));
 
 beforeAll(() => {
-  // Setup global antes de todos os testes
   console.log('🧪 Iniciando suite de testes...');
 });
 
-// Setup default mock for sharedEntity before each test
-// This ensures getOwnerOrSharedFilter and canAccessEntity work correctly in all tests
-// Individual tests can override these mocks if they need to test sharing behavior
-beforeEach(() => {
-  // For getSharedEntityIds (used by getOwnerOrSharedFilter)
-  prismaMock.sharedEntity.findMany.mockResolvedValue([]);
-  // For canAccessEntity (checks if entity is shared with user)
-  prismaMock.sharedEntity.findFirst.mockResolvedValue(null);
-});
-
 afterEach(() => {
-  // Limpar mocks após cada teste
-  mockReset(prismaMock);
   vi.clearAllMocks();
 });
 
 afterAll(() => {
-  // Cleanup após todos os testes
   console.log('✅ Suite de testes finalizada!');
 });

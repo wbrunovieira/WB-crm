@@ -1,148 +1,44 @@
-# Tests - WB-CRM
+# Tests — WB-CRM (frontend)
 
-Este diretório contém toda a suite de testes do projeto WB-CRM.
+Testes unitários do **frontend Next.js**. O acesso a dados migrou para o backend
+NestJS (Strangler Fig) — o `src/` não usa mais Prisma, então estes testes cobrem
+apenas **lógica pura do frontend**: validações Zod, utilitários, cálculos e
+componentes. Os testes de domínio/dados (use cases, repositórios, e2e de API)
+ficam em `backend/test/` e rodam com `npm --prefix backend test`.
 
-## 📁 Estrutura
+> `npm test` (raiz) roda os dois: `vitest run` (este diretório) **e** a suíte do backend.
+
+## Estrutura
 
 ```
 tests/
-├── setup.ts                    # Configuração global de testes
-├── fixtures/                   # Dados de teste reutilizáveis
-│   ├── users.ts               # Fixtures de usuários e sessões
-│   ├── leads.ts               # Fixtures de leads e lead contacts
-│   ├── organizations.ts       # Fixtures de organizações
-│   ├── contacts.ts            # Fixtures de contatos
-│   ├── deals.ts               # Fixtures de deals, pipelines e stages
-│   ├── activities.ts          # Fixtures de atividades
-│   ├── partners.ts            # Fixtures de parceiros
-│   └── index.ts               # Export consolidado
-├── mocks/                      # Mocks globais (futuro)
-├── unit/                       # Testes unitários
-│   ├── actions/               # Testes de Server Actions
-│   ├── validations/           # Testes de schemas Zod
-│   └── lib/                   # Testes de utilitários
-├── integration/                # Testes de integração
-│   ├── api/                   # Testes de API routes
-│   └── database/              # Testes com banco de dados
-├── e2e/                        # Testes end-to-end
-└── performance/                # Benchmarks (futuro)
+├── setup.ts                 # mocks globais de next-auth / next-cache / next-navigation
+├── lib/                     # errors, logger
+├── logging/                 # action-logs, request-logs
+└── unit/
+    ├── validations/         # schemas Zod (icp, manager, organization-hosting, …)
+    ├── funnel/              # cálculos de funil (computeFunnelStats, computeGoalBreakdown)
+    ├── lib/                 # api-client, email-campaigns/progress-stats, import/parse-file
+    └── components/          # phone-link, hosting-renewals-widget (happy-dom)
 ```
 
-## 🚀 Executando Testes
+## Executando
 
 ```bash
-# Rodar todos os testes
-npm test
-
-# Modo watch (desenvolvimento)
-npm run test:watch
-
-# Interface visual
-npm run test:ui
-
-# Apenas testes unitários
-npm run test:unit
-
-# Apenas testes de integração
-npm run test:integration
-
-# Apenas testes E2E
-npm run test:e2e
-
-# Gerar relatório de cobertura
+npm test            # frontend + backend
+npx vitest run      # só o frontend (este diretório)
+npm run test:watch  # watch
+npm run test:ui     # UI do Vitest
 npm run test:coverage
 ```
 
-## 📊 Status Atual
+## Convenções
 
-✅ **Fase 1 - Setup Completo**
-- [x] Vitest configurado
-- [x] Mocks globais (Prisma, NextAuth)
-- [x] Fixtures criados
-- [x] Scripts npm adicionados
-- [x] Testes de validação do setup
+- Arquivos: `*.test.ts` / `*.test.tsx`. Padrão AAA (Arrange, Act, Assert).
+- Não há mock de banco aqui — o frontend fala com o backend via `apiFetch`; em
+  testes de componente, mocke `apiFetch`/`fetch` quando necessário.
+- Mocks globais de `next-auth`, `next/cache` e `next/navigation` vivem em `setup.ts`.
 
-**Próximos Passos:**
-- [ ] Fase 2: Testes de validação (Zod schemas)
-- [ ] Fase 3: Testes de Server Actions CRUD
-- [ ] Fase 4: Testes de lógica complexa
-- [ ] Fase 5: Testes de integração API
-- [ ] Fase 6: Testes E2E
-- [ ] Fase 7: Coverage e performance
+## Recursos
 
-## 📝 Convenções
-
-### Nomenclatura de Arquivos
-- Testes unitários: `*.test.ts`
-- Testes de integração: `*.integration.test.ts`
-- Testes E2E: `*.e2e.test.ts`
-
-### Estrutura de Testes
-
-```typescript
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getServerSession } from 'next-auth';
-import { prismaMock } from '../setup';
-import { mockSession, mockUser } from '../fixtures';
-
-describe('Feature Name', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(getServerSession).mockResolvedValue(mockSession);
-  });
-
-  describe('Function Name', () => {
-    it('should do something specific', async () => {
-      // Arrange
-      prismaMock.model.findUnique.mockResolvedValue(mockData);
-
-      // Act
-      const result = await functionUnderTest();
-
-      // Assert
-      expect(result).toBeDefined();
-      expect(prismaMock.model.findUnique).toHaveBeenCalled();
-    });
-  });
-});
-```
-
-## 🛠️ Fixtures Disponíveis
-
-Todos os fixtures estão disponíveis em `tests/fixtures/`:
-
-```typescript
-import {
-  mockUser,
-  mockAdminUser,
-  mockSession,
-  mockLead,
-  mockLeadWithContacts,
-  mockOrganization,
-  mockContact,
-  mockDeal,
-  mockActivity,
-  mockPartner,
-} from '@/tests/fixtures';
-```
-
-## 🎯 Metas de Cobertura
-
-- **Lines**: 80%+
-- **Functions**: 80%+
-- **Branches**: 75%+
-- **Statements**: 80%+
-
-## 📚 Recursos
-
-- [Vitest Docs](https://vitest.dev/)
-- [Testing Library](https://testing-library.com/)
-- [Planejamento Completo](/docs/planejamento-testes.md)
-
-## ✅ Testes Ativos
-
-### Validação do Setup
-- [x] `tests/unit/example.test.ts` - Testes básicos de validação
-- [x] `tests/unit/setup-validation.test.ts` - Validação de mocks e fixtures
-
-**Total**: 13 testes passando ✅
+- [Vitest](https://vitest.dev/) · [Testing Library](https://testing-library.com/)

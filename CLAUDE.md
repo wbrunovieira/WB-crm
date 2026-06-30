@@ -23,12 +23,12 @@ npm run db:studio             # Open Prisma Studio GUI
 npm run db:seed               # Seed database with initial data
 
 # Testing
-npm test                      # Run all tests
+npm test                      # Frontend (vitest) + backend (npm --prefix backend test)
+npm run test:frontend         # Only the Next.js frontend unit tests (this repo's /tests)
+npm run test:backend          # Only the NestJS backend suite
 npm run test:watch            # Run tests in watch mode (development)
 npm run test:ui               # Open Vitest UI in browser
-npm run test:unit             # Run only unit tests (tests/unit)
-npm run test:integration      # Run only integration tests (tests/integration)
-npm run test:e2e              # Run only E2E tests (tests/e2e)
+npm run test:unit             # Run only tests/unit
 npm run test:coverage         # Run tests with coverage report
 
 # Build & Deploy
@@ -39,25 +39,26 @@ npm run lint                  # Run ESLint
 
 ## Testing
 
-Test files are in `/tests` with fixtures in `/tests/fixtures`. Vitest is configured with:
-- Environment: happy-dom
-- Coverage thresholds: 80% lines/functions/statements, 75% branches
-- Global setup: `tests/setup.ts` includes Prisma and NextAuth mocks
+The Next.js frontend no longer accesses the database directly (data access moved to
+the NestJS backend), so `/tests` holds **frontend unit tests only** — Zod validations,
+utilities, funnel calculations, and components. Domain/data tests (use cases,
+repositories, API e2e) live in `backend/test/`. `npm test` runs both.
+
+Vitest config: environment happy-dom; coverage thresholds 80% lines/functions/statements,
+75% branches; global mocks (next-auth, next/cache, next/navigation) in `tests/setup.ts`
+(no Prisma mock — the frontend has no Prisma). AAA pattern (Arrange, Act, Assert).
 
 Run a specific test file:
 ```bash
-npx vitest run tests/unit/example.test.ts
+npx vitest run tests/unit/validations/icp.test.ts
 ```
 
-Test structure follows AAA pattern (Arrange, Act, Assert) with fixtures from `@/tests/fixtures`.
-
-Test subdirectories:
-- `/tests/unit/` — Server Actions, validations, utilities
-- `/tests/integration/` — API and database integration tests
-- `/tests/actions/` — Entity-specific server action tests
-- `/tests/security/` — Data isolation and API isolation tests
-- `/tests/auth/` — Route protection and authorization tests
-- `/tests/e2e/` — End-to-end tests
+Frontend test subdirectories:
+- `/tests/unit/validations/` — Zod schemas
+- `/tests/unit/funnel/` — funnel/goal calculations
+- `/tests/unit/lib/`, `/tests/lib/` — utilities (api-client, errors, logger, import, …)
+- `/tests/unit/components/` — React components (happy-dom)
+- `/tests/logging/` — logger behavior
 
 ## Environment Setup
 
