@@ -1,5 +1,6 @@
 # Build context: raiz do monorepo (docker-compose context: .)
-# Isso permite acessar tanto ./backend quanto ./prisma (schema compartilhado)
+# O backend é dono do schema/migrations Prisma (backend/prisma); o frontend não
+# usa mais Prisma.
 
 # ─── Stage 1: Build ───────────────────────────────────────────────────────────
 FROM node:20-alpine AS builder
@@ -10,14 +11,12 @@ WORKDIR /app
 COPY backend/package*.json ./
 RUN npm ci
 
-# Copia o schema Prisma da raiz do monorepo e gera o client
-COPY prisma ./prisma
+# Copia o schema Prisma do backend e gera o client
+COPY backend/prisma ./prisma
 RUN npx prisma generate
 
 # Copia o código do backend e compila TypeScript
 COPY backend/ .
-# Restaura o schema.prisma da raiz (COPY backend/ sobrescreve prisma/)
-COPY prisma/schema.prisma ./prisma/schema.prisma
 RUN npm run build
 
 # Remove devDependencies para o próximo stage
