@@ -27,6 +27,7 @@ import { SendEmailUseCase } from "./application/use-cases/send-email.use-case";
 import { ScheduleEmailUseCase } from "./application/use-cases/schedule-email.use-case";
 import { SendDueScheduledEmailsUseCase } from "./application/use-cases/send-due-scheduled-emails.use-case";
 import { CancelScheduledEmailUseCase } from "./application/use-cases/cancel-scheduled-email.use-case";
+import { SendScheduledEmailNowUseCase } from "./application/use-cases/send-scheduled-email-now.use-case";
 import { ListScheduledEmailsUseCase } from "./application/use-cases/list-scheduled-emails.use-case";
 import { PollGmailUseCase } from "./application/use-cases/poll-gmail.use-case";
 import { TrackEmailOpenUseCase } from "./application/use-cases/track-email-open.use-case";
@@ -67,6 +68,7 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     ScheduleEmailUseCase,
     SendDueScheduledEmailsUseCase,
     CancelScheduledEmailUseCase,
+    SendScheduledEmailNowUseCase,
     ListScheduledEmailsUseCase,
     PollGmailUseCase,
     TrackEmailOpenUseCase,

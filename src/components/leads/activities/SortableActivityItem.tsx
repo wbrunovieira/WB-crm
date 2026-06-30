@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import dynamic from "next/dynamic";
-import { AlertTriangle, Check, Eye, EyeOff, GripVertical, Loader2, MousePointerClick, RotateCcw, SkipForward, UserPlus, Users, XCircle, Mail, Reply, Clock } from "lucide-react";
+import { AlertTriangle, Check, Eye, EyeOff, GripVertical, Loader2, MousePointerClick, RotateCcw, SkipForward, UserPlus, Users, XCircle, Mail, Reply, Clock, Send } from "lucide-react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { formatDate, formatTime, formatRelativeTime } from "@/lib/utils";
@@ -77,6 +77,7 @@ export function SortableActivityItem({
 
   const [outcomePickerOpen, setOutcomePickerOpen] = useState(false);
   const [contactTypePickerOpen, setContactTypePickerOpen] = useState(false);
+  const [scheduledAction, setScheduledAction] = useState<"send" | "cancel" | null>(null);
   const [meetAnalysisTriggering, setMeetAnalysisTriggering] = useState(false);
   const [gkAnalysisTriggering, setGkAnalysisTriggering] = useState(false);
   const [transferAnalysisTriggering, setTransferAnalysisTriggering] = useState(false);
@@ -234,9 +235,55 @@ export function SortableActivityItem({
                 </span>
               )}
               {activity.type === "email" && activity.scheduledSendAt && !activity.completed && !activity.failedAt && !activity.skippedAt && (
-                <span className="inline-flex items-center gap-1 rounded bg-purple-500/10 px-2 py-0.5 text-xs font-medium text-purple-300 border border-purple-500/30">
+                <span className="inline-flex items-center gap-1.5 rounded bg-purple-500/10 px-2 py-0.5 text-xs font-medium text-purple-300 border border-purple-500/30">
                   <Clock className="h-3 w-3" />
                   Agendado para {formatDate(activity.scheduledSendAt)}
+                  <button
+                    type="button"
+                    title="Enviar agora"
+                    disabled={scheduledAction !== null || !token}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!token) return;
+                      setScheduledAction("send");
+                      try {
+                        await apiFetch(`/email/scheduled/by-activity/${activity.id}/send-now`, token, { method: "POST" });
+                        toast.success("E-mail enviado");
+                        onPurged();
+                      } catch {
+                        toast.error("Erro ao enviar o e-mail agendado");
+                        setScheduledAction(null);
+                      }
+                    }}
+                    className="ml-1 inline-flex items-center gap-0.5 rounded border border-purple-500/40 px-1.5 py-0.5 text-purple-200 hover:bg-purple-500/20 disabled:opacity-50"
+                  >
+                    {scheduledAction === "send" ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
+                    Enviar agora
+                  </button>
+                  <button
+                    type="button"
+                    title="Cancelar envio"
+                    disabled={scheduledAction !== null || !token}
+                    onClick={async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (!token) return;
+                      setScheduledAction("cancel");
+                      try {
+                        await apiFetch(`/email/scheduled/by-activity/${activity.id}`, token, { method: "DELETE" });
+                        toast.success("Envio cancelado");
+                        onPurged();
+                      } catch {
+                        toast.error("Erro ao cancelar o envio");
+                        setScheduledAction(null);
+                      }
+                    }}
+                    className="inline-flex items-center gap-0.5 rounded border border-gray-500/40 px-1.5 py-0.5 text-gray-300 hover:bg-gray-500/20 disabled:opacity-50"
+                  >
+                    {scheduledAction === "cancel" ? <Loader2 className="h-3 w-3 animate-spin" /> : <XCircle className="h-3 w-3" />}
+                    Cancelar
+                  </button>
                 </span>
               )}
               {(activity.type === "email" || activity.type === "campaign_email") && (activity.clickUrls ?? []).length > 0 && (

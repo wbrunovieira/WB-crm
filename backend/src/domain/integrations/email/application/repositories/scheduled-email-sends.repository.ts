@@ -3,6 +3,8 @@ import { ScheduledEmailSend } from "../../enterprise/entities/scheduled-email-se
 export abstract class ScheduledEmailSendsRepository {
   abstract save(scheduled: ScheduledEmailSend): Promise<void>;
   abstract findById(id: string): Promise<ScheduledEmailSend | null>;
+  /** O agendamento vinculado a uma atividade (activityId é @unique). */
+  abstract findByActivityId(activityId: string): Promise<ScheduledEmailSend | null>;
   /** PENDING com scheduledSendAt <= now, ordenados por scheduledSendAt asc. */
   abstract findDue(now: Date, limit: number): Promise<ScheduledEmailSend[]>;
   /** PENDING vinculados a um lead ou contato (para cancelar quando ele responde). */

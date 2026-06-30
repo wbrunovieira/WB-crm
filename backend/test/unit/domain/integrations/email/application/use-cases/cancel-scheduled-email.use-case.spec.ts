@@ -99,6 +99,30 @@ describe("CancelScheduledEmailUseCase", () => {
     expect(result.isLeft()).toBe(true);
     expect((result.value as Error).message).toContain("pendentes");
   });
+
+  // The timeline only knows the activityId, so cancel must work by activityId too.
+  it("cancels by activityId (timeline button)", async () => {
+    const r = makePending({ activityId: "act-99" });
+    await repo.save(r);
+
+    const result = await cancel.execute({ activityId: "act-99", requesterId: OWNER, requesterRole: "sdr" });
+
+    expect(result.isRight()).toBe(true);
+    expect((await repo.findById(r.id.toString()))!.status).toBe("CANCELLED");
+  });
+
+  it("returns left when no pending send matches the activityId", async () => {
+    const result = await cancel.execute({ activityId: "nope", requesterId: OWNER, requesterRole: "sdr" });
+    expect(result.isLeft()).toBe(true);
+  });
+
+  it("enforces ownership when cancelling by activityId", async () => {
+    const r = makePending({ ownerId: "someone-else", activityId: "act-77" });
+    await repo.save(r);
+    const result = await cancel.execute({ activityId: "act-77", requesterId: OWNER, requesterRole: "sdr" });
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).message).toContain("Não autorizado");
+  });
 });
 
 describe("ListScheduledEmailsUseCase", () => {

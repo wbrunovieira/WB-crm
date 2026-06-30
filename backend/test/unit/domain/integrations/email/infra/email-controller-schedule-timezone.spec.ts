@@ -18,6 +18,7 @@ beforeEach(() => {
     null as never, // sendEmail
     scheduleEmail as never,
     null as never, // cancelScheduledEmail
+    null as never, // sendScheduledEmailNow
     null as never, // listScheduledEmails
     null as never, null as never, null as never, null as never, null as never,
     null as never, null as never, null as never, null as never, null as never,

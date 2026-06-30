@@ -4,7 +4,9 @@ import { ScheduledEmailSendsRepository } from "../repositories/scheduled-email-s
 import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
 
 export interface CancelScheduledEmailInput {
-  scheduledEmailId: string;
+  // Pass one of the two. The timeline only knows the activityId.
+  scheduledEmailId?: string;
+  activityId?: string;
   requesterId: string;
   requesterRole: string;
 }
@@ -19,7 +21,11 @@ export class CancelScheduledEmailUseCase {
   ) {}
 
   async execute(input: CancelScheduledEmailInput): Promise<Either<Error, { id: string }>> {
-    const record = await this.scheduled.findById(input.scheduledEmailId);
+    const record = input.scheduledEmailId
+      ? await this.scheduled.findById(input.scheduledEmailId)
+      : input.activityId
+        ? await this.scheduled.findByActivityId(input.activityId)
+        : null;
     if (!record) return left(new Error("Agendamento não encontrado"));
 
     const isOwner = record.ownerId === input.requesterId;

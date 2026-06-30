@@ -28,6 +28,11 @@ export class PrismaScheduledEmailSendsRepository extends ScheduledEmailSendsRepo
     return row ? this.toDomain(row) : null;
   }
 
+  async findByActivityId(activityId: string): Promise<ScheduledEmailSend | null> {
+    const row = await this.prisma.scheduledEmailSend.findUnique({ where: { activityId } });
+    return row ? this.toDomain(row) : null;
+  }
+
   async findDue(now: Date, limit: number): Promise<ScheduledEmailSend[]> {
     const rows = await this.prisma.scheduledEmailSend.findMany({
       where: { status: "PENDING", scheduledSendAt: { lte: now } },

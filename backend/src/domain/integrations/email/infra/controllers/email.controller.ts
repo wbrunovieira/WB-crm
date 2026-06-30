@@ -25,6 +25,7 @@ import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { SendEmailUseCase } from "../../application/use-cases/send-email.use-case";
 import { ScheduleEmailUseCase } from "../../application/use-cases/schedule-email.use-case";
 import { CancelScheduledEmailUseCase } from "../../application/use-cases/cancel-scheduled-email.use-case";
+import { SendScheduledEmailNowUseCase } from "../../application/use-cases/send-scheduled-email-now.use-case";
 import { ListScheduledEmailsUseCase } from "../../application/use-cases/list-scheduled-emails.use-case";
 import { PollGmailUseCase } from "../../application/use-cases/poll-gmail.use-case";
 import { GetEmailMessagesUseCase } from "../../application/use-cases/get-email-messages.use-case";
@@ -73,6 +74,7 @@ export class EmailController {
     private readonly sendEmail: SendEmailUseCase,
     private readonly scheduleEmail: ScheduleEmailUseCase,
     private readonly cancelScheduledEmail: CancelScheduledEmailUseCase,
+    private readonly sendScheduledEmailNow: SendScheduledEmailNowUseCase,
     private readonly listScheduledEmails: ListScheduledEmailsUseCase,
     private readonly pollGmail: PollGmailUseCase,
     private readonly getEmailMessages: GetEmailMessagesUseCase,
@@ -193,6 +195,50 @@ export class EmailController {
       throw new BadRequestException(msg);
     }
 
+    return { ok: true };
+  }
+
+  // ── Timeline actions (keyed by activityId — that's all the timeline knows) ──
+
+  @Post("scheduled/by-activity/:activityId/send-now")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Send a pending scheduled email immediately" })
+  async sendScheduledNow(
+    @Param("activityId") activityId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ ok: boolean }> {
+    const result = await this.sendScheduledEmailNow.execute({
+      activityId,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) {
+      const msg = result.value.message;
+      if (msg.includes("Não autorizado")) throw new ForbiddenException(msg);
+      if (msg.includes("não encontrado")) throw new NotFoundException(msg);
+      throw new BadRequestException(msg);
+    }
+    return { ok: true };
+  }
+
+  @Delete("scheduled/by-activity/:activityId")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Cancel a pending scheduled email by its activity" })
+  async cancelScheduledByActivity(
+    @Param("activityId") activityId: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ ok: boolean }> {
+    const result = await this.cancelScheduledEmail.execute({
+      activityId,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) {
+      const msg = result.value.message;
+      if (msg.includes("Não autorizado")) throw new ForbiddenException(msg);
+      if (msg.includes("não encontrado")) throw new NotFoundException(msg);
+      throw new BadRequestException(msg);
+    }
     return { ok: true };
   }
 

@@ -14,6 +14,10 @@ export class InMemoryScheduledEmailSendsRepository extends ScheduledEmailSendsRe
     return this.items.find((x) => x.id.toString() === id) ?? null;
   }
 
+  async findByActivityId(activityId: string): Promise<ScheduledEmailSend | null> {
+    return this.items.find((x) => x.activityId === activityId) ?? null;
+  }
+
   async findDue(now: Date, limit: number): Promise<ScheduledEmailSend[]> {
     return this.items
       .filter((x) => x.isPending && x.scheduledSendAt.getTime() <= now.getTime())
