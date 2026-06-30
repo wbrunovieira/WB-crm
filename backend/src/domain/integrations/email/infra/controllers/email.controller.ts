@@ -35,6 +35,7 @@ import { VerifyLeadEmailUseCase } from "../../application/use-cases/verify-lead-
 import { VerifyLeadContactEmailUseCase } from "../../application/use-cases/verify-lead-contact-email.use-case";
 import { BatchVerifyEmailsUseCase } from "../../application/use-cases/batch-verify-emails.use-case";
 import { GetLeadSourceGroupsUseCase } from "@/domain/leads/application/use-cases/get-lead-source-groups.use-case";
+import { parseInstant } from "@/core/date/parse-instant";
 
 interface SendEmailAttachment {
   filename: string;
@@ -135,8 +136,11 @@ export class EmailController {
       throw new BadRequestException("Missing required fields: to, subject, bodyHtml, scheduledSendAt");
     }
 
-    const when = new Date(body.scheduledSendAt);
-    if (isNaN(when.getTime())) {
+    // Naive strings (no timezone) are interpreted as the business timezone
+    // (America/Sao_Paulo); strings with Z/offset stay absolute. The server runs
+    // in UTC, so a plain new Date() on a naive string would schedule ~3h early.
+    const when = parseInstant(body.scheduledSendAt);
+    if (!when || isNaN(when.getTime())) {
       throw new BadRequestException("Invalid scheduledSendAt (expected ISO-8601)");
     }
 

@@ -24,6 +24,7 @@ import { LinkActivityToDealUseCase } from "@/domain/activities/application/use-c
 import { UnlinkActivityFromDealUseCase } from "@/domain/activities/application/use-cases/unlink-activity-from-deal.use-case";
 import { MarkThreadRepliedUseCase } from "@/domain/activities/application/use-cases/mark-thread-replied.use-case";
 import type { Activity } from "@/domain/activities/enterprise/entities/activity";
+import { parseInstant } from "@/core/date/parse-instant";
 
 /* ─── DTOs ─────────────────────────────────────────────────────────────────── */
 
@@ -205,9 +206,9 @@ export class ActivitiesController {
     const result = await this.createActivity.execute({
       ...body,
       ownerId: user.id,
-      dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
-      completedAt: body.completedAt ? new Date(body.completedAt) : undefined,
-      remindAt: body.remindAt ? new Date(body.remindAt) : undefined,
+      dueDate: parseInstant(body.dueDate),
+      completedAt: parseInstant(body.completedAt),
+      remindAt: parseInstant(body.remindAt),
     });
     if (result.isLeft()) handleError(result);
     return serializeActivity(result.value.activity);
@@ -229,10 +230,10 @@ export class ActivitiesController {
       requesterId: user.id,
       requesterRole: user.role ?? "sdr",
       dueDate: body.dueDate !== undefined
-        ? body.dueDate ? new Date(body.dueDate) : null
+        ? body.dueDate ? parseInstant(body.dueDate) : null
         : undefined,
       remindAt: body.remindAt !== undefined
-        ? body.remindAt ? new Date(body.remindAt) : null
+        ? body.remindAt ? parseInstant(body.remindAt) : null
         : undefined,
     });
     if (result.isLeft()) handleError(result);
