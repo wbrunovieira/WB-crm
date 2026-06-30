@@ -233,6 +233,12 @@ export function SortableActivityItem({
                   Descadastrou
                 </span>
               )}
+              {activity.type === "email" && activity.scheduledSendAt && !activity.completed && !activity.failedAt && !activity.skippedAt && (
+                <span className="inline-flex items-center gap-1 rounded bg-purple-500/10 px-2 py-0.5 text-xs font-medium text-purple-300 border border-purple-500/30">
+                  <Clock className="h-3 w-3" />
+                  Agendado para {formatDate(activity.scheduledSendAt)}
+                </span>
+              )}
               {(activity.type === "email" || activity.type === "campaign_email") && (activity.clickUrls ?? []).length > 0 && (
                 <div className="mt-1.5 flex flex-wrap gap-1.5">
                   {(activity.clickUrls ?? []).map((cu) => (

@@ -20,6 +20,7 @@ export type Activity = {
   failReason?: string | null;
   skippedAt?: Date | string | null;
   skipReason?: string | null;
+  scheduledSendAt?: Date | string | null;
   leadContactIds?: string | null;
   callContactType?: string | null;
   gotoCallId?: string | null;

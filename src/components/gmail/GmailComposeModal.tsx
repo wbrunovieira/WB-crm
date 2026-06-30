@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { X, Send, Loader2, Paperclip, FileText, ChevronDown, LayoutTemplate, Maximize2, Minimize2 } from "lucide-react";
+import { X, Send, Loader2, Paperclip, FileText, ChevronDown, LayoutTemplate, Maximize2, Minimize2, Clock } from "lucide-react";
 import { applyVariables } from "@/lib/gmail-variables";
 import { apiFetch } from "@/lib/api-client";
 import RichTextEditor, { RichTextEditorHandle } from "@/components/gmail/RichTextEditor";
@@ -26,6 +26,12 @@ function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
   if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** Formats a Date as the local "YYYY-MM-DDTHH:MM" value a datetime-local input expects. */
+function toDatetimeLocalValue(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
 async function fileToBase64(file: File): Promise<string> {
@@ -91,6 +97,10 @@ export default function GmailComposeModal({
   const [aliases, setAliases] = useState<SendAsAlias[]>([]);
   const [fromEmail, setFromEmail] = useState<string>("");
   const [expanded, setExpanded] = useState(false);
+  const [showSchedule, setShowSchedule] = useState(false);
+  const [scheduleAt, setScheduleAt] = useState("");
+  const [scheduling, setScheduling] = useState(false);
+  const [scheduled, setScheduled] = useState(false);
   const editorRef = useRef<RichTextEditorHandle>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -233,6 +243,74 @@ export default function GmailComposeModal({
       setError(err instanceof Error ? err.message : "Erro inesperado.");
     } finally {
       setSending(false);
+    }
+  }
+
+  async function handleSchedule() {
+    const bodyEmpty = editorRef.current?.isEmpty() ?? true;
+    if (!subject.trim() || bodyEmpty) {
+      setError("Preencha o assunto e o corpo do e-mail.");
+      return;
+    }
+    if (aliases.length > 0 && !fromEmail) {
+      setError('Selecione a conta de envio no campo "De" antes de agendar.');
+      return;
+    }
+    if (!scheduleAt) {
+      setError("Escolha a data e a hora do envio.");
+      return;
+    }
+    const when = new Date(scheduleAt); // datetime-local is parsed as local time
+    if (isNaN(when.getTime())) {
+      setError("Data/hora inválida.");
+      return;
+    }
+    if (when.getTime() <= Date.now()) {
+      setError("O horário de envio deve ser no futuro.");
+      return;
+    }
+
+    setScheduling(true);
+    setError(null);
+
+    try {
+      const rawHtml = editorRef.current?.getHTML() ?? "";
+      const html = `<div style="font-family: sans-serif; font-size: 14px; line-height: 1.5;">${rawHtml}</div>`;
+
+      const result = await apiFetch<{ ok: boolean; scheduledEmailId?: string; activityId?: string | null; error?: string }>(
+        "/email/schedule",
+        token,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            to,
+            subject: subject.trim(),
+            bodyHtml: html,
+            scheduledSendAt: when.toISOString(), // local pick → UTC instant
+            fromEmail: fromEmail || undefined,
+            threadId,
+            attachments: attachments.length > 0 ? attachments : undefined,
+            contactIds: contactId ? [contactId] : undefined,
+            leadId,
+            organizationId,
+            dealId,
+          }),
+        },
+      );
+
+      if (!result.ok) {
+        setError(result.error ?? "Falha ao agendar o e-mail.");
+        return;
+      }
+
+      setShowSchedule(false);
+      setScheduled(true);
+      router.refresh();
+      setTimeout(onClose, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro inesperado.");
+    } finally {
+      setScheduling(false);
     }
   }
 
@@ -404,13 +482,18 @@ export default function GmailComposeModal({
             E-mail enviado com sucesso!
           </p>
         )}
+        {scheduled && (
+          <p className="mx-3 mb-2 rounded bg-purple-50 px-3 py-2 text-xs text-purple-700 font-medium">
+            E-mail agendado com sucesso!
+          </p>
+        )}
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t px-3 py-2">
           <div className="flex items-center gap-2">
             <button
               onClick={handleSend}
-              disabled={sending || sent}
+              disabled={sending || sent || scheduling || scheduled}
               className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
             >
               {sending ? (
@@ -421,6 +504,50 @@ export default function GmailComposeModal({
               {sending ? "Enviando..." : "Enviar"}
               {!sending && <span className="ml-1 text-xs opacity-70">Ctrl+Enter</span>}
             </button>
+
+            {/* Schedule send */}
+            <div className="relative">
+              <button
+                type="button"
+                title="Agendar envio"
+                onClick={() => {
+                  setShowSchedule((v) => !v);
+                  if (!scheduleAt) {
+                    // default: 1h from now, rounded to the minute
+                    setScheduleAt(toDatetimeLocalValue(new Date(Date.now() + 60 * 60 * 1000)));
+                  }
+                }}
+                disabled={sending || sent || scheduling || scheduled}
+                className="inline-flex items-center gap-1 rounded-lg border border-gray-200 px-2.5 py-2 text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition-colors disabled:opacity-50"
+              >
+                {scheduling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
+                <ChevronDown className={`h-3 w-3 transition-transform ${showSchedule ? "rotate-180" : ""}`} />
+              </button>
+
+              {showSchedule && (
+                <div className="absolute bottom-full left-0 mb-1 z-50 w-72 rounded-lg border border-gray-200 bg-white p-3 shadow-lg">
+                  <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Agendar envio
+                  </p>
+                  <input
+                    type="datetime-local"
+                    value={scheduleAt}
+                    min={toDatetimeLocalValue(new Date())}
+                    onChange={(e) => setScheduleAt(e.target.value)}
+                    className="w-full rounded border border-gray-300 px-2 py-1.5 text-sm text-gray-900 outline-none focus:border-purple-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleSchedule}
+                    disabled={scheduling || !scheduleAt}
+                    className="mt-2 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-purple-600 px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-purple-700 disabled:opacity-50"
+                  >
+                    {scheduling ? <Loader2 className="h-4 w-4 animate-spin" /> : <Clock className="h-4 w-4" />}
+                    {scheduling ? "Agendando..." : "Agendar envio"}
+                  </button>
+                </div>
+              )}
+            </div>
 
             {/* Hidden file input */}
             <input
