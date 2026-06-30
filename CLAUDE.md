@@ -16,11 +16,11 @@ WB-crm - Clone do Pipedrive. Sistema de CRM focado em gestão de pipeline de ven
 # Development
 npm run dev                    # Start development server (port 3000)
 
-# Database
-npm run db:push               # Push schema changes to database (dev only - NEVER use in prod)
-npm run db:migrate            # Create and run migrations (ALWAYS use for schema changes)
-npm run db:studio             # Open Prisma Studio GUI
-npm run db:seed               # Seed database with initial data
+# Database — Prisma lives in the backend now (the frontend has no Prisma).
+# Run these from /backend:
+#   cd backend && npm run db:migrate   # apply migrations (prisma migrate deploy)
+#   cd backend && npm run db:generate  # regenerate the client
+#   cd backend && npm run db:seed      # seed admin/pipelines  (db:seed:cnaes for CNAEs)
 
 # Testing
 npm test                      # Frontend (vitest) + backend (npm --prefix backend test)
@@ -206,8 +206,8 @@ export async function createDeal(data: DealFormData) {
 ### Database
 - **Development**: PostgreSQL via Docker (port 5499) - `docker-compose up -d`
 - **Production**: PostgreSQL (via `DATABASE_URL` environment variable)
-- **Schema changes**: ALWAYS use `npm run db:migrate` to create migrations (never use `db:push` in production)
-- **Single-source Prisma schema**: `backend/prisma/schema.prisma` is the CANONICAL schema; the root `prisma/schema.prisma` is a verbatim mirror. Edit the backend one, then run `npm run schema:sync` (root) to copy it over. A backend architecture test (`test/unit/architecture/schema-in-sync.spec.ts`) fails if they drift; check manually with `npm run schema:check`. (Migration SQL still goes in BOTH `backend/prisma/migrations/` and `prisma/migrations/`.)
+- **Prisma is backend-only**: the single schema is `backend/prisma/schema.prisma` and migrations live in `backend/prisma/migrations/` (no more root mirror). The Next.js frontend has no Prisma — it talks to the backend via `apiFetch`.
+- **Schema changes**: create the migration under `backend/prisma/migrations/`; it is applied to production by `deploy-backend.yml` (backup → `prisma migrate deploy` with the new image → swap container). Never use `db:push` in production.
 - **Data isolation**: All entities have `ownerId` foreign key to User
   - CRITICAL: ALWAYS filter queries by `ownerId: session.user.id` to ensure users only see their own data
   - Verify ownership before updates/deletes: check `existingRecord.ownerId === session.user.id`
@@ -488,11 +488,11 @@ ssh root@45.90.123.190 "tail -50 /var/log/crm-backup.log"
 ```bash
 cd deploy/ansible
 
-# Deploy rápido (sem migrations)
+# Deploy frontend + backend (código; sem migração de schema)
 ansible-playbook -i inventory/production.yml playbooks/quick-deploy.yml
 
-# Deploy com migrations (faz backup antes)
-ansible-playbook -i inventory/production.yml playbooks/deploy-with-migrations.yml
+# Deploy do backend COM migração (backup → prisma migrate deploy → swap)
+ansible-playbook -i inventory/production.yml playbooks/deploy-backend.yml
 
 # Rollback
 ansible-playbook -i inventory/production.yml playbooks/rollback.yml \

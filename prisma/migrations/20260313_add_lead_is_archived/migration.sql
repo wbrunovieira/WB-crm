@@ -1,2 +1,0 @@
--- AlterTable
-ALTER TABLE "leads" ADD COLUMN IF NOT EXISTS "isArchived" BOOLEAN NOT NULL DEFAULT false;

@@ -34,18 +34,8 @@
         ci: yes
       when: git_result.changed
 
-    - name: Generate Prisma client
-      command: npx prisma generate
-      args:
-        chdir: "{{ app_dir }}"
-      when: git_result.changed
-
-    - name: Run database migrations
-      command: npx prisma migrate deploy
-      args:
-        chdir: "{{ app_dir }}"
-      register: prisma_migrate
-      when: git_result.changed
+    # Prisma/migrations moved to the backend (deploy-backend.yml). The frontend
+    # has no Prisma — nothing to generate or migrate here.
 
     - name: Build Next.js application
       command: npm run build

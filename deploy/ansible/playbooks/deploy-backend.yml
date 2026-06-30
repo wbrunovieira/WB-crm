@@ -3,10 +3,13 @@
 #
 # O que faz:
 #   1. Git pull no servidor
-#   2. docker compose build + up --profile backend
-#   3. Health check em /health
+#   2. docker compose build --profile backend
+#   3. Backup do DB + prisma migrate deploy (backend é a autoridade de migração)
+#   4. up --profile backend
+#   5. Health check em /health
 #
 # CRM Next.js NÃO é afetado — roda em PM2 independente.
+# As migrações Prisma rodam AQUI (a partir do backend/prisma), não mais pelo frontend.
 #
 # Uso:
 #   ansible-playbook -i inventory/production.yml playbooks/deploy-backend.yml
@@ -20,6 +23,7 @@
     backend_port: 3010
     backend_domain: api.crm.wbdigitalsolutions.com
     github_branch: main
+    backup_script: /opt/backups/backup-crm.sh
 
   tasks:
     # ── 1. Código ──────────────────────────────────────────────────────────────
@@ -51,6 +55,37 @@
     - name: Mostrar output do build
       debug:
         msg: "{{ docker_build.stdout_lines | last }}"
+
+    # ── 2b. Migração do banco (backend = autoridade de migração) ───────────────
+    # Roda ANTES de trocar o container ativo: backup → migrate deploy com a imagem
+    # nova (usa env_file + rede do serviço via `compose run`). Se a migração falhar,
+    # o play aborta e o container antigo continua servindo.
+
+    - name: Backup do banco antes da migração (Google Drive via backup-crm.sh)
+      raw: bash {{ backup_script }} 2>&1
+      register: backup_result
+
+    - name: Verificar backup
+      fail:
+        msg: |
+          ❌ Backup falhou — abortando antes de migrar.
+          {{ backup_result.stdout }}
+      when: backup_result.rc != 0
+
+    - name: Aplicar migrações Prisma (prisma migrate deploy)
+      raw: cd {{ app_dir }} && docker compose --profile backend run --rm backend npx prisma migrate deploy 2>&1
+      register: migrate_result
+
+    - name: Resultado da migração
+      debug:
+        msg: "{{ migrate_result.stdout_lines | default(['(sem saída)']) | join('\n') }}"
+
+    - name: Abortar se a migração falhou
+      fail:
+        msg: |
+          ❌ Migração falhou. Container antigo segue ativo. Restaure o backup se necessário.
+          {{ migrate_result.stdout }}
+      when: migrate_result.rc != 0
 
     - name: Remover container existente (qualquer estado)
       raw: docker rm -f wb-crm-backend 2>/dev/null || true

@@ -102,13 +102,7 @@
         msg: "Reverted to: {{ git_revert.stdout_lines | last }}"
 
     # ============ REBUILD ============
-    - name: Update Prisma schema for PostgreSQL
-      raw: sed -i 's/provider = "sqlite"/provider = "postgresql"/' {{ app_dir }}/prisma/schema.prisma
-
-    - name: Generate Prisma client
-      raw: cd {{ app_dir }} && npx prisma generate
-
-    - name: Build Next.js
+    - name: Build Next.js (frontend — no Prisma)
       raw: cd {{ app_dir }} && NODE_ENV=production npm run build
       register: build_result
 

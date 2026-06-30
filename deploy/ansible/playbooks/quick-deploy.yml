@@ -1,29 +1,21 @@
 ---
-# Quick Deploy - Fast code update without full infrastructure check
+# Quick Deploy - Fast code update (frontend PM2 + backend container)
 #
 # Use this for:
-#   - Code updates WITHOUT schema changes
-#   - Security patches
-#   - Bug fixes
-#   - UI changes
+#   - Frontend code/UI changes, security patches, bug fixes
+#   - Backend CODE changes WITHOUT schema migrations
 #
-# ⚠️  DO NOT USE THIS FOR MIGRATIONS!
-#     Use deploy-with-migrations.yml instead when:
-#     - prisma/migrations/* has new folders
-#     - schema.prisma has changes
+# ⚠️  DATABASE MIGRATIONS run via deploy-backend.yml (the backend owns Prisma).
+#     For any schema change, deploy the backend with that playbook.
 #
 # What it does:
 #   1. Git pull
-#   2. npm ci
-#   3. Prisma generate
-#   4. Check for pending migrations (warn only)
-#   5. npm run build
-#   6. PM2 restart
+#   2. npm ci + npm run build (Next.js frontend — no Prisma)
+#   3. PM2 restart (frontend)
+#   4. Rebuild + restart the NestJS backend container (no migration here)
 #
 # Usage:
 #   ansible-playbook -i inventory/production.yml playbooks/quick-deploy.yml
-#
-# Time: ~2-3 minutes (vs 5-10 minutes for full deploy)
 
 - name: Quick Deploy - Code Update Only
   hosts: crm_server
@@ -71,49 +63,6 @@
     - name: Install dependencies (including dev deps needed for build)
       raw: cd {{ app_dir }} && npm ci --production=false
       register: npm_install
-
-    - name: Update Prisma schema for PostgreSQL
-      raw: sed -i 's/provider = "sqlite"/provider = "postgresql"/' {{ app_dir }}/prisma/schema.prisma
-
-    - name: Generate Prisma client
-      raw: cd {{ app_dir }} && npx prisma generate
-
-    - name: Check for pending migrations
-      raw: cd {{ app_dir }} && npx prisma migrate status 2>&1 | grep -E "(pending|Behind)" || echo "NO_PENDING"
-      register: migration_check
-      ignore_errors: yes
-
-    - name: Warn about pending migrations
-      debug:
-        msg: |
-          ⚠️  WARNING: PENDING MIGRATIONS DETECTED
-          =========================================
-          {{ migration_check.stdout }}
-
-          Consider using deploy-with-migrations.yml instead:
-          ansible-playbook -i inventory/production.yml playbooks/deploy-with-migrations.yml
-      when: "'NO_PENDING' not in migration_check.stdout and migration_check.stdout | trim != ''"
-
-    - name: Run database migrations (safe apply)
-      raw: cd {{ app_dir }} && npx prisma migrate deploy 2>&1
-      register: migrations
-      ignore_errors: yes
-
-    - name: Check migration result
-      debug:
-        msg: "{{ 'Migrations: ' + (migrations.stdout_lines | last) if migrations.stdout_lines else 'No migrations output' }}"
-      when: migrations.stdout_lines is defined
-
-    - name: Fail on migration error
-      fail:
-        msg: |
-          ❌ MIGRATION FAILED
-          ===================
-          {{ migrations.stdout }}
-
-          ⚠️  USE deploy-with-migrations.yml FOR SAFER MIGRATION HANDLING:
-          ansible-playbook -i inventory/production.yml playbooks/deploy-with-migrations.yml
-      when: migrations.rc is defined and migrations.rc != 0 and 'Error' in (migrations.stdout | default(''))
 
     - name: Build Next.js
       raw: cd {{ app_dir }} && NODE_OPTIONS="--max-old-space-size=4096" NODE_ENV=production npm run build

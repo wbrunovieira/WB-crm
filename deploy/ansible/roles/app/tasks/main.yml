@@ -45,27 +45,8 @@
   debug:
     msg: "npm dependencies installed"
 
-- name: Update Prisma schema for PostgreSQL
-  raw: |
-    sed -i 's/provider = "sqlite"/provider = "postgresql"/' {{ app_dir }}/prisma/schema.prisma
-  changed_when: false
-
-- name: Generate Prisma client
-  raw: cd {{ app_dir }} && npx prisma generate
-  changed_when: false
-
-- name: Run database migrations
-  raw: cd {{ app_dir }} && npx prisma migrate deploy
-  register: prisma_migrate
-  ignore_errors: yes
-
-- name: Push schema if migrations fail (first deploy)
-  raw: cd {{ app_dir }} && npx prisma db push --accept-data-loss
-  when: prisma_migrate.rc != 0
-
-- name: Display migration result
-  debug:
-    msg: "Database migrations applied"
+# Prisma/migrations live in the backend (deploy-backend.yml runs prisma migrate
+# deploy). The Next.js frontend has no Prisma — nothing to generate/migrate here.
 
 - name: Check if users exist in database
   raw: docker exec crm_postgres psql -U {{ db_user }} -d {{ db_name }} -t -c "SELECT COUNT(*) FROM \"User\";" 2>/dev/null || echo "0"
