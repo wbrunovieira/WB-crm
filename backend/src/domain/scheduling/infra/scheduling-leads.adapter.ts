@@ -51,4 +51,10 @@ export class SchedulingLeadsAdapter extends SchedulingLeadsPort {
     // só preenche se o lead ainda não tinha e-mail próprio (não sobrescreve)
     await this.prisma.lead.updateMany({ where: { id: leadId, email: null }, data: { email: email.trim() } });
   }
+
+  async confirmLeadWhatsapp(leadId: string, whatsapp: string): Promise<void> {
+    const wa = normalizePhoneE164(whatsapp);
+    if (!wa) return;
+    await this.prisma.lead.updateMany({ where: { id: leadId, whatsapp: null }, data: { whatsapp: wa } });
+  }
 }

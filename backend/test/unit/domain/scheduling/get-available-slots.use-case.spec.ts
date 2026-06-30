@@ -41,6 +41,7 @@ class FakeLeads extends SchedulingLeadsPort {
   async findByContact() { return null; }
   async createLead(input: { ownerId: string; name: string; email?: string }) { return { id: "x", name: input.name, email: input.email ?? null, city: null, state: null, address: null }; }
   async confirmLeadEmail() {}
+  async confirmLeadWhatsapp() {}
 }
 
 function link(over: Partial<BookingLinkRecord> = {}): BookingLinkRecord {

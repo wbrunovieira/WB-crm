@@ -72,10 +72,15 @@ export class CreateBookingUseCase {
 
     // E-mail: o que o lead digitar tem prioridade (confirmação); cai pro do lead se já houver.
     const email = (input.attendeeEmail?.trim() || lead?.email || "").trim();
-    const name = (lead?.name ?? input.attendeeName ?? "").trim();
+    // Nome da PESSOA que está agendando tem prioridade (o link pode ter sido aberto
+    // por alguém cujo nome não temos); cai pro nome do lead se não vier.
+    const name = (input.attendeeName?.trim() || lead?.name || "").trim();
     if (!email) return left(new BookingError("Informe seu e-mail para receber a confirmação."));
-    // Link por-lead: salva o e-mail no lead se ele ainda não tinha (não sobrescreve).
-    if (link.leadId) await this.leads.confirmLeadEmail(link.leadId, email);
+    // Link por-lead: salva e-mail/WhatsApp no lead se ele ainda não tinha (não sobrescreve).
+    if (link.leadId) {
+      await this.leads.confirmLeadEmail(link.leadId, email);
+      if (input.attendeeWhatsapp?.trim()) await this.leads.confirmLeadWhatsapp(link.leadId, input.attendeeWhatsapp.trim());
+    }
 
     let location: string | null = null;
     if (input.mode === "presential") {

@@ -40,6 +40,7 @@ class FakeLeads extends SchedulingLeadsPort {
   byContact: BookingLead | null = null;
   createdWith?: { ownerId: string; name: string; email?: string; whatsapp?: string };
   confirmedEmail?: string;
+  confirmedWhatsapp?: string;
   async findForBooking(id: string) { return this.lead && this.lead.id === id ? this.lead : null; }
   async findByContact() { return this.byContact; }
   async createLead(input: { ownerId: string; name: string; email?: string; whatsapp?: string }) {
@@ -47,6 +48,7 @@ class FakeLeads extends SchedulingLeadsPort {
     return { id: "newlead", name: input.name, email: input.email ?? null, city: null, state: null, address: null };
   }
   async confirmLeadEmail(_leadId: string, email: string) { this.confirmedEmail = email; }
+  async confirmLeadWhatsapp(_leadId: string, whatsapp: string) { this.confirmedWhatsapp = whatsapp; }
 }
 const GENERIC_LINK: BookingLinkRecord = { id: "lg", token: "gen", ownerId: "owner1", bookingTypeId: "bt1", leadId: null, contactId: null, label: null, active: true, expiresAt: null };
 class FakeTokens extends TokenGeneratorPort { generate() { return "manage-tok"; } }
@@ -96,6 +98,13 @@ describe("CreateBookingUseCase", () => {
     leads.lead = { ...LEAD, email: null };
     const r = await create.execute({ token: "abc", startISO: SLOT_ONLINE, mode: "online", now: NOW });
     expect(r.isLeft()).toBe(true);
+  });
+
+  it("link por-lead: usa o nome digitado (pessoa) e salva o whatsapp no lead", async () => {
+    const r = await create.execute({ token: "abc", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Maria Recepção", attendeeWhatsapp: "+5511988887777", now: NOW });
+    expect(r.isRight()).toBe(true);
+    expect(sched.scheduled?.attendeeName).toBe("Maria Recepção");
+    expect(leads.confirmedWhatsapp).toBe("+5511988887777");
   });
 
   it("presencial usa o endereço do lead", async () => {

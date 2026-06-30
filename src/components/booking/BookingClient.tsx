@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { getCountries, getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 
 interface Slot { start: string; end: string }
 interface BookingData {
@@ -69,6 +70,48 @@ function Page({ children }: { children: React.ReactNode }) {
   );
 }
 
+/* Lista de países (via libphonenumber-js) com bandeira + DDI, ordenada por nome pt-BR. */
+const regionNames = new Intl.DisplayNames(["pt-BR"], { type: "region" });
+const flagEmoji = (iso: string) => iso.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+const COUNTRY_OPTIONS = getCountries()
+  .map((iso) => {
+    let name = iso as string;
+    try { name = regionNames.of(iso) ?? iso; } catch { /* keep iso */ }
+    return { iso, dial: getCountryCallingCode(iso), name };
+  })
+  .sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+
+/* Campo de WhatsApp com seletor de país (Brasil pré-selecionado). Emite E.164. */
+function PhoneField({ onChange }: { onChange: (v: string) => void }) {
+  const [iso, setIso] = useState<CountryCode>("BR");
+  const [num, setNum] = useState("");
+  const emit = (i: CountryCode, n: string) => {
+    const digits = n.replace(/\D/g, "");
+    onChange(digits ? `+${getCountryCallingCode(i)}${digits}` : "");
+  };
+  return (
+    <div className="flex gap-2">
+      <select
+        value={iso}
+        onChange={(e) => { const i = e.target.value as CountryCode; setIso(i); emit(i, num); }}
+        aria-label="País"
+        className="w-[6rem] shrink-0 rounded-xl border border-white/15 bg-white/[0.06] px-2 py-2.5 text-sm text-white outline-none transition focus:border-[#792990]/70 [color-scheme:dark]"
+      >
+        {COUNTRY_OPTIONS.map((c) => (
+          <option key={c.iso} value={c.iso} className="bg-[#2a0038] text-white">{flagEmoji(c.iso)} +{c.dial}</option>
+        ))}
+      </select>
+      <input
+        value={num}
+        onChange={(e) => { setNum(e.target.value); emit(iso, e.target.value); }}
+        inputMode="tel"
+        placeholder="WhatsApp (DDD + número)"
+        className="flex-1 rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]"
+      />
+    </div>
+  );
+}
+
 export function BookingClient({ token, backend, initial }: { token: string; backend: string; initial: BookingData | null }) {
   const tz = useMemo(() => {
     try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "America/Sao_Paulo"; }
@@ -113,9 +156,10 @@ export function BookingClient({ token, backend, initial }: { token: string; back
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           startISO: selected, mode,
+          attendeeName: name,
           attendeeEmail: email,
+          attendeeWhatsapp: whatsapp,
           ...(mode === "presential" ? { address } : {}),
-          ...(isGeneric ? { attendeeName: name, attendeeWhatsapp: whatsapp } : {}),
         }),
       });
       if (!res.ok) {
@@ -166,7 +210,9 @@ export function BookingClient({ token, backend, initial }: { token: string; back
             <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#792990] text-3xl shadow-[0_8px_30px_rgba(121,41,144,0.45)]">✓</div>
             <h1 style={display} className="text-[1.7rem] font-bold leading-tight">Tudo certo! Reunião confirmada</h1>
             <p className="mt-3 text-white/80">
-              {initial.lead?.name ? `Até breve, ${initial.lead.name.split(" ")[0]}. ` : ""}Mal podemos esperar para conversar.
+              {(name.trim() || initial.lead?.name)
+                ? `Até breve, ${(name.trim() || initial.lead?.name || "").split(" ")[0]}!`
+                : "Seu horário está reservado."}
             </p>
           </div>
           <div className="mx-7 my-7 rounded-2xl border border-white/10 bg-white/[0.03] p-5">
@@ -200,7 +246,7 @@ export function BookingClient({ token, backend, initial }: { token: string; back
     );
   }
 
-  const confirmDisabled = !selected || status === "submitting" || !email.trim() || (isGeneric && !name.trim());
+  const confirmDisabled = !selected || status === "submitting" || !name.trim() || !email.trim() || !whatsapp.trim();
 
   // ── Booking ───────────────────────────────────────────────────────────────
   return (
@@ -311,18 +357,13 @@ export function BookingClient({ token, backend, initial }: { token: string; back
 
         {selected && (
           <div className="mt-6 space-y-2.5 border-t border-white/10 pt-5">
-            <div className="text-sm font-semibold text-white/85">{isGeneric ? "Seus dados" : "Confirme seu e-mail"}</div>
-            {isGeneric && (
-              <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome"
-                className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]" />
-            )}
+            <div className="text-sm font-semibold text-white/85">Seus dados</div>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Seu nome"
+              className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]" />
             <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="Seu e-mail"
               className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]" />
-            {isGeneric && (
-              <input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} inputMode="tel" placeholder="WhatsApp (com DDD)"
-                className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]" />
-            )}
-            <p className="text-[11px] text-white/60">🔒 Usamos seu e-mail apenas para enviar a confirmação e o convite da reunião.</p>
+            <PhoneField onChange={setWhatsapp} />
+            <p className="text-[11px] text-white/60">🔒 Usamos seus dados apenas para confirmar e lembrar da reunião.</p>
           </div>
         )}
 

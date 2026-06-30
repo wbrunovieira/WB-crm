@@ -16,4 +16,6 @@ export abstract class SchedulingLeadsPort {
   abstract createLead(input: { ownerId: string; name: string; email?: string; whatsapp?: string }): Promise<BookingLead>;
   /** Salva o e-mail confirmado no lead se ele ainda não tinha e-mail próprio. */
   abstract confirmLeadEmail(leadId: string, email: string): Promise<void>;
+  /** Salva o WhatsApp informado no lead se ele ainda não tinha. */
+  abstract confirmLeadWhatsapp(leadId: string, whatsapp: string): Promise<void>;
 }
