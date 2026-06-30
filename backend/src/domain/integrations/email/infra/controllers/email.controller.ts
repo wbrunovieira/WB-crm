@@ -23,6 +23,9 @@ import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { SendEmailUseCase } from "../../application/use-cases/send-email.use-case";
+import { ScheduleEmailUseCase } from "../../application/use-cases/schedule-email.use-case";
+import { CancelScheduledEmailUseCase } from "../../application/use-cases/cancel-scheduled-email.use-case";
+import { ListScheduledEmailsUseCase } from "../../application/use-cases/list-scheduled-emails.use-case";
 import { PollGmailUseCase } from "../../application/use-cases/poll-gmail.use-case";
 import { GetEmailMessagesUseCase } from "../../application/use-cases/get-email-messages.use-case";
 import { GetGmailTemplatesUseCase, CreateGmailTemplateUseCase, UpdateGmailTemplateUseCase, DeleteGmailTemplateUseCase } from "../../application/use-cases/gmail-templates.use-cases";
@@ -53,6 +56,11 @@ interface SendEmailBody {
   dealId?: string;
 }
 
+interface ScheduleEmailBody extends SendEmailBody {
+  // ISO-8601 instant (the frontend converts the user's local pick to UTC)
+  scheduledSendAt: string;
+}
+
 @ApiTags("Email")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
@@ -62,6 +70,9 @@ export class EmailController {
 
   constructor(
     private readonly sendEmail: SendEmailUseCase,
+    private readonly scheduleEmail: ScheduleEmailUseCase,
+    private readonly cancelScheduledEmail: CancelScheduledEmailUseCase,
+    private readonly listScheduledEmails: ListScheduledEmailsUseCase,
     private readonly pollGmail: PollGmailUseCase,
     private readonly getEmailMessages: GetEmailMessagesUseCase,
     private readonly getTemplates: GetGmailTemplatesUseCase,
@@ -111,6 +122,74 @@ export class EmailController {
     }
 
     return { ok: true, ...result.value };
+  }
+
+  @Post("schedule")
+  @HttpCode(201)
+  @ApiOperation({ summary: "Schedule an email to be sent at a future time" })
+  async schedule(
+    @Body() body: ScheduleEmailBody,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ ok: boolean; scheduledEmailId?: string; activityId?: string | null; scheduledSendAt?: Date; error?: string }> {
+    if (!body.to || !body.subject || !body.bodyHtml || !body.scheduledSendAt) {
+      throw new BadRequestException("Missing required fields: to, subject, bodyHtml, scheduledSendAt");
+    }
+
+    const when = new Date(body.scheduledSendAt);
+    if (isNaN(when.getTime())) {
+      throw new BadRequestException("Invalid scheduledSendAt (expected ISO-8601)");
+    }
+
+    const result = await this.scheduleEmail.execute({
+      ownerId: user.id,
+      to: body.to,
+      subject: body.subject,
+      bodyHtml: body.bodyHtml,
+      scheduledSendAt: when,
+      fromEmail: body.fromEmail,
+      threadId: body.threadId,
+      attachments: body.attachments,
+      leadId: body.leadId,
+      contactIds: body.contactIds,
+      organizationId: body.organizationId,
+      dealId: body.dealId,
+    });
+
+    if (result.isLeft()) {
+      throw new BadRequestException(result.value.message);
+    }
+
+    return { ok: true, ...result.value };
+  }
+
+  @Get("scheduled")
+  @ApiOperation({ summary: "List the current user's pending scheduled emails" })
+  async listScheduled(@CurrentUser() user: AuthenticatedUser) {
+    const result = await this.listScheduledEmails.execute(user.id);
+    return { items: result.value.items };
+  }
+
+  @Delete("scheduled/:id")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Cancel a pending scheduled email" })
+  async cancelScheduled(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ): Promise<{ ok: boolean }> {
+    const result = await this.cancelScheduledEmail.execute({
+      scheduledEmailId: id,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+
+    if (result.isLeft()) {
+      const msg = result.value.message;
+      if (msg.includes("Não autorizado")) throw new ForbiddenException(msg);
+      if (msg.includes("não encontrado")) throw new NotFoundException(msg);
+      throw new BadRequestException(msg);
+    }
+
+    return { ok: true };
   }
 
   @Get("aliases")

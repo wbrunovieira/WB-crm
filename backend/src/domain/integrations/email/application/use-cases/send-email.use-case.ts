@@ -6,6 +6,7 @@ import { EmailMessagesRepository, EmailMessage } from "../repositories/email-mes
 import { EmailTrackingRepository, EmailTrackingRecord } from "../repositories/email-tracking.repository";
 import { EmailAddress } from "../../enterprise/value-objects/email-address.vo";
 import { CreateActivityUseCase } from "@/domain/activities/application/use-cases/create-activity.use-case";
+import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
 
 export interface SendEmailInput {
   userId: string;
@@ -21,6 +22,10 @@ export interface SendEmailInput {
   contactIds?: string[];
   organizationId?: string;
   dealId?: string;
+  // Scheduled-send flow: when set, the (pending) activity created at schedule time
+  // is completed in place instead of creating a second activity. See
+  // ScheduleEmailUseCase / SendDueScheduledEmailsUseCase.
+  existingActivityId?: string;
 }
 
 export interface SendEmailOutput {
@@ -72,6 +77,7 @@ export class SendEmailUseCase {
     private readonly emailMessagesRepo: EmailMessagesRepository,
     private readonly emailTrackingRepo: EmailTrackingRepository,
     private readonly createActivity: CreateActivityUseCase,
+    private readonly activitiesRepo: ActivitiesRepository,
   ) {}
 
   async execute(input: SendEmailInput): Promise<Either<Error, SendEmailOutput>> {
@@ -133,32 +139,59 @@ export class SendEmailUseCase {
     let activityId: string | undefined;
     try {
       const bodyPreview = bodyHtml.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim().slice(0, 500);
-      const activityResult = await this.createActivity.execute({
-        ownerId,
-        type: "email",
-        subject,
-        description: bodyPreview,
-        completed: true,
-        completedAt: now,
-        emailMessageId: messageId,
-        emailThreadId: resultThreadId,
-        emailSubject: subject,
-        emailTrackingToken: trackingToken,
-        contactIds,
-        leadId,
-        organizationId,
-        dealId,
-      });
-      if (activityResult.isRight()) {
-        activityId = activityResult.value.activity.id.toString();
+
+      if (input.existingActivityId) {
+        // Scheduled send: complete the pending activity created at schedule time
+        // (don't create a second one). Clears scheduledSendAt so the UI flips the
+        // clock icon to "sent".
+        const existing = await this.activitiesRepo.findByIdRaw(input.existingActivityId);
+        if (existing) {
+          existing.update({
+            completed: true,
+            completedAt: now,
+            scheduledSendAt: undefined,
+            description: bodyPreview,
+            emailMessageId: messageId,
+            emailThreadId: resultThreadId,
+            emailSubject: subject,
+            emailTrackingToken: trackingToken,
+          });
+          await this.activitiesRepo.save(existing);
+          activityId = existing.id.toString();
+        } else {
+          this.logger.warn("SendEmailUseCase: existingActivityId not found, no activity updated", {
+            messageId,
+            existingActivityId: input.existingActivityId,
+          });
+        }
       } else {
-        this.logger.warn("SendEmailUseCase: failed to create outbound activity", {
-          messageId,
-          error: activityResult.value.message,
+        const activityResult = await this.createActivity.execute({
+          ownerId,
+          type: "email",
+          subject,
+          description: bodyPreview,
+          completed: true,
+          completedAt: now,
+          emailMessageId: messageId,
+          emailThreadId: resultThreadId,
+          emailSubject: subject,
+          emailTrackingToken: trackingToken,
+          contactIds,
+          leadId,
+          organizationId,
+          dealId,
         });
+        if (activityResult.isRight()) {
+          activityId = activityResult.value.activity.id.toString();
+        } else {
+          this.logger.warn("SendEmailUseCase: failed to create outbound activity", {
+            messageId,
+            error: activityResult.value.message,
+          });
+        }
       }
     } catch (err) {
-      this.logger.warn("SendEmailUseCase: failed to create outbound activity", {
+      this.logger.warn("SendEmailUseCase: failed to create/complete outbound activity", {
         messageId,
         error: err instanceof Error ? err.message : String(err),
       });

@@ -675,3 +675,104 @@ describe("ProcessIncomingEmailUseCase — bounce fails 1:1 outbound activity", (
     expect(activity.completed).toBe(true);
   });
 });
+
+// ── Cancel pending scheduled sends when the contact/lead replies ───────────────
+import { InMemoryScheduledEmailSendsRepository } from "../../fakes/in-memory-scheduled-email-sends.repository";
+import { ScheduledEmailSend } from "@/domain/integrations/email/enterprise/entities/scheduled-email-send";
+
+describe("ProcessIncomingEmailUseCase — cancels pending scheduled sends on reply", () => {
+  let scheduledRepo: InMemoryScheduledEmailSendsRepository;
+  let emailMessagesRepo2: FakeEmailMessagesRepository;
+  let activitiesRepo2: FakeActivitiesRepository;
+  let contacts2: FakeContacts;
+  let leadContacts2: FakeLeadContacts;
+  let useCase2: ProcessIncomingEmailUseCase;
+
+  function makePendingScheduled(opts: { leadId?: string; contactId?: string; activityId?: string }) {
+    return ScheduledEmailSend.create({
+      ownerId: OWNER_ID,
+      activityId: opts.activityId ?? null,
+      scheduledSendAt: new Date("2026-07-10T09:00:00Z"),
+      to: "sender@example.com",
+      subject: "Follow-up",
+      bodyHtml: "<p>oi</p>",
+      fromEmail: null,
+      threadId: null,
+      attachments: [],
+      leadId: opts.leadId ?? null,
+      contactId: opts.contactId ?? null,
+      contactIds: opts.contactId ? [opts.contactId] : [],
+      organizationId: null,
+      dealId: null,
+    });
+  }
+
+  beforeEach(() => {
+    scheduledRepo = new InMemoryScheduledEmailSendsRepository();
+    emailMessagesRepo2 = new FakeEmailMessagesRepository();
+    activitiesRepo2 = new FakeActivitiesRepository();
+    contacts2 = new FakeContacts();
+    leadContacts2 = new FakeLeadContacts();
+
+    useCase2 = new ProcessIncomingEmailUseCase(
+      emailMessagesRepo2,
+      activitiesRepo2,
+      contacts2 as never,
+      leadContacts2 as never,
+      new FakeOrganizations() as never,
+      new FakeCampaigns() as never,
+      new FakeRecipients() as never,
+      new FakeSends() as never,
+      new FakeSuppressions() as never,
+      new FakeCreateNotification() as never,
+      scheduledRepo,
+    );
+  });
+
+  it("cancels a pending scheduled send when the matched lead replies", async () => {
+    leadContacts2.map[`${OWNER_ID}|sender@example.com`] = "lead-1";
+    const pending = makePendingScheduled({ leadId: "lead-1" });
+    await scheduledRepo.save(pending);
+
+    await useCase2.execute(makeMessage(), OWNER_ID);
+
+    const saved = await scheduledRepo.findById(pending.id.toString());
+    expect(saved!.status).toBe("CANCELLED");
+    expect(saved!.cancelledAt).toBeDefined();
+  });
+
+  it("skips the linked pending activity when cancelling", async () => {
+    contacts2.map[`${OWNER_ID}|sender@example.com`] = "contact-1";
+    const activity = activitiesRepo2.createAndAdd({
+      ownerId: OWNER_ID,
+      type: "email",
+      subject: "Follow-up",
+      completed: false,
+      scheduledSendAt: new Date("2026-07-10T09:00:00Z"),
+      meetingNoShow: false,
+      emailReplied: false,
+      emailOpenCount: 0,
+      emailLinkClickCount: 0,
+    });
+    const pending = makePendingScheduled({ contactId: "contact-1", activityId: activity.id.toString() });
+    await scheduledRepo.save(pending);
+
+    await useCase2.execute(makeMessage(), OWNER_ID);
+
+    const updated = await activitiesRepo2.findByIdRaw(activity.id.toString());
+    expect(updated!.skippedAt).toBeDefined();
+    expect(updated!.scheduledSendAt).toBeUndefined();
+  });
+
+  it("does not touch already-sent records", async () => {
+    leadContacts2.map[`${OWNER_ID}|sender@example.com`] = "lead-1";
+    const pending = makePendingScheduled({ leadId: "lead-1" });
+    pending.markSent("m", "t");
+    await scheduledRepo.save(pending);
+
+    await useCase2.execute(makeMessage(), OWNER_ID);
+
+    const saved = await scheduledRepo.findById(pending.id.toString());
+    expect(saved!.status).toBe("SENT");
+  });
+});

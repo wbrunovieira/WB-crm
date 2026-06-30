@@ -5,6 +5,7 @@ export interface ActivitySummary {
   subject: string;
   description: string | null;
   dueDate: Date | null;
+  scheduledSendAt: Date | null;
   completed: boolean;
   completedAt: Date | null;
   failedAt: Date | null;

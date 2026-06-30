@@ -88,4 +88,7 @@ Para **follow-up** e **nurture**, encurtar bastante e ajustar o tom (agradecer, 
 - **Não enviar** nada; só **entregar o texto** (assunto + corpo) para o usuário enviar pela plataforma. Se gerar rascunho no Gmail, confirmar antes.
 - Reenvio após bounce: texto limpo, sem tracking/co-branding (ex.: evitar 554/URIBL); remetente `bruno@wbdigitalsolutions.com`.
 - Excluir agências de marketing/publicidade/TI (concorrentes) — não são alvo.
+- **Reunião padrão = 30 minutos** — usar "30 minutos" no CTA, salvo se o usuário pedir outra duração.
+- **Link de agenda é ÚNICO por lead** (`https://agenda.wbdigitalsolutions.com/book/<token>`). NUNCA reutilizar o link de outro lead — sempre usar o link daquele lead específico. Se não tiver o link do lead em mãos, **pedir ao usuário** antes de inserir (não copiar de e-mail anterior).
+- **Ocultar o link de agenda atrás de uma frase clicável** (âncora), nunca colar a URL crua e feia no corpo. Entregar o corpo com a frase do CTA (ex.: "Agendar uma conversa de 15 min") + a URL separada, e instruir a aplicar o link na frase no editor do CRM (selecionar texto → botão de link / Ctrl+K).
 - Entregue: **Assunto** + **Corpo** em blocos de código, prontos para colar.

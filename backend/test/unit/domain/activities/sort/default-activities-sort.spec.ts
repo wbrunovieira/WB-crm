@@ -7,6 +7,7 @@ const BASE: Omit<ActivitySummary, "id" | "dueDate" | "completed" | "lead"> = {
   type: "call",
   subject: "",
   description: null,
+  scheduledSendAt: null,
   completedAt: null,
   failedAt: null,
   failReason: null,

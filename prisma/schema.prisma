@@ -763,6 +763,9 @@ model Activity {
   remindAt    DateTime?
   remindedAt  DateTime?
 
+  // Envio de e-mail agendado (preenchido quando completed=false e há ScheduledEmail)
+  scheduledSendAt DateTime?
+
   dealId             String?
   additionalDealIds  String?   // JSON array of secondary deal IDs (same pattern as contactIds)
   contactId       String?   // Primary contact (for backwards compatibility)
@@ -834,6 +837,44 @@ model Activity {
   @@index([dueDate])
   @@index([gotoCallId])
   @@map("activities")
+}
+
+// E-mail com envio programado para uma data/hora futura. Um worker envia os
+// PENDING vencidos; uma resposta do lead/contato cancela os pendentes.
+// (Distinto de ScheduledEmail, que são lembretes de reunião.)
+model ScheduledEmailSend {
+  id              String    @id @default(cuid())
+  ownerId         String
+  activityId      String?   @unique // atividade "agendada" criada junto (concluída ao enviar)
+  status          String    @default("PENDING") // PENDING | SENT | CANCELLED | FAILED
+  scheduledSendAt DateTime
+
+  to              String
+  subject         String
+  bodyHtml        String
+  fromEmail       String?
+  threadId        String?
+  attachmentsJson String? // JSON: [{filename, mimeType, data(base64), size}]
+
+  leadId          String?
+  contactId       String? // contato principal (usado para cancelar ao responder)
+  contactIdsJson  String? // JSON: todos os contatos (passados ao envio)
+  organizationId  String?
+  dealId          String?
+
+  sentMessageId   String?
+  sentThreadId    String?
+  failReason      String?
+
+  createdAt       DateTime  @default(now())
+  sentAt          DateTime?
+  cancelledAt     DateTime?
+
+  @@index([status, scheduledSendAt])
+  @@index([ownerId])
+  @@index([leadId])
+  @@index([contactId])
+  @@map("scheduled_email_sends")
 }
 
 model CallAnalysis {

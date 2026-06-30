@@ -21,6 +21,7 @@ export interface CreateActivityInput {
   callContactType?: string;
   meetingNoShow?: boolean;
   remindAt?: Date;
+  scheduledSendAt?: Date;
   // Campaign email fields
   emailCampaignSendId?: string;
   emailCampaignId?: string;
@@ -55,6 +56,7 @@ export class CreateActivityUseCase {
       completed: input.completed ?? false,
       completedAt: input.completedAt,
       remindAt: input.remindAt,
+      scheduledSendAt: input.scheduledSendAt,
       meetingNoShow: input.meetingNoShow ?? false,
       emailReplied: false,
       emailOpenCount: 0,

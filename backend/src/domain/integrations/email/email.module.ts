@@ -16,12 +16,18 @@ import { EmailVerifierPort } from "./application/ports/email-verifier.port";
 // Repositories (abstract)
 import { EmailMessagesRepository } from "./application/repositories/email-messages.repository";
 import { EmailTrackingRepository } from "./application/repositories/email-tracking.repository";
+import { ScheduledEmailSendsRepository } from "./application/repositories/scheduled-email-sends.repository";
+import { PrismaScheduledEmailSendsRepository } from "./infra/prisma-scheduled-email-sends.repository";
 import { EmailEngagementReadPort } from "./application/ports/email-engagement-read.port";
 import { PrismaEmailEngagementReadAdapter } from "./infra/prisma-email-engagement-read.adapter";
 
 // Use Cases
 import { ProcessIncomingEmailUseCase } from "./application/use-cases/process-incoming-email.use-case";
 import { SendEmailUseCase } from "./application/use-cases/send-email.use-case";
+import { ScheduleEmailUseCase } from "./application/use-cases/schedule-email.use-case";
+import { SendDueScheduledEmailsUseCase } from "./application/use-cases/send-due-scheduled-emails.use-case";
+import { CancelScheduledEmailUseCase } from "./application/use-cases/cancel-scheduled-email.use-case";
+import { ListScheduledEmailsUseCase } from "./application/use-cases/list-scheduled-emails.use-case";
 import { PollGmailUseCase } from "./application/use-cases/poll-gmail.use-case";
 import { TrackEmailOpenUseCase } from "./application/use-cases/track-email-open.use-case";
 import { TrackEmailClickUseCase } from "./application/use-cases/track-email-click.use-case";
@@ -48,6 +54,7 @@ import { EmailWebhookController } from "./infra/controllers/email-webhook.contro
 import { EmailController } from "./infra/controllers/email.controller";
 import { GoogleOAuthController } from "./infra/controllers/google-oauth.controller";
 import { GmailPollCronService } from "./infra/scheduled/gmail-poll-cron.service";
+import { ScheduledEmailsCronService } from "./infra/scheduled/scheduled-emails-cron.service";
 import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.repository";
 
 @Module({
@@ -57,6 +64,10 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     // Use Cases
     ProcessIncomingEmailUseCase,
     SendEmailUseCase,
+    ScheduleEmailUseCase,
+    SendDueScheduledEmailsUseCase,
+    CancelScheduledEmailUseCase,
+    ListScheduledEmailsUseCase,
     PollGmailUseCase,
     TrackEmailOpenUseCase,
     TrackEmailClickUseCase,
@@ -85,6 +96,8 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
     PrismaEmailTrackingRepository,
     { provide: EmailTrackingRepository, useClass: PrismaEmailTrackingRepository },
     { provide: EmailEngagementReadPort, useClass: PrismaEmailEngagementReadAdapter },
+    PrismaScheduledEmailSendsRepository,
+    { provide: ScheduledEmailSendsRepository, useClass: PrismaScheduledEmailSendsRepository },
 
     // Gmail templates
     PrismaGmailTemplatesRepository,
@@ -95,6 +108,7 @@ import { PrismaGmailTemplatesRepository } from "./infra/prisma-gmail-templates.r
 
     // Scheduled
     GmailPollCronService,
+    ScheduledEmailsCronService,
   ],
   exports: [EmailMessagesRepository, EmailTrackingRepository, GmailPort, GoogleOAuthPort, VerifyLeadEmailUseCase, VerifyLeadContactEmailUseCase, BatchVerifyEmailsUseCase],
 })

@@ -42,6 +42,7 @@ beforeEach(() => {
     emailMessagesRepo,
     emailTrackingRepo,
     createActivity,
+    activitiesRepo,
   );
 });
 
@@ -219,6 +220,51 @@ describe("SendEmailUseCase — creates the outbound activity", () => {
     const result = await useCase.execute(makeInput({ leadId: "lead-1" }));
 
     expect(result.isLeft()).toBe(true);
+    expect(activitiesRepo.items).toHaveLength(0);
+  });
+});
+
+// ── Scheduled-send flow: completes the pre-created activity ───────────────────
+// When existingActivityId is passed (worker sending a scheduled email), the use
+// case must complete THAT activity, not create a second one.
+describe("SendEmailUseCase — existingActivityId (scheduled send)", () => {
+  it("completes the existing activity instead of creating a new one", async () => {
+    const pending = activitiesRepo.createAndAdd({
+      ownerId: OWNER_ID,
+      type: "email",
+      subject: "Proposta",
+      completed: false,
+      scheduledSendAt: new Date("2026-07-01T09:00:00.000Z"),
+      meetingNoShow: false,
+      emailReplied: false,
+      emailOpenCount: 0,
+      emailLinkClickCount: 0,
+    });
+
+    const result = await useCase.execute(
+      makeInput({ existingActivityId: pending.id.toString(), subject: "Proposta" }),
+    );
+
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().activityId).toBe(pending.id.toString());
+    // still exactly one activity — the pending one, now completed
+    expect(activitiesRepo.items).toHaveLength(1);
+    const activity = activitiesRepo.items[0];
+    expect(activity.completed).toBe(true);
+    expect(activity.completedAt).toBeDefined();
+    expect(activity.scheduledSendAt).toBeUndefined();
+    expect(activity.emailMessageId).toBe(result.unwrap().messageId);
+    expect(activity.emailThreadId).toBe(result.unwrap().threadId);
+    expect(activity.emailTrackingToken).toBe(result.unwrap().trackingToken);
+  });
+
+  it("falls back gracefully when existingActivityId does not exist (still sends)", async () => {
+    const result = await useCase.execute(
+      makeInput({ existingActivityId: "missing-activity" }),
+    );
+
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().messageId).toBeDefined();
     expect(activitiesRepo.items).toHaveLength(0);
   });
 });

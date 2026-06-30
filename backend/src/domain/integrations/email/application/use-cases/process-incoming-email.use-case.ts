@@ -1,7 +1,8 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger, Optional } from "@nestjs/common";
 import { Either, right, left } from "@/core/either";
 import { GmailMessage } from "../ports/gmail.port";
 import { EmailMessagesRepository, EmailMessage } from "../repositories/email-messages.repository";
+import { ScheduledEmailSendsRepository } from "../repositories/scheduled-email-sends.repository";
 import { ActivitiesRepository } from "@/domain/activities/application/repositories/activities.repository";
 import { Activity } from "@/domain/activities/enterprise/entities/activity";
 import { ContactsRepository } from "@/domain/contacts/application/repositories/contacts.repository";
@@ -37,6 +38,7 @@ export class ProcessIncomingEmailUseCase {
     private readonly sends: EmailCampaignSendsRepository,
     private readonly suppressions: EmailSuppressionsRepository,
     private readonly createNotification: CreateNotificationUseCase,
+    @Optional() private readonly scheduledSends?: ScheduledEmailSendsRepository,
   ) {}
 
   async execute(
@@ -109,6 +111,10 @@ export class ProcessIncomingEmailUseCase {
       if (!contactId && !leadId && !organizationId) {
         return right({ skipped: true });
       }
+
+      // 4b. The lead/contact replied — cancel any still-pending scheduled emails to
+      // them (we don't want to keep nudging someone who already answered).
+      await this.cancelPendingScheduledSends(leadId, contactId);
 
       // 5. Create Activity of type 'email'
       const subject = message.subject || "(sem assunto)";
@@ -341,6 +347,46 @@ export class ProcessIncomingEmailUseCase {
         recipient.markDelayed();
         await this.recipients.save(recipient);
       }
+    }
+  }
+
+  /**
+   * Cancels PENDING scheduled emails to a lead/contact that just replied, and marks
+   * each linked (pending) activity as skipped so it doesn't linger as a future send.
+   * No-op when the scheduled-sends repository isn't wired (optional dependency).
+   */
+  private async cancelPendingScheduledSends(
+    leadId: string | undefined,
+    contactId: string | undefined,
+  ): Promise<void> {
+    if (!this.scheduledSends) return;
+    if (!leadId && !contactId) return;
+
+    try {
+      const pending = await this.scheduledSends.findPendingByLeadOrContact({ leadId, contactId });
+      for (const record of pending) {
+        record.markCancelled();
+        await this.scheduledSends.save(record);
+
+        if (record.activityId) {
+          const activity = await this.activitiesRepo.findByIdRaw(record.activityId);
+          if (activity && !activity.completed && !activity.failedAt && !activity.skippedAt) {
+            activity.update({ scheduledSendAt: undefined });
+            activity.skip("Envio cancelado — o contato respondeu antes");
+            await this.activitiesRepo.save(activity);
+          }
+        }
+      }
+      if (pending.length > 0) {
+        this.logger.log(`ProcessIncomingEmailUseCase: cancelled ${pending.length} pending scheduled email(s) after reply`, {
+          leadId,
+          contactId,
+        });
+      }
+    } catch (err) {
+      this.logger.warn("ProcessIncomingEmailUseCase: failed to cancel pending scheduled sends", {
+        error: err instanceof Error ? err.message : String(err),
+      });
     }
   }
 

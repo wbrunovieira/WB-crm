@@ -21,6 +21,10 @@ export interface ActivityProps {
   remindAt?: Date;
   remindedAt?: Date;
 
+  // Envio de e-mail agendado: quando setado e completed=false, a atividade é um
+  // e-mail programado (ícone de relógio). Concluída quando enviado.
+  scheduledSendAt?: Date;
+
   // Links
   dealId?: string;
   additionalDealIds?: string; // JSON string
@@ -82,6 +86,7 @@ export class Activity extends AggregateRoot<ActivityProps> {
   get skipReason()           { return this.props.skipReason; }
   get remindAt()             { return this.props.remindAt; }
   get remindedAt()           { return this.props.remindedAt; }
+  get scheduledSendAt()      { return this.props.scheduledSendAt; }
   get dealId()               { return this.props.dealId; }
   get additionalDealIds()    { return this.props.additionalDealIds; }
   get contactId()            { return this.props.contactId; }
