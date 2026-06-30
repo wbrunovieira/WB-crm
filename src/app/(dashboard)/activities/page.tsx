@@ -20,6 +20,10 @@ import { authOptions } from "@/lib/auth";
 import WhatsAppActivityLog from "@/components/whatsapp/WhatsAppActivityLog";
 import { ActivityDescriptionExpand } from "@/components/activities/ActivityDescriptionExpand";
 
+// Sempre dinâmico: desliga o cache do fetch para que router.refresh() (ex.: após
+// excluir uma atividade) reflita os dados frescos sem o usuário recarregar.
+export const dynamic = "force-dynamic";
+
 // Generate consistent color for cadence name
 const CADENCE_COLORS = [
   { border: "border-purple-400", badge: "bg-purple-100 text-purple-800" },
