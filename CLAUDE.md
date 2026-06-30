@@ -206,6 +206,7 @@ export async function createDeal(data: DealFormData) {
 - **Development**: PostgreSQL via Docker (port 5499) - `docker-compose up -d`
 - **Production**: PostgreSQL (via `DATABASE_URL` environment variable)
 - **Schema changes**: ALWAYS use `npm run db:migrate` to create migrations (never use `db:push` in production)
+- **Single-source Prisma schema**: `backend/prisma/schema.prisma` is the CANONICAL schema; the root `prisma/schema.prisma` is a verbatim mirror. Edit the backend one, then run `npm run schema:sync` (root) to copy it over. A backend architecture test (`test/unit/architecture/schema-in-sync.spec.ts`) fails if they drift; check manually with `npm run schema:check`. (Migration SQL still goes in BOTH `backend/prisma/migrations/` and `prisma/migrations/`.)
 - **Data isolation**: All entities have `ownerId` foreign key to User
   - CRITICAL: ALWAYS filter queries by `ownerId: session.user.id` to ensure users only see their own data
   - Verify ownership before updates/deletes: check `existingRecord.ownerId === session.user.id`

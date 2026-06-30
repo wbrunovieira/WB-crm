@@ -11,6 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
     "db:seed": "tsx prisma/seed.ts",
+    "schema:sync": "node scripts/sync-prisma-schema.mjs",
+    "schema:check": "node scripts/sync-prisma-schema.mjs --check",
     "test": "vitest run && npm --prefix backend test",
     "test:frontend": "vitest run",
     "test:backend": "npm --prefix backend test",
