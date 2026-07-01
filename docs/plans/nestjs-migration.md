@@ -1173,19 +1173,15 @@ Next.js: `/api/google/auth` e `/api/google/callback` viram thin proxies. `/api/g
 
 ---
 
-### ⏳ M15 — Deploy de Validação em Produção
-**Status**: Pendente — acumulou mudanças desde o último deploy
+### ✅ M15 — Deploy de Validação em Produção
+**Status**: Validado em 2026-07-01 (deploys ao longo de jun/2026 + validação de rotas)
 
-Validar em produção todas as fases concluídas desde o último deploy (M14.2–M14.6, M2.5):
-
-- [ ] `ansible-playbook deploy-backend.yml` (novos controllers: WhatsApp media, Proposals file, GoTo recordings, Google OAuth, GoogleDriveDownloadService)
-- [ ] `ansible-playbook quick-deploy.yml` (frontend: remoção de proxy routes, LeadForm, GoToCallPlayer, WhatsAppMessageLog, ProposalViewer, ProposalsList, GoogleDisconnectButton, register page)
-- [ ] Verificar nos logs Nginx que `/whatsapp/media/`, `/proposals/:id/file`, `/goto/recordings/`, `/google/auth`, `/google/callback`, `/google/disconnect` chegam ao NestJS (porta 3010)
-- [ ] Testar fluxo OAuth Google no browser: conectar conta, desconectar
-- [ ] Testar reprodução de áudio WhatsApp, download de proposta, reprodução de gravação GoTo
-- [ ] Testar criação de lead com parceiro indicador
-- [ ] Confirmar que o register page funciona (chama NestJS diretamente)
-- [ ] Confirmar que login/sessão funciona sem PrismaAdapter
+- [x] `deploy-backend.yml` (novos controllers + backup→`prisma migrate deploy`→swap) — health `{ok:true,db:ok}`
+- [x] `quick-deploy.yml` (frontend + backend) — Frontend OK / Backend OK
+- [x] Rotas chegam ao NestJS (checado por HTTP, 401 = rota viva e protegida): `/whatsapp/media/:id`, `/proposals/:id/file`, `/goto/recordings/:id`, `/google/disconnect` → 401; `/register` e `/login` (páginas) → 200
+- [x] **Login sem PrismaAdapter** funciona: JSON válido + senha errada → 401; credencial certa → 200 + JWT
+- [x] **Bug encontrado e corrigido nesta validação**: `POST /auth/login` com body `{}`/parcial dava **500** (Prisma lançava em `findByEmail(undefined)`) → agora **401**. Guard no `LoginUseCase` + testes unit (3) + **e2e novo de auth** (6). Commit `bd9d6f53`, deployado e re-validado em prod.
+- [ ] **Manual no browser (requer sessão logada)**: fluxo OAuth Google (conectar/desconectar), reprodução de áudio WhatsApp / gravação GoTo, download de proposta, criar lead com parceiro indicador. *(As rotas respondem 401 sem token — wiring OK; falta o teste interativo de ponta a ponta.)*
 
 ---
 
