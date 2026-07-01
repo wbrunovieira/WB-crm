@@ -19,6 +19,10 @@ export class LoginUseCase {
   ) {}
 
   async execute({ email, password }: Input): Promise<Output> {
+    // Guard input malformado (ex.: body {}) antes de tocar o repositório —
+    // findByEmail(undefined) faz o Prisma lançar (→ 500). Retorna left = 401.
+    if (!email || !password) return left(new Error("Credenciais inválidas"));
+
     const user = await this.users.findByEmail(email);
     if (!user) return left(new Error("Credenciais inválidas"));
 

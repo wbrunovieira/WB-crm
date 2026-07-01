@@ -90,4 +90,28 @@ describe("LoginUseCase", () => {
     expect(result.isLeft()).toBe(true);
     expect(fakeJwt.signAsync).not.toHaveBeenCalled();
   });
+
+  // Input malformado (ex.: POST /auth/login com body {}). Deve retornar left ANTES
+  // de consultar o repositório — senão o Prisma lança em findByEmail(undefined) → 500.
+  it("retorna erro quando email ausente, sem consultar o repositório", async () => {
+    const spy = vi.spyOn(repo, "findByEmail");
+    const result = await sut.execute({ email: undefined as unknown as string, password: "x" });
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) expect(result.value.message).toBe("Credenciais inválidas");
+    expect(spy).not.toHaveBeenCalled();
+    expect(fakeJwt.signAsync).not.toHaveBeenCalled();
+  });
+
+  it("retorna erro quando senha ausente, sem consultar o repositório", async () => {
+    const spy = vi.spyOn(repo, "findByEmail");
+    const result = await sut.execute({ email: "a@b.com", password: undefined as unknown as string });
+    expect(result.isLeft()).toBe(true);
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  it("retorna erro quando body vazio (email e senha ausentes)", async () => {
+    const result = await sut.execute({} as unknown as { email: string; password: string });
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) expect(result.value.message).toBe("Credenciais inválidas");
+  });
 });
