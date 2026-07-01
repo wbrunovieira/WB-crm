@@ -68,3 +68,25 @@ reata no container novo automaticamente. Mesma proteção para quedas de ssh.
 - Só backend: `ssh root@45.90.123.190 'docker logs -f wb-crm-backend'`
 - Só frontend: `ssh root@45.90.123.190 'pm2 logs wb-crm'`
 - Filtrar erro no frontend: `ssh root@45.90.123.190 'tail -f /root/.pm2/logs/wb-crm-error-0.log'`
+
+## Deploy dentro do MESMO tmux (ver o ansible ao vivo, junto dos logs)
+
+Mesma limitação de sandbox: o agente não deve rodar o deploy por si só se o usuário quer
+**assistir** — ele roda invisível no sandbox. Em vez disso, o deploy roda numa **janela nova**
+da sessão `wblogs`, via `~/wb-deploy.sh`, que o USUÁRIO executa. Alternar janelas: `Ctrl-b n`
+ou `Ctrl-b <número>`; fechar a janela do deploy ao terminar: `Ctrl-b &`.
+
+Conteúdo de `~/wb-deploy.sh`:
+```bash
+#!/usr/bin/env bash
+# Roda um playbook ansible numa NOVA JANELA do tmux 'wblogs' (junto dos logs).
+# Uso:  ~/wb-deploy.sh quick-deploy      (frontend + backend, sem migração)
+#       ~/wb-deploy.sh deploy-backend    (backend + migração)
+PB="${1:-quick-deploy}"
+DIR="$HOME/projects/WB-crm/deploy/ansible"
+SESS="wblogs"
+CMD="cd '$DIR' && ansible-playbook -i inventory/production.yml playbooks/$PB.yml; echo; echo '=== $PB TERMINOU — feche com Ctrl-b & ==='; exec bash"
+tmux has-session -t "$SESS" 2>/dev/null || tmux new-session -d -s "$SESS" -n logs
+tmux new-window -t "$SESS" -n "deploy" "$CMD"
+if [ -n "$TMUX" ]; then tmux select-window -t "$SESS:deploy"; else tmux attach -t "$SESS"; fi
+```
