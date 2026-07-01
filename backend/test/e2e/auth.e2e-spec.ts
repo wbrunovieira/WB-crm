@@ -3,6 +3,7 @@ import { Test } from "@nestjs/testing";
 import { INestApplication } from "@nestjs/common";
 import request from "supertest";
 import * as bcrypt from "bcryptjs";
+import { randomBytes } from "node:crypto";
 import { AppModule } from "@/app.module";
 import { PrismaService } from "@/infra/database/prisma.service";
 
@@ -10,7 +11,8 @@ let app: INestApplication;
 let prisma: PrismaService;
 
 const EMAIL = "auth-e2e@test.com";
-const PASSWORD = "senha-correta-123";
+// Random per-run credential — not a hardcoded secret (avoids secret scanners).
+const PASSWORD = randomBytes(12).toString("hex");
 
 beforeAll(async () => {
   const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
