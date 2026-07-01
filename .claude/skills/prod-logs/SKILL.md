@@ -69,7 +69,27 @@ reata no container novo automaticamente. Mesma proteção para quedas de ssh.
 - Só frontend: `ssh root@45.90.123.190 'pm2 logs wb-crm'`
 - Filtrar erro no frontend: `ssh root@45.90.123.190 'tail -f /root/.pm2/logs/wb-crm-error-0.log'`
 
-## Deploy dentro do MESMO tmux (ver o ansible ao vivo, junto dos logs)
+## Warp / prefixo Ctrl-b
+
+No **Warp** (e outros terminais com atalhos próprios) o prefixo `Ctrl-b` do tmux colide.
+Por isso: ligar `tmux set mouse on` — dá pra **clicar** pra trocar de painel, **rolar** com o
+scroll e **arrastar a borda** pra redimensionar, sem usar `Ctrl-b`. Prefira **painéis na mesma
+janela** (tudo visível de uma vez) a **janelas** (que exigem `Ctrl-b w`/`n`/`p` pra alternar).
+
+## Deploy + logs NA MESMA TELA (recomendado — `~/wb-deploy-pane.sh`)
+
+Abre o deploy como **painel full-width embaixo** dos logs (logs em cima, deploy embaixo), tudo
+numa janela só — nada some, sem trocar de janela. Ideal pro Warp. O USUÁRIO roda:
+```
+~/wb-deploy-pane.sh quick-deploy      # frontend + backend
+~/wb-deploy-pane.sh deploy-backend    # backend + migração
+```
+Conteúdo (`~/wb-deploy-pane.sh`): cria a sessão `wblogs` com os 2 painéis de log se não existir,
+liga o mouse, e faz `tmux split-window -v -f -l 60%` pra colocar o ansible embaixo em tela cheia.
+Ao terminar mostra "TERMINOU"; feche o painel com `exit`. **Não dispare dois deploys ao mesmo
+tempo** (builds se atropelam).
+
+## Deploy em outra JANELA (`~/wb-deploy.sh`) — alternativa
 
 Mesma limitação de sandbox: o agente não deve rodar o deploy por si só se o usuário quer
 **assistir** — ele roda invisível no sandbox. Em vez disso, o deploy roda numa **janela nova**
