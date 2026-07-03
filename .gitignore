@@ -54,3 +54,9 @@ deploy/ansible/*.retry
 # Playwright agent CLI (runtime artifacts: snapshots, console logs, videos, config)
 .playwright/
 .playwright-cli/
+
+# Playwright @playwright/test outputs
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
