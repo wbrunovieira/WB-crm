@@ -50,3 +50,7 @@ deploy/ansible/*.retry
 
 # Claude Code (internal worktrees, locks, etc.)
 .claude/
+
+# Playwright agent CLI (runtime artifacts: snapshots, console logs, videos, config)
+.playwright/
+.playwright-cli/
