@@ -1,0 +1,119 @@
+name: CD
+
+# Deploy contínuo → VPS Contabo via Ansible, como o usuário NÃO-root `deploy`
+# (chave dedicada; sudo escopado apenas a pm2 restart/status e ao script de backup).
+#
+# Gates de segurança:
+#   1. Só dispara quando o workflow CI termina VERDE na main (nunca em PR).
+#   2. Environment `production` exige APROVAÇÃO MANUAL (required reviewer).
+#   3. Host key do VPS pinada em deploy/ci/known_hosts (sem TOFU/keyscan em runtime).
+#   4. Migrations: se o diff entre o commit deployado e a main tocar
+#      backend/prisma/migrations/, roda deploy-backend (backup → migrate → swap)
+#      ANTES do quick-deploy — código novo nunca sobe sem a coluna existir.
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      playbook:
+        description: "O que deployar"
+        type: choice
+        options: [auto, quick-deploy, deploy-backend]
+        default: auto
+
+permissions:
+  contents: read
+
+# Um deploy por vez; nunca cancela um deploy em andamento.
+concurrency:
+  group: cd-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy → VPS Contabo
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # workflow_run: só se o CI concluiu com sucesso. workflow_dispatch: sempre permite
+    # (o environment ainda exige aprovação manual).
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    environment:
+      name: production
+      url: https://crm.wbdigitalsolutions.com
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # histórico completo p/ detectar migrations pendentes
+
+      # ssh-agent manual (sem action de terceiro tocando a chave privada)
+      - name: Start ssh-agent with deploy key
+        env:
+          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+        run: |
+          eval "$(ssh-agent -s)"
+          echo "SSH_AUTH_SOCK=$SSH_AUTH_SOCK" >> "$GITHUB_ENV"
+          echo "SSH_AGENT_PID=$SSH_AGENT_PID" >> "$GITHUB_ENV"
+          ssh-add - <<< "$SSH_DEPLOY_KEY"
+
+      - name: Pin VPS host key (no TOFU)
+        run: |
+          mkdir -p ~/.ssh && chmod 700 ~/.ssh
+          grep -v '^#' deploy/ci/known_hosts > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Detect pending migrations
+        id: detect
+        env:
+          VPS: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+        run: |
+          DEPLOYED=$(ssh -o BatchMode=yes "$VPS" 'cd /opt/wb-crm && git rev-parse HEAD' || true)
+          echo "SHA deployado no servidor: ${DEPLOYED:-desconhecido}"
+          if [ -n "$DEPLOYED" ] && git cat-file -e "$DEPLOYED" 2>/dev/null; then
+            CHANGED=$(git diff --name-only "$DEPLOYED"..HEAD -- backend/prisma/migrations/)
+          else
+            echo "::warning::SHA deployado desconhecido — assumindo migrations pendentes (default seguro)"
+            CHANGED="(desconhecido — default seguro)"
+          fi
+          if [ -n "$CHANGED" ]; then
+            echo "migrate=true" >> "$GITHUB_OUTPUT"
+            printf 'Migrations no diff:\n%s\n' "$CHANGED"
+          else
+            echo "migrate=false" >> "$GITHUB_OUTPUT"
+            echo "Sem migrations novas."
+          fi
+
+      - name: Install Ansible
+        run: pipx install ansible-core
+
+      # Inventory do CI: usuário deploy, SEM become global (o ansible.cfg do repo tem
+      # become=True pro fluxo local como root; aqui o sudo é explícito e escopado
+      # dentro dos próprios comandos dos playbooks).
+      - name: Build CI inventory
+        working-directory: deploy/ansible
+        run: |
+          cat > inventory/ci.yml <<EOF
+          all:
+            hosts:
+              crm_server:
+                ansible_host: ${{ secrets.VPS_HOST }}
+                ansible_user: ${{ secrets.VPS_USER }}
+                ansible_become: false
+                ansible_python_interpreter: /usr/bin/python3.9
+          EOF
+
+      - name: Deploy backend com migração (backup → migrate → swap)
+        if: (steps.detect.outputs.migrate == 'true' && inputs.playbook != 'quick-deploy') || inputs.playbook == 'deploy-backend'
+        working-directory: deploy/ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "True"
+        run: ansible-playbook -i inventory/ci.yml playbooks/deploy-backend.yml
+
+      - name: Deploy frontend + backend (quick-deploy)
+        if: inputs.playbook != 'deploy-backend'
+        working-directory: deploy/ansible
+        env:
+          ANSIBLE_HOST_KEY_CHECKING: "True"
+        run: ansible-playbook -i inventory/ci.yml playbooks/quick-deploy.yml

@@ -3,6 +3,7 @@
 **Production-grade B2B sales CRM** — full-stack, architected with Domain-Driven Design and backed by **600+ automated tests**. Runs the whole sales cycle on a drag-and-drop kanban pipeline, with AI call/meeting analysis, a visual bot-flow builder, and native Google (Gmail, Meet, Places) integrations.
 
 [![CI](https://github.com/wbrunovieira/WB-crm/actions/workflows/ci.yml/badge.svg)](https://github.com/wbrunovieira/WB-crm/actions/workflows/ci.yml)
+[![CD](https://github.com/wbrunovieira/WB-crm/actions/workflows/deploy.yml/badge.svg)](https://github.com/wbrunovieira/WB-crm/actions/workflows/deploy.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
@@ -88,6 +89,10 @@ npm run test:coverage   # coverage report
 ```
 
 CI (GitHub Actions) runs on every push/PR to `main`: **lint → unit → build → E2E** (Playwright frontend + backend against Postgres). See [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
+
+## CI/CD
+
+**CI green gates CD**: after a successful CI run on `main`, the [CD workflow](./.github/workflows/deploy.yml) deploys to the VPS (Contabo) via **Ansible**, pending a **manual approval** (GitHub Environment `production` with required reviewer). It runs as a dedicated **non-root `deploy` user** (scoped sudo, pinned host key) and auto-detects pending Prisma migrations — schema changes trigger the backup → migrate → swap path before the code deploy.
 
 ## Documentation
 

@@ -72,7 +72,10 @@
       raw: cd {{ app_dir }} && npm prune --production
 
     - name: Restart PM2 (Next.js frontend)
-      raw: pm2 restart {{ app_name }} && sleep 3 && pm2 status {{ app_name }}
+      # sudo com caminho absoluto: o PM2 do frontend roda no daemon do root. Funciona
+      # tanto como root (local) quanto como o usuário `deploy` do CD (sudoers escopado
+      # em /etc/sudoers.d/deploy permite exatamente estes comandos).
+      raw: sudo /usr/bin/pm2 restart {{ app_name }} && sleep 3 && sudo /usr/bin/pm2 status {{ app_name }}
       register: pm2_status
 
     - name: Display PM2 status

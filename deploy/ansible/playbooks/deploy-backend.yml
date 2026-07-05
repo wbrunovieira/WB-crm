@@ -62,7 +62,9 @@
     # o play aborta e o container antigo continua servindo.
 
     - name: Backup do banco antes da migração (Google Drive via backup-crm.sh)
-      raw: bash {{ backup_script }} 2>&1
+      # sudo: o script usa o rclone config do root (Google Drive). Sudoers escopado
+      # do usuário `deploy` (CD) permite exatamente este script; como root é no-op.
+      raw: sudo {{ backup_script }} 2>&1
       register: backup_result
 
     - name: Verificar backup

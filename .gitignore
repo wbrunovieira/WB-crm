@@ -60,3 +60,4 @@ deploy/ansible/*.retry
 /playwright-report/
 /blob-report/
 /playwright/.cache/
+deploy/ansible/inventory/ci.yml
