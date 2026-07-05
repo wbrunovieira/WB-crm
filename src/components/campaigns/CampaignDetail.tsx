@@ -11,7 +11,7 @@ import type {
   StepType,
   SendStatus,
 } from "@/types/campaign";
-import { MessageSquare, Image, Volume2, Clock, Type, Trash2, Search } from "lucide-react";
+import { MessageSquare, Image as ImageIcon, Volume2, Clock, Type, Search } from "lucide-react";
 
 /* ── Status helpers ── */
 
@@ -45,7 +45,7 @@ const STEP_TYPE_COLOR: Record<StepType, string> = {
 
 const STEP_ICON: Record<StepType, React.ReactNode> = {
   TEXT: <MessageSquare size={14} />,
-  MEDIA: <Image size={14} />,
+  MEDIA: <ImageIcon size={14} />,
   AUDIO: <Volume2 size={14} />,
   DELAY: <Clock size={14} />,
   TYPING: <Type size={14} />,
@@ -174,7 +174,7 @@ export function CampaignDetail({ campaign: initial }: Props) {
   const toggleLead = (id: string) => {
     setSelectedLeads((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) { next.delete(id); } else { next.add(id); }
       return next;
     });
   };

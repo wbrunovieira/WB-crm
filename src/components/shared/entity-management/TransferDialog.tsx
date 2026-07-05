@@ -47,7 +47,7 @@ export function TransferDialog({
     } finally {
       setLoading(false);
     }
-  }, [currentOwnerId]);
+  }, [currentOwnerId, token]);
 
   useEffect(() => {
     if (isOpen) {

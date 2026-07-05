@@ -238,8 +238,11 @@ export function useUpdateCadenceStep() {
   return useMutation({
     mutationFn: ({
       stepId,
-      cadenceId,
-      ...data
+      dayNumber,
+      channel,
+      subject,
+      description,
+      order,
     }: {
       stepId: string;
       cadenceId: string;
@@ -251,7 +254,7 @@ export function useUpdateCadenceStep() {
     }) =>
       apiFetch<CadenceStep>(`/cadences/steps/${stepId}`, token, {
         method: "PATCH",
-        body: JSON.stringify(data),
+        body: JSON.stringify({ dayNumber, channel, subject, description, order }),
       }),
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: cadenceKeys.steps(vars.cadenceId) });
@@ -263,7 +266,7 @@ export function useDeleteCadenceStep() {
   const queryClient = useQueryClient();
   const token = useToken();
   return useMutation({
-    mutationFn: ({ stepId, cadenceId }: { stepId: string; cadenceId: string }) =>
+    mutationFn: ({ stepId }: { stepId: string; cadenceId: string }) =>
       apiFetch<void>(`/cadences/steps/${stepId}`, token, { method: "DELETE" }),
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: cadenceKeys.steps(vars.cadenceId) });
@@ -330,7 +333,7 @@ export function usePauseLeadCadence() {
   const queryClient = useQueryClient();
   const token = useToken();
   return useMutation({
-    mutationFn: ({ leadCadenceId, leadId }: { leadCadenceId: string; leadId: string }) =>
+    mutationFn: ({ leadCadenceId }: { leadCadenceId: string; leadId: string }) =>
       apiFetch<void>(`/cadences/lead-cadences/${leadCadenceId}/pause`, token, {
         method: "PATCH",
       }),
@@ -344,7 +347,7 @@ export function useResumeLeadCadence() {
   const queryClient = useQueryClient();
   const token = useToken();
   return useMutation({
-    mutationFn: ({ leadCadenceId, leadId }: { leadCadenceId: string; leadId: string }) =>
+    mutationFn: ({ leadCadenceId }: { leadCadenceId: string; leadId: string }) =>
       apiFetch<void>(`/cadences/lead-cadences/${leadCadenceId}/resume`, token, {
         method: "PATCH",
       }),
@@ -358,7 +361,7 @@ export function useCancelLeadCadence() {
   const queryClient = useQueryClient();
   const token = useToken();
   return useMutation({
-    mutationFn: ({ leadCadenceId, leadId }: { leadCadenceId: string; leadId: string }) =>
+    mutationFn: ({ leadCadenceId }: { leadCadenceId: string; leadId: string }) =>
       apiFetch<void>(`/cadences/lead-cadences/${leadCadenceId}/cancel`, token, {
         method: "PATCH",
       }),

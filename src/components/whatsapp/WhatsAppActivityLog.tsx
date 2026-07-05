@@ -17,7 +17,7 @@ interface Props {
  */
 export default function WhatsAppActivityLog({ activityId, description, previewCount = 3 }: Props) {
   const { data: session } = useSession();
-  const token = (session?.user as any)?.accessToken ?? "";
+  const token = session?.user?.accessToken ?? "";
   const [mediaMessages, setMediaMessages] = useState<WhatsAppMediaMessage[]>([]);
 
   useEffect(() => {

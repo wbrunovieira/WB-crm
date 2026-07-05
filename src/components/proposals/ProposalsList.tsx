@@ -175,7 +175,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, lead
     };
   }, [agentProposalId, token, router]);
 
-  function handleAgentProposalCreated(proposalId: string, _jobId: string) {
+  function handleAgentProposalCreated(proposalId: string) {
     setAgentProposalId(proposalId);
     // Add a placeholder proposal immediately
     const placeholder: Proposal = {
@@ -196,7 +196,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, lead
   }
 
   // Correction: same proposal ID — update in place, don't add placeholder
-  function handleCorrectionStarted(proposalId: string, _jobId: string) {
+  function handleCorrectionStarted(proposalId: string) {
     setAgentProposalId(proposalId);
     setProposals((prev) =>
       prev.map((p) => p.id === proposalId ? { ...p, agentStatus: "processing" } : p)
@@ -224,7 +224,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, lead
     setProposals((prev) => [placeholder, ...prev]);
   }
 
-  function handleQuestionAnswered(_answer: string) {
+  function handleQuestionAnswered() {
     // Status will update via polling
     setProposals((prev) => prev.map((p) =>
       p.id === agentProposalId ? { ...p, agentStatus: "processing", agentCurrentQuestion: null } : p

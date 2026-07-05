@@ -3,7 +3,7 @@
 import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowDownUp, Calendar, Check, Loader2, MessageCircleReply, SkipForward, UserPlus, X, XCircle, Reply, Clock, Search, RefreshCcw } from "lucide-react";
+import { ArrowDownUp, Calendar, Check, Loader2, MessageCircleReply, SkipForward, UserPlus, X, XCircle, Clock, Search, RefreshCcw } from "lucide-react";
 import dynamic from "next/dynamic";
 const GmailComposeModal = dynamic(() => import("@/components/gmail/GmailComposeModal"), { ssr: false });
 import { formatDate } from "@/lib/utils";
@@ -734,7 +734,7 @@ export function LeadActivitiesList({
                             onToggle={() =>
                               setExpandedGroups((prev) => {
                                 const next = new Set(prev);
-                                next.has(groupKey) ? next.delete(groupKey) : next.add(groupKey);
+                                if (next.has(groupKey)) { next.delete(groupKey); } else { next.add(groupKey); }
                                 return next;
                               })
                             }
@@ -848,7 +848,7 @@ export function LeadActivitiesList({
                         onToggle={() =>
                           setExpandedGroups((prev) => {
                             const next = new Set(prev);
-                            next.has(groupKey) ? next.delete(groupKey) : next.add(groupKey);
+                            if (next.has(groupKey)) { next.delete(groupKey); } else { next.add(groupKey); }
                             return next;
                           })
                         }
@@ -934,7 +934,7 @@ export function LeadActivitiesList({
                             key={groupKey}
                             activities={item.activities}
                             expanded={expanded}
-                            onToggle={() => setExpandedGroups((prev) => { const next = new Set(prev); next.has(groupKey) ? next.delete(groupKey) : next.add(groupKey); return next; })}
+                            onToggle={() => setExpandedGroups((prev) => { const next = new Set(prev); if (next.has(groupKey)) { next.delete(groupKey); } else { next.add(groupKey); } return next; })}
                             renderItem={(activity) => {
                               const conn = skippedThreadConnectors.get(activity.id);
                               return (

@@ -168,7 +168,7 @@ export function useUpdateStage() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, pipelineId, ...payload }: UpdateStagePayload & { id: string; pipelineId: string }) =>
+    mutationFn: ({ id, ...payload }: UpdateStagePayload & { id: string; pipelineId: string }) =>
       apiFetch<{ id: string }>(`/pipelines/stages/${id}`, token, {
         method: "PATCH",
         body: JSON.stringify(payload),

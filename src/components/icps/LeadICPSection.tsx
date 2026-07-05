@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { Target, Plus, X, Loader2, ChevronDown, ChevronUp, Save, HelpCircle } from "lucide-react";
 import {
@@ -108,42 +108,6 @@ function Tooltip({ tip }: { tip: string }) {
       </div>
     </div>
   );
-}
-
-interface LeadICP {
-  id: string;
-  leadId: string;
-  icpId: string;
-  matchScore: number | null;
-  notes: string | null;
-  icpFitStatus: string | null;
-  realDecisionMaker: string | null;
-  realDecisionMakerOther: string | null;
-  perceivedUrgency: string | null;
-  businessMoment: string | null;
-  currentPlatforms: string | null;
-  fragmentationLevel: number | null;
-  mainDeclaredPain: string | null;
-  strategicDesire: string | null;
-  perceivedTechnicalComplexity: number | null;
-  purchaseTrigger: string | null;
-  nonClosingReason: string | null;
-  estimatedDecisionTime: string | null;
-  expansionPotential: number | null;
-  createdAt: Date;
-  icp: {
-    id: string;
-    name: string;
-    slug: string;
-    status: string;
-  };
-}
-
-interface ICP {
-  id: string;
-  name: string;
-  slug: string;
-  status: string;
 }
 
 interface LeadICPSectionProps {

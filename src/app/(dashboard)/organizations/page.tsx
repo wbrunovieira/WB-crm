@@ -19,7 +19,6 @@ export default async function OrganizationsPage({
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
   const currentUserId = session?.user?.id || "";
-  const hasHostingFilter = searchParams.hasHosting === "true" ? true : searchParams.hasHosting === "false" ? false : undefined;
 
   const orgQs = new URLSearchParams();
   if (searchParams.search) orgQs.set("search", searchParams.search);

@@ -57,7 +57,7 @@ export function EntityManagementPanel({
     } finally {
       setLoading(false);
     }
-  }, [entityType, entityId]);
+  }, [entityType, entityId, token]);
 
   useEffect(() => {
     loadSharedUsers();

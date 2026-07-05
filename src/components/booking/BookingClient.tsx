@@ -118,7 +118,6 @@ export function BookingClient({ token, backend, initial }: { token: string; back
   }, []);
   const tzShort = tz.split("/").pop()?.replace(/_/g, " ") ?? tz;
   const presentialAvailable = !!initial?.locationModes.includes("presential");
-  const isGeneric = !initial?.lead;
 
   const [mode, setMode] = useState<"online" | "presential">("online");
   const [address, setAddress] = useState(initial?.lead?.address ?? "");

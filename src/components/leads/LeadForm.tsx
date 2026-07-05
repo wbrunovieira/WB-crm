@@ -21,7 +21,7 @@ import { PresenceSelectField } from "@/components/leads/PresenceSelectField";
 import { StarRatingInput } from "@/components/leads/StarRatingInput";
 import { SourceGroupCombobox } from "@/components/leads/SourceGroupCombobox";
 
-import type { Lead, LeadFormProps, ContactFormData, LeadDuplicates, LeadSummary } from "./lead-form-types";
+import type { LeadFormProps, ContactFormData, LeadDuplicates, LeadSummary } from "./lead-form-types";
 import { emptyContact } from "./lead-form-types";
 import { DuplicateWarningPanel } from "./DuplicateWarningPanel";
 

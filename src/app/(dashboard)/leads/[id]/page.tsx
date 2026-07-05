@@ -58,8 +58,6 @@ import {
   Search,
   ShieldCheck,
   Package,
-  Layers,
-  Target,
   CalendarClock,
   BarChart2,
   Users,

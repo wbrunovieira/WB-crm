@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Zap, Archive, BrainCircuit, ChevronUp, ChevronDown, ChevronsUpDown, Star } from "lucide-react";
+import { Zap, Archive, BrainCircuit, ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
 import { DeleteLeadIconButton } from "@/components/leads/DeleteLeadIconButton";
 import { LeadNameCell } from "@/components/leads/LeadNameCell";
 import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";

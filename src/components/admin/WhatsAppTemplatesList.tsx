@@ -22,7 +22,7 @@ interface WhatsAppTemplatesListProps {
 
 export function WhatsAppTemplatesList({ templates }: WhatsAppTemplatesListProps) {
   const { data: session } = useSession();
-  const token = (session?.user as any)?.accessToken ?? "";
+  const token = session?.user?.accessToken ?? "";
   const [editingId, setEditingId] = useState<string | null>(null);
 
   // Group by category

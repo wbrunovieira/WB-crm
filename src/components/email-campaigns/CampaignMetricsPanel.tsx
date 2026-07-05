@@ -565,7 +565,7 @@ export function CampaignMetricsPanel({ metrics, recipientEngagement = [] }: { me
               </div>
 
               {filteredEngagement.length === 0 ? (
-                <div className="text-center py-6 text-gray-500 text-sm">Nenhum resultado para "{searchQuery}"</div>
+                <div className="text-center py-6 text-gray-500 text-sm">Nenhum resultado para &quot;{searchQuery}&quot;</div>
               ) : (
                 <div className="divide-y divide-gray-700/50">
                   {filteredEngagement.map((r) => (

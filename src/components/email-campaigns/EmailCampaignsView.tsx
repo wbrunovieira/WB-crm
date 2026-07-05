@@ -1,13 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 import {
   Mail, Plus, Play, Pause, BarChart2, Trash2, Users, ShieldOff,
-  ChevronDown, ChevronUp, Send, ArrowRight, CheckCircle, Clock, XCircle,
+  ChevronUp, Send, ArrowRight, CheckCircle, Clock, XCircle,
   FileCode, Search, Group, UserPlus, Zap, ListChecks, Pencil,
 } from "lucide-react";
 import { CampaignMetricsPanel, type CampaignMetrics } from "./CampaignMetricsPanel";
@@ -21,7 +20,6 @@ import { StatusBadge } from "./StatusBadge";
 // ── Main view ─────────────────────────────────────────────────────────────────
 
 export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: initialSuppressions }: Props) {
-  const router = useRouter();
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
 
@@ -205,7 +203,11 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
   const toggleCandidate = (candidate: RecipientCandidate) => {
     setSelectedCandidates((prev) => {
       const next = new Map(prev);
-      next.has(candidate.key) ? next.delete(candidate.key) : next.set(candidate.key, candidate);
+      if (next.has(candidate.key)) {
+        next.delete(candidate.key);
+      } else {
+        next.set(candidate.key, candidate);
+      }
       return next;
     });
   };

@@ -110,42 +110,6 @@ function Tooltip({ tip }: { tip: string }) {
   );
 }
 
-interface OrganizationICP {
-  id: string;
-  organizationId: string;
-  icpId: string;
-  matchScore: number | null;
-  notes: string | null;
-  icpFitStatus: string | null;
-  realDecisionMaker: string | null;
-  realDecisionMakerOther: string | null;
-  perceivedUrgency: string | null;
-  businessMoment: string | null;
-  currentPlatforms: string | null;
-  fragmentationLevel: number | null;
-  mainDeclaredPain: string | null;
-  strategicDesire: string | null;
-  perceivedTechnicalComplexity: number | null;
-  purchaseTrigger: string | null;
-  nonClosingReason: string | null;
-  estimatedDecisionTime: string | null;
-  expansionPotential: number | null;
-  createdAt: Date;
-  icp: {
-    id: string;
-    name: string;
-    slug: string;
-    status: string;
-  };
-}
-
-interface ICP {
-  id: string;
-  name: string;
-  slug: string;
-  status: string;
-}
-
 interface OrganizationICPSectionProps {
   organizationId: string;
 }

@@ -73,7 +73,7 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
     }, 300);
 
     return () => clearTimeout(searchTimer);
-  }, [query, cnaes]);
+  }, [query, cnaes, token]);
 
   const handleAdd = async (cnaeId: string) => {
     setAdding(cnaeId);

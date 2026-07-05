@@ -3,19 +3,9 @@
 import { useState, useMemo } from "react";
 import { TechProfileGenericForm } from "./TechProfileGenericForm";
 import { TechProfileGenericList } from "./TechProfileGenericList";
-import { useTechOptions, type TechOptionType } from "@/hooks/admin/use-admin";
+import { useTechOptions } from "@/hooks/admin/use-admin";
 
 type Tab = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
-
-const TYPE_MAP: Record<Tab, TechOptionType> = {
-  languages: "profile-language",
-  frameworks: "profile-framework",
-  hosting: "profile-hosting",
-  databases: "profile-database",
-  erps: "profile-erp",
-  crms: "profile-crm",
-  ecommerces: "profile-ecommerce",
-};
 
 export function TechProfileManager() {
   const [activeTab, setActiveTab] = useState<Tab>("languages");

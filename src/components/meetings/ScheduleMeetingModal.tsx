@@ -18,7 +18,7 @@ export interface MeetingInitialData {
   description?: string;
   startAt: Date;
   endAt: Date | null;
-  attendeeEmails: string | any[]; // JSON string or parsed array
+  attendeeEmails: string | (string | { email: string })[]; // JSON string or parsed array
 }
 
 interface Props {
@@ -141,7 +141,11 @@ export default function ScheduleMeetingModal({
   function toggleContact(id: string) {
     setSelectedContactIds((prev) => {
       const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
       return next;
     });
   }

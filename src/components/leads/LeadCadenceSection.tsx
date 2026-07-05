@@ -88,7 +88,7 @@ export function LeadCadenceSection({ leadId, isConverted = false }: LeadCadenceS
       }
     }
     loadCadences();
-  }, [leadId]);
+  }, [leadId, token]);
 
   const handlePause = async (id: string) => {
     const confirmed = await confirm({

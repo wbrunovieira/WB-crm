@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, MapPin, User, Phone, Mail, Calendar, Clock, Check, Loader2, ChevronDown } from "lucide-react";
+import { X, MapPin, User, Phone, Mail, Calendar, Check, Loader2, ChevronDown } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
@@ -142,8 +142,8 @@ export default function SchedulePresentialMeetingModal({
       toast.success("Reunião presencial agendada!");
       onCreated();
       onClose();
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro ao agendar reunião");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao agendar reunião");
     } finally {
       setSubmitting(false);
     }

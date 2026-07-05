@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type PeriodOption } from "@/lib/validations/manager";
@@ -47,7 +47,6 @@ export function DateRangePicker({
   dayOffset = 0,
 }: DateRangePickerProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [showCustom, setShowCustom] = useState(currentPeriod === "custom");
   const [customStart, setCustomStart] = useState(startDate || "");
   const [customEnd, setCustomEnd] = useState(endDate || "");

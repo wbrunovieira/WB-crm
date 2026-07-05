@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { X } from "lucide-react";
@@ -47,13 +47,7 @@ export function AddProductToDealModal({
   const [description, setDescription] = useState("");
   const [deliveryTime, setDeliveryTime] = useState<number | undefined>();
 
-  useEffect(() => {
-    if (isOpen && token) {
-      loadProducts();
-    }
-  }, [isOpen, token]);
-
-  const loadProducts = async () => {
+  const loadProducts = useCallback(async () => {
     try {
       const data = await apiFetch<Product[]>("/admin/products?active=true", token);
       setProducts(data);
@@ -63,7 +57,13 @@ export function AddProductToDealModal({
     } finally {
       setLoading(false);
     }
-  };
+  }, [token]);
+
+  useEffect(() => {
+    if (isOpen && token) {
+      loadProducts();
+    }
+  }, [isOpen, token, loadProducts]);
 
   const handleProductChange = (productId: string) => {
     setSelectedProductId(productId);

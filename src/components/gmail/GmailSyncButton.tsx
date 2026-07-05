@@ -11,7 +11,7 @@ interface GmailSyncButtonProps {
   revalidateUrl?: string;
 }
 
-export default function GmailSyncButton({ revalidateUrl: _revalidateUrl }: GmailSyncButtonProps) {
+export default function GmailSyncButton({}: GmailSyncButtonProps) {
   const [syncing, setSyncing] = useState(false);
   const router = useRouter();
   const { data: session } = useSession();

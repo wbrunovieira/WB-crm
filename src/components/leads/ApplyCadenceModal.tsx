@@ -56,7 +56,7 @@ export function ApplyCadenceModal({ leadId, onClose, onSuccess }: ApplyCadenceMo
       }
     }
     loadCadences();
-  }, [leadId]);
+  }, [leadId, token]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

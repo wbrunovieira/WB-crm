@@ -17,8 +17,6 @@ interface SharedUsersListProps {
 }
 
 export function SharedUsersList({
-  entityType: _entityType,
-  entityId: _entityId,
   sharedUsers,
   isAdmin,
   onUnshared,

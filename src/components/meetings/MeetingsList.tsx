@@ -22,8 +22,7 @@ import {
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
-import { formatDate } from "@/lib/utils";
-import ScheduleMeetingModal, { type SuggestedContact, type MeetingInitialData } from "./ScheduleMeetingModal";
+import ScheduleMeetingModal, { type SuggestedContact } from "./ScheduleMeetingModal";
 import SchedulePresentialMeetingModal, { type PresentialContact } from "./SchedulePresentialMeetingModal";
 import { EditEndedMeetingModal } from "./EditEndedMeetingModal";
 
@@ -36,7 +35,7 @@ export interface Meeting {
   endAt: string | Date | null;
   actualStartAt: string | Date | null;
   actualEndAt: string | Date | null;
-  attendeeEmails: string | any[]; // JSON string or parsed array
+  attendeeEmails: string | (string | Attendee)[]; // JSON string or parsed array
   status: string; // scheduled | ended | cancelled
   recordingDriveId: string | null;
   recordingUrl: string | null;
@@ -121,7 +120,7 @@ const RSVP_CONFIG: Record<
   needsAction: { label: "Pendente",   color: "bg-[#2d1b3d] text-gray-400" },
 };
 
-function parseAttendees(raw: string | any[]): Attendee[] {
+function parseAttendees(raw: string | (string | Attendee)[]): Attendee[] {
   try {
     const parsed = Array.isArray(raw) ? raw : JSON.parse(raw as string);
     if (Array.isArray(parsed) && parsed.length > 0) {
@@ -519,8 +518,8 @@ function MeetingCard({
       const data = await res.json();
       onUploaded?.(meeting.id, data.transcriptionJobId ?? "uploaded");
       toast.success("Áudio enviado para transcrição!");
-    } catch (err: any) {
-      toast.error(err?.message ?? "Erro ao enviar áudio");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Erro ao enviar áudio");
     } finally {
       setUploading(false);
     }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
 import { X, CheckCircle2, Plus, Loader2 } from "lucide-react";
@@ -34,17 +34,17 @@ export function CompleteWithReasonModal({
   const [savingNew, setSavingNew] = useState(false);
   const [loadingReasons, setLoadingReasons] = useState(true);
 
-  const fetchReasons = async () => {
+  const fetchReasons = useCallback(async () => {
     const data = await apiFetch<{ id: string; name: string }[]>("/disqualification-reasons", token);
     const customNames = data.map((r) => r.name);
     const defaults = DEFAULT_DISQUALIFICATION_REASONS.filter((d) => !customNames.includes(d));
     return [...defaults, ...customNames];
-  };
+  }, [token]);
 
   useEffect(() => {
     if (!token) return;
     fetchReasons().then(setReasons).finally(() => setLoadingReasons(false));
-  }, [token]);
+  }, [token, fetchReasons]);
 
   async function handleAddReason() {
     const trimmed = newReason.trim();

@@ -46,7 +46,7 @@ export function ShareDialog({
     } finally {
       setLoading(false);
     }
-  }, [entityType, entityId]);
+  }, [entityType, entityId, token]);
 
   useEffect(() => {
     if (isOpen) {

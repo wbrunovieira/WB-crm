@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useLabels, useCreateLabel, type Label } from "@/hooks/labels/use-labels";
+import { useLabels, useCreateLabel } from "@/hooks/labels/use-labels";
 
 interface MultiLabelSelectProps {
   value: string[];

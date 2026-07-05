@@ -15,7 +15,7 @@ import { apiFetch } from "@/lib/api-client";
 import { toast } from "sonner";
 import {
   Play, Square, MessageSquare, Clock, GitBranch,
-  Tag, Zap, ZapOff, Save, ArrowLeft, X, Plus, Trash2, Type,
+  Tag, Zap, ZapOff, Save, ArrowLeft, X, Trash2, Type,
 } from "lucide-react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -26,6 +26,13 @@ type ConditionType = "contains" | "exact" | "regex" | "number_range" | "default"
 interface NodeData {
   nodeType: NodeType;
   config: Record<string, unknown>;
+  label?: string;
+  [key: string]: unknown;
+}
+
+interface EdgeData {
+  conditionType?: string;
+  conditionValue?: string;
   label?: string;
   [key: string]: unknown;
 }
@@ -114,7 +121,7 @@ function FlowNode({ data, selected }: NodeProps) {
 
 function LabeledEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, data, markerEnd, style }: EdgeProps) {
   const [edgePath, labelX, labelY] = getBezierPath({ sourceX, sourceY, sourcePosition, targetX, targetY, targetPosition });
-  const label = (data as any)?.label as string | undefined;
+  const label = (data as EdgeData | undefined)?.label;
 
   return (
     <>
@@ -137,13 +144,12 @@ const edgeTypes = { labeled: LabeledEdge };
 // ── Config panel ──────────────────────────────────────────────────────────────
 
 function ConfigPanel({
-  node, edges, onUpdate, onDelete, onAddEdge, onUpdateEdge, onDeleteEdge, allNodes,
+  node, edges, onUpdate, onDelete, onUpdateEdge, onDeleteEdge, allNodes,
 }: {
   node: Node<NodeData>;
   edges: Edge[];
   onUpdate: (id: string, data: Partial<NodeData>) => void;
   onDelete: (id: string) => void;
-  onAddEdge: (edge: Partial<Edge>) => void;
   onUpdateEdge: (id: string, data: Partial<Record<string, unknown>>) => void;
   onDeleteEdge: (id: string) => void;
   allNodes: Node<NodeData>[];
@@ -420,9 +426,9 @@ export function BotFlowEditor({ flow: initial }: { flow: BotFlowData }) {
           id: e.id,
           sourceNodeId: e.source,
           targetNodeId: e.target,
-          conditionType: (e.data as any)?.conditionType || undefined,
-          conditionValue: (e.data as any)?.conditionValue || undefined,
-          label: (e.data as any)?.label || undefined,
+          conditionType: (e.data as EdgeData | undefined)?.conditionType || undefined,
+          conditionValue: (e.data as EdgeData | undefined)?.conditionValue || undefined,
+          label: (e.data as EdgeData | undefined)?.label || undefined,
         })),
         name: flow.name,
         description: flow.description,
@@ -522,7 +528,6 @@ export function BotFlowEditor({ flow: initial }: { flow: BotFlowData }) {
             edges={edges}
             onUpdate={updateNodeData}
             onDelete={deleteNode}
-            onAddEdge={(edge) => setEdges((eds) => [...eds, edge as Edge])}
             onUpdateEdge={updateEdgeData}
             onDeleteEdge={deleteEdge}
             allNodes={nodes as Node<NodeData>[]}

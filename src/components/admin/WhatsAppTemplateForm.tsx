@@ -18,7 +18,7 @@ interface WhatsAppTemplateFormProps {
 
 export function WhatsAppTemplateForm({ template, onSuccess }: WhatsAppTemplateFormProps) {
   const { data: session } = useSession();
-  const token = (session?.user as any)?.accessToken ?? "";
+  const token = session?.user?.accessToken ?? "";
   const [name, setName] = useState(template?.name ?? "");
   const [text, setText] = useState(template?.text ?? "");
   const [category, setCategory] = useState(template?.category ?? "");

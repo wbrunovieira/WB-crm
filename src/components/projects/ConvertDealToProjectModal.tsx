@@ -78,7 +78,7 @@ export function ConvertDealToProjectModal({
 
       // Vincular projeto à organização se existir
       if (organizationId && project.id) {
-        const token = (session?.user as any)?.accessToken;
+        const token = session?.user?.accessToken ?? "";
         await apiFetch(`/organizations/${organizationId}/projects/${project.id}`, token, { method: "POST" });
       }
 

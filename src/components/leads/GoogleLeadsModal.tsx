@@ -216,7 +216,7 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
     let imported = 0;
     let skipped = 0;
     let pageToken: string | undefined;
-    let newlySeenIds: string[] = [];
+    const newlySeenIds: string[] = [];
     let fetchedPlaceIds: string[] = [];
     let searchProfileId: string | undefined;
 

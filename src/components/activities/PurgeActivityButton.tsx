@@ -10,7 +10,7 @@ export default function PurgeActivityButton({ activityId, onPurged }: { activity
   const { data: session } = useSession();
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
-  const token = (session?.user as any)?.accessToken ?? "";
+  const token = session?.user?.accessToken ?? "";
 
   if (session?.user?.role !== "admin") return null;
 

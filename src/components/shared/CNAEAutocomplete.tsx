@@ -66,7 +66,7 @@ export function CNAEAutocomplete({
     }, 300);
 
     return () => clearTimeout(searchTimer);
-  }, [query]);
+  }, [query, token]);
 
   const handleSelect = (cnae: CNAE) => {
     onChange(cnae);

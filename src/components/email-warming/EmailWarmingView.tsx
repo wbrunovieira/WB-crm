@@ -50,7 +50,6 @@ export function EmailWarmingView({ accounts, poolEmails, history, historyTotal }
 
   const [activeTab, setActiveTab] = useState<Tab>("painel");
   const [newEmail, setNewEmail] = useState("");
-  const [newName, setNewName] = useState("");
   const [newPoolEmail, setNewPoolEmail] = useState("");
   const [newPoolName, setNewPoolName] = useState("");
   const [isRunning, setIsRunning] = useState(false);

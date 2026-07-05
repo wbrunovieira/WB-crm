@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { BACKEND_URL } from "@/lib/api-client";
 

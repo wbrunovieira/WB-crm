@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { useSession } from "next-auth/react";
 import { apiFetch } from "@/lib/api-client";
@@ -31,7 +31,7 @@ export function PresenceSelectField({
   const [newOption, setNewOption] = useState("");
   const [saving, setSaving] = useState(false);
 
-  async function loadOptions() {
+  const loadOptions = useCallback(async () => {
     const custom = await apiFetch<Array<{ name: string }>>(
       `/leads/dropdown-options?category=${encodeURIComponent(category)}`,
       token,
@@ -41,11 +41,11 @@ export function PresenceSelectField({
       .filter((c) => !defaultValues.includes(c.name))
       .map((c) => ({ value: c.name, label: c.name }));
     setOptions([...DEFAULT_DIGITAL_PRESENCE_OPTIONS, ...filteredCustom]);
-  }
+  }, [category, token]);
 
   useEffect(() => {
     if (token) loadOptions();
-  }, [category, token]);
+  }, [category, token, loadOptions]);
 
   async function handleAdd() {
     const trimmed = newOption.trim();

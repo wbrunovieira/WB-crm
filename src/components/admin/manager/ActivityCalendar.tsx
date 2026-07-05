@@ -65,7 +65,7 @@ export function ActivityCalendar() {
     } finally {
       setLoading(false);
     }
-  }, [year, month]);
+  }, [year, month, token]);
 
   useEffect(() => {
     fetchData();

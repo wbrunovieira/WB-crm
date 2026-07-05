@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Target, Users, Calendar, Zap } from "lucide-react";
+import { Users, Calendar, Zap } from "lucide-react";
 import { backendFetch } from "@/lib/backend/client";
 import { CadenceStepForm } from "@/components/admin/CadenceStepForm";
 import { CadenceStepsList } from "@/components/admin/CadenceStepsList";
