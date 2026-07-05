@@ -18,8 +18,14 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
-    // channel: "chrome" usa o Google Chrome do sistema (evita baixar o chromium do Playwright).
-    { name: "chrome", use: { ...devices["Desktop Chrome"], channel: "chrome" } },
+    // Local: usa o Google Chrome do sistema (channel: "chrome") — não baixa o chromium.
+    // No CI (Linux): usa o chromium do Playwright (instalado no workflow), sem channel.
+    {
+      name: "chromium",
+      use: process.env.CI
+        ? { ...devices["Desktop Chrome"] }
+        : { ...devices["Desktop Chrome"], channel: "chrome" },
+    },
   ],
   webServer: {
     command: `npm run dev -- -p ${PORT}`,

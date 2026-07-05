@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Um run por ref; cancela o anterior ao empurrar de novo.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: "20"
+  # Segredos dummy/de teste — NUNCA reais. Só pra o app bootar em CI.
+  JWT_SECRET: ci-dummy-jwt-secret
+  NEXTAUTH_SECRET: ci-dummy-nextauth-secret
+  NEXTAUTH_URL: http://localhost:3000
+  WEBHOOK_SECRET: ci-dummy-webhook-secret
+  BACKEND_URL: http://localhost:3010
+  NEXT_PUBLIC_BACKEND_URL: http://localhost:3010
+
+jobs:
+  # ── Frontend: lint + unit (Vitest) + build (typecheck). Sem DB. Deve ser sempre verde. ──
+  frontend:
+    name: Frontend (lint · unit · build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Lint (next lint)
+        run: npm run lint
+      - name: Unit tests (Vitest)
+        run: npx vitest run
+      - name: Build (next build)
+        run: npm run build
+
+  # ── Backend: build (nest/tsc) + unit (Vitest, in-memory). Sem DB. Deve ser sempre verde. ──
+  backend:
+    name: Backend (build · unit)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Prisma generate
+        run: npx prisma generate
+      - name: Build (nest build)
+        run: npm run build
+      - name: Unit tests (Vitest)
+        run: npm test
+
+  # ── Backend E2E: Postgres + prisma db push + suíte e2e (NestJS + DB real). ──
+  backend-e2e:
+    name: Backend E2E (Postgres)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: crm
+          POSTGRES_PASSWORD: crm
+          POSTGRES_DB: crm_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      DATABASE_URL: postgresql://crm:crm@localhost:5432/crm_test
+      TEST_DATABASE_URL: postgresql://crm:crm@localhost:5432/crm_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+      - run: npm ci
+      - name: Prisma generate
+        run: npx prisma generate
+      # As migrations não criam o schema do zero (base histórica veio de db push);
+      # para um DB de teste efêmero, db push materializa o schema atual.
+      - name: Create schema (prisma db push)
+        run: npx prisma db push --skip-generate
+      - name: E2E tests (Vitest)
+        run: npm run test:e2e
+
+  # ── Frontend E2E: Playwright (login smoke, client-only — sobe o next dev sozinho). ──
+  e2e-frontend:
+    name: Frontend E2E (Playwright)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: package-lock.json
+      - run: npm ci
+      - name: Install Playwright chromium
+        run: npx playwright install --with-deps chromium
+      - name: E2E tests (Playwright)
+        run: npm run test:e2e
+      - name: Upload Playwright report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 7

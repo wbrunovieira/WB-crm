@@ -2,6 +2,9 @@
 
 **Production-grade B2B sales CRM** — full-stack, architected with Domain-Driven Design and backed by **600+ automated tests**. Runs the whole sales cycle on a drag-and-drop kanban pipeline, with AI call/meeting analysis, a visual bot-flow builder, and native Google (Gmail, Meet, Places) integrations.
 
+[![CI](https://github.com/wbrunovieira/WB-crm/actions/workflows/ci.yml/badge.svg)](https://github.com/wbrunovieira/WB-crm/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
+
 ![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-000000?logo=next.js&logoColor=white)
 ![NestJS](https://img.shields.io/badge/NestJS-E0234E?logo=nestjs&logoColor=white)
@@ -69,7 +72,7 @@ docker compose up -d
 # 3. Install deps + run migrations
 npm install
 npm --prefix backend install
-npm --prefix backend run prisma:migrate   # or: npx prisma migrate dev
+npm --prefix backend run db:migrate      # applies Prisma migrations (backend owns the schema)
 
 # 4. Run frontend + backend
 npm run dev
@@ -78,12 +81,18 @@ npm run dev
 ## Tests
 
 ```bash
-npm run test            # everything
+npm run test            # everything (frontend + backend unit)
 npm run test:unit       # Vitest unit tests
-npm run test:e2e        # Playwright end-to-end
+npm run test:e2e        # Playwright end-to-end (boots next dev on its own)
 npm run test:coverage   # coverage report
 ```
+
+CI (GitHub Actions) runs on every push/PR to `main`: **lint → unit → build → E2E** (Playwright frontend + backend against Postgres). See [`.github/workflows/ci.yml`](./.github/workflows/ci.yml).
 
 ## Documentation
 
 See [`docs/`](docs/): project architecture (`arquitetura-projeto.md`), API reference (`docs/api/`), the testing plan, and integration plans (Google, WhatsApp/Evolution, GoTo Connect).
+
+## License
+
+[MIT](./LICENSE) © Bruno Vieira
