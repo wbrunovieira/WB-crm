@@ -3,6 +3,10 @@ import { defineConfig } from "vitest/config";
 import { resolve } from "node:path";
 
 export default defineConfig({
+  // Config PostCSS inline vazia: impede o Vite de subir diretórios e achar o
+  // postcss.config.mjs da raiz (que requer @tailwindcss/postcss — inexistente
+  // quando só backend/node_modules está instalado, como no CI). Backend não tem CSS.
+  css: { postcss: { plugins: [] } },
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),

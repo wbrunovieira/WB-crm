@@ -23,6 +23,8 @@ function loadEnv(): Record<string, string> {
 const envFile = loadEnv();
 
 export default defineConfig({
+  // Evita a descoberta ascendente do postcss.config.mjs da raiz (ver vitest.config.ts).
+  css: { postcss: { plugins: [] } },
   resolve: {
     alias: {
       "@": resolve(__dirname, "src"),
