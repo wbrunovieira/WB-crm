@@ -33,7 +33,7 @@
         cd {{ app_dir }} && \
         git fetch origin {{ github_branch }} && \
         git reset --hard origin/{{ github_branch }} && \
-        git log -1 --oneline
+        git --no-pager log -1 --oneline
       register: git_result
 
     - name: Commit deployado

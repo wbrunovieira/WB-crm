@@ -94,7 +94,7 @@
       raw: |
         cd {{ app_dir }} && \
         git reset --hard HEAD~{{ commits_back }} && \
-        git log -1 --oneline
+        git --no-pager log -1 --oneline
       register: git_revert
 
     - name: Display reverted commit

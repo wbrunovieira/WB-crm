@@ -42,7 +42,7 @@
       raw: |
         cd {{ app_dir }} && \
         git reset --hard origin/{{ github_branch }} && \
-        git log -1 --oneline
+        git --no-pager log -1 --oneline
       register: git_pull
 
     - name: Display commit
