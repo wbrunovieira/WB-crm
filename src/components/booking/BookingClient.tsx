@@ -12,7 +12,7 @@ interface BookingData {
 }
 
 const LOGO_WB_WHITE = "https://crm.wbdigitalsolutions.com/email-assets/logo-wb-white.svg";
-const LOGO_SALTO = "https://crm.wbdigitalsolutions.com/email-assets/logo-salto.svg";
+const WB_SITE = "https://www.wbdigitalsolutions.com";
 const WB = "#792990"; // cor de destaque da WB
 
 const display = { fontFamily: "var(--font-display), Georgia, serif" } as const;
@@ -34,20 +34,14 @@ function Atmosphere() {
   );
 }
 
-/* Footer co-marca (WB + Salto) — nível de módulo p/ não remontar a cada tecla. */
+/* Footer — logo WB (link para o site), nível de módulo p/ não remontar a cada tecla. */
 function Footer() {
   return (
     <div className="mt-10 flex flex-col items-center gap-3 pb-2 text-center">
-      <div className="flex items-center gap-5">
+      <a href={WB_SITE} target="_blank" rel="noreferrer" className="transition hover:opacity-80">
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={LOGO_WB_WHITE} alt="WB Digital Solutions" height={28} style={{ height: 28, width: "auto" }} />
-        <span className="h-7 w-px bg-white/25" />
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={LOGO_SALTO} alt="Salto" height={26} style={{ height: 26, width: "auto" }} />
-      </div>
-      <span className="max-w-sm text-[12.5px] leading-relaxed text-white/70">
-        WB Digital Solutions e Salto — <span className="font-medium text-white/90">a mesma equipe</span>. Você pode nos conhecer por qualquer um dos dois nomes.
-      </span>
+      </a>
     </div>
   );
 }
@@ -388,8 +382,10 @@ export function BookingClient({ token, backend, initial }: { token: string; back
 function Brand() {
   return (
     <div className="flex flex-col items-center">
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={LOGO_WB_WHITE} alt="WB Digital Solutions" height={60} style={{ height: 60, width: "auto" }} />
+      <a href={WB_SITE} target="_blank" rel="noreferrer" className="transition hover:opacity-80">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={LOGO_WB_WHITE} alt="WB Digital Solutions" height={60} style={{ height: 60, width: "auto" }} />
+      </a>
       <div className="mt-3 flex items-center gap-2.5">
         <span className="h-px w-7 bg-white/25" />
         <span className="text-[10.5px] font-medium uppercase tracking-[0.32em] text-white/70">Agendamento</span>

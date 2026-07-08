@@ -20,16 +20,17 @@ async function fetchBooking(token: string) {
 export async function generateMetadata({ params }: { params: { token: string } }): Promise<Metadata> {
   const data = await fetchBooking(params.token);
   const title = data?.bookingType?.name
-    ? `Agende: ${data.bookingType.name} — WB Digital Solutions`
-    : "Agendar uma reunião — WB Digital Solutions";
+    ? `${data.bookingType.name} — WB Digital Solutions`
+    : "Agende uma conversa — WB Digital Solutions";
   const description = data?.lead?.name
-    ? `${data.lead.name}, escolha o melhor horário para conversarmos. Rápido e sem compromisso.`
-    : "Escolha o melhor horário para conversarmos. Rápido e sem compromisso.";
+    ? `${data.lead.name}, escolha o melhor horário para a gente conversar — leva 1 minuto, sem compromisso.`
+    : "Escolha o melhor horário para a gente conversar — leva 1 minuto, sem compromisso.";
   return {
     title,
     description,
     openGraph: { title, description, type: "website", siteName: "WB Digital Solutions" },
-    twitter: { card: "summary_large_image", title, description },
+    // "summary" (não large): reforça o card COMPACTO no WhatsApp/Twitter.
+    twitter: { card: "summary", title, description },
   };
 }
 

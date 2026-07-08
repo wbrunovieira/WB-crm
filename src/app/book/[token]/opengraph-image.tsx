@@ -1,10 +1,28 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Agende uma reunião com a WB Digital Solutions";
-export const size = { width: 1200, height: 630 };
+export const alt = "WB Digital Solutions";
+// Quadrado e pequeno (<300px) de propósito: faz o WhatsApp mostrar o card COMPACTO
+// (miniatura + texto), não o banner grande. Mantém o visual de marca no thumbnail.
+export const size = { width: 256, height: 256 };
 export const contentType = "image/png";
 
-export default function Og() {
+const LOGO_URL = "https://crm.wbdigitalsolutions.com/email-assets/logo-wb-white.svg";
+
+export default async function Og() {
+  let logoSrc: string | null = null;
+  try {
+    const res = await fetch(LOGO_URL);
+    if (res.ok) {
+      const svg = await res.text();
+      logoSrc = `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`;
+    }
+  } catch {
+    logoSrc = null;
+  }
+
+  const logoW = 190;
+  const logoH = Math.round((logoW * 91) / 245); // mantém a proporção do logo (245×91)
+
   return new ImageResponse(
     (
       <div
@@ -12,23 +30,35 @@ export default function Og() {
           height: "100%",
           width: "100%",
           display: "flex",
-          flexDirection: "column",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #350045 0%, #792990 100%)",
-          color: "white",
-          fontFamily: "sans-serif",
-          padding: 60,
-          textAlign: "center",
+          background:
+            "radial-gradient(120% 90% at 50% -10%, #4a0a5e 0%, #350045 45%, #240030 100%)",
         }}
       >
-        <div style={{ fontSize: 38, opacity: 0.85, marginBottom: 20, letterSpacing: 2 }}>
-          WB DIGITAL SOLUTIONS
-        </div>
-        <div style={{ fontSize: 84, fontWeight: 800 }}>Agende uma reunião</div>
-        <div style={{ fontSize: 32, opacity: 0.85, marginTop: 28 }}>
-          Escolha o melhor horário — rápido e sem compromisso
-        </div>
+        {logoSrc ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logoSrc}
+            width={logoW}
+            height={logoH}
+            alt="WB Digital Solutions"
+            style={{ borderRadius: 16, boxShadow: "0 12px 34px rgba(0,0,0,0.45)" }}
+          />
+        ) : (
+          <div
+            style={{
+              display: "flex",
+              fontSize: 72,
+              fontWeight: 800,
+              color: "white",
+              letterSpacing: 4,
+              fontFamily: "sans-serif",
+            }}
+          >
+            WB
+          </div>
+        )}
       </div>
     ),
     { ...size },

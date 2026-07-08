@@ -12,7 +12,7 @@ interface ManageData {
 
 const LOGO_WB_WHITE = "https://crm.wbdigitalsolutions.com/email-assets/logo-wb-white.svg";
 const LOGO_WB = "https://crm.wbdigitalsolutions.com/email-assets/logo-wb.svg";
-const LOGO_SALTO_DARK = "https://crm.wbdigitalsolutions.com/email-assets/logo-salto-dark.svg";
+const WB_SITE = "https://www.wbdigitalsolutions.com";
 const display = { fontFamily: "var(--font-display), Georgia, serif" } as const;
 const bodyFont = { fontFamily: "var(--font-body), system-ui, sans-serif" } as const;
 
@@ -62,21 +62,17 @@ export function ManageClient({ manageToken, backend, initial }: { manageToken: s
       <Atmosphere />
       <div className="relative mx-auto flex min-h-screen w-full max-w-xl flex-col px-5 py-12 sm:py-16">
         <div className="flex flex-col items-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={LOGO_WB_WHITE} alt="WB Digital Solutions" height={52} style={{ height: 52, width: "auto" }} />
+          <a href={WB_SITE} target="_blank" rel="noreferrer" className="transition hover:opacity-80">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={LOGO_WB_WHITE} alt="WB Digital Solutions" height={52} style={{ height: 52, width: "auto" }} />
+          </a>
         </div>
         <div className="mt-9">{children}</div>
         <div className="mt-auto flex flex-col items-center gap-3 pt-10 text-center">
-          <div className="flex items-center gap-4 rounded-full bg-white px-6 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+          <a href={WB_SITE} target="_blank" rel="noreferrer" className="flex items-center gap-4 rounded-full bg-white px-6 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)] transition hover:opacity-90">
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={LOGO_WB} alt="WB Digital Solutions" height={26} style={{ height: 26, width: "auto" }} />
-            <span className="h-6 w-px bg-[#350045]/15" />
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={LOGO_SALTO_DARK} alt="Salto" height={24} style={{ height: 24, width: "auto" }} />
-          </div>
-          <span className="max-w-sm text-[12.5px] leading-relaxed text-white/70">
-            WB Digital Solutions e Salto — <span className="font-medium text-white/85">a mesma equipe</span>.
-          </span>
+          </a>
         </div>
       </div>
     </div>
