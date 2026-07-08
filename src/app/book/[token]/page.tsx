@@ -23,9 +23,14 @@ export async function generateMetadata({ params }: { params: { token: string } }
     ? `${data.bookingType.name} — WB Digital Solutions`
     : "Agende uma conversa — WB Digital Solutions";
   const description = data?.lead?.name
-    ? `${data.lead.name}, escolha o melhor horário para a gente conversar — leva 1 minuto, sem compromisso.`
-    : "Escolha o melhor horário para a gente conversar — leva 1 minuto, sem compromisso.";
+    ? `${data.lead.name}, escolha o melhor horário para a gente conversar — leva 1 minuto.`
+    : "Escolha o melhor horário para a gente conversar — leva 1 minuto.";
   return {
+    // Sem isto o Next resolve og:image contra http://localhost:3000 (default) e o
+    // WhatsApp não consegue buscar a imagem. Aponta pro domínio público do agendamento.
+    metadataBase: new URL(
+      process.env.NEXT_PUBLIC_BOOKING_BASE_URL ?? "https://agenda.wbdigitalsolutions.com",
+    ),
     title,
     description,
     openGraph: { title, description, type: "website", siteName: "WB Digital Solutions" },
