@@ -7,6 +7,7 @@ import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeletePartnerButton } from "@/components/partners/DeletePartnerButton";
+import { CopyBookingLinkButton } from "@/components/partners/CopyBookingLinkButton";
 import { formatDate } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -41,7 +42,8 @@ export default async function PartnerDetailPage({
           <h1 className="text-3xl font-bold">{partner.name}</h1>
           <p className="mt-2 text-gray-600">{partner.partnerType}</p>
         </div>
-        <div className="flex gap-4">
+        <div className="flex items-center gap-4">
+          <CopyBookingLinkButton partnerId={partner.id} />
           <DeletePartnerButton partnerId={partner.id} />
           <Link
             href={`/partners/${partner.id}/edit`}

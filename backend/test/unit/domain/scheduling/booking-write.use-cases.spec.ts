@@ -26,7 +26,9 @@ const TYPE: BookingTypeRecord = {
   presentialCities: [{ city: "Teresópolis", state: "RJ" }], active: true,
 };
 const LEAD: BookingLead = { id: "lead1", name: "Padaria X", email: "x@x.com", city: "Teresópolis", state: "RJ", address: "Rua A, 100" };
-const LINK: BookingLinkRecord = { id: "l1", token: "abc", ownerId: "owner1", bookingTypeId: "bt1", leadId: "lead1", contactId: null, label: null, active: true, expiresAt: null };
+const PARTNER: BookingLead = { id: "partner1", name: "Agência Z", email: "contato@agenciaz.com", city: "Teresópolis", state: "RJ", address: "Av. B, 200" };
+const LINK: BookingLinkRecord = { id: "l1", token: "abc", ownerId: "owner1", bookingTypeId: "bt1", leadId: "lead1", contactId: null, partnerId: null, label: null, active: true, expiresAt: null };
+const PARTNER_LINK: BookingLinkRecord = { id: "lp", token: "prt", ownerId: "owner1", bookingTypeId: "bt1", leadId: null, contactId: null, partnerId: "partner1", label: null, active: true, expiresAt: null };
 
 class FakeTypes extends BookingTypesRepository { async findById(id: string) { return id === TYPE.id ? TYPE : null; } }
 class FakeLinks extends BookingLinksRepository {
@@ -37,11 +39,13 @@ class FakeLinks extends BookingLinksRepository {
 class FakeFreeBusy extends CalendarFreeBusyPort { async getBusy() { return []; } }
 class FakeLeads extends SchedulingLeadsPort {
   lead: BookingLead | null = LEAD; // ajustável por teste (ex.: e-mail null)
+  partner: BookingLead | null = PARTNER;
   byContact: BookingLead | null = null;
   createdWith?: { ownerId: string; name: string; email?: string; whatsapp?: string };
   confirmedEmail?: string;
   confirmedWhatsapp?: string;
   async findForBooking(id: string) { return this.lead && this.lead.id === id ? this.lead : null; }
+  async findPartnerForBooking(id: string) { return this.partner && this.partner.id === id ? this.partner : null; }
   async findByContact() { return this.byContact; }
   async createLead(input: { ownerId: string; name: string; email?: string; whatsapp?: string }) {
     this.createdWith = input;
@@ -50,7 +54,7 @@ class FakeLeads extends SchedulingLeadsPort {
   async confirmLeadEmail(_leadId: string, email: string) { this.confirmedEmail = email; }
   async confirmLeadWhatsapp(_leadId: string, whatsapp: string) { this.confirmedWhatsapp = whatsapp; }
 }
-const GENERIC_LINK: BookingLinkRecord = { id: "lg", token: "gen", ownerId: "owner1", bookingTypeId: "bt1", leadId: null, contactId: null, label: null, active: true, expiresAt: null };
+const GENERIC_LINK: BookingLinkRecord = { id: "lg", token: "gen", ownerId: "owner1", bookingTypeId: "bt1", leadId: null, contactId: null, partnerId: null, label: null, active: true, expiresAt: null };
 class FakeTokens extends TokenGeneratorPort { generate() { return "manage-tok"; } }
 class FakeScheduler extends MeetingSchedulerPort {
   meetings: (BookedMeetingRef & { manageToken: string; startAt: Date })[] = [];
@@ -161,6 +165,42 @@ describe("CreateBookingUseCase", () => {
   it("link genérico sem nome/e-mail → left", async () => {
     links.links.push(GENERIC_LINK);
     const r = await create.execute({ token: "gen", startISO: SLOT_ONLINE, mode: "online", now: NOW });
+    expect(r.isLeft()).toBe(true);
+  });
+
+  // ── Link por-partner: agenda vinculado ao partner, sem criar lead ──────────────
+  it("link por-partner: agenda vinculado ao partner (sem criar lead) e usa o e-mail do partner", async () => {
+    links.links.push(PARTNER_LINK);
+    const r = await create.execute({ token: "prt", startISO: SLOT_ONLINE, mode: "online", now: NOW });
+    expect(r.isRight()).toBe(true);
+    expect(sched.scheduled?.partnerId).toBe("partner1");
+    expect(sched.scheduled?.leadId).toBeNull();
+    expect(sched.scheduled?.attendeeEmail).toBe("contato@agenciaz.com");
+    expect(sched.scheduled?.attendeeName).toBe("Agência Z");
+    expect(leads.createdWith).toBeUndefined(); // NÃO cria lead para o partner
+  });
+
+  it("link por-partner: e-mail/nome digitados têm prioridade sobre os do partner", async () => {
+    links.links.push(PARTNER_LINK);
+    const r = await create.execute({ token: "prt", startISO: SLOT_ONLINE, mode: "online", attendeeName: "João da Agência", attendeeEmail: "joao@agenciaz.com", now: NOW });
+    expect(r.isRight()).toBe(true);
+    expect(sched.scheduled?.partnerId).toBe("partner1");
+    expect(sched.scheduled?.attendeeEmail).toBe("joao@agenciaz.com");
+    expect(sched.scheduled?.attendeeName).toBe("João da Agência");
+  });
+
+  it("link por-partner presencial usa o endereço do partner", async () => {
+    links.links.push(PARTNER_LINK);
+    const r = await create.execute({ token: "prt", startISO: SLOT_ONLINE, mode: "presential", now: NOW });
+    expect(r.isRight()).toBe(true);
+    expect(sched.scheduled?.mode).toBe("presential");
+    expect(sched.scheduled?.location).toBe("Av. B, 200");
+  });
+
+  it("link por-partner sem e-mail no partner e sem digitar → left", async () => {
+    links.links.push(PARTNER_LINK);
+    leads.partner = { ...PARTNER, email: null };
+    const r = await create.execute({ token: "prt", startISO: SLOT_ONLINE, mode: "online", now: NOW });
     expect(r.isLeft()).toBe(true);
   });
 });

@@ -117,6 +117,7 @@ export class FakeMeetingsRepository extends MeetingsRepository {
       transcriptText: null, meetingSummary: null,
       leadId: data.leadId ?? null, contactId: data.contactId ?? null,
       organizationId: data.organizationId ?? null, dealId: data.dealId ?? null,
+      partnerId: data.partnerId ?? null,
       ownerId: data.ownerId,
       isPresential: data.isPresential ?? false,
       location: data.location ?? null,

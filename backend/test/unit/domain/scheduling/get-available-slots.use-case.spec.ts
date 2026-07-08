@@ -38,6 +38,7 @@ class FakeFreeBusy extends CalendarFreeBusyPort {
 class FakeLeads extends SchedulingLeadsPort {
   constructor(public lead: BookingLead | null) { super(); }
   async findForBooking(id: string) { return this.lead && this.lead.id === id ? this.lead : null; }
+  async findPartnerForBooking() { return null; }
   async findByContact() { return null; }
   async createLead(input: { ownerId: string; name: string; email?: string }) { return { id: "x", name: input.name, email: input.email ?? null, city: null, state: null, address: null }; }
   async confirmLeadEmail() {}
@@ -45,7 +46,7 @@ class FakeLeads extends SchedulingLeadsPort {
 }
 
 function link(over: Partial<BookingLinkRecord> = {}): BookingLinkRecord {
-  return { id: "l1", token: "abc", ownerId: "owner1", bookingTypeId: "bt1", leadId: "lead1", contactId: null, label: null, active: true, expiresAt: null, ...over };
+  return { id: "l1", token: "abc", ownerId: "owner1", bookingTypeId: "bt1", leadId: "lead1", contactId: null, partnerId: null, label: null, active: true, expiresAt: null, ...over };
 }
 const LEAD_TERE: BookingLead = { id: "lead1", name: "Padaria X", email: "x@x.com", city: "Teresópolis", state: "RJ", address: "Rua A, 100" };
 

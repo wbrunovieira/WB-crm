@@ -7,6 +7,7 @@ export interface ScheduleBookingInput {
   attendeeName: string;
   leadId: string | null;
   contactId: string | null;
+  partnerId: string | null;
   mode: "online" | "presential";
   location: string | null; // endereço (presencial)
   manageToken: string;

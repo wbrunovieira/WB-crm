@@ -12,7 +12,7 @@ const TYPE: BookingTypeRecord = {
   weeklyHours: [{ weekday: 3, start: "09:00", end: "18:00" }, { weekday: 4, start: "09:00", end: "18:00" }],
   presentialCities: [], active: true,
 };
-const LINK: BookingLinkRecord = { id: "l1", token: "abc", ownerId: "o1", bookingTypeId: "bt1", leadId: "lead1", contactId: null, label: null, active: true, expiresAt: null };
+const LINK: BookingLinkRecord = { id: "l1", token: "abc", ownerId: "o1", bookingTypeId: "bt1", leadId: "lead1", contactId: null, partnerId: null, label: null, active: true, expiresAt: null };
 
 function make(ref: BookedMeetingRef | null) {
   const scheduler = { findByManageToken: async () => ref } as unknown as MeetingSchedulerPort;

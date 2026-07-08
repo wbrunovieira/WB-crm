@@ -79,6 +79,7 @@ export class ScheduleMeetingUseCase {
     contactId?: string;
     organizationId?: string;
     dealId?: string;
+    partnerId?: string;
     requesterId: string;
     contactName?: string;
     companyName?: string;
@@ -176,6 +177,7 @@ export class ScheduleMeetingUseCase {
       contactId: input.contactId,
       organizationId: input.organizationId,
       dealId: input.dealId,
+      partnerId: input.partnerId,
       ownerId: input.requesterId,
       createActivity: input.createActivity,
     });

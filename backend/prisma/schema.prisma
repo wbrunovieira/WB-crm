@@ -1048,6 +1048,7 @@ model Partner {
   owner                 User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   contacts              Contact[] // Contatos da empresa parceira
   activities            Activity[]
+  meetings              Meeting[]
   referredLeads         Lead[]           @relation("PartnerReferrals")
   referredOrganizations Organization[]   @relation("OrganizationReferrals")
   partnerProducts       PartnerProduct[] // Produtos/serviços do parceiro
@@ -2265,6 +2266,7 @@ model Meeting {
   contactId      String?
   organizationId String?
   dealId         String?
+  partnerId      String?
 
   // One-to-one with Activity (pending when scheduled, completed when ended)
   activityId String? @unique
@@ -2283,6 +2285,7 @@ model Meeting {
   contact      Contact?      @relation(fields: [contactId], references: [id], onDelete: SetNull)
   organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
   deal         Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  partner      Partner?      @relation(fields: [partnerId], references: [id], onDelete: SetNull)
   activity     Activity?     @relation(fields: [activityId], references: [id], onDelete: SetNull)
 
   scheduledEmails ScheduledEmail[]
@@ -2292,6 +2295,7 @@ model Meeting {
   @@index([contactId])
   @@index([organizationId])
   @@index([dealId])
+  @@index([partnerId])
   @@index([status])
   @@index([startAt])
   @@map("meetings")
@@ -2838,6 +2842,7 @@ model BookingLink {
   bookingTypeId String
   leadId        String?
   contactId     String?
+  partnerId     String?
   label         String?
   active        Boolean   @default(true)
   expiresAt     DateTime?
@@ -2846,6 +2851,7 @@ model BookingLink {
 
   @@index([ownerId])
   @@index([leadId])
+  @@index([partnerId])
   @@index([bookingTypeId])
   @@map("booking_links")
 }

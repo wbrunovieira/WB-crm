@@ -22,6 +22,17 @@ export class SchedulingLeadsAdapter extends SchedulingLeadsPort {
     return { id: l.id.toString(), name: l.businessName, email: l.email ?? null, city: l.city ?? null, state: l.state ?? null, address: l.address ?? null };
   }
 
+  async findPartnerForBooking(partnerId: string): Promise<BookingLead | null> {
+    const p = await this.prisma.partner.findUnique({
+      where: { id: partnerId },
+      select: { id: true, name: true, email: true, city: true, state: true, streetAddress: true, contacts: { where: { email: { not: null } }, select: { email: true }, take: 1 } },
+    });
+    if (!p) return null;
+    // E-mail próprio do partner; se não tiver, cai pro do contato principal com e-mail.
+    const email = p.email ?? p.contacts[0]?.email ?? null;
+    return { id: p.id, name: p.name, email, city: p.city ?? null, state: p.state ?? null, address: p.streetAddress ?? null };
+  }
+
   async findByContact(input: { ownerId: string; email?: string; whatsapp?: string }): Promise<BookingLead | null> {
     const or: Array<Record<string, string>> = [];
     if (input.email?.trim()) or.push({ email: input.email.trim() });

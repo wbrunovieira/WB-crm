@@ -38,6 +38,7 @@ class GenerateLinkDto {
   bookingTypeId?: string; // opcional: se omitido usa (ou cria) o tipo padrão do dono
   leadId?: string;
   contactId?: string;
+  partnerId?: string;
   label?: string;
 }
 
@@ -80,7 +81,7 @@ export class AdminSchedulingController {
 
   @Post("links")
   @HttpCode(201)
-  @ApiOperation({ summary: "Gerar link de agendamento (por lead ou genérico)" })
+  @ApiOperation({ summary: "Gerar link de agendamento (por lead, por partner ou genérico)" })
   async generate(@Body() body: GenerateLinkDto, @CurrentUser() user: AuthenticatedUser) {
     let bookingTypeId = body.bookingTypeId;
     if (!bookingTypeId) {
@@ -88,7 +89,7 @@ export class AdminSchedulingController {
       if (def.isRight()) bookingTypeId = def.value.bookingType.id;
     }
     if (!bookingTypeId) throw new BadRequestException("Nenhum tipo de agendamento disponível");
-    const r = await this.genLink.execute({ ownerId: user.id, bookingTypeId, leadId: body.leadId, contactId: body.contactId, label: body.label });
+    const r = await this.genLink.execute({ ownerId: user.id, bookingTypeId, leadId: body.leadId, contactId: body.contactId, partnerId: body.partnerId, label: body.label });
     if (r.isLeft()) throw new BadRequestException(r.value.message);
     return r.value;
   }

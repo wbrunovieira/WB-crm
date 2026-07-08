@@ -6,6 +6,7 @@ export interface CreateBookingLinkData {
   bookingTypeId: string;
   leadId?: string | null;
   contactId?: string | null;
+  partnerId?: string | null;
   label?: string | null;
 }
 

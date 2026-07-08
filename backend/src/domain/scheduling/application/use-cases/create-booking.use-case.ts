@@ -57,8 +57,12 @@ export class CreateBookingUseCase {
     let lead = link.leadId ? await this.leads.findForBooking(link.leadId) : null;
     let resolvedLeadId: string | null = link.leadId;
 
-    // Link genérico (sem lead): exige contato; acha lead existente por e-mail/WhatsApp ou cria um novo.
-    if (!link.leadId) {
+    // Link por-partner: resolve o partner (nome/e-mail/endereço próprios); NÃO cria lead.
+    const partner = link.partnerId ? await this.leads.findPartnerForBooking(link.partnerId) : null;
+    const resolvedPartnerId: string | null = link.partnerId;
+
+    // Link genérico (sem lead E sem partner): exige contato; acha lead por e-mail/WhatsApp ou cria um novo.
+    if (!link.leadId && !link.partnerId) {
       const n = input.attendeeName?.trim();
       const em = input.attendeeEmail?.trim();
       const wa = input.attendeeWhatsapp?.trim();
@@ -69,11 +73,13 @@ export class CreateBookingUseCase {
       resolvedLeadId = lead.id;
     }
 
-    // E-mail: o que o lead digitar tem prioridade (confirmação); cai pro do lead se já houver.
-    const email = (input.attendeeEmail?.trim() || lead?.email || "").trim();
+    // Entidade-fonte (lead OU partner) para e-mail/nome/endereço.
+    const entity = lead ?? partner;
+    // E-mail: o que a pessoa digitar tem prioridade (confirmação); cai pro da entidade.
+    const email = (input.attendeeEmail?.trim() || entity?.email || "").trim();
     // Nome da PESSOA que está agendando tem prioridade (o link pode ter sido aberto
-    // por alguém cujo nome não temos); cai pro nome do lead se não vier.
-    const name = (input.attendeeName?.trim() || lead?.name || "").trim();
+    // por alguém cujo nome não temos); cai pro nome da entidade se não vier.
+    const name = (input.attendeeName?.trim() || entity?.name || "").trim();
     if (!email) return left(new BookingError("Informe seu e-mail para receber a confirmação."));
     // Link por-lead: salva e-mail/WhatsApp no lead se ele ainda não tinha (não sobrescreve).
     if (link.leadId) {
@@ -83,9 +89,9 @@ export class CreateBookingUseCase {
 
     let location: string | null = null;
     if (input.mode === "presential") {
-      const served = cityIsServed(lead?.city, type.presentialCities);
+      const served = cityIsServed(entity?.city, type.presentialCities);
       if (!served) return left(new BookingError("Atendimento presencial não disponível para esta cidade"));
-      location = (input.address?.trim() || lead?.address) ?? null;
+      location = (input.address?.trim() || entity?.address) ?? null;
     }
 
     const endAt = new Date(startAt.getTime() + type.durationMinutes * 60_000);
@@ -100,6 +106,7 @@ export class CreateBookingUseCase {
       attendeeName: name || email,
       leadId: resolvedLeadId,
       contactId: link.contactId,
+      partnerId: resolvedPartnerId,
       mode: input.mode,
       location,
       manageToken,

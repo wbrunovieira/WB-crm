@@ -29,6 +29,7 @@ export class MeetSchedulerAdapter extends MeetingSchedulerPort {
       description: input.mode === "presential" && input.location ? `Reunião presencial — ${input.location}` : undefined,
       leadId: input.leadId ?? undefined,
       contactId: input.contactId ?? undefined,
+      partnerId: input.partnerId ?? undefined,
       requesterId: input.ownerId,
       contactName: input.attendeeName,
       createActivity: true,

@@ -29,7 +29,7 @@ class FakeReadTypes extends BookingTypesRepository {
 class FakeAdminLinks extends BookingLinksAdminRepository {
   items: BookingLinkRecord[] = [];
   async create(d: CreateBookingLinkData) {
-    const r: BookingLinkRecord = { id: "l1", token: d.token, ownerId: d.ownerId, bookingTypeId: d.bookingTypeId, leadId: d.leadId ?? null, contactId: d.contactId ?? null, label: d.label ?? null, active: true, expiresAt: null };
+    const r: BookingLinkRecord = { id: "l1", token: d.token, ownerId: d.ownerId, bookingTypeId: d.bookingTypeId, leadId: d.leadId ?? null, contactId: d.contactId ?? null, partnerId: d.partnerId ?? null, label: d.label ?? null, active: true, expiresAt: null };
     this.items.push(r); return r;
   }
 }

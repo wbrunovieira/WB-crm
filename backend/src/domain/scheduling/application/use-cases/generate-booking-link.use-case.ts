@@ -13,7 +13,7 @@ export class GenerateBookingLinkUseCase {
     private readonly tokens: TokenGeneratorPort,
   ) {}
 
-  async execute(input: { ownerId: string; bookingTypeId: string; leadId?: string | null; contactId?: string | null; label?: string | null }):
+  async execute(input: { ownerId: string; bookingTypeId: string; leadId?: string | null; contactId?: string | null; partnerId?: string | null; label?: string | null }):
     Promise<Either<SchedulingAdminError, { token: string; link: string }>> {
     const type = await this.types.findById(input.bookingTypeId);
     if (!type) return left(new SchedulingAdminError("Tipo de agendamento não encontrado"));
@@ -22,7 +22,7 @@ export class GenerateBookingLinkUseCase {
     const token = this.tokens.generate();
     await this.links.create({
       token, ownerId: input.ownerId, bookingTypeId: input.bookingTypeId,
-      leadId: input.leadId ?? null, contactId: input.contactId ?? null, label: input.label ?? null,
+      leadId: input.leadId ?? null, contactId: input.contactId ?? null, partnerId: input.partnerId ?? null, label: input.label ?? null,
     });
     const base = process.env.BOOKING_PUBLIC_BASE_URL ?? "https://agenda.wbdigitalsolutions.com/book";
     return right({ token, link: `${base}/${token}` });

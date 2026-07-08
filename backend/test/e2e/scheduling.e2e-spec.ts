@@ -20,6 +20,7 @@ class FakeScheduler extends MeetingSchedulerPort {
         ownerId: input.ownerId, status: "scheduled",
         manageToken: input.manageToken, bookingLinkId: input.bookingLinkId,
         leadId: input.leadId ?? undefined,
+        partnerId: input.partnerId ?? undefined,
         isPresential: input.mode === "presential",
         location: input.location ?? undefined,
       },
@@ -36,8 +37,9 @@ class FakeScheduler extends MeetingSchedulerPort {
 
 let app: INestApplication;
 let prisma: PrismaService;
-let ownerId: string, leadId: string, bookingTypeId: string;
+let ownerId: string, leadId: string, bookingTypeId: string, partnerId: string;
 const TOKEN = "e2e-sched-tok-001";
+const PARTNER_TOKEN = "e2e-sched-prt-001";
 const EMAIL = "scheduling-e2e@test.com";
 
 const WEEKLY = JSON.stringify([
@@ -48,9 +50,10 @@ const WEEKLY = JSON.stringify([
 
 async function cleanup() {
   await prisma.meeting.deleteMany({ where: { ownerId } });
-  await prisma.bookingLink.deleteMany({ where: { token: { in: [TOKEN, GEN_TOKEN] } } });
+  await prisma.bookingLink.deleteMany({ where: { token: { in: [TOKEN, GEN_TOKEN, PARTNER_TOKEN] } } });
   await prisma.bookingType.deleteMany({ where: { ownerId } });
   await prisma.lead.deleteMany({ where: { ownerId } });
+  await prisma.partner.deleteMany({ where: { ownerId } });
 }
 
 beforeAll(async () => {
@@ -69,8 +72,11 @@ beforeAll(async () => {
   leadId = lead.id;
   const bt = await prisma.bookingType.create({ data: { ownerId, name: "Reunião 30min", slug: "e2e-30", weeklyHours: WEEKLY, presentialCities: JSON.stringify([{ city: "Teresópolis", state: "RJ" }]), active: true } });
   bookingTypeId = bt.id;
+  const partner = await prisma.partner.create({ data: { name: "Agência E2E", partnerType: "outros", ownerId, email: "partner@e2e.com", city: "Teresópolis", state: "RJ", streetAddress: "Av. B, 200" } });
+  partnerId = partner.id;
   await prisma.bookingLink.create({ data: { token: TOKEN, ownerId, bookingTypeId, leadId } });
   await prisma.bookingLink.create({ data: { token: GEN_TOKEN, ownerId, bookingTypeId, leadId: null } });
+  await prisma.bookingLink.create({ data: { token: PARTNER_TOKEN, ownerId, bookingTypeId, partnerId } });
 });
 
 const GEN_TOKEN = "e2e-sched-gen-001";
@@ -149,5 +155,37 @@ describe("Scheduling (e2e) — link genérico (sem lead)", () => {
     const slotsRes = await request(app.getHttpServer()).get(`/public/booking/${GEN_TOKEN}`).expect(200);
     await request(app.getHttpServer()).post(`/public/booking/${GEN_TOKEN}`)
       .send({ startISO: slotsRes.body.slots[0].start, mode: "online" }).expect(400);
+  });
+});
+
+describe("Scheduling (e2e) — link por-partner", () => {
+  it("GET mostra o partner; POST agenda vinculado ao partner SEM criar lead", async () => {
+    const slotsRes = await request(app.getHttpServer()).get(`/public/booking/${PARTNER_TOKEN}`).expect(200);
+    expect(slotsRes.body.lead.name).toBe("Agência E2E");
+    expect(slotsRes.body.lead.email).toBe("partner@e2e.com");
+    expect(slotsRes.body.locationModes).toEqual(expect.arrayContaining(["online", "presential"]));
+    const slot = slotsRes.body.slots[0].start;
+
+    const leadsBefore = await prisma.lead.count({ where: { ownerId } });
+    const res = await request(app.getHttpServer()).post(`/public/booking/${PARTNER_TOKEN}`)
+      .send({ startISO: slot, mode: "online" }).expect(201);
+    expect(res.body.manageToken).toBeTruthy();
+
+    const meeting = await prisma.meeting.findFirst({ where: { manageToken: res.body.manageToken } });
+    expect(meeting!.partnerId).toBe(partnerId);
+    expect(meeting!.leadId).toBeNull();
+    expect(JSON.parse(meeting!.attendeeEmails)).toContain("partner@e2e.com"); // convite vai pro e-mail do partner
+
+    const leadsAfter = await prisma.lead.count({ where: { ownerId } });
+    expect(leadsAfter).toBe(leadsBefore); // NÃO cria lead falso para o partner
+  });
+
+  it("link por-partner presencial usa o endereço do partner", async () => {
+    const slotsRes = await request(app.getHttpServer()).get(`/public/booking/${PARTNER_TOKEN}`).expect(200);
+    const res = await request(app.getHttpServer()).post(`/public/booking/${PARTNER_TOKEN}`)
+      .send({ startISO: slotsRes.body.slots[0].start, mode: "presential" }).expect(201);
+    const meeting = await prisma.meeting.findFirst({ where: { manageToken: res.body.manageToken } });
+    expect(meeting!.location).toBe("Av. B, 200");
+    expect(meeting!.partnerId).toBe(partnerId);
   });
 });

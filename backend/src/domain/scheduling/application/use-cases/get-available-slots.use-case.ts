@@ -60,17 +60,22 @@ export class GetAvailableSlotsUseCase {
     });
     const slots = curateSlots(allSlots, { maxPerTurno: MAX_SLOTS_PER_TURNO, timeZone: type.timeZone });
 
-    const lead = link.leadId ? await this.leads.findForBooking(link.leadId) : null;
+    // Entidade do link: lead OU partner (mesmo formato de exibição).
+    const entity = link.leadId
+      ? await this.leads.findForBooking(link.leadId)
+      : link.partnerId
+        ? await this.leads.findPartnerForBooking(link.partnerId)
+        : null;
 
     const locationModes: ("online" | "presential")[] = ["online"];
-    if (cityIsServed(lead?.city, type.presentialCities)) {
+    if (cityIsServed(entity?.city, type.presentialCities)) {
       locationModes.push("presential");
     }
 
     return right({
       bookingType: { name: type.name, durationMinutes: type.durationMinutes, timeZone: type.timeZone },
       locationModes,
-      lead: lead ? { name: lead.name, address: lead.address, email: lead.email } : null,
+      lead: entity ? { name: entity.name, address: entity.address, email: entity.email } : null,
       slots: slots.map((s) => ({ start: s.start.toISOString(), end: s.end.toISOString() })),
     });
   }

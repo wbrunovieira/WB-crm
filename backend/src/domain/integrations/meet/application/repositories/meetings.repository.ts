@@ -21,6 +21,7 @@ export interface MeetingRecord {
   contactId: string | null;
   organizationId: string | null;
   dealId: string | null;
+  partnerId: string | null;
   ownerId: string;
   // Presential
   isPresential: boolean;
@@ -51,6 +52,7 @@ export interface CreateMeetingData {
   contactId?: string;
   organizationId?: string;
   dealId?: string;
+  partnerId?: string;
   ownerId: string;
   description?: string;
   createActivity?: boolean;

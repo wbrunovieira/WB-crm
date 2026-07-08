@@ -4,12 +4,12 @@ import { BookingLinksRepository, BookingLinkRecord } from "../../application/rep
 
 type Row = {
   id: string; token: string; ownerId: string; bookingTypeId: string;
-  leadId: string | null; contactId: string | null; label: string | null;
+  leadId: string | null; contactId: string | null; partnerId: string | null; label: string | null;
   active: boolean; expiresAt: Date | null;
 };
 const toRecord = (r: Row): BookingLinkRecord => ({
   id: r.id, token: r.token, ownerId: r.ownerId, bookingTypeId: r.bookingTypeId,
-  leadId: r.leadId, contactId: r.contactId, label: r.label, active: r.active, expiresAt: r.expiresAt,
+  leadId: r.leadId, contactId: r.contactId, partnerId: r.partnerId, label: r.label, active: r.active, expiresAt: r.expiresAt,
 });
 
 @Injectable()

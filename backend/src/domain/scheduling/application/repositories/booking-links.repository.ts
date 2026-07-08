@@ -5,6 +5,7 @@ export interface BookingLinkRecord {
   bookingTypeId: string;
   leadId: string | null;
   contactId: string | null;
+  partnerId: string | null;
   label: string | null;
   active: boolean;
   expiresAt: Date | null;
