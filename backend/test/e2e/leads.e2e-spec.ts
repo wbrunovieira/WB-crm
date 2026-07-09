@@ -16,7 +16,7 @@ const ALL_FIELDS_PAYLOAD = {
   businessName: "Tech Solutions Ltda",
   registeredName: "Tech Solutions Ltda ME",
   foundationDate: "2010-03-15",
-  companyRegistrationID: "12.345.678/0001-99",
+  companyRegistrationID: "11222333000181",
   address: "Rua das Flores, 123",
   city: "São Paulo",
   state: "SP",
@@ -235,6 +235,24 @@ describe("Leads API (e2e)", () => {
       expect(res.body.id).toBeDefined();
       expect(res.body.businessName).toBe("Lead Mínimo E2E");
       expect(res.body.ownerId).toBe(ownerId);
+    });
+
+    it("rejeita CNPJ inválido com 400 (não 500)", async () => {
+      await request(app.getHttpServer())
+        .post("/leads")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ businessName: "Lead CNPJ Ruim E2E", companyRegistrationID: "11.222.333/0001-82" })
+        .expect(400);
+    });
+
+    it("aceita CNPJ alfanumérico válido e guarda normalizado", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/leads")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ businessName: "Lead Alfanumérico E2E", companyRegistrationID: "12.abc.345/01de-35" })
+        .expect(201);
+      expect(res.body.companyRegistrationID).toBe("12ABC34501DE35");
+      await prisma.lead.deleteMany({ where: { id: res.body.id } });
     });
 
     it("cria lead com TODOS os campos incluindo foundationDate no formato YYYY-MM-DD", async () => {

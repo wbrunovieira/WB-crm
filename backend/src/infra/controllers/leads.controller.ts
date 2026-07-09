@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  BadRequestException,
   Delete,
   ForbiddenException,
   Get,
@@ -552,6 +553,8 @@ function handleError(err: Left<Error, unknown>): never {
   if (msg.includes("não encontrado") || name.includes("NotFound")) throw new NotFoundException(msg);
   if (msg.includes("Acesso negado") || name.includes("Forbidden")) throw new ForbiddenException(msg);
   if (msg.includes("Não autorizado")) throw new UnauthorizedException(msg);
+  // Erros de validação de entrada (ex.: CNPJ inválido) → 400, não 500.
+  if (name === "InvalidCnpjError" || msg.includes("CNPJ inválido")) throw new BadRequestException(msg);
   throw new Error(msg);
 }
 
