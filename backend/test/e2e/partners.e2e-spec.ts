@@ -65,6 +65,8 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
+  await prisma.activity.deleteMany({ where: { ownerId } });
+  await prisma.contact.deleteMany({ where: { ownerId } });
   await prisma.partner.deleteMany({ where: { ownerId } });
 });
 
@@ -215,6 +217,31 @@ describe("Partners API (e2e)", () => {
         .get("/partners/id-inexistente-123")
         .set("Authorization", `Bearer ${token}`)
         .expect(404);
+    });
+
+    it("faz roll-up: inclui atividades dos contatos mesmo sem partnerId na atividade", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/partners")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro Rollup", partnerType: "consultoria" })
+        .expect(201);
+      const partnerId = created.body.id;
+
+      const contact = await prisma.contact.create({
+        data: { name: "Contato Rollup", ownerId, partnerId },
+      });
+      // Activity saved with contactId only (like inbound sync does) — no partnerId.
+      const act = await prisma.activity.create({
+        data: { type: "email", subject: "Email via contato (roll-up)", ownerId, contactId: contact.id },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/partners/${partnerId}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const ids = res.body.activities.map((a: { id: string }) => a.id);
+      expect(ids).toContain(act.id);
     });
   });
 

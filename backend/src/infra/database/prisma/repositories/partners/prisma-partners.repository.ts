@@ -4,6 +4,7 @@ import { PartnersRepository, type PartnerFilters } from "@/domain/partners/appli
 import type { Partner } from "@/domain/partners/enterprise/entities/partner";
 import type { PartnerSummary, PartnerDetail } from "@/domain/partners/enterprise/read-models/partner-read-models";
 import { PartnerMapper } from "../../mappers/partners/partner.mapper";
+import { mergeActivities } from "@/infra/shared/timeline/merge-activities";
 
 @Injectable()
 export class PrismaPartnersRepository extends PartnersRepository {
@@ -82,7 +83,7 @@ export class PrismaPartnersRepository extends PartnersRepository {
         activities: {
           select: { id: true, type: true, subject: true, completed: true, dueDate: true, createdAt: true },
           orderBy: { createdAt: "desc" },
-          take: 10,
+          take: 50,
         },
         referredLeads: {
           select: { id: true, businessName: true, status: true, convertedToOrganizationId: true },
@@ -102,6 +103,22 @@ export class PrismaPartnersRepository extends PartnersRepository {
     }
 
     const r = row as any;
+
+    // Timeline roll-up: also show activities of the partner's contacts, even when the
+    // activity has only contactId (inbound sync) and not partnerId. Merge + dedup + sort.
+    const ACTIVITY_SELECT = { id: true, type: true, subject: true, completed: true, dueDate: true, createdAt: true } as const;
+    const contactIds: string[] = (r.contacts ?? []).map((c: { id: string }) => c.id);
+    let activities = r.activities;
+    if (contactIds.length > 0) {
+      const viaContacts = await this.prisma.activity.findMany({
+        where: { contactId: { in: contactIds } },
+        select: ACTIVITY_SELECT,
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      });
+      activities = mergeActivities(r.activities, viaContacts, 50);
+    }
+
     return {
       id: r.id,
       ownerId: r.ownerId,
@@ -134,7 +151,7 @@ export class PrismaPartnersRepository extends PartnersRepository {
       owner: r.owner,
       _count: r._count,
       contacts: r.contacts,
-      activities: r.activities,
+      activities,
       referredLeads: r.referredLeads,
     };
   }
