@@ -31,7 +31,7 @@ describe("CreateLeadUseCase", () => {
       businessName: "Tech Solutions Ltda",
       registeredName: "Tech Solutions Ltda ME",
       foundationDate: new Date("2010-03-15"),
-      companyRegistrationID: "12.345.678/0001-99",
+      companyRegistrationID: "11.222.333/0001-81",
       address: "Rua das Flores, 123",
       city: "São Paulo",
       state: "SP",
@@ -132,5 +132,36 @@ describe("CreateLeadUseCase", () => {
     if (result.isLeft()) {
       expect(result.value.message).toContain("obrigatório");
     }
+  });
+
+  it("rejeita CNPJ inválido", async () => {
+    const result = await sut.execute({
+      ownerId: "user-1",
+      businessName: "Empresa CNPJ Ruim",
+      companyRegistrationID: "11.222.333/0001-82", // DV errado
+    });
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) expect(result.value.message).toContain("CNPJ");
+  });
+
+  it("aceita CNPJ alfanumérico válido e guarda normalizado", async () => {
+    const result = await sut.execute({
+      ownerId: "user-1",
+      businessName: "Empresa Alfanumérica",
+      companyRegistrationID: "12.abc.345/01de-35",
+    });
+    expect(result.isRight()).toBe(true);
+    if (result.isRight()) {
+      expect(result.value.lead.companyRegistrationID).toBe("12ABC34501DE35");
+    }
+  });
+
+  it("ignora CNPJ vazio (campo opcional)", async () => {
+    const result = await sut.execute({
+      ownerId: "user-1",
+      businessName: "Empresa Sem CNPJ",
+      companyRegistrationID: "",
+    });
+    expect(result.isRight()).toBe(true);
   });
 });

@@ -3,6 +3,7 @@ import { left, right, type Either } from "@/core/either";
 import { LeadsRepository, type LeadContactInput } from "../repositories/leads.repository";
 import { Lead } from "../../enterprise/entities/lead";
 import { BusinessName } from "../../enterprise/value-objects/business-name.vo";
+import { Cnpj } from "../../enterprise/value-objects/cnpj.vo";
 import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
 
 export interface CreateLeadInput {
@@ -94,12 +95,21 @@ export class CreateLeadUseCase {
     const businessNameResult = BusinessName.create(input.businessName);
     if (businessNameResult.isLeft()) return left(businessNameResult.value);
 
+    // CNPJ é opcional; quando informado, valida o dígito verificador (numérico ou
+    // alfanumérico) e guarda normalizado.
+    let companyRegistrationID = input.companyRegistrationID;
+    if (companyRegistrationID && companyRegistrationID.trim()) {
+      const cnpjResult = Cnpj.create(companyRegistrationID);
+      if (cnpjResult.isLeft()) return left(cnpjResult.value);
+      companyRegistrationID = cnpjResult.value.value;
+    }
+
     const lead = Lead.create({
       ownerId: input.ownerId,
       businessName: businessNameResult.value.value,
       registeredName: input.registeredName,
       foundationDate: input.foundationDate,
-      companyRegistrationID: input.companyRegistrationID,
+      companyRegistrationID,
       address: input.address,
       city: input.city,
       state: input.state,

@@ -4,6 +4,7 @@ import { LeadsRepository } from "../repositories/leads.repository";
 import type { Lead } from "../../enterprise/entities/lead";
 import type { LeadProps } from "../../enterprise/entities/lead";
 import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
+import { Cnpj } from "../../enterprise/value-objects/cnpj.vo";
 
 export interface UpdateLeadInput {
   id: string;
@@ -106,6 +107,13 @@ export class UpdateLeadUseCase {
     if (fields.phone !== undefined) fields.phone = normalizePhoneE164(fields.phone) ?? undefined;
     if (fields.phone2 !== undefined) fields.phone2 = normalizePhoneE164(fields.phone2) ?? undefined;
     if (fields.whatsapp !== undefined) fields.whatsapp = normalizePhoneE164(fields.whatsapp) ?? undefined;
+
+    // CNPJ: valida o dígito (numérico ou alfanumérico) e normaliza quando informado.
+    if (fields.companyRegistrationID && fields.companyRegistrationID.trim()) {
+      const cnpjResult = Cnpj.create(fields.companyRegistrationID);
+      if (cnpjResult.isLeft()) return left(cnpjResult.value);
+      fields.companyRegistrationID = cnpjResult.value.value;
+    }
 
     lead.update(fields as Partial<Omit<LeadProps, "ownerId" | "createdAt" | "updatedAt">>);
 
