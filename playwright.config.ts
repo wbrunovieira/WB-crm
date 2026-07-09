@@ -8,7 +8,10 @@ const baseURL = `http://localhost:${PORT}`;
 
 export default defineConfig({
   testDir: "./e2e",
-  fullyParallel: true,
+  // Serial: the partner mock-backend specs each bind the fixed backend port (3010),
+  // so they must not run concurrently.
+  fullyParallel: false,
+  workers: 1,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   reporter: process.env.CI ? "github" : "list",
@@ -32,5 +35,7 @@ export default defineConfig({
     url: baseURL,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
+    // NextAuth callbacks/redirects must target the e2e port, not the .env default.
+    env: { NEXTAUTH_URL: baseURL },
   },
 });
