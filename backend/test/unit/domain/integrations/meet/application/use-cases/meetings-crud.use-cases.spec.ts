@@ -177,6 +177,22 @@ describe("ScheduleMeetingUseCase", () => {
     expect(calendar.createdEvents).toHaveLength(1);
   });
 
+  it("links the meeting to a partner (partnerId flows to the repository)", async () => {
+    const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
+
+    const result = await useCase.execute({
+      title: "Call com partner",
+      startAt: FUTURE,
+      attendeeEmails: ["p@x.com"],
+      requesterId: OWNER,
+      partnerId: "partner-1",
+      skipCalendar: true,
+    });
+
+    expect(result.isRight()).toBe(true);
+    expect(result.unwrap().partnerId).toBe("partner-1");
+  });
+
   it("creates meeting without Calendar when skipCalendar=true", async () => {
     const useCase = new ScheduleMeetingUseCase(meetings, calendar, fakeEmitter);
 

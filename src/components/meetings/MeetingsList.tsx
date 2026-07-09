@@ -56,6 +56,7 @@ interface Props {
   meetings: Meeting[];
   leadId?: string;
   contactId?: string;
+  partnerId?: string;
   organizationId?: string;
   dealId?: string;
   /** Contacts shown as clickable chips in the schedule modal */
@@ -139,6 +140,7 @@ export default function MeetingsList({
   meetings: initial,
   leadId,
   contactId,
+  partnerId,
   organizationId,
   dealId,
   suggestedContacts = [],
@@ -322,6 +324,7 @@ export default function MeetingsList({
         <SchedulePresentialMeetingModal
           leadId={leadId}
           contactId={contactId}
+          partnerId={partnerId}
           organizationId={organizationId}
           dealId={dealId}
           suggestedContacts={presentialContacts.length > 0 ? presentialContacts : suggestedContacts}
@@ -335,6 +338,7 @@ export default function MeetingsList({
         <ScheduleMeetingModal
           leadId={leadId}
           contactId={contactId}
+          partnerId={partnerId}
           organizationId={organizationId}
           dealId={dealId}
           suggestedContacts={suggestedContacts}
@@ -368,6 +372,7 @@ export default function MeetingsList({
         <ScheduleMeetingModal
           leadId={leadId}
           contactId={contactId}
+          partnerId={partnerId}
           organizationId={organizationId}
           dealId={dealId}
           suggestedContacts={suggestedContacts}

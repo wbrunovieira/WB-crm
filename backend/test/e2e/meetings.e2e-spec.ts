@@ -30,6 +30,7 @@ beforeAll(async () => {
 
 afterEach(async () => {
   await prisma.meeting.deleteMany({ where: { ownerId } });
+  await prisma.partner.deleteMany({ where: { ownerId } });
 });
 
 afterAll(async () => {
@@ -67,6 +68,30 @@ describe("POST /meetings (e2e)", () => {
     expect(res.body.title).toBe("Reunião de alinhamento");
     expect(res.body.status).toBe("scheduled");
     expect(Array.isArray(res.body.attendeeEmails)).toBe(true);
+  });
+
+  it("cria reunião vinculada a um partner e filtra por partnerId", async () => {
+    const partner = await prisma.partner.create({
+      data: { name: "Partner Meet E2E", partnerType: "consultoria", ownerId },
+    });
+
+    const created = await request(app.getHttpServer())
+      .post("/meetings")
+      .set("Authorization", `Bearer ${token}`)
+      .send({
+        title: "Call com partner",
+        startAt: "2026-05-01T14:00:00.000Z",
+        attendeeEmails: ["p@x.com"],
+        partnerId: partner.id,
+      })
+      .expect(201);
+    expect(created.body.partnerId).toBe(partner.id);
+
+    const list = await request(app.getHttpServer())
+      .get(`/meetings?partnerId=${partner.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    expect(list.body.map((m: { id: string }) => m.id)).toContain(created.body.id);
   });
 });
 

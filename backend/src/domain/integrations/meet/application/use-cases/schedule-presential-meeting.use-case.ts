@@ -22,6 +22,7 @@ export interface SchedulePresentialMeetingInput {
   contactId?: string;
   organizationId?: string;
   dealId?: string;
+  partnerId?: string;
   description?: string;
   // Extended fields
   reminderSteps?: ("immediate" | "morning_reminder" | "one_hour_reminder" | "on_time_reminder")[];
@@ -66,6 +67,7 @@ export class SchedulePresentialMeetingUseCase {
       contactId: input.contactId,
       organizationId: input.organizationId,
       dealId: input.dealId,
+      partnerId: input.partnerId,
       description: input.description,
       createActivity: true,
       isPresential: true,

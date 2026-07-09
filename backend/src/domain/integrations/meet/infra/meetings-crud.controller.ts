@@ -29,7 +29,7 @@ function serialize(m: any) {
     uploadedAudioKey: m.uploadedAudioKey ?? null,
     transcriptText: m.transcriptText, nativeTranscriptUrl: m.nativeTranscriptUrl,
     meetingSummary: m.meetingSummary, activityId: m.activityId,
-    leadId: m.leadId, contactId: m.contactId, organizationId: m.organizationId, dealId: m.dealId,
+    leadId: m.leadId, contactId: m.contactId, organizationId: m.organizationId, dealId: m.dealId, partnerId: m.partnerId,
     ownerId: m.ownerId,
     isPresential: m.isPresential ?? false,
     location: m.location ?? null,
@@ -71,8 +71,9 @@ export class MeetingsCrudController {
     @Query("dealId") dealId?: string,
     @Query("organizationId") organizationId?: string,
     @Query("contactId") contactId?: string,
+    @Query("partnerId") partnerId?: string,
   ) {
-    const r = await this.getMeetings.execute({ requesterId: req.user.id, filters: { leadId, dealId, organizationId, contactId } });
+    const r = await this.getMeetings.execute({ requesterId: req.user.id, filters: { leadId, dealId, organizationId, contactId, partnerId } });
     if (r.isLeft()) throwIfError(r.value);
     return r.unwrap().map(serialize);
   }
@@ -103,7 +104,7 @@ export class MeetingsCrudController {
     description?: string;
     contactName?: string;
     companyName?: string;
-    leadId?: string; contactId?: string; organizationId?: string; dealId?: string;
+    leadId?: string; contactId?: string; organizationId?: string; dealId?: string; partnerId?: string;
     createActivity?: boolean; skipCalendar?: boolean;
   }) {
     const r = await this.schedule.execute({
@@ -119,6 +120,7 @@ export class MeetingsCrudController {
       contactId: body.contactId,
       organizationId: body.organizationId,
       dealId: body.dealId,
+      partnerId: body.partnerId,
       requesterId: req.user.id,
       createActivity: body.createActivity,
       skipCalendar: body.skipCalendar,
@@ -192,6 +194,7 @@ export class MeetingsCrudController {
     contactId?: string;
     organizationId?: string;
     dealId?: string;
+    partnerId?: string;
     description?: string;
     reminderSteps?: ("immediate" | "morning_reminder" | "one_hour_reminder" | "on_time_reminder")[];
     reminderChannels?: ("email" | "whatsapp")[];
@@ -215,6 +218,7 @@ export class MeetingsCrudController {
       contactId: body.contactId,
       organizationId: body.organizationId,
       dealId: body.dealId,
+      partnerId: body.partnerId,
       description: body.description,
       reminderSteps: body.reminderSteps,
       reminderChannels: body.reminderChannels,

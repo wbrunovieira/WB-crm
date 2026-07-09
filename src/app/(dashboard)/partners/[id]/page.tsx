@@ -8,6 +8,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { DeletePartnerButton } from "@/components/partners/DeletePartnerButton";
 import { CopyBookingLinkButton } from "@/components/partners/CopyBookingLinkButton";
+import MeetingsList from "@/components/meetings/MeetingsList";
+import type { Meeting } from "@/components/meetings/MeetingsList";
 import { formatDate } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -17,9 +19,10 @@ export default async function PartnerDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [partner, session] = await Promise.all([
+  const [partner, session, meetings] = await Promise.all([
     backendFetch<Partner>(`/partners/${params.id}`).catch(() => null),
     getServerSession(authOptions),
+    backendFetch<Meeting[]>(`/meetings?partnerId=${params.id}`).catch((): Meeting[] => []),
   ]);
 
   if (!partner) {
@@ -428,6 +431,23 @@ export default async function PartnerDetailPage({
             </p>
           </div>
         )}
+      </div>
+
+      {/* Reuniões */}
+      <div id="reunioes" className="mt-6">
+        <MeetingsList
+          meetings={meetings ?? []}
+          partnerId={partner.id}
+          defaultLocation={[partner.streetAddress, partner.city, partner.state, partner.zipCode].filter(Boolean).join(", ")}
+          suggestedContacts={[
+            ...(partner.email
+              ? [{ id: `partner-${partner.id}`, name: partner.name, email: partner.email, role: "Empresa" }]
+              : []),
+            ...partner.contacts
+              .filter((c) => c.email)
+              .map((c) => ({ id: c.id, name: c.name, email: c.email as string, role: c.role ?? undefined })),
+          ]}
+        />
       </div>
 
       {/* Entity Management Panel (Admin Only) */}

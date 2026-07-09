@@ -26,6 +26,7 @@ interface Props {
   contactId?: string;
   organizationId?: string;
   dealId?: string;
+  partnerId?: string;
   /** Contacts from the lead/deal to show as clickable chips */
   suggestedContacts?: SuggestedContact[];
   /** When provided, switches modal to edit mode */
@@ -69,6 +70,7 @@ export default function ScheduleMeetingModal({
   contactId,
   organizationId,
   dealId,
+  partnerId,
   suggestedContacts = [],
   meetingId,
   initialData,
@@ -249,6 +251,7 @@ export default function ScheduleMeetingModal({
             contactId,
             organizationId,
             dealId,
+            partnerId,
             createActivity: true,
           }),
         });

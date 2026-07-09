@@ -38,6 +38,7 @@ export interface MeetingFilters {
   dealId?: string;
   organizationId?: string;
   contactId?: string;
+  partnerId?: string;
 }
 
 export interface CreateMeetingData {

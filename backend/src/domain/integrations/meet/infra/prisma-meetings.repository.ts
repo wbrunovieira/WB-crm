@@ -143,6 +143,7 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
         ...(filters.dealId && { dealId: filters.dealId }),
         ...(filters.organizationId && { organizationId: filters.organizationId }),
         ...(filters.contactId && { contactId: filters.contactId }),
+        ...(filters.partnerId && { partnerId: filters.partnerId }),
       },
       include: {
         activity: { select: { id: true, completed: true, completedAt: true } },

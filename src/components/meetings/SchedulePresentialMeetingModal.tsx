@@ -18,6 +18,7 @@ export interface PresentialContact {
 interface Props {
   leadId?: string;
   contactId?: string;
+  partnerId?: string;
   organizationId?: string;
   dealId?: string;
   suggestedContacts?: PresentialContact[];
@@ -51,6 +52,7 @@ function nextHourTime() {
 export default function SchedulePresentialMeetingModal({
   leadId,
   contactId,
+  partnerId,
   organizationId,
   dealId,
   suggestedContacts = [],
@@ -130,6 +132,7 @@ export default function SchedulePresentialMeetingModal({
           description: description.trim() || undefined,
           leadId,
           contactId,
+          partnerId,
           organizationId,
           dealId,
           reminderSteps: Array.from(reminderSteps),
