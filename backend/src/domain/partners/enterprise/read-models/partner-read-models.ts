@@ -54,6 +54,8 @@ export interface PartnerDetail extends PartnerSummary {
     dueDate: Date | null;
     createdAt: Date;
   }>;
+  /** Most recent contact-type activity date (derived), for the "last contact" alert. */
+  lastContactAt: Date | null;
   referredLeads: Array<{
     id: string;
     businessName: string;

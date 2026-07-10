@@ -242,6 +242,8 @@ describe("Partners API (e2e)", () => {
 
       const ids = res.body.activities.map((a: { id: string }) => a.id);
       expect(ids).toContain(act.id);
+      // "Último contato" derives from the most recent contact activity (email is one).
+      expect(res.body.lastContactAt).toBeTruthy();
     });
   });
 

@@ -121,6 +121,8 @@ export interface Lead {
   agentResearchAt?: string | null;
   // Notes
   notes?: string | null;
+  /** Most recent contact-type activity date (derived by the backend). */
+  lastContactAt?: string | null;
   // Matriz / Filiais
   parentLeadId?: string | null;
   parentLead?: { id: string; businessName: string } | null;

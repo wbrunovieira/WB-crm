@@ -324,6 +324,26 @@ describe("Leads API (e2e)", () => {
       expect(res.body.leadContacts).toBeInstanceOf(Array);
       expect(res.body.activities).toBeInstanceOf(Array);
       expect(res.body.secondaryCNAEs).toBeInstanceOf(Array);
+      expect(res.body.lastContactAt).toBeNull(); // no contact activities yet
+    });
+
+    it('deriva lastContactAt da atividade de contato mais recente', async () => {
+      const created = await request(app.getHttpServer())
+        .post("/leads")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ businessName: "Lead Último Contato E2E" })
+        .expect(201);
+
+      await prisma.activity.create({
+        data: { type: "call", subject: "Ligação", ownerId, leadId: created.body.id, completedAt: new Date() },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/leads/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.lastContactAt).toBeTruthy();
     });
 
     it("inclui isActive nos leadContacts da resposta", async () => {

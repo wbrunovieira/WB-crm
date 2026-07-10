@@ -11,6 +11,7 @@ import { CopyBookingLinkButton } from "@/components/partners/CopyBookingLinkButt
 import MeetingsList from "@/components/meetings/MeetingsList";
 import type { Meeting } from "@/components/meetings/MeetingsList";
 import { EntityNotesBlock } from "@/components/shared/EntityNotesBlock";
+import { LastContactAlert } from "@/components/shared/LastContactAlert";
 import { Building2, Users, Activity, Video, Pencil } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -32,13 +33,6 @@ export default async function PartnerDetailPage({
   }
 
   const isAdmin = session?.user?.role?.toLowerCase() === "admin";
-
-  const daysSinceLastContact = partner.lastContactDate
-    ? Math.ceil(
-        (new Date().getTime() - new Date(partner.lastContactDate).getTime()) /
-          (1000 * 60 * 60 * 24)
-      )
-    : null;
 
   return (
     <div className="min-h-screen bg-[#350045] p-4 md:p-8">
@@ -88,34 +82,8 @@ export default async function PartnerDetailPage({
         </div>
       </div>
 
-      {/* Last Contact Alert */}
-      {daysSinceLastContact !== null && (
-        <div
-          className={`mb-6 rounded-lg p-4 ${
-            daysSinceLastContact > 60
-              ? "bg-red-50 border border-red-200"
-              : daysSinceLastContact > 30
-                ? "bg-orange-50 border border-orange-200"
-                : "bg-green-50 border border-green-200"
-          }`}
-        >
-          <p
-            className={`text-sm font-medium ${
-              daysSinceLastContact > 60
-                ? "text-red-800"
-                : daysSinceLastContact > 30
-                  ? "text-orange-800"
-                  : "text-green-800"
-            }`}
-          >
-            {daysSinceLastContact === 0
-              ? "Último contato: hoje"
-              : daysSinceLastContact === 1
-                ? "Último contato: há 1 dia"
-                : `Último contato: há ${daysSinceLastContact} dias`}
-          </p>
-        </div>
-      )}
+      {/* Last contact (derived from the most recent contact activity) */}
+      <LastContactAlert lastContactAt={partner.lastContactAt} />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Basic Information */}

@@ -50,6 +50,8 @@ export interface Partner {
   expertise: string | null;
   notes: string | null;
   lastContactDate: string | null;
+  /** Most recent contact-type activity date (derived by the backend). */
+  lastContactAt: string | null;
   createdAt: string | Date;
   contacts: PartnerContact[];
   activities: PartnerActivity[];

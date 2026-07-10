@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/infra/database/prisma.service";
+import { computeLastContactAt } from "@/infra/shared/timeline/last-contact";
 import { LeadsRepository, type LeadFilters, type LeadRelations, type PaginatedLeads } from "@/domain/leads/application/repositories/leads.repository";
 import type { Lead } from "@/domain/leads/enterprise/entities/lead";
 import type { LeadSummary, LeadDetail } from "@/domain/leads/enterprise/read-models/lead-read-models";
@@ -439,6 +440,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
         phoneValid: lc.phoneValid,
         phoneType: lc.phoneType,
       })),
+      lastContactAt: computeLastContactAt(row.activities),
       activities: row.activities.map((a) => {
         const sendId = (a as unknown as { emailCampaignSendId?: string | null }).emailCampaignSendId;
         const rawClickData = sendId ? (clickDataMap.get(sendId) ?? {}) : {};

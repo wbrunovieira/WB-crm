@@ -42,6 +42,7 @@ import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { LeadNotesBlock } from "@/components/leads/LeadNotesBlock";
+import { LastContactAlert } from "@/components/shared/LastContactAlert";
 import { LeadHierarchySection } from "@/components/leads/LeadHierarchySection";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
@@ -308,6 +309,9 @@ export default async function LeadDetailPage({
           </p>
         </div>
       )}
+
+      {/* Last contact (derived from the most recent contact activity) */}
+      <LastContactAlert lastContactAt={lead.lastContactAt} />
 
       {/* Notes + Hierarchy */}
       <LeadNotesBlock leadId={lead.id} initialNotes={lead.notes} />

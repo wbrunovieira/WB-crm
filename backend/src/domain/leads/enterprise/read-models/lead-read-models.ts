@@ -177,6 +177,8 @@ export interface LeadDetail extends LeadSummary {
   // Relations
   leadContacts: LeadContact[];
   activities: LeadActivity[];
+  /** Most recent contact-type activity date (derived), for the "last contact" alert. */
+  lastContactAt: Date | null;
   secondaryCNAEs: Array<{ id: string; code: string; description: string }>;
   techProfile: LeadTechProfile;
   parentLead: { id: string; businessName: string } | null;

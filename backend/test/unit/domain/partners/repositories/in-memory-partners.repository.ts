@@ -82,6 +82,7 @@ export class InMemoryPartnersRepository extends PartnersRepository {
       _count: { contacts: 0, activities: 0, referredLeads: 0 },
       contacts: [],
       activities: [],
+      lastContactAt: null,
       referredLeads: [],
     };
   }

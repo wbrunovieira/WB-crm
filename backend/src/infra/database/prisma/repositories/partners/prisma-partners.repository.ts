@@ -5,6 +5,7 @@ import type { Partner } from "@/domain/partners/enterprise/entities/partner";
 import type { PartnerSummary, PartnerDetail } from "@/domain/partners/enterprise/read-models/partner-read-models";
 import { PartnerMapper } from "../../mappers/partners/partner.mapper";
 import { mergeActivities } from "@/infra/shared/timeline/merge-activities";
+import { computeLastContactAt } from "@/infra/shared/timeline/last-contact";
 
 @Injectable()
 export class PrismaPartnersRepository extends PartnersRepository {
@@ -81,7 +82,7 @@ export class PrismaPartnersRepository extends PartnersRepository {
           orderBy: { name: "asc" },
         },
         activities: {
-          select: { id: true, type: true, subject: true, completed: true, dueDate: true, createdAt: true },
+          select: { id: true, type: true, subject: true, completed: true, completedAt: true, dueDate: true, createdAt: true },
           orderBy: { createdAt: "desc" },
           take: 50,
         },
@@ -106,7 +107,7 @@ export class PrismaPartnersRepository extends PartnersRepository {
 
     // Timeline roll-up: also show activities of the partner's contacts, even when the
     // activity has only contactId (inbound sync) and not partnerId. Merge + dedup + sort.
-    const ACTIVITY_SELECT = { id: true, type: true, subject: true, completed: true, dueDate: true, createdAt: true } as const;
+    const ACTIVITY_SELECT = { id: true, type: true, subject: true, completed: true, completedAt: true, dueDate: true, createdAt: true } as const;
     const contactIds: string[] = (r.contacts ?? []).map((c: { id: string }) => c.id);
     let activities = r.activities;
     if (contactIds.length > 0) {
@@ -152,6 +153,7 @@ export class PrismaPartnersRepository extends PartnersRepository {
       _count: r._count,
       contacts: r.contacts,
       activities,
+      lastContactAt: computeLastContactAt(activities),
       referredLeads: r.referredLeads,
     };
   }
