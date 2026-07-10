@@ -55,6 +55,7 @@ interface SendEmailBody {
   leadId?: string;
   contactIds?: string[];
   organizationId?: string;
+  partnerId?: string;
   dealId?: string;
 }
 
@@ -117,6 +118,7 @@ export class EmailController {
       contactIds: body.contactIds,
       organizationId: body.organizationId,
       dealId: body.dealId,
+      partnerId: body.partnerId,
     });
 
     if (result.isLeft()) {
@@ -158,6 +160,7 @@ export class EmailController {
       leadId: body.leadId,
       contactIds: body.contactIds,
       organizationId: body.organizationId,
+      partnerId: body.partnerId,
       dealId: body.dealId,
     });
 

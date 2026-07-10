@@ -11,6 +11,7 @@ export interface SendWhatsAppMessageInput {
   leadId?: string;
   contactId?: string;
   organizationId?: string;
+  partnerId?: string;
 }
 
 export interface SendWhatsAppMessageOutput {
@@ -30,7 +31,7 @@ export class SendWhatsAppMessageUseCase {
   async execute(
     input: SendWhatsAppMessageInput,
   ): Promise<Either<Error, SendWhatsAppMessageOutput>> {
-    const { to, text, ownerId, contactName, leadId, contactId, organizationId } = input;
+    const { to, text, ownerId, contactName, leadId, contactId, organizationId, partnerId } = input;
 
     try {
       // 1. Send via Evolution API
@@ -50,7 +51,7 @@ export class SendWhatsAppMessageUseCase {
         text,
         messageTimestamp: sendResult.timestamp ?? now,
         ownerId,
-        entityOverride: { leadId, contactId },
+        entityOverride: { leadId, contactId, partnerId },
       });
 
       if (processResult.isRight() && processResult.value.activityId) {

@@ -55,6 +55,7 @@ interface GmailComposeModalProps {
   contactId?: string;
   leadId?: string;
   organizationId?: string;
+  partnerId?: string;
   dealId?: string;
   threadId?: string;
   initialSubject?: string;
@@ -77,6 +78,7 @@ export default function GmailComposeModal({
   contactId,
   leadId,
   organizationId,
+  partnerId,
   dealId,
   threadId,
   initialSubject,
@@ -219,6 +221,7 @@ export default function GmailComposeModal({
             leadId,
             organizationId,
             dealId,
+            partnerId,
           }),
         },
       );
@@ -293,6 +296,7 @@ export default function GmailComposeModal({
             contactIds: contactId ? [contactId] : undefined,
             leadId,
             organizationId,
+            partnerId,
             dealId,
           }),
         },

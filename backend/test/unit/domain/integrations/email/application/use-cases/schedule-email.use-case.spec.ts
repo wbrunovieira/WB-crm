@@ -96,15 +96,16 @@ describe("ScheduleEmailUseCase — creates the pending activity", () => {
     expect(activity.leadId).toBe("lead-1");
   });
 
-  it("links the entity refs (contact/org/deal) onto the activity", async () => {
+  it("links the entity refs (contact/org/deal/partner) onto the activity", async () => {
     await useCase.execute(
-      makeInput({ contactIds: ["c-1", "c-2"], organizationId: "org-1", dealId: "deal-1" }),
+      makeInput({ contactIds: ["c-1", "c-2"], organizationId: "org-1", dealId: "deal-1", partnerId: "partner-1" }),
       NOW,
     );
     const activity = activitiesRepo.items[0];
     expect(activity.contactId).toBe("c-1");
     expect(activity.organizationId).toBe("org-1");
     expect(activity.dealId).toBe("deal-1");
+    expect(activity.partnerId).toBe("partner-1");
   });
 
   it("stores an HTML-stripped preview as the activity description", async () => {

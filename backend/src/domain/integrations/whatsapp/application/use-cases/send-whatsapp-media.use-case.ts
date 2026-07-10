@@ -16,6 +16,7 @@ export interface SendWhatsAppMediaInput {
   entityName: string;
   leadId?: string | null;
   contactId?: string | null;
+  partnerId?: string | null;
   organizationId?: string | null;
 }
 
@@ -37,7 +38,7 @@ export class SendWhatsAppMediaUseCase {
   ) {}
 
   async execute(input: SendWhatsAppMediaInput): Promise<Either<Error, SendWhatsAppMediaOutput>> {
-    const { to, mediatype, mediaBase64, fileName, mimetype, caption, ownerId, entityName, leadId, contactId } = input;
+    const { to, mediatype, mediaBase64, fileName, mimetype, caption, ownerId, entityName, leadId, contactId, partnerId } = input;
 
     let messageId: string;
     try {
@@ -89,6 +90,7 @@ export class SendWhatsAppMediaUseCase {
         dueDate: now,
         leadId: leadId ?? undefined,
         contactId: contactId ?? undefined,
+        partnerId: partnerId ?? undefined,
         meetingNoShow: false,
         emailReplied: false,
         emailOpenCount: 0,

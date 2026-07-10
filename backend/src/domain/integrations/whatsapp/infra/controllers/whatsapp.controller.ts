@@ -43,6 +43,7 @@ interface SendMessageBody {
   leadId?: string;
   contactId?: string;
   organizationId?: string;
+  partnerId?: string;
 }
 
 interface SendMediaBody {
@@ -56,6 +57,7 @@ interface SendMediaBody {
   leadId?: string;
   contactId?: string;
   organizationId?: string;
+  partnerId?: string;
 }
 
 interface CheckNumberBody {
@@ -119,6 +121,7 @@ export class WhatsAppController {
       leadId: body.leadId,
       contactId: body.contactId,
       organizationId: body.organizationId,
+      partnerId: body.partnerId,
     });
 
     if (result.isLeft()) {
@@ -152,6 +155,7 @@ export class WhatsAppController {
       leadId: body.leadId ?? null,
       contactId: body.contactId ?? null,
       organizationId: body.organizationId ?? null,
+      partnerId: body.partnerId ?? null,
     });
 
     if (result.isLeft()) {
@@ -171,6 +175,7 @@ export class WhatsAppController {
     @Body("entityName") entityName: string,
     @Body("leadId") leadId: string | undefined,
     @Body("contactId") contactId: string | undefined,
+    @Body("partnerId") partnerId: string | undefined,
     @CurrentUser() user: AuthenticatedUser,
   ): Promise<{ ok: boolean; messageId?: string; driveId?: string; activityId?: string; error?: string }> {
     if (!file || !to) {
@@ -188,6 +193,7 @@ export class WhatsAppController {
       entityName: entityName ?? to,
       leadId: leadId || null,
       contactId: contactId || null,
+      partnerId: partnerId || null,
     });
 
     if (result.isLeft()) {

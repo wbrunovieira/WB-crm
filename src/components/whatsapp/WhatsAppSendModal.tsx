@@ -131,13 +131,14 @@ interface WhatsAppSendModalProps {
   leadId?: string;
   contactId?: string;
   organizationId?: string;
+  partnerId?: string;
 }
 
 // ---------------------------------------------------------------------------
 // Modal principal
 // ---------------------------------------------------------------------------
 
-export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId, organizationId }: WhatsAppSendModalProps) {
+export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId, organizationId, partnerId }: WhatsAppSendModalProps) {
   const router = useRouter();
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
@@ -331,6 +332,7 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
         console.log("[WhatsAppSendModal] audio send — leadId:", leadId, "contactId:", contactId);
         if (leadId) formData.append("leadId", leadId);
         if (contactId) formData.append("contactId", contactId);
+        if (partnerId) formData.append("partnerId", partnerId);
         const res = await fetch(`${BACKEND_URL}/whatsapp/send-audio`, {
           method: "POST",
           headers: { Authorization: `Bearer ${token}` },
@@ -355,6 +357,7 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
               contactName: name,
               leadId: leadId ?? undefined,
               contactId: contactId ?? undefined,
+              partnerId: partnerId ?? undefined,
             }),
           },
         );
@@ -363,7 +366,7 @@ export default function WhatsAppSendModal({ to, name, onClose, leadId, contactId
         const nestResult = await apiFetch<{ ok: boolean; error?: string }>(
           "/whatsapp/send",
           token,
-          { method: "POST", body: JSON.stringify({ to, text: trimmed, contactName: name, leadId, contactId, organizationId }) },
+          { method: "POST", body: JSON.stringify({ to, text: trimmed, contactName: name, leadId, contactId, organizationId, partnerId }) },
         );
         result = { success: nestResult.ok, error: nestResult.error };
       }

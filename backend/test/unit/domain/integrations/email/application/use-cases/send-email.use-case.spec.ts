@@ -189,6 +189,12 @@ describe("SendEmailUseCase — creates the outbound activity", () => {
     expect(activity.emailFromAddress).toBeUndefined();
   });
 
+  it("links the logged activity to a partner when partnerId is provided", async () => {
+    await useCase.execute(makeInput({ partnerId: "partner-1" }));
+    expect(activitiesRepo.items).toHaveLength(1);
+    expect(activitiesRepo.items[0].partnerId).toBe("partner-1");
+  });
+
   it("stores the gmail thread/message ids + tracking token on the activity (join keys)", async () => {
     const result = await useCase.execute(makeInput());
     const activity = activitiesRepo.items[0];

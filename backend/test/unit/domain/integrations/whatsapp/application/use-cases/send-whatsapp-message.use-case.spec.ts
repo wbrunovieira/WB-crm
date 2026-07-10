@@ -59,6 +59,18 @@ describe("SendWhatsAppMessageUseCase", () => {
     expect(whatsAppRepo.items[0].text).toBe("Olá, tudo bem?");
   });
 
+  it("links the logged activity to a partner when partnerId is provided", async () => {
+    const result = await useCase.execute({
+      to: PHONE,
+      text: "Oi parceiro",
+      ownerId: OWNER_ID,
+      partnerId: "partner-1",
+    });
+    expect(result.isRight()).toBe(true);
+    expect(activitiesRepo.items).toHaveLength(1);
+    expect(activitiesRepo.items[0].partnerId).toBe("partner-1");
+  });
+
   it("returns messageId on success", async () => {
     evolutionApi.nextMessageId = "evo-msg-xyz";
 

@@ -38,7 +38,7 @@ function forgeAccessToken(): string {
 
 const partner = {
   id: PARTNER_ID, name: PARTNER_NAME, legalName: null, foundationDate: null,
-  partnerType: "consultoria", website: null, email: null, phone: null, whatsapp: null,
+  partnerType: "consultoria", website: null, email: "partner@e2e.test", phone: null, whatsapp: "+5521999990000",
   country: null, state: "RJ", city: "Teresópolis", zipCode: null, streetAddress: "Av. Teste, 100",
   linkedin: null, instagram: null, facebook: null, twitter: null, industry: null,
   employeeCount: null, companySize: null, description: null, expertise: null, notes: null,

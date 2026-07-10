@@ -14,6 +14,7 @@ interface WhatsAppButtonProps {
   leadId?: string;
   contactId?: string;
   organizationId?: string;
+  partnerId?: string;
 }
 
 export default function WhatsAppButton({
@@ -23,6 +24,7 @@ export default function WhatsAppButton({
   leadId,
   contactId,
   organizationId,
+  partnerId,
 }: WhatsAppButtonProps) {
   const [open, setOpen] = useState(false);
 
@@ -37,7 +39,7 @@ export default function WhatsAppButton({
           <WhatsAppIcon className="h-4 w-4" />
         </button>
         {open && (
-          <WhatsAppSendModal to={to} name={name} onClose={() => setOpen(false)} leadId={leadId} contactId={contactId} organizationId={organizationId} />
+          <WhatsAppSendModal to={to} name={name} onClose={() => setOpen(false)} leadId={leadId} contactId={contactId} organizationId={organizationId} partnerId={partnerId} />
         )}
       </>
     );
@@ -53,7 +55,7 @@ export default function WhatsAppButton({
         Enviar WhatsApp
       </button>
       {open && (
-        <WhatsAppSendModal to={to} name={name} onClose={() => setOpen(false)} leadId={leadId} contactId={contactId} organizationId={organizationId} />
+        <WhatsAppSendModal to={to} name={name} onClose={() => setOpen(false)} leadId={leadId} contactId={contactId} organizationId={organizationId} partnerId={partnerId} />
       )}
     </>
   );

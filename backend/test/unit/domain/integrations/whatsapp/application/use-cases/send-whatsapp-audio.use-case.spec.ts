@@ -104,6 +104,13 @@ describe("SendWhatsAppAudioUseCase", () => {
     expect(activity.contactId).toBe("contact-1");
   });
 
+  it("associa partnerId à atividade criada", async () => {
+    await sut.execute({ ...baseInput, partnerId: "partner-1" });
+
+    const activity = activitiesRepo.items[0];
+    expect(activity.partnerId).toBe("partner-1");
+  });
+
   it("falha se Evolution API lançar erro", async () => {
     evolutionApi.shouldFailAudio = true;
 

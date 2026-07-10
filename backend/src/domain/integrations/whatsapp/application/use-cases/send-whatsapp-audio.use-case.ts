@@ -16,6 +16,7 @@ export interface SendWhatsAppAudioInput {
   entityName: string;
   leadId?: string | null;
   contactId?: string | null;
+  partnerId?: string | null;
 }
 
 export interface SendWhatsAppAudioOutput {
@@ -39,7 +40,7 @@ export class SendWhatsAppAudioUseCase {
   ) {}
 
   async execute(input: SendWhatsAppAudioInput): Promise<Either<Error, SendWhatsAppAudioOutput>> {
-    const { to, buffer, fileName, mimetype, requesterId, entityName, leadId, contactId } = input;
+    const { to, buffer, fileName, mimetype, requesterId, entityName, leadId, contactId, partnerId } = input;
 
     // 1. Upload to Google Drive
     const folderId = await this.drive.getOrCreateFolder(`WhatsApp - ${entityName}`);
@@ -94,6 +95,7 @@ export class SendWhatsAppAudioUseCase {
         dueDate: now,
         leadId: leadId ?? undefined,
         contactId: contactId ?? undefined,
+        partnerId: partnerId ?? undefined,
         meetingNoShow: false,
         emailReplied: false,
         emailOpenCount: 0,

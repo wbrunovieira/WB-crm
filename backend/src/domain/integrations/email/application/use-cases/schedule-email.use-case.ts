@@ -17,6 +17,7 @@ export interface ScheduleEmailInput {
   leadId?: string;
   contactIds?: string[];
   organizationId?: string;
+  partnerId?: string;
   dealId?: string;
 }
 
@@ -65,6 +66,7 @@ export class ScheduleEmailUseCase {
       contactIds,
       leadId: input.leadId,
       organizationId: input.organizationId,
+      partnerId: input.partnerId,
       dealId: input.dealId,
     });
     if (activityResult.isLeft()) return left(activityResult.value);

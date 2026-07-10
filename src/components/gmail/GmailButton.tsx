@@ -17,6 +17,7 @@ interface GmailButtonProps {
   leadId?: string;
   organizationId?: string;
   dealId?: string;
+  partnerId?: string;
   variant?: "icon" | "badge";
 }
 
@@ -29,6 +30,7 @@ export default function GmailButton({
   leadId,
   organizationId,
   dealId,
+  partnerId,
   variant = "badge",
 }: GmailButtonProps) {
   const [open, setOpen] = useState(false);
@@ -51,6 +53,7 @@ export default function GmailButton({
             senderName={senderName}
             contactId={contactId}
             leadId={leadId}
+            partnerId={partnerId}
             organizationId={organizationId}
             dealId={dealId}
             onClose={() => setOpen(false)}
@@ -77,6 +80,7 @@ export default function GmailButton({
           senderName={senderName}
           contactId={contactId}
           leadId={leadId}
+          partnerId={partnerId}
           organizationId={organizationId}
           dealId={dealId}
           onClose={() => setOpen(false)}

@@ -21,6 +21,7 @@ export interface SendEmailInput {
   leadId?: string;
   contactIds?: string[];
   organizationId?: string;
+  partnerId?: string;
   dealId?: string;
   // Scheduled-send flow: when set, the (pending) activity created at schedule time
   // is completed in place instead of creating a second activity. See
@@ -81,7 +82,7 @@ export class SendEmailUseCase {
   ) {}
 
   async execute(input: SendEmailInput): Promise<Either<Error, SendEmailOutput>> {
-    const { userId, to, subject, bodyHtml, fromEmail, threadId, attachments, ownerId, leadId, contactIds, organizationId, dealId } = input;
+    const { userId, to, subject, bodyHtml, fromEmail, threadId, attachments, ownerId, leadId, contactIds, organizationId, dealId, partnerId } = input;
 
     // 1. Validate email address
     const emailResult = EmailAddress.create(to);
@@ -180,6 +181,7 @@ export class SendEmailUseCase {
           leadId,
           organizationId,
           dealId,
+          partnerId,
         });
         if (activityResult.isRight()) {
           activityId = activityResult.value.activity.id.toString();

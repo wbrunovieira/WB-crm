@@ -13,6 +13,8 @@ import type { Meeting } from "@/components/meetings/MeetingsList";
 import { EntityNotesBlock } from "@/components/shared/EntityNotesBlock";
 import { LastContactAlert } from "@/components/shared/LastContactAlert";
 import { PartnerProductsSection } from "@/components/partners/PartnerProductsSection";
+import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
+import GmailButton from "@/components/gmail/GmailButton";
 import { Building2, Users, Activity, Video, Package, Pencil } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
@@ -146,6 +148,25 @@ export default async function PartnerDetailPage({
         {/* Contact Information */}
         <div className="rounded-lg bg-white p-6 shadow">
           <h2 className="mb-4 text-lg font-semibold">Contato da Empresa</h2>
+          {(partner.whatsapp || partner.phone || partner.email) && (
+            <div className="mb-4 flex flex-wrap gap-2">
+              {(partner.whatsapp || partner.phone) && (
+                <WhatsAppButton
+                  to={(partner.whatsapp || partner.phone) as string}
+                  name={partner.name}
+                  partnerId={partner.id}
+                />
+              )}
+              {partner.email && (
+                <GmailButton
+                  to={partner.email}
+                  name={partner.name}
+                  companyName={partner.name}
+                  partnerId={partner.id}
+                />
+              )}
+            </div>
+          )}
           <dl className="space-y-4">
             {partner.website && (
               <div>
