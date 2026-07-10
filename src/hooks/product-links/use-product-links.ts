@@ -15,10 +15,44 @@ export interface ProductLink {
   status?: string;
 }
 
+export interface PartnerProductLink {
+  id: string;
+  productId: string;
+  productName: string;
+  expertiseLevel?: string;
+  canRefer: boolean;
+  canDeliver: boolean;
+  commissionType?: string;
+  commissionValue?: number;
+  notes?: string;
+}
+
 export const productLinkKeys = {
   lead: (leadId: string) => ["product-links", "lead", leadId] as const,
   deal: (dealId: string) => ["product-links", "deal", dealId] as const,
+  partner: (partnerId: string) => ["product-links", "partner", partnerId] as const,
 };
+
+export function usePartnerProducts(partnerId: string) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  return useQuery({
+    queryKey: productLinkKeys.partner(partnerId),
+    queryFn: () => apiFetch<PartnerProductLink[]>(`/partners/${partnerId}/products`, token),
+    enabled: !!token && !!partnerId,
+  });
+}
+
+export function useRemovePartnerProduct() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ partnerId, productId }: { partnerId: string; productId: string }) =>
+      apiFetch<void>(`/partners/${partnerId}/products/${productId}`, token, { method: "DELETE" }),
+    onSuccess: (_d, { partnerId }) => qc.invalidateQueries({ queryKey: productLinkKeys.partner(partnerId) }),
+  });
+}
 
 export function useLeadProducts(leadId: string) {
   const { data: session } = useSession();

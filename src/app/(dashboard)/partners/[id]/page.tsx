@@ -12,7 +12,8 @@ import MeetingsList from "@/components/meetings/MeetingsList";
 import type { Meeting } from "@/components/meetings/MeetingsList";
 import { EntityNotesBlock } from "@/components/shared/EntityNotesBlock";
 import { LastContactAlert } from "@/components/shared/LastContactAlert";
-import { Building2, Users, Activity, Video, Pencil } from "lucide-react";
+import { PartnerProductsSection } from "@/components/partners/PartnerProductsSection";
+import { Building2, Users, Activity, Video, Package, Pencil } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -68,6 +69,7 @@ export default async function PartnerDetailPage({
               { href: "#contatos", icon: <Users size={11} />, label: "Contatos" },
               { href: "#atividades", icon: <Activity size={11} />, label: "Atividades" },
               { href: "#reunioes", icon: <Video size={11} />, label: "Reuniões" },
+              { href: "#produtos", icon: <Package size={11} />, label: "Produtos" },
             ].map(({ href, icon, label }) => (
               <a
                 key={href}
@@ -445,6 +447,9 @@ export default async function PartnerDetailPage({
           ]}
         />
       </div>
+
+      {/* Products / expertise */}
+      <PartnerProductsSection partnerId={partner.id} />
 
       {/* Entity Management Panel (Admin Only) */}
       {isAdmin && partner.owner && (

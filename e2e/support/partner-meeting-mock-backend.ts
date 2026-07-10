@@ -67,6 +67,11 @@ export function startMeetingMockBackend(port = 3010): Promise<MeetingMock> {
     if (req.method === "OPTIONS") return res.writeHead(204, CORS).end();
 
     if (req.method === "POST" && path === "/auth/login") return send(200, { accessToken: forgeAccessToken() });
+    if (req.method === "GET" && path === `/partners/${PARTNER_ID}/products`) {
+      return send(200, [
+        { id: "pp-1", productId: "prod-1", productName: "Desenvolvimento Web", expertiseLevel: "expert", canRefer: true, canDeliver: true, notes: null },
+      ]);
+    }
     if (req.method === "GET" && path === `/partners/${PARTNER_ID}`) return send(200, partner);
     if (req.method === "GET" && path === "/meetings" && !url.searchParams.has("title")) return send(200, []);
     if (req.method === "GET" && path === "/email/aliases") return send(200, { aliases: [] });

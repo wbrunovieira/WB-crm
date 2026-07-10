@@ -27,10 +27,12 @@ test.describe("Agendar reunião na página do partner (E2E UI)", () => {
     await page.getByRole("button", { name: "Entrar" }).click();
     await page.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20_000 });
 
-    // Partner page with the "Reuniões" section.
+    // Partner page with the "Reuniões" and "Produtos" sections.
     await page.goto(`/partners/${PARTNER_ID}`);
     await expect(page.getByRole("heading", { name: PARTNER_NAME })).toBeVisible();
     await expect(page.getByRole("heading", { name: /Reuniões/ })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Produtos \/ Expertise/ })).toBeVisible();
+    await expect(page.getByText("Desenvolvimento Web")).toBeVisible();
 
     // Open the schedule modal (empty state — no meetings yet).
     await page.getByRole("button", { name: /Agendar Primeira Reunião/ }).click();
