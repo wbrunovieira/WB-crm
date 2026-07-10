@@ -10,6 +10,8 @@ import { DeletePartnerButton } from "@/components/partners/DeletePartnerButton";
 import { CopyBookingLinkButton } from "@/components/partners/CopyBookingLinkButton";
 import MeetingsList from "@/components/meetings/MeetingsList";
 import type { Meeting } from "@/components/meetings/MeetingsList";
+import { EntityNotesBlock } from "@/components/shared/EntityNotesBlock";
+import { Building2, Users, Activity, Video, Pencil } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -39,21 +41,50 @@ export default async function PartnerDetailPage({
     : null;
 
   return (
-    <div className="p-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">{partner.name}</h1>
-          <p className="mt-2 text-gray-600">{partner.partnerType}</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <CopyBookingLinkButton partnerId={partner.id} />
-          <DeletePartnerButton partnerId={partner.id} />
-          <Link
-            href={`/partners/${partner.id}/edit`}
-            className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
-          >
-            Editar
-          </Link>
+    <div className="min-h-screen bg-[#350045] p-4 md:p-8">
+      {/* ── Header card (sticky, mirrors the lead page) ─────────────────── */}
+      <div className="sticky top-16 z-40 mb-6 rounded-2xl border border-purple-900/40 bg-white px-4 py-4 shadow-lg md:px-6 md:py-5">
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="break-words text-xl font-bold leading-tight text-gray-900 sm:text-2xl md:text-3xl">
+                {partner.name}
+              </h1>
+              <span className="mt-2 inline-flex items-center rounded-md bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-800">
+                {partner.partnerType}
+              </span>
+            </div>
+            <div className="flex flex-shrink-0 items-center gap-2">
+              <CopyBookingLinkButton partnerId={partner.id} />
+              <DeletePartnerButton partnerId={partner.id} />
+              <Link
+                href={`/partners/${partner.id}/edit`}
+                className="inline-flex flex-shrink-0 items-center gap-1 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-purple-700 sm:text-sm"
+              >
+                <Pencil size={13} />
+                <span className="hidden sm:inline">Editar</span>
+              </Link>
+            </div>
+          </div>
+
+          {/* Quick-nav pills */}
+          <div className="flex flex-wrap gap-1.5 border-t border-purple-900/20 pt-3">
+            {[
+              { href: "#info-basica", icon: <Building2 size={11} />, label: "Informações" },
+              { href: "#contatos", icon: <Users size={11} />, label: "Contatos" },
+              { href: "#atividades", icon: <Activity size={11} />, label: "Atividades" },
+              { href: "#reunioes", icon: <Video size={11} />, label: "Reuniões" },
+            ].map(({ href, icon, label }) => (
+              <a
+                key={href}
+                href={href}
+                className="inline-flex items-center gap-1 rounded-full border border-purple-300 bg-purple-50 px-2.5 py-1 text-xs font-medium text-purple-700 transition-colors hover:bg-purple-100"
+              >
+                {icon}
+                {label}
+              </a>
+            ))}
+          </div>
         </div>
       </div>
 
@@ -88,7 +119,7 @@ export default async function PartnerDetailPage({
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Basic Information */}
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div id="info-basica" className="scroll-mt-52 rounded-lg bg-white p-6 shadow">
           <h2 className="mb-4 text-lg font-semibold">Informações Básicas</h2>
           <dl className="space-y-4">
             <div>
@@ -293,7 +324,7 @@ export default async function PartnerDetailPage({
       {/* Contacts and Activities */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         {/* Contacts */}
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div id="contatos" className="scroll-mt-52 rounded-lg bg-white p-6 shadow">
           <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
             <h2 className="text-lg font-bold text-gray-900">
               Contatos ({partner.contacts.length})
@@ -330,7 +361,7 @@ export default async function PartnerDetailPage({
         </div>
 
         {/* Recent Activities */}
-        <div className="rounded-lg bg-white p-6 shadow">
+        <div id="atividades" className="scroll-mt-52 rounded-lg bg-white p-6 shadow">
           <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
             <h2 className="text-lg font-bold text-gray-900">
               Atividades ({partner.activities.length})
@@ -423,18 +454,15 @@ export default async function PartnerDetailPage({
           </dl>
         </div>
 
-        {partner.notes && (
-          <div className="rounded-lg bg-white p-6 shadow">
-            <h2 className="mb-4 text-lg font-semibold">Observações Internas</h2>
-            <p className="text-sm text-gray-700 whitespace-pre-wrap">
-              {partner.notes}
-            </p>
-          </div>
-        )}
+        <EntityNotesBlock
+          patchUrl={`/partners/${partner.id}`}
+          initialNotes={partner.notes}
+          entityLabel="parceiro"
+        />
       </div>
 
-      {/* Reuniões */}
-      <div id="reunioes" className="mt-6">
+      {/* Meetings */}
+      <div id="reunioes" className="mt-6 scroll-mt-52">
         <MeetingsList
           meetings={meetings ?? []}
           partnerId={partner.id}
