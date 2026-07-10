@@ -5,6 +5,11 @@ export interface PartnerContact {
   phone: string | null;
   position: string | null;
   role?: string | null;
+  whatsapp?: string | null;
+  linkedin?: string | null;
+  instagram?: string | null;
+  isPrimary?: boolean;
+  status?: string;
 }
 
 export interface PartnerActivity {

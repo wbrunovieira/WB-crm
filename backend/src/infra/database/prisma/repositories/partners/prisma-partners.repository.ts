@@ -78,7 +78,7 @@ export class PrismaPartnersRepository extends PartnersRepository {
         owner: { select: { id: true, name: true, email: true } },
         _count: { select: { contacts: true, activities: true, referredLeads: true } },
         contacts: {
-          select: { id: true, name: true, email: true, phone: true, whatsapp: true, role: true, isPrimary: true },
+          select: { id: true, name: true, email: true, phone: true, whatsapp: true, role: true, isPrimary: true, linkedin: true, instagram: true, status: true },
           orderBy: { name: "asc" },
         },
         activities: {

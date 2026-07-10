@@ -13,6 +13,7 @@ import type { Meeting } from "@/components/meetings/MeetingsList";
 import { EntityNotesBlock } from "@/components/shared/EntityNotesBlock";
 import { LastContactAlert } from "@/components/shared/LastContactAlert";
 import { PartnerProductsSection } from "@/components/partners/PartnerProductsSection";
+import { PartnerContactsList } from "@/components/partners/PartnerContactsList";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import GmailButton from "@/components/gmail/GmailButton";
 import { Building2, Users, Activity, Video, Package, Pencil } from "lucide-react";
@@ -315,41 +316,7 @@ export default async function PartnerDetailPage({
       {/* Contacts and Activities */}
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         {/* Contacts */}
-        <div id="contatos" className="scroll-mt-52 rounded-lg bg-white p-6 shadow">
-          <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
-            <h2 className="text-lg font-bold text-gray-900">
-              Contatos ({partner.contacts.length})
-            </h2>
-            <Link
-              href={`/contacts/new?partnerId=${partner.id}`}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
-            >
-              + Novo Contato
-            </Link>
-          </div>
-          {partner.contacts.length === 0 ? (
-            <p className="text-sm text-gray-500">Nenhum contato cadastrado</p>
-          ) : (
-            <ul className="space-y-2">
-              {partner.contacts.map((contact) => (
-                <li key={contact.id} className="text-sm">
-                  <Link
-                    href={`/contacts/${contact.id}`}
-                    className="font-medium text-primary hover:underline"
-                  >
-                    {contact.name}
-                  </Link>
-                  {contact.role && (
-                    <span className="ml-2 text-gray-500">• {contact.role}</span>
-                  )}
-                  {contact.email && (
-                    <span className="block text-xs text-gray-400">{contact.email}</span>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+        <PartnerContactsList partnerId={partner.id} partnerName={partner.name} contacts={partner.contacts} />
 
         {/* Recent Activities */}
         <div id="atividades" className="scroll-mt-52 rounded-lg bg-white p-6 shadow">

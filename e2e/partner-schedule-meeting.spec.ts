@@ -34,6 +34,13 @@ test.describe("Agendar reunião na página do partner (E2E UI)", () => {
     await expect(page.getByRole("heading", { name: /Produtos \/ Expertise/ })).toBeVisible();
     await expect(page.getByText("Desenvolvimento Web")).toBeVisible();
 
+    // Rich contacts section: the contact row shows the Principal badge and the
+    // WhatsApp/LinkedIn channel badges derived from the contact's fields.
+    const contactsCard = page.locator("#contatos");
+    await expect(contactsCard.getByText("Principal")).toBeVisible();
+    await expect(contactsCard.getByText("WhatsApp")).toBeVisible();
+    await expect(contactsCard.getByText("LinkedIn")).toBeVisible();
+
     // Open the schedule modal (empty state — no meetings yet).
     await page.getByRole("button", { name: /Agendar Primeira Reunião/ }).click();
     await expect(page.getByPlaceholder(/Apresentação da proposta/)).toBeVisible();
@@ -43,8 +50,10 @@ test.describe("Agendar reunião na página do partner (E2E UI)", () => {
     await page.locator('input[type="date"]').first().fill("2026-07-20");
     await page.locator('input[type="time"]').first().fill("14:00");
 
-    // Add the client as attendee via its suggested-contact chip.
-    await page.getByRole("button", { name: /Cliente Diego/ }).click();
+    // Add the client as attendee via its suggested-contact chip. The name is
+    // scoped tightly ("… · Contato") so it doesn't collide with the contact
+    // row's WhatsApp/Gmail quick-action buttons ("Enviar … para Cliente Diego").
+    await page.getByRole("button", { name: /Cliente Diego.*Contato/ }).click();
 
     // Submit.
     await page.getByRole("button", { name: "Agendar Reunião" }).click();

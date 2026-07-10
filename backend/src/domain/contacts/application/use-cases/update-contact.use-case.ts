@@ -45,30 +45,36 @@ export class UpdateContactUseCase {
       return left(new Error("Não autorizado"));
     }
 
-    const leadId = input.companyType === "lead" ? input.companyId : undefined;
-    const organizationId = input.companyType === "organization" ? input.companyId : undefined;
-    const partnerId = input.companyType === "partner" ? input.companyId : undefined;
-
+    // Partial (PATCH) semantics: only touch fields the caller actually sent.
+    // Passing `undefined` through would let Object.assign overwrite existing
+    // values — so a partial update (e.g. from the partner contacts modal, which
+    // omits companyType and the fields it doesn't manage) must NOT clear them or
+    // detach the contact from its company.
     contact.update({
-      name: input.name ?? contact.name,
-      email: input.email,
-      phone: input.phone,
-      whatsapp: input.whatsapp,
-      role: input.role,
-      department: input.department,
-      leadId,
-      organizationId,
-      partnerId,
-      linkedin: input.linkedin,
-      instagram: input.instagram,
-      status: input.status ?? contact.status,
-      isPrimary: input.isPrimary ?? contact.isPrimary,
-      birthDate: input.birthDate,
-      notes: input.notes,
-      preferredLanguage: input.preferredLanguage ?? contact.preferredLanguage,
-      languages: input.languages,
-      source: input.source,
-      sourceLeadContactId: input.sourceLeadContactId,
+      ...(input.name !== undefined && { name: input.name }),
+      ...(input.email !== undefined && { email: input.email }),
+      ...(input.phone !== undefined && { phone: input.phone }),
+      ...(input.whatsapp !== undefined && { whatsapp: input.whatsapp }),
+      ...(input.role !== undefined && { role: input.role }),
+      ...(input.department !== undefined && { department: input.department }),
+      ...(input.linkedin !== undefined && { linkedin: input.linkedin }),
+      ...(input.instagram !== undefined && { instagram: input.instagram }),
+      ...(input.status !== undefined && { status: input.status }),
+      ...(input.isPrimary !== undefined && { isPrimary: input.isPrimary }),
+      ...(input.birthDate !== undefined && { birthDate: input.birthDate }),
+      ...(input.notes !== undefined && { notes: input.notes }),
+      ...(input.preferredLanguage !== undefined && { preferredLanguage: input.preferredLanguage }),
+      ...(input.languages !== undefined && { languages: input.languages }),
+      ...(input.source !== undefined && { source: input.source }),
+      ...(input.sourceLeadContactId !== undefined && { sourceLeadContactId: input.sourceLeadContactId }),
+      // Company link is only reassigned when companyType is provided; the other
+      // two links are cleared (undefined → persisted as null by the mapper) so a
+      // contact moves cleanly between a lead / organization / partner.
+      ...(input.companyType !== undefined && {
+        leadId: input.companyType === "lead" ? input.companyId : undefined,
+        organizationId: input.companyType === "organization" ? input.companyId : undefined,
+        partnerId: input.companyType === "partner" ? input.companyId : undefined,
+      }),
     });
 
     await this.contacts.save(contact);

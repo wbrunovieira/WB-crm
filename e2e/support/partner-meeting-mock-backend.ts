@@ -43,7 +43,7 @@ const partner = {
   linkedin: null, instagram: null, facebook: null, twitter: null, industry: null,
   employeeCount: null, companySize: null, description: null, expertise: null, notes: null,
   lastContactDate: null, createdAt: "2026-07-01T00:00:00.000Z",
-  contacts: [{ id: "c-e2e-1", name: "Cliente Diego", email: CLIENT_EMAIL, phone: null, position: null, role: "Contato" }],
+  contacts: [{ id: "c-e2e-1", name: "Cliente Diego", email: CLIENT_EMAIL, phone: null, position: null, role: "Contato", whatsapp: "+5521988887777", linkedin: "in/diego", instagram: null, isPrimary: true, status: "active" }],
   activities: [], referredLeads: [],
   _count: { contacts: 1, activities: 0, referredLeads: 0 },
   owner: { id: USER_ID, name: "E2E User", email: USER_EMAIL },

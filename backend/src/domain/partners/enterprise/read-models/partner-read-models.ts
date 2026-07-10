@@ -45,6 +45,9 @@ export interface PartnerDetail extends PartnerSummary {
     whatsapp: string | null;
     role: string | null;
     isPrimary: boolean;
+    linkedin: string | null;
+    instagram: string | null;
+    status: string;
   }>;
   activities: Array<{
     id: string;
