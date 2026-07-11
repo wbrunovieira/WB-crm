@@ -107,3 +107,38 @@ export class RemoveSecondaryCnaeFromOrganizationUseCase {
     return right(undefined);
   }
 }
+
+// ─── Partner secondary CNAEs ─────────────────────────────────────────────────
+
+@Injectable()
+export class ListSecondaryCnaesForPartnerUseCase {
+  constructor(private readonly repo: CnaeRepository) {}
+  async execute(partnerId: string): Promise<Either<never, { cnaes: CnaeRecord[] }>> {
+    const cnaes = await this.repo.listForPartner(partnerId);
+    return right({ cnaes });
+  }
+}
+
+@Injectable()
+export class AddSecondaryCnaeToPartnerUseCase {
+  constructor(private readonly repo: CnaeRepository) {}
+
+  async execute(input: CnaeLinkInput): Promise<Either<CnaeNotFoundError, void>> {
+    const cnae = await this.repo.findById(input.cnaeId);
+    if (!cnae) return left(new CnaeNotFoundError());
+    await this.repo.addToPartner(input.cnaeId, input.entityId);
+    return right(undefined);
+  }
+}
+
+@Injectable()
+export class RemoveSecondaryCnaeFromPartnerUseCase {
+  constructor(private readonly repo: CnaeRepository) {}
+
+  async execute(input: CnaeLinkInput): Promise<Either<CnaeNotFoundError, void>> {
+    const cnae = await this.repo.findById(input.cnaeId);
+    if (!cnae) return left(new CnaeNotFoundError());
+    await this.repo.removeFromPartner(input.cnaeId, input.entityId);
+    return right(undefined);
+  }
+}

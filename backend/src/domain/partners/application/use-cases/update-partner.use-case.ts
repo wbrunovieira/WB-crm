@@ -34,6 +34,8 @@ export interface UpdatePartnerInput {
   notes?: string;
   starRating?: number | null;
   languages?: string | null;
+  primaryCNAEId?: string | null;
+  internationalActivity?: string | null;
 }
 
 type Output = Either<Error, { partner: Partner }>;

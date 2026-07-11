@@ -31,6 +31,8 @@ export interface CreatePartnerInput {
   expertise?: string;
   notes?: string;
   languages?: string | null;
+  primaryCNAEId?: string | null;
+  internationalActivity?: string | null;
 }
 
 type Output = Either<Error, { partner: Partner }>;
@@ -76,6 +78,8 @@ export class CreatePartnerUseCase {
       expertise: input.expertise,
       notes: input.notes,
       languages: input.languages,
+      primaryCNAEId: input.primaryCNAEId,
+      internationalActivity: input.internationalActivity,
       lastContactDate: new Date(),
     });
 

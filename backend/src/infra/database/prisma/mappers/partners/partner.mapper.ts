@@ -34,6 +34,8 @@ export class PartnerMapper {
         notes: raw.notes ?? undefined,
         starRating: raw.starRating ?? null,
         languages: raw.languages ?? undefined,
+        primaryCNAEId: raw.primaryCNAEId ?? null,
+        internationalActivity: raw.internationalActivity ?? null,
         lastContactDate: raw.lastContactDate ?? undefined,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
@@ -77,6 +79,8 @@ export class PartnerMapper {
       notes: partner.notes ?? null,
       starRating: partner.starRating ?? null,
       languages: partner.languages ?? null,
+      primaryCNAEId: partner.primaryCNAEId ?? null,
+      internationalActivity: partner.internationalActivity ?? null,
       lastContactDate: partner.lastContactDate instanceof Date
         ? partner.lastContactDate
         : partner.lastContactDate ? new Date(partner.lastContactDate as string) : null,

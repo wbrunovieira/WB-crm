@@ -119,6 +119,7 @@ export class PrismaPartnersRepository extends PartnersRepository {
       where: { id },
       include: {
         owner: { select: { id: true, name: true, email: true } },
+        primaryCNAE: { select: { id: true, code: true, description: true } },
         _count: { select: { contacts: true, activities: true, referredLeads: true } },
         contacts: {
           select: { id: true, name: true, email: true, phone: true, whatsapp: true, role: true, isPrimary: true, linkedin: true, instagram: true, status: true },
@@ -256,6 +257,8 @@ export class PrismaPartnersRepository extends PartnersRepository {
       instagram: r.instagram,
       facebook: r.facebook,
       twitter: r.twitter,
+      primaryCNAE: r.primaryCNAE ?? null,
+      internationalActivity: r.internationalActivity,
       emailVerified: r.emailVerified,
       emailVerifiedAt: r.emailVerifiedAt,
       emailVerificationStatus: r.emailVerificationStatus,

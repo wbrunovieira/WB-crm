@@ -15,8 +15,15 @@ interface CNAE {
 
 interface SecondaryCNAEsManagerProps {
   entityId: string;
-  entityType: "lead" | "organization";
+  entityType: "lead" | "organization" | "partner";
 }
+
+// Maps the entity type to the REST path segment used by the CNAE endpoints.
+const ENTITY_PATH_SEGMENT: Record<SecondaryCNAEsManagerProps["entityType"], string> = {
+  lead: "leads",
+  organization: "organizations",
+  partner: "partners",
+};
 
 export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsManagerProps) {
   const { data: session } = useSession();
@@ -35,9 +42,7 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
     if (!token) return;
     setLoading(true);
     try {
-      const path = entityType === "lead"
-        ? `/cnaes/leads/${entityId}`
-        : `/cnaes/organizations/${entityId}`;
+      const path = `/cnaes/${ENTITY_PATH_SEGMENT[entityType]}/${entityId}`;
       const data = await apiFetch<CNAE[]>(path, token);
       setCnaes(data);
     } catch (err) {
@@ -78,9 +83,7 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
   const handleAdd = async (cnaeId: string) => {
     setAdding(cnaeId);
     try {
-      const path = entityType === "lead"
-        ? `/cnaes/leads/${entityId}/${cnaeId}`
-        : `/cnaes/organizations/${entityId}/${cnaeId}`;
+      const path = `/cnaes/${ENTITY_PATH_SEGMENT[entityType]}/${entityId}/${cnaeId}`;
       await apiFetch(path, token, { method: "POST" });
       await loadCNAEs();
       setQuery("");
@@ -105,9 +108,7 @@ export function SecondaryCNAEsManager({ entityId, entityType }: SecondaryCNAEsMa
 
     setRemoving(cnaeId);
     try {
-      const path = entityType === "lead"
-        ? `/cnaes/leads/${entityId}/${cnaeId}`
-        : `/cnaes/organizations/${entityId}/${cnaeId}`;
+      const path = `/cnaes/${ENTITY_PATH_SEGMENT[entityType]}/${entityId}/${cnaeId}`;
       await apiFetch(path, token, { method: "DELETE" });
       await loadCNAEs();
     } catch (err) {

@@ -55,4 +55,20 @@ export class FakeSectorsRepository extends SectorsRepository {
     const ids = this.orgLinks.get(orgId) ?? new Set();
     return this.items.filter((s) => ids.has(s.id.toString()));
   }
+
+  public partnerLinks: Map<string, Set<string>> = new Map();
+
+  async addToPartner(sectorId: string, partnerId: string): Promise<void> {
+    if (!this.partnerLinks.has(partnerId)) this.partnerLinks.set(partnerId, new Set());
+    this.partnerLinks.get(partnerId)!.add(sectorId);
+  }
+
+  async removeFromPartner(sectorId: string, partnerId: string): Promise<void> {
+    this.partnerLinks.get(partnerId)?.delete(sectorId);
+  }
+
+  async findByPartner(partnerId: string): Promise<Sector[]> {
+    const ids = this.partnerLinks.get(partnerId) ?? new Set();
+    return this.items.filter((s) => ids.has(s.id.toString()));
+  }
 }

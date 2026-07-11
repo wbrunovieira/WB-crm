@@ -44,6 +44,7 @@ export const sectorKeys = {
   list: () => ["sectors", "list"] as const,
   leadSectors: (leadId: string) => ["sectors", "lead", leadId] as const,
   orgSectors: (orgId: string) => ["sectors", "org", orgId] as const,
+  partnerSectors: (partnerId: string) => ["sectors", "partner", partnerId] as const,
 };
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
@@ -75,6 +76,16 @@ export function useOrgSectors(orgId: string) {
     queryKey: sectorKeys.orgSectors(orgId),
     queryFn: () => apiFetch<{ sector: Sector }[]>(`/sectors/organizations/${orgId}`, token),
     enabled: !!token && !!orgId,
+  });
+}
+
+export function usePartnerSectors(partnerId: string) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  return useQuery({
+    queryKey: sectorKeys.partnerSectors(partnerId),
+    queryFn: () => apiFetch<{ sector: Sector }[]>(`/sectors/partners/${partnerId}`, token),
+    enabled: !!token && !!partnerId,
   });
 }
 
@@ -154,5 +165,27 @@ export function useUnlinkOrgFromSector() {
     mutationFn: ({ orgId, sectorId }: { orgId: string; sectorId: string }) =>
       apiFetch<void>(`/sectors/organizations/${orgId}/${sectorId}`, token, { method: "DELETE" }),
     onSuccess: (_d, { orgId }) => qc.invalidateQueries({ queryKey: sectorKeys.orgSectors(orgId) }),
+  });
+}
+
+export function useLinkPartnerToSector() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ partnerId, sectorId }: { partnerId: string; sectorId: string }) =>
+      apiFetch<void>(`/sectors/partners/${partnerId}/${sectorId}`, token, { method: "POST" }),
+    onSuccess: (_d, { partnerId }) => qc.invalidateQueries({ queryKey: sectorKeys.partnerSectors(partnerId) }),
+  });
+}
+
+export function useUnlinkPartnerFromSector() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ partnerId, sectorId }: { partnerId: string; sectorId: string }) =>
+      apiFetch<void>(`/sectors/partners/${partnerId}/${sectorId}`, token, { method: "DELETE" }),
+    onSuccess: (_d, { partnerId }) => qc.invalidateQueries({ queryKey: sectorKeys.partnerSectors(partnerId) }),
   });
 }

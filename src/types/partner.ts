@@ -59,6 +59,9 @@ export interface Partner {
   notes: string | null;
   starRating: number | null;
   languages: string | null;
+  primaryCNAEId: string | null;
+  primaryCNAE: { id: string; code: string; description: string } | null;
+  internationalActivity: string | null;
   emailVerified: boolean | null;
   emailVerifiedAt: string | null;
   emailVerificationStatus: string | null;

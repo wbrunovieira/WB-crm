@@ -9,6 +9,7 @@ import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
 import { brazilianStates } from "@/lib/lists/brazilian-states";
 import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
+import { CNAEAutocomplete } from "@/components/shared/CNAEAutocomplete";
 
 interface PartnerFormProps {
   partner?: {
@@ -38,6 +39,9 @@ interface PartnerFormProps {
     expertise: string | null;
     notes: string | null;
     languages?: string | null;
+    primaryCNAEId?: string | null;
+    primaryCNAE?: { id: string; code: string; description: string } | null;
+    internationalActivity?: string | null;
   };
 }
 
@@ -54,6 +58,9 @@ export function PartnerForm({ partner }: PartnerFormProps) {
     }
     return [];
   });
+  const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(
+    partner?.primaryCNAE || null,
+  );
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -90,6 +97,9 @@ export function PartnerForm({ partner }: PartnerFormProps) {
       notes: formData.get("notes") as string,
       // null (not undefined) so removing all languages actually clears the field on update
       languages: languages.length > 0 ? JSON.stringify(languages) : null,
+      primaryCNAEId: primaryCNAE?.id ?? null,
+      // null (not "") when empty, matching the languages convention
+      internationalActivity: (formData.get("internationalActivity") as string) || null,
     };
 
     try {
@@ -481,6 +491,29 @@ export function PartnerForm({ partner }: PartnerFormProps) {
 
           <div>
             <LanguageSelector value={languages} onChange={setLanguages} />
+          </div>
+
+          <div>
+            <CNAEAutocomplete
+              value={primaryCNAE}
+              onChange={setPrimaryCNAE}
+              label="Atividade Primária (CNAE) — Empresas Brasileiras"
+              placeholder="Digite código ou descrição do CNAE..."
+            />
+          </div>
+
+          <div>
+            <label htmlFor="internationalActivity" className="block text-sm font-medium text-gray-700">
+              Atividade Internacional (Empresas Estrangeiras)
+            </label>
+            <input
+              type="text"
+              id="internationalActivity"
+              name="internationalActivity"
+              placeholder="Ex: Software Development, Digital Marketing..."
+              defaultValue={partner?.internationalActivity || ""}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
           </div>
 
           <div>

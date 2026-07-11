@@ -195,3 +195,37 @@ export class UnlinkSectorFromOrganizationUseCase {
     return right(undefined);
   }
 }
+
+// ─── Partner sector link ─────────────────────────────────────────────────────
+
+@Injectable()
+export class GetPartnerSectorsUseCase {
+  constructor(private readonly repo: SectorsRepository) {}
+  async execute(partnerId: string): Promise<Either<never, { sectors: Sector[] }>> {
+    return right({ sectors: await this.repo.findByPartner(partnerId) });
+  }
+}
+
+@Injectable()
+export class LinkSectorToPartnerUseCase {
+  constructor(private readonly repo: SectorsRepository) {}
+  async execute(input: SectorLinkInput): Promise<Either<SectorNotFoundError | SectorForbiddenError, void>> {
+    const sector = await this.repo.findById(input.sectorId);
+    if (!sector) return left(new SectorNotFoundError());
+    if (sector.ownerId !== input.requesterId) return left(new SectorForbiddenError());
+    await this.repo.addToPartner(input.sectorId, input.entityId);
+    return right(undefined);
+  }
+}
+
+@Injectable()
+export class UnlinkSectorFromPartnerUseCase {
+  constructor(private readonly repo: SectorsRepository) {}
+  async execute(input: SectorLinkInput): Promise<Either<SectorNotFoundError | SectorForbiddenError, void>> {
+    const sector = await this.repo.findById(input.sectorId);
+    if (!sector) return left(new SectorNotFoundError());
+    if (sector.ownerId !== input.requesterId) return left(new SectorForbiddenError());
+    await this.repo.removeFromPartner(input.sectorId, input.entityId);
+    return right(undefined);
+  }
+}

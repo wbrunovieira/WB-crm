@@ -90,6 +90,8 @@ export class InMemoryPartnersRepository extends PartnersRepository {
       instagram: partner.instagram ?? null,
       facebook: partner.facebook ?? null,
       twitter: partner.twitter ?? null,
+      primaryCNAE: null,
+      internationalActivity: partner.internationalActivity ?? null,
       emailVerified: null,
       emailVerifiedAt: null,
       emailVerificationStatus: null,

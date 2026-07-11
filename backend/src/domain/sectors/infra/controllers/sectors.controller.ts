@@ -13,7 +13,8 @@ import {
   CreateSectorUseCase, UpdateSectorUseCase, DeleteSectorUseCase,
   LinkSectorToLeadUseCase, UnlinkSectorFromLeadUseCase,
   LinkSectorToOrganizationUseCase, UnlinkSectorFromOrganizationUseCase,
-  GetLeadSectorsUseCase, GetOrgSectorsUseCase,
+  LinkSectorToPartnerUseCase, UnlinkSectorFromPartnerUseCase,
+  GetLeadSectorsUseCase, GetOrgSectorsUseCase, GetPartnerSectorsUseCase,
 } from "../../application/use-cases/sectors.use-cases";
 
 function handleError(err: Left<Error, unknown>): never {
@@ -38,8 +39,11 @@ export class SectorsController {
     private readonly unlinkFromLead: UnlinkSectorFromLeadUseCase,
     private readonly linkToOrg: LinkSectorToOrganizationUseCase,
     private readonly unlinkFromOrg: UnlinkSectorFromOrganizationUseCase,
+    private readonly linkToPartner: LinkSectorToPartnerUseCase,
+    private readonly unlinkFromPartner: UnlinkSectorFromPartnerUseCase,
     private readonly getLeadSectors: GetLeadSectorsUseCase,
     private readonly getOrgSectors: GetOrgSectorsUseCase,
+    private readonly getPartnerSectors: GetPartnerSectorsUseCase,
   ) {}
 
   @Get()
@@ -117,6 +121,26 @@ export class SectorsController {
   @HttpCode(204)
   async removeFromOrg(@Param("orgId") orgId: string, @Param("sectorId") sectorId: string, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.unlinkFromOrg.execute({ sectorId, entityId: orgId, requesterId: user.id });
+    if (result.isLeft()) handleError(result);
+  }
+
+  @Get("partners/:partnerId")
+  async getPartnerSectorsList(@Param("partnerId") partnerId: string) {
+    const { sectors } = (await this.getPartnerSectors.execute(partnerId)).unwrap();
+    return sectors.map((s) => ({ sector: { id: s.id.toString(), name: s.name, slug: s.slug, isActive: s.isActive, description: s.description, marketSize: s.marketSize, salesCycleDays: s.salesCycleDays } }));
+  }
+
+  @Post("partners/:partnerId/:sectorId")
+  @HttpCode(204)
+  async addToPartner(@Param("partnerId") partnerId: string, @Param("sectorId") sectorId: string, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.linkToPartner.execute({ sectorId, entityId: partnerId, requesterId: user.id });
+    if (result.isLeft()) handleError(result);
+  }
+
+  @Delete("partners/:partnerId/:sectorId")
+  @HttpCode(204)
+  async removeFromPartner(@Param("partnerId") partnerId: string, @Param("sectorId") sectorId: string, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.unlinkFromPartner.execute({ sectorId, entityId: partnerId, requesterId: user.id });
     if (result.isLeft()) handleError(result);
   }
 }

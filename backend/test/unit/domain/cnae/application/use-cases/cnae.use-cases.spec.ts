@@ -6,6 +6,9 @@ import {
   RemoveSecondaryCnaeFromLeadUseCase,
   AddSecondaryCnaeToOrganizationUseCase,
   RemoveSecondaryCnaeFromOrganizationUseCase,
+  ListSecondaryCnaesForPartnerUseCase,
+  AddSecondaryCnaeToPartnerUseCase,
+  RemoveSecondaryCnaeFromPartnerUseCase,
 } from "@/domain/cnae/application/use-cases/cnae.use-cases";
 import { FakeCnaeRepository } from "../../fakes/fake-cnae.repository";
 
@@ -106,5 +109,42 @@ describe("RemoveSecondaryCnaeFromOrganizationUseCase", () => {
     });
     expect(result.isRight()).toBe(true);
     expect(repo.orgLinks.get("org-001")?.has("cnae-002")).toBe(false);
+  });
+});
+
+describe("AddSecondaryCnaeToPartnerUseCase", () => {
+  it("links cnae to partner", async () => {
+    const result = await new AddSecondaryCnaeToPartnerUseCase(repo).execute({
+      cnaeId: "cnae-002", entityId: "partner-001",
+    });
+    expect(result.isRight()).toBe(true);
+    expect(repo.partnerLinks.get("partner-001")?.has("cnae-002")).toBe(true);
+  });
+
+  it("returns CnaeNotFoundError for an unknown cnae", async () => {
+    const result = await new AddSecondaryCnaeToPartnerUseCase(repo).execute({
+      cnaeId: "cnae-999", entityId: "partner-001",
+    });
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).name).toBe("CnaeNotFoundError");
+  });
+});
+
+describe("RemoveSecondaryCnaeFromPartnerUseCase", () => {
+  it("removes cnae from partner", async () => {
+    await repo.addToPartner("cnae-002", "partner-001");
+    const result = await new RemoveSecondaryCnaeFromPartnerUseCase(repo).execute({
+      cnaeId: "cnae-002", entityId: "partner-001",
+    });
+    expect(result.isRight()).toBe(true);
+    expect(repo.partnerLinks.get("partner-001")?.has("cnae-002")).toBe(false);
+  });
+});
+
+describe("ListSecondaryCnaesForPartnerUseCase", () => {
+  it("lists cnaes linked to a partner", async () => {
+    await repo.addToPartner("cnae-002", "partner-001");
+    const result = await new ListSecondaryCnaesForPartnerUseCase(repo).execute("partner-001");
+    expect(result.value.cnaes.map((c) => c.id)).toContain("cnae-002");
   });
 });

@@ -300,6 +300,25 @@ describe("Partners Use Cases", () => {
       }
     });
 
+    it("atualiza primaryCNAEId e internationalActivity", async () => {
+      const created = await createUseCase.execute({ ownerId: "user-1", name: "Parceiro", partnerType: "consultoria" });
+      const id = created.isRight() ? created.value.partner.id.toString() : "";
+
+      const r = await updateUseCase.execute({
+        id, requesterId: "user-1", requesterRole: "sdr",
+        primaryCNAEId: "cnae-123", internationalActivity: "Software development",
+      });
+      expect(r.isRight()).toBe(true);
+      if (r.isRight()) {
+        expect(r.value.partner.primaryCNAEId).toBe("cnae-123");
+        expect(r.value.partner.internationalActivity).toBe("Software development");
+      }
+
+      // null clears primaryCNAE
+      const cleared = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", primaryCNAEId: null });
+      if (cleared.isRight()) expect(cleared.value.partner.primaryCNAEId).toBeNull();
+    });
+
     it("atualiza starRating (classificação por estrelas)", async () => {
       const created = await createUseCase.execute({ ownerId: "user-1", name: "Parceiro", partnerType: "consultoria" });
       const id = created.isRight() ? created.value.partner.id.toString() : "";

@@ -6,7 +6,8 @@ import {
   CreateSectorUseCase, UpdateSectorUseCase, DeleteSectorUseCase,
   LinkSectorToLeadUseCase, UnlinkSectorFromLeadUseCase,
   LinkSectorToOrganizationUseCase, UnlinkSectorFromOrganizationUseCase,
-  GetLeadSectorsUseCase, GetOrgSectorsUseCase,
+  LinkSectorToPartnerUseCase, UnlinkSectorFromPartnerUseCase,
+  GetLeadSectorsUseCase, GetOrgSectorsUseCase, GetPartnerSectorsUseCase,
 } from "./application/use-cases/sectors.use-cases";
 import { PrismaSectorsRepository } from "./infra/repositories/prisma-sectors.repository";
 import { SectorsController } from "./infra/controllers/sectors.controller";
@@ -19,7 +20,8 @@ import { SectorsController } from "./infra/controllers/sectors.controller";
     CreateSectorUseCase, UpdateSectorUseCase, DeleteSectorUseCase,
     LinkSectorToLeadUseCase, UnlinkSectorFromLeadUseCase,
     LinkSectorToOrganizationUseCase, UnlinkSectorFromOrganizationUseCase,
-    GetLeadSectorsUseCase, GetOrgSectorsUseCase,
+    LinkSectorToPartnerUseCase, UnlinkSectorFromPartnerUseCase,
+    GetLeadSectorsUseCase, GetOrgSectorsUseCase, GetPartnerSectorsUseCase,
     { provide: SectorsRepository, useClass: PrismaSectorsRepository },
   ],
 })

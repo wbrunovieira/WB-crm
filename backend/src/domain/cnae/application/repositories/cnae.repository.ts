@@ -17,4 +17,9 @@ export abstract class CnaeRepository {
   abstract listForOrganization(organizationId: string): Promise<CnaeRecord[]>;
   abstract addToOrganization(cnaeId: string, organizationId: string): Promise<void>;
   abstract removeFromOrganization(cnaeId: string, organizationId: string): Promise<void>;
+
+  // Partner secondary CNAEs
+  abstract listForPartner(partnerId: string): Promise<CnaeRecord[]>;
+  abstract addToPartner(cnaeId: string, partnerId: string): Promise<void>;
+  abstract removeFromPartner(cnaeId: string, partnerId: string): Promise<void>;
 }

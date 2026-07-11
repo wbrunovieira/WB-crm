@@ -127,4 +127,24 @@ export class PrismaSectorsRepository extends SectorsRepository {
     });
     return rows.map((r) => toDomain(r.sector));
   }
+
+  async addToPartner(sectorId: string, partnerId: string): Promise<void> {
+    await this.prisma.partnerSector.upsert({
+      where: { partnerId_sectorId: { partnerId, sectorId } },
+      create: { partnerId, sectorId },
+      update: {},
+    });
+  }
+
+  async removeFromPartner(sectorId: string, partnerId: string): Promise<void> {
+    await this.prisma.partnerSector.deleteMany({ where: { partnerId, sectorId } });
+  }
+
+  async findByPartner(partnerId: string): Promise<Sector[]> {
+    const rows = await this.prisma.partnerSector.findMany({
+      where: { partnerId },
+      include: { sector: true },
+    });
+    return rows.map((r) => toDomain(r.sector));
+  }
 }

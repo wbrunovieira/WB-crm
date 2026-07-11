@@ -17,6 +17,9 @@ import {
   RemoveSecondaryCnaeFromLeadUseCase,
   AddSecondaryCnaeToOrganizationUseCase,
   RemoveSecondaryCnaeFromOrganizationUseCase,
+  ListSecondaryCnaesForPartnerUseCase,
+  AddSecondaryCnaeToPartnerUseCase,
+  RemoveSecondaryCnaeFromPartnerUseCase,
 } from "../../application/use-cases/cnae.use-cases";
 
 function handleError(err: Left<Error, unknown>): never {
@@ -37,6 +40,9 @@ export class CnaeController {
     private readonly removeFromLead: RemoveSecondaryCnaeFromLeadUseCase,
     private readonly addToOrg: AddSecondaryCnaeToOrganizationUseCase,
     private readonly removeFromOrg: RemoveSecondaryCnaeFromOrganizationUseCase,
+    private readonly listForPartner: ListSecondaryCnaesForPartnerUseCase,
+    private readonly addToPartner: AddSecondaryCnaeToPartnerUseCase,
+    private readonly removeFromPartner: RemoveSecondaryCnaeFromPartnerUseCase,
   ) {}
 
   @Get()
@@ -105,6 +111,34 @@ export class CnaeController {
     @CurrentUser() _user: AuthenticatedUser,
   ) {
     const result = await this.removeFromOrg.execute({ cnaeId, entityId: orgId });
+    if (result.isLeft()) handleError(result);
+  }
+
+  @Get("partners/:partnerId")
+  async listPartnerCnaes(@Param("partnerId") partnerId: string) {
+    const result = await this.listForPartner.execute(partnerId);
+    return result.value.cnaes;
+  }
+
+  @Post("partners/:partnerId/:cnaeId")
+  @HttpCode(204)
+  async addCnaeToPartner(
+    @Param("partnerId") partnerId: string,
+    @Param("cnaeId") cnaeId: string,
+    @CurrentUser() _user: AuthenticatedUser,
+  ) {
+    const result = await this.addToPartner.execute({ cnaeId, entityId: partnerId });
+    if (result.isLeft()) handleError(result);
+  }
+
+  @Delete("partners/:partnerId/:cnaeId")
+  @HttpCode(204)
+  async removeCnaeFromPartner(
+    @Param("partnerId") partnerId: string,
+    @Param("cnaeId") cnaeId: string,
+    @CurrentUser() _user: AuthenticatedUser,
+  ) {
+    const result = await this.removeFromPartner.execute({ cnaeId, entityId: partnerId });
     if (result.isLeft()) handleError(result);
   }
 }

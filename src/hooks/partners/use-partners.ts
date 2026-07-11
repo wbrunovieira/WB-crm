@@ -58,6 +58,8 @@ export interface PartnerPayload {
   expertise?: string;
   notes?: string;
   languages?: string | null;
+  primaryCNAEId?: string | null;
+  internationalActivity?: string | null;
 }
 
 // ─── Mutations ────────────────────────────────────────────────────────────────

@@ -44,6 +44,22 @@ export class FakeCnaeRepository extends CnaeRepository {
     this.orgLinks.get(orgId)?.delete(cnaeId);
   }
 
+  public partnerLinks: Map<string, Set<string>> = new Map();
+
+  async listForPartner(partnerId: string): Promise<CnaeRecord[]> {
+    const ids = this.partnerLinks.get(partnerId) ?? new Set<string>();
+    return this.items.filter((c) => ids.has(c.id));
+  }
+
+  async addToPartner(cnaeId: string, partnerId: string): Promise<void> {
+    if (!this.partnerLinks.has(partnerId)) this.partnerLinks.set(partnerId, new Set());
+    this.partnerLinks.get(partnerId)!.add(cnaeId);
+  }
+
+  async removeFromPartner(cnaeId: string, partnerId: string): Promise<void> {
+    this.partnerLinks.get(partnerId)?.delete(cnaeId);
+  }
+
   seed(records: CnaeRecord[]): void {
     this.items.push(...records);
   }

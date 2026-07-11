@@ -61,6 +61,11 @@ export interface PartnerProps {
   // null explicitly clears (mirrors the starRating "null clears" convention).
   languages?: string | null;
 
+  // Economic activity (mirrors Lead/Organization): primary CNAE for Brazilian
+  // companies, free-text internationalActivity for foreign ones.
+  primaryCNAEId?: string | null;
+  internationalActivity?: string | null;
+
   lastContactDate?: Date;
 
   createdAt: Date;
@@ -96,6 +101,8 @@ export class Partner extends AggregateRoot<PartnerProps> {
   get notes()            { return this.props.notes; }
   get starRating()       { return this.props.starRating ?? null; }
   get languages()        { return this.props.languages ?? null; }
+  get primaryCNAEId()    { return this.props.primaryCNAEId ?? null; }
+  get internationalActivity() { return this.props.internationalActivity ?? null; }
   get lastContactDate()  { return this.props.lastContactDate; }
   get createdAt()        { return this.props.createdAt; }
   get updatedAt()        { return this.props.updatedAt; }

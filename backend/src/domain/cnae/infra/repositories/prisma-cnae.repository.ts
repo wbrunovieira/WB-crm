@@ -66,4 +66,25 @@ export class PrismaCnaeRepository extends CnaeRepository {
   async removeFromOrganization(cnaeId: string, organizationId: string): Promise<void> {
     await this.prisma.organizationSecondaryCNAE.deleteMany({ where: { organizationId, cnaeId } });
   }
+
+  async listForPartner(partnerId: string): Promise<CnaeRecord[]> {
+    const rows = await this.prisma.partnerSecondaryCNAE.findMany({
+      where: { partnerId },
+      include: { cnae: true },
+      orderBy: { cnae: { code: "asc" } },
+    });
+    return rows.map((r) => r.cnae);
+  }
+
+  async addToPartner(cnaeId: string, partnerId: string): Promise<void> {
+    await this.prisma.partnerSecondaryCNAE.upsert({
+      where: { partnerId_cnaeId: { partnerId, cnaeId } },
+      create: { partnerId, cnaeId },
+      update: {},
+    });
+  }
+
+  async removeFromPartner(cnaeId: string, partnerId: string): Promise<void> {
+    await this.prisma.partnerSecondaryCNAE.deleteMany({ where: { partnerId, cnaeId } });
+  }
 }

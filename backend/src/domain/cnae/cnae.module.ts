@@ -10,6 +10,9 @@ import {
   RemoveSecondaryCnaeFromLeadUseCase,
   AddSecondaryCnaeToOrganizationUseCase,
   RemoveSecondaryCnaeFromOrganizationUseCase,
+  ListSecondaryCnaesForPartnerUseCase,
+  AddSecondaryCnaeToPartnerUseCase,
+  RemoveSecondaryCnaeFromPartnerUseCase,
 } from "./application/use-cases/cnae.use-cases";
 import { PrismaCnaeRepository } from "./infra/repositories/prisma-cnae.repository";
 import { CnaeController } from "./infra/controllers/cnae.controller";
@@ -26,6 +29,9 @@ import { CnaeController } from "./infra/controllers/cnae.controller";
     RemoveSecondaryCnaeFromLeadUseCase,
     AddSecondaryCnaeToOrganizationUseCase,
     RemoveSecondaryCnaeFromOrganizationUseCase,
+    ListSecondaryCnaesForPartnerUseCase,
+    AddSecondaryCnaeToPartnerUseCase,
+    RemoveSecondaryCnaeFromPartnerUseCase,
     { provide: CnaeRepository, useClass: PrismaCnaeRepository },
   ],
 })

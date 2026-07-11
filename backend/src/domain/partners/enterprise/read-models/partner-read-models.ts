@@ -75,6 +75,10 @@ export interface PartnerDetail extends PartnerSummary {
   facebook: string | null;
   twitter: string | null;
 
+  // Economic activity
+  primaryCNAE: { id: string; code: string; description: string } | null;
+  internationalActivity: string | null;
+
   // Verification (email + phone/whatsapp format)
   emailVerified: boolean | null;
   emailVerifiedAt: Date | null;

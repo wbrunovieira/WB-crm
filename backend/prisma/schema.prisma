@@ -1063,6 +1063,11 @@ model Partner {
   whatsappPhoneValid      Boolean? // Format validation of the whatsapp number
   whatsappPhoneType       String?
 
+  // Economic activity (mirrors Lead/Organization): CNAE for Brazilian companies,
+  // free-text internationalActivity for foreign ones.
+  primaryCNAEId         String?
+  internationalActivity String? // Free-text activity for non-Brazilian partners
+
   lastContactDate DateTime? // Última vez que houve contato
 
   ownerId   String
@@ -1080,10 +1085,14 @@ model Partner {
   deals                 Deal[]           @relation("PartnerDeals") // Negócios com o parceiro (parceiro-cliente)
   referredDeals         Deal[]           @relation("PartnerReferredDeals") // Negócios indicados pelo parceiro
   proposals             Proposal[]       @relation("PartnerProposals") // Propostas para o parceiro
+  primaryCNAE           CNAE?                  @relation("PartnerPrimaryCNAE", fields: [primaryCNAEId], references: [id], onDelete: SetNull)
+  secondaryCNAEs        PartnerSecondaryCNAE[]
+  sectors               PartnerSector[]
 
   @@index([ownerId])
   @@index([partnerType])
   @@index([partnerStatus])
+  @@index([primaryCNAEId])
   @@map("partners")
 }
 
@@ -1790,6 +1799,8 @@ model CNAE {
   leadsSecondary         LeadSecondaryCNAE[]
   organizationsPrimary   Organization[]              @relation("OrganizationPrimaryCNAE")
   organizationsSecondary OrganizationSecondaryCNAE[]
+  partnersPrimary        Partner[]                   @relation("PartnerPrimaryCNAE")
+  partnersSecondary      PartnerSecondaryCNAE[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1838,6 +1849,24 @@ model OrganizationSecondaryCNAE {
   @@map("organization_secondary_cnaes")
 }
 
+model PartnerSecondaryCNAE {
+  id        String @id @default(cuid())
+  partnerId String
+  cnaeId    String
+
+  // Relations
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  cnae    CNAE    @relation(fields: [cnaeId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partnerId, cnaeId])
+  @@index([partnerId])
+  @@index([cnaeId])
+  @@map("partner_secondary_cnaes")
+}
+
 // ============ SECTOR ============
 
 model Sector {
@@ -1876,6 +1905,7 @@ model Sector {
   owner         User                 @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   leads         LeadSector[]
   organizations OrganizationSector[]
+  partners      PartnerSector[]
 
   @@index([ownerId])
   @@index([isActive])
@@ -1912,6 +1942,22 @@ model OrganizationSector {
   @@index([organizationId])
   @@index([sectorId])
   @@map("organization_sectors")
+}
+
+model PartnerSector {
+  id        String @id @default(cuid())
+  partnerId String @map("partner_id")
+  sectorId  String @map("sector_id")
+
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  sector  Sector  @relation(fields: [sectorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@unique([partnerId, sectorId])
+  @@index([partnerId])
+  @@index([sectorId])
+  @@map("partner_sectors")
 }
 
 // ============ ICP (Ideal Customer Profile) ============

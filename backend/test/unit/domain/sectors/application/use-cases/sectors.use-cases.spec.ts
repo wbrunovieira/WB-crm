@@ -4,7 +4,8 @@ import {
   CreateSectorUseCase, UpdateSectorUseCase, DeleteSectorUseCase,
   LinkSectorToLeadUseCase, UnlinkSectorFromLeadUseCase,
   LinkSectorToOrganizationUseCase, UnlinkSectorFromOrganizationUseCase,
-  GetLeadSectorsUseCase, GetOrgSectorsUseCase,
+  LinkSectorToPartnerUseCase, UnlinkSectorFromPartnerUseCase,
+  GetLeadSectorsUseCase, GetOrgSectorsUseCase, GetPartnerSectorsUseCase,
 } from "@/domain/sectors/application/use-cases/sectors.use-cases";
 import { FakeSectorsRepository } from "../../fakes/fake-sectors.repository";
 import { Sector } from "@/domain/sectors/enterprise/entities/sector";
@@ -144,6 +145,21 @@ describe("GetOrgSectorsUseCase", () => {
   });
 });
 
+describe("GetPartnerSectorsUseCase", () => {
+  it("returns sectors linked to a partner", async () => {
+    seed("s1", "Tech", "tech", "user-001");
+    await repo.addToPartner("s1", "partner-001");
+    const { sectors } = (await new GetPartnerSectorsUseCase(repo).execute("partner-001")).unwrap();
+    expect(sectors).toHaveLength(1);
+    expect(sectors[0].id.toString()).toBe("s1");
+  });
+
+  it("returns empty array when partner has no sectors", async () => {
+    const { sectors } = (await new GetPartnerSectorsUseCase(repo).execute("partner-999")).unwrap();
+    expect(sectors).toHaveLength(0);
+  });
+});
+
 describe("Link use cases", () => {
   it("links sector to lead", async () => {
     seed("s1", "Tech", "tech", "user-001");
@@ -162,6 +178,26 @@ describe("Link use cases", () => {
     seed("s1", "Tech", "tech", "user-001");
     await new LinkSectorToOrganizationUseCase(repo).execute({ sectorId: "s1", entityId: "org-001", requesterId: "user-001" });
     expect(repo.orgLinks.get("org-001")?.has("s1")).toBe(true);
+  });
+
+  it("links sector to partner", async () => {
+    seed("s1", "Tech", "tech", "user-001");
+    await new LinkSectorToPartnerUseCase(repo).execute({ sectorId: "s1", entityId: "partner-001", requesterId: "user-001" });
+    expect(repo.partnerLinks.get("partner-001")?.has("s1")).toBe(true);
+  });
+
+  it("unlinks sector from partner", async () => {
+    seed("s1", "Tech", "tech", "user-001");
+    await repo.addToPartner("s1", "partner-001");
+    await new UnlinkSectorFromPartnerUseCase(repo).execute({ sectorId: "s1", entityId: "partner-001", requesterId: "user-001" });
+    expect(repo.partnerLinks.get("partner-001")?.has("s1")).toBe(false);
+  });
+
+  it("returns SectorForbiddenError when linking another owner's sector to a partner", async () => {
+    seed("s1", "Tech", "tech", "user-001");
+    const result = await new LinkSectorToPartnerUseCase(repo).execute({ sectorId: "s1", entityId: "partner-001", requesterId: "user-999" });
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).name).toBe("SectorForbiddenError");
   });
 
   it("returns SectorForbiddenError when linking another owner's sector", async () => {

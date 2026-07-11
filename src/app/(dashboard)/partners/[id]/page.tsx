@@ -20,6 +20,8 @@ import { PartnerStarRatingInline } from "@/components/partners/PartnerStarRating
 import { LanguageBadges } from "@/components/shared/LanguageSelector";
 import { PartnerEmailVerifyButton } from "@/components/partners/PartnerEmailVerifyButton";
 import { PartnerPhoneVerifyButton } from "@/components/partners/PartnerPhoneVerifyButton";
+import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
+import { PartnerSectorSection } from "@/components/sectors/PartnerSectorSection";
 import { PartnerDealsList, type PartnerDealItem } from "@/components/partners/PartnerDealsList";
 import ProposalsList, { type Proposal } from "@/components/proposals/ProposalsList";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
@@ -414,6 +416,44 @@ export default async function PartnerDetailPage({
           </p>
         </div>
       )}
+
+      {/* Economic activity (CNAE) */}
+      <div id="cnae" className="mt-6 scroll-mt-52 rounded-lg bg-white p-6 shadow">
+        <h2 className="mb-4 text-lg font-semibold">Atividades Econômicas (CNAE)</h2>
+        {partner.primaryCNAE && (
+          <div className="mb-6 rounded-lg border-2 border-purple-200 bg-purple-50 p-4">
+            <dt className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-700">
+              Atividade Primária
+            </dt>
+            <dd className="flex items-center gap-3">
+              <span className="rounded-md bg-white px-3 py-1 font-mono text-sm font-bold text-purple-900 shadow-sm">
+                {partner.primaryCNAE.code}
+              </span>
+              <span className="text-base font-medium text-gray-900">
+                {partner.primaryCNAE.description}
+              </span>
+            </dd>
+          </div>
+        )}
+        {partner.internationalActivity && (
+          <div className="mb-6 rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
+            <dt className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+              Atividade Internacional
+            </dt>
+            <dd className="text-base font-medium text-gray-900">
+              {partner.internationalActivity}
+            </dd>
+          </div>
+        )}
+        <div className="mt-6">
+          <SecondaryCNAEsManager entityId={partner.id} entityType="partner" />
+        </div>
+      </div>
+
+      {/* Sectors */}
+      <div id="setores" className="mt-6 scroll-mt-52">
+        <PartnerSectorSection partnerId={partner.id} />
+      </div>
 
       {/* Contacts */}
       <div className="mt-6">

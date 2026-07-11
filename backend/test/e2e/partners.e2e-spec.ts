@@ -480,6 +480,48 @@ describe("Partners API (e2e)", () => {
       await prisma.user.delete({ where: { id: otherUser.id } });
     });
 
+    it("CNAE primário/secundário e setor do parceiro (fluxo completo)", async () => {
+      const cnaeA = await prisma.cNAE.create({ data: { code: "9999-9/01", description: "Atividade E2E A" } });
+      const cnaeB = await prisma.cNAE.create({ data: { code: "9999-9/02", description: "Atividade E2E B" } });
+      const sector = await prisma.sector.create({
+        data: { name: "Setor E2E", slug: `setor-e2e-${ownerId}`, ownerId, isActive: true },
+      });
+
+      const created = await request(app.getHttpServer())
+        .post("/partners").set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro CNAE", partnerType: "consultoria", primaryCNAEId: cnaeA.id, internationalActivity: "Dev" }).expect(201);
+      const pid = created.body.id;
+      expect(created.body.primaryCNAEId).toBe(cnaeA.id);
+
+      // Detail returns the hydrated primary CNAE object
+      const detail = await request(app.getHttpServer())
+        .get(`/partners/${pid}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(detail.body.primaryCNAE).toMatchObject({ id: cnaeA.id, code: "9999-9/01" });
+      expect(detail.body.internationalActivity).toBe("Dev");
+
+      // Secondary CNAE: add → list → remove
+      await request(app.getHttpServer())
+        .post(`/cnaes/partners/${pid}/${cnaeB.id}`).set("Authorization", `Bearer ${token}`).expect(204);
+      const cnaesList = await request(app.getHttpServer())
+        .get(`/cnaes/partners/${pid}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(cnaesList.body.map((c: { id: string }) => c.id)).toContain(cnaeB.id);
+      await request(app.getHttpServer())
+        .delete(`/cnaes/partners/${pid}/${cnaeB.id}`).set("Authorization", `Bearer ${token}`).expect(204);
+
+      // Sector: link → list → unlink
+      await request(app.getHttpServer())
+        .post(`/sectors/partners/${pid}/${sector.id}`).set("Authorization", `Bearer ${token}`).expect(204);
+      const sectorsList = await request(app.getHttpServer())
+        .get(`/sectors/partners/${pid}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(sectorsList.body.map((s: { sector: { id: string } }) => s.sector.id)).toContain(sector.id);
+      await request(app.getHttpServer())
+        .delete(`/sectors/partners/${pid}/${sector.id}`).set("Authorization", `Bearer ${token}`).expect(204);
+
+      // Cleanup (partner is removed by afterEach; junctions cascade)
+      await prisma.sector.delete({ where: { id: sector.id } });
+      await prisma.cNAE.deleteMany({ where: { id: { in: [cnaeA.id, cnaeB.id] } } });
+    });
+
     it("oficializar (prospect → active) carimba partnershipStartedAt e o preserva depois", async () => {
       const created = await request(app.getHttpServer())
         .post("/partners")
