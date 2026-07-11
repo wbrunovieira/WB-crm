@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { UploadProposalUseCase } from "@/domain/proposals/application/use-cases/upload-proposal.use-case";
 import { InMemoryProposalsRepository } from "../../fakes/in-memory-proposals.repository";
+import { InMemoryPartnersRepository } from "../../../partners/repositories/in-memory-partners.repository";
+import { PartnerOwnershipValidator } from "@/domain/partners/application/services/partner-ownership.validator";
 
 const mockGetOrCreateFolder = vi.fn();
 const mockUploadFile = vi.fn();
@@ -24,7 +26,8 @@ describe("UploadProposalUseCase", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     repo = new InMemoryProposalsRepository();
-    uc = new UploadProposalUseCase(repo, mockDrive as any, mockLeads as any);
+    const partnerOwnership = new PartnerOwnershipValidator(new InMemoryPartnersRepository());
+    uc = new UploadProposalUseCase(repo, mockDrive as any, mockLeads as any, partnerOwnership);
   });
 
   it("creates proposal without file when no fileBase64 provided", async () => {

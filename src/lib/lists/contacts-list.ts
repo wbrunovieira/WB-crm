@@ -6,8 +6,6 @@ export async function getContactsList() {
     const contacts = await backendFetch<{
       id: string;
       name: string;
-      organizationId: string | null;
-      leadId: string | null;
       organization: { id: string; name: string } | null;
       lead: { id: string; businessName: string } | null;
       partner: { id: string; name: string } | null;

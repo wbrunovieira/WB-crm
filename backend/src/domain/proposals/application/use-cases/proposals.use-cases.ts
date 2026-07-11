@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { Proposal } from "../../enterprise/entities/proposal";
 import { ProposalsRepository, ProposalFilters } from "../repositories/proposals.repository";
+import { PartnerOwnershipValidator } from "@/domain/partners/application/services/partner-ownership.validator";
 
 export class ProposalNotFoundError extends Error { name = "ProposalNotFoundError"; }
 export class ProposalForbiddenError extends Error { name = "ProposalForbiddenError"; }
@@ -31,7 +32,10 @@ export class GetProposalByIdUseCase {
 
 @Injectable()
 export class CreateProposalUseCase {
-  constructor(private readonly repo: ProposalsRepository) {}
+  constructor(
+    private readonly repo: ProposalsRepository,
+    private readonly partnerOwnership: PartnerOwnershipValidator,
+  ) {}
 
   async execute(input: {
     title: string;
@@ -45,7 +49,15 @@ export class CreateProposalUseCase {
     dealId?: string;
     partnerId?: string;
     ownerId: string;
+    requesterRole?: string;
   }): Promise<Either<Error, Proposal>> {
+    const partnerCheck = await this.partnerOwnership.assertAccessible(
+      input.partnerId,
+      input.ownerId,
+      input.requesterRole ?? "sdr",
+    );
+    if (partnerCheck.isLeft()) return left(partnerCheck.value);
+
     const result = Proposal.create(input);
     if (result.isLeft()) return left(result.value);
     const proposal = result.value as Proposal;
@@ -56,7 +68,10 @@ export class CreateProposalUseCase {
 
 @Injectable()
 export class UpdateProposalUseCase {
-  constructor(private readonly repo: ProposalsRepository) {}
+  constructor(
+    private readonly repo: ProposalsRepository,
+    private readonly partnerOwnership: PartnerOwnershipValidator,
+  ) {}
 
   async execute(input: {
     id: string;
@@ -77,6 +92,15 @@ export class UpdateProposalUseCase {
     if (!proposal) return left(new ProposalNotFoundError("Proposta não encontrada"));
     if (input.requesterRole !== "admin" && proposal.ownerId !== input.requesterId) {
       return left(new ProposalForbiddenError("Acesso negado"));
+    }
+
+    if (input.partnerId !== undefined) {
+      const partnerCheck = await this.partnerOwnership.assertAccessible(
+        input.partnerId,
+        proposal.ownerId,
+        input.requesterRole,
+      );
+      if (partnerCheck.isLeft()) return left(partnerCheck.value);
     }
 
     const updateResult = proposal.update(input);

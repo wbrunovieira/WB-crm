@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { InMemoryDealsRepository } from "../../repositories/in-memory-deals.repository";
+import { InMemoryPartnersRepository } from "../../../partners/repositories/in-memory-partners.repository";
+import { PartnerOwnershipValidator } from "@/domain/partners/application/services/partner-ownership.validator";
+import { Partner } from "@/domain/partners/enterprise/entities/partner";
+import { UniqueEntityID } from "@/core/unique-entity-id";
 import { GetDealsUseCase } from "@/domain/deals/application/use-cases/get-deals.use-case";
 import { GetDealByIdUseCase } from "@/domain/deals/application/use-cases/get-deal-by-id.use-case";
 import { CreateDealUseCase } from "@/domain/deals/application/use-cases/create-deal.use-case";
@@ -8,12 +12,23 @@ import { DeleteDealUseCase } from "@/domain/deals/application/use-cases/delete-d
 import { UpdateDealStageUseCase } from "@/domain/deals/application/use-cases/update-deal-stage.use-case";
 
 const OWNER_ID = "user-1";
+const OTHER_ID = "user-2";
 const STAGE_PROSP = { id: "stage-prosp", name: "Prospecção", probability: 20 };
 const STAGE_WON = { id: "stage-won", name: "Ganho", probability: 100 };
 const STAGE_LOST = { id: "stage-lost", name: "Perdido", probability: 0 };
 
+function seedPartner(repo: InMemoryPartnersRepository, id: string, ownerId: string) {
+  repo.items.push(
+    Partner.create(
+      { ownerId, name: `Parceiro ${id}`, partnerType: "indicador", partnerStatus: "active" },
+      new UniqueEntityID(id),
+    ),
+  );
+}
+
 describe("Deals Use Cases", () => {
   let repo: InMemoryDealsRepository;
+  let partnersRepo: InMemoryPartnersRepository;
   let getList: GetDealsUseCase;
   let getById: GetDealByIdUseCase;
   let create: CreateDealUseCase;
@@ -24,10 +39,14 @@ describe("Deals Use Cases", () => {
   beforeEach(() => {
     repo = new InMemoryDealsRepository();
     repo.stages = [STAGE_PROSP, STAGE_WON, STAGE_LOST];
+    partnersRepo = new InMemoryPartnersRepository();
+    // Partners referenced by the existing tests, all owned by OWNER_ID
+    ["partner-1", "partner-2", "partner-x", "partner-y"].forEach((id) => seedPartner(partnersRepo, id, OWNER_ID));
+    const partnerOwnership = new PartnerOwnershipValidator(partnersRepo);
     getList = new GetDealsUseCase(repo);
     getById = new GetDealByIdUseCase(repo);
-    create = new CreateDealUseCase(repo);
-    update = new UpdateDealUseCase(repo);
+    create = new CreateDealUseCase(repo, partnerOwnership);
+    update = new UpdateDealUseCase(repo, partnerOwnership);
     deleteDeal = new DeleteDealUseCase(repo);
     updateStage = new UpdateDealStageUseCase(repo);
   });
@@ -115,6 +134,66 @@ describe("Deals Use Cases", () => {
         expect(result.value.deal.partnerId).toBe("partner-1");
         expect(result.value.deal.referredByPartnerId).toBe("partner-2");
       }
+    });
+
+    it("rejeita partner-cliente de outro dono", async () => {
+      seedPartner(partnersRepo, "partner-alheio", OTHER_ID);
+      const result = await create.execute({
+        ownerId: OWNER_ID,
+        title: "Negócio inválido",
+        stageId: STAGE_PROSP.id,
+        partnerId: "partner-alheio",
+      });
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) expect(result.value.message).toContain("Não autorizado");
+      expect(repo.items).toHaveLength(0);
+    });
+
+    it("rejeita partner-indicador de outro dono", async () => {
+      seedPartner(partnersRepo, "partner-alheio", OTHER_ID);
+      const result = await create.execute({
+        ownerId: OWNER_ID,
+        title: "Negócio inválido",
+        stageId: STAGE_PROSP.id,
+        referredByPartnerId: "partner-alheio",
+      });
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) expect(result.value.message).toContain("Não autorizado");
+    });
+
+    it("admin pode vincular partner de outro dono", async () => {
+      seedPartner(partnersRepo, "partner-alheio", OTHER_ID);
+      const result = await create.execute({
+        ownerId: OWNER_ID,
+        requesterRole: "admin",
+        title: "Negócio admin",
+        stageId: STAGE_PROSP.id,
+        partnerId: "partner-alheio",
+      });
+      expect(result.isRight()).toBe(true);
+    });
+
+    it("rejeita partner inexistente", async () => {
+      const result = await create.execute({
+        ownerId: OWNER_ID,
+        title: "Negócio inválido",
+        stageId: STAGE_PROSP.id,
+        partnerId: "partner-fantasma",
+      });
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) expect(result.value.message).toContain("Parceiro não encontrado");
+    });
+
+    it("rejeita o mesmo parceiro como cliente e indicador", async () => {
+      const result = await create.execute({
+        ownerId: OWNER_ID,
+        title: "Negócio inválido",
+        stageId: STAGE_PROSP.id,
+        partnerId: "partner-1",
+        referredByPartnerId: "partner-1",
+      });
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) expect(result.value.message).toContain("mesmo parceiro");
     });
   });
 
@@ -269,6 +348,78 @@ describe("Deals Use Cases", () => {
 
       const result = await update.execute({ id: dealId, requesterId: OWNER_ID, requesterRole: "sdr", title: "Hack" });
       expect(result.isLeft()).toBe(true);
+    });
+
+    it("vincula partner-cliente e indicador via update", async () => {
+      const created = await create.execute({ ownerId: OWNER_ID, title: "Deal", stageId: STAGE_PROSP.id });
+      const dealId = (created as any).value.deal.id.toString();
+
+      const result = await update.execute({
+        id: dealId,
+        requesterId: OWNER_ID,
+        requesterRole: "sdr",
+        partnerId: "partner-1",
+        referredByPartnerId: "partner-2",
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.deal.partnerId).toBe("partner-1");
+        expect(result.value.deal.referredByPartnerId).toBe("partner-2");
+      }
+    });
+
+    it("desvincula partner (partnerId null) via update", async () => {
+      const created = await create.execute({ ownerId: OWNER_ID, title: "Deal", stageId: STAGE_PROSP.id, partnerId: "partner-1" });
+      const dealId = (created as any).value.deal.id.toString();
+
+      const result = await update.execute({
+        id: dealId,
+        requesterId: OWNER_ID,
+        requesterRole: "sdr",
+        partnerId: undefined,
+      });
+      // undefined means "no change"; explicit null is what unlinks
+      const unlinked = await update.execute({
+        id: dealId,
+        requesterId: OWNER_ID,
+        requesterRole: "sdr",
+        partnerId: null as unknown as string,
+      });
+
+      expect(result.isRight()).toBe(true);
+      expect(unlinked.isRight()).toBe(true);
+      if (unlinked.isRight()) expect(unlinked.value.deal.partnerId).toBeNull();
+    });
+
+    it("rejeita vincular partner de outro dono via update", async () => {
+      seedPartner(partnersRepo, "partner-alheio", OTHER_ID);
+      const created = await create.execute({ ownerId: OWNER_ID, title: "Deal", stageId: STAGE_PROSP.id });
+      const dealId = (created as any).value.deal.id.toString();
+
+      const result = await update.execute({
+        id: dealId,
+        requesterId: OWNER_ID,
+        requesterRole: "sdr",
+        partnerId: "partner-alheio",
+      });
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) expect(result.value.message).toContain("Não autorizado");
+    });
+
+    it("rejeita mesmo parceiro cliente+indicador considerando estado existente", async () => {
+      // Deal already has partner-1 as referrer; now try to set it as client too
+      const created = await create.execute({ ownerId: OWNER_ID, title: "Deal", stageId: STAGE_PROSP.id, referredByPartnerId: "partner-1" });
+      const dealId = (created as any).value.deal.id.toString();
+
+      const result = await update.execute({
+        id: dealId,
+        requesterId: OWNER_ID,
+        requesterRole: "sdr",
+        partnerId: "partner-1",
+      });
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) expect(result.value.message).toContain("mesmo parceiro");
     });
   });
 

@@ -17,7 +17,7 @@ export default async function NewDealPage({
     searchParams.leadId
       ? backendFetch<{ leadContacts?: { id: string; name: string; email?: string | null; phone?: string | null; role?: string | null; whatsapp?: string | null }[] }>(`/leads/${searchParams.leadId}`).catch(() => null)
       : Promise.resolve(null),
-    backendFetch<{ id: string; name: string }[]>("/partners?pageSize=200").catch(() => [] as { id: string; name: string }[]),
+    backendFetch<{ id: string; name: string }[]>("/partners").catch(() => [] as { id: string; name: string }[]),
   ]);
 
   const leads = leadsData.leads.map((l) => ({ id: l.id, businessName: l.businessName }));

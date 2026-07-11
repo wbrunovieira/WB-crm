@@ -214,10 +214,11 @@ export class DealsController {
   @ApiOperation({ summary: "Criar deal" })
   @ApiBody({ type: CreateDealDto })
   @ApiResponse({ status: 201 })
-  async create(@Body() body: Omit<CreateDealInput, "ownerId">, @CurrentUser() user: AuthenticatedUser) {
+  async create(@Body() body: Omit<CreateDealInput, "ownerId" | "requesterRole">, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.createDeal.execute({
       ...body,
       ownerId: user.id,
+      requesterRole: user.role ?? "sdr",
       expectedCloseDate: (body as any).expectedCloseDate ? new Date((body as any).expectedCloseDate) : undefined,
     });
     if (result.isLeft()) handleError(result);

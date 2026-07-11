@@ -214,6 +214,38 @@ describe("Deals API (e2e)", () => {
       expect(detail.body.partner).toMatchObject({ id: buyer.id, name: "Agência Compradora" });
       expect(detail.body.referredByPartner).toMatchObject({ id: referrer.id, name: "Agência Indicadora" });
     });
+
+    it("rejeita vincular parceiro de outro dono", async () => {
+      const otherUser = await prisma.user.create({
+        data: { email: "e2e-deals-other@test.com", name: "Outro", password: "x", role: "sdr" },
+      });
+      const foreignPartner = await prisma.partner.create({
+        data: { name: "Parceiro Alheio", partnerType: "consultoria", ownerId: otherUser.id },
+      });
+
+      const res = await request(app.getHttpServer())
+        .post("/deals")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ title: "Tentativa indevida", stageId, partnerId: foreignPartner.id });
+
+      expect(res.status).toBe(401);
+
+      await prisma.partner.delete({ where: { id: foreignPartner.id } });
+      await prisma.user.delete({ where: { id: otherUser.id } });
+    });
+
+    it("ao deletar o parceiro, o deal.partnerId vira null (ON DELETE SET NULL)", async () => {
+      const buyer = await prisma.partner.create({ data: { name: "Parceiro Efêmero", partnerType: "consultoria", ownerId } });
+
+      const created = await request(app.getHttpServer())
+        .post("/deals").set("Authorization", `Bearer ${token}`)
+        .send({ title: "Deal com parceiro efêmero", stageId, partnerId: buyer.id }).expect(201);
+
+      await prisma.partner.delete({ where: { id: buyer.id } });
+
+      const after = await prisma.deal.findUnique({ where: { id: created.body.id } });
+      expect(after?.partnerId).toBeNull();
+    });
   });
 
   // ─── GET /deals?partnerId / ?referredByPartnerId ──────────────────────────────

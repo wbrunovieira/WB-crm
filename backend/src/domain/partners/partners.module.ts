@@ -8,6 +8,7 @@ import { CreatePartnerUseCase } from "./application/use-cases/create-partner.use
 import { UpdatePartnerUseCase } from "./application/use-cases/update-partner.use-case";
 import { DeletePartnerUseCase } from "./application/use-cases/delete-partner.use-case";
 import { UpdatePartnerLastContactUseCase } from "./application/use-cases/update-partner-last-contact.use-case";
+import { PartnerOwnershipValidator } from "./application/services/partner-ownership.validator";
 import { PartnersController } from "@/infra/controllers/partners.controller";
 
 @Module({
@@ -21,6 +22,8 @@ import { PartnersController } from "@/infra/controllers/partners.controller";
     UpdatePartnerUseCase,
     DeletePartnerUseCase,
     UpdatePartnerLastContactUseCase,
+    PartnerOwnershipValidator,
   ],
+  exports: [PartnerOwnershipValidator],
 })
 export class PartnersModule {}

@@ -110,6 +110,41 @@ describe("POST /proposals (e2e)", () => {
     expect(listed.body.map((p: { id: string }) => p.id)).toEqual([created.body.id]);
   });
 
+  it("rejeita parceiro de outro dono", async () => {
+    const otherUser = await prisma.user.create({
+      data: { email: "e2e-proposals-other@test.com", name: "Outro", password: "x", role: "sdr" },
+    });
+    const foreignPartner = await prisma.partner.create({
+      data: { name: "Parceiro Alheio", partnerType: "consultoria", ownerId: otherUser.id },
+    });
+
+    await request(app.getHttpServer())
+      .post("/proposals")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Proposta indevida", partnerId: foreignPartner.id })
+      .expect(422);
+
+    const list = await request(app.getHttpServer())
+      .get("/proposals").set("Authorization", `Bearer ${token}`).expect(200);
+    expect(list.body).toHaveLength(0);
+
+    await prisma.partner.delete({ where: { id: foreignPartner.id } });
+    await prisma.user.delete({ where: { id: otherUser.id } });
+  });
+
+  it("ao deletar o parceiro, proposal.partnerId vira null (ON DELETE SET NULL)", async () => {
+    const partner = await prisma.partner.create({ data: { name: "Parceiro Efêmero", partnerType: "consultoria", ownerId } });
+
+    const created = await request(app.getHttpServer())
+      .post("/proposals").set("Authorization", `Bearer ${token}`)
+      .send({ title: "Proposta com parceiro efêmero", partnerId: partner.id }).expect(201);
+
+    await prisma.partner.delete({ where: { id: partner.id } });
+
+    const after = await prisma.proposal.findUnique({ where: { id: created.body.id } });
+    expect(after?.partnerId).toBeNull();
+  });
+
   it("rejeita título vazio", async () => {
     await request(app.getHttpServer())
       .post("/proposals")

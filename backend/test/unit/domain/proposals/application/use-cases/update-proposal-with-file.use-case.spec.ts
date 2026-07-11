@@ -1,6 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import { UpdateProposalWithFileUseCase } from "@/domain/proposals/application/use-cases/update-proposal-with-file.use-case";
 import { InMemoryProposalsRepository } from "../../fakes/in-memory-proposals.repository";
+import { InMemoryPartnersRepository } from "../../../partners/repositories/in-memory-partners.repository";
+import { PartnerOwnershipValidator } from "@/domain/partners/application/services/partner-ownership.validator";
 import { CreateProposalUseCase } from "@/domain/proposals/application/use-cases/proposals.use-cases";
 
 const mockGetOrCreateFolder = vi.fn();
@@ -27,7 +29,7 @@ describe("UpdateProposalWithFileUseCase", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     repo = new InMemoryProposalsRepository();
-    create = new CreateProposalUseCase(repo);
+    create = new CreateProposalUseCase(repo, new PartnerOwnershipValidator(new InMemoryPartnersRepository()));
     uc = new UpdateProposalWithFileUseCase(repo, mockDrive as any, mockLeads as any);
   });
 

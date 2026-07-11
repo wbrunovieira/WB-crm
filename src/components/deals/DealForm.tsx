@@ -12,8 +12,10 @@ import { toast } from "sonner";
 type Contact = {
   id: string;
   name: string;
-  organizationId?: string | null;
-  leadId?: string | null;
+  // The /contacts list read model returns nested relations, not flat FK ids.
+  organization?: { id: string; name: string } | null;
+  lead?: { id: string; businessName: string } | null;
+  partner?: { id: string; name: string } | null;
   _isLeadContact?: boolean;
 };
 
@@ -237,11 +239,11 @@ export default function DealForm({
       : "",
   });
 
-  // Lead contacts mapped to the Contact shape (unconverted LeadContacts)
+  // Lead contacts mapped to the Contact shape (unconverted LeadContacts).
+  // Flagged with _isLeadContact so the lead-mode filter always includes them.
   const leadContactsMapped: Contact[] = leadContacts.map((lc) => ({
     id: lc.id,
     name: lc.name,
-    leadId: preselectedLeadId || deal?.leadId || "",
     _isLeadContact: true,
   }));
 
@@ -253,15 +255,18 @@ export default function DealForm({
       ]
     : contacts;
 
-  // Filter contacts based on selected link
+  // Filter contacts based on selected link (list read model uses nested relations)
   const filteredContacts = allContacts.filter((c) => {
     if (linkType === "organization" && formData.organizationId) {
-      return c.organizationId === formData.organizationId;
+      return c.organization?.id === formData.organizationId;
     }
     if (linkType === "lead" && formData.leadId) {
-      return c.leadId === formData.leadId || c._isLeadContact;
+      return c.lead?.id === formData.leadId || c._isLeadContact;
     }
-    // No org/lead selected → show all
+    if (linkType === "partner" && formData.partnerId) {
+      return c.partner?.id === formData.partnerId;
+    }
+    // No counterparty selected → show all
     return true;
   });
 
@@ -553,7 +558,7 @@ export default function DealForm({
       <div>
         <label className="block text-sm font-medium text-gray-700">
           Contato
-          {(formData.organizationId || formData.leadId) && (
+          {(formData.organizationId || formData.leadId || formData.partnerId) && (
             <span className="ml-1 text-xs text-gray-400">
               ({filteredContacts.length} disponível{filteredContacts.length !== 1 ? "is" : ""})
             </span>

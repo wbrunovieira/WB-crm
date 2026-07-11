@@ -4,6 +4,7 @@ import { Proposal } from "../../enterprise/entities/proposal";
 import { ProposalsRepository } from "../repositories/proposals.repository";
 import { GoogleDrivePort } from "@/domain/integrations/whatsapp/application/ports/google-drive.port";
 import { LeadsRepository } from "@/domain/leads/application/repositories/leads.repository";
+import { PartnerOwnershipValidator } from "@/domain/partners/application/services/partner-ownership.validator";
 
 export interface UploadProposalInput {
   title: string;
@@ -15,6 +16,7 @@ export interface UploadProposalInput {
   fileMimeType?: string;
   fileBase64?: string;
   ownerId: string;
+  requesterRole?: string;
 }
 
 @Injectable()
@@ -23,9 +25,17 @@ export class UploadProposalUseCase {
     private readonly repo: ProposalsRepository,
     private readonly drive: GoogleDrivePort,
     private readonly leads: LeadsRepository,
+    private readonly partnerOwnership: PartnerOwnershipValidator,
   ) {}
 
   async execute(input: UploadProposalInput): Promise<Either<Error, Proposal>> {
+    const partnerCheck = await this.partnerOwnership.assertAccessible(
+      input.partnerId,
+      input.ownerId,
+      input.requesterRole ?? "sdr",
+    );
+    if (partnerCheck.isLeft()) return left(partnerCheck.value);
+
     let driveFileId: string | undefined;
     let driveUrl: string | undefined;
     let fileSize: number | undefined;

@@ -109,12 +109,13 @@ export class ProposalsController {
         fileMimeType: body.fileMimeType,
         fileBase64: body.fileBase64,
         ownerId: user.id,
+        requesterRole: user.role ?? "sdr",
       });
       if (r.isLeft()) handleError(r);
       return serialize(r.unwrap());
     }
 
-    const r = await this.createProposal.execute({ ...body, ownerId: user.id });
+    const r = await this.createProposal.execute({ ...body, ownerId: user.id, requesterRole: user.role ?? "sdr" });
     if (r.isLeft()) handleError(r);
     return serialize(r.unwrap());
   }

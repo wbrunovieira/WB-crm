@@ -15,7 +15,7 @@ export function usePartnersForSelect() {
   const token = session?.user?.accessToken ?? "";
   return useQuery<PartnerSelectItem[]>({
     queryKey: ["partners", "select"],
-    queryFn: () => apiFetch<PartnerSelectItem[]>("/partners?pageSize=200", token),
+    queryFn: () => apiFetch<PartnerSelectItem[]>("/partners", token),
     enabled: !!token,
     staleTime: 60_000,
   });
