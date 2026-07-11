@@ -24,6 +24,6 @@ import { PartnersController } from "@/infra/controllers/partners.controller";
     UpdatePartnerLastContactUseCase,
     PartnerOwnershipValidator,
   ],
-  exports: [PartnerOwnershipValidator],
+  exports: [PartnerOwnershipValidator, PartnersRepository],
 })
 export class PartnersModule {}

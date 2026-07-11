@@ -24,6 +24,8 @@ import { BatchVerifyContactPhonesUseCase } from "../../application/use-cases/bat
 import { VerifyContactEmailUseCase } from "../../application/use-cases/verify-contact-email.use-case";
 import { BatchVerifyContactEmailsUseCase } from "../../application/use-cases/batch-verify-contact-emails.use-case";
 import { VerifyLeadContactPhonesUseCase } from "../../application/use-cases/verify-lead-contact-phones.use-case";
+import { VerifyPartnerPhonesUseCase } from "../../application/use-cases/verify-partner-phones.use-case";
+import { VerifyPartnerEmailUseCase } from "../../application/use-cases/verify-partner-email.use-case";
 import { GetLeadSourceGroupsUseCase } from "@/domain/leads/application/use-cases/get-lead-source-groups.use-case";
 
 @ApiTags("Phone Verification")
@@ -41,6 +43,8 @@ export class PhoneController {
     private readonly verifyContactEmail: VerifyContactEmailUseCase,
     private readonly batchVerifyContactEmails: BatchVerifyContactEmailsUseCase,
     private readonly verifyLeadContactPhones: VerifyLeadContactPhonesUseCase,
+    private readonly verifyPartnerPhones: VerifyPartnerPhonesUseCase,
+    private readonly verifyPartnerEmail: VerifyPartnerEmailUseCase,
     private readonly getSourceGroups: GetLeadSourceGroupsUseCase,
   ) {}
 
@@ -166,6 +170,50 @@ export class PhoneController {
 
     if (result.isLeft()) {
       throw new NotFoundException(result.value.message);
+    }
+
+    return { ok: true, ...result.value };
+  }
+
+  @Post("verify/partner/:id")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Verificar formato dos telefones de um parceiro" })
+  async verifyPartnerPhonesHandler(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.verifyPartnerPhones.execute({
+      partnerId: id,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+
+    if (result.isLeft()) {
+      const msg = result.value.message;
+      if (msg.includes("Não autorizado")) throw new ForbiddenException(msg);
+      throw new NotFoundException(msg);
+    }
+
+    return { ok: true, ...result.value };
+  }
+
+  @Post("verify/partner/:id/email")
+  @HttpCode(200)
+  @ApiOperation({ summary: "Verificar email de um parceiro específico" })
+  async verifyPartnerEmailHandler(
+    @Param("id") id: string,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.verifyPartnerEmail.execute({
+      partnerId: id,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+
+    if (result.isLeft()) {
+      const msg = result.value.message;
+      if (msg.includes("Não autorizado")) throw new ForbiddenException(msg);
+      throw new NotFoundException(msg);
     }
 
     return { ok: true, ...result.value };

@@ -59,6 +59,14 @@ export interface Partner {
   notes: string | null;
   starRating: number | null;
   languages: string | null;
+  emailVerified: boolean | null;
+  emailVerifiedAt: string | null;
+  emailVerificationStatus: string | null;
+  emailVerificationReason: string | null;
+  phoneValid: boolean | null;
+  phoneType: string | null;
+  whatsappPhoneValid: boolean | null;
+  whatsappPhoneType: string | null;
   lastContactDate: string | null;
   /** Most recent contact-type activity date (derived by the backend). */
   lastContactAt: string | null;

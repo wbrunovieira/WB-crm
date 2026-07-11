@@ -18,6 +18,8 @@ import { PartnerActivitiesList } from "@/components/partners/PartnerActivitiesLi
 import { PartnerStatusBadge } from "@/components/partners/PartnerStatusBadge";
 import { PartnerStarRatingInline } from "@/components/partners/PartnerStarRatingInline";
 import { LanguageBadges } from "@/components/shared/LanguageSelector";
+import { PartnerEmailVerifyButton } from "@/components/partners/PartnerEmailVerifyButton";
+import { PartnerPhoneVerifyButton } from "@/components/partners/PartnerPhoneVerifyButton";
 import { PartnerDealsList, type PartnerDealItem } from "@/components/partners/PartnerDealsList";
 import ProposalsList, { type Proposal } from "@/components/proposals/ProposalsList";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
@@ -259,13 +261,41 @@ export default async function PartnerDetailPage({
             {partner.email && (
               <div>
                 <dt className="text-sm font-medium text-gray-500">Email</dt>
-                <dd className="mt-1 text-sm text-gray-900">
+                <dd className="mt-1 flex flex-wrap items-center gap-2 text-sm text-gray-900">
                   <a
                     href={`mailto:${partner.email}`}
                     className="text-primary hover:underline"
                   >
                     {partner.email}
                   </a>
+                  <PartnerEmailVerifyButton
+                    email={partner.email}
+                    partnerId={partner.id}
+                    verified={{
+                      at: partner.emailVerifiedAt,
+                      status: partner.emailVerificationStatus,
+                      reason: partner.emailVerificationReason,
+                      valid: partner.emailVerified,
+                    }}
+                  />
+                </dd>
+              </div>
+            )}
+            {(partner.phone || partner.whatsapp) && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Verificação de telefone</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  <PartnerPhoneVerifyButton
+                    partnerId={partner.id}
+                    phone={partner.phone}
+                    whatsapp={partner.whatsapp}
+                    existing={{
+                      phoneValid: partner.phoneValid,
+                      phoneType: partner.phoneType,
+                      whatsappPhoneValid: partner.whatsappPhoneValid,
+                      whatsappPhoneType: partner.whatsappPhoneType,
+                    }}
+                  />
                 </dd>
               </div>
             )}

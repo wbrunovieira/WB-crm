@@ -439,6 +439,47 @@ describe("Partners API (e2e)", () => {
       expect(cleared.body.languages).toBeNull();
     });
 
+    it("verifica telefones do parceiro e persiste no detalhe", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/partners").set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro Fone", partnerType: "consultoria", phone: "+5511988887777" }).expect(201);
+
+      const res = await request(app.getHttpServer())
+        .post(`/phone/verify/partner/${created.body.id}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(res.body.ok).toBe(true);
+      expect(res.body.phone).toBeDefined();
+
+      const detail = await request(app.getHttpServer())
+        .get(`/partners/${created.body.id}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(detail.body.phoneValid).toBe(res.body.phone.valid);
+    });
+
+    it("retorna 404 ao verificar email de parceiro sem email", async () => {
+      // Partner without email → the email verify route returns 404 ("não possui email")
+      const created = await request(app.getHttpServer())
+        .post("/partners").set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro Sem Email", partnerType: "consultoria" }).expect(201);
+
+      const noEmail = await request(app.getHttpServer())
+        .post(`/phone/verify/partner/${created.body.id}/email`).set("Authorization", `Bearer ${token}`);
+      expect(noEmail.status).toBe(404);
+    });
+
+    it("rejeita verificar parceiro de outro dono (403)", async () => {
+      const otherUser = await prisma.user.create({
+        data: { email: "e2e-partner-verify-other@test.com", name: "Outro", password: "x", role: "sdr" },
+      });
+      const foreign = await prisma.partner.create({
+        data: { name: "Alheio", partnerType: "consultoria", ownerId: otherUser.id, phone: "+5511900000000" },
+      });
+
+      await request(app.getHttpServer())
+        .post(`/phone/verify/partner/${foreign.id}`).set("Authorization", `Bearer ${token}`).expect(403);
+
+      await prisma.partner.delete({ where: { id: foreign.id } });
+      await prisma.user.delete({ where: { id: otherUser.id } });
+    });
+
     it("oficializar (prospect → active) carimba partnershipStartedAt e o preserva depois", async () => {
       const created = await request(app.getHttpServer())
         .post("/partners")

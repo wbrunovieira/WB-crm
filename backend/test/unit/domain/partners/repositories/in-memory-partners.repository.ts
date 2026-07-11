@@ -1,9 +1,12 @@
-import { PartnersRepository, type PartnerFilters } from "@/domain/partners/application/repositories/partners.repository";
+import { PartnersRepository, type PartnerFilters, type PartnerEmailVerificationData, type PartnerPhoneVerificationData } from "@/domain/partners/application/repositories/partners.repository";
 import type { Partner } from "@/domain/partners/enterprise/entities/partner";
 import type { PartnerSummary, PartnerDetail } from "@/domain/partners/enterprise/read-models/partner-read-models";
 
 export class InMemoryPartnersRepository extends PartnersRepository {
   public items: Partner[] = [];
+  // Verification data captured by the save* methods (for test assertions)
+  public emailVerifications = new Map<string, PartnerEmailVerificationData>();
+  public phoneVerifications = new Map<string, PartnerPhoneVerificationData>();
 
   async findMany(requesterId: string, requesterRole: string, filters: PartnerFilters = {}): Promise<PartnerSummary[]> {
     let results = this.items;
@@ -87,6 +90,14 @@ export class InMemoryPartnersRepository extends PartnersRepository {
       instagram: partner.instagram ?? null,
       facebook: partner.facebook ?? null,
       twitter: partner.twitter ?? null,
+      emailVerified: null,
+      emailVerifiedAt: null,
+      emailVerificationStatus: null,
+      emailVerificationReason: null,
+      phoneValid: null,
+      phoneType: null,
+      whatsappPhoneValid: null,
+      whatsappPhoneType: null,
       createdAt: partner.createdAt,
       updatedAt: partner.updatedAt,
       owner: null,
@@ -110,5 +121,13 @@ export class InMemoryPartnersRepository extends PartnersRepository {
 
   async delete(id: string): Promise<void> {
     this.items = this.items.filter((p) => p.id.toString() !== id);
+  }
+
+  async saveEmailVerification(partnerId: string, data: PartnerEmailVerificationData): Promise<void> {
+    this.emailVerifications.set(partnerId, data);
+  }
+
+  async savePhoneVerification(partnerId: string, data: PartnerPhoneVerificationData): Promise<void> {
+    this.phoneVerifications.set(partnerId, data);
   }
 }

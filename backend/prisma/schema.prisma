@@ -1053,6 +1053,16 @@ model Partner {
   starRating    Int? // Classificação manual por estrelas (1–5) para priorizar parceiros
   languages     String? // JSON: [{code, isPrimary}] - idiomas falados pelo parceiro
 
+  // Contact verification (format/email checks) — mirrors Lead/Contact
+  emailVerified           Boolean?  @default(false)
+  emailVerifiedAt         DateTime?
+  emailVerificationStatus String? // "valid" | "invalid" | "risky" | "unknown"
+  emailVerificationReason String? // human-readable reason
+  phoneValid              Boolean? // Format validation via libphonenumber-js
+  phoneType               String? // MOBILE, FIXED_LINE, VOIP, UNKNOWN, ...
+  whatsappPhoneValid      Boolean? // Format validation of the whatsapp number
+  whatsappPhoneType       String?
+
   lastContactDate DateTime? // Última vez que houve contato
 
   ownerId   String

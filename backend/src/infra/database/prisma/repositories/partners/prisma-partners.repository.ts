@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/infra/database/prisma.service";
-import { PartnersRepository, type PartnerFilters } from "@/domain/partners/application/repositories/partners.repository";
+import { PartnersRepository, type PartnerFilters, type PartnerEmailVerificationData, type PartnerPhoneVerificationData } from "@/domain/partners/application/repositories/partners.repository";
 import type { Partner } from "@/domain/partners/enterprise/entities/partner";
 import type { PartnerSummary, PartnerDetail } from "@/domain/partners/enterprise/read-models/partner-read-models";
 import { PartnerMapper } from "../../mappers/partners/partner.mapper";
@@ -256,6 +256,14 @@ export class PrismaPartnersRepository extends PartnersRepository {
       instagram: r.instagram,
       facebook: r.facebook,
       twitter: r.twitter,
+      emailVerified: r.emailVerified,
+      emailVerifiedAt: r.emailVerifiedAt,
+      emailVerificationStatus: r.emailVerificationStatus,
+      emailVerificationReason: r.emailVerificationReason,
+      phoneValid: r.phoneValid,
+      phoneType: r.phoneType,
+      whatsappPhoneValid: r.whatsappPhoneValid,
+      whatsappPhoneType: r.whatsappPhoneType,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       owner: r.owner,
@@ -284,5 +292,13 @@ export class PrismaPartnersRepository extends PartnersRepository {
 
   async delete(id: string): Promise<void> {
     await this.prisma.partner.delete({ where: { id } });
+  }
+
+  async saveEmailVerification(partnerId: string, data: PartnerEmailVerificationData): Promise<void> {
+    await this.prisma.partner.update({ where: { id: partnerId }, data });
+  }
+
+  async savePhoneVerification(partnerId: string, data: PartnerPhoneVerificationData): Promise<void> {
+    await this.prisma.partner.update({ where: { id: partnerId }, data });
   }
 }

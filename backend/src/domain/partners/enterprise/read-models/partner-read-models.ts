@@ -75,6 +75,16 @@ export interface PartnerDetail extends PartnerSummary {
   facebook: string | null;
   twitter: string | null;
 
+  // Verification (email + phone/whatsapp format)
+  emailVerified: boolean | null;
+  emailVerifiedAt: Date | null;
+  emailVerificationStatus: string | null;
+  emailVerificationReason: string | null;
+  phoneValid: boolean | null;
+  phoneType: string | null;
+  whatsappPhoneValid: boolean | null;
+  whatsappPhoneType: string | null;
+
   // Relations
   contacts: Array<{
     id: string;
