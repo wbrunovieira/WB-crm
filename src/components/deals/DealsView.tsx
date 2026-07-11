@@ -37,6 +37,8 @@ interface KanbanDeal {
   contact: { id: string; name: string; email: string | null } | null;
   organization: { id: string; name: string } | null;
   lead: { id: string; businessName: string } | null;
+  partner?: { id: string; name: string } | null;
+  referredByPartner?: { id: string; name: string } | null;
   createdAt: Date;
   activities?: Array<{
     id: string;
