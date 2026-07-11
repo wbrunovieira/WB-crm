@@ -1,7 +1,7 @@
 # Plano: Paridade da página do Partner com a página do Lead
 
 **Data de Criação:** 2026-07-10
-**Status:** Proposto — análise concluída, implementação não iniciada
+**Status:** Em andamento — Fases 1, 2, 3a e 3b concluídas; Fase 4 pendente (última atualização 2026-07-11)
 **Prioridade:** Média — melhora consistência de UX e produtividade no trabalho com parceiros
 **Origem:** Pedido do Bruno (2026-07-10): a página do partner deve ter os mesmos recursos da página do lead; onde já existe, a renderização deve ficar similar.
 
@@ -71,8 +71,8 @@ Legenda: ✅ igual · 🟡 existe mas renderização difere · ❌ falta · ⚪ 
 7. **Negócios (Deals)** — precisa **migração `Deal.partnerId`** + endpoint `/deals?partnerId` + `MeetingsList`-style. Decisão de produto: um deal pode ser "de um parceiro"? (ex.: negócio de indicação/co-venda).
 8. **Propostas** — precisa **migração `Proposal.partnerId`** + `/proposals?partnerId`. Avaliar se faz sentido enviar proposta a um parceiro.
 
-### C. Específico de lead — avaliar/pular (provavelmente não portar)
-ICP/qualificação, Convert, Tech Profile, Setor/CNAEs, Cadência, Meta/Google Ads, Deep Research, Google Places, Hierarquia, estrela/quality/status. São recursos de **prospecção/qualificação** de um prospect; um partner é uma relação estabelecida. Recomendo **não portar** por padrão, e reavaliar caso a caso se o Bruno quiser algum.
+### C. Específico de lead — avaliar/portar na Fase 4
+ICP/qualificação, Convert, Tech Profile, Setor/CNAEs, Cadência, Meta/Google Ads, Deep Research, Google Places, Hierarquia, estrela/quality/status. Originalmente eram recursos de **prospecção/qualificação** de um prospect. **Decisão do Bruno (2026-07-11):** manter esses itens como opções e **avaliar portar** para o partner — vários podem ser úteis também na relação com parceiros (ex.: Tech Profile de uma agência parceira, Setor/CNAEs, notas de qualificação). A Fase 4 trata cada um caso a caso em vez de descartar por padrão.
 
 ---
 
@@ -81,16 +81,17 @@ ICP/qualificação, Convert, Tech Profile, Setor/CNAEs, Cadência, Meta/Google A
 - **Fase 1 — Paridade de renderização (frontend puro, alto valor):** ✅ CONCLUÍDA — barra de nav, Contatos rico (`PartnerContactsList`), Atividades rico (`PartnerActivitiesList` + backend rich activity read-model), Notas inline, layout de Informações. Sem migração. Decisão do Bruno (2026-07-11): variantes `Partner*` em vez de generalizar os componentes do lead; Atividades sem cadência, sem drag-order e sem atribuição de contatos.
 - **Fase 2 — Comunicação + Produtos:** ✅ CONCLUÍDA — WhatsApp/Gmail no partner; seção Produtos (PartnerProduct). Sem migração.
 - **Fase 3 — Ciclo de vida do partner + Negócios/Propostas** (decisões tomadas por Bruno em 2026-07-11, ver §9). Migração só no backend, tudo aditivo (nullable/default, sem backfill). TDD obrigatório: unit + e2e.
-  - **3a — Estágio do partner:** campo `partnerStatus` (`prospect` = lead de partner ainda não oficializado · `active` = parceria oficializada · `inactive` = encerrada/pausada) + `partnershipStartedAt`. Badge de status no cabeçalho, filtro na lista, badge "já trouxe cliente" **derivado** de `referredLeads`/`referredOrganizations` convertidos (não armazenar). Espelha `Lead.status`.
-  - **3b — Negócios/Propostas do partner:** `Deal.partnerId` (partner é o cliente — cenário A), `Deal.referredByPartnerId` (atribuição/indicação — cenário B, mesmo padrão de `Lead.referredByPartnerId`/`Organization.referredByPartnerId`), `Proposal.partnerId`. Seções "Negócios" e "Propostas" na página do partner; na página de Negócios, badge "Parceiro: X" (indicação) + filtro "Negócios de parceiro".
-- **Fase 4 — Limpeza:** revisar itens do grupo C com o Bruno; portar o que ele quiser.
+  - **3a — Estágio do partner:** ✅ CONCLUÍDA (commit `e83b082b`) — campo `partnerStatus` (`prospect` = lead de partner ainda não oficializado · `active` = parceria oficializada · `inactive` = encerrada/pausada) + `partnershipStartedAt`. Badge de status no cabeçalho, filtro na lista, badge "já trouxe cliente" **derivado** de `referredLeads`/`referredOrganizations` convertidos (não armazenar). Espelha `Lead.status`.
+  - **3b — Negócios/Propostas do partner:** ✅ CONCLUÍDA (commits `5dd5a2bc` backend, `804f4cbd` frontend, `cf2c950f` lock de campos no DealsView) — `Deal.partnerId` (partner é o cliente — cenário A), `Deal.referredByPartnerId` (atribuição/indicação — cenário B, mesmo padrão de `Lead.referredByPartnerId`/`Organization.referredByPartnerId`), `Proposal.partnerId`. Seções "Negócios" e "Propostas" na página do partner; na página de Negócios, badge "Parceiro: X" (indicação) + filtro "Negócios de parceiro".
+    - **Senior review (2026-07-11):** aprovado com ressalvas, todas corrigidas — (1) `PartnerOwnershipValidator` reutilizável valida ownership de `partnerId`/`referredByPartnerId` em deals e proposals (a FK só garantia existência, não dono); (2) guard "mesmo parceiro não pode ser cliente e indicador"; (3) filtro de contatos do `DealForm` corrigido para usar as relações aninhadas do read model (`c.partner?.id` etc. — org/lead estavam quebrados em runtime); (4) removido `?pageSize=200` no-op das chamadas de `/partners`; (5) testes: unit (ownership, unlink, same-partner, admin bypass) + e2e (rejeição de partner alheio, `ON DELETE SET NULL`). **Drift descoberto:** a migration `20260711000002` não estava aplicada no dev DB (colunas via `db push`, FKs ausentes) — FKs alinhadas manualmente no dev; prod aplica via `deploy-backend.yml`.
+- **Fase 4 — Grupo C (avaliar/portar):** revisar cada item do grupo C com o Bruno e portar o que fizer sentido. **Decisão do Bruno (2026-07-11):** manter as opções — vários recursos de lead podem ser úteis também para partner (não descartar por padrão). Ver §4.C.
 
 ---
 
 ## 6. Decisões de produto (resolvidas)
 
 1. **Deals e Propostas vinculam a partner?** ✅ SIM (2026-07-11). Ver §9 — dois cenários (partner-cliente e partner-indicador), ambos suportados.
-2. Quais itens do **grupo C** o Bruno quer no partner (se algum)? — pendente.
+2. Quais itens do **grupo C** o Bruno quer no partner (se algum)? — ✅ DIREÇÃO DADA (2026-07-11): manter como opções e avaliar/portar na Fase 4 (podem ser úteis pro partner). Escolha item a item ainda a fazer na Fase 4.
 3. **Generalizar vs. variantes:** ✅ RESOLVIDO — criar variantes `Partner*` (não generalizar). Aplicado nas Fases 1–2.
 
 ---
