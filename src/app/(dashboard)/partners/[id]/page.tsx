@@ -16,6 +16,7 @@ import { PartnerProductsSection } from "@/components/partners/PartnerProductsSec
 import { PartnerContactsList } from "@/components/partners/PartnerContactsList";
 import { PartnerActivitiesList } from "@/components/partners/PartnerActivitiesList";
 import { PartnerStatusBadge } from "@/components/partners/PartnerStatusBadge";
+import { PartnerStarRatingInline } from "@/components/partners/PartnerStarRatingInline";
 import { PartnerDealsList, type PartnerDealItem } from "@/components/partners/PartnerDealsList";
 import ProposalsList, { type Proposal } from "@/components/proposals/ProposalsList";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
@@ -111,6 +112,7 @@ export default async function PartnerDetailPage({
                     ✓ Já trouxe cliente
                   </span>
                 )}
+                <PartnerStarRatingInline partnerId={partner.id} initialValue={partner.starRating ?? null} />
               </div>
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">

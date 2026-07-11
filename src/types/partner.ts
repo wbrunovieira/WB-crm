@@ -57,6 +57,7 @@ export interface Partner {
   description: string | null;
   expertise: string | null;
   notes: string | null;
+  starRating: number | null;
   lastContactDate: string | null;
   /** Most recent contact-type activity date (derived by the backend). */
   lastContactAt: string | null;

@@ -6,6 +6,7 @@ import { EntityAccessBadges } from "@/components/shared/EntityAccessBadges";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import Link from "next/link";
+import { Star } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PartnerStatusBadge } from "@/components/partners/PartnerStatusBadge";
@@ -43,6 +44,7 @@ export default async function PartnersPage({
     email?: string | null; phone?: string | null; city?: string | null;
     state?: string | null; country?: string | null; industry?: string | null;
     expertise?: string | null; companySize?: string | null;
+    starRating?: number | null;
     lastContactDate?: string | null; website?: string | null;
     owner?: { id: string; name: string; email: string } | null;
     _count: { contacts: number; activities: number; referredLeads: number };
@@ -166,6 +168,16 @@ export default async function PartnersPage({
                   {partner.partnerType}
                 </span>
                 <PartnerStatusBadge status={partner.partnerStatus} />
+                {partner.starRating != null && partner.starRating > 0 && (
+                  <span className="inline-flex items-center gap-0.5" title={`${partner.starRating} estrela${partner.starRating > 1 ? "s" : ""}`}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`h-3.5 w-3.5 ${star <= partner.starRating! ? "fill-amber-400 text-amber-400" : "fill-transparent text-gray-300"}`}
+                      />
+                    ))}
+                  </span>
+                )}
               </div>
 
               {partner.expertise && (

@@ -1050,6 +1050,7 @@ model Partner {
   description   String?
   expertise     String? // Área de expertise/especialização
   notes         String?
+  starRating    Int? // Classificação manual por estrelas (1–5) para priorizar parceiros
 
   lastContactDate DateTime? // Última vez que houve contato
 

@@ -137,6 +137,7 @@ class UpdatePartnerDto {
   @ApiPropertyOptional() description?: string;
   @ApiPropertyOptional() expertise?: string;
   @ApiPropertyOptional() notes?: string;
+  @ApiPropertyOptional({ example: 4, description: "Classificação por estrelas 1–5 (null limpa)" }) starRating?: number | null;
 }
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -177,6 +178,7 @@ function serialize(partner: Partner) {
     description: partner.description,
     expertise: partner.expertise,
     notes: partner.notes,
+    starRating: partner.starRating,
     lastContactDate: partner.lastContactDate,
     createdAt: partner.createdAt,
     updatedAt: partner.updatedAt,

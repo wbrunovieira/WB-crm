@@ -32,6 +32,7 @@ export class PartnerMapper {
         description: raw.description ?? undefined,
         expertise: raw.expertise ?? undefined,
         notes: raw.notes ?? undefined,
+        starRating: raw.starRating ?? null,
         lastContactDate: raw.lastContactDate ?? undefined,
         createdAt: raw.createdAt,
         updatedAt: raw.updatedAt,
@@ -73,6 +74,7 @@ export class PartnerMapper {
       description: partner.description ?? null,
       expertise: partner.expertise ?? null,
       notes: partner.notes ?? null,
+      starRating: partner.starRating ?? null,
       lastContactDate: partner.lastContactDate instanceof Date
         ? partner.lastContactDate
         : partner.lastContactDate ? new Date(partner.lastContactDate as string) : null,

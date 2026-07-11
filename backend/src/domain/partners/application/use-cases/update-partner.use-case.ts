@@ -32,6 +32,7 @@ export interface UpdatePartnerInput {
   description?: string;
   expertise?: string;
   notes?: string;
+  starRating?: number | null;
 }
 
 type Output = Either<Error, { partner: Partner }>;
@@ -50,6 +51,15 @@ export class UpdatePartnerUseCase {
 
     if (input.partnerStatus !== undefined && !isPartnerStatus(input.partnerStatus)) {
       return left(new Error("Status de parceria inválido"));
+    }
+
+    // starRating is 1–5 or null (clear). Guard the API path — the UI already constrains it.
+    if (
+      input.starRating !== undefined &&
+      input.starRating !== null &&
+      (!Number.isInteger(input.starRating) || input.starRating < 1 || input.starRating > 5)
+    ) {
+      return left(new Error("Classificação deve ser entre 1 e 5"));
     }
 
     const { id, requesterId, requesterRole, ...fields } = input;

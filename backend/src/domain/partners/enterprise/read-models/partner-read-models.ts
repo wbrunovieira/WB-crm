@@ -49,6 +49,7 @@ export interface PartnerSummary {
   industry: string | null;
   expertise: string | null;
   companySize: string | null;
+  starRating: number | null;
   lastContactDate: Date | null;
   createdAt: Date;
   updatedAt: Date;

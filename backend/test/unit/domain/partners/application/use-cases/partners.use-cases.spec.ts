@@ -298,6 +298,31 @@ describe("Partners Use Cases", () => {
       }
     });
 
+    it("atualiza starRating (classificação por estrelas)", async () => {
+      const created = await createUseCase.execute({ ownerId: "user-1", name: "Parceiro", partnerType: "consultoria" });
+      const id = created.isRight() ? created.value.partner.id.toString() : "";
+
+      const set = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", starRating: 4 });
+      expect(set.isRight()).toBe(true);
+      if (set.isRight()) expect(set.value.partner.starRating).toBe(4);
+
+      // Setting null clears the rating
+      const clear = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", starRating: null });
+      expect(clear.isRight()).toBe(true);
+      if (clear.isRight()) expect(clear.value.partner.starRating).toBeNull();
+    });
+
+    it("rejeita starRating fora da faixa 1–5", async () => {
+      const created = await createUseCase.execute({ ownerId: "user-1", name: "Parceiro", partnerType: "consultoria" });
+      const id = created.isRight() ? created.value.partner.id.toString() : "";
+
+      for (const bad of [0, 6, -3, 2.5]) {
+        const r = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", starRating: bad });
+        expect(r.isLeft()).toBe(true);
+        if (r.isLeft()) expect(r.value.message).toContain("entre 1 e 5");
+      }
+    });
+
     it("retorna erro quando parceiro não existe", async () => {
       const result = await updateUseCase.execute({ id: "nao-existe", requesterId: "user-1", requesterRole: "sdr", name: "X" });
 

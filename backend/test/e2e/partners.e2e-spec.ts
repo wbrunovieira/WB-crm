@@ -384,6 +384,32 @@ describe("Partners API (e2e)", () => {
         .expect(404);
     });
 
+    it("define e limpa starRating (classificação por estrelas)", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/partners").set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro Estrela", partnerType: "consultoria" }).expect(201);
+      expect(created.body.starRating ?? null).toBeNull();
+
+      const rated = await request(app.getHttpServer())
+        .patch(`/partners/${created.body.id}`).set("Authorization", `Bearer ${token}`)
+        .send({ starRating: 5 }).expect(200);
+      expect(rated.body.starRating).toBe(5);
+
+      const detail = await request(app.getHttpServer())
+        .get(`/partners/${created.body.id}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(detail.body.starRating).toBe(5);
+
+      const cleared = await request(app.getHttpServer())
+        .patch(`/partners/${created.body.id}`).set("Authorization", `Bearer ${token}`)
+        .send({ starRating: null }).expect(200);
+      expect(cleared.body.starRating).toBeNull();
+
+      const bad = await request(app.getHttpServer())
+        .patch(`/partners/${created.body.id}`).set("Authorization", `Bearer ${token}`)
+        .send({ starRating: 9 });
+      expect(bad.status).toBeGreaterThanOrEqual(400);
+    });
+
     it("oficializar (prospect → active) carimba partnershipStartedAt e o preserva depois", async () => {
       const created = await request(app.getHttpServer())
         .post("/partners")

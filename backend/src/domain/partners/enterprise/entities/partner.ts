@@ -54,6 +54,9 @@ export interface PartnerProps {
   expertise?: string;
   notes?: string;
 
+  // Manual star rating (1–5) to prioritize partners; null = unrated
+  starRating?: number | null;
+
   lastContactDate?: Date;
 
   createdAt: Date;
@@ -87,6 +90,7 @@ export class Partner extends AggregateRoot<PartnerProps> {
   get description()      { return this.props.description; }
   get expertise()        { return this.props.expertise; }
   get notes()            { return this.props.notes; }
+  get starRating()       { return this.props.starRating ?? null; }
   get lastContactDate()  { return this.props.lastContactDate; }
   get createdAt()        { return this.props.createdAt; }
   get updatedAt()        { return this.props.updatedAt; }
