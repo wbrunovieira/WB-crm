@@ -53,6 +53,7 @@ export interface Proposal {
   createdAt: string | Date;
   leadId?: string | null;
   dealId?: string | null;
+  partnerId?: string | null;
   // Agent fields
   agentJobId?: string | null;
   agentStatus?: string | null;
@@ -67,6 +68,7 @@ interface Props {
   proposals: Proposal[];
   leadId?: string;
   dealId?: string;
+  partnerId?: string;
   leadContacts?: LeadContact[];
 }
 
@@ -115,7 +117,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function ProposalsList({ proposals: initial, leadId, dealId, leadContacts = [] }: Props) {
+export default function ProposalsList({ proposals: initial, leadId, dealId, partnerId, leadContacts = [] }: Props) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const router = useRouter();
@@ -516,6 +518,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, lead
         <ProposalUploadModal
           leadId={leadId}
           dealId={dealId}
+          partnerId={partnerId}
           onClose={() => setShowModal(false)}
           onCreated={handleCreated}
         />
@@ -526,6 +529,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, lead
           proposal={editing}
           leadId={leadId}
           dealId={dealId}
+          partnerId={partnerId}
           onClose={() => setEditing(null)}
           onSaved={handleSaved}
         />

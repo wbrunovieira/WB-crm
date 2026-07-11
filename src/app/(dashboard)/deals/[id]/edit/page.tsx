@@ -11,12 +11,13 @@ export default async function EditDealPage({
 }: {
   params: { id: string };
 }) {
-  const [deal, contacts, organizations, stages, leadsData] = await Promise.all([
+  const [deal, contacts, organizations, stages, leadsData, partners] = await Promise.all([
     backendFetch<Deal>(`/deals/${params.id}`).catch(() => null),
     getContactsList(),
     backendFetch<{ id: string; name: string }[]>("/organizations").catch(() => []),
     getStagesList(),
     backendFetch<{ leads: { id: string; businessName: string }[] }>("/leads?isArchived=false&isProspect=false&pageSize=200").catch(() => ({ leads: [] })),
+    backendFetch<{ id: string; name: string }[]>("/partners?pageSize=200").catch(() => [] as { id: string; name: string }[]),
   ]);
 
   const leads = leadsData.leads.map((l) => ({ id: l.id, businessName: l.businessName }));
@@ -45,6 +46,7 @@ export default async function EditDealPage({
           contacts={contacts}
           organizations={organizations}
           leads={leads}
+          partners={partners}
           stages={stages}
         />
       </div>

@@ -23,6 +23,9 @@ interface Deal {
   expectedCloseDate: Date | string | null;
   contact: { id: string; name: string } | null;
   organization: { id: string; name: string } | null;
+  lead?: { id: string; businessName: string } | null;
+  partner?: { id: string; name: string } | null;
+  referredByPartner?: { id: string; name: string } | null;
   stage: {
     id: string;
     name: string;
@@ -224,6 +227,15 @@ export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin =
               >
                 {deal.title}
               </Link>
+              {deal.referredByPartner && (
+                <Link
+                  href={`/partners/${deal.referredByPartner.id}`}
+                  className="inline-flex items-center gap-1 rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 hover:bg-amber-100"
+                  title="Negócio indicado por parceiro"
+                >
+                  🤝 {deal.referredByPartner.name}
+                </Link>
+              )}
               {isAdmin && deal.owner && (
                 <EntityAccessBadges
                   owner={{ id: deal.owner.id, name: deal.owner.name || "" }}
@@ -279,6 +291,15 @@ export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin =
             className="text-gray-900 hover:text-primary"
           >
             {deal.organization.name}
+          </Link>
+        ) : deal.lead ? (
+          <Link href={`/leads/${deal.lead.id}`} className="text-gray-900 hover:text-primary">
+            {deal.lead.businessName}
+          </Link>
+        ) : deal.partner ? (
+          <Link href={`/partners/${deal.partner.id}`} className="inline-flex items-center gap-1 text-gray-900 hover:text-primary">
+            {deal.partner.name}
+            <span className="rounded bg-purple-100 px-1 py-0.5 text-[10px] font-medium text-purple-700">parceiro</span>
           </Link>
         ) : (
           <span className="text-gray-400">-</span>

@@ -36,6 +36,11 @@ type Lead = {
   businessName: string;
 };
 
+type PartnerOpt = {
+  id: string;
+  name: string;
+};
+
 type Stage = {
   id: string;
   name: string;
@@ -56,6 +61,8 @@ type Deal = {
   contactId: string | null;
   organizationId: string | null;
   leadId?: string | null;
+  partnerId?: string | null;
+  referredByPartnerId?: string | null;
   stageId: string;
   expectedCloseDate: string | Date | null;
 };
@@ -65,9 +72,11 @@ type DealFormProps = {
   contacts: Contact[];
   organizations: Organization[];
   leads: Lead[];
+  partners: PartnerOpt[];
   stages: Stage[];
   preselectedOrganizationId?: string;
   preselectedLeadId?: string;
+  preselectedPartnerId?: string;
   leadContacts?: LeadContactItem[];
   returnTo?: string;
 };
@@ -187,9 +196,11 @@ export default function DealForm({
   contacts,
   organizations,
   leads,
+  partners,
   stages,
   preselectedOrganizationId,
   preselectedLeadId,
+  preselectedPartnerId,
   leadContacts = [],
   returnTo,
 }: DealFormProps) {
@@ -201,10 +212,13 @@ export default function DealForm({
   const isSubmitting = createMutation.isPending || updateMutation.isPending;
   const [error, setError] = useState<string | null>(null);
 
-  // Determine initial link type
-  const initialLinkType = (deal?.leadId || preselectedLeadId) ? "lead" : "organization";
+  // Determine initial link type (counterparty): partner > lead > organization
+  const initialLinkType: "organization" | "lead" | "partner" =
+    (deal?.partnerId || preselectedPartnerId) ? "partner"
+    : (deal?.leadId || preselectedLeadId) ? "lead"
+    : "organization";
 
-  const [linkType, setLinkType] = useState<"organization" | "lead">(initialLinkType);
+  const [linkType, setLinkType] = useState<"organization" | "lead" | "partner">(initialLinkType);
   const [formData, setFormData] = useState({
     title: deal?.title || "",
     description: deal?.description || "",
@@ -214,6 +228,9 @@ export default function DealForm({
     contactId: deal?.contactId || "",
     organizationId: deal?.organizationId || preselectedOrganizationId || "",
     leadId: deal?.leadId || preselectedLeadId || "",
+    partnerId: deal?.partnerId || preselectedPartnerId || "",
+    // Referral attribution is independent of the counterparty (can coexist with lead/org)
+    referredByPartnerId: deal?.referredByPartnerId || "",
     stageId: deal?.stageId || "",
     expectedCloseDate: deal?.expectedCloseDate
       ? new Date(deal.expectedCloseDate).toISOString().split("T")[0]
@@ -248,13 +265,15 @@ export default function DealForm({
     return true;
   });
 
-  function handleLinkTypeChange(type: "organization" | "lead") {
+  function handleLinkTypeChange(type: "organization" | "lead" | "partner") {
     setLinkType(type);
-    // Clear the other field and reset contact
+    // Clear the other counterparty fields and reset contact
     if (type === "organization") {
-      setFormData((f) => ({ ...f, leadId: "", contactId: "" }));
+      setFormData((f) => ({ ...f, leadId: "", partnerId: "", contactId: "" }));
+    } else if (type === "lead") {
+      setFormData((f) => ({ ...f, organizationId: "", partnerId: "", contactId: "" }));
     } else {
-      setFormData((f) => ({ ...f, organizationId: "", contactId: "" }));
+      setFormData((f) => ({ ...f, organizationId: "", leadId: "", contactId: "" }));
     }
   }
 
@@ -301,6 +320,8 @@ export default function DealForm({
       contactId: resolvedContactId,
       organizationId: linkType === "organization" ? (formData.organizationId || null) : null,
       leadId: linkType === "lead" ? (formData.leadId || null) : null,
+      partnerId: linkType === "partner" ? (formData.partnerId || null) : null,
+      referredByPartnerId: formData.referredByPartnerId || null,
       stageId: formData.stageId,
       expectedCloseDate: formData.expectedCloseDate || undefined,
     };
@@ -321,6 +342,7 @@ export default function DealForm({
 
   const orgOptions = organizations.map((o) => ({ value: o.id, label: o.name }));
   const leadOptions = leads.map((l) => ({ value: l.id, label: l.businessName }));
+  const partnerOptions = partners.map((p) => ({ value: p.id, label: p.name }));
   const contactOptions = filteredContacts.map((c) => ({ value: c.id, label: c.name }));
 
   return (
@@ -456,6 +478,17 @@ export default function DealForm({
             />
             Lead
           </label>
+          <label className="flex cursor-pointer items-center gap-2 text-sm">
+            <input
+              type="radio"
+              name="linkType"
+              value="partner"
+              checked={linkType === "partner"}
+              onChange={() => handleLinkTypeChange("partner")}
+              className="accent-primary"
+            />
+            Parceiro
+          </label>
         </div>
 
         {linkType === "organization" ? (
@@ -470,7 +503,7 @@ export default function DealForm({
               emptyLabel="Nenhuma organização"
             />
           </div>
-        ) : (
+        ) : linkType === "lead" ? (
           <div>
             <label className="block text-sm font-medium text-gray-700">Lead</label>
             <SearchableSelect
@@ -482,7 +515,38 @@ export default function DealForm({
               emptyLabel="Nenhum lead"
             />
           </div>
+        ) : (
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Parceiro (cliente)</label>
+            <SearchableSelect
+              id="partnerId"
+              value={formData.partnerId}
+              onChange={(v) => setFormData({ ...formData, partnerId: v, contactId: "" })}
+              options={partnerOptions}
+              placeholder="Selecione um parceiro"
+              emptyLabel="Nenhum parceiro"
+            />
+            <p className="mt-1 text-xs text-gray-400">A agência/parceiro contratando um serviço para si.</p>
+          </div>
         )}
+      </div>
+
+      {/* Referral attribution (independent of the counterparty above) */}
+      <div className="rounded-md border border-amber-200 bg-amber-50/40 p-4">
+        <label htmlFor="referredByPartnerId" className="block text-sm font-medium text-gray-700">
+          Indicado por (parceiro)
+        </label>
+        <p className="mb-2 text-xs text-gray-500">
+          Se este negócio veio da indicação de um parceiro — mesmo que o cliente seja um lead/organização.
+        </p>
+        <SearchableSelect
+          id="referredByPartnerId"
+          value={formData.referredByPartnerId}
+          onChange={(v) => setFormData({ ...formData, referredByPartnerId: v })}
+          options={partnerOptions}
+          placeholder="Nenhum (sem indicação)"
+          emptyLabel="Nenhum parceiro"
+        />
       </div>
 
       {/* Contact — filtered by selected org or lead */}

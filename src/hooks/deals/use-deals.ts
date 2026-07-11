@@ -24,6 +24,8 @@ export interface DealPayload {
   contactId?: string | null;
   organizationId?: string | null;
   leadId?: string | null;
+  partnerId?: string | null;
+  referredByPartnerId?: string | null;
   expectedCloseDate?: string | null;
 }
 

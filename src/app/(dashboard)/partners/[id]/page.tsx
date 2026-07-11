@@ -16,28 +16,60 @@ import { PartnerProductsSection } from "@/components/partners/PartnerProductsSec
 import { PartnerContactsList } from "@/components/partners/PartnerContactsList";
 import { PartnerActivitiesList } from "@/components/partners/PartnerActivitiesList";
 import { PartnerStatusBadge } from "@/components/partners/PartnerStatusBadge";
+import { PartnerDealsList, type PartnerDealItem } from "@/components/partners/PartnerDealsList";
+import ProposalsList, { type Proposal } from "@/components/proposals/ProposalsList";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import GmailButton from "@/components/gmail/GmailButton";
-import { Building2, Users, Activity, Video, Package, Pencil } from "lucide-react";
+import { Building2, Users, Activity, Video, Package, Pencil, TrendingUp, FileText } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+
+/** Deal summary shape returned by /deals (subset consumed by the partner page). */
+interface DealRow {
+  id: string;
+  title: string;
+  value: number;
+  currency: string;
+  status: string;
+  stage: { id: string; name: string; pipeline?: { id: string; name: string } } | null;
+  contact: { id: string; name: string } | null;
+  _count: { activities: number };
+}
 
 export default async function PartnerDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const [partner, session, meetings, callAnalyses, meetAnalyses, gkAnalyses] = await Promise.all([
+  const [partner, session, meetings, callAnalyses, meetAnalyses, gkAnalyses, customerDeals, referredDeals, proposals] = await Promise.all([
     backendFetch<Partner>(`/partners/${params.id}`).catch(() => null),
     getServerSession(authOptions),
     backendFetch<Meeting[]>(`/meetings?partnerId=${params.id}`).catch((): Meeting[] => []),
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/call-analysis").catch(() => []),
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/meet-analysis").catch(() => []),
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/gatekeeper-analysis").catch(() => []),
+    backendFetch<DealRow[]>(`/deals?partnerId=${params.id}&closedMonth=all`).catch((): DealRow[] => []),
+    backendFetch<DealRow[]>(`/deals?referredByPartnerId=${params.id}&closedMonth=all`).catch((): DealRow[] => []),
+    backendFetch<Proposal[]>(`/proposals?partnerId=${params.id}`).catch((): Proposal[] => []),
   ]);
 
   if (!partner) {
     notFound();
   }
+
+  // Merge the partner's deals (as customer) with the deals it referred into a single
+  // list, tagging each row's role(s). A deal can be both (rare) → shows both badges.
+  const dealRoleMap = new Map<string, PartnerDealItem>();
+  const collectDeal = (d: DealRow, role: "customer" | "referred") => {
+    const existing = dealRoleMap.get(d.id);
+    if (existing) { existing.roles.push(role); return; }
+    dealRoleMap.set(d.id, {
+      id: d.id, title: d.title, value: d.value, currency: d.currency, status: d.status,
+      stage: d.stage, contact: d.contact, _count: d._count, roles: [role],
+    });
+  };
+  (customerDeals ?? []).forEach((d) => collectDeal(d, "customer"));
+  (referredDeals ?? []).forEach((d) => collectDeal(d, "referred"));
+  const partnerDeals = Array.from(dealRoleMap.values());
 
   const callAnalysesMap = Object.fromEntries(
     callAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
@@ -100,6 +132,8 @@ export default async function PartnerDetailPage({
               { href: "#info-basica", icon: <Building2 size={11} />, label: "Informações" },
               { href: "#contatos", icon: <Users size={11} />, label: "Contatos" },
               { href: "#atividades", icon: <Activity size={11} />, label: "Atividades" },
+              { href: "#negocios", icon: <TrendingUp size={11} />, label: "Negócios" },
+              { href: "#propostas", icon: <FileText size={11} />, label: "Propostas" },
               { href: "#reunioes", icon: <Video size={11} />, label: "Reuniões" },
               { href: "#produtos", icon: <Package size={11} />, label: "Produtos" },
             ].map(({ href, icon, label }) => (
@@ -357,6 +391,16 @@ export default async function PartnerDetailPage({
           meetTranscriptActivityIds={meetTranscriptActivityIds}
           gkAnalysesMap={gkAnalysesMap}
         />
+      </div>
+
+      {/* Deals (partner as customer + referred deals, one list with role badges) */}
+      <div className="mt-6">
+        <PartnerDealsList deals={partnerDeals} partnerId={partner.id} />
+      </div>
+
+      {/* Proposals */}
+      <div id="propostas" className="mt-6 scroll-mt-52">
+        <ProposalsList proposals={proposals ?? []} partnerId={partner.id} />
       </div>
 
       {/* Referred Leads */}

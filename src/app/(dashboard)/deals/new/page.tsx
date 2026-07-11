@@ -7,9 +7,9 @@ import Link from "next/link";
 export default async function NewDealPage({
   searchParams,
 }: {
-  searchParams: { organizationId?: string; leadId?: string; returnTo?: string };
+  searchParams: { organizationId?: string; leadId?: string; partnerId?: string; returnTo?: string };
 }) {
-  const [contacts, organizations, stages, leadsData, leadData] = await Promise.all([
+  const [contacts, organizations, stages, leadsData, leadData, partners] = await Promise.all([
     getContactsList(),
     backendFetch<{ id: string; name: string }[]>("/organizations").catch(() => []),
     getStagesList(),
@@ -17,6 +17,7 @@ export default async function NewDealPage({
     searchParams.leadId
       ? backendFetch<{ leadContacts?: { id: string; name: string; email?: string | null; phone?: string | null; role?: string | null; whatsapp?: string | null }[] }>(`/leads/${searchParams.leadId}`).catch(() => null)
       : Promise.resolve(null),
+    backendFetch<{ id: string; name: string }[]>("/partners?pageSize=200").catch(() => [] as { id: string; name: string }[]),
   ]);
 
   const leads = leadsData.leads.map((l) => ({ id: l.id, businessName: l.businessName }));
@@ -38,9 +39,11 @@ export default async function NewDealPage({
           contacts={contacts}
           organizations={organizations}
           leads={leads}
+          partners={partners}
           stages={stages}
           preselectedOrganizationId={searchParams.organizationId}
           preselectedLeadId={searchParams.leadId}
+          preselectedPartnerId={searchParams.partnerId}
           leadContacts={leadContacts}
           returnTo={searchParams.returnTo}
         />
