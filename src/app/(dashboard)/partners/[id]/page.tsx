@@ -17,6 +17,7 @@ import { PartnerContactsList } from "@/components/partners/PartnerContactsList";
 import { PartnerActivitiesList } from "@/components/partners/PartnerActivitiesList";
 import { PartnerStatusBadge } from "@/components/partners/PartnerStatusBadge";
 import { PartnerStarRatingInline } from "@/components/partners/PartnerStarRatingInline";
+import { LanguageBadges } from "@/components/shared/LanguageSelector";
 import { PartnerDealsList, type PartnerDealItem } from "@/components/partners/PartnerDealsList";
 import ProposalsList, { type Proposal } from "@/components/proposals/ProposalsList";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
@@ -198,6 +199,12 @@ export default async function PartnerDetailPage({
               <div>
                 <dt className="text-sm font-medium text-gray-500">Funcionários</dt>
                 <dd className="mt-1 text-sm text-gray-900">{partner.employeeCount}</dd>
+              </div>
+            )}
+            {partner.languages && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Idiomas</dt>
+                <dd className="mt-1"><LanguageBadges languages={partner.languages} /></dd>
               </div>
             )}
             <div>

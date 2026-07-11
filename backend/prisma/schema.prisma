@@ -1051,6 +1051,7 @@ model Partner {
   expertise     String? // Área de expertise/especialização
   notes         String?
   starRating    Int? // Classificação manual por estrelas (1–5) para priorizar parceiros
+  languages     String? // JSON: [{code, isPrimary}] - idiomas falados pelo parceiro
 
   lastContactDate DateTime? // Última vez que houve contato
 

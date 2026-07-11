@@ -33,6 +33,7 @@ export interface UpdatePartnerInput {
   expertise?: string;
   notes?: string;
   starRating?: number | null;
+  languages?: string | null;
 }
 
 type Output = Either<Error, { partner: Partner }>;

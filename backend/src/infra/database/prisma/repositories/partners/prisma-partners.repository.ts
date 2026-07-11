@@ -251,6 +251,7 @@ export class PrismaPartnersRepository extends PartnersRepository {
       employeeCount: r.employeeCount,
       description: r.description,
       notes: r.notes,
+      languages: r.languages,
       linkedin: r.linkedin,
       instagram: r.instagram,
       facebook: r.facebook,

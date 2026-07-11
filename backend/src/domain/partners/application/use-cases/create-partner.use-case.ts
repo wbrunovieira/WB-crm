@@ -30,6 +30,7 @@ export interface CreatePartnerInput {
   description?: string;
   expertise?: string;
   notes?: string;
+  languages?: string | null;
 }
 
 type Output = Either<Error, { partner: Partner }>;
@@ -74,6 +75,7 @@ export class CreatePartnerUseCase {
       description: input.description,
       expertise: input.expertise,
       notes: input.notes,
+      languages: input.languages,
       lastContactDate: new Date(),
     });
 

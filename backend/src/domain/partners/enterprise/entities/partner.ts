@@ -57,6 +57,10 @@ export interface PartnerProps {
   // Manual star rating (1–5) to prioritize partners; null = unrated
   starRating?: number | null;
 
+  // Spoken languages as JSON: [{ code, isPrimary }] (same shape as Lead.languages).
+  // null explicitly clears (mirrors the starRating "null clears" convention).
+  languages?: string | null;
+
   lastContactDate?: Date;
 
   createdAt: Date;
@@ -91,6 +95,7 @@ export class Partner extends AggregateRoot<PartnerProps> {
   get expertise()        { return this.props.expertise; }
   get notes()            { return this.props.notes; }
   get starRating()       { return this.props.starRating ?? null; }
+  get languages()        { return this.props.languages ?? null; }
   get lastContactDate()  { return this.props.lastContactDate; }
   get createdAt()        { return this.props.createdAt; }
   get updatedAt()        { return this.props.updatedAt; }

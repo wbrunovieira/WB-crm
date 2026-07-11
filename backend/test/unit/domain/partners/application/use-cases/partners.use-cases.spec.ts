@@ -72,6 +72,7 @@ describe("Partners Use Cases", () => {
         description: "Especializada em transformação digital",
         expertise: "ERP, CRM, Automação",
         notes: "Parceiro estratégico desde 2020",
+        languages: JSON.stringify([{ code: "pt-BR", isPrimary: true }, { code: "en", isPrimary: false }]),
       });
 
       expect(result.isRight()).toBe(true);
@@ -82,6 +83,7 @@ describe("Partners Use Cases", () => {
         expect(p.expertise).toBe("ERP, CRM, Automação");
         expect(p.companySize).toBe("pequena");
         expect(p.employeeCount).toBe(25);
+        expect(p.languages).toBe(JSON.stringify([{ code: "pt-BR", isPrimary: true }, { code: "en", isPrimary: false }]));
       }
     });
 
@@ -310,6 +312,24 @@ describe("Partners Use Cases", () => {
       const clear = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", starRating: null });
       expect(clear.isRight()).toBe(true);
       if (clear.isRight()) expect(clear.value.partner.starRating).toBeNull();
+    });
+
+    it("atualiza languages (idiomas)", async () => {
+      const created = await createUseCase.execute({ ownerId: "user-1", name: "Parceiro", partnerType: "consultoria" });
+      const id = created.isRight() ? created.value.partner.id.toString() : "";
+
+      const langs = JSON.stringify([{ code: "es", isPrimary: true }]);
+      const set = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", languages: langs });
+      expect(set.isRight()).toBe(true);
+      if (set.isRight()) expect(set.value.partner.languages).toBe(langs);
+
+      // Sending null clears all languages; omitting the field preserves them
+      const preserved = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", name: "Novo Nome" });
+      if (preserved.isRight()) expect(preserved.value.partner.languages).toBe(langs);
+
+      const cleared = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", languages: null });
+      expect(cleared.isRight()).toBe(true);
+      if (cleared.isRight()) expect(cleared.value.partner.languages).toBeNull();
     });
 
     it("rejeita starRating fora da faixa 1–5", async () => {

@@ -82,6 +82,7 @@ export class InMemoryPartnersRepository extends PartnersRepository {
       employeeCount: partner.employeeCount ?? null,
       description: partner.description ?? null,
       notes: partner.notes ?? null,
+      languages: partner.languages ?? null,
       linkedin: partner.linkedin ?? null,
       instagram: partner.instagram ?? null,
       facebook: partner.facebook ?? null,

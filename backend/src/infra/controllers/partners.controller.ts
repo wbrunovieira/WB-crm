@@ -109,6 +109,9 @@ class CreatePartnerDto {
 
   @ApiPropertyOptional()
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'JSON de idiomas: [{ code, isPrimary }]' })
+  languages?: string | null;
 }
 
 class UpdatePartnerDto {
@@ -138,6 +141,7 @@ class UpdatePartnerDto {
   @ApiPropertyOptional() expertise?: string;
   @ApiPropertyOptional() notes?: string;
   @ApiPropertyOptional({ example: 4, description: "Classificação por estrelas 1–5 (null limpa)" }) starRating?: number | null;
+  @ApiPropertyOptional({ description: 'JSON de idiomas: [{ code, isPrimary }] (null limpa)' }) languages?: string | null;
 }
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -179,6 +183,7 @@ function serialize(partner: Partner) {
     expertise: partner.expertise,
     notes: partner.notes,
     starRating: partner.starRating,
+    languages: partner.languages ?? null,
     lastContactDate: partner.lastContactDate,
     createdAt: partner.createdAt,
     updatedAt: partner.updatedAt,

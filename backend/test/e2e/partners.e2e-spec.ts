@@ -410,6 +410,35 @@ describe("Partners API (e2e)", () => {
       expect(bad.status).toBeGreaterThanOrEqual(400);
     });
 
+    it("persiste languages (idiomas) no create e no update", async () => {
+      const langs = JSON.stringify([{ code: "pt-BR", isPrimary: true }, { code: "en", isPrimary: false }]);
+      const created = await request(app.getHttpServer())
+        .post("/partners").set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro Poliglota", partnerType: "consultoria", languages: langs }).expect(201);
+      expect(created.body.languages).toBe(langs);
+
+      const newLangs = JSON.stringify([{ code: "es", isPrimary: true }]);
+      const updated = await request(app.getHttpServer())
+        .patch(`/partners/${created.body.id}`).set("Authorization", `Bearer ${token}`)
+        .send({ languages: newLangs }).expect(200);
+      expect(updated.body.languages).toBe(newLangs);
+
+      const detail = await request(app.getHttpServer())
+        .get(`/partners/${created.body.id}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(detail.body.languages).toBe(newLangs);
+
+      // Sending null clears; omitting preserves
+      const preserved = await request(app.getHttpServer())
+        .patch(`/partners/${created.body.id}`).set("Authorization", `Bearer ${token}`)
+        .send({ city: "Curitiba" }).expect(200);
+      expect(preserved.body.languages).toBe(newLangs);
+
+      const cleared = await request(app.getHttpServer())
+        .patch(`/partners/${created.body.id}`).set("Authorization", `Bearer ${token}`)
+        .send({ languages: null }).expect(200);
+      expect(cleared.body.languages).toBeNull();
+    });
+
     it("oficializar (prospect → active) carimba partnershipStartedAt e o preserva depois", async () => {
       const created = await request(app.getHttpServer())
         .post("/partners")

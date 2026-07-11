@@ -69,6 +69,7 @@ export interface PartnerDetail extends PartnerSummary {
   employeeCount: number | null;
   description: string | null;
   notes: string | null;
+  languages: string | null;
   linkedin: string | null;
   instagram: string | null;
   facebook: string | null;

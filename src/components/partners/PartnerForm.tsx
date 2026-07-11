@@ -8,6 +8,7 @@ import { PARTNER_STATUSES, PARTNER_STATUS_LABELS } from "@/lib/validations/partn
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
 import { brazilianStates } from "@/lib/lists/brazilian-states";
+import { LanguageSelector, type LanguageEntry } from "@/components/shared/LanguageSelector";
 
 interface PartnerFormProps {
   partner?: {
@@ -36,6 +37,7 @@ interface PartnerFormProps {
     description: string | null;
     expertise: string | null;
     notes: string | null;
+    languages?: string | null;
   };
 }
 
@@ -46,6 +48,12 @@ export function PartnerForm({ partner }: PartnerFormProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedCountry, setSelectedCountry] = useState<string>(partner?.country || "");
+  const [languages, setLanguages] = useState<LanguageEntry[]>(() => {
+    if (partner?.languages) {
+      try { return JSON.parse(partner.languages); } catch { return []; }
+    }
+    return [];
+  });
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -80,6 +88,8 @@ export function PartnerForm({ partner }: PartnerFormProps) {
       description: formData.get("description") as string,
       expertise: formData.get("expertise") as string,
       notes: formData.get("notes") as string,
+      // null (not undefined) so removing all languages actually clears the field on update
+      languages: languages.length > 0 ? JSON.stringify(languages) : null,
     };
 
     try {
@@ -467,6 +477,10 @@ export function PartnerForm({ partner }: PartnerFormProps) {
               defaultValue={partner?.expertise || ""}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
+          </div>
+
+          <div>
+            <LanguageSelector value={languages} onChange={setLanguages} />
           </div>
 
           <div>

@@ -57,6 +57,7 @@ export interface PartnerPayload {
   description?: string;
   expertise?: string;
   notes?: string;
+  languages?: string | null;
 }
 
 // ─── Mutations ────────────────────────────────────────────────────────────────
