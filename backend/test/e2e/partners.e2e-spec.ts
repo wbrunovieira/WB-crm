@@ -245,6 +245,65 @@ describe("Partners API (e2e)", () => {
       // "Último contato" derives from the most recent contact activity (email is one).
       expect(res.body.lastContactAt).toBeTruthy();
     });
+
+    it("devolve os campos ricos de atividade (GoTo + rastreio de e-mail) para a timeline", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/partners")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro Rico", partnerType: "consultoria" })
+        .expect(201);
+      const partnerId = created.body.id;
+
+      const call = await prisma.activity.create({
+        data: {
+          type: "call",
+          subject: "Ligação GoTo",
+          ownerId,
+          partnerId,
+          gotoCallId: "goto-123",
+          gotoCallOutcome: "answered",
+          gotoDuration: 42,
+          gotoRecordingUrl: "s3://bucket/agent.mp3",
+          gotoTranscriptText: "olá, tudo bem?",
+        },
+      });
+      const email = await prisma.activity.create({
+        data: {
+          type: "email",
+          subject: "E-mail rastreado",
+          ownerId,
+          partnerId,
+          emailThreadId: "thread-1",
+          emailSubject: "Proposta",
+          emailFromAddress: "cliente@empresa.com",
+          emailOpenCount: 3,
+        },
+      });
+
+      const res = await request(app.getHttpServer())
+        .get(`/partners/${partnerId}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const byId = (id: string) =>
+        res.body.activities.find((a: { id: string }) => a.id === id);
+
+      const callActivity = byId(call.id);
+      expect(callActivity).toBeDefined();
+      expect(callActivity.gotoCallId).toBe("goto-123");
+      expect(callActivity.gotoCallOutcome).toBe("answered");
+      expect(callActivity.gotoDuration).toBe(42);
+      expect(callActivity.gotoRecordingUrl).toBe("s3://bucket/agent.mp3");
+      expect(callActivity.gotoTranscriptText).toBe("olá, tudo bem?");
+      // clickUrls is always present (empty when there is no campaign send)
+      expect(callActivity.clickUrls).toEqual([]);
+
+      const emailActivity = byId(email.id);
+      expect(emailActivity).toBeDefined();
+      expect(emailActivity.emailThreadId).toBe("thread-1");
+      expect(emailActivity.emailFromAddress).toBe("cliente@empresa.com");
+      expect(emailActivity.emailOpenCount).toBe(3);
+    });
   });
 
   // ─── PATCH /partners/:id ───────────────────────────────────────────────────

@@ -14,27 +14,43 @@ import { EntityNotesBlock } from "@/components/shared/EntityNotesBlock";
 import { LastContactAlert } from "@/components/shared/LastContactAlert";
 import { PartnerProductsSection } from "@/components/partners/PartnerProductsSection";
 import { PartnerContactsList } from "@/components/partners/PartnerContactsList";
+import { PartnerActivitiesList } from "@/components/partners/PartnerActivitiesList";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import GmailButton from "@/components/gmail/GmailButton";
 import { Building2, Users, Activity, Video, Package, Pencil } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { formatDistanceToNow } from "date-fns";
-import { ptBR } from "date-fns/locale";
 
 export default async function PartnerDetailPage({
   params,
 }: {
   params: { id: string };
 }) {
-  const [partner, session, meetings] = await Promise.all([
+  const [partner, session, meetings, callAnalyses, meetAnalyses, gkAnalyses] = await Promise.all([
     backendFetch<Partner>(`/partners/${params.id}`).catch(() => null),
     getServerSession(authOptions),
     backendFetch<Meeting[]>(`/meetings?partnerId=${params.id}`).catch((): Meeting[] => []),
+    backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/call-analysis").catch(() => []),
+    backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/meet-analysis").catch(() => []),
+    backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/gatekeeper-analysis").catch(() => []),
   ]);
 
   if (!partner) {
     notFound();
   }
+
+  const callAnalysesMap = Object.fromEntries(
+    callAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
+  );
+  const meetAnalysesMap = Object.fromEntries(
+    meetAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
+  );
+  const gkAnalysesMap = Object.fromEntries(
+    gkAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
+  );
+  // Activity IDs whose linked Meeting has a transcript (enables the meet-analysis trigger)
+  const meetTranscriptActivityIds = new Set(
+    (meetings ?? []).filter((m) => m.transcriptText && m.activityId).map((m) => m.activityId!)
+  );
 
   const isAdmin = session?.user?.role?.toLowerCase() === "admin";
 
@@ -313,46 +329,25 @@ export default async function PartnerDetailPage({
         </div>
       )}
 
-      {/* Contacts and Activities */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        {/* Contacts */}
+      {/* Contacts */}
+      <div className="mt-6">
         <PartnerContactsList partnerId={partner.id} partnerName={partner.name} contacts={partner.contacts} />
+      </div>
 
-        {/* Recent Activities */}
-        <div id="atividades" className="scroll-mt-52 rounded-lg bg-white p-6 shadow">
-          <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
-            <h2 className="text-lg font-bold text-gray-900">
-              Atividades ({partner.activities.length})
-            </h2>
-            <Link
-              href={`/activities/new?partnerId=${partner.id}&returnTo=/partners/${partner.id}`}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
-            >
-              + Nova Atividade
-            </Link>
-          </div>
-          {partner.activities.length === 0 ? (
-            <p className="text-sm text-gray-500">Nenhuma atividade registrada</p>
-          ) : (
-            <ul className="space-y-3">
-              {partner.activities.slice(0, 5).map((activity) => (
-                <li key={activity.id} className="border-b border-gray-100 pb-2">
-                  <p className="text-sm font-medium text-gray-900">
-                    {activity.subject}
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    {formatDistanceToNow(new Date(activity.createdAt), {
-                      addSuffix: true,
-                      locale: ptBR,
-                    })}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+      {/* Activities (rich timeline, mirrors the lead page) */}
+      <div className="mt-6">
+        <PartnerActivitiesList
+          partnerId={partner.id}
+          activities={partner.activities}
+          callAnalysesMap={callAnalysesMap}
+          meetAnalysesMap={meetAnalysesMap}
+          meetTranscriptActivityIds={meetTranscriptActivityIds}
+          gkAnalysesMap={gkAnalysesMap}
+        />
+      </div>
 
-        {/* Referred Leads */}
+      {/* Referred Leads */}
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <div className="rounded-lg bg-white p-6 shadow">
           <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
             <h2 className="text-lg font-bold text-gray-900">

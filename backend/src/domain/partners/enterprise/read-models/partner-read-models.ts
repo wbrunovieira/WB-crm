@@ -1,3 +1,38 @@
+export interface PartnerActivity {
+  id: string;
+  type: string;
+  subject: string;
+  description: string | null;
+  completed: boolean;
+  completedAt: Date | null;
+  dueDate: Date | null;
+  createdAt: Date;
+  failedAt: Date | null;
+  failReason: string | null;
+  skippedAt: Date | null;
+  skipReason: string | null;
+  contactId: string | null;
+  leadContactIds: string | null;
+  callContactType: string | null;
+  gotoCallId: string | null;
+  gotoCallOutcome: string | null;
+  gotoDuration: number | null;
+  gotoRecordingUrl: string | null;
+  gotoRecordingUrl2: string | null;
+  gotoTranscriptText: string | null;
+  emailThreadId: string | null;
+  emailSubject: string | null;
+  emailFromAddress: string | null;
+  emailFromName: string | null;
+  emailReplied: boolean;
+  emailOpenCount: number;
+  emailOpenedAt: Date | null;
+  emailLinkClickCount: number;
+  emailLinkClickedAt: Date | null;
+  emailToAddress: string | null;
+  clickUrls: Array<{ url: string; count: number }>;
+}
+
 export interface PartnerSummary {
   id: string;
   ownerId: string;
@@ -49,14 +84,7 @@ export interface PartnerDetail extends PartnerSummary {
     instagram: string | null;
     status: string;
   }>;
-  activities: Array<{
-    id: string;
-    type: string;
-    subject: string;
-    completed: boolean;
-    dueDate: Date | null;
-    createdAt: Date;
-  }>;
+  activities: PartnerActivity[];
   /** Most recent contact-type activity date (derived), for the "last contact" alert. */
   lastContactAt: Date | null;
   referredLeads: Array<{

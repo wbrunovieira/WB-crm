@@ -41,6 +41,7 @@ export function SortableActivityItem({
   hasMeetTranscript,
   gkAnalysis,
   token,
+  sortable = true,
 }: {
   activity: Activity;
   isPending: (a: Activity) => boolean;
@@ -65,6 +66,8 @@ export function SortableActivityItem({
   hasMeetTranscript?: boolean;
   gkAnalysis?: GkAnalysisSummary;
   token?: string;
+  /** When false, hides the drag handle (entities without activity ordering, e.g. partners). */
+  sortable?: boolean;
 }) {
   const {
     attributes,
@@ -113,14 +116,16 @@ export function SortableActivityItem({
 
       <div className="flex items-start gap-3">
         {/* Drag handle */}
-        <button
-          {...attributes}
-          {...listeners}
-          className="mt-1 flex-shrink-0 cursor-grab touch-none text-gray-300 hover:text-gray-500 active:cursor-grabbing"
-          tabIndex={-1}
-        >
-          <GripVertical className="h-4 w-4" />
-        </button>
+        {sortable && (
+          <button
+            {...attributes}
+            {...listeners}
+            className="mt-1 flex-shrink-0 cursor-grab touch-none text-gray-300 hover:text-gray-500 active:cursor-grabbing"
+            tabIndex={-1}
+          >
+            <GripVertical className="h-4 w-4" />
+          </button>
+        )}
 
         {/* Toggle button */}
         {activity.gotoCallId ? (

@@ -1,3 +1,5 @@
+import type { Activity } from "@/components/leads/activities/activity-types";
+
 export interface PartnerContact {
   id: string;
   name: string;
@@ -12,14 +14,11 @@ export interface PartnerContact {
   status?: string;
 }
 
-export interface PartnerActivity {
-  id: string;
-  type: string;
-  subject: string;
-  dueDate: Date | string | null;
-  completed: boolean;
-  createdAt: Date | string;
-}
+/**
+ * Partner timeline activity — the shared rich Activity shape (consumed by the same
+ * SortableActivityItem the lead page uses) plus createdAt, which the backend rolls up.
+ */
+export type PartnerActivity = Activity & { createdAt: Date | string };
 
 export interface PartnerReferredLead {
   id: string;

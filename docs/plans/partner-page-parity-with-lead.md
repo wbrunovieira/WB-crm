@@ -78,8 +78,8 @@ ICP/qualificação, Convert, Tech Profile, Setor/CNAEs, Cadência, Meta/Google A
 
 ## 5. Fases sugeridas (ordem por valor × esforço)
 
-- **Fase 1 — Paridade de renderização (frontend puro, alto valor):** barra de nav, Contatos rico, Atividades rico, Notas inline, layout de Informações. Sem migração. Generalizar os componentes do lead para receberem `partnerId`.
-- **Fase 2 — Comunicação + Produtos:** WhatsApp/Gmail no partner; seção Produtos (PartnerProduct). Sem migração.
+- **Fase 1 — Paridade de renderização (frontend puro, alto valor):** ✅ CONCLUÍDA — barra de nav, Contatos rico (`PartnerContactsList`), Atividades rico (`PartnerActivitiesList` + backend rich activity read-model), Notas inline, layout de Informações. Sem migração. Decisão do Bruno (2026-07-11): variantes `Partner*` em vez de generalizar os componentes do lead; Atividades sem cadência, sem drag-order e sem atribuição de contatos.
+- **Fase 2 — Comunicação + Produtos:** ✅ CONCLUÍDA — WhatsApp/Gmail no partner; seção Produtos (PartnerProduct). Sem migração.
 - **Fase 3 — Negócios e Propostas (precisa decisão + backend):** migração `Deal.partnerId`/`Proposal.partnerId`, endpoints e seções. Só se o produto confirmar que faz sentido.
 - **Fase 4 — Limpeza:** revisar itens do grupo C com o Bruno; portar o que ele quiser.
 
