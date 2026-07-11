@@ -4,6 +4,7 @@ import type { PartnerSummary, PartnerDetail } from "../../enterprise/read-models
 export interface PartnerFilters {
   search?: string;
   owner?: string;
+  status?: string;
 }
 
 export abstract class PartnersRepository {

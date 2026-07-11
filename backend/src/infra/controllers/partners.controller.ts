@@ -44,6 +44,9 @@ class CreatePartnerDto {
   @ApiProperty({ example: "agencia_digital", description: "Tipo: agencia_digital, consultoria, universidade, fornecedor, indicador, investidor, mentor, parceiro_tecnologico, associacao, midia, outros" })
   partnerType!: string;
 
+  @ApiPropertyOptional({ example: "prospect", description: "Estágio: prospect (lead de partner) | active (oficializado) | inactive. Default: prospect" })
+  partnerStatus?: string;
+
   @ApiPropertyOptional({ example: "Agência Digital XYZ Ltda" })
   legalName?: string;
 
@@ -111,6 +114,8 @@ class CreatePartnerDto {
 class UpdatePartnerDto {
   @ApiPropertyOptional() name?: string;
   @ApiPropertyOptional() partnerType?: string;
+  @ApiPropertyOptional({ description: "prospect | active | inactive" }) partnerStatus?: string;
+  @ApiPropertyOptional({ description: "Data de oficialização (YYYY-MM-DD)" }) partnershipStartedAt?: string;
   @ApiPropertyOptional() legalName?: string;
   @ApiPropertyOptional() foundationDate?: string;
   @ApiPropertyOptional() website?: string;
@@ -151,6 +156,8 @@ function serialize(partner: Partner) {
     legalName: partner.legalName,
     foundationDate: partner.foundationDate,
     partnerType: partner.partnerType,
+    partnerStatus: partner.partnerStatus,
+    partnershipStartedAt: partner.partnershipStartedAt ?? null,
     website: partner.website,
     email: partner.email,
     phone: partner.phone,
@@ -196,16 +203,18 @@ export class PartnersController {
   @ApiOperation({ summary: "Listar parceiros" })
   @ApiQuery({ name: "search", required: false })
   @ApiQuery({ name: "owner", required: false, description: "Admin: 'all', 'mine' ou userId" })
+  @ApiQuery({ name: "status", required: false, description: "prospect | active | inactive" })
   @ApiResponse({ status: 200, description: "Lista de parceiros" })
   async list(
     @Query("search") search?: string,
     @Query("owner") owner?: string,
+    @Query("status") status?: string,
     @CurrentUser() user?: AuthenticatedUser,
   ) {
     const result = await this.getPartners.execute({
       requesterId: user!.id,
       requesterRole: user!.role ?? "sdr",
-      filters: { search, owner },
+      filters: { search, owner, status },
     });
     return result.unwrap().partners;
   }
@@ -258,6 +267,7 @@ export class PartnersController {
       requesterId: user.id,
       requesterRole: user.role ?? "sdr",
       foundationDate: (body as any).foundationDate ? new Date((body as any).foundationDate) : undefined,
+      partnershipStartedAt: (body as any).partnershipStartedAt ? new Date((body as any).partnershipStartedAt) : undefined,
     });
     if (result.isLeft()) handleError(result);
     return serialize(result.value.partner);

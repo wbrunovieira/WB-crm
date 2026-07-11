@@ -72,6 +72,7 @@ export class PrismaPartnersRepository extends PartnersRepository {
     const rows = await this.prisma.partner.findMany({
       where: {
         ...ownerFilter,
+        ...(filters.status && { partnerStatus: filters.status }),
         ...(filters.search && {
           OR: [
             { name: { contains: filters.search, mode: "insensitive" } },
@@ -94,6 +95,8 @@ export class PrismaPartnersRepository extends PartnersRepository {
       name: row.name,
       legalName: row.legalName,
       partnerType: row.partnerType,
+      partnerStatus: row.partnerStatus,
+      partnershipStartedAt: row.partnershipStartedAt,
       email: row.email,
       phone: row.phone,
       city: row.city,
@@ -126,7 +129,7 @@ export class PrismaPartnersRepository extends PartnersRepository {
           take: 50,
         },
         referredLeads: {
-          select: { id: true, businessName: true, status: true, convertedToOrganizationId: true },
+          select: { id: true, businessName: true, status: true, convertedToOrganizationId: true, createdAt: true },
           orderBy: { createdAt: "desc" },
         },
       },
@@ -227,6 +230,8 @@ export class PrismaPartnersRepository extends PartnersRepository {
       name: r.name,
       legalName: r.legalName,
       partnerType: r.partnerType,
+      partnerStatus: r.partnerStatus,
+      partnershipStartedAt: r.partnershipStartedAt,
       email: r.email,
       phone: r.phone,
       city: r.city,

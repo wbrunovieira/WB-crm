@@ -25,7 +25,8 @@ export interface PartnerReferredLead {
   businessName: string;
   status: string;
   createdAt: Date | string;
-  convertedOrganization?: { id: string; name: string } | null;
+  /** Set when the referred lead has been converted into an Organization (client). */
+  convertedToOrganizationId: string | null;
 }
 
 export interface Partner {
@@ -34,6 +35,9 @@ export interface Partner {
   legalName: string | null;
   foundationDate: Date | string | null;
   partnerType: string;
+  /** Lifecycle stage: prospect (partner lead) | active (officialized) | inactive. */
+  partnerStatus: string;
+  partnershipStartedAt: string | null;
   website: string | null;
   email: string | null;
   phone: string | null;

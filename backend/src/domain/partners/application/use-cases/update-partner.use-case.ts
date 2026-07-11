@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { PartnersRepository } from "../repositories/partners.repository";
-import type { Partner, PartnerProps } from "../../enterprise/entities/partner";
+import { isPartnerStatus, type Partner, type PartnerProps } from "../../enterprise/entities/partner";
 
 export interface UpdatePartnerInput {
   id: string;
@@ -9,6 +9,8 @@ export interface UpdatePartnerInput {
   requesterRole: string;
   name?: string;
   partnerType?: string;
+  partnerStatus?: string;
+  partnershipStartedAt?: Date;
   legalName?: string;
   foundationDate?: Date;
   website?: string;
@@ -46,7 +48,22 @@ export class UpdatePartnerUseCase {
       return left(new Error("Não autorizado"));
     }
 
+    if (input.partnerStatus !== undefined && !isPartnerStatus(input.partnerStatus)) {
+      return left(new Error("Status de parceria inválido"));
+    }
+
     const { id, requesterId, requesterRole, ...fields } = input;
+
+    // Officializing (→ active) stamps the partnership start date once, unless one is
+    // already set or explicitly provided in this update.
+    if (
+      input.partnerStatus === "active" &&
+      input.partnershipStartedAt === undefined &&
+      partner.partnershipStartedAt === undefined
+    ) {
+      fields.partnershipStartedAt = new Date();
+    }
+
     partner.update(fields as Partial<Omit<PartnerProps, "ownerId" | "createdAt" | "updatedAt">>);
 
     await this.partners.save(partner);

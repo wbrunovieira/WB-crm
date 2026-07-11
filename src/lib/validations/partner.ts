@@ -1,10 +1,25 @@
 import { z } from "zod";
 
+/**
+ * Partner lifecycle stages (orthogonal to partnerType).
+ * Keep in sync with the backend list in
+ * backend/src/domain/partners/enterprise/entities/partner.ts (PARTNER_STATUSES).
+ */
+export const PARTNER_STATUSES = ["prospect", "active", "inactive"] as const;
+export type PartnerStatus = (typeof PARTNER_STATUSES)[number];
+
+export const PARTNER_STATUS_LABELS: Record<PartnerStatus, string> = {
+  prospect: "Lead de parceiro",
+  active: "Parceria ativa",
+  inactive: "Inativa",
+};
+
 export const partnerSchema = z.object({
   name: z.string().min(2, "Nome da empresa deve ter no mínimo 2 caracteres"),
   legalName: z.string().optional(),
   foundationDate: z.string().optional(),
   partnerType: z.string().min(1, "Tipo de parceria é obrigatório"),
+  partnerStatus: z.enum(PARTNER_STATUSES).optional(),
   website: z.string().optional(),
   email: z.string().email("Email inválido").optional().or(z.literal("")),
   phone: z.string().optional(),

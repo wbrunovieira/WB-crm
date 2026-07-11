@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCreatePartner, useUpdatePartner } from "@/hooks/partners/use-partners";
 import { partnerTypes } from "@/lib/lists/partner-types";
+import { PARTNER_STATUSES, PARTNER_STATUS_LABELS } from "@/lib/validations/partner";
 import { companySizes } from "@/lib/lists/company-sizes";
 import { countries } from "@/lib/lists/countries";
 import { brazilianStates } from "@/lib/lists/brazilian-states";
@@ -15,6 +16,7 @@ interface PartnerFormProps {
     legalName: string | null;
     foundationDate: Date | string | null;
     partnerType: string;
+    partnerStatus?: string | null;
     website: string | null;
     email: string | null;
     phone: string | null;
@@ -58,6 +60,7 @@ export function PartnerForm({ partner }: PartnerFormProps) {
       legalName: formData.get("legalName") as string,
       foundationDate: formData.get("foundationDate") as string,
       partnerType: formData.get("partnerType") as string,
+      partnerStatus: formData.get("partnerStatus") as string,
       website: formData.get("website") as string,
       email: formData.get("email") as string,
       phone: formData.get("phone") as string,
@@ -147,6 +150,24 @@ export function PartnerForm({ partner }: PartnerFormProps) {
               {partnerTypes.map((type) => (
                 <option key={type.value} value={type.value}>
                   {type.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label htmlFor="partnerStatus" className="block text-sm font-medium text-gray-700">
+              Estágio da Parceria
+            </label>
+            <select
+              id="partnerStatus"
+              name="partnerStatus"
+              defaultValue={partner?.partnerStatus || "prospect"}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              {PARTNER_STATUSES.map((status) => (
+                <option key={status} value={status}>
+                  {PARTNER_STATUS_LABELS[status]}
                 </option>
               ))}
             </select>

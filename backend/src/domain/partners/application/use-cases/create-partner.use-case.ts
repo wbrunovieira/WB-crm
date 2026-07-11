@@ -1,13 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { PartnersRepository } from "../repositories/partners.repository";
-import { Partner } from "../../enterprise/entities/partner";
+import { Partner, isPartnerStatus } from "../../enterprise/entities/partner";
 import { PartnerName } from "../../enterprise/value-objects/partner-name.vo";
 
 export interface CreatePartnerInput {
   ownerId: string;
   name: string;
   partnerType: string;
+  partnerStatus?: string;
   legalName?: string;
   foundationDate?: Date;
   website?: string;
@@ -42,10 +43,16 @@ export class CreatePartnerUseCase {
     if (nameResult.isLeft()) return left(nameResult.value);
     if (!input.partnerType?.trim()) return left(new Error("Tipo de parceria é obrigatório"));
 
+    const partnerStatus = input.partnerStatus ?? "prospect";
+    if (!isPartnerStatus(partnerStatus)) return left(new Error("Status de parceria inválido"));
+
     const partner = Partner.create({
       ownerId: input.ownerId,
       name: nameResult.value.value,
       partnerType: input.partnerType,
+      partnerStatus,
+      // Officializing on creation stamps the partnership start date.
+      partnershipStartedAt: partnerStatus === "active" ? new Date() : undefined,
       legalName: input.legalName,
       foundationDate: input.foundationDate,
       website: input.website,

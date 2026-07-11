@@ -15,6 +15,7 @@ import { LastContactAlert } from "@/components/shared/LastContactAlert";
 import { PartnerProductsSection } from "@/components/partners/PartnerProductsSection";
 import { PartnerContactsList } from "@/components/partners/PartnerContactsList";
 import { PartnerActivitiesList } from "@/components/partners/PartnerActivitiesList";
+import { PartnerStatusBadge } from "@/components/partners/PartnerStatusBadge";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import GmailButton from "@/components/gmail/GmailButton";
 import { Building2, Users, Activity, Video, Package, Pencil } from "lucide-react";
@@ -54,6 +55,10 @@ export default async function PartnerDetailPage({
 
   const isAdmin = session?.user?.role?.toLowerCase() === "admin";
 
+  // Derived signal: this partner has already produced a client (a referred lead that
+  // converted into an organization). Not stored — computed from referrals.
+  const broughtClient = partner.referredLeads.some((l) => l.convertedToOrganizationId);
+
   return (
     <div className="min-h-screen bg-[#350045] p-4 md:p-8">
       {/* ── Header card (sticky, mirrors the lead page) ─────────────────── */}
@@ -64,9 +69,17 @@ export default async function PartnerDetailPage({
               <h1 className="break-words text-xl font-bold leading-tight text-gray-900 sm:text-2xl md:text-3xl">
                 {partner.name}
               </h1>
-              <span className="mt-2 inline-flex items-center rounded-md bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-800">
-                {partner.partnerType}
-              </span>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center rounded-md bg-purple-100 px-2 py-0.5 text-xs font-semibold text-purple-800">
+                  {partner.partnerType}
+                </span>
+                <PartnerStatusBadge status={partner.partnerStatus} />
+                {broughtClient && (
+                  <span className="inline-flex items-center gap-1 rounded-md bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-800">
+                    ✓ Já trouxe cliente
+                  </span>
+                )}
+              </div>
             </div>
             <div className="flex flex-shrink-0 items-center gap-2">
               <CopyBookingLinkButton partnerId={partner.id} />
@@ -366,7 +379,7 @@ export default async function PartnerDetailPage({
                   >
                     {lead.businessName}
                   </Link>
-                  {lead.convertedOrganization && (
+                  {lead.convertedToOrganizationId && (
                     <span className="ml-2 inline-block rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
                       Convertido
                     </span>

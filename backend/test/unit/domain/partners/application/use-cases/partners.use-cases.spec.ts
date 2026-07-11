@@ -119,6 +119,48 @@ describe("Partners Use Cases", () => {
       expect(result.isRight()).toBe(true);
       if (result.isRight()) expect(result.value.partner.name).toBe("Parceiro Espaços");
     });
+
+    it("usa partnerStatus 'prospect' por padrão (lead de partner)", async () => {
+      const result = await createUseCase.execute({
+        ownerId: "user-1",
+        name: "Agência Prospect",
+        partnerType: "agencia_digital",
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.partner.partnerStatus).toBe("prospect");
+        expect(result.value.partner.partnershipStartedAt).toBeUndefined();
+      }
+    });
+
+    it("ao criar já como 'active', define partnershipStartedAt automaticamente", async () => {
+      const result = await createUseCase.execute({
+        ownerId: "user-1",
+        name: "Agência Ativa",
+        partnerType: "agencia_digital",
+        partnerStatus: "active",
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.partner.partnerStatus).toBe("active");
+        expect(result.value.partner.partnershipStartedAt).toBeInstanceOf(Date);
+      }
+    });
+
+    it("rejeita partnerStatus inválido", async () => {
+      const result = await createUseCase.execute({
+        ownerId: "user-1",
+        name: "Agência Inválida",
+        partnerType: "agencia_digital",
+        partnerStatus: "banana",
+      });
+
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) expect(result.value.message).toContain("Status");
+      expect(repo.items).toHaveLength(0);
+    });
   });
 
   // ─── GetPartnersUseCase ──────────────────────────────────────────────────────
@@ -172,6 +214,23 @@ describe("Partners Use Cases", () => {
       if (result.isRight()) {
         expect(result.value.partners).toHaveLength(1);
         expect(result.value.partners[0].expertise).toBe("SEO");
+      }
+    });
+
+    it("filtra por partnerStatus", async () => {
+      await createUseCase.execute({ ownerId: "user-1", name: "Agência Ativa", partnerType: "agencia_digital", partnerStatus: "active" });
+
+      const result = await getListUseCase.execute({
+        requesterId: "user-1",
+        requesterRole: "sdr",
+        filters: { status: "active" },
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.partners).toHaveLength(1);
+        expect(result.value.partners[0].name).toBe("Agência Ativa");
+        expect(result.value.partners[0].partnerStatus).toBe("active");
       }
     });
   });
@@ -264,6 +323,61 @@ describe("Partners Use Cases", () => {
 
       expect(result.isRight()).toBe(true);
       if (result.isRight()) expect(result.value.partner.name).toBe("Admin Update");
+    });
+
+    it("ao oficializar (prospect → active), define partnershipStartedAt", async () => {
+      const created = await createUseCase.execute({ ownerId: "user-1", name: "A Oficializar", partnerType: "consultoria" });
+      const id = created.isRight() ? created.value.partner.id.toString() : "";
+      expect(created.isRight() && created.value.partner.partnershipStartedAt).toBeUndefined();
+
+      const result = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", partnerStatus: "active" });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.partner.partnerStatus).toBe("active");
+        expect(result.value.partner.partnershipStartedAt).toBeInstanceOf(Date);
+      }
+    });
+
+    it("não sobrescreve partnershipStartedAt já existente ao reafirmar 'active'", async () => {
+      const created = await createUseCase.execute({
+        ownerId: "user-1",
+        name: "Já Ativa",
+        partnerType: "consultoria",
+        partnerStatus: "active",
+      });
+      const id = created.isRight() ? created.value.partner.id.toString() : "";
+      const originalStarted = created.isRight() ? created.value.partner.partnershipStartedAt : null;
+
+      const result = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", partnerStatus: "active", city: "Recife" });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.partner.partnershipStartedAt?.getTime()).toBe(originalStarted?.getTime());
+      }
+    });
+
+    it("mudar para 'inactive' não define partnershipStartedAt", async () => {
+      const created = await createUseCase.execute({ ownerId: "user-1", name: "A Pausar", partnerType: "consultoria" });
+      const id = created.isRight() ? created.value.partner.id.toString() : "";
+
+      const result = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", partnerStatus: "inactive" });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.partner.partnerStatus).toBe("inactive");
+        expect(result.value.partner.partnershipStartedAt).toBeUndefined();
+      }
+    });
+
+    it("rejeita partnerStatus inválido no update", async () => {
+      const created = await createUseCase.execute({ ownerId: "user-1", name: "Original", partnerType: "consultoria" });
+      const id = created.isRight() ? created.value.partner.id.toString() : "";
+
+      const result = await updateUseCase.execute({ id, requesterId: "user-1", requesterRole: "sdr", partnerStatus: "xpto" });
+
+      expect(result.isLeft()).toBe(true);
+      if (result.isLeft()) expect(result.value.message).toContain("Status");
     });
   });
 

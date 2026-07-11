@@ -136,6 +136,28 @@ describe("Partners API (e2e)", () => {
       expect(res.body).toHaveLength(1);
       expect(res.body[0].name).toBe("BuscaUnicaXYZ");
     });
+
+    it("filtra por partnerStatus", async () => {
+      await request(app.getHttpServer())
+        .post("/partners")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Prospect Parceiro", partnerType: "agencia_digital" })
+        .expect(201);
+      await request(app.getHttpServer())
+        .post("/partners")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Ativo Parceiro", partnerType: "consultoria", partnerStatus: "active" })
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get("/partners?status=active")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].name).toBe("Ativo Parceiro");
+      expect(res.body[0].partnerStatus).toBe("active");
+    });
   });
 
   // ─── POST /partners ────────────────────────────────────────────────────────
@@ -160,6 +182,29 @@ describe("Partners API (e2e)", () => {
       expect(res.body.partnerType).toBe("indicador");
       expect(res.body.ownerId).toBe(ownerId);
       expect(res.body.lastContactDate).toBeTruthy();
+      // Default lifecycle stage is "prospect" (partner lead)
+      expect(res.body.partnerStatus).toBe("prospect");
+      expect(res.body.partnershipStartedAt).toBeNull();
+    });
+
+    it("cria já como 'active' e carimba partnershipStartedAt", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/partners")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro Ativo", partnerType: "consultoria", partnerStatus: "active" })
+        .expect(201);
+
+      expect(res.body.partnerStatus).toBe("active");
+      expect(res.body.partnershipStartedAt).toBeTruthy();
+    });
+
+    it("rejeita partnerStatus inválido", async () => {
+      const res = await request(app.getHttpServer())
+        .post("/partners")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro Ruim", partnerType: "consultoria", partnerStatus: "banana" });
+
+      expect(res.status).toBeGreaterThanOrEqual(400);
     });
 
     it("cria parceiro com todos os campos", async () => {
@@ -337,6 +382,33 @@ describe("Partners API (e2e)", () => {
         .set("Authorization", `Bearer ${token}`)
         .send({ name: "Novo" })
         .expect(404);
+    });
+
+    it("oficializar (prospect → active) carimba partnershipStartedAt e o preserva depois", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/partners")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "A Oficializar", partnerType: "consultoria" })
+        .expect(201);
+      expect(created.body.partnerStatus).toBe("prospect");
+
+      const officialized = await request(app.getHttpServer())
+        .patch(`/partners/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ partnerStatus: "active" })
+        .expect(200);
+      expect(officialized.body.partnerStatus).toBe("active");
+      expect(officialized.body.partnershipStartedAt).toBeTruthy();
+      const started = officialized.body.partnershipStartedAt;
+
+      // A later edit that omits partnershipStartedAt must not wipe it (PATCH semantics).
+      const edited = await request(app.getHttpServer())
+        .patch(`/partners/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ city: "Curitiba" })
+        .expect(200);
+      expect(edited.body.city).toBe("Curitiba");
+      expect(edited.body.partnershipStartedAt).toBe(started);
     });
 
     it("atualiza foundationDate (DateTime)", async () => {

@@ -39,6 +39,8 @@ export interface PartnerSummary {
   name: string;
   legalName: string | null;
   partnerType: string;
+  partnerStatus: string;
+  partnershipStartedAt: Date | null;
   email: string | null;
   phone: string | null;
   city: string | null;
@@ -92,5 +94,6 @@ export interface PartnerDetail extends PartnerSummary {
     businessName: string;
     status: string;
     convertedToOrganizationId: string | null;
+    createdAt: Date;
   }>;
 }

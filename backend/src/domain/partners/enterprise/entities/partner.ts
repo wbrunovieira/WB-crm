@@ -1,6 +1,17 @@
 import { AggregateRoot } from "@/core/aggregate-root";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 
+/**
+ * Partner lifecycle stages (orthogonal to partnerType).
+ * Keep in sync with the frontend list in src/lib/validations/partner.ts (PARTNER_STATUSES).
+ */
+export const PARTNER_STATUSES = ["prospect", "active", "inactive"] as const;
+export type PartnerStatus = (typeof PARTNER_STATUSES)[number];
+
+export function isPartnerStatus(value: string): value is PartnerStatus {
+  return (PARTNER_STATUSES as readonly string[]).includes(value);
+}
+
 export interface PartnerProps {
   ownerId: string;
 
@@ -11,6 +22,10 @@ export interface PartnerProps {
 
   // Partnership type
   partnerType: string;
+
+  // Lifecycle: prospect (partner lead) | active (officialized) | inactive (ended)
+  partnerStatus: string;
+  partnershipStartedAt?: Date;
 
   // Contact info
   website?: string;
@@ -51,6 +66,8 @@ export class Partner extends AggregateRoot<PartnerProps> {
   get legalName()        { return this.props.legalName; }
   get foundationDate()   { return this.props.foundationDate; }
   get partnerType()      { return this.props.partnerType; }
+  get partnerStatus()        { return this.props.partnerStatus; }
+  get partnershipStartedAt() { return this.props.partnershipStartedAt; }
   get website()          { return this.props.website; }
   get email()            { return this.props.email; }
   get phone()            { return this.props.phone; }
@@ -77,7 +94,12 @@ export class Partner extends AggregateRoot<PartnerProps> {
   private touch() { this.props.updatedAt = new Date(); }
 
   update(data: Partial<Omit<PartnerProps, "ownerId" | "createdAt" | "updatedAt">>) {
-    Object.assign(this.props, data);
+    // PATCH semantics: only touch fields explicitly provided. A key set to
+    // undefined (e.g. an omitted optional field forwarded by the controller)
+    // must NOT wipe an existing value like partnershipStartedAt or foundationDate.
+    for (const [key, value] of Object.entries(data)) {
+      if (value !== undefined) (this.props as unknown as Record<string, unknown>)[key] = value;
+    }
     this.touch();
   }
 

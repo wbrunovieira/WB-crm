@@ -8,11 +8,13 @@ import { authOptions } from "@/lib/auth";
 import Link from "next/link";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PartnerStatusBadge } from "@/components/partners/PartnerStatusBadge";
+import { PARTNER_STATUSES, PARTNER_STATUS_LABELS } from "@/lib/validations/partner";
 
 export default async function PartnersPage({
   searchParams,
 }: {
-  searchParams: { search?: string; owner?: string };
+  searchParams: { search?: string; owner?: string; status?: string };
 }) {
   const session = await getServerSession(authOptions);
   const isAdmin = session?.user?.role === "admin";
@@ -21,10 +23,23 @@ export default async function PartnersPage({
   const params = new URLSearchParams();
   if (searchParams.search) params.set("search", searchParams.search);
   if (searchParams.owner) params.set("owner", searchParams.owner);
+  if (searchParams.status) params.set("status", searchParams.status);
   const qs = params.toString();
+
+  // Build a status-filter href that preserves the other active filters.
+  const statusHref = (status?: string) => {
+    const p = new URLSearchParams();
+    if (searchParams.search) p.set("search", searchParams.search);
+    if (searchParams.owner) p.set("owner", searchParams.owner);
+    if (status) p.set("status", status);
+    const s = p.toString();
+    return `/partners${s ? `?${s}` : ""}`;
+  };
+  const activeStatus = searchParams.status ?? "";
 
   type PartnerSummary = {
     id: string; ownerId: string; name: string; partnerType: string;
+    partnerStatus: string;
     email?: string | null; phone?: string | null; city?: string | null;
     state?: string | null; country?: string | null; industry?: string | null;
     expertise?: string | null; companySize?: string | null;
@@ -74,6 +89,33 @@ export default async function PartnersPage({
         )}
       </div>
 
+      {/* Lifecycle stage filter */}
+      <div className="mb-6 flex flex-wrap gap-2">
+        <Link
+          href={statusHref()}
+          className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+            activeStatus === ""
+              ? "border-primary bg-primary text-white"
+              : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+          }`}
+        >
+          Todos
+        </Link>
+        {PARTNER_STATUSES.map((status) => (
+          <Link
+            key={status}
+            href={statusHref(status)}
+            className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+              activeStatus === status
+                ? "border-primary bg-primary text-white"
+                : "border-gray-300 bg-white text-gray-600 hover:bg-gray-50"
+            }`}
+          >
+            {PARTNER_STATUS_LABELS[status]}
+          </Link>
+        ))}
+      </div>
+
       {partners.length === 0 ? (
         <div className="rounded-lg border-2 border-dashed border-gray-300 p-12 text-center">
           <h3 className="text-lg font-medium text-gray-900">
@@ -119,10 +161,11 @@ export default async function PartnersPage({
                 )}
               </div>
 
-              <div className="mb-4">
+              <div className="mb-4 flex flex-wrap items-center gap-2">
                 <span className="inline-block rounded-full bg-blue-100 px-3 py-1 text-xs font-medium text-blue-800">
                   {partner.partnerType}
                 </span>
+                <PartnerStatusBadge status={partner.partnerStatus} />
               </div>
 
               {partner.expertise && (

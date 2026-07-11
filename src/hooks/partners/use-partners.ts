@@ -34,6 +34,8 @@ export const partnerKeys = {
 export interface PartnerPayload {
   name: string;
   partnerType: string;
+  partnerStatus?: string;
+  partnershipStartedAt?: string;
   legalName?: string;
   foundationDate?: string;
   website?: string;

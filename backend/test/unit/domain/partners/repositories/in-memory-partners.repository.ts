@@ -12,6 +12,10 @@ export class InMemoryPartnersRepository extends PartnersRepository {
       results = results.filter((p) => p.ownerId === requesterId);
     }
 
+    if (filters.status) {
+      results = results.filter((p) => p.partnerStatus === filters.status);
+    }
+
     if (filters.search) {
       const q = filters.search.toLowerCase();
       results = results.filter(
@@ -28,6 +32,8 @@ export class InMemoryPartnersRepository extends PartnersRepository {
       name: p.name,
       legalName: p.legalName ?? null,
       partnerType: p.partnerType,
+      partnerStatus: p.partnerStatus,
+      partnershipStartedAt: p.partnershipStartedAt ?? null,
       email: p.email ?? null,
       phone: p.phone ?? null,
       city: p.city ?? null,
@@ -55,6 +61,8 @@ export class InMemoryPartnersRepository extends PartnersRepository {
       name: partner.name,
       legalName: partner.legalName ?? null,
       partnerType: partner.partnerType,
+      partnerStatus: partner.partnerStatus,
+      partnershipStartedAt: partner.partnershipStartedAt ?? null,
       email: partner.email ?? null,
       phone: partner.phone ?? null,
       city: partner.city ?? null,

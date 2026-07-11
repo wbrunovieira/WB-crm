@@ -1011,6 +1011,11 @@ model Partner {
   // Tipo de parceria
   partnerType String // consultoria, universidade, fornecedor, indicador, investidor, etc
 
+  // Estágio da relação (ortogonal ao tipo): prospect = lead de partner ainda não
+  // oficializado, active = parceria oficializada, inactive = encerrada/pausada.
+  partnerStatus        String    @default("prospect") // prospect | active | inactive
+  partnershipStartedAt DateTime? // Quando a parceria foi oficializada
+
   // Contato da Empresa (geral)
   website  String?
   email    String?
@@ -1055,6 +1060,7 @@ model Partner {
 
   @@index([ownerId])
   @@index([partnerType])
+  @@index([partnerStatus])
   @@map("partners")
 }
 

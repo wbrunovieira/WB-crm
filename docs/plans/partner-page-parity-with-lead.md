@@ -80,16 +80,33 @@ ICP/qualificação, Convert, Tech Profile, Setor/CNAEs, Cadência, Meta/Google A
 
 - **Fase 1 — Paridade de renderização (frontend puro, alto valor):** ✅ CONCLUÍDA — barra de nav, Contatos rico (`PartnerContactsList`), Atividades rico (`PartnerActivitiesList` + backend rich activity read-model), Notas inline, layout de Informações. Sem migração. Decisão do Bruno (2026-07-11): variantes `Partner*` em vez de generalizar os componentes do lead; Atividades sem cadência, sem drag-order e sem atribuição de contatos.
 - **Fase 2 — Comunicação + Produtos:** ✅ CONCLUÍDA — WhatsApp/Gmail no partner; seção Produtos (PartnerProduct). Sem migração.
-- **Fase 3 — Negócios e Propostas (precisa decisão + backend):** migração `Deal.partnerId`/`Proposal.partnerId`, endpoints e seções. Só se o produto confirmar que faz sentido.
+- **Fase 3 — Ciclo de vida do partner + Negócios/Propostas** (decisões tomadas por Bruno em 2026-07-11, ver §9). Migração só no backend, tudo aditivo (nullable/default, sem backfill). TDD obrigatório: unit + e2e.
+  - **3a — Estágio do partner:** campo `partnerStatus` (`prospect` = lead de partner ainda não oficializado · `active` = parceria oficializada · `inactive` = encerrada/pausada) + `partnershipStartedAt`. Badge de status no cabeçalho, filtro na lista, badge "já trouxe cliente" **derivado** de `referredLeads`/`referredOrganizations` convertidos (não armazenar). Espelha `Lead.status`.
+  - **3b — Negócios/Propostas do partner:** `Deal.partnerId` (partner é o cliente — cenário A), `Deal.referredByPartnerId` (atribuição/indicação — cenário B, mesmo padrão de `Lead.referredByPartnerId`/`Organization.referredByPartnerId`), `Proposal.partnerId`. Seções "Negócios" e "Propostas" na página do partner; na página de Negócios, badge "Parceiro: X" (indicação) + filtro "Negócios de parceiro".
 - **Fase 4 — Limpeza:** revisar itens do grupo C com o Bruno; portar o que ele quiser.
 
 ---
 
-## 6. Decisões de produto a confirmar (antes de codar)
+## 6. Decisões de produto (resolvidas)
 
-1. **Deals e Propostas** vinculam a partner? (define se entra migração ou fica fora)
-2. Quais itens do **grupo C** o Bruno quer no partner (se algum)?
-3. **Generalizar** os componentes do lead (`LeadContactsList`, `LeadActivitiesList`, etc.) para `lead|partner|organization` **ou** criar variantes de partner? (recomendo generalizar — evita 3× de código e mantém a renderização idêntica de fato).
+1. **Deals e Propostas vinculam a partner?** ✅ SIM (2026-07-11). Ver §9 — dois cenários (partner-cliente e partner-indicador), ambos suportados.
+2. Quais itens do **grupo C** o Bruno quer no partner (se algum)? — pendente.
+3. **Generalizar vs. variantes:** ✅ RESOLVIDO — criar variantes `Partner*` (não generalizar). Aplicado nas Fases 1–2.
+
+---
+
+## 9. Decisões da Fase 3 (Bruno, 2026-07-11)
+
+**Contexto:** partners são agências/negócios que indicam a WB para os clientes deles. Os cadastrados hoje ainda não trouxeram cliente nem oficializaram a parceria — são "leads de partner", mas NÃO devem se misturar com os leads de cliente final (que já são entidade separada `Lead` / página `/leads`).
+
+**Decisão 1 — Ciclo de vida (aceita):** um Partner já é entidade separada, então basta um campo de estágio (não um novo tipo). Adicionar `partnerStatus` (`prospect|active|inactive`, default `prospect`, indexado) + `partnershipStartedAt DateTime?`. "Já trouxe cliente" é **derivado** de referrals convertidos, não armazenado. `partnerType` (o que ele é) e `partnerStatus` (onde está na relação) são ortogonais.
+
+**Decisão 2 — Negócios/Propostas (aceita):** suportar os dois cenários:
+- **A. Partner é o cliente** (ex.: a agência contrata um serviço para a própria agência) → `Deal.partnerId`, `Proposal.partnerId`.
+- **B. Partner indicou** (ex.: a agência oferece o serviço para o cliente dela; o cliente final fecha) → `Deal.referredByPartnerId` (mesmo padrão já existente em Lead/Organization).
+- Na página de Negócios: badge "Parceiro: X" quando `referredByPartnerId` setado + filtro "Negócios de parceiro".
+
+**Pergunta em aberto (não bloqueia schema/backend, decide só a UX do fluxo de criação):** quando a agência indica, quem fatura/paga é o cliente final (cenário B, comissão) ou a agência (cenário A)? Definir na etapa de frontend da 3b.
 
 ---
 

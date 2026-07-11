@@ -11,6 +11,8 @@ export class PartnerMapper {
         legalName: raw.legalName ?? undefined,
         foundationDate: raw.foundationDate ?? undefined,
         partnerType: raw.partnerType,
+        partnerStatus: raw.partnerStatus,
+        partnershipStartedAt: raw.partnershipStartedAt ?? undefined,
         website: raw.website ?? undefined,
         email: raw.email ?? undefined,
         phone: raw.phone ?? undefined,
@@ -48,6 +50,10 @@ export class PartnerMapper {
         ? partner.foundationDate
         : partner.foundationDate ? new Date(partner.foundationDate as string) : null,
       partnerType: partner.partnerType,
+      partnerStatus: partner.partnerStatus,
+      partnershipStartedAt: partner.partnershipStartedAt instanceof Date
+        ? partner.partnershipStartedAt
+        : partner.partnershipStartedAt ? new Date(partner.partnershipStartedAt as string) : null,
       website: partner.website ?? null,
       email: partner.email ?? null,
       phone: partner.phone ?? null,
