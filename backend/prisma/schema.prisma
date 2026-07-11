@@ -695,6 +695,10 @@ model Deal {
   contactId      String?
   organizationId String?
   leadId         String?
+  // Partner as the deal's counterparty (agency buying a service for itself)
+  partnerId      String?
+  // Partner that referred this deal (attribution; the customer may be a lead/org)
+  referredByPartnerId String?
 
   ownerId           String
   expectedCloseDate DateTime?
@@ -702,11 +706,13 @@ model Deal {
   updatedAt         DateTime  @updatedAt
 
   // Relations
-  owner          User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  stage          Stage              @relation(fields: [stageId], references: [id], onDelete: Restrict)
-  contact        Contact?           @relation(fields: [contactId], references: [id], onDelete: SetNull)
-  organization   Organization?      @relation(fields: [organizationId], references: [id], onDelete: SetNull)
-  lead           Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  owner             User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  stage             Stage              @relation(fields: [stageId], references: [id], onDelete: Restrict)
+  contact           Contact?           @relation(fields: [contactId], references: [id], onDelete: SetNull)
+  organization      Organization?      @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  lead              Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  partner           Partner?           @relation("PartnerDeals", fields: [partnerId], references: [id], onDelete: SetNull)
+  referredByPartner Partner?           @relation("PartnerReferredDeals", fields: [referredByPartnerId], references: [id], onDelete: SetNull)
   activities     Activity[]
   dealProducts   DealProduct[] // Produtos do Deal
   dealTechStacks DealTechStack[] // Categorias técnicas (Frontend, Backend, etc)
@@ -721,6 +727,8 @@ model Deal {
   @@index([contactId])
   @@index([organizationId])
   @@index([leadId])
+  @@index([partnerId])
+  @@index([referredByPartnerId])
   @@map("deals")
 }
 
@@ -1057,6 +1065,9 @@ model Partner {
   referredLeads         Lead[]           @relation("PartnerReferrals")
   referredOrganizations Organization[]   @relation("OrganizationReferrals")
   partnerProducts       PartnerProduct[] // Produtos/serviços do parceiro
+  deals                 Deal[]           @relation("PartnerDeals") // Negócios com o parceiro (parceiro-cliente)
+  referredDeals         Deal[]           @relation("PartnerReferredDeals") // Negócios indicados pelo parceiro
+  proposals             Proposal[]       @relation("PartnerProposals") // Propostas para o parceiro
 
   @@index([ownerId])
   @@index([partnerType])
@@ -2218,15 +2229,18 @@ model Proposal {
   // Revision fields
   revisionNumber       Int?
   originalProposalId   String?
+  partnerId            String? // Proposta endereçada a um parceiro (parceiro-cliente)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  lead  Lead? @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  deal  Deal? @relation(fields: [dealId], references: [id], onDelete: SetNull)
-  owner User  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  lead    Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  partner Partner? @relation("PartnerProposals", fields: [partnerId], references: [id], onDelete: SetNull)
+  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([dealId])
+  @@index([partnerId])
   @@index([ownerId])
   @@map("proposals")
 }

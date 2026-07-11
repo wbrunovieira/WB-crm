@@ -34,6 +34,7 @@ beforeAll(async () => {
 
 afterEach(async () => {
   await prisma.proposal.deleteMany({ where: { ownerId } });
+  await prisma.partner.deleteMany({ where: { ownerId } });
 });
 
 afterAll(async () => {
@@ -90,6 +91,23 @@ describe("POST /proposals (e2e)", () => {
     expect(res.body.fileName).toBe("proposta.pdf");
     expect(res.body.leadId).toBe(leadId);
     expect(res.body.sentAt).toBeDefined();
+  });
+
+  it("cria proposta para um parceiro e filtra por partnerId", async () => {
+    const partner = await prisma.partner.create({ data: { name: "Parceiro Proposta", partnerType: "consultoria", ownerId } });
+
+    const created = await request(app.getHttpServer())
+      .post("/proposals")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ title: "Proposta ao parceiro", partnerId: partner.id })
+      .expect(201);
+    expect(created.body.partnerId).toBe(partner.id);
+
+    const listed = await request(app.getHttpServer())
+      .get(`/proposals?partnerId=${partner.id}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+    expect(listed.body.map((p: { id: string }) => p.id)).toEqual([created.body.id]);
   });
 
   it("rejeita título vazio", async () => {

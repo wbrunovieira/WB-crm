@@ -40,6 +40,12 @@ describe("CreateProposalUseCase", () => {
     expect(p.fileSize).toBe(102400);
     expect(p.leadId).toBe("l1");
   });
+
+  it("stores partnerId (proposal addressed to a partner)", async () => {
+    const r = await new CreateProposalUseCase(repo).execute({ title: "Proposta ao parceiro", ownerId: "u1", partnerId: "p1" });
+    expect(r.isRight()).toBe(true);
+    expect(r.unwrap().partnerId).toBe("p1");
+  });
 });
 
 describe("GetProposalsUseCase", () => {
@@ -59,6 +65,15 @@ describe("GetProposalsUseCase", () => {
     const r = await new GetProposalsUseCase(repo).execute({ requesterId: "u1", filters: { leadId: "l1" } });
     expect(r.unwrap()).toHaveLength(1);
     expect(r.unwrap()[0].leadId).toBe("l1");
+  });
+
+  it("filters by partnerId", async () => {
+    const uc = new CreateProposalUseCase(repo);
+    await uc.execute({ title: "Partner Prop", ownerId: "u1", partnerId: "p1" });
+    await uc.execute({ title: "No Partner", ownerId: "u1" });
+    const r = await new GetProposalsUseCase(repo).execute({ requesterId: "u1", filters: { partnerId: "p1" } });
+    expect(r.unwrap()).toHaveLength(1);
+    expect(r.unwrap()[0].partnerId).toBe("p1");
   });
 });
 

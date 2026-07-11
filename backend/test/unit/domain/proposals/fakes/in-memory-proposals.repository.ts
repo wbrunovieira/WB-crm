@@ -17,6 +17,7 @@ export class InMemoryProposalsRepository extends ProposalsRepository {
       if (p.ownerId !== ownerId) return false;
       if (filters?.leadId && p.leadId !== filters.leadId) return false;
       if (filters?.dealId && p.dealId !== filters.dealId) return false;
+      if (filters?.partnerId && p.partnerId !== filters.partnerId) return false;
       if (filters?.status && p.status !== filters.status) return false;
       return true;
     });

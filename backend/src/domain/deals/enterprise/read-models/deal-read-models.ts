@@ -11,6 +11,8 @@ export interface DealSummary {
   contactId: string | null;
   organizationId: string | null;
   leadId: string | null;
+  partnerId: string | null;
+  referredByPartnerId: string | null;
   expectedCloseDate: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -21,6 +23,8 @@ export interface DealSummary {
   contact: { id: string; name: string; email: string | null } | null;
   organization: { id: string; name: string } | null;
   lead: { id: string; businessName: string } | null;
+  partner: { id: string; name: string } | null;
+  referredByPartner: { id: string; name: string } | null;
   _count: { activities: number; dealProducts: number };
 }
 

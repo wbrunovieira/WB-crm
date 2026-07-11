@@ -13,6 +13,8 @@ export interface DealProps {
   contactId?: string;
   organizationId?: string;
   leadId?: string;
+  partnerId?: string;
+  referredByPartnerId?: string;
   expectedCloseDate?: Date;
   createdAt: Date;
   updatedAt: Date;
@@ -30,6 +32,8 @@ export class Deal extends AggregateRoot<DealProps> {
   get contactId()         { return this.props.contactId; }
   get organizationId()    { return this.props.organizationId; }
   get leadId()            { return this.props.leadId; }
+  get partnerId()             { return this.props.partnerId; }
+  get referredByPartnerId()   { return this.props.referredByPartnerId; }
   get expectedCloseDate() { return this.props.expectedCloseDate; }
   get createdAt()         { return this.props.createdAt; }
   get updatedAt()         { return this.props.updatedAt; }

@@ -14,6 +14,8 @@ export interface CreateDealInput {
   contactId?: string;
   organizationId?: string;
   leadId?: string;
+  partnerId?: string;
+  referredByPartnerId?: string;
   expectedCloseDate?: Date;
 }
 
@@ -42,6 +44,8 @@ export class CreateDealUseCase {
       contactId: input.contactId,
       organizationId: input.organizationId,
       leadId: input.leadId,
+      partnerId: input.partnerId,
+      referredByPartnerId: input.referredByPartnerId,
       expectedCloseDate: input.expectedCloseDate,
     });
 

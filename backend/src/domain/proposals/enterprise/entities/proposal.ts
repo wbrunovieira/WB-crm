@@ -15,6 +15,7 @@ export interface ProposalProps {
   sentAt?: Date;
   leadId?: string;
   dealId?: string;
+  partnerId?: string;
   ownerId: string;
   // Agent fields
   agentJobId?: string;
@@ -39,6 +40,7 @@ export class Proposal extends AggregateRoot<ProposalProps> {
   get sentAt(): Date | undefined { return this.props.sentAt; }
   get leadId(): string | undefined { return this.props.leadId; }
   get dealId(): string | undefined { return this.props.dealId; }
+  get partnerId(): string | undefined { return this.props.partnerId; }
   get ownerId(): string { return this.props.ownerId; }
   get agentJobId(): string | undefined { return this.props.agentJobId; }
   get agentStatus(): string | undefined { return this.props.agentStatus; }
@@ -60,6 +62,7 @@ export class Proposal extends AggregateRoot<ProposalProps> {
     sentAt?: Date;
     leadId?: string;
     dealId?: string;
+    partnerId?: string;
     ownerId: string;
     agentJobId?: string;
     agentStatus?: string;
@@ -91,6 +94,7 @@ export class Proposal extends AggregateRoot<ProposalProps> {
       sentAt,
       leadId: data.leadId,
       dealId: data.dealId,
+      partnerId: data.partnerId,
       ownerId: data.ownerId,
       agentJobId: data.agentJobId,
       agentStatus: data.agentStatus,
@@ -113,6 +117,7 @@ export class Proposal extends AggregateRoot<ProposalProps> {
     fileSize?: number;
     leadId?: string;
     dealId?: string;
+    partnerId?: string;
     agentJobId?: string;
     agentStatus?: string;
     agentCurrentQuestion?: string | null;
@@ -140,6 +145,7 @@ export class Proposal extends AggregateRoot<ProposalProps> {
     if (data.fileSize !== undefined) this.props.fileSize = data.fileSize;
     if (data.leadId !== undefined) this.props.leadId = data.leadId;
     if (data.dealId !== undefined) this.props.dealId = data.dealId;
+    if (data.partnerId !== undefined) this.props.partnerId = data.partnerId;
     if (data.agentJobId !== undefined) this.props.agentJobId = data.agentJobId;
     if (data.agentStatus !== undefined) this.props.agentStatus = data.agentStatus;
     if (data.agentCurrentQuestion !== undefined) this.props.agentCurrentQuestion = data.agentCurrentQuestion ?? undefined;

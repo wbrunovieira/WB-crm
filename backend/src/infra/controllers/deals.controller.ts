@@ -68,6 +68,12 @@ class CreateDealDto {
   @ApiPropertyOptional()
   leadId?: string;
 
+  @ApiPropertyOptional({ description: "Parceiro-cliente (a agência contrata para si)" })
+  partnerId?: string;
+
+  @ApiPropertyOptional({ description: "Parceiro que indicou este negócio (atribuição)" })
+  referredByPartnerId?: string;
+
   @ApiPropertyOptional({ example: "2025-12-31", description: "Data prevista de fechamento (YYYY-MM-DD)" })
   expectedCloseDate?: string;
 }
@@ -81,6 +87,8 @@ class UpdateDealDto {
   @ApiPropertyOptional() contactId?: string;
   @ApiPropertyOptional() organizationId?: string;
   @ApiPropertyOptional() leadId?: string;
+  @ApiPropertyOptional() partnerId?: string;
+  @ApiPropertyOptional() referredByPartnerId?: string;
   @ApiPropertyOptional() expectedCloseDate?: string;
 }
 
@@ -112,6 +120,8 @@ function serialize(deal: Deal) {
     contactId: deal.contactId,
     organizationId: deal.organizationId,
     leadId: deal.leadId,
+    partnerId: deal.partnerId ?? null,
+    referredByPartnerId: deal.referredByPartnerId ?? null,
     expectedCloseDate: deal.expectedCloseDate,
     createdAt: deal.createdAt,
     updatedAt: deal.updatedAt,
@@ -152,6 +162,8 @@ export class DealsController {
   @ApiQuery({ name: "organizationId", required: false })
   @ApiQuery({ name: "contactId", required: false })
   @ApiQuery({ name: "leadId", required: false })
+  @ApiQuery({ name: "partnerId", required: false, description: "Negócios com este parceiro (parceiro-cliente)" })
+  @ApiQuery({ name: "referredByPartnerId", required: false, description: "Negócios indicados por este parceiro" })
   @ApiQuery({ name: "valueRange", required: false, description: "'0-10000', '10000-50000', '50000-100000', '100000+', 'all'" })
   @ApiQuery({ name: "sortBy", required: false, enum: ["value", "title", "createdAt"] })
   @ApiQuery({ name: "sortOrder", required: false, enum: ["asc", "desc"] })
@@ -165,6 +177,8 @@ export class DealsController {
     @Query("organizationId") organizationId?: string,
     @Query("contactId") contactId?: string,
     @Query("leadId") leadId?: string,
+    @Query("partnerId") partnerId?: string,
+    @Query("referredByPartnerId") referredByPartnerId?: string,
     @Query("valueRange") valueRange?: string,
     @Query("sortBy") sortBy?: string,
     @Query("sortOrder") sortOrder?: string,
@@ -175,7 +189,7 @@ export class DealsController {
     const result = await this.getDeals.execute({
       requesterId: user!.id,
       requesterRole: user!.role ?? "sdr",
-      filters: { search, owner, stageId, status, organizationId, contactId, leadId, valueRange, sortBy, sortOrder: sortOrderTyped, closedMonth },
+      filters: { search, owner, stageId, status, organizationId, contactId, leadId, partnerId, referredByPartnerId, valueRange, sortBy, sortOrder: sortOrderTyped, closedMonth },
     });
     return result.unwrap().deals;
   }

@@ -10,6 +10,7 @@ export interface UploadProposalInput {
   description?: string;
   leadId?: string;
   dealId?: string;
+  partnerId?: string;
   fileName?: string;
   fileMimeType?: string;
   fileBase64?: string;
@@ -54,6 +55,7 @@ export class UploadProposalUseCase {
       description: input.description,
       leadId: input.leadId,
       dealId: input.dealId,
+      partnerId: input.partnerId,
       ownerId: input.ownerId,
       status: "draft",
       driveFileId,

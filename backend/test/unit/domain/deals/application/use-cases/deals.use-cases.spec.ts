@@ -100,6 +100,22 @@ describe("Deals Use Cases", () => {
       expect(repo.stageHistories[0].fromStageId).toBeNull();
       expect(repo.stageHistories[0].toStageId).toBe(STAGE_PROSP.id);
     });
+
+    it("cria deal com partner-cliente e partner-indicador", async () => {
+      const result = await create.execute({
+        ownerId: OWNER_ID,
+        title: "Negócio de parceiro",
+        stageId: STAGE_PROSP.id,
+        partnerId: "partner-1",
+        referredByPartnerId: "partner-2",
+      });
+
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.deal.partnerId).toBe("partner-1");
+        expect(result.value.deal.referredByPartnerId).toBe("partner-2");
+      }
+    });
   });
 
   // ─── GetDealsUseCase ───────────────────────────────────────────────────────
@@ -130,6 +146,28 @@ describe("Deals Use Cases", () => {
     it("filtra por stageId", async () => {
       const result = await getList.execute({ requesterId: OWNER_ID, requesterRole: "sdr", filters: { stageId: STAGE_PROSP.id } });
       if (result.isRight()) expect(result.value.deals).toHaveLength(2);
+    });
+
+    it("filtra por partnerId (parceiro-cliente)", async () => {
+      await create.execute({ ownerId: OWNER_ID, title: "Deal do Parceiro", stageId: STAGE_PROSP.id, partnerId: "partner-x" });
+
+      const result = await getList.execute({ requesterId: OWNER_ID, requesterRole: "sdr", filters: { partnerId: "partner-x" } });
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.deals).toHaveLength(1);
+        expect(result.value.deals[0].partnerId).toBe("partner-x");
+      }
+    });
+
+    it("filtra por referredByPartnerId (indicação)", async () => {
+      await create.execute({ ownerId: OWNER_ID, title: "Deal Indicado", stageId: STAGE_PROSP.id, referredByPartnerId: "partner-y" });
+
+      const result = await getList.execute({ requesterId: OWNER_ID, requesterRole: "sdr", filters: { referredByPartnerId: "partner-y" } });
+      expect(result.isRight()).toBe(true);
+      if (result.isRight()) {
+        expect(result.value.deals).toHaveLength(1);
+        expect(result.value.deals[0].referredByPartnerId).toBe("partner-y");
+      }
     });
   });
 

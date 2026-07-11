@@ -3,6 +3,7 @@ import { Proposal } from "../../enterprise/entities/proposal";
 export interface ProposalFilters {
   leadId?: string;
   dealId?: string;
+  partnerId?: string;
   status?: string;
 }
 

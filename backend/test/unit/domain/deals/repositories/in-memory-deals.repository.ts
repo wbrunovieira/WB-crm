@@ -24,6 +24,9 @@ export class InMemoryDealsRepository extends DealsRepository {
     if (filters.status) results = results.filter((d) => d.status === filters.status);
     if (filters.organizationId) results = results.filter((d) => d.organizationId === filters.organizationId);
     if (filters.contactId) results = results.filter((d) => d.contactId === filters.contactId);
+    if (filters.leadId) results = results.filter((d) => d.leadId === filters.leadId);
+    if (filters.partnerId) results = results.filter((d) => d.partnerId === filters.partnerId);
+    if (filters.referredByPartnerId) results = results.filter((d) => d.referredByPartnerId === filters.referredByPartnerId);
 
     if (filters.search) {
       const q = filters.search.toLowerCase();
@@ -90,6 +93,8 @@ export class InMemoryDealsRepository extends DealsRepository {
       contactId: d.contactId ?? null,
       organizationId: d.organizationId ?? null,
       leadId: d.leadId ?? null,
+      partnerId: d.partnerId ?? null,
+      referredByPartnerId: d.referredByPartnerId ?? null,
       expectedCloseDate: d.expectedCloseDate ?? null,
       createdAt: d.createdAt,
       updatedAt: d.updatedAt,
@@ -98,6 +103,8 @@ export class InMemoryDealsRepository extends DealsRepository {
       contact: null,
       organization: null,
       lead: null,
+      partner: null,
+      referredByPartner: null,
       _count: { activities: 0, dealProducts: 0 },
     }));
   }
@@ -120,6 +127,8 @@ export class InMemoryDealsRepository extends DealsRepository {
       contactId: deal.contactId ?? null,
       organizationId: deal.organizationId ?? null,
       leadId: deal.leadId ?? null,
+      partnerId: deal.partnerId ?? null,
+      referredByPartnerId: deal.referredByPartnerId ?? null,
       expectedCloseDate: deal.expectedCloseDate ?? null,
       createdAt: deal.createdAt,
       updatedAt: deal.updatedAt,
@@ -128,6 +137,8 @@ export class InMemoryDealsRepository extends DealsRepository {
       contact: null,
       organization: null,
       lead: null,
+      partner: null,
+      referredByPartner: null,
       _count: { activities: 0, dealProducts: 0 },
       activities: [],
       dealProducts: [],

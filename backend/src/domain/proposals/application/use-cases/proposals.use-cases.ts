@@ -43,6 +43,7 @@ export class CreateProposalUseCase {
     fileSize?: number;
     leadId?: string;
     dealId?: string;
+    partnerId?: string;
     ownerId: string;
   }): Promise<Either<Error, Proposal>> {
     const result = Proposal.create(input);
@@ -70,6 +71,7 @@ export class UpdateProposalUseCase {
     fileSize?: number;
     leadId?: string;
     dealId?: string;
+    partnerId?: string;
   }): Promise<Either<Error, Proposal>> {
     const proposal = await this.repo.findById(input.id);
     if (!proposal) return left(new ProposalNotFoundError("Proposta não encontrada"));

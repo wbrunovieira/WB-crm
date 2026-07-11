@@ -72,6 +72,7 @@ beforeAll(async () => {
 
 afterEach(async () => {
   await prisma.deal.deleteMany({ where: { ownerId } });
+  await prisma.partner.deleteMany({ where: { ownerId } });
 });
 
 afterAll(async () => {
@@ -191,6 +192,51 @@ describe("Deals API (e2e)", () => {
         .post("/deals")
         .send({ title: "Deal", stageId });
       expect(res.status).toBe(401);
+    });
+
+    it("cria deal vinculado a parceiro-cliente e a parceiro-indicador", async () => {
+      const buyer = await prisma.partner.create({ data: { name: "Agência Compradora", partnerType: "agencia_digital", ownerId } });
+      const referrer = await prisma.partner.create({ data: { name: "Agência Indicadora", partnerType: "agencia_digital", ownerId } });
+
+      const res = await request(app.getHttpServer())
+        .post("/deals")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ title: "Serviço para a agência", stageId, partnerId: buyer.id, referredByPartnerId: referrer.id });
+
+      expect(res.status).toBe(201);
+      expect(res.body.partnerId).toBe(buyer.id);
+      expect(res.body.referredByPartnerId).toBe(referrer.id);
+
+      const detail = await request(app.getHttpServer())
+        .get(`/deals/${res.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+      expect(detail.body.partner).toMatchObject({ id: buyer.id, name: "Agência Compradora" });
+      expect(detail.body.referredByPartner).toMatchObject({ id: referrer.id, name: "Agência Indicadora" });
+    });
+  });
+
+  // ─── GET /deals?partnerId / ?referredByPartnerId ──────────────────────────────
+
+  describe("GET /deals — filtros de parceiro", () => {
+    it("filtra por partnerId e por referredByPartnerId", async () => {
+      const buyer = await prisma.partner.create({ data: { name: "Parceiro Cliente", partnerType: "consultoria", ownerId } });
+      const referrer = await prisma.partner.create({ data: { name: "Parceiro Indicador", partnerType: "indicador", ownerId } });
+
+      const dealBuyer = await request(app.getHttpServer())
+        .post("/deals").set("Authorization", `Bearer ${token}`)
+        .send({ title: "Deal do cliente-parceiro", stageId, partnerId: buyer.id }).expect(201);
+      const dealReferred = await request(app.getHttpServer())
+        .post("/deals").set("Authorization", `Bearer ${token}`)
+        .send({ title: "Deal indicado", stageId, referredByPartnerId: referrer.id }).expect(201);
+
+      const byPartner = await request(app.getHttpServer())
+        .get(`/deals?partnerId=${buyer.id}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(byPartner.body.map((d: { id: string }) => d.id)).toEqual([dealBuyer.body.id]);
+
+      const byReferrer = await request(app.getHttpServer())
+        .get(`/deals?referredByPartnerId=${referrer.id}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(byReferrer.body.map((d: { id: string }) => d.id)).toEqual([dealReferred.body.id]);
     });
   });
 

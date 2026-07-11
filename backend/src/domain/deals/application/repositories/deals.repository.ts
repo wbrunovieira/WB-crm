@@ -9,6 +9,8 @@ export interface DealFilters {
   organizationId?: string;
   contactId?: string;
   leadId?: string;
+  partnerId?: string;
+  referredByPartnerId?: string;
   valueRange?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";

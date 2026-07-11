@@ -82,6 +82,8 @@ export class PrismaDealsRepository extends DealsRepository {
         ...(filters.organizationId && { organizationId: filters.organizationId }),
         ...(filters.contactId && { contactId: filters.contactId }),
         ...(filters.leadId && { leadId: filters.leadId }),
+        ...(filters.partnerId && { partnerId: filters.partnerId }),
+        ...(filters.referredByPartnerId && { referredByPartnerId: filters.referredByPartnerId }),
         ...(filters.search && {
           OR: [
             { title: { contains: filters.search, mode: "insensitive" } },
@@ -95,6 +97,8 @@ export class PrismaDealsRepository extends DealsRepository {
         contact: { select: { id: true, name: true, email: true } },
         organization: { select: { id: true, name: true } },
         lead: { select: { id: true, businessName: true } },
+        partner: { select: { id: true, name: true } },
+        referredByPartner: { select: { id: true, name: true } },
         _count: { select: { activities: true, dealProducts: true } },
       },
       orderBy,
@@ -115,6 +119,8 @@ export class PrismaDealsRepository extends DealsRepository {
         contactId: r.contactId,
         organizationId: r.organizationId,
         leadId: r.leadId,
+        partnerId: r.partnerId,
+        referredByPartnerId: r.referredByPartnerId,
         expectedCloseDate: r.expectedCloseDate,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,
@@ -123,6 +129,8 @@ export class PrismaDealsRepository extends DealsRepository {
         contact: r.contact,
         organization: r.organization,
         lead: r.lead,
+        partner: r.partner,
+        referredByPartner: r.referredByPartner,
         _count: r._count,
       };
     });
@@ -137,6 +145,8 @@ export class PrismaDealsRepository extends DealsRepository {
         contact: { select: { id: true, name: true, email: true } },
         organization: { select: { id: true, name: true } },
         lead: { select: { id: true, businessName: true } },
+        partner: { select: { id: true, name: true } },
+        referredByPartner: { select: { id: true, name: true } },
         _count: { select: { activities: true, dealProducts: true } },
         activities: {
           select: {
@@ -205,6 +215,8 @@ export class PrismaDealsRepository extends DealsRepository {
       contactId: r.contactId,
       organizationId: r.organizationId,
       leadId: r.leadId,
+      partnerId: r.partnerId,
+      referredByPartnerId: r.referredByPartnerId,
       expectedCloseDate: r.expectedCloseDate,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
@@ -213,6 +225,8 @@ export class PrismaDealsRepository extends DealsRepository {
       contact: r.contact,
       organization: r.organization,
       lead: r.lead,
+      partner: r.partner,
+      referredByPartner: r.referredByPartner,
       _count: r._count,
       activities: r.activities,
       dealProducts: r.dealProducts,
