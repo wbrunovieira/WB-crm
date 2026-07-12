@@ -32,6 +32,16 @@ const ORG_JUNCTION: Record<TechProfileType, string> = {
   ecommerce: "organizationEcommerce",
 };
 
+const PARTNER_JUNCTION: Record<TechProfileType, string> = {
+  language:  "partnerLanguage",
+  framework: "partnerFramework",
+  hosting:   "partnerHosting",
+  database:  "partnerDatabase",
+  erp:       "partnerERP",
+  crm:       "partnerCRM",
+  ecommerce: "partnerEcommerce",
+};
+
 const ITEM_FK: Record<TechProfileType, string> = {
   language: "languageId", framework: "frameworkId", hosting: "hostingId",
   database: "databaseId", erp: "erpId", crm: "crmId", ecommerce: "ecommerceId",
@@ -45,6 +55,11 @@ const UNIQUE_LEAD_KEY: Record<TechProfileType, string> = {
 const UNIQUE_ORG_KEY: Record<TechProfileType, string> = {
   language: "organizationId_languageId", framework: "organizationId_frameworkId", hosting: "organizationId_hostingId",
   database: "organizationId_databaseId", erp: "organizationId_erpId", crm: "organizationId_crmId", ecommerce: "organizationId_ecommerceId",
+};
+
+const UNIQUE_PARTNER_KEY: Record<TechProfileType, string> = {
+  language: "partnerId_languageId", framework: "partnerId_frameworkId", hosting: "partnerId_hostingId",
+  database: "partnerId_databaseId", erp: "partnerId_erpId", crm: "partnerId_crmId", ecommerce: "partnerId_ecommerceId",
 };
 
 function toItem(raw: { id: string; name: string; slug: string; color?: string | null; icon?: string | null }): TechProfileItem {
@@ -114,5 +129,24 @@ export class PrismaTechProfileRepository extends TechProfileRepository {
   async removeFromOrganization(organizationId: string, type: TechProfileType, itemId: string): Promise<void> {
     const fk = ITEM_FK[type];
     await this.table(ORG_JUNCTION[type]).deleteMany({ where: { organizationId, [fk]: itemId } });
+  }
+
+  async getPartnerTechProfile(partnerId: string): Promise<TechProfileResult> {
+    return this.getEntityItems(PARTNER_JUNCTION, "partnerId", partnerId);
+  }
+
+  async addToPartner(partnerId: string, type: TechProfileType, itemId: string): Promise<void> {
+    const fk = ITEM_FK[type];
+    const uniqueKey = UNIQUE_PARTNER_KEY[type];
+    await this.table(PARTNER_JUNCTION[type]).upsert({
+      where: { [uniqueKey]: { partnerId, [fk]: itemId } },
+      create: { partnerId, [fk]: itemId },
+      update: {},
+    });
+  }
+
+  async removeFromPartner(partnerId: string, type: TechProfileType, itemId: string): Promise<void> {
+    const fk = ITEM_FK[type];
+    await this.table(PARTNER_JUNCTION[type]).deleteMany({ where: { partnerId, [fk]: itemId } });
   }
 }

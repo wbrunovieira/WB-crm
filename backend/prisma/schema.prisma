@@ -1088,6 +1088,13 @@ model Partner {
   primaryCNAE           CNAE?                  @relation("PartnerPrimaryCNAE", fields: [primaryCNAEId], references: [id], onDelete: SetNull)
   secondaryCNAEs        PartnerSecondaryCNAE[]
   sectors               PartnerSector[]
+  partnerLanguages      PartnerLanguage[]
+  partnerFrameworks     PartnerFramework[]
+  partnerHosting        PartnerHosting[]
+  partnerDatabases      PartnerDatabase[]
+  partnerERPs           PartnerERP[]
+  partnerCRMs           PartnerCRM[]
+  partnerEcommerces     PartnerEcommerce[]
 
   @@index([ownerId])
   @@index([partnerType])
@@ -1399,6 +1406,7 @@ model TechProfileLanguage {
   // Relations
   leadLanguages         LeadLanguage[]
   organizationLanguages OrganizationLanguage[]
+  partnerLanguages      PartnerLanguage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1419,6 +1427,7 @@ model TechProfileFramework {
   // Relations
   leadFrameworks         LeadFramework[]
   organizationFrameworks OrganizationFramework[]
+  partnerFrameworks     PartnerFramework[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1440,6 +1449,7 @@ model TechProfileHosting {
   // Relations
   leadHosting         LeadHosting[]
   organizationHosting OrganizationHosting[]
+  partnerHosting        PartnerHosting[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1462,6 +1472,7 @@ model TechProfileDatabase {
   // Relations
   leadDatabases         LeadDatabase[]
   organizationDatabases OrganizationDatabase[]
+  partnerDatabases      PartnerDatabase[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1483,6 +1494,7 @@ model TechProfileERP {
   // Relations
   leadERPs         LeadERP[]
   organizationERPs OrganizationERP[]
+  partnerERPs           PartnerERP[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1503,6 +1515,7 @@ model TechProfileCRM {
   // Relations
   leadCRMs         LeadCRM[]
   organizationCRMs OrganizationCRM[]
+  partnerCRMs           PartnerCRM[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1523,6 +1536,7 @@ model TechProfileEcommerce {
   // Relations
   leadEcommerces         LeadEcommerce[]
   organizationEcommerces OrganizationEcommerce[]
+  partnerEcommerces     PartnerEcommerce[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1785,6 +1799,134 @@ model OrganizationEcommerce {
   @@index([organizationId])
   @@index([ecommerceId])
   @@map("organization_ecommerce")
+}
+
+// ============ PARTNER TECH PROFILE (junctions, mirror Organization*) ============
+
+model PartnerLanguage {
+  id             String @id @default(cuid())
+  partnerId String
+  languageId     String
+
+  // Relations
+  partner      Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  language     TechProfileLanguage @relation(fields: [languageId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partnerId, languageId])
+  @@index([partnerId])
+  @@index([languageId])
+  @@map("partner_languages")
+}
+
+model PartnerFramework {
+  id             String @id @default(cuid())
+  partnerId String
+  frameworkId    String
+
+  // Relations
+  partner      Partner         @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  framework    TechProfileFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partnerId, frameworkId])
+  @@index([partnerId])
+  @@index([frameworkId])
+  @@map("partner_frameworks")
+}
+
+model PartnerHosting {
+  id             String @id @default(cuid())
+  partnerId String
+  hostingId      String
+
+  // Relations
+  partner      Partner       @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  hosting      TechProfileHosting @relation(fields: [hostingId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partnerId, hostingId])
+  @@index([partnerId])
+  @@index([hostingId])
+  @@map("partner_hosting")
+}
+
+model PartnerDatabase {
+  id             String @id @default(cuid())
+  partnerId String
+  databaseId     String
+
+  // Relations
+  partner      Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  database     TechProfileDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partnerId, databaseId])
+  @@index([partnerId])
+  @@index([databaseId])
+  @@map("partner_databases")
+}
+
+model PartnerERP {
+  id             String @id @default(cuid())
+  partnerId String
+  erpId          String
+
+  // Relations
+  partner      Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  erp          TechProfileERP @relation(fields: [erpId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partnerId, erpId])
+  @@index([partnerId])
+  @@index([erpId])
+  @@map("partner_erps")
+}
+
+model PartnerCRM {
+  id             String @id @default(cuid())
+  partnerId String
+  crmId          String
+
+  // Relations
+  partner      Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  crm          TechProfileCRM @relation(fields: [crmId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partnerId, crmId])
+  @@index([partnerId])
+  @@index([crmId])
+  @@map("partner_crms")
+}
+
+model PartnerEcommerce {
+  id             String @id @default(cuid())
+  partnerId String
+  ecommerceId    String
+
+  // Relations
+  partner      Partner         @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  ecommerce    TechProfileEcommerce @relation(fields: [ecommerceId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([partnerId, ecommerceId])
+  @@index([partnerId])
+  @@index([ecommerceId])
+  @@map("partner_ecommerce")
 }
 
 // ============ CNAE (Classificação Nacional de Atividades Econômicas) ============

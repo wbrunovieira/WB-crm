@@ -5,6 +5,7 @@ import {
   GetTechProfileItemsUseCase, GetLeadTechProfileUseCase,
   AddLeadTechProfileItemUseCase, RemoveLeadTechProfileItemUseCase,
   GetOrganizationTechProfileUseCase, AddOrganizationTechProfileItemUseCase, RemoveOrganizationTechProfileItemUseCase,
+  GetPartnerTechProfileUseCase, AddPartnerTechProfileItemUseCase, RemovePartnerTechProfileItemUseCase,
 } from "./application/use-cases/tech-profile.use-cases";
 import { PrismaTechProfileRepository } from "./infra/repositories/prisma-tech-profile.repository";
 import { TechProfileController } from "./infra/controllers/tech-profile.controller";
@@ -16,6 +17,7 @@ import { TechProfileController } from "./infra/controllers/tech-profile.controll
     GetTechProfileItemsUseCase, GetLeadTechProfileUseCase,
     AddLeadTechProfileItemUseCase, RemoveLeadTechProfileItemUseCase,
     GetOrganizationTechProfileUseCase, AddOrganizationTechProfileItemUseCase, RemoveOrganizationTechProfileItemUseCase,
+    GetPartnerTechProfileUseCase, AddPartnerTechProfileItemUseCase, RemovePartnerTechProfileItemUseCase,
     { provide: TechProfileRepository, useClass: PrismaTechProfileRepository },
   ],
 })

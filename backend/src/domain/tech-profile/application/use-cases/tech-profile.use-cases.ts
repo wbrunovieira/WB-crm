@@ -93,3 +93,38 @@ export class RemoveOrganizationTechProfileItemUseCase {
     return right(undefined);
   }
 }
+
+// ── Partner tech profile ──────────────────────────────────────────────────
+@Injectable()
+export class GetPartnerTechProfileUseCase {
+  constructor(private readonly repo: TechProfileRepository) {}
+
+  async execute(partnerId: string): Promise<Either<never, { profile: TechProfileResult }>> {
+    const profile = await this.repo.getPartnerTechProfile(partnerId);
+    return right({ profile });
+  }
+}
+
+@Injectable()
+export class AddPartnerTechProfileItemUseCase {
+  constructor(private readonly repo: TechProfileRepository) {}
+
+  async execute(partnerId: string, type: string, itemId: string): Promise<Either<InvalidTechProfileTypeError, void>> {
+    const typeResult = validateType(type);
+    if (typeResult.isLeft()) return left(typeResult.value);
+    await this.repo.addToPartner(partnerId, typeResult.value as TechProfileType, itemId);
+    return right(undefined);
+  }
+}
+
+@Injectable()
+export class RemovePartnerTechProfileItemUseCase {
+  constructor(private readonly repo: TechProfileRepository) {}
+
+  async execute(partnerId: string, type: string, itemId: string): Promise<Either<InvalidTechProfileTypeError, void>> {
+    const typeResult = validateType(type);
+    if (typeResult.isLeft()) return left(typeResult.value);
+    await this.repo.removeFromPartner(partnerId, typeResult.value as TechProfileType, itemId);
+    return right(undefined);
+  }
+}

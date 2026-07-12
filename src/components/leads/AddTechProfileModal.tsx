@@ -9,7 +9,7 @@ import { useTechOptions } from "@/hooks/admin/use-admin";
 
 interface AddTechProfileModalProps {
   entityId: string;
-  entityType: "lead" | "organization";
+  entityType: "lead" | "organization" | "partner";
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
@@ -20,6 +20,10 @@ type TabType = "languages" | "frameworks" | "hosting" | "databases" | "erps" | "
 const TAB_TO_TYPE: Record<TabType, string> = {
   languages: "language", frameworks: "framework", hosting: "hosting",
   databases: "database", erps: "erp", crms: "crm", ecommerces: "ecommerce",
+};
+
+const ENTITY_PATH_SEGMENT: Record<AddTechProfileModalProps["entityType"], string> = {
+  lead: "leads", organization: "organizations", partner: "partners",
 };
 
 export function AddTechProfileModal({ entityId, entityType, isOpen, onClose, onSuccess }: AddTechProfileModalProps) {
@@ -61,7 +65,7 @@ export function AddTechProfileModal({ entityId, entityType, isOpen, onClose, onS
   const handleAdd = async (itemId: string) => {
     setAdding(itemId);
     const type = TAB_TO_TYPE[activeTab];
-    const base = entityType === "lead" ? `leads/${entityId}` : `organizations/${entityId}`;
+    const base = `${ENTITY_PATH_SEGMENT[entityType]}/${entityId}`;
     try {
       await apiFetch(`/${base}/tech-profile/${type}/${itemId}`, token, { method: "POST" });
       onSuccess();

@@ -522,6 +522,59 @@ describe("Partners API (e2e)", () => {
       await prisma.cNAE.deleteMany({ where: { id: { in: [cnaeA.id, cnaeB.id] } } });
     });
 
+    it("tech profile do parceiro: add → get → remove nos 7 tipos", async () => {
+      // Exercise ALL 7 tech types end-to-end (each hits a distinct junction map
+      // entry in the repo — guards against a wrong Prisma model name/casing).
+      const specs = [
+        { type: "language",  catModel: "techProfileLanguage",  resultKey: "languages",  extra: {} },
+        { type: "framework", catModel: "techProfileFramework", resultKey: "frameworks", extra: {} },
+        { type: "hosting",   catModel: "techProfileHosting",   resultKey: "hosting",    extra: { type: "cloud" } },
+        { type: "database",  catModel: "techProfileDatabase",  resultKey: "databases",  extra: { type: "sql" } },
+        { type: "erp",       catModel: "techProfileERP",       resultKey: "erps",       extra: {} },
+        { type: "crm",       catModel: "techProfileCRM",       resultKey: "crms",       extra: {} },
+        { type: "ecommerce", catModel: "techProfileEcommerce", resultKey: "ecommerce",  extra: {} },
+      ] as const;
+
+      const created = await request(app.getHttpServer())
+        .post("/partners").set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro Tech", partnerType: "consultoria" }).expect(201);
+      const pid = created.body.id;
+
+      const createdItems: { catModel: string; id: string }[] = [];
+      for (const s of specs) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const item = await (prisma as any)[s.catModel].create({
+          data: { name: `e2e-${s.type}`, slug: `e2e-${s.type}-${ownerId}`, isActive: true, ...s.extra },
+        });
+        createdItems.push({ catModel: s.catModel, id: item.id });
+
+        await request(app.getHttpServer())
+          .post(`/partners/${pid}/tech-profile/${s.type}/${item.id}`).set("Authorization", `Bearer ${token}`).expect(204);
+        // idempotent: second add must not error (unique key correct)
+        await request(app.getHttpServer())
+          .post(`/partners/${pid}/tech-profile/${s.type}/${item.id}`).set("Authorization", `Bearer ${token}`).expect(204);
+
+        const profile = await request(app.getHttpServer())
+          .get(`/partners/${pid}/tech-profile`).set("Authorization", `Bearer ${token}`).expect(200);
+        expect(profile.body[s.resultKey].map((i: { id: string }) => i.id)).toContain(item.id);
+
+        await request(app.getHttpServer())
+          .delete(`/partners/${pid}/tech-profile/${s.type}/${item.id}`).set("Authorization", `Bearer ${token}`).expect(204);
+        const after = await request(app.getHttpServer())
+          .get(`/partners/${pid}/tech-profile`).set("Authorization", `Bearer ${token}`).expect(200);
+        expect(after.body[s.resultKey].map((i: { id: string }) => i.id)).not.toContain(item.id);
+      }
+
+      // invalid type → 422
+      await request(app.getHttpServer())
+        .post(`/partners/${pid}/tech-profile/bad-type/x`).set("Authorization", `Bearer ${token}`).expect(422);
+
+      for (const it of createdItems) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await (prisma as any)[it.catModel].delete({ where: { id: it.id } });
+      }
+    });
+
     it("oficializar (prospect → active) carimba partnershipStartedAt e o preserva depois", async () => {
       const created = await request(app.getHttpServer())
         .post("/partners")

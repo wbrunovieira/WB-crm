@@ -10,6 +10,7 @@ import {
   GetTechProfileItemsUseCase, GetLeadTechProfileUseCase,
   AddLeadTechProfileItemUseCase, RemoveLeadTechProfileItemUseCase,
   GetOrganizationTechProfileUseCase, AddOrganizationTechProfileItemUseCase, RemoveOrganizationTechProfileItemUseCase,
+  GetPartnerTechProfileUseCase, AddPartnerTechProfileItemUseCase, RemovePartnerTechProfileItemUseCase,
 } from "../../application/use-cases/tech-profile.use-cases";
 
 function handleError(err: Left<Error, unknown>): never {
@@ -31,6 +32,9 @@ export class TechProfileController {
     private readonly getOrgProfile: GetOrganizationTechProfileUseCase,
     private readonly addToOrg: AddOrganizationTechProfileItemUseCase,
     private readonly removeFromOrg: RemoveOrganizationTechProfileItemUseCase,
+    private readonly getPartnerProfile: GetPartnerTechProfileUseCase,
+    private readonly addToPartner: AddPartnerTechProfileItemUseCase,
+    private readonly removeFromPartner: RemovePartnerTechProfileItemUseCase,
   ) {}
 
   @Get("tech-profile/:type")
@@ -77,6 +81,26 @@ export class TechProfileController {
   @HttpCode(204)
   async removeOrgItem(@Param("orgId") orgId: string, @Param("type") type: string, @Param("itemId") itemId: string) {
     const result = await this.removeFromOrg.execute(orgId, type, itemId);
+    if (result.isLeft()) handleError(result);
+  }
+
+  @Get("partners/:partnerId/tech-profile")
+  async getPartnerTechProfile(@Param("partnerId") partnerId: string) {
+    const { profile } = (await this.getPartnerProfile.execute(partnerId)).unwrap();
+    return profile;
+  }
+
+  @Post("partners/:partnerId/tech-profile/:type/:itemId")
+  @HttpCode(204)
+  async addPartnerItem(@Param("partnerId") partnerId: string, @Param("type") type: string, @Param("itemId") itemId: string) {
+    const result = await this.addToPartner.execute(partnerId, type, itemId);
+    if (result.isLeft()) handleError(result);
+  }
+
+  @Delete("partners/:partnerId/tech-profile/:type/:itemId")
+  @HttpCode(204)
+  async removePartnerItem(@Param("partnerId") partnerId: string, @Param("type") type: string, @Param("itemId") itemId: string) {
+    const result = await this.removeFromPartner.execute(partnerId, type, itemId);
     if (result.isLeft()) handleError(result);
   }
 }

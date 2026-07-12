@@ -20,7 +20,7 @@ interface TechProfileBadgeProps {
   title: string;
   items: TechItem[];
   entityId: string;
-  entityType: "lead" | "organization";
+  entityType: "lead" | "organization" | "partner";
   profileType: "languages" | "frameworks" | "hosting" | "databases" | "erps" | "crms" | "ecommerces";
   onUpdate: () => void;
 }
@@ -28,6 +28,10 @@ interface TechProfileBadgeProps {
 const TAB_TO_TYPE: Record<string, string> = {
   languages: "language", frameworks: "framework", hosting: "hosting",
   databases: "database", erps: "erp", crms: "crm", ecommerces: "ecommerce",
+};
+
+const ENTITY_PATH_SEGMENT: Record<TechProfileBadgeProps["entityType"], string> = {
+  lead: "leads", organization: "organizations", partner: "partners",
 };
 
 export function TechProfileBadge({ title, items, entityId, entityType, profileType, onUpdate }: TechProfileBadgeProps) {
@@ -47,7 +51,7 @@ export function TechProfileBadge({ title, items, entityId, entityType, profileTy
 
     setRemoving(itemId);
     const type = TAB_TO_TYPE[profileType] ?? profileType;
-    const base = entityType === "lead" ? `leads/${entityId}` : `organizations/${entityId}`;
+    const base = `${ENTITY_PATH_SEGMENT[entityType]}/${entityId}`;
     try {
       await apiFetch(`/${base}/tech-profile/${type}/${itemId}`, token, { method: "DELETE" });
       await onUpdate();

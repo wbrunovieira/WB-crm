@@ -3,6 +3,7 @@ import {
   GetTechProfileItemsUseCase, GetLeadTechProfileUseCase,
   AddLeadTechProfileItemUseCase, RemoveLeadTechProfileItemUseCase,
   GetOrganizationTechProfileUseCase, AddOrganizationTechProfileItemUseCase, RemoveOrganizationTechProfileItemUseCase,
+  GetPartnerTechProfileUseCase, AddPartnerTechProfileItemUseCase, RemovePartnerTechProfileItemUseCase,
 } from "@/domain/tech-profile/application/use-cases/tech-profile.use-cases";
 import { FakeTechProfileRepository } from "../../fakes/fake-tech-profile.repository";
 
@@ -79,5 +80,33 @@ describe("Organization tech profile", () => {
     await new RemoveOrganizationTechProfileItemUseCase(repo).execute("org-001", "framework", "fw-1");
     const { profile } = (await new GetOrganizationTechProfileUseCase(repo).execute("org-001")).unwrap();
     expect(profile.frameworks).toHaveLength(0);
+  });
+});
+
+describe("Partner tech profile", () => {
+  it("gets empty profile for new partner", async () => {
+    const { profile } = (await new GetPartnerTechProfileUseCase(repo).execute("partner-001")).unwrap();
+    expect(profile.languages).toHaveLength(0);
+  });
+
+  it("adds language and framework to partner", async () => {
+    await new AddPartnerTechProfileItemUseCase(repo).execute("partner-001", "language", "lang-2");
+    await new AddPartnerTechProfileItemUseCase(repo).execute("partner-001", "framework", "fw-1");
+    const { profile } = (await new GetPartnerTechProfileUseCase(repo).execute("partner-001")).unwrap();
+    expect(profile.languages).toHaveLength(1);
+    expect(profile.languages[0].name).toBe("Python");
+    expect(profile.frameworks).toHaveLength(1);
+  });
+
+  it("removes language from partner", async () => {
+    await repo.addToPartner("partner-001", "language", "lang-1");
+    await new RemovePartnerTechProfileItemUseCase(repo).execute("partner-001", "language", "lang-1");
+    const { profile } = (await new GetPartnerTechProfileUseCase(repo).execute("partner-001")).unwrap();
+    expect(profile.languages).toHaveLength(0);
+  });
+
+  it("returns error for invalid type when adding to partner", async () => {
+    const result = await new AddPartnerTechProfileItemUseCase(repo).execute("partner-001", "bad-type", "x");
+    expect(result.isLeft()).toBe(true);
   });
 });

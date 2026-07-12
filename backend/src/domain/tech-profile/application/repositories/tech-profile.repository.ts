@@ -30,4 +30,8 @@ export abstract class TechProfileRepository {
   abstract getOrganizationTechProfile(organizationId: string): Promise<TechProfileResult>;
   abstract addToOrganization(organizationId: string, type: TechProfileType, itemId: string): Promise<void>;
   abstract removeFromOrganization(organizationId: string, type: TechProfileType, itemId: string): Promise<void>;
+
+  abstract getPartnerTechProfile(partnerId: string): Promise<TechProfileResult>;
+  abstract addToPartner(partnerId: string, type: TechProfileType, itemId: string): Promise<void>;
+  abstract removeFromPartner(partnerId: string, type: TechProfileType, itemId: string): Promise<void>;
 }

@@ -6,6 +6,7 @@ export class FakeTechProfileRepository extends TechProfileRepository {
   availableItems: Map<TechProfileType, TechProfileItem[]> = new Map();
   leadProfiles: Map<string, Map<TechProfileType, Set<string>>> = new Map();
   orgProfiles: Map<string, Map<TechProfileType, Set<string>>> = new Map();
+  partnerProfiles: Map<string, Map<TechProfileType, Set<string>>> = new Map();
 
   seedItem(type: TechProfileType, item: TechProfileItem): void {
     if (!this.availableItems.has(type)) this.availableItems.set(type, []);
@@ -57,5 +58,22 @@ export class FakeTechProfileRepository extends TechProfileRepository {
 
   async removeFromOrganization(organizationId: string, type: TechProfileType, itemId: string): Promise<void> {
     this.orgProfiles.get(organizationId)?.get(type)?.delete(itemId);
+  }
+
+  async getPartnerTechProfile(partnerId: string): Promise<TechProfileResult> {
+    const map = this.partnerProfiles.get(partnerId);
+    if (!map) return EMPTY_PROFILE;
+    return this.buildProfile(map);
+  }
+
+  async addToPartner(partnerId: string, type: TechProfileType, itemId: string): Promise<void> {
+    if (!this.partnerProfiles.has(partnerId)) this.partnerProfiles.set(partnerId, new Map());
+    const map = this.partnerProfiles.get(partnerId)!;
+    if (!map.has(type)) map.set(type, new Set());
+    map.get(type)!.add(itemId);
+  }
+
+  async removeFromPartner(partnerId: string, type: TechProfileType, itemId: string): Promise<void> {
+    this.partnerProfiles.get(partnerId)?.get(type)?.delete(itemId);
   }
 }

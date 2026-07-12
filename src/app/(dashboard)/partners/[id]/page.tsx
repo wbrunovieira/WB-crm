@@ -22,6 +22,7 @@ import { PartnerEmailVerifyButton } from "@/components/partners/PartnerEmailVeri
 import { PartnerPhoneVerifyButton } from "@/components/partners/PartnerPhoneVerifyButton";
 import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
 import { PartnerSectorSection } from "@/components/sectors/PartnerSectorSection";
+import { PartnerTechProfileSection } from "@/components/partners/PartnerTechProfileSection";
 import { PartnerDealsList, type PartnerDealItem } from "@/components/partners/PartnerDealsList";
 import ProposalsList, { type Proposal } from "@/components/proposals/ProposalsList";
 import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
@@ -453,6 +454,11 @@ export default async function PartnerDetailPage({
       {/* Sectors */}
       <div id="setores" className="mt-6 scroll-mt-52">
         <PartnerSectorSection partnerId={partner.id} />
+      </div>
+
+      {/* Tech Profile (current tech stack) */}
+      <div id="tech-profile" className="scroll-mt-52">
+        <PartnerTechProfileSection partnerId={partner.id} />
       </div>
 
       {/* Contacts */}
