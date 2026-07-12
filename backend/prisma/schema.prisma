@@ -1095,6 +1095,7 @@ model Partner {
   partnerERPs           PartnerERP[]
   partnerCRMs           PartnerCRM[]
   partnerEcommerces     PartnerEcommerce[]
+  partnerICPs           PartnerICP[]
 
   @@index([ownerId])
   @@index([partnerType])
@@ -2120,6 +2121,7 @@ model ICP {
   versions      ICPVersion[]
   leads         LeadICP[]
   organizations OrganizationICP[]
+  partners      PartnerICP[]
   cadences      Cadence[]
 
   @@index([ownerId])
@@ -2230,6 +2232,47 @@ model OrganizationICP {
   @@index([icpFitStatus])
   @@index([businessMoment])
   @@map("organization_icps")
+}
+
+model PartnerICP {
+  id             String   @id @default(cuid())
+  partnerId String
+  icpId          String
+  matchScore     Int? // Score de fit (0-100)
+  notes          String? // Observações do link
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Essential Fields
+  icpFitStatus           String? // ideal, partial, out_of_icp
+  realDecisionMaker      String? // founder_ceo, tech_partner, commercial_partner, other
+  realDecisionMakerOther String? // Text when realDecisionMaker = other
+  perceivedUrgency       String? // JSON array: ["curiosity", "interest", "future_need", "current_need", "active_pain"]
+  businessMoment         String? // JSON array: ["validation", "growth", "scale", "consolidation"]
+
+  // Specific Fields
+  currentPlatforms             String? // JSON array: ["hotmart", "cademi", ...]
+  fragmentationLevel           Int? // 0-10 (based on IFEE diagnostic)
+  mainDeclaredPain             String? // student_experience, operational_fragmentation, etc
+  strategicDesire              String? // total_control, own_identity, etc
+  perceivedTechnicalComplexity Int? // 1-5
+
+  // Strategic Fields
+  purchaseTrigger       String? // Short text (max 500)
+  nonClosingReason      String? // priority_changed, budget, timing, etc
+  estimatedDecisionTime String? // less_than_2_weeks, 2_to_4_weeks, etc
+  expansionPotential    Int? // 1-5
+
+  // Relations
+  partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  icp          ICP          @relation(fields: [icpId], references: [id], onDelete: Cascade)
+
+  @@unique([partnerId, icpId])
+  @@index([partnerId])
+  @@index([icpId])
+  @@index([icpFitStatus])
+  @@index([businessMoment])
+  @@map("partner_icps")
 }
 
 // ============ SALES CADENCE SYSTEM ============

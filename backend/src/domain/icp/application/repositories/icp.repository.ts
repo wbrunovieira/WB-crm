@@ -41,6 +41,17 @@ export interface OrganizationICPRecord extends ICPLinkData {
   updatedAt: Date;
 }
 
+export interface PartnerICPRecord extends ICPLinkData {
+  id: string;
+  partnerId: string;
+  icpId: string;
+  icpName: string;
+  icpSlug: string;
+  icp: { id: string; name: string; slug: string; status: string };
+  createdAt: Date;
+  updatedAt: Date;
+}
+
 export interface ICPVersionRecord {
   id: string;
   icpId: string;
@@ -73,4 +84,9 @@ export abstract class ICPRepository {
   abstract linkToOrganization(icpId: string, organizationId: string, data?: ICPLinkData): Promise<void>;
   abstract updateOrganizationLink(icpId: string, organizationId: string, data: ICPLinkData): Promise<void>;
   abstract unlinkFromOrganization(icpId: string, organizationId: string): Promise<void>;
+
+  abstract getPartnerICPs(partnerId: string): Promise<PartnerICPRecord[]>;
+  abstract linkToPartner(icpId: string, partnerId: string, data?: ICPLinkData): Promise<void>;
+  abstract updatePartnerLink(icpId: string, partnerId: string, data: ICPLinkData): Promise<void>;
+  abstract unlinkFromPartner(icpId: string, partnerId: string): Promise<void>;
 }

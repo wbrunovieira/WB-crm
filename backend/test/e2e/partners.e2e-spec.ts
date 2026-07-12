@@ -575,6 +575,56 @@ describe("Partners API (e2e)", () => {
       }
     });
 
+    it("ICP do parceiro: link → get → update → unlink + rejeita ICP de outro dono", async () => {
+      const icp = await prisma.iCP.create({
+        data: { name: "ICP E2E", slug: `icp-e2e-${ownerId}`, content: "x", status: "active", ownerId },
+      });
+      const created = await request(app.getHttpServer())
+        .post("/partners").set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro ICP", partnerType: "consultoria" }).expect(201);
+      const pid = created.body.id;
+
+      // link with qualification fields
+      await request(app.getHttpServer())
+        .post(`/icps/partners/${pid}/${icp.id}`).set("Authorization", `Bearer ${token}`)
+        .send({ matchScore: 80, icpFitStatus: "ideal", perceivedUrgency: ["active_pain"] }).expect(204);
+
+      const list = await request(app.getHttpServer())
+        .get(`/icps/partners/${pid}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(list.body).toHaveLength(1);
+      expect(list.body[0].matchScore).toBe(80);
+      expect(list.body[0].icpFitStatus).toBe("ideal");
+      expect(list.body[0].perceivedUrgency).toEqual(["active_pain"]);
+
+      await request(app.getHttpServer())
+        .patch(`/icps/partners/${pid}/${icp.id}`).set("Authorization", `Bearer ${token}`)
+        .send({ matchScore: 95 }).expect(204);
+      const after = await request(app.getHttpServer())
+        .get(`/icps/partners/${pid}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(after.body[0].matchScore).toBe(95);
+
+      // another owner's ICP → 403
+      const otherUser = await prisma.user.create({
+        data: { email: "e2e-partner-icp-other@test.com", name: "Outro", password: "x", role: "sdr" },
+      });
+      const foreignIcp = await prisma.iCP.create({
+        data: { name: "ICP Alheio", slug: `icp-alheio-${ownerId}`, content: "x", status: "active", ownerId: otherUser.id },
+      });
+      await request(app.getHttpServer())
+        .post(`/icps/partners/${pid}/${foreignIcp.id}`).set("Authorization", `Bearer ${token}`).send({}).expect(403);
+      // ownership is enforced on update and unlink too, not only on link
+      await request(app.getHttpServer())
+        .patch(`/icps/partners/${pid}/${foreignIcp.id}`).set("Authorization", `Bearer ${token}`).send({ matchScore: 10 }).expect(403);
+      await request(app.getHttpServer())
+        .delete(`/icps/partners/${pid}/${foreignIcp.id}`).set("Authorization", `Bearer ${token}`).expect(403);
+
+      await request(app.getHttpServer())
+        .delete(`/icps/partners/${pid}/${icp.id}`).set("Authorization", `Bearer ${token}`).expect(204);
+
+      await prisma.iCP.deleteMany({ where: { id: { in: [icp.id, foreignIcp.id] } } });
+      await prisma.user.delete({ where: { id: otherUser.id } });
+    });
+
     it("oficializar (prospect → active) carimba partnershipStartedAt e o preserva depois", async () => {
       const created = await request(app.getHttpServer())
         .post("/partners")

@@ -1,10 +1,11 @@
-import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord, ICPVersionRecord } from "@/domain/icp/application/repositories/icp.repository";
+import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord, PartnerICPRecord, ICPVersionRecord } from "@/domain/icp/application/repositories/icp.repository";
 import { ICP } from "@/domain/icp/enterprise/entities/icp";
 
 export class FakeICPRepository extends ICPRepository {
   items: ICP[] = [];
   leadLinks: Map<string, Map<string, ICPLinkData>> = new Map();
   orgLinks: Map<string, Map<string, ICPLinkData>> = new Map();
+  partnerLinks: Map<string, Map<string, ICPLinkData>> = new Map();
   versions: ICPVersionRecord[] = [];
 
   async findById(id: string): Promise<ICP | null> {
@@ -73,6 +74,29 @@ export class FakeICPRepository extends ICPRepository {
 
   async unlinkFromOrganization(icpId: string, organizationId: string): Promise<void> {
     this.orgLinks.get(organizationId)?.delete(icpId);
+  }
+
+  async getPartnerICPs(partnerId: string): Promise<PartnerICPRecord[]> {
+    const map = this.partnerLinks.get(partnerId) ?? new Map();
+    return Array.from(map.entries()).map(([icpId, data]) => {
+      const icp = this.items.find((i) => i.id.toString() === icpId);
+      return { id: `link-${partnerId}-${icpId}`, partnerId, icpId, icpName: icp?.name ?? "", icpSlug: icp?.slug ?? "", icp: { id: icpId, name: icp?.name ?? "", slug: icp?.slug ?? "", status: "active" }, createdAt: new Date(), updatedAt: new Date(), ...data };
+    });
+  }
+
+  async linkToPartner(icpId: string, partnerId: string, data?: ICPLinkData): Promise<void> {
+    if (!this.partnerLinks.has(partnerId)) this.partnerLinks.set(partnerId, new Map());
+    this.partnerLinks.get(partnerId)!.set(icpId, data ?? {});
+  }
+
+  async updatePartnerLink(icpId: string, partnerId: string, data: ICPLinkData): Promise<void> {
+    if (!this.partnerLinks.has(partnerId)) this.partnerLinks.set(partnerId, new Map());
+    const existing = this.partnerLinks.get(partnerId)!.get(icpId) ?? {};
+    this.partnerLinks.get(partnerId)!.set(icpId, { ...existing, ...data });
+  }
+
+  async unlinkFromPartner(icpId: string, partnerId: string): Promise<void> {
+    this.partnerLinks.get(partnerId)?.delete(icpId);
   }
 
   async getVersions(icpId: string): Promise<ICPVersionRecord[]> {

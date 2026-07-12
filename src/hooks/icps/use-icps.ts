@@ -58,6 +58,12 @@ export interface ICPOrgLink extends ICPLinkData {
   icp: { id: string; name: string; slug: string; status: string };
 }
 
+export interface ICPPartnerLink extends ICPLinkData {
+  icpId: string;
+  partnerId: string;
+  icp: { id: string; name: string; slug: string; status: string };
+}
+
 // ─── Query keys ──────────────────────────────────────────────────────────────
 
 export const icpKeys = {
@@ -67,6 +73,7 @@ export const icpKeys = {
   versions: (id: string) => ["icps", "versions", id] as const,
   leadICPs: (leadId: string) => ["icps", "lead", leadId] as const,
   orgICPs: (orgId: string) => ["icps", "org", orgId] as const,
+  partnerICPs: (partnerId: string) => ["icps", "partner", partnerId] as const,
 };
 
 // ─── Queries ─────────────────────────────────────────────────────────────────
@@ -119,6 +126,16 @@ export function useOrgICPs(orgId: string) {
     queryKey: icpKeys.orgICPs(orgId),
     queryFn: () => apiFetch<ICPOrgLink[]>(`/icps/organizations/${orgId}`, token),
     enabled: !!token && !!orgId,
+  });
+}
+
+export function usePartnerICPs(partnerId: string) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  return useQuery({
+    queryKey: icpKeys.partnerICPs(partnerId),
+    queryFn: () => apiFetch<ICPPartnerLink[]>(`/icps/partners/${partnerId}`, token),
+    enabled: !!token && !!partnerId,
   });
 }
 
@@ -231,5 +248,38 @@ export function useUnlinkOrgFromICP() {
     mutationFn: ({ orgId, icpId }: { orgId: string; icpId: string }) =>
       apiFetch<void>(`/icps/organizations/${orgId}/${icpId}`, token, { method: "DELETE" }),
     onSuccess: (_d, { orgId }) => qc.invalidateQueries({ queryKey: icpKeys.orgICPs(orgId) }),
+  });
+}
+
+export function useLinkPartnerToICP() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ partnerId, icpId, ...data }: { partnerId: string; icpId: string } & ICPLinkData) =>
+      apiFetch<void>(`/icps/partners/${partnerId}/${icpId}`, token, { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: (_d, { partnerId }) => qc.invalidateQueries({ queryKey: icpKeys.partnerICPs(partnerId) }),
+  });
+}
+
+export function useUpdatePartnerICP() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ partnerId, icpId, ...data }: { partnerId: string; icpId: string } & ICPLinkData) =>
+      apiFetch<void>(`/icps/partners/${partnerId}/${icpId}`, token, { method: "PATCH", body: JSON.stringify(data) }),
+    onSuccess: (_d, { partnerId }) => qc.invalidateQueries({ queryKey: icpKeys.partnerICPs(partnerId) }),
+  });
+}
+
+export function useUnlinkPartnerFromICP() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ partnerId, icpId }: { partnerId: string; icpId: string }) =>
+      apiFetch<void>(`/icps/partners/${partnerId}/${icpId}`, token, { method: "DELETE" }),
+    onSuccess: (_d, { partnerId }) => qc.invalidateQueries({ queryKey: icpKeys.partnerICPs(partnerId) }),
   });
 }

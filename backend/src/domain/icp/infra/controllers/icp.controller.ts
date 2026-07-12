@@ -12,6 +12,7 @@ import {
   GetICPsUseCase, GetICPByIdUseCase, CreateICPUseCase, UpdateICPUseCase, DeleteICPUseCase,
   GetLeadICPsUseCase, LinkLeadToICPUseCase, UpdateLeadICPUseCase, UnlinkLeadFromICPUseCase,
   GetOrganizationICPsUseCase, LinkOrganizationToICPUseCase, UpdateOrganizationICPUseCase, UnlinkOrganizationFromICPUseCase,
+  GetPartnerICPsUseCase, LinkPartnerToICPUseCase, UpdatePartnerICPUseCase, UnlinkPartnerFromICPUseCase,
   GetICPVersionsUseCase, RestoreICPVersionUseCase,
 } from "../../application/use-cases/icp.use-cases";
 import type { ICPLinkData } from "../../application/repositories/icp.repository";
@@ -42,6 +43,10 @@ export class ICPController {
     private readonly linkOrgToICP: LinkOrganizationToICPUseCase,
     private readonly updateOrgICP: UpdateOrganizationICPUseCase,
     private readonly unlinkOrgFromICP: UnlinkOrganizationFromICPUseCase,
+    private readonly getPartnerICPs: GetPartnerICPsUseCase,
+    private readonly linkPartnerToICP: LinkPartnerToICPUseCase,
+    private readonly updatePartnerICP: UpdatePartnerICPUseCase,
+    private readonly unlinkPartnerFromICP: UnlinkPartnerFromICPUseCase,
     private readonly getICPVersions: GetICPVersionsUseCase,
     private readonly restoreICPVersion: RestoreICPVersionUseCase,
   ) {}
@@ -137,6 +142,35 @@ export class ICPController {
   @HttpCode(204)
   async removeFromOrg(@Param("orgId") orgId: string, @Param("icpId") icpId: string, @CurrentUser() user: AuthenticatedUser) {
     const result = await this.unlinkOrgFromICP.execute(icpId, orgId, user.id);
+    if (result.isLeft()) handleError(result);
+  }
+
+  // ─── Partner links ─────────────────────────────────────────────────────────
+
+  @Get("partners/:partnerId")
+  async listPartnerICPs(@Param("partnerId") partnerId: string) {
+    const { links } = (await this.getPartnerICPs.execute(partnerId)).unwrap();
+    return links;
+  }
+
+  @Post("partners/:partnerId/:icpId")
+  @HttpCode(204)
+  async addToPartner(@Param("partnerId") partnerId: string, @Param("icpId") icpId: string, @Body() body: ICPLinkData, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.linkPartnerToICP.execute({ icpId, partnerId, requesterId: user.id, ...body });
+    if (result.isLeft()) handleError(result);
+  }
+
+  @Patch("partners/:partnerId/:icpId")
+  @HttpCode(204)
+  async updatePartnerLink(@Param("partnerId") partnerId: string, @Param("icpId") icpId: string, @Body() body: ICPLinkData, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.updatePartnerICP.execute({ icpId, partnerId, requesterId: user.id, ...body });
+    if (result.isLeft()) handleError(result);
+  }
+
+  @Delete("partners/:partnerId/:icpId")
+  @HttpCode(204)
+  async removeFromPartner(@Param("partnerId") partnerId: string, @Param("icpId") icpId: string, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.unlinkPartnerFromICP.execute(icpId, partnerId, user.id);
     if (result.isLeft()) handleError(result);
   }
 

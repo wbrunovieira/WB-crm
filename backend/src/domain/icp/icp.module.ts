@@ -5,6 +5,7 @@ import {
   GetICPsUseCase, GetICPByIdUseCase, CreateICPUseCase, UpdateICPUseCase, DeleteICPUseCase,
   GetLeadICPsUseCase, LinkLeadToICPUseCase, UpdateLeadICPUseCase, UnlinkLeadFromICPUseCase,
   GetOrganizationICPsUseCase, LinkOrganizationToICPUseCase, UpdateOrganizationICPUseCase, UnlinkOrganizationFromICPUseCase,
+  GetPartnerICPsUseCase, LinkPartnerToICPUseCase, UpdatePartnerICPUseCase, UnlinkPartnerFromICPUseCase,
   GetICPVersionsUseCase, RestoreICPVersionUseCase,
 } from "./application/use-cases/icp.use-cases";
 import { PrismaICPRepository } from "./infra/repositories/prisma-icp.repository";
@@ -17,6 +18,7 @@ import { ICPController } from "./infra/controllers/icp.controller";
     GetICPsUseCase, GetICPByIdUseCase, CreateICPUseCase, UpdateICPUseCase, DeleteICPUseCase,
     GetLeadICPsUseCase, LinkLeadToICPUseCase, UpdateLeadICPUseCase, UnlinkLeadFromICPUseCase,
     GetOrganizationICPsUseCase, LinkOrganizationToICPUseCase, UpdateOrganizationICPUseCase, UnlinkOrganizationFromICPUseCase,
+  GetPartnerICPsUseCase, LinkPartnerToICPUseCase, UpdatePartnerICPUseCase, UnlinkPartnerFromICPUseCase,
     GetICPVersionsUseCase, RestoreICPVersionUseCase,
     { provide: ICPRepository, useClass: PrismaICPRepository },
   ],

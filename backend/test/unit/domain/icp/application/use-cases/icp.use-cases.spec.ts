@@ -4,6 +4,7 @@ import {
   LinkLeadToICPUseCase, UpdateLeadICPUseCase, UnlinkLeadFromICPUseCase,
   GetLeadICPsUseCase, GetOrganizationICPsUseCase,
   LinkOrganizationToICPUseCase, UpdateOrganizationICPUseCase, UnlinkOrganizationFromICPUseCase,
+  GetPartnerICPsUseCase, LinkPartnerToICPUseCase, UpdatePartnerICPUseCase, UnlinkPartnerFromICPUseCase,
   GetICPVersionsUseCase, RestoreICPVersionUseCase,
 } from "@/domain/icp/application/use-cases/icp.use-cases";
 import { FakeICPRepository } from "../../fakes/fake-icp.repository";
@@ -189,6 +190,57 @@ describe("Organization link use cases", () => {
     const { links } = (await new GetOrganizationICPsUseCase(repo).execute("org-001")).unwrap();
     expect(links).toHaveLength(1);
     expect(links[0].matchScore).toBe(60);
+  });
+});
+
+describe("Partner link use cases", () => {
+  it("links ICP to partner", async () => {
+    seed("i1", "Startup Tech", "startup-tech", "user-001");
+    await new LinkPartnerToICPUseCase(repo).execute({ icpId: "i1", partnerId: "partner-001", requesterId: "user-001" });
+    expect(repo.partnerLinks.get("partner-001")?.has("i1")).toBe(true);
+  });
+
+  it("rejects linking another owner's ICP to a partner", async () => {
+    seed("i1", "Startup Tech", "startup-tech", "user-001");
+    const result = await new LinkPartnerToICPUseCase(repo).execute({ icpId: "i1", partnerId: "partner-001", requesterId: "user-999" });
+    expect(result.isLeft()).toBe(true);
+    expect((result.value as Error).name).toBe("ICPForbiddenError");
+    expect(repo.partnerLinks.get("partner-001")?.has("i1")).toBeFalsy();
+  });
+
+  it("updates partner ICP link data", async () => {
+    seed("i1", "Startup Tech", "startup-tech", "user-001");
+    await repo.linkToPartner("i1", "partner-001");
+    await new UpdatePartnerICPUseCase(repo).execute({ icpId: "i1", partnerId: "partner-001", requesterId: "user-001", icpFitStatus: "ideal", matchScore: 90 });
+    const links = await repo.getPartnerICPs("partner-001");
+    expect(links[0].icpFitStatus).toBe("ideal");
+    expect(links[0].matchScore).toBe(90);
+  });
+
+  it("unlinks ICP from partner", async () => {
+    seed("i1", "Startup Tech", "startup-tech", "user-001");
+    await repo.linkToPartner("i1", "partner-001");
+    await new UnlinkPartnerFromICPUseCase(repo).execute("i1", "partner-001", "user-001");
+    expect(repo.partnerLinks.get("partner-001")?.has("i1")).toBe(false);
+  });
+
+  it("gets partner ICPs", async () => {
+    seed("i1", "Startup Tech", "startup-tech", "user-001");
+    await repo.linkToPartner("i1", "partner-001", { matchScore: 55 });
+    const { links } = (await new GetPartnerICPsUseCase(repo).execute("partner-001")).unwrap();
+    expect(links).toHaveLength(1);
+    expect(links[0].matchScore).toBe(55);
+  });
+
+  it("rejects updating/unlinking another owner's ICP", async () => {
+    seed("i1", "Startup Tech", "startup-tech", "user-001");
+    await repo.linkToPartner("i1", "partner-001");
+    const upd = await new UpdatePartnerICPUseCase(repo).execute({ icpId: "i1", partnerId: "partner-001", requesterId: "user-999", matchScore: 10 });
+    expect(upd.isLeft()).toBe(true);
+    expect((upd.value as Error).name).toBe("ICPForbiddenError");
+    const unl = await new UnlinkPartnerFromICPUseCase(repo).execute("i1", "partner-001", "user-999");
+    expect(unl.isLeft()).toBe(true);
+    expect((unl.value as Error).name).toBe("ICPForbiddenError");
   });
 });
 

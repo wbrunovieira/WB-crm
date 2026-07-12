@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 import { ICP } from "../../enterprise/entities/icp";
-import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord, ICPVersionRecord } from "../repositories/icp.repository";
+import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord, PartnerICPRecord, ICPVersionRecord } from "../repositories/icp.repository";
 
 export class ICPNotFoundError extends Error { name = "ICPNotFoundError"; }
 export class DuplicateICPError extends Error { name = "DuplicateICPError"; }
@@ -205,6 +205,57 @@ export class UnlinkOrganizationFromICPUseCase {
     if (!icp) return left(new ICPNotFoundError("ICP não encontrado"));
     if (icp.ownerId !== requesterId) return left(new ICPForbiddenError("Acesso negado ao ICP"));
     await this.repo.unlinkFromOrganization(icpId, organizationId);
+    return right(undefined);
+  }
+}
+
+// ── Partner link use cases ────────────────────────────────────────────────
+@Injectable()
+export class GetPartnerICPsUseCase {
+  constructor(private readonly repo: ICPRepository) {}
+  async execute(partnerId: string): Promise<Either<never, { links: PartnerICPRecord[] }>> {
+    const links = await this.repo.getPartnerICPs(partnerId);
+    return right({ links });
+  }
+}
+
+@Injectable()
+export class LinkPartnerToICPUseCase {
+  constructor(private readonly repo: ICPRepository) {}
+
+  async execute(data: { icpId: string; partnerId: string; requesterId: string } & ICPLinkData): Promise<Either<ICPNotFoundError | ICPForbiddenError, void>> {
+    const { icpId, partnerId, requesterId, ...linkData } = data;
+    const icp = await this.repo.findById(icpId);
+    if (!icp) return left(new ICPNotFoundError("ICP não encontrado"));
+    if (icp.ownerId !== requesterId) return left(new ICPForbiddenError("Acesso negado ao ICP"));
+    await this.repo.linkToPartner(icpId, partnerId, linkData);
+    return right(undefined);
+  }
+}
+
+@Injectable()
+export class UpdatePartnerICPUseCase {
+  constructor(private readonly repo: ICPRepository) {}
+
+  async execute(data: { icpId: string; partnerId: string; requesterId: string } & ICPLinkData): Promise<Either<ICPNotFoundError | ICPForbiddenError, void>> {
+    const { icpId, partnerId, requesterId, ...linkData } = data;
+    const icp = await this.repo.findById(icpId);
+    if (!icp) return left(new ICPNotFoundError("ICP não encontrado"));
+    if (icp.ownerId !== requesterId) return left(new ICPForbiddenError("Acesso negado ao ICP"));
+    await this.repo.updatePartnerLink(icpId, partnerId, linkData);
+    return right(undefined);
+  }
+}
+
+@Injectable()
+export class UnlinkPartnerFromICPUseCase {
+  constructor(private readonly repo: ICPRepository) {}
+
+  async execute(icpId: string, partnerId: string, requesterId: string): Promise<Either<ICPNotFoundError | ICPForbiddenError, void>> {
+    const icp = await this.repo.findById(icpId);
+    if (!icp) return left(new ICPNotFoundError("ICP não encontrado"));
+    if (icp.ownerId !== requesterId) return left(new ICPForbiddenError("Acesso negado ao ICP"));
+    await this.repo.unlinkFromPartner(icpId, partnerId);
     return right(undefined);
   }
 }

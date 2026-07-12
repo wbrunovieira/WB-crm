@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/infra/database/prisma.service";
-import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord, ICPVersionRecord } from "../../application/repositories/icp.repository";
+import { ICPRepository, ICPLinkData, LeadICPRecord, OrganizationICPRecord, PartnerICPRecord, ICPVersionRecord } from "../../application/repositories/icp.repository";
 import { ICP, CreateICPProps } from "../../enterprise/entities/icp";
 import { ICPStatus } from "../../enterprise/value-objects/icp-status.vo";
 import { UniqueEntityID } from "@/core/unique-entity-id";
@@ -155,6 +155,37 @@ export class PrismaICPRepository extends ICPRepository {
 
   async unlinkFromOrganization(icpId: string, organizationId: string): Promise<void> {
     await this.prisma.organizationICP.deleteMany({ where: { organizationId, icpId } });
+  }
+
+  async getPartnerICPs(partnerId: string): Promise<PartnerICPRecord[]> {
+    const rows = await this.prisma.partnerICP.findMany({ where: { partnerId }, include: { icp: true } });
+    return rows.map((r) => ({
+      id: r.id, partnerId: r.partnerId, icpId: r.icpId,
+      icpName: r.icp.name, icpSlug: r.icp.slug,
+      icp: { id: r.icp.id, name: r.icp.name, slug: r.icp.slug, status: r.icp.status },
+      createdAt: r.createdAt, updatedAt: r.updatedAt,
+      ...toLinkData(r as unknown as Record<string, unknown>),
+    }));
+  }
+
+  async linkToPartner(icpId: string, partnerId: string, data?: ICPLinkData): Promise<void> {
+    const linkData = toDbLinkData(data ?? {});
+    await this.prisma.partnerICP.upsert({
+      where: { partnerId_icpId: { partnerId, icpId } },
+      create: { partnerId, icpId, ...linkData },
+      update: linkData,
+    });
+  }
+
+  async updatePartnerLink(icpId: string, partnerId: string, data: ICPLinkData): Promise<void> {
+    await this.prisma.partnerICP.update({
+      where: { partnerId_icpId: { partnerId, icpId } },
+      data: toDbLinkData(data),
+    });
+  }
+
+  async unlinkFromPartner(icpId: string, partnerId: string): Promise<void> {
+    await this.prisma.partnerICP.deleteMany({ where: { partnerId, icpId } });
   }
 
   async getVersions(icpId: string): Promise<ICPVersionRecord[]> {
