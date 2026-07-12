@@ -1,4 +1,4 @@
-import { CadencesRepository, LeadCadenceRecord, LeadCadenceDetail, AvailableCadenceForLead, ApplyCadenceInput, GeneratedActivity } from "@/domain/cadences/application/repositories/cadences.repository";
+import { CadencesRepository, LeadCadenceRecord, LeadCadenceDetail, AvailableCadenceForLead, ApplyCadenceInput, GeneratedActivity, PartnerCadenceRecord, PartnerCadenceDetail, ApplyPartnerCadenceInput } from "@/domain/cadences/application/repositories/cadences.repository";
 import { Cadence } from "@/domain/cadences/enterprise/entities/cadence";
 import { CadenceStep } from "@/domain/cadences/enterprise/entities/cadence-step";
 import { UniqueEntityID } from "@/core/unique-entity-id";
@@ -15,6 +15,8 @@ export class InMemoryCadencesRepository extends CadencesRepository {
     skippedAt?: Date;
     failedAt?: Date;
   }> = [];
+  partnerCadences: PartnerCadenceRecord[] = [];
+  partnerCadenceActivities: Array<{ id: string; partnerCadenceId: string; activityId: string; completed: boolean; skippedAt?: Date; failedAt?: Date }> = [];
 
   async findById(id: string): Promise<Cadence | null> {
     return this.cadences.find(c => c.id.toString() === id) ?? null;
@@ -139,6 +141,64 @@ export class InMemoryCadencesRepository extends CadencesRepository {
   }
 
   async registerLeadReply(_leadId: string, _ownerId: string, _channel: string, _notes?: string): Promise<{ activityId: string; cancelledCadences: number; skippedActivities: number }> {
+    return { activityId: "", cancelledCadences: 0, skippedActivities: 0 };
+  }
+
+  // ── Partner cadence ──
+  async applyToPartner(input: ApplyPartnerCadenceInput, steps: CadenceStep[]): Promise<{ partnerCadenceId: string; activities: GeneratedActivity[] }> {
+    const partnerCadenceId = new UniqueEntityID().toString();
+    this.partnerCadences.push({
+      id: partnerCadenceId, partnerId: input.partnerId, cadenceId: input.cadenceId,
+      status: "active", startDate: input.startDate, currentStep: 0, notes: input.notes, ownerId: input.ownerId,
+    });
+    const activities: GeneratedActivity[] = steps.map(step => {
+      const scheduled = new Date(input.startDate);
+      scheduled.setDate(scheduled.getDate() + (step.dayNumber - 1));
+      const activityId = new UniqueEntityID().toString();
+      this.partnerCadenceActivities.push({ id: new UniqueEntityID().toString(), partnerCadenceId, activityId, completed: false });
+      return { leadCadenceId: partnerCadenceId, cadenceStepId: step.id.toString(), activityId, scheduledDate: scheduled };
+    });
+    return { partnerCadenceId, activities };
+  }
+
+  async findPartnerCadenceById(id: string): Promise<PartnerCadenceRecord | null> {
+    return this.partnerCadences.find(pc => pc.id === id) ?? null;
+  }
+
+  async pausePartnerCadence(id: string): Promise<void> {
+    const pc = this.partnerCadences.find(p => p.id === id);
+    if (pc) { pc.status = "paused"; pc.pausedAt = new Date(); }
+  }
+
+  async resumePartnerCadence(id: string): Promise<void> {
+    const pc = this.partnerCadences.find(p => p.id === id);
+    if (pc) { pc.status = "active"; pc.pausedAt = undefined; }
+  }
+
+  async cancelPartnerCadence(id: string): Promise<void> {
+    const pc = this.partnerCadences.find(p => p.id === id);
+    if (!pc) return;
+    const now = new Date();
+    pc.status = "cancelled"; pc.cancelledAt = now;
+    for (const a of this.partnerCadenceActivities.filter(a => a.partnerCadenceId === id)) {
+      if (!a.completed && !a.failedAt && !a.skippedAt) a.skippedAt = now;
+    }
+  }
+
+  async completePartnerCadence(id: string, _disqualificationReason?: string): Promise<void> {
+    const pc = this.partnerCadences.find(p => p.id === id);
+    if (pc) { pc.status = "completed"; pc.completedAt = new Date(); }
+  }
+
+  async getPartnerCadencesDetail(_partnerId: string): Promise<PartnerCadenceDetail[]> {
+    return [];
+  }
+
+  async getAvailableCadencesForPartner(_partnerId: string, _ownerId: string): Promise<AvailableCadenceForLead[]> {
+    return [];
+  }
+
+  async registerPartnerReply(_partnerId: string, _ownerId: string, _channel: string, _notes?: string): Promise<{ activityId: string; cancelledCadences: number; skippedActivities: number }> {
     return { activityId: "", cancelledCadences: 0, skippedActivities: 0 };
   }
 }

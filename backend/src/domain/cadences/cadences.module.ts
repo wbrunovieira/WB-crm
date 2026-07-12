@@ -11,6 +11,9 @@ import {
   PauseLeadCadenceUseCase, ResumeLeadCadenceUseCase, CancelLeadCadenceUseCase,
   CompleteLeadCadenceUseCase, CancelAllActiveCadencesUseCase,
   GetAvailableCadencesForLeadUseCase, RegisterLeadReplyUseCase,
+  ApplyCadenceToPartnerUseCase, GetPartnerCadencesDetailUseCase, GetAvailableCadencesForPartnerUseCase,
+  PausePartnerCadenceUseCase, ResumePartnerCadenceUseCase, CancelPartnerCadenceUseCase,
+  CompletePartnerCadenceUseCase, RegisterPartnerReplyUseCase,
   GetCadenceLeadCountUseCase, BulkApplyCadenceUseCase,
 } from "./application/use-cases/cadences.use-cases";
 import { PrismaCadencesRepository } from "./infra/repositories/prisma-cadences.repository";
@@ -29,6 +32,9 @@ import { CadencesController } from "./infra/controllers/cadences.controller";
     PauseLeadCadenceUseCase, ResumeLeadCadenceUseCase, CancelLeadCadenceUseCase,
     CompleteLeadCadenceUseCase, CancelAllActiveCadencesUseCase,
     GetAvailableCadencesForLeadUseCase, RegisterLeadReplyUseCase,
+  ApplyCadenceToPartnerUseCase, GetPartnerCadencesDetailUseCase, GetAvailableCadencesForPartnerUseCase,
+  PausePartnerCadenceUseCase, ResumePartnerCadenceUseCase, CancelPartnerCadenceUseCase,
+  CompletePartnerCadenceUseCase, RegisterPartnerReplyUseCase,
     GetCadenceLeadCountUseCase,
     BulkApplyCadenceUseCase,
     { provide: CadencesRepository, useClass: PrismaCadencesRepository },

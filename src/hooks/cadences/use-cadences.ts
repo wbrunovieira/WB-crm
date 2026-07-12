@@ -56,6 +56,7 @@ export const cadenceKeys = {
   steps: (cadenceId: string) => ["cadences", "steps", cadenceId] as const,
   leadCount: (id: string) => ["cadences", "lead-count", id] as const,
   leadCadences: (leadId: string) => ["cadences", "lead", leadId] as const,
+  partnerCadences: (partnerId: string) => ["cadences", "partner", partnerId] as const,
 };
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -367,6 +368,59 @@ export function useCancelLeadCadence() {
       }),
     onSuccess: (_data, vars) => {
       queryClient.invalidateQueries({ queryKey: cadenceKeys.leadCadences(vars.leadId) });
+    },
+  });
+}
+
+// ── Partner cadence mutations (mirror the lead ones) ──
+
+export function useApplyCadenceToPartner() {
+  const queryClient = useQueryClient();
+  const token = useToken();
+  return useMutation({
+    mutationFn: (data: { cadenceId: string; partnerId: string; startDate?: Date; notes?: string }) =>
+      apiFetch<{ partnerCadenceId: string }>(`/cadences/${data.cadenceId}/apply-partner`, token, {
+        method: "POST",
+        body: JSON.stringify({ partnerId: data.partnerId, startDate: data.startDate?.toISOString(), notes: data.notes }),
+      }),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: cadenceKeys.partnerCadences(vars.partnerId) });
+    },
+  });
+}
+
+export function usePausePartnerCadence() {
+  const queryClient = useQueryClient();
+  const token = useToken();
+  return useMutation({
+    mutationFn: ({ partnerCadenceId }: { partnerCadenceId: string; partnerId: string }) =>
+      apiFetch<void>(`/cadences/partner-cadences/${partnerCadenceId}/pause`, token, { method: "PATCH" }),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: cadenceKeys.partnerCadences(vars.partnerId) });
+    },
+  });
+}
+
+export function useResumePartnerCadence() {
+  const queryClient = useQueryClient();
+  const token = useToken();
+  return useMutation({
+    mutationFn: ({ partnerCadenceId }: { partnerCadenceId: string; partnerId: string }) =>
+      apiFetch<void>(`/cadences/partner-cadences/${partnerCadenceId}/resume`, token, { method: "PATCH" }),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: cadenceKeys.partnerCadences(vars.partnerId) });
+    },
+  });
+}
+
+export function useCancelPartnerCadence() {
+  const queryClient = useQueryClient();
+  const token = useToken();
+  return useMutation({
+    mutationFn: ({ partnerCadenceId }: { partnerCadenceId: string; partnerId: string }) =>
+      apiFetch<void>(`/cadences/partner-cadences/${partnerCadenceId}/cancel`, token, { method: "PATCH" }),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: cadenceKeys.partnerCadences(vars.partnerId) });
     },
   });
 }

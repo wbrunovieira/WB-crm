@@ -48,6 +48,38 @@ export interface ApplyCadenceInput {
   notes?: string;
 }
 
+// ── Partner cadence (mirrors the Lead types; instances reuse the shared template) ──
+
+export interface PartnerCadenceRecord {
+  id: string;
+  partnerId: string;
+  cadenceId: string;
+  status: string;
+  startDate: Date;
+  currentStep: number;
+  notes?: string;
+  ownerId: string;
+  pausedAt?: Date;
+  completedAt?: Date;
+  cancelledAt?: Date;
+}
+
+export interface PartnerCadenceDetail extends PartnerCadenceRecord {
+  cadence: { name: string; slug: string; durationDays: number; icp?: { id: string; name: string } | null };
+  activities: LeadCadenceActivity[];
+  progress: number;
+  completedSteps: number;
+  totalSteps: number;
+}
+
+export interface ApplyPartnerCadenceInput {
+  partnerId: string;
+  cadenceId: string;
+  startDate: Date;
+  ownerId: string;
+  notes?: string;
+}
+
 export interface GeneratedActivity {
   leadCadenceId: string;
   cadenceStepId: string;
@@ -83,4 +115,15 @@ export abstract class CadencesRepository {
   abstract getAvailableCadencesForLead(leadId: string, ownerId: string): Promise<AvailableCadenceForLead[]>;
   abstract registerLeadReply(leadId: string, ownerId: string, channel: string, notes?: string): Promise<{ activityId: string; cancelledCadences: number; skippedActivities: number }>;
   abstract countActiveLeads(cadenceId: string): Promise<number>;
+
+  // PartnerCadence ops (mirror LeadCadence; available list is NOT ICP-filtered)
+  abstract applyToPartner(input: ApplyPartnerCadenceInput, steps: CadenceStep[]): Promise<{ partnerCadenceId: string; activities: GeneratedActivity[] }>;
+  abstract getPartnerCadencesDetail(partnerId: string): Promise<PartnerCadenceDetail[]>;
+  abstract findPartnerCadenceById(id: string): Promise<PartnerCadenceRecord | null>;
+  abstract pausePartnerCadence(id: string): Promise<void>;
+  abstract resumePartnerCadence(id: string): Promise<void>;
+  abstract cancelPartnerCadence(id: string): Promise<void>;
+  abstract completePartnerCadence(id: string, disqualificationReason?: string): Promise<void>;
+  abstract getAvailableCadencesForPartner(partnerId: string, ownerId: string): Promise<AvailableCadenceForLead[]>;
+  abstract registerPartnerReply(partnerId: string, ownerId: string, channel: string, notes?: string): Promise<{ activityId: string; cancelledCadences: number; skippedActivities: number }>;
 }

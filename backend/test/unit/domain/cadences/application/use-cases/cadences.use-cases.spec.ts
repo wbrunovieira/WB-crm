@@ -10,6 +10,8 @@ import {
   ApplyCadenceToLeadUseCase, GetLeadCadencesUseCase,
   PauseLeadCadenceUseCase, ResumeLeadCadenceUseCase, CancelLeadCadenceUseCase,
   GetCadenceLeadCountUseCase,
+  ApplyCadenceToPartnerUseCase, PausePartnerCadenceUseCase, ResumePartnerCadenceUseCase,
+  CancelPartnerCadenceUseCase, CompletePartnerCadenceUseCase,
 } from "@/domain/cadences/application/use-cases/cadences.use-cases";
 
 let repo: InMemoryCadencesRepository;
@@ -37,6 +39,11 @@ function makeUseCases() {
     resume: new ResumeLeadCadenceUseCase(repo),
     cancel: new CancelLeadCadenceUseCase(repo),
     leadCount: new GetCadenceLeadCountUseCase(repo),
+    applyPartner: new ApplyCadenceToPartnerUseCase(repo),
+    pausePartner: new PausePartnerCadenceUseCase(repo),
+    resumePartner: new ResumePartnerCadenceUseCase(repo),
+    cancelPartner: new CancelPartnerCadenceUseCase(repo),
+    completePartner: new CompletePartnerCadenceUseCase(repo),
   };
 }
 
@@ -254,6 +261,63 @@ describe("Lead cadence lifecycle", () => {
     const r = await uc.pause.execute({ leadCadenceId, ...other });
     expect(r.isLeft()).toBe(true);
     expect((r.value as Error).name).toBe("CadenceForbiddenError");
+  });
+});
+
+describe("Partner cadence execution", () => {
+  async function setup() {
+    const uc = makeUseCases();
+    const cadence = (await uc.create.execute({ name: "Test", ownerId: "u1" })).unwrap();
+    await uc.createStep.execute({ cadenceId: cadence.id.toString(), dayNumber: 1, channel: "email", subject: "Hi", ...user });
+    await uc.createStep.execute({ cadenceId: cadence.id.toString(), dayNumber: 3, channel: "call", subject: "Follow", ...user });
+    const applied = (await uc.applyPartner.execute({ cadenceId: cadence.id.toString(), partnerId: "p1", ...user })).unwrap();
+    return { uc, partnerCadenceId: applied.partnerCadenceId };
+  }
+
+  it("applies cadence to partner and generates activities", async () => {
+    const { partnerCadenceId } = await setup();
+    expect(partnerCadenceId).toBeTruthy();
+    expect(repo.partnerCadenceActivities.filter(a => a.partnerCadenceId === partnerCadenceId)).toHaveLength(2);
+  });
+
+  it("forbids other user from applying to partner", async () => {
+    const uc = makeUseCases();
+    const cadence = (await uc.create.execute({ name: "Test", ownerId: "u1" })).unwrap();
+    const r = await uc.applyPartner.execute({ cadenceId: cadence.id.toString(), partnerId: "p1", ...other });
+    expect(r.isLeft()).toBe(true);
+    expect((r.value as Error).name).toBe("CadenceForbiddenError");
+  });
+
+  it("pauses / resumes / cancels / completes a partner cadence", async () => {
+    const { uc, partnerCadenceId } = await setup();
+    await uc.pausePartner.execute({ partnerCadenceId, ...user });
+    expect((await repo.findPartnerCadenceById(partnerCadenceId))!.status).toBe("paused");
+    await uc.resumePartner.execute({ partnerCadenceId, ...user });
+    expect((await repo.findPartnerCadenceById(partnerCadenceId))!.status).toBe("active");
+    await uc.completePartner.execute({ partnerCadenceId, ...user });
+    expect((await repo.findPartnerCadenceById(partnerCadenceId))!.status).toBe("completed");
+  });
+
+  it("skips pending activities when cancelling a partner cadence", async () => {
+    const { uc, partnerCadenceId } = await setup();
+    await uc.cancelPartner.execute({ partnerCadenceId, ...user });
+    expect((await repo.findPartnerCadenceById(partnerCadenceId))!.status).toBe("cancelled");
+    const acts = repo.partnerCadenceActivities.filter(a => a.partnerCadenceId === partnerCadenceId);
+    expect(acts[0].skippedAt).toBeInstanceOf(Date);
+  });
+
+  it("forbids other user from pausing a partner cadence", async () => {
+    const { uc, partnerCadenceId } = await setup();
+    const r = await uc.pausePartner.execute({ partnerCadenceId, ...other });
+    expect(r.isLeft()).toBe(true);
+    expect((r.value as Error).name).toBe("CadenceForbiddenError");
+  });
+
+  it("returns not found for unknown partner cadence", async () => {
+    const uc = makeUseCases();
+    const r = await uc.pausePartner.execute({ partnerCadenceId: "nope", ...user });
+    expect(r.isLeft()).toBe(true);
+    expect((r.value as Error).name).toBe("PartnerCadenceNotFoundError");
   });
 });
 

@@ -21,6 +21,9 @@ import {
   CompleteLeadCadenceUseCase, CancelAllActiveCadencesUseCase,
   GetAvailableCadencesForLeadUseCase, RegisterLeadReplyUseCase,
   GetCadenceLeadCountUseCase, BulkApplyCadenceUseCase,
+  ApplyCadenceToPartnerUseCase, GetPartnerCadencesDetailUseCase, GetAvailableCadencesForPartnerUseCase,
+  PausePartnerCadenceUseCase, ResumePartnerCadenceUseCase, CancelPartnerCadenceUseCase,
+  CompletePartnerCadenceUseCase, RegisterPartnerReplyUseCase,
 } from "../../application/use-cases/cadences.use-cases";
 
 function serializeCadence(c: Cadence) {
@@ -56,7 +59,7 @@ function serializeStep(s: CadenceStep) {
 
 function handleError(err: Left<Error, unknown>): never {
   const e = err.value as Error;
-  if (e.name === "CadenceNotFoundError" || e.name === "CadenceStepNotFoundError" || e.name === "LeadCadenceNotFoundError") throw new NotFoundException(e.message);
+  if (e.name === "CadenceNotFoundError" || e.name === "CadenceStepNotFoundError" || e.name === "LeadCadenceNotFoundError" || e.name === "PartnerCadenceNotFoundError") throw new NotFoundException(e.message);
   if (e.name === "CadenceForbiddenError") throw new ForbiddenException(e.message);
   if (e.name === "CadenceSlugConflictError") throw new ConflictException(e.message);
   throw new UnprocessableEntityException(e.message);
@@ -92,6 +95,14 @@ export class CadencesController {
     private readonly completeLeadCadence: CompleteLeadCadenceUseCase,
     private readonly cancelAllActiveCadences: CancelAllActiveCadencesUseCase,
     private readonly registerLeadReply: RegisterLeadReplyUseCase,
+    private readonly applyToPartner: ApplyCadenceToPartnerUseCase,
+    private readonly getPartnerCadencesDetail: GetPartnerCadencesDetailUseCase,
+    private readonly getAvailableCadencesForPartner: GetAvailableCadencesForPartnerUseCase,
+    private readonly pausePartnerCadence: PausePartnerCadenceUseCase,
+    private readonly resumePartnerCadence: ResumePartnerCadenceUseCase,
+    private readonly cancelPartnerCadence: CancelPartnerCadenceUseCase,
+    private readonly completePartnerCadence: CompletePartnerCadenceUseCase,
+    private readonly registerPartnerReply: RegisterPartnerReplyUseCase,
   ) {}
 
   // ── Static routes FIRST to avoid `:id` collision ────────────────────────────
@@ -161,6 +172,61 @@ export class CadencesController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     const r = await this.completeLeadCadence.execute({ leadCadenceId, requesterId: user.id, requesterRole: user.role ?? "sdr", disqualificationReason: body.disqualificationReason });
+    if (r.isLeft()) handleError(r);
+  }
+
+  // ── Partner cadence (static routes) ─────────────────────────────────────────
+
+  @Get("partner/:partnerId")
+  async listPartnerCadences(@Param("partnerId") partnerId: string) {
+    const r = await this.getPartnerCadencesDetail.execute({ partnerId });
+    if (r.isLeft()) handleError(r);
+    return r.unwrap();
+  }
+
+  @Get("available-for-partner/:partnerId")
+  async listAvailableForPartner(@Param("partnerId") partnerId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.getAvailableCadencesForPartner.execute({ partnerId, requesterId: user.id });
+    if (r.isLeft()) handleError(r);
+    return r.unwrap();
+  }
+
+  @Post("partner/:partnerId/reply")
+  async registerPartnerReplyRoute(
+    @Param("partnerId") partnerId: string,
+    @Body() body: { channel: string; notes?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const r = await this.registerPartnerReply.execute({ partnerId, requesterId: user.id, channel: body.channel, notes: body.notes });
+    if (r.isLeft()) handleError(r);
+    return r.unwrap();
+  }
+
+  @Patch("partner-cadences/:partnerCadenceId/pause")
+  async pausePartner(@Param("partnerCadenceId") partnerCadenceId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.pausePartnerCadence.execute({ partnerCadenceId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+  }
+
+  @Patch("partner-cadences/:partnerCadenceId/resume")
+  async resumePartner(@Param("partnerCadenceId") partnerCadenceId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.resumePartnerCadence.execute({ partnerCadenceId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+  }
+
+  @Patch("partner-cadences/:partnerCadenceId/cancel")
+  async cancelPartner(@Param("partnerCadenceId") partnerCadenceId: string, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.cancelPartnerCadence.execute({ partnerCadenceId, requesterId: user.id, requesterRole: user.role ?? "sdr" });
+    if (r.isLeft()) handleError(r);
+  }
+
+  @Patch("partner-cadences/:partnerCadenceId/complete")
+  async completePartner(
+    @Param("partnerCadenceId") partnerCadenceId: string,
+    @Body() body: { disqualificationReason?: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const r = await this.completePartnerCadence.execute({ partnerCadenceId, requesterId: user.id, requesterRole: user.role ?? "sdr", disqualificationReason: body.disqualificationReason });
     if (r.isLeft()) handleError(r);
   }
 
@@ -279,6 +345,22 @@ export class CadencesController {
     const r = await this.applyToLead.execute({
       cadenceId,
       leadId: body.leadId,
+      startDate: body.startDate ? new Date(body.startDate) : undefined,
+      notes: body.notes,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (r.isLeft()) handleError(r);
+    return r.unwrap();
+  }
+
+  @Post(":cadenceId/apply-partner")
+  async applyPartner(@Param("cadenceId") cadenceId: string, @Body() body: {
+    partnerId: string; startDate?: string; notes?: string;
+  }, @CurrentUser() user: AuthenticatedUser) {
+    const r = await this.applyToPartner.execute({
+      cadenceId,
+      partnerId: body.partnerId,
       startDate: body.startDate ? new Date(body.startDate) : undefined,
       notes: body.notes,
       requesterId: user.id,

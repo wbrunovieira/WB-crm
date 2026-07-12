@@ -625,6 +625,65 @@ describe("Partners API (e2e)", () => {
       await prisma.user.delete({ where: { id: otherUser.id } });
     });
 
+    it("cadência do parceiro: aplica → gera atividades → disponíveis exclui aplicada → reply cancela", async () => {
+      const cadence = await prisma.cadence.create({
+        data: { name: "Cad E2E", slug: `cad-e2e-${ownerId}`, status: "active", durationDays: 7, ownerId },
+      });
+      await prisma.cadenceStep.create({ data: { cadenceId: cadence.id, dayNumber: 1, channel: "email", subject: "Toque 1", order: 0 } });
+      await prisma.cadenceStep.create({ data: { cadenceId: cadence.id, dayNumber: 3, channel: "whatsapp", subject: "Toque 2", order: 1 } });
+
+      const created = await request(app.getHttpServer())
+        .post("/partners").set("Authorization", `Bearer ${token}`)
+        .send({ name: "Parceiro Cad", partnerType: "consultoria" }).expect(201);
+      const pid = created.body.id;
+
+      // available before apply: includes our cadence
+      const availBefore = await request(app.getHttpServer())
+        .get(`/cadences/available-for-partner/${pid}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(availBefore.body.map((c: { id: string }) => c.id)).toContain(cadence.id);
+
+      // apply → generates 2 activities
+      const applied = await request(app.getHttpServer())
+        .post(`/cadences/${cadence.id}/apply-partner`).set("Authorization", `Bearer ${token}`)
+        .send({ partnerId: pid }).expect(201);
+      expect(applied.body.activities).toHaveLength(2);
+      const pcId = applied.body.partnerCadenceId;
+
+      // activities were created on the partner
+      const acts = await prisma.activity.count({ where: { partnerId: pid } });
+      expect(acts).toBe(2);
+
+      // detail shows the applied cadence with progress
+      const detail = await request(app.getHttpServer())
+        .get(`/cadences/partner/${pid}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(detail.body).toHaveLength(1);
+      expect(detail.body[0].totalSteps).toBe(2);
+
+      // available now excludes the applied cadence
+      const availAfter = await request(app.getHttpServer())
+        .get(`/cadences/available-for-partner/${pid}`).set("Authorization", `Bearer ${token}`).expect(200);
+      expect(availAfter.body.map((c: { id: string }) => c.id)).not.toContain(cadence.id);
+
+      // pause / resume
+      await request(app.getHttpServer())
+        .patch(`/cadences/partner-cadences/${pcId}/pause`).set("Authorization", `Bearer ${token}`).expect(200);
+      await request(app.getHttpServer())
+        .patch(`/cadences/partner-cadences/${pcId}/resume`).set("Authorization", `Bearer ${token}`).expect(200);
+
+      // reply cancels active cadences + skips pending activities
+      const reply = await request(app.getHttpServer())
+        .post(`/cadences/partner/${pid}/reply`).set("Authorization", `Bearer ${token}`)
+        .send({ channel: "whatsapp" }).expect(201);
+      expect(reply.body.cancelledCadences).toBe(1);
+      expect(reply.body.skippedActivities).toBe(2);
+
+      const pcAfter = await prisma.partnerCadence.findUnique({ where: { id: pcId } });
+      expect(pcAfter?.status).toBe("cancelled");
+
+      // cleanup (partner removed by afterEach; cadence cascade)
+      await prisma.cadence.delete({ where: { id: cadence.id } });
+    });
+
     it("oficializar (prospect → active) carimba partnershipStartedAt e o preserva depois", async () => {
       const created = await request(app.getHttpServer())
         .post("/partners")

@@ -3,13 +3,14 @@ import { Either, left, right } from "@/core/either";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 import { Cadence } from "../../enterprise/entities/cadence";
 import { CadenceStep } from "../../enterprise/entities/cadence-step";
-import { CadencesRepository, LeadCadenceRecord, LeadCadenceDetail, AvailableCadenceForLead, GeneratedActivity } from "../repositories/cadences.repository";
+import { CadencesRepository, LeadCadenceRecord, LeadCadenceDetail, AvailableCadenceForLead, GeneratedActivity, PartnerCadenceDetail } from "../repositories/cadences.repository";
 
 export class CadenceNotFoundError extends Error { name = "CadenceNotFoundError"; }
 export class CadenceForbiddenError extends Error { name = "CadenceForbiddenError"; }
 export class CadenceStepNotFoundError extends Error { name = "CadenceStepNotFoundError"; }
 export class CadenceAlreadyAppliedError extends Error { name = "CadenceAlreadyAppliedError"; }
 export class LeadCadenceNotFoundError extends Error { name = "LeadCadenceNotFoundError"; }
+export class PartnerCadenceNotFoundError extends Error { name = "PartnerCadenceNotFoundError"; }
 export class CadenceSlugConflictError extends Error { name = "CadenceSlugConflictError"; }
 
 // ── Cadence CRUD ─────────────────────────────────────────────────────────────
@@ -474,5 +475,112 @@ export class RegisterLeadReplyUseCase {
   async execute(input: { leadId: string; requesterId: string; channel: string; notes?: string }): Promise<Either<never, { activityId: string; cancelledCadences: number; skippedActivities: number }>> {
     const result = await this.repo.registerLeadReply(input.leadId, input.requesterId, input.channel, input.notes);
     return right(result);
+  }
+}
+
+// ── Partner cadence execution (mirror Lead; available list is NOT ICP-filtered) ──
+
+@Injectable()
+export class ApplyCadenceToPartnerUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: {
+    cadenceId: string;
+    partnerId: string;
+    startDate?: Date;
+    notes?: string;
+    requesterId: string;
+    requesterRole: string;
+  }): Promise<Either<Error, { partnerCadenceId: string; activities: GeneratedActivity[] }>> {
+    const cadence = await this.repo.findById(input.cadenceId);
+    if (!cadence) return left(new CadenceNotFoundError("Cadência não encontrada"));
+    if (input.requesterRole !== "admin" && cadence.ownerId !== input.requesterId) {
+      return left(new CadenceForbiddenError("Acesso negado"));
+    }
+    const steps = await this.repo.findStepsByCadence(input.cadenceId);
+    const result = await this.repo.applyToPartner(
+      { partnerId: input.partnerId, cadenceId: input.cadenceId, startDate: input.startDate ?? new Date(), ownerId: input.requesterId, notes: input.notes },
+      steps,
+    );
+    return right(result);
+  }
+}
+
+@Injectable()
+export class GetPartnerCadencesDetailUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { partnerId: string }): Promise<Either<never, PartnerCadenceDetail[]>> {
+    return right(await this.repo.getPartnerCadencesDetail(input.partnerId));
+  }
+}
+
+@Injectable()
+export class GetAvailableCadencesForPartnerUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { partnerId: string; requesterId: string }): Promise<Either<never, AvailableCadenceForLead[]>> {
+    return right(await this.repo.getAvailableCadencesForPartner(input.partnerId, input.requesterId));
+  }
+}
+
+@Injectable()
+export class PausePartnerCadenceUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { partnerCadenceId: string; requesterId: string; requesterRole: string }): Promise<Either<Error, void>> {
+    const pc = await this.repo.findPartnerCadenceById(input.partnerCadenceId);
+    if (!pc) return left(new PartnerCadenceNotFoundError("Cadência do parceiro não encontrada"));
+    if (input.requesterRole !== "admin" && pc.ownerId !== input.requesterId) return left(new CadenceForbiddenError("Acesso negado"));
+    await this.repo.pausePartnerCadence(input.partnerCadenceId);
+    return right(undefined);
+  }
+}
+
+@Injectable()
+export class ResumePartnerCadenceUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { partnerCadenceId: string; requesterId: string; requesterRole: string }): Promise<Either<Error, void>> {
+    const pc = await this.repo.findPartnerCadenceById(input.partnerCadenceId);
+    if (!pc) return left(new PartnerCadenceNotFoundError("Cadência do parceiro não encontrada"));
+    if (input.requesterRole !== "admin" && pc.ownerId !== input.requesterId) return left(new CadenceForbiddenError("Acesso negado"));
+    await this.repo.resumePartnerCadence(input.partnerCadenceId);
+    return right(undefined);
+  }
+}
+
+@Injectable()
+export class CancelPartnerCadenceUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { partnerCadenceId: string; requesterId: string; requesterRole: string }): Promise<Either<Error, void>> {
+    const pc = await this.repo.findPartnerCadenceById(input.partnerCadenceId);
+    if (!pc) return left(new PartnerCadenceNotFoundError("Cadência do parceiro não encontrada"));
+    if (input.requesterRole !== "admin" && pc.ownerId !== input.requesterId) return left(new CadenceForbiddenError("Acesso negado"));
+    await this.repo.cancelPartnerCadence(input.partnerCadenceId);
+    return right(undefined);
+  }
+}
+
+@Injectable()
+export class CompletePartnerCadenceUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { partnerCadenceId: string; requesterId: string; requesterRole: string; disqualificationReason?: string }): Promise<Either<Error, void>> {
+    const pc = await this.repo.findPartnerCadenceById(input.partnerCadenceId);
+    if (!pc) return left(new PartnerCadenceNotFoundError("Cadência do parceiro não encontrada"));
+    if (input.requesterRole !== "admin" && pc.ownerId !== input.requesterId) return left(new CadenceForbiddenError("Acesso negado"));
+    await this.repo.completePartnerCadence(input.partnerCadenceId, input.disqualificationReason);
+    return right(undefined);
+  }
+}
+
+@Injectable()
+export class RegisterPartnerReplyUseCase {
+  constructor(private readonly repo: CadencesRepository) {}
+
+  async execute(input: { partnerId: string; requesterId: string; channel: string; notes?: string }): Promise<Either<never, { activityId: string; cancelledCadences: number; skippedActivities: number }>> {
+    return right(await this.repo.registerPartnerReply(input.partnerId, input.requesterId, input.channel, input.notes));
   }
 }
