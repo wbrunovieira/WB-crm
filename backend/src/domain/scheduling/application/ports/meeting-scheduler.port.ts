@@ -5,6 +5,7 @@ export interface ScheduleBookingInput {
   endAt: Date;
   attendeeEmail: string;
   attendeeName: string;
+  companyName?: string; // business/partner name, for email personalization
   leadId: string | null;
   contactId: string | null;
   partnerId: string | null;

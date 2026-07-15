@@ -104,6 +104,7 @@ export class CreateBookingUseCase {
       endAt,
       attendeeEmail: email,
       attendeeName: name || email,
+      companyName: entity?.name ?? undefined, // lead.businessName / partner.name
       leadId: resolvedLeadId,
       contactId: link.contactId,
       partnerId: resolvedPartnerId,

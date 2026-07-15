@@ -43,6 +43,13 @@ function meetButtonHtml(brand: BrandConfig, meetLink: string, label: string): st
     </div>`;
 }
 
+// Meetings booked via self-scheduling are stored with a "Reunião: <name>" title.
+// Strip that leading prefix so the reminder copy (which already says "reunião"/
+// "Lembrete") doesn't read "Sua reunião Reunião: ..." / "Lembrete: Reunião: ...".
+function cleanTitle(title: string): string {
+  return title.replace(/^\s*reuni[ãa]o\s*:\s*/i, "").trim() || title;
+}
+
 function detailsTable(brand: BrandConfig, title: string, startAt: Date, endAt: Date): string {
   return `
     <table cellpadding="0" cellspacing="0" style="width:100%;background:${brand.surfaceColor};border-radius:8px;border:1px solid ${brand.borderColor};margin-bottom:24px;">
@@ -107,7 +114,7 @@ export function buildMorningReminderEmail(params: ReminderEmailParams): { subjec
     <p style="margin:0 0 24px;font-size:15px;color:${brand.mutedColor};">
       Só passando para lembrar que hoje${company ? ` a gente tem uma reunião com a <strong>${params.companyName}</strong>` : " temos uma reunião agendada"}. Estamos animados! 😊
     </p>
-    ${detailsTable(brand, params.meetingTitle, params.meetingStartAt, params.meetingEndAt)}
+    ${detailsTable(brand, cleanTitle(params.meetingTitle), params.meetingStartAt, params.meetingEndAt)}
     ${params.meetLink ? meetButtonHtml(brand, params.meetLink, "Acessar link da reunião") : ""}
     <p style="color:${brand.mutedColor};font-size:13px;margin:0 0 24px;">
       Até mais tarde!
@@ -116,7 +123,7 @@ export function buildMorningReminderEmail(params: ReminderEmailParams): { subjec
   `;
 
   return {
-    subject: `Lembrete: ${params.meetingTitle} — hoje às ${fmtTime(params.meetingStartAt)}`,
+    subject: `Lembrete de reunião: ${cleanTitle(params.meetingTitle)} — hoje às ${fmtTime(params.meetingStartAt)}`,
     html: wrapper(brand, brand.companyName, body),
   };
 }
@@ -130,13 +137,13 @@ export function buildOneHourReminderEmail(params: ReminderEmailParams): { subjec
     <p style="margin:0 0 24px;font-size:15px;color:${brand.mutedColor};">
       Falta <strong style="color:${brand.textColor};">1 hora</strong> para a sua reunião começar. Veja os detalhes abaixo:
     </p>
-    ${detailsTable(brand, params.meetingTitle, params.meetingStartAt, params.meetingEndAt)}
+    ${detailsTable(brand, cleanTitle(params.meetingTitle), params.meetingStartAt, params.meetingEndAt)}
     ${params.meetLink ? meetButtonHtml(brand, params.meetLink, "Entrar no Google Meet") : ""}
     <p style="margin:0;color:${brand.textColor};font-size:14px;">Até já,<br><strong>${params.organizerEmail}</strong></p>
   `;
 
   return {
-    subject: `Falta 1 hora — ${params.meetingTitle}`,
+    subject: `Falta 1 hora para a reunião — ${cleanTitle(params.meetingTitle)}`,
     html: wrapper(brand, brand.companyName, body),
   };
 }
@@ -148,7 +155,7 @@ export function buildOnTimeReminderEmail(params: ReminderEmailParams): { subject
   const body = `
     <p style="margin:0 0 8px;font-size:18px;font-weight:bold;">${greeting} 🚀</p>
     <p style="margin:0 0 24px;font-size:15px;color:${brand.mutedColor};">
-      Sua reunião <strong style="color:${brand.textColor};">${params.meetingTitle}</strong> está começando agora. Estamos te esperando!
+      Sua reunião <strong style="color:${brand.textColor};">${cleanTitle(params.meetingTitle)}</strong> está começando agora. Estamos te esperando!
     </p>
     ${params.meetLink
       ? `<div style="margin:24px 0;text-align:center;">
@@ -163,7 +170,7 @@ export function buildOnTimeReminderEmail(params: ReminderEmailParams): { subject
   `;
 
   return {
-    subject: `🚀 Sua reunião começa agora — ${params.meetingTitle}`,
+    subject: `🚀 Sua reunião começa agora — ${cleanTitle(params.meetingTitle)}`,
     html: wrapper(brand, brand.companyName, body),
   };
 }

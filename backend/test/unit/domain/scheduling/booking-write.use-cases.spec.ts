@@ -111,6 +111,20 @@ describe("CreateBookingUseCase", () => {
     expect(leads.confirmedWhatsapp).toBe("+5511988887777");
   });
 
+  it("passa o nome da empresa (companyName) do lead ao scheduler", async () => {
+    const r = await create.execute({ token: "abc", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Maria", now: NOW });
+    expect(r.isRight()).toBe(true);
+    expect(sched.scheduled?.companyName).toBe("Padaria X"); // lead.businessName
+  });
+
+  it("passa o nome da empresa (companyName) do partner ao scheduler", async () => {
+    links.links.push(PARTNER_LINK);
+    const r = await create.execute({ token: "prt", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Fabio", now: NOW });
+    expect(r.isRight()).toBe(true);
+    expect(sched.scheduled?.partnerId).toBe("partner1");
+    expect(sched.scheduled?.companyName).toBe("Agência Z"); // partner.name
+  });
+
   it("presencial usa o endereço do lead", async () => {
     const r = await create.execute({ token: "abc", startISO: SLOT_ONLINE, mode: "presential", now: NOW });
     expect(r.isRight()).toBe(true);

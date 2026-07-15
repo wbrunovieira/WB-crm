@@ -309,12 +309,13 @@ export class PrismaMeetingsRepository extends MeetingsRepository {
         contact: { select: { name: true } },
         lead: { select: { businessName: true } },
         organization: { select: { name: true } },
+        partner: { select: { name: true } },
       },
     });
     if (!row) return {};
     return {
       contactName: row.contact?.name ?? undefined,
-      companyName: row.organization?.name ?? row.lead?.businessName ?? undefined,
+      companyName: row.organization?.name ?? row.lead?.businessName ?? row.partner?.name ?? undefined,
     };
   }
 

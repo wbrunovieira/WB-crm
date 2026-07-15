@@ -32,6 +32,7 @@ export class MeetSchedulerAdapter extends MeetingSchedulerPort {
       partnerId: input.partnerId ?? undefined,
       requesterId: input.ownerId,
       contactName: input.attendeeName,
+      companyName: input.companyName,
       createActivity: true,
     });
     if (res.isLeft()) throw res.value;
