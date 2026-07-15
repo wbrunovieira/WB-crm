@@ -23,4 +23,13 @@ export class PrismaBookingLinksRepository extends BookingLinksRepository {
     const r = await this.prisma.bookingLink.findUnique({ where: { id } });
     return r ? toRecord(r) : null;
   }
+  async findDefaultPublic(): Promise<BookingLinkRecord | null> {
+    // A partial unique index guarantees at most one default; orderBy is a
+    // deterministic tiebreaker so slots (GET) and create (POST) can't diverge.
+    const r = await this.prisma.bookingLink.findFirst({
+      where: { isDefaultPublic: true, active: true },
+      orderBy: { createdAt: "asc" },
+    });
+    return r ? toRecord(r) : null;
+  }
 }

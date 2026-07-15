@@ -75,7 +75,7 @@ beforeAll(async () => {
   const partner = await prisma.partner.create({ data: { name: "Agência E2E", partnerType: "outros", ownerId, email: "partner@e2e.com", city: "Teresópolis", state: "RJ", streetAddress: "Av. B, 200" } });
   partnerId = partner.id;
   await prisma.bookingLink.create({ data: { token: TOKEN, ownerId, bookingTypeId, leadId } });
-  await prisma.bookingLink.create({ data: { token: GEN_TOKEN, ownerId, bookingTypeId, leadId: null } });
+  await prisma.bookingLink.create({ data: { token: GEN_TOKEN, ownerId, bookingTypeId, leadId: null, isDefaultPublic: true } });
   await prisma.bookingLink.create({ data: { token: PARTNER_TOKEN, ownerId, bookingTypeId, partnerId } });
 });
 
@@ -97,6 +97,24 @@ describe("Scheduling (e2e) — fluxo público de auto-agendamento", () => {
     expect(res.body.lead.address).toBe("Rua A, 100");
     firstSlot = res.body.slots[0].start;
     secondSlot = res.body.slots[1].start;
+  });
+
+  it("GET /public/booking (SEM token, URL /book) resolve o link público default", async () => {
+    const res = await request(app.getHttpServer()).get(`/public/booking`).expect(200);
+    expect(res.body.slots.length).toBeGreaterThan(0);
+    expect(res.body.lead).toBeNull(); // link genérico → sem lead vinculado
+  });
+
+  it("POST /public/booking (SEM token) agenda pelo default e cria lead inbound", async () => {
+    const notokenEmail = "inbound-notoken-e2e@x.com";
+    const slots = await request(app.getHttpServer()).get(`/public/booking`).expect(200);
+    const slot = slots.body.slots[0].start;
+    const res = await request(app.getHttpServer()).post(`/public/booking`)
+      .send({ startISO: slot, mode: "online", attendeeName: "Ana Notoken", attendeeEmail: notokenEmail })
+      .expect(201);
+    expect(res.body.manageToken).toBeTruthy();
+    const lead = await prisma.lead.findFirst({ where: { ownerId, email: notokenEmail } });
+    expect(lead).toBeTruthy(); // lead inbound criado pelo agendamento sem token
   });
 
   it("POST /public/booking/:token agenda e retorna manageToken + cria a reunião", async () => {

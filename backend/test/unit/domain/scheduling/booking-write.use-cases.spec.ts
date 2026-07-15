@@ -33,8 +33,10 @@ const PARTNER_LINK: BookingLinkRecord = { id: "lp", token: "prt", ownerId: "owne
 class FakeTypes extends BookingTypesRepository { async findById(id: string) { return id === TYPE.id ? TYPE : null; } }
 class FakeLinks extends BookingLinksRepository {
   links = [LINK];
+  defaultLink: BookingLinkRecord | null = null; // the token-less /book default
   async findByToken(t: string) { return this.links.find((l) => l.token === t) ?? null; }
   async findById(id: string) { return this.links.find((l) => l.id === id) ?? null; }
+  async findDefaultPublic() { return this.defaultLink; }
 }
 class FakeFreeBusy extends CalendarFreeBusyPort { async getBusy() { return []; } }
 class FakeLeads extends SchedulingLeadsPort {
@@ -123,6 +125,19 @@ describe("CreateBookingUseCase", () => {
     expect(r.isRight()).toBe(true);
     expect(sched.scheduled?.partnerId).toBe("partner1");
     expect(sched.scheduled?.companyName).toBe("Agência Z"); // partner.name
+  });
+
+  it("sem token (URL /book): resolve o link público default", async () => {
+    links.defaultLink = GENERIC_LINK; // link genérico marcado como default
+    const r = await create.execute({ token: "", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Ana", attendeeEmail: "ana@x.com", now: NOW });
+    expect(r.isRight()).toBe(true);
+    expect(leads.createdWith?.name).toBe("Ana"); // link genérico → cria lead inbound
+  });
+
+  it("sem token e sem link default configurado → left", async () => {
+    links.defaultLink = null;
+    const r = await create.execute({ token: "", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Ana", attendeeEmail: "ana@x.com", now: NOW });
+    expect(r.isLeft()).toBe(true);
   });
 
   it("presencial usa o endereço do lead", async () => {

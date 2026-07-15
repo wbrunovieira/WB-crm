@@ -41,6 +41,29 @@ export class PublicBookingController {
     return r.value;
   }
 
+  // Token-less /book URL → uses the default public link (declared before :token).
+  @Get()
+  @HttpCode(200)
+  @ApiOperation({ summary: "Horários livres do link público default (URL /book sem token)" })
+  async defaultSlots() {
+    const r = await this.getSlots.execute({});
+    if (r.isLeft()) throw new NotFoundException(r.value.message);
+    return r.value;
+  }
+
+  @Post()
+  @HttpCode(201)
+  @ApiOperation({ summary: "Agendar via link público default (URL /book sem token)" })
+  async defaultBook(@Body() body: CreateBookingDto) {
+    const r = await this.create.execute({
+      startISO: body.startISO, mode: body.mode,
+      attendeeName: body.attendeeName, attendeeEmail: body.attendeeEmail,
+      attendeeWhatsapp: body.attendeeWhatsapp, address: body.address,
+    });
+    if (r.isLeft()) throw new BadRequestException(r.value.message);
+    return r.value;
+  }
+
   @Get(":token")
   @HttpCode(200)
   @ApiOperation({ summary: "Horários livres + dados do agendamento (público)" })

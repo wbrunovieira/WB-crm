@@ -30,7 +30,7 @@ export class CreateBookingUseCase {
   ) {}
 
   async execute(input: {
-    token: string;
+    token?: string;
     startISO: string;
     mode: "online" | "presential";
     attendeeName?: string;
@@ -41,7 +41,8 @@ export class CreateBookingUseCase {
   }): Promise<Either<BookingError, CreateBookingResult>> {
     const now = input.now ?? new Date();
 
-    const link = await this.links.findByToken(input.token);
+    // Empty token = the token-less /book URL → resolve the default public link.
+    const link = input.token ? await this.links.findByToken(input.token) : await this.links.findDefaultPublic();
     if (!link || !link.active || (link.expiresAt && link.expiresAt < now)) {
       return left(new BookingError("Link de agendamento inválido ou expirado"));
     }

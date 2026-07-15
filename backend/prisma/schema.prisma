@@ -3175,6 +3175,7 @@ model BookingLink {
   partnerId     String?
   label         String?
   active        Boolean   @default(true)
+  isDefaultPublic Boolean @default(false) // served at the token-less /book URL
   expiresAt     DateTime?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
@@ -3183,5 +3184,7 @@ model BookingLink {
   @@index([leadId])
   @@index([partnerId])
   @@index([bookingTypeId])
+  // The partial UNIQUE index enforcing a single default public link is created in
+  // the migration (Prisma can't express a filtered/partial unique index in-schema).
   @@map("booking_links")
 }
