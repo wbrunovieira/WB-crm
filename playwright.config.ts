@@ -17,6 +17,9 @@ export default defineConfig({
   reporter: process.env.CI ? "github" : "list",
   use: {
     baseURL,
+    // The booking page auto-detects language from navigator.language; pin the browser
+    // locale so specs render in pt-BR (the assertions are in Portuguese).
+    locale: "pt-BR",
     trace: "on-first-retry",
     screenshot: "only-on-failure",
   },
