@@ -402,9 +402,10 @@ export function BookingClient({ token, backend, initial }: { token?: string; bac
   const t = DICT[lang];
   const locale = LOCALE[lang];
 
-  const tz = useMemo(() => {
-    try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return "America/Sao_Paulo"; }
-  }, []);
+  // Start from the booking type's timezone (known at SSR) so the server HTML and the
+  // first client render match; switch to the visitor's real timezone after mount.
+  // Prevents a hydration mismatch on the formatted slot times (React #418/#423/#425).
+  const [tz, setTz] = useState(initial?.bookingType.timeZone ?? "America/Sao_Paulo");
   const tzShort = tz.split("/").pop()?.replace(/_/g, " ") ?? tz;
   const presentialAvailable = !!initial?.locationModes.includes("presential");
 
@@ -418,7 +419,13 @@ export function BookingClient({ token, backend, initial }: { token?: string; bac
   const [errorMsg, setErrorMsg] = useState("");
   const [result, setResult] = useState<{ meetLink: string | null; startAt: string; mode: string; manageToken: string } | null>(null);
   const [mounted, setMounted] = useState(false);
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    try {
+      const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (browserTz) setTz(browserTz);
+    } catch { /* keep the booking-type timezone */ }
+  }, []);
 
   const fmtTime = (iso: string) => new Intl.DateTimeFormat(locale, { timeZone: tz, hour: "2-digit", minute: "2-digit" }).format(new Date(iso));
   const fmtDayLong = (iso: string) => new Intl.DateTimeFormat(locale, { timeZone: tz, weekday: "long", day: "2-digit", month: "long" }).format(new Date(iso));
