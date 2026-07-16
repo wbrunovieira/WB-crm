@@ -1,7 +1,7 @@
 # Plano: Migração do runtime Node (20 → 22 LTS)
 
 **Data de Criação:** 2026-07-06
-**Status:** Em andamento (2026-07-16) — **Fase 0 implementada** (Dockerfile `node:22-alpine`, CI `NODE_VERSION=22`, `engines: >=22`, `.nvmrc`); gate = CI verde no Node 22. Alvo escolhido: **Node 22 LTS**. Falta: Fase 1 (deploy backend → container no 22, automático no próximo quick-deploy que rebuilda a imagem), Fase 2 (host `/usr/bin/node` 20→22, manual/sistêmico), Fase 3 (consolidação).
+**Status:** ✅ CONCLUÍDO (2026-07-16) — frontend (host) e backend (container) ambos em **Node v22.23.1**. Fase 0 implementada (Dockerfile `node:22-alpine`, CI `NODE_VERSION=22`, `engines: >=22`, `.nvmrc`); gate = CI verde no Node 22. Alvo escolhido: **Node 22 LTS**. Falta: Fase 1 (deploy backend → container no 22, automático no próximo quick-deploy que rebuilda a imagem), Fase 2 (host `/usr/bin/node` 20→22, manual/sistêmico), Fase 3 (consolidação).
 **Prioridade:** Média-alta — Node 20 entrou em **EOL em 30/abr/2026**; produção está sem patches de segurança do runtime desde então
 **Origem:** Follow-up do audit de CI/CD (2026-07-06). O nit das actions (`checkout`/`setup-node` mirando Node 20) **já foi resolvido** com o bump pra `@v5`; este plano cobre o item maior e separado: o **runtime de produção**.
 
@@ -82,8 +82,8 @@ Fazer **backend primeiro** (isolado, reversível) e só então o frontend (sist�
 
 - [x] Fase 0: `Dockerfile` (2 estágios) + `NODE_VERSION` + `engines` + `.nvmrc` → **CI verde no 22** ✅ (2026-07-16)
 - [x] Fase 1: backend em prod → container `node -v` **v22.23.1** + health 200 + smoke (auth/listagem/booking) ✅ (2026-07-16, via quick-deploy que rebuilda a imagem)
-- [ ] Fase 2: NodeSource 22.x no host → rebuild → `pm2 restart` → front 302/307
-- [ ] Fase 3: primeiro `quick-deploy` normal verde + docs atualizadas
+- [x] Fase 2: NodeSource 22.x no host → rebuild → `pm2 restart` → front **307** ✅ (2026-07-16) — host `/usr/bin/node` **v22.23.1**; role Ansible `nodejs` atualizado p/ setup_22.x
+- [x] Fase 3: front+back ambos em **v22.23.1**; docs/checklist atualizados. (O próximo quick-deploy normal roda `npm ci`/build no Node 22 — confirmação final no primeiro deploy pós-migração.)
 - [ ] (Opcional) avaliar Node 24 no lugar de 22 para runway até 2028
 - [ ] (Fora de escopo) migração do Node do n8n (`/usr/local/bin/node`)
 
