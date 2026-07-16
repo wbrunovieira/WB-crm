@@ -8,11 +8,13 @@
   debug:
     msg: "Node.js: {{ node_installed.stdout_lines | default(['']) | first }}"
 
-- name: Install Node.js 20.x via NodeSource
+- name: Install/upgrade Node.js 22.x via NodeSource
+  # Runs on a fresh host OR when the installed Node is not the 22 line — so a
+  # re-provision converges the host to Node 22 (the frontend/system runtime).
   raw: |
-    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
     apt-get install -y nodejs
-  when: "'not installed' in node_installed.stdout"
+  when: "'not installed' in node_installed.stdout or 'v22.' not in node_installed.stdout"
 
 - name: Verify Node.js version
   raw: node --version
