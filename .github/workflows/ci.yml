@@ -12,7 +12,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: "20"
+  NODE_VERSION: "22"
   # Segredos dummy/de teste — NUNCA reais. Só pra o app bootar em CI.
   JWT_SECRET: ci-dummy-jwt-secret
   NEXTAUTH_SECRET: ci-dummy-nextauth-secret

@@ -1,7 +1,7 @@
 # Plano: Migração do runtime Node (20 → 22 LTS)
 
 **Data de Criação:** 2026-07-06
-**Status:** Proposto — não iniciado
+**Status:** Em andamento (2026-07-16) — **Fase 0 implementada** (Dockerfile `node:22-alpine`, CI `NODE_VERSION=22`, `engines: >=22`, `.nvmrc`); gate = CI verde no Node 22. Alvo escolhido: **Node 22 LTS**. Falta: Fase 1 (deploy backend → container no 22, automático no próximo quick-deploy que rebuilda a imagem), Fase 2 (host `/usr/bin/node` 20→22, manual/sistêmico), Fase 3 (consolidação).
 **Prioridade:** Média-alta — Node 20 entrou em **EOL em 30/abr/2026**; produção está sem patches de segurança do runtime desde então
 **Origem:** Follow-up do audit de CI/CD (2026-07-06). O nit das actions (`checkout`/`setup-node` mirando Node 20) **já foi resolvido** com o bump pra `@v5`; este plano cobre o item maior e separado: o **runtime de produção**.
 

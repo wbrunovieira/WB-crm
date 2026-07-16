@@ -3,7 +3,7 @@
 # usa mais Prisma.
 
 # ─── Stage 1: Build ───────────────────────────────────────────────────────────
-FROM node:20-alpine AS builder
+FROM node:22-alpine AS builder
 
 WORKDIR /app
 
@@ -23,7 +23,7 @@ RUN npm run build
 RUN npm prune --production
 
 # ─── Stage 2: Runtime ─────────────────────────────────────────────────────────
-FROM node:20-alpine AS runtime
+FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
