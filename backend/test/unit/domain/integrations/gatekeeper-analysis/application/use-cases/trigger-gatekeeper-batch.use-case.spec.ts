@@ -42,7 +42,7 @@ describe("TriggerGatekeeperBatchUseCase", () => {
     const result = await sut.execute({
       ownerId: "user-1",
       analysisIds: [a1.id.toString(), a2.id.toString()],
-      webhookUrl: "https://api.crm.wbdigitalsolutions.com/webhooks/gatekeeper-batch",
+      webhookUrl: "https://crm-api.wbdigitalsolutions.com/webhooks/gatekeeper-batch",
     });
 
     expect(result.isRight()).toBe(true);

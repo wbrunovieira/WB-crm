@@ -38,7 +38,7 @@ import {
   CampaignStepNotFoundError,
 } from "@/domain/email-campaigns/application/use-cases/update-campaign.use-cases";
 
-const TRACKING_BASE_URL = process.env.BACKEND_URL ?? "https://api.crm.wbdigitalsolutions.com";
+const TRACKING_BASE_URL = process.env.BACKEND_URL ?? "https://crm-api.wbdigitalsolutions.com";
 
 @ApiTags("email-campaigns")
 @Controller("email-campaigns")

@@ -21,7 +21,7 @@
   vars:
     app_dir: /opt/wb-crm
     backend_port: 3010
-    backend_domain: api.crm.wbdigitalsolutions.com
+    backend_domain: crm-api.wbdigitalsolutions.com
     github_branch: main
     backup_script: /opt/backups/backup-crm.sh
 

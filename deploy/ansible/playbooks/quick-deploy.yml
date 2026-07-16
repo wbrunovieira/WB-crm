@@ -114,4 +114,4 @@
           Frontend: {{ 'OK' if health_check.stdout | trim in ['200', '307'] else 'FAILED' }}
           Backend:  {{ 'OK' if backend_health.stdout | trim == '200' else 'FAILED' }}
           Frontend URL: https://crm.wbdigitalsolutions.com
-          Backend URL:  https://api.crm.wbdigitalsolutions.com
+          Backend URL:  https://crm-api.wbdigitalsolutions.com

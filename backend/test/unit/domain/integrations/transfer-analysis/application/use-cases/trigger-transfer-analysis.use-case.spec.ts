@@ -10,8 +10,8 @@ import type { ActivityAnalysisContext } from "@/domain/activities/application/re
 const input = () => ({
   activityId: "act-1",
   ownerId: "user-1",
-  gkWebhookUrl: "https://api.crm.wbdigitalsolutions.com/webhooks/gatekeeper-analysis",
-  spicedWebhookUrl: "https://api.crm.wbdigitalsolutions.com/webhooks/call-analysis",
+  gkWebhookUrl: "https://crm-api.wbdigitalsolutions.com/webhooks/gatekeeper-analysis",
+  spicedWebhookUrl: "https://crm-api.wbdigitalsolutions.com/webhooks/call-analysis",
 });
 
 // Minimal fake exposing only the method the use case calls.

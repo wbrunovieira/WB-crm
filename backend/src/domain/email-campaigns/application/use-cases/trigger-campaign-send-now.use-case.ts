@@ -3,7 +3,7 @@ import { Either, left, right } from "@/core/either";
 import { EmailCampaignStepsRepository } from "../repositories/email-campaign-steps.repository";
 import { SendCampaignStepUseCase } from "./send-campaign-step.use-case";
 
-const TRACKING_BASE_URL = process.env.BACKEND_URL ?? "https://api.crm.wbdigitalsolutions.com";
+const TRACKING_BASE_URL = process.env.BACKEND_URL ?? "https://crm-api.wbdigitalsolutions.com";
 
 /** In-memory lock: campaignIds currently being sent. Exported so controller and GetCampaignProgressUseCase can read it. */
 export const sendingInProgress = new Set<string>();

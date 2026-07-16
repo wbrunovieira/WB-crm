@@ -8,7 +8,7 @@ import type { ActivityAnalysisContext } from "@/domain/activities/application/re
 const makeInput = (overrides = {}) => ({
   activityId: "activity-1",
   ownerId: "user-1",
-  webhookUrl: "https://api.crm.wbdigitalsolutions.com/webhooks/gatekeeper-analysis",
+  webhookUrl: "https://crm-api.wbdigitalsolutions.com/webhooks/gatekeeper-analysis",
   ...overrides,
 });
 
