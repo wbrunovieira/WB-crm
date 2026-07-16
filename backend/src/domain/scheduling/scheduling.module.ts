@@ -3,6 +3,8 @@ import { SharedInfraModule } from "@/infra/shared/shared-infra.module";
 import { AuthModule } from "@/infra/auth/auth.module";
 import { MeetModule } from "@/domain/integrations/meet/meet.module";
 import { LeadsModule } from "@/domain/leads/leads.module";
+import { NotificationsModule } from "@/domain/notifications/notifications.module";
+import { EmailModule } from "@/domain/integrations/email/email.module";
 
 import { BookingTypesRepository } from "./application/repositories/booking-types.repository";
 import { BookingLinksRepository } from "./application/repositories/booking-links.repository";
@@ -15,6 +17,7 @@ import { TokenGeneratorPort } from "./application/ports/token-generator.port";
 
 import { GetAvailableSlotsUseCase } from "./application/use-cases/get-available-slots.use-case";
 import { CreateBookingUseCase } from "./application/use-cases/create-booking.use-case";
+import { NotifyHostBookingUseCase } from "./application/use-cases/notify-host-booking.use-case";
 import { RescheduleBookingUseCase } from "./application/use-cases/reschedule-booking.use-case";
 import { CancelBookingUseCase } from "./application/use-cases/cancel-booking.use-case";
 import { GetBookingManageInfoUseCase } from "./application/use-cases/get-booking-manage-info.use-case";
@@ -32,15 +35,18 @@ import { GoogleFreeBusyAdapter } from "./infra/google-freebusy.adapter";
 import { SchedulingLeadsAdapter } from "./infra/scheduling-leads.adapter";
 import { MeetSchedulerAdapter } from "./infra/meet-scheduler.adapter";
 import { CryptoTokenGenerator } from "./infra/crypto-token-generator";
+import { BookingCreatedListener } from "./infra/booking-created.listener";
 import { PublicBookingController } from "./infra/public-booking.controller";
 import { AdminSchedulingController } from "./infra/admin-scheduling.controller";
 
 @Module({
-  imports: [SharedInfraModule, AuthModule, MeetModule, LeadsModule],
+  imports: [SharedInfraModule, AuthModule, MeetModule, LeadsModule, NotificationsModule, EmailModule],
   controllers: [PublicBookingController, AdminSchedulingController],
   providers: [
     GetAvailableSlotsUseCase,
     CreateBookingUseCase,
+    NotifyHostBookingUseCase,
+    BookingCreatedListener,
     RescheduleBookingUseCase,
     CancelBookingUseCase,
     GetBookingManageInfoUseCase,

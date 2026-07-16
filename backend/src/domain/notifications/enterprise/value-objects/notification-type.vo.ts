@@ -13,6 +13,7 @@ export type NotificationTypeValue =
   | "MEETING_ENDED"
   | "ACTIVITY_REMINDER"
   | "LEAD_CREATED"
+  | "BOOKING_CREATED"
   | "GENERIC";
 
 const VALID: NotificationTypeValue[] = [
@@ -28,6 +29,7 @@ const VALID: NotificationTypeValue[] = [
   "MEETING_ENDED",
   "ACTIVITY_REMINDER",
   "LEAD_CREATED",
+  "BOOKING_CREATED",
   "GENERIC",
 ];
 

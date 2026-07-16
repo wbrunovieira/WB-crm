@@ -1,5 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional, Inject } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { Either, left, right } from "@/core/either";
+import { BookingCreatedEvent, BOOKING_CREATED_EVENT } from "../../enterprise/events/booking-created.event";
 import { BookingLinksRepository } from "../repositories/booking-links.repository";
 import { BookingTypesRepository } from "../repositories/booking-types.repository";
 import { CalendarFreeBusyPort } from "../ports/calendar-freebusy.port";
@@ -27,6 +29,7 @@ export class CreateBookingUseCase {
     private readonly leads: SchedulingLeadsPort,
     private readonly scheduler: MeetingSchedulerPort,
     private readonly tokens: TokenGeneratorPort,
+    @Optional() @Inject(EventEmitter2) private readonly events: EventEmitter2 | null = null,
   ) {}
 
   async execute(input: {
@@ -114,6 +117,25 @@ export class CreateBookingUseCase {
       manageToken,
       bookingLinkId: link.id,
     });
+
+    // Alert the host (link owner) — Google never emails the organizer, so without
+    // this a booking is silent by email. Fire-and-forget; never fails the booking.
+    try {
+      this.events?.emit(
+        BOOKING_CREATED_EVENT,
+        new BookingCreatedEvent({
+          ownerId: link.ownerId,
+          attendeeName: name || email,
+          startAtISO: startAt.toISOString(),
+          timeZone: type.timeZone,
+          meetingId: res.meetingId,
+          meetLink: res.meetLink,
+          mode: input.mode,
+        }),
+      );
+    } catch {
+      // notification failure must never break the booking
+    }
 
     return right({
       manageToken,

@@ -83,6 +83,22 @@ beforeEach(() => {
 });
 
 describe("CreateBookingUseCase", () => {
+  it("emite booking.created com o dono do link e quem agendou (aviso ao host)", async () => {
+    const emitted: Array<{ name: string; event: unknown }> = [];
+    const emitter = { emit: (name: string, event: unknown) => { emitted.push({ name, event }); return true; } };
+    const c = new CreateBookingUseCase(links, types, freebusy, leads, sched, tokens, emitter as never);
+
+    const r = await c.execute({ token: "abc", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Ana Cliente", now: NOW });
+    expect(r.isRight()).toBe(true);
+
+    const ev = emitted.find((e) => e.name === "booking.created");
+    expect(ev).toBeTruthy();
+    const p = (ev!.event as { payload: { ownerId: string; attendeeName: string; meetingId: string } }).payload;
+    expect(p.ownerId).toBe("owner1");
+    expect(p.attendeeName).toBe("Ana Cliente");
+    expect(p.meetingId).toBe("m1");
+  });
+
   it("agenda online num slot livre, gera manageToken e chama o scheduler com o e-mail do lead", async () => {
     const r = await create.execute({ token: "abc", startISO: SLOT_ONLINE, mode: "online", now: NOW });
     expect(r.isRight()).toBe(true);
