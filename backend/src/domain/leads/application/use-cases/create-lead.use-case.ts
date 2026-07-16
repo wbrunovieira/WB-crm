@@ -1,10 +1,12 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Optional, Inject } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import { left, right, type Either } from "@/core/either";
 import { LeadsRepository, type LeadContactInput } from "../repositories/leads.repository";
 import { Lead } from "../../enterprise/entities/lead";
 import { BusinessName } from "../../enterprise/value-objects/business-name.vo";
 import { Cnpj } from "../../enterprise/value-objects/cnpj.vo";
 import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
+import { LeadCreatedEvent, LEAD_CREATED_EVENT } from "../../enterprise/events/lead-created.event";
 
 export interface CreateLeadInput {
   ownerId: string;
@@ -89,7 +91,10 @@ type Output = Either<Error, { lead: Lead }>;
 
 @Injectable()
 export class CreateLeadUseCase {
-  constructor(private readonly leads: LeadsRepository) {}
+  constructor(
+    private readonly leads: LeadsRepository,
+    @Optional() @Inject(EventEmitter2) private readonly events: EventEmitter2 | null = null,
+  ) {}
 
   async execute(input: CreateLeadInput): Promise<Output> {
     const businessNameResult = BusinessName.create(input.businessName);
@@ -189,6 +194,22 @@ export class CreateLeadUseCase {
       });
     } else {
       await this.leads.save(lead);
+    }
+
+    // Notify listeners (e.g. bot-created lead → bell + email to the owner).
+    // Fire-and-forget: emit() is synchronous and NOT awaited; a failing listener
+    // must never break lead creation (guarded here too as defense in depth).
+    try {
+      this.events?.emit(
+        LEAD_CREATED_EVENT,
+        new LeadCreatedEvent({
+          leadId: lead.id.toString(),
+          creatorId: input.ownerId,
+          businessName: businessNameResult.value.value,
+        }),
+      );
+    } catch {
+      // never let a notification failure fail the lead creation
     }
 
     return right({ lead });

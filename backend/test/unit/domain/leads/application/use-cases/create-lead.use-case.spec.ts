@@ -164,4 +164,29 @@ describe("CreateLeadUseCase", () => {
     });
     expect(result.isRight()).toBe(true);
   });
+
+  it("emite o evento lead.created com leadId, creator e businessName", async () => {
+    const emitted: Array<{ name: string; event: unknown }> = [];
+    const emitter = { emit: (name: string, event: unknown) => { emitted.push({ name, event }); return true; } };
+    sut = new CreateLeadUseCase(repo, emitter as never);
+
+    const result = await sut.execute({ ownerId: "bot-user", businessName: "Padaria do Zé" });
+    expect(result.isRight()).toBe(true);
+
+    expect(emitted).toHaveLength(1);
+    expect(emitted[0].name).toBe("lead.created");
+    const payload = (emitted[0].event as { payload: { creatorId: string; businessName: string; leadId: string } }).payload;
+    expect(payload.creatorId).toBe("bot-user");
+    expect(payload.businessName).toBe("Padaria do Zé");
+    expect(payload.leadId).toBeTruthy();
+  });
+
+  it("listener que lança erro NÃO quebra a criação do lead", async () => {
+    const boom = { emit: () => { throw new Error("listener down"); } };
+    sut = new CreateLeadUseCase(repo, boom as never);
+
+    const result = await sut.execute({ ownerId: "user-1", businessName: "Resiliente" });
+    expect(result.isRight()).toBe(true);
+    expect(repo.items).toHaveLength(1); // lead persistido mesmo com o emit falhando
+  });
 });
