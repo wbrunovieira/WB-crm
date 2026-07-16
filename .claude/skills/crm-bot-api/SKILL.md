@@ -1,11 +1,11 @@
 ---
 name: crm-bot-api
-description: Como um BOT/agente externo consome a API do WB-crm — autenticar (JWT), pesquisar empresas no Google Meu Negócio (Places), criar/consultar/editar leads, criar atividades e registrar seu trabalho no CRM. Use sempre que precisar dar acesso de API a um bot, gerar/renovar token, ou lembrar dos endpoints e formatos (leads, activities, google-places). Base: https://api.crm.wbdigitalsolutions.com.
+description: Como um BOT/agente externo consome a API do WB-crm — autenticar (JWT), pesquisar empresas no Google Meu Negócio (Places), criar/consultar/editar leads, criar atividades e registrar seu trabalho no CRM. Use sempre que precisar dar acesso de API a um bot, gerar/renovar token, ou lembrar dos endpoints e formatos (leads, activities, google-places). Base: https://crm-api.wbdigitalsolutions.com.
 ---
 
 # WB-crm API para bots/agentes externos
 
-O backend NestJS (`https://api.crm.wbdigitalsolutions.com`, container `wb-crm-backend`:3010 no servidor `45.90.123.190`) expõe REST protegido por **JWT Bearer**. Um bot autentica com um token e usa os mesmos endpoints da UI.
+O backend NestJS (`https://crm-api.wbdigitalsolutions.com`, container `wb-crm-backend`:3010 no servidor `45.90.123.190`) expõe REST protegido por **JWT Bearer**. Um bot autentica com um token e usa os mesmos endpoints da UI.
 
 ## Autenticação (CRÍTICO)
 - O guard valida com **`process.env.JWT_SECRET`** do backend — **NÃO** é o `NEXTAUTH_SECRET` (são valores diferentes em prod). Assine o token com `JWT_SECRET`.

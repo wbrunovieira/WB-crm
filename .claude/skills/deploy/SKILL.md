@@ -49,7 +49,7 @@ gh run view <run-id>                 # steps
 gh run watch <run-id> --exit-status  # espera terminar (usar o RUN id, não o job id)
 ```
 Health de prod: front `curl -s -o /dev/null -w '%{http_code}' https://crm.wbdigitalsolutions.com`
-(302/307 = ok, redireciona pro login); back `.../api/... ` via `https://api.crm.wbdigitalsolutions.com`.
+(302/307 = ok, redireciona pro login); back `.../api/... ` via `https://crm-api.wbdigitalsolutions.com`.
 
 ## Fallback manual (Ansible direto do seu terminal)
 

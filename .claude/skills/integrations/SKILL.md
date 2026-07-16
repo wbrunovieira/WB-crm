@@ -39,7 +39,7 @@ Exemplos no repo pra copiar: **whatsapp** (mais completo), **goto** (ver [[refer
 Client `backend/src/domain/leads/infra/google-places.client.ts` → `POST https://places.googleapis.com/v1/places:searchText` (header `X-Goog-Api-Key` = env **`GOOGLE_PLACES_API_KEY`**, `X-Goog-FieldMask` com os campos). Exposto no CRM via `POST /leads/google-places/search` `{textQuery,pageToken?,languageCode?}` → `{places[],nextPageToken?}`; `priceLevel` vira 0-4; HTTP 429 = rate limit (`retryAfterSeconds`). Place→Lead: `POST /leads` com `googleId`(=placeId, único), `businessName`, endereço, `phone`, `website`, `rating`, `source:"google_places"`. Dedupe: `GET /leads/check-google-id?googleId=`. Frontend: `GoogleLeadsModal` (busca em lote) e `LeadGooglePlacesLinkModal` ("Vincular Google Places" no lead).
 
 ### Dar acesso de API a um bot externo
-Ver a skill **`crm-bot-api`** (auth JWT com `JWT_SECRET`, base `https://api.crm.wbdigitalsolutions.com`, endpoints de leads/atividades/google-places, como cunhar token e criar usuário-bot).
+Ver a skill **`crm-bot-api`** (auth JWT com `JWT_SECRET`, base `https://crm-api.wbdigitalsolutions.com`, endpoints de leads/atividades/google-places, como cunhar token e criar usuário-bot).
 
 ---
 

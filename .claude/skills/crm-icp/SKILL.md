@@ -1,11 +1,11 @@
 ---
 name: crm-icp
-description: Como consultar e criar ICP (Ideal Customer Profile / Perfil de Cliente Ideal) no WB-crm via API, e como vincular um ICP a um lead com os campos de qualificação. Use sempre que um bot/agente precisar criar ICPs, listar/ler ICPs, ou marcar o fit de um lead a um ICP. Endpoints sob https://api.crm.wbdigitalsolutions.com, auth JWT (ver skill crm-bot-api).
+description: Como consultar e criar ICP (Ideal Customer Profile / Perfil de Cliente Ideal) no WB-crm via API, e como vincular um ICP a um lead com os campos de qualificação. Use sempre que um bot/agente precisar criar ICPs, listar/ler ICPs, ou marcar o fit de um lead a um ICP. Endpoints sob https://crm-api.wbdigitalsolutions.com, auth JWT (ver skill crm-bot-api).
 ---
 
 # ICP (Perfil de Cliente Ideal) — API
 
-ICP no WB-crm = um **perfil/segmento alvo** com nome, slug e um **conteúdo em markdown** descrevendo o cliente ideal (características, dores, solução). É **user-scoped** (`ownerId`): cada ICP pertence a quem criou; só o dono vincula/edita (checagem estrita, sem bypass de admin). Lead↔ICP é **N:N** (junção `LeadICP`) com campos ricos de qualificação. Auth: JWT Bearer (ver [[reference_jwt_backend_admin]] / skill `crm-bot-api`). Base `https://api.crm.wbdigitalsolutions.com`.
+ICP no WB-crm = um **perfil/segmento alvo** com nome, slug e um **conteúdo em markdown** descrevendo o cliente ideal (características, dores, solução). É **user-scoped** (`ownerId`): cada ICP pertence a quem criou; só o dono vincula/edita (checagem estrita, sem bypass de admin). Lead↔ICP é **N:N** (junção `LeadICP`) com campos ricos de qualificação. Auth: JWT Bearer (ver [[reference_jwt_backend_admin]] / skill `crm-bot-api`). Base `https://crm-api.wbdigitalsolutions.com`.
 
 ## CRUD do ICP
 | Ação | Rota | Body | Resposta |
