@@ -47,6 +47,33 @@ describe("useAsyncAction", () => {
     expect(toast.error).toHaveBeenCalledWith("boom");
   });
 
+  it("loading fica true durante a ação pendente e volta a false", async () => {
+    let release!: () => void;
+    const gate = new Promise<void>((r) => { release = r; });
+    const { result } = renderHook(() => useAsyncAction(async () => { await gate; return 1; }));
+
+    let p!: Promise<number | undefined>;
+    act(() => { p = result.current.run(); });
+    await waitFor(() => expect(result.current.loading).toBe(true));
+
+    await act(async () => { release(); await p; });
+    expect(result.current.loading).toBe(false);
+  });
+
+  it("run é estável e usa options frescas (sem stale closure)", async () => {
+    const onSuccess = vi.fn();
+    const { result, rerender } = renderHook(
+      ({ msg }: { msg: string }) => useAsyncAction(async () => "x", { successMessage: msg, onSuccess }),
+      { initialProps: { msg: "first" } },
+    );
+    const firstRun = result.current.run;
+    rerender({ msg: "second" }); // options inline mudam a cada render
+    expect(result.current.run).toBe(firstRun); // run permanece estável
+
+    await act(async () => { await result.current.run(); });
+    expect(toast.success).toHaveBeenCalledWith("second"); // usa a option mais nova
+  });
+
   it("reset limpa o erro", async () => {
     const { result } = renderHook(() =>
       useAsyncAction(async () => { throw new Error("x"); }),
