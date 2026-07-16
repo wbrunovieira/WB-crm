@@ -9,6 +9,8 @@ function input(over: Partial<Parameters<NotifyHostBookingUseCase["execute"]>[0]>
   return {
     ownerId: OWNER,
     attendeeName: "Ana Cliente",
+    attendeeEmail: "ana@cliente.com",
+    attendeeWhatsapp: "+5511999998888",
     startAtISO: "2026-07-20T18:00:00.000Z",
     timeZone: "America/Sao_Paulo",
     meetingId: "meet-1",
@@ -44,6 +46,9 @@ describe("NotifyHostBookingUseCase", () => {
     expect(mail.to).toBe(OWNER_EMAIL);
     expect(mail.subject).toContain("Ana Cliente");
     expect(mail.bodyHtml).toContain("meet.google.com/abc");
+    // host email traz nome, e-mail e telefone que o lead preencheu
+    expect(mail.bodyHtml).toContain("ana@cliente.com");
+    expect(mail.bodyHtml).toContain("+5511999998888");
   });
 
   it("dono sem e-mail (ou não encontrado) → ainda cria o sino, sem e-mail", async () => {

@@ -1,16 +1,24 @@
 /**
  * Emitted (EventEmitter2, "booking.created") after a public booking is scheduled.
- * Lets a listener alert the link owner (the host) via bell + email — Google Calendar
- * never emails the organizer, so without this the host learns nothing by email.
+ * Carries everything two listeners need:
+ *  - alert the link owner (host) via bell + email (Google never emails the organizer);
+ *  - send the attendee a branded confirmation email in the language they booked in.
  */
 export interface BookingCreatedPayload {
   ownerId: string; // the booking link owner = the host to notify
-  attendeeName: string; // who booked
+  attendeeName: string;
+  attendeeEmail: string;
+  attendeeWhatsapp: string | null;
+  title: string;
   startAtISO: string;
-  timeZone: string;
+  endAtISO: string;
+  timeZone: string; // booking type tz — used for the host-facing email
+  attendeeTimeZone: string; // the visitor's tz — used for the attendee email
+  lang: string; // pt | en | es | it — the language the attendee booked in
   meetingId: string;
   meetLink: string | null;
   mode: "online" | "presential";
+  location: string | null;
 }
 
 export class BookingCreatedEvent {

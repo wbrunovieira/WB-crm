@@ -88,14 +88,18 @@ describe("CreateBookingUseCase", () => {
     const emitter = { emit: (name: string, event: unknown) => { emitted.push({ name, event }); return true; } };
     const c = new CreateBookingUseCase(links, types, freebusy, leads, sched, tokens, emitter as never);
 
-    const r = await c.execute({ token: "abc", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Ana Cliente", now: NOW });
+    const r = await c.execute({ token: "abc", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Ana Cliente", attendeeEmail: "ana@x.com", attendeeWhatsapp: "+5511999998888", lang: "en", tz: "Europe/Rome", now: NOW });
     expect(r.isRight()).toBe(true);
 
     const ev = emitted.find((e) => e.name === "booking.created");
     expect(ev).toBeTruthy();
-    const p = (ev!.event as { payload: { ownerId: string; attendeeName: string; meetingId: string } }).payload;
+    const p = (ev!.event as { payload: { ownerId: string; attendeeName: string; attendeeEmail: string; attendeeWhatsapp: string; meetingId: string; lang: string; attendeeTimeZone: string } }).payload;
     expect(p.ownerId).toBe("owner1");
     expect(p.attendeeName).toBe("Ana Cliente");
+    expect(p.attendeeEmail).toBe("ana@x.com");
+    expect(p.attendeeWhatsapp).toBe("+5511999998888");
+    expect(p.lang).toBe("en");
+    expect(p.attendeeTimeZone).toBe("Europe/Rome");
     expect(p.meetingId).toBe("m1");
   });
 
@@ -147,7 +151,8 @@ describe("CreateBookingUseCase", () => {
     links.defaultLink = GENERIC_LINK; // link genérico marcado como default
     const r = await create.execute({ token: "", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Ana", attendeeEmail: "ana@x.com", now: NOW });
     expect(r.isRight()).toBe(true);
-    expect(leads.createdWith?.name).toBe("Ana"); // link genérico → cria lead inbound
+    expect(leads.createdWith).toBeUndefined(); // agendamento NÃO cria lead (por ora)
+    expect(sched.scheduled?.attendeeEmail).toBe("ana@x.com");
   });
 
   it("sem token e sem link default configurado → left", async () => {
@@ -187,24 +192,15 @@ describe("CreateBookingUseCase", () => {
     expect(r.isLeft()).toBe(true);
   });
 
-  it("link genérico (sem lead): cria lead novo quando não existe", async () => {
+  it("link genérico (sem lead): agenda SEM criar lead no CRM (por ora), usando o e-mail digitado", async () => {
     links.links.push(GENERIC_LINK);
     leads.byContact = null;
     const r = await create.execute({ token: "gen", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Maria Souza", attendeeEmail: "maria@x.com", attendeeWhatsapp: "+5524999990000", now: NOW });
     expect(r.isRight()).toBe(true);
-    expect(leads.createdWith?.email).toBe("maria@x.com");
-    expect(leads.createdWith?.name).toBe("Maria Souza");
-    expect(sched.scheduled?.leadId).toBe("newlead");
+    expect(leads.createdWith).toBeUndefined();   // NÃO cria lead
+    expect(sched.scheduled?.leadId).toBeNull();  // agenda sem vínculo de lead
     expect(sched.scheduled?.attendeeEmail).toBe("maria@x.com");
-  });
-
-  it("link genérico: reusa lead existente por contato (não cria de novo)", async () => {
-    links.links.push(GENERIC_LINK);
-    leads.byContact = { id: "existing9", name: "Maria", email: "maria@x.com", city: null, state: null, address: null };
-    const r = await create.execute({ token: "gen", startISO: SLOT_ONLINE, mode: "online", attendeeName: "Maria", attendeeEmail: "maria@x.com", now: NOW });
-    expect(r.isRight()).toBe(true);
-    expect(leads.createdWith).toBeUndefined();
-    expect(sched.scheduled?.leadId).toBe("existing9");
+    expect(sched.scheduled?.attendeeName).toBe("Maria Souza");
   });
 
   it("link genérico sem nome/e-mail → left", async () => {

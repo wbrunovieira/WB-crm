@@ -40,6 +40,8 @@ export class CreateBookingUseCase {
     attendeeEmail?: string;
     attendeeWhatsapp?: string;
     address?: string; // endereço confirmado/alterado pelo lead (presencial)
+    lang?: string; // idioma que o lead usou na página (pt|en|es|it) — p/ o e-mail
+    tz?: string; // fuso do visitante — p/ mostrar o horário no e-mail dele
     now?: Date;
   }): Promise<Either<BookingError, CreateBookingResult>> {
     const now = input.now ?? new Date();
@@ -65,16 +67,13 @@ export class CreateBookingUseCase {
     const partner = link.partnerId ? await this.leads.findPartnerForBooking(link.partnerId) : null;
     const resolvedPartnerId: string | null = link.partnerId;
 
-    // Link genérico (sem lead E sem partner): exige contato; acha lead por e-mail/WhatsApp ou cria um novo.
+    // Link genérico (sem lead E sem partner): exige contato, mas NÃO cria lead no CRM
+    // (decisão do produto, por ora) — os dados do lead vão apenas nos e-mails de
+    // confirmação (pro lead) e de aviso (pro host).
     if (!link.leadId && !link.partnerId) {
       const n = input.attendeeName?.trim();
       const em = input.attendeeEmail?.trim();
-      const wa = input.attendeeWhatsapp?.trim();
       if (!n || !em) return left(new BookingError("Para agendar, informe seu nome e e-mail."));
-      lead =
-        (await this.leads.findByContact({ ownerId: link.ownerId, email: em, whatsapp: wa })) ??
-        (await this.leads.createLead({ ownerId: link.ownerId, name: n, email: em, whatsapp: wa }));
-      resolvedLeadId = lead.id;
     }
 
     // Entidade-fonte (lead OU partner) para e-mail/nome/endereço.
@@ -126,11 +125,18 @@ export class CreateBookingUseCase {
         new BookingCreatedEvent({
           ownerId: link.ownerId,
           attendeeName: name || email,
+          attendeeEmail: email,
+          attendeeWhatsapp: input.attendeeWhatsapp?.trim() || null,
+          title: type.name,
           startAtISO: startAt.toISOString(),
+          endAtISO: endAt.toISOString(),
           timeZone: type.timeZone,
+          attendeeTimeZone: input.tz || type.timeZone,
+          lang: input.lang || "pt",
           meetingId: res.meetingId,
           meetLink: res.meetLink,
           mode: input.mode,
+          location,
         }),
       );
     } catch {

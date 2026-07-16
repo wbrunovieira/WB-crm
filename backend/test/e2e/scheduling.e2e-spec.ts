@@ -105,16 +105,16 @@ describe("Scheduling (e2e) — fluxo público de auto-agendamento", () => {
     expect(res.body.lead).toBeNull(); // link genérico → sem lead vinculado
   });
 
-  it("POST /public/booking (SEM token) agenda pelo default e cria lead inbound", async () => {
+  it("POST /public/booking (SEM token) agenda pelo default SEM criar lead", async () => {
     const notokenEmail = "inbound-notoken-e2e@x.com";
     const slots = await request(app.getHttpServer()).get(`/public/booking`).expect(200);
     const slot = slots.body.slots[0].start;
     const res = await request(app.getHttpServer()).post(`/public/booking`)
-      .send({ startISO: slot, mode: "online", attendeeName: "Ana Notoken", attendeeEmail: notokenEmail })
+      .send({ startISO: slot, mode: "online", attendeeName: "Ana Notoken", attendeeEmail: notokenEmail, lang: "en" })
       .expect(201);
     expect(res.body.manageToken).toBeTruthy();
     const lead = await prisma.lead.findFirst({ where: { ownerId, email: notokenEmail } });
-    expect(lead).toBeTruthy(); // lead inbound criado pelo agendamento sem token
+    expect(lead).toBeNull(); // agendamento NÃO cria lead (por ora)
   });
 
   it("POST /public/booking/:token agenda e retorna manageToken + cria a reunião", async () => {
@@ -148,25 +148,22 @@ describe("Scheduling (e2e) — fluxo público de auto-agendamento", () => {
 });
 
 describe("Scheduling (e2e) — link genérico (sem lead)", () => {
-  it("agenda informando contato e CRIA um lead inbound", async () => {
+  it("agenda informando contato SEM criar lead (por ora)", async () => {
     const slotsRes = await request(app.getHttpServer()).get(`/public/booking/${GEN_TOKEN}`).expect(200);
     expect(slotsRes.body.lead).toBeNull();
     expect(slotsRes.body.locationModes).toEqual(["online"]);
     const slot = slotsRes.body.slots[0].start;
 
     const res = await request(app.getHttpServer()).post(`/public/booking/${GEN_TOKEN}`)
-      .send({ startISO: slot, mode: "online", attendeeName: "Cliente Inbound", attendeeEmail: INBOUND_EMAIL, attendeeWhatsapp: "(24) 99999-0000" })
+      .send({ startISO: slot, mode: "online", attendeeName: "Cliente Inbound", attendeeEmail: INBOUND_EMAIL, attendeeWhatsapp: "(24) 99999-0000", lang: "pt" })
       .expect(201);
     expect(res.body.manageToken).toBeTruthy();
 
     const lead = await prisma.lead.findFirst({ where: { ownerId, email: INBOUND_EMAIL } });
-    expect(lead).toBeTruthy();
-    expect(lead!.businessName).toBe("Cliente Inbound");
-    expect(lead!.isProspect).toBe(false);
-    expect(lead!.whatsapp).toBe("+5524999990000"); // normalizado E.164
+    expect(lead).toBeNull(); // agendamento NÃO cria lead
 
     const meeting = await prisma.meeting.findFirst({ where: { manageToken: res.body.manageToken } });
-    expect(meeting!.leadId).toBe(lead!.id);
+    expect(meeting!.leadId).toBeNull(); // reunião sem vínculo de lead
   });
 
   it("link genérico sem nome/e-mail → 400", async () => {

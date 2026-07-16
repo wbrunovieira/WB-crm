@@ -13,6 +13,8 @@ class CreateBookingDto {
   attendeeEmail?: string;
   attendeeWhatsapp?: string;
   address?: string;
+  lang?: string; // idioma escolhido na página (pt|en|es|it)
+  tz?: string; // fuso do visitante
 }
 class RescheduleDto { startISO!: string; }
 
@@ -59,6 +61,7 @@ export class PublicBookingController {
       startISO: body.startISO, mode: body.mode,
       attendeeName: body.attendeeName, attendeeEmail: body.attendeeEmail,
       attendeeWhatsapp: body.attendeeWhatsapp, address: body.address,
+      lang: body.lang, tz: body.tz,
     });
     if (r.isLeft()) throw new BadRequestException(r.value.message);
     return r.value;
@@ -83,6 +86,7 @@ export class PublicBookingController {
       token, startISO: body.startISO, mode: body.mode,
       attendeeName: body.attendeeName, attendeeEmail: body.attendeeEmail,
       attendeeWhatsapp: body.attendeeWhatsapp, address: body.address,
+      lang: body.lang, tz: body.tz,
     });
     if (r.isLeft()) throw new BadRequestException(r.value.message);
     return r.value;

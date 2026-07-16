@@ -18,6 +18,7 @@ import { TokenGeneratorPort } from "./application/ports/token-generator.port";
 import { GetAvailableSlotsUseCase } from "./application/use-cases/get-available-slots.use-case";
 import { CreateBookingUseCase } from "./application/use-cases/create-booking.use-case";
 import { NotifyHostBookingUseCase } from "./application/use-cases/notify-host-booking.use-case";
+import { SendBookingConfirmationUseCase } from "./application/use-cases/send-booking-confirmation.use-case";
 import { RescheduleBookingUseCase } from "./application/use-cases/reschedule-booking.use-case";
 import { CancelBookingUseCase } from "./application/use-cases/cancel-booking.use-case";
 import { GetBookingManageInfoUseCase } from "./application/use-cases/get-booking-manage-info.use-case";
@@ -46,6 +47,7 @@ import { AdminSchedulingController } from "./infra/admin-scheduling.controller";
     GetAvailableSlotsUseCase,
     CreateBookingUseCase,
     NotifyHostBookingUseCase,
+    SendBookingConfirmationUseCase,
     BookingCreatedListener,
     RescheduleBookingUseCase,
     CancelBookingUseCase,

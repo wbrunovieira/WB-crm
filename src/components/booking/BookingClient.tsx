@@ -456,6 +456,8 @@ export function BookingClient({ token, backend, initial }: { token?: string; bac
           attendeeName: name,
           attendeeEmail: email,
           attendeeWhatsapp: whatsapp,
+          lang,
+          tz,
           ...(mode === "presential" ? { address } : {}),
         }),
       });
