@@ -51,6 +51,23 @@ describe("ConvertLeadToOrganizationUseCase", () => {
     expect(contactIds).toHaveLength(2);
   });
 
+  it("preserva o commLanguage do lead e do lead-contact na conversão", async () => {
+    const lead = makeLead({ commLanguage: "en" });
+    repo.seedLead({
+      lead,
+      contacts: [
+        { id: "lc-001", leadId: "lead-001", name: "John", role: null, email: "john@acme.com", isPrimary: true, isActive: true, phone: null, whatsapp: null, linkedin: null, instagram: null, languages: null, commLanguage: "en" },
+      ],
+      secondaryCNAEIds: [],
+      techProfile: { languageIds: [], frameworkIds: [], hostingIds: [], databaseIds: [], erpIds: [], crmIds: [], ecommerceIds: [] },
+    });
+
+    await useCase.execute({ leadId: "lead-001", requesterId: "user-001", requesterRole: "sdr" });
+
+    expect(repo.lastPayload!.organization.commLanguage).toBe("en");
+    expect(repo.lastPayload!.contacts[0].contact.commLanguage).toBe("en");
+  });
+
   it("maps lead fields to organization correctly", async () => {
     const lead = makeLead({ businessName: "Acme Tech Ltda", city: "Campinas" });
     repo.seedLead({ lead, contacts: [], secondaryCNAEIds: [], techProfile: { languageIds: [], frameworkIds: [], hostingIds: [], databaseIds: [], erpIds: [], crmIds: [], ecommerceIds: [] } });

@@ -80,6 +80,9 @@ class CreateContactDto {
   @ApiPropertyOptional({ example: "pt-BR" })
   preferredLanguage?: string;
 
+  @ApiPropertyOptional({ description: "Idioma de comunicação para campanhas: pt | en | es | it" })
+  commLanguage?: string;
+
   @ApiPropertyOptional({ example: ["pt-BR", "en"] })
   languages?: string[];
 
@@ -123,6 +126,9 @@ class UpdateContactDto {
 
   @ApiPropertyOptional()
   preferredLanguage?: string;
+
+  @ApiPropertyOptional({ description: "Idioma de comunicação para campanhas: pt | en | es | it" })
+  commLanguage?: string;
 
   @ApiPropertyOptional()
   languages?: string[];
@@ -186,6 +192,9 @@ class ContactResponseDto {
   @ApiPropertyOptional({ example: "pt-BR" })
   preferredLanguage?: string;
 
+  @ApiPropertyOptional({ description: "Idioma de comunicação para campanhas: pt | en | es | it" })
+  commLanguage?: string;
+
   @ApiPropertyOptional()
   languages?: string[];
 
@@ -229,6 +238,7 @@ function serialize(c: Contact) {
     birthDate: c.birthDate,
     notes: c.notes,
     preferredLanguage: c.preferredLanguage,
+    commLanguage: c.commLanguage,
     languages: c.languages,
     source: c.source,
     createdAt: c.createdAt,

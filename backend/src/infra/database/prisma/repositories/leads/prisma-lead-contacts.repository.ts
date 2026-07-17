@@ -40,6 +40,7 @@ export class PrismaLeadContactsRepository extends LeadContactsRepository {
         instagram: data.instagram,
         isPrimary: data.isPrimary ?? false,
         languages: data.languages,
+        ...(data.commLanguage !== undefined && { commLanguage: data.commLanguage }),
       },
     });
     return this.toRecord(row);
@@ -63,6 +64,7 @@ export class PrismaLeadContactsRepository extends LeadContactsRepository {
         ...(data.instagram !== undefined && { instagram: data.instagram }),
         ...(data.isPrimary !== undefined && { isPrimary: data.isPrimary }),
         ...(data.languages !== undefined && { languages: data.languages }),
+        ...(data.commLanguage !== undefined && { commLanguage: data.commLanguage }),
         updatedAt: new Date(),
       },
     });
@@ -122,6 +124,7 @@ export class PrismaLeadContactsRepository extends LeadContactsRepository {
     isPrimary: boolean;
     isActive: boolean;
     languages: string | null;
+    commLanguage: string;
     convertedToContactId: string | null;
     createdAt: Date;
     updatedAt: Date;
@@ -139,6 +142,7 @@ export class PrismaLeadContactsRepository extends LeadContactsRepository {
       isPrimary: row.isPrimary,
       isActive: row.isActive,
       languages: row.languages,
+      commLanguage: row.commLanguage,
       convertedToContactId: row.convertedToContactId,
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,

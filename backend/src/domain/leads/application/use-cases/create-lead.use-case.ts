@@ -6,6 +6,7 @@ import { Lead } from "../../enterprise/entities/lead";
 import { BusinessName } from "../../enterprise/value-objects/business-name.vo";
 import { Cnpj } from "../../enterprise/value-objects/cnpj.vo";
 import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
+import { CommLanguage } from "@/core/value-objects/comm-language";
 import { LeadCreatedEvent, LEAD_CREATED_EVENT } from "../../enterprise/events/lead-created.event";
 
 export interface CreateLeadInput {
@@ -48,6 +49,7 @@ export interface CreateLeadInput {
   equityCapital?: number;
   businessStatus?: string;
   languages?: string;
+  commLanguage?: string;
   primaryActivity?: string;
   secondaryActivities?: string;
   primaryCNAEId?: string;
@@ -109,6 +111,9 @@ export class CreateLeadUseCase {
       companyRegistrationID = cnpjResult.value.value;
     }
 
+    const langR = CommLanguage.create(input.commLanguage);
+    if (langR.isLeft()) return left(langR.value);
+
     const lead = Lead.create({
       ownerId: input.ownerId,
       businessName: businessNameResult.value.value,
@@ -149,6 +154,7 @@ export class CreateLeadUseCase {
       equityCapital: input.equityCapital,
       businessStatus: input.businessStatus,
       languages: input.languages,
+      commLanguage: langR.value.value,
       primaryActivity: input.primaryActivity,
       secondaryActivities: input.secondaryActivities,
       primaryCNAEId: input.primaryCNAEId,

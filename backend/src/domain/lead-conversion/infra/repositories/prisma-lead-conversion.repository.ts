@@ -41,6 +41,7 @@ export class PrismaLeadConversionRepository extends LeadConversionRepository {
         whatsapp: lc.whatsapp ?? null, linkedin: lc.linkedin ?? null,
         instagram: lc.instagram ?? null, isPrimary: lc.isPrimary,
         isActive: lc.isActive, languages: lc.languages ?? null,
+        commLanguage: (lc.commLanguage as string) ?? null,
       })),
       secondaryCNAEIds: raw.secondaryCNAEs.map((s: Record<string, unknown>) => s.cnaeId as string),
       techProfile: {

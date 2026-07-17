@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { ContactsRepository } from "../repositories/contacts.repository";
 import type { Contact, ContactStatus } from "../../enterprise/entities/contact";
+import { CommLanguage } from "@/core/value-objects/comm-language";
 
 export interface UpdateContactInput {
   id: string;
@@ -22,6 +23,7 @@ export interface UpdateContactInput {
   birthDate?: Date;
   notes?: string;
   preferredLanguage?: string;
+  commLanguage?: string;
   languages?: string;
   source?: string;
   sourceLeadContactId?: string;
@@ -45,6 +47,12 @@ export class UpdateContactUseCase {
       return left(new Error("Não autorizado"));
     }
 
+    if (input.commLanguage !== undefined) {
+      const langR = CommLanguage.create(input.commLanguage);
+      if (langR.isLeft()) return left(langR.value);
+      input.commLanguage = langR.value.value;
+    }
+
     // Partial (PATCH) semantics: only touch fields the caller actually sent.
     // Passing `undefined` through would let Object.assign overwrite existing
     // values — so a partial update (e.g. from the partner contacts modal, which
@@ -64,6 +72,7 @@ export class UpdateContactUseCase {
       ...(input.birthDate !== undefined && { birthDate: input.birthDate }),
       ...(input.notes !== undefined && { notes: input.notes }),
       ...(input.preferredLanguage !== undefined && { preferredLanguage: input.preferredLanguage }),
+      ...(input.commLanguage !== undefined && { commLanguage: input.commLanguage }),
       ...(input.languages !== undefined && { languages: input.languages }),
       ...(input.source !== undefined && { source: input.source }),
       ...(input.sourceLeadContactId !== undefined && { sourceLeadContactId: input.sourceLeadContactId }),

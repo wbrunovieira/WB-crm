@@ -15,6 +15,7 @@ export interface LeadContactRaw {
   isPrimary: boolean;
   isActive: boolean;
   languages?: string | null;
+  commLanguage?: string | null;
 }
 
 export interface LeadWithContacts {

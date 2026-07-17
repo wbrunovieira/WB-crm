@@ -4,6 +4,7 @@ import { OrganizationsRepository } from "../repositories/organizations.repositor
 import type { Organization } from "../../enterprise/entities/organization";
 import type { OrganizationProps } from "../../enterprise/entities/organization";
 import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
+import { CommLanguage } from "@/core/value-objects/comm-language";
 
 export interface UpdateOrganizationInput {
   id: string;
@@ -29,6 +30,7 @@ export interface UpdateOrganizationInput {
   companyOwner?: string;
   companySize?: string;
   languages?: string;
+  commLanguage?: string;
   primaryCNAEId?: string;
   internationalActivity?: string;
   instagram?: string;
@@ -69,6 +71,12 @@ export class UpdateOrganizationUseCase {
 
     if (input.requesterRole !== "admin" && organization.ownerId !== input.requesterId) {
       return left(new Error("Não autorizado"));
+    }
+
+    if (input.commLanguage !== undefined) {
+      const langR = CommLanguage.create(input.commLanguage);
+      if (langR.isLeft()) return left(langR.value);
+      input.commLanguage = langR.value.value;
     }
 
     const { id, requesterId, requesterRole, labelIds, ...fields } = input;

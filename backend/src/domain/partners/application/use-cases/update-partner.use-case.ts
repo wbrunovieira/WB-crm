@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
 import { PartnersRepository } from "../repositories/partners.repository";
 import { isPartnerStatus, type Partner, type PartnerProps } from "../../enterprise/entities/partner";
+import { CommLanguage } from "@/core/value-objects/comm-language";
 
 export interface UpdatePartnerInput {
   id: string;
@@ -34,6 +35,7 @@ export interface UpdatePartnerInput {
   notes?: string;
   starRating?: number | null;
   languages?: string | null;
+  commLanguage?: string;
   primaryCNAEId?: string | null;
   internationalActivity?: string | null;
 }
@@ -63,6 +65,12 @@ export class UpdatePartnerUseCase {
       (!Number.isInteger(input.starRating) || input.starRating < 1 || input.starRating > 5)
     ) {
       return left(new Error("Classificação deve ser entre 1 e 5"));
+    }
+
+    if (input.commLanguage !== undefined) {
+      const langR = CommLanguage.create(input.commLanguage);
+      if (langR.isLeft()) return left(langR.value);
+      input.commLanguage = langR.value.value;
     }
 
     const { id, requesterId, requesterRole, ...fields } = input;

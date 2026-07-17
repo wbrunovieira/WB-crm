@@ -46,6 +46,21 @@ describe("Partners Use Cases", () => {
       expect(repo.items).toHaveLength(1);
     });
 
+    it("commLanguage: default 'pt' quando não informado", async () => {
+      const r = await createUseCase.execute({ ownerId: "user-1", name: "Sem idioma", partnerType: "agencia_digital" });
+      expect(r.isRight() && r.value.partner.commLanguage).toBe("pt");
+    });
+
+    it("commLanguage: aceita 'en'", async () => {
+      const r = await createUseCase.execute({ ownerId: "user-1", name: "Inglês", partnerType: "agencia_digital", commLanguage: "en" });
+      expect(r.isRight() && r.value.partner.commLanguage).toBe("en");
+    });
+
+    it("commLanguage: idioma não suportado → left", async () => {
+      const r = await createUseCase.execute({ ownerId: "user-1", name: "Francês", partnerType: "agencia_digital", commLanguage: "fr" });
+      expect(r.isLeft()).toBe(true);
+    });
+
     it("cria parceiro com todos os campos", async () => {
       const result = await createUseCase.execute({
         ownerId: "user-1",

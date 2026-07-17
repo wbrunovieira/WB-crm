@@ -11,6 +11,7 @@ export class FakeLeadConversionRepository extends LeadConversionRepository {
 
   // Populated by execute()
   convertedLeads: Map<string, { organizationId: string; contactIds: string[] }> = new Map();
+  lastPayload?: ConversionPayload; // the org/contacts entities that were persisted
 
   seedLead(data: LeadWithContacts): void {
     this.leadsWithContacts.set(data.lead.id.toString(), data);
@@ -21,6 +22,7 @@ export class FakeLeadConversionRepository extends LeadConversionRepository {
   }
 
   async execute(payload: ConversionPayload): Promise<ConversionResult> {
+    this.lastPayload = payload;
     const organizationId = payload.organization.id.toString();
     const contactIds = payload.contacts.map((c) => c.contact.id.toString());
 

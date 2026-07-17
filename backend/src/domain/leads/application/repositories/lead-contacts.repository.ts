@@ -11,6 +11,7 @@ export interface LeadContactRecord {
   isPrimary: boolean;
   isActive: boolean;
   languages: string | null;
+  commLanguage: string;
   convertedToContactId: string | null;
   createdAt: Date;
   updatedAt: Date;
@@ -27,6 +28,7 @@ export interface CreateLeadContactData {
   instagram?: string;
   isPrimary?: boolean;
   languages?: string;
+  commLanguage?: string;
 }
 
 export interface UpdateLeadContactData {
@@ -39,6 +41,7 @@ export interface UpdateLeadContactData {
   instagram?: string;
   isPrimary?: boolean;
   languages?: string;
+  commLanguage?: string;
 }
 
 export interface EmailVerificationData {

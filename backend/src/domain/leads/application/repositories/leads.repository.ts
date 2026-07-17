@@ -36,6 +36,7 @@ export interface LeadContactInput {
   role?: string;
   isPrimary?: boolean;
   languages?: string;
+  commLanguage?: string;
 }
 
 export interface LeadRelations {

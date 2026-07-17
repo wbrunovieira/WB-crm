@@ -189,4 +189,19 @@ describe("CreateLeadUseCase", () => {
     expect(result.isRight()).toBe(true);
     expect(repo.items).toHaveLength(1); // lead persistido mesmo com o emit falhando
   });
+
+  it("commLanguage: default 'pt' quando não informado", async () => {
+    const r = await sut.execute({ ownerId: "user-1", businessName: "Sem idioma" });
+    expect(r.isRight() && r.value.lead.commLanguage).toBe("pt");
+  });
+
+  it("commLanguage: aceita 'en'", async () => {
+    const r = await sut.execute({ ownerId: "user-1", businessName: "Inglês", commLanguage: "en" });
+    expect(r.isRight() && r.value.lead.commLanguage).toBe("en");
+  });
+
+  it("commLanguage: idioma não suportado → left", async () => {
+    const r = await sut.execute({ ownerId: "user-1", businessName: "Francês", commLanguage: "fr" });
+    expect(r.isLeft()).toBe(true);
+  });
 });

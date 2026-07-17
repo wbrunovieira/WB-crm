@@ -565,6 +565,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
                 role: c.role,
                 isPrimary: c.isPrimary ?? false,
                 languages: c.languages,
+                ...(c.commLanguage !== undefined && { commLanguage: c.commLanguage }),
               },
             });
           }

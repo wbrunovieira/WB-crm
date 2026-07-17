@@ -113,6 +113,9 @@ class CreatePartnerDto {
   @ApiPropertyOptional({ description: 'JSON de idiomas: [{ code, isPrimary }]' })
   languages?: string | null;
 
+  @ApiPropertyOptional({ description: 'Idioma de comunicação para campanhas: pt | en | es | it' })
+  commLanguage?: string;
+
   @ApiPropertyOptional({ description: 'ID do CNAE primário (atividade econômica)' })
   primaryCNAEId?: string | null;
 
@@ -148,6 +151,7 @@ class UpdatePartnerDto {
   @ApiPropertyOptional() notes?: string;
   @ApiPropertyOptional({ example: 4, description: "Classificação por estrelas 1–5 (null limpa)" }) starRating?: number | null;
   @ApiPropertyOptional({ description: 'JSON de idiomas: [{ code, isPrimary }] (null limpa)' }) languages?: string | null;
+  @ApiPropertyOptional({ description: 'Idioma de comunicação para campanhas: pt | en | es | it' }) commLanguage?: string;
   @ApiPropertyOptional({ description: 'ID do CNAE primário (null limpa)' }) primaryCNAEId?: string | null;
   @ApiPropertyOptional({ description: 'Atividade (texto livre) para parceiros estrangeiros' }) internationalActivity?: string | null;
 }
@@ -192,6 +196,7 @@ function serialize(partner: Partner) {
     notes: partner.notes,
     starRating: partner.starRating,
     languages: partner.languages ?? null,
+    commLanguage: partner.commLanguage,
     primaryCNAEId: partner.primaryCNAEId ?? null,
     internationalActivity: partner.internationalActivity ?? null,
     lastContactDate: partner.lastContactDate,

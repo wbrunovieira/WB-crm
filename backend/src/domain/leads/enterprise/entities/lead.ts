@@ -74,6 +74,9 @@ export interface LeadProps {
   // Languages (JSON)
   languages?: string;
 
+  // Communication language for campaigns (pt|en|es|it); defaults to "pt"
+  commLanguage: string;
+
   // Activities (deprecated — use CNAE)
   primaryActivity?: string;
   secondaryActivities?: string;
@@ -202,6 +205,7 @@ export class Lead extends AggregateRoot<LeadProps> {
   get isMei()                       { return this.props.isMei; }
   get phone2()                      { return this.props.phone2; }
   get languages()                   { return this.props.languages; }
+  get commLanguage()                { return this.props.commLanguage; }
   get primaryActivity()             { return this.props.primaryActivity; }
   get secondaryActivities()         { return this.props.secondaryActivities; }
   get primaryCNAEId()               { return this.props.primaryCNAEId; }
@@ -275,8 +279,8 @@ export class Lead extends AggregateRoot<LeadProps> {
   }
 
   static create(
-    props: Omit<LeadProps, "whatsappVerified" | "permanentlyClosed" | "status" | "isArchived" | "isProspect" | "createdAt" | "updatedAt">
-      & Partial<Pick<LeadProps, "whatsappVerified" | "permanentlyClosed" | "status" | "isArchived" | "isProspect" | "createdAt" | "updatedAt">>,
+    props: Omit<LeadProps, "whatsappVerified" | "permanentlyClosed" | "status" | "isArchived" | "isProspect" | "commLanguage" | "createdAt" | "updatedAt">
+      & Partial<Pick<LeadProps, "whatsappVerified" | "permanentlyClosed" | "status" | "isArchived" | "isProspect" | "commLanguage" | "createdAt" | "updatedAt">>,
     id?: UniqueEntityID,
   ): Lead {
     const now = new Date();
@@ -287,6 +291,7 @@ export class Lead extends AggregateRoot<LeadProps> {
         status: "new",
         isArchived: false,
         isProspect: false,
+        commLanguage: "pt",
         createdAt: now,
         updatedAt: now,
         ...props,

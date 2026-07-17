@@ -34,6 +34,9 @@ export interface OrganizationProps {
   // Languages (JSON: [{code, isPrimary}])
   languages?: string;
 
+  // Communication language for campaigns (pt|en|es|it); defaults to "pt"
+  commLanguage: string;
+
   // CNAE
   primaryCNAEId?: string;
   internationalActivity?: string;
@@ -106,6 +109,7 @@ export class Organization extends AggregateRoot<OrganizationProps> {
   get companyOwner()          { return this.props.companyOwner; }
   get companySize()           { return this.props.companySize; }
   get languages()             { return this.props.languages; }
+  get commLanguage()          { return this.props.commLanguage; }
   get primaryCNAEId()         { return this.props.primaryCNAEId; }
   get internationalActivity() { return this.props.internationalActivity; }
   get instagram()             { return this.props.instagram; }
@@ -143,8 +147,8 @@ export class Organization extends AggregateRoot<OrganizationProps> {
   }
 
   static create(
-    props: Omit<OrganizationProps, "hasHosting" | "hostingReminderDays" | "createdAt" | "updatedAt">
-      & Partial<Pick<OrganizationProps, "hasHosting" | "hostingReminderDays" | "createdAt" | "updatedAt">>,
+    props: Omit<OrganizationProps, "hasHosting" | "hostingReminderDays" | "commLanguage" | "createdAt" | "updatedAt">
+      & Partial<Pick<OrganizationProps, "hasHosting" | "hostingReminderDays" | "commLanguage" | "createdAt" | "updatedAt">>,
     id?: UniqueEntityID,
   ): Organization {
     const now = new Date();
@@ -152,6 +156,7 @@ export class Organization extends AggregateRoot<OrganizationProps> {
       {
         hasHosting: false,
         hostingReminderDays: 30,
+        commLanguage: "pt",
         createdAt: now,
         updatedAt: now,
         ...props,

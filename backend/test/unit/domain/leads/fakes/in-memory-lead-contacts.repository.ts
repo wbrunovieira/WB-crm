@@ -32,6 +32,7 @@ export class InMemoryLeadContactsRepository extends LeadContactsRepository {
       isPrimary: data.isPrimary ?? false,
       isActive: true,
       languages: data.languages ?? null,
+      commLanguage: data.commLanguage ?? "pt",
       convertedToContactId: null,
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -54,6 +55,7 @@ export class InMemoryLeadContactsRepository extends LeadContactsRepository {
       instagram: data.instagram !== undefined ? (data.instagram ?? null) : existing.instagram,
       isPrimary: data.isPrimary ?? existing.isPrimary,
       languages: data.languages !== undefined ? (data.languages ?? null) : existing.languages,
+      commLanguage: data.commLanguage !== undefined ? data.commLanguage : existing.commLanguage,
       updatedAt: new Date(),
     };
     this.items[idx] = updated;

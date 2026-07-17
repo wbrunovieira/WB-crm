@@ -98,6 +98,9 @@ class CreateOrganizationDto {
   @ApiPropertyOptional({ description: "JSON string or array of language objects [{code, isPrimary}]" })
   languages?: string;
 
+  @ApiPropertyOptional({ description: "Idioma de comunicação para campanhas: pt | en | es | it" })
+  commLanguage?: string;
+
   @ApiPropertyOptional()
   primaryCNAEId?: string;
 
@@ -217,6 +220,9 @@ class UpdateOrganizationDto {
   @ApiPropertyOptional()
   languages?: string;
 
+  @ApiPropertyOptional({ description: "Idioma de comunicação para campanhas: pt | en | es | it" })
+  commLanguage?: string;
+
   @ApiPropertyOptional()
   primaryCNAEId?: string;
 
@@ -308,6 +314,7 @@ function serialize(organization: Organization) {
     companyOwner: organization.companyOwner,
     companySize: organization.companySize,
     languages: organization.languages,
+    commLanguage: organization.commLanguage,
     primaryCNAEId: organization.primaryCNAEId,
     internationalActivity: organization.internationalActivity,
     instagram: organization.instagram,

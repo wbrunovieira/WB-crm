@@ -61,6 +61,9 @@ export interface PartnerProps {
   // null explicitly clears (mirrors the starRating "null clears" convention).
   languages?: string | null;
 
+  // Communication language for campaigns (pt|en|es|it); defaults to "pt"
+  commLanguage: string;
+
   // Economic activity (mirrors Lead/Organization): primary CNAE for Brazilian
   // companies, free-text internationalActivity for foreign ones.
   primaryCNAEId?: string | null;
@@ -101,6 +104,7 @@ export class Partner extends AggregateRoot<PartnerProps> {
   get notes()            { return this.props.notes; }
   get starRating()       { return this.props.starRating ?? null; }
   get languages()        { return this.props.languages ?? null; }
+  get commLanguage()     { return this.props.commLanguage; }
   get primaryCNAEId()    { return this.props.primaryCNAEId ?? null; }
   get internationalActivity() { return this.props.internationalActivity ?? null; }
   get lastContactDate()  { return this.props.lastContactDate; }
@@ -125,12 +129,13 @@ export class Partner extends AggregateRoot<PartnerProps> {
   }
 
   static create(
-    props: Omit<PartnerProps, "createdAt" | "updatedAt"> & Partial<Pick<PartnerProps, "createdAt" | "updatedAt">>,
+    props: Omit<PartnerProps, "commLanguage" | "createdAt" | "updatedAt"> & Partial<Pick<PartnerProps, "commLanguage" | "createdAt" | "updatedAt">>,
     id?: UniqueEntityID,
   ): Partner {
     const now = new Date();
     return new Partner(
       {
+        commLanguage: "pt",
         createdAt: now,
         updatedAt: now,
         ...props,

@@ -5,6 +5,7 @@ import type { Lead } from "../../enterprise/entities/lead";
 import type { LeadProps } from "../../enterprise/entities/lead";
 import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
 import { Cnpj } from "../../enterprise/value-objects/cnpj.vo";
+import { CommLanguage } from "@/core/value-objects/comm-language";
 
 export interface UpdateLeadInput {
   id: string;
@@ -48,6 +49,7 @@ export interface UpdateLeadInput {
   equityCapital?: number;
   businessStatus?: string;
   languages?: string;
+  commLanguage?: string;
   primaryActivity?: string;
   secondaryActivities?: string;
   primaryCNAEId?: string;
@@ -113,6 +115,12 @@ export class UpdateLeadUseCase {
       const cnpjResult = Cnpj.create(fields.companyRegistrationID);
       if (cnpjResult.isLeft()) return left(cnpjResult.value);
       fields.companyRegistrationID = cnpjResult.value.value;
+    }
+
+    if (fields.commLanguage !== undefined) {
+      const langR = CommLanguage.create(fields.commLanguage);
+      if (langR.isLeft()) return left(langR.value);
+      fields.commLanguage = langR.value.value;
     }
 
     lead.update(fields as Partial<Omit<LeadProps, "ownerId" | "createdAt" | "updatedAt">>);

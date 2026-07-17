@@ -30,6 +30,8 @@ export interface ContactProps {
   birthDate?: Date;
   notes?: string;
   preferredLanguage: string;
+  // Communication language for campaigns (pt|en|es|it); defaults to "pt"
+  commLanguage: string;
   languages?: string; // JSON
   source?: string;
   sourceLeadContactId?: string;
@@ -64,6 +66,7 @@ export class Contact extends AggregateRoot<ContactProps> {
   get birthDate()             { return this.props.birthDate; }
   get notes()                 { return this.props.notes; }
   get preferredLanguage()     { return this.props.preferredLanguage; }
+  get commLanguage()          { return this.props.commLanguage; }
   get languages()             { return this.props.languages; }
   get source()                { return this.props.source; }
   get sourceLeadContactId()   { return this.props.sourceLeadContactId; }
@@ -93,8 +96,8 @@ export class Contact extends AggregateRoot<ContactProps> {
   }
 
   static create(
-    props: Omit<ContactProps, "whatsappVerified" | "isPrimary" | "preferredLanguage" | "status" | "createdAt" | "updatedAt">
-      & Partial<Pick<ContactProps, "whatsappVerified" | "isPrimary" | "preferredLanguage" | "status" | "createdAt" | "updatedAt">>,
+    props: Omit<ContactProps, "whatsappVerified" | "isPrimary" | "preferredLanguage" | "commLanguage" | "status" | "createdAt" | "updatedAt">
+      & Partial<Pick<ContactProps, "whatsappVerified" | "isPrimary" | "preferredLanguage" | "commLanguage" | "status" | "createdAt" | "updatedAt">>,
     id?: UniqueEntityID,
   ): Contact {
     const now = new Date();
@@ -103,6 +106,7 @@ export class Contact extends AggregateRoot<ContactProps> {
         whatsappVerified: false,
         isPrimary: false,
         preferredLanguage: "pt-BR",
+        commLanguage: "pt",
         status: "active",
         createdAt: now,
         updatedAt: now,

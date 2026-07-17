@@ -4,6 +4,7 @@ import { OrganizationsRepository } from "../repositories/organizations.repositor
 import { Organization } from "../../enterprise/entities/organization";
 import { OrganizationName } from "../../enterprise/value-objects/organization-name.vo";
 import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
+import { CommLanguage } from "@/core/value-objects/comm-language";
 
 export interface CreateOrganizationInput {
   ownerId: string;
@@ -27,6 +28,7 @@ export interface CreateOrganizationInput {
   companyOwner?: string;
   companySize?: string;
   languages?: string;
+  commLanguage?: string;
   primaryCNAEId?: string;
   internationalActivity?: string;
   instagram?: string;
@@ -65,6 +67,9 @@ export class CreateOrganizationUseCase {
     const nameResult = OrganizationName.create(input.name);
     if (nameResult.isLeft()) return left(nameResult.value);
 
+    const langR = CommLanguage.create(input.commLanguage);
+    if (langR.isLeft()) return left(langR.value);
+
     const organization = Organization.create({
       ownerId: input.ownerId,
       name: nameResult.value.value,
@@ -88,6 +93,7 @@ export class CreateOrganizationUseCase {
       companyOwner: input.companyOwner,
       companySize: input.companySize,
       languages: input.languages,
+      commLanguage: langR.value.value,
       primaryCNAEId: input.primaryCNAEId,
       internationalActivity: input.internationalActivity,
       instagram: input.instagram,

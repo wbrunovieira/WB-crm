@@ -33,6 +33,7 @@ export class ContactMapper {
         birthDate: raw.birthDate ?? undefined,
         notes: raw.notes ?? undefined,
         preferredLanguage: raw.preferredLanguage ?? "pt-BR",
+        commLanguage: raw.commLanguage,
         languages: raw.languages ?? undefined,
         source: raw.source ?? undefined,
         sourceLeadContactId: raw.sourceLeadContactId ?? undefined,
@@ -78,6 +79,7 @@ export class ContactMapper {
           : null,
       notes: contact.notes ?? null,
       preferredLanguage: contact.preferredLanguage,
+      commLanguage: contact.commLanguage,
       languages: contact.languages
         ? typeof contact.languages === "string"
           ? contact.languages

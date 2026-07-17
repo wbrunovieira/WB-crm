@@ -3,6 +3,7 @@ import { left, right, type Either } from "@/core/either";
 import { PartnersRepository } from "../repositories/partners.repository";
 import { Partner, isPartnerStatus } from "../../enterprise/entities/partner";
 import { PartnerName } from "../../enterprise/value-objects/partner-name.vo";
+import { CommLanguage } from "@/core/value-objects/comm-language";
 
 export interface CreatePartnerInput {
   ownerId: string;
@@ -31,6 +32,7 @@ export interface CreatePartnerInput {
   expertise?: string;
   notes?: string;
   languages?: string | null;
+  commLanguage?: string;
   primaryCNAEId?: string | null;
   internationalActivity?: string | null;
 }
@@ -48,6 +50,9 @@ export class CreatePartnerUseCase {
 
     const partnerStatus = input.partnerStatus ?? "prospect";
     if (!isPartnerStatus(partnerStatus)) return left(new Error("Status de parceria inválido"));
+
+    const langR = CommLanguage.create(input.commLanguage);
+    if (langR.isLeft()) return left(langR.value);
 
     const partner = Partner.create({
       ownerId: input.ownerId,
@@ -78,6 +83,7 @@ export class CreatePartnerUseCase {
       expertise: input.expertise,
       notes: input.notes,
       languages: input.languages,
+      commLanguage: langR.value.value,
       primaryCNAEId: input.primaryCNAEId,
       internationalActivity: input.internationalActivity,
       lastContactDate: new Date(),

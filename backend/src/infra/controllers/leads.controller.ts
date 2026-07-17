@@ -171,6 +171,9 @@ class CreateLeadDto {
   @ApiPropertyOptional({ description: "JSON string or array of language objects" })
   languages?: string;
 
+  @ApiPropertyOptional({ description: "Idioma de comunicação para campanhas: pt | en | es | it" })
+  commLanguage?: string;
+
   @ApiPropertyOptional({ example: "cold", enum: ["cold", "warm", "hot"] })
   quality?: string;
 
@@ -279,6 +282,7 @@ class CreateLeadDto {
     role?: string;
     isPrimary?: boolean;
     languages?: string;
+    commLanguage?: string;
   }>;
 }
 
@@ -366,6 +370,9 @@ class UpdateLeadDto {
 
   @ApiPropertyOptional()
   languages?: string;
+
+  @ApiPropertyOptional({ description: "Idioma de comunicação para campanhas: pt | en | es | it" })
+  commLanguage?: string;
 
   @ApiPropertyOptional({ enum: ["cold", "warm", "hot"] })
   quality?: string;
@@ -514,6 +521,9 @@ class CreateLeadContactDto {
 
   @ApiPropertyOptional()
   languages?: string;
+
+  @ApiPropertyOptional({ description: "Idioma de comunicação: pt | en | es | it" })
+  commLanguage?: string;
 }
 
 class UpdateLeadContactDto {
@@ -543,6 +553,9 @@ class UpdateLeadContactDto {
 
   @ApiPropertyOptional()
   languages?: string;
+
+  @ApiPropertyOptional({ description: "Idioma de comunicação: pt | en | es | it" })
+  commLanguage?: string;
 }
 
 /* ─── Helpers ─────────────────────────────────────────────────────────────── */
@@ -610,6 +623,7 @@ function serialize(lead: Lead) {
     equityCapital: lead.equityCapital,
     businessStatus: lead.businessStatus,
     languages: lead.languages,
+    commLanguage: lead.commLanguage,
     primaryActivity: lead.primaryActivity,
     secondaryActivities: lead.secondaryActivities,
     primaryCNAEId: lead.primaryCNAEId,

@@ -152,6 +152,7 @@ model VerificationToken {
 // CRM Models
 
 model Lead {
+  commLanguage String @default("pt") // idioma de comunicação (campanhas/newsletter)
   id       String  @id @default(cuid())
   googleId String? @unique
 
@@ -394,6 +395,7 @@ model GooglePlacesSearch {
 }
 
 model LeadContact {
+  commLanguage String @default("pt") // idioma de comunicação (campanhas/newsletter)
   id     String @id @default(cuid())
   leadId String
 
@@ -438,6 +440,7 @@ model LeadContact {
 }
 
 model Organization {
+  commLanguage String @default("pt") // idioma de comunicação (campanhas/newsletter)
   id             String    @id @default(cuid())
   name           String // Nome Fantasia (obrigatório)
   legalName      String? // Razão Social
@@ -586,6 +589,7 @@ model Label {
 }
 
 model Contact {
+  commLanguage String @default("pt") // idioma de comunicação (campanhas/newsletter)
   id                      String    @id @default(cuid())
   name                    String
   email                   String?
@@ -1011,6 +1015,7 @@ model GatekeeperBatch {
 }
 
 model Partner {
+  commLanguage String @default("pt") // idioma de comunicação (campanhas/newsletter)
   id String @id @default(cuid())
 
   // Informações da Empresa Parceira

@@ -4,6 +4,7 @@ import { ContactsRepository } from "../repositories/contacts.repository";
 import { Contact } from "../../enterprise/entities/contact";
 import type { ContactStatus } from "../../enterprise/entities/contact";
 import { ContactName } from "../../enterprise/value-objects/contact-name.vo";
+import { CommLanguage } from "@/core/value-objects/comm-language";
 
 export interface CreateContactInput {
   ownerId: string;
@@ -22,6 +23,7 @@ export interface CreateContactInput {
   birthDate?: Date;
   notes?: string;
   preferredLanguage?: string;
+  commLanguage?: string;
   languages?: string;
   source?: string;
   sourceLeadContactId?: string;
@@ -36,6 +38,9 @@ export class CreateContactUseCase {
   async execute(input: CreateContactInput): Promise<Output> {
     const nameResult = ContactName.create(input.name);
     if (nameResult.isLeft()) return left(nameResult.value);
+
+    const langR = CommLanguage.create(input.commLanguage);
+    if (langR.isLeft()) return left(langR.value);
 
     const leadId = input.companyType === "lead" ? input.companyId : undefined;
     const organizationId = input.companyType === "organization" ? input.companyId : undefined;
@@ -59,6 +64,7 @@ export class CreateContactUseCase {
       birthDate: input.birthDate,
       notes: input.notes,
       preferredLanguage: input.preferredLanguage ?? "pt-BR",
+      commLanguage: langR.value.value,
       languages: input.languages,
       source: input.source,
       sourceLeadContactId: input.sourceLeadContactId,
