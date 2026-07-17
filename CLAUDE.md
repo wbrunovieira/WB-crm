@@ -432,6 +432,14 @@ Backend runs as PM2 process `wb-crm-backend` on port 3010.
 
 ---
 
+## Gestão de Projeto (issues)
+
+**Toda melhoria, correção ou pendência do CRM vira uma issue** no board do projeto "WB CRM" no **WB Project Manager**, e o status é mantido em dia (In Progress ao começar → Done ao concluir).
+
+- **Docs da API (Swagger):** https://projects.wbdigitalsolutions.com/api/docs
+- **Como criar/atualizar issues e milestones via API:** ver a skill `wb-project-manager` (auth por API key em `~/.wb-project-manager-api-key`, IDs do projeto/status, bulk, gotchas).
+- Antes de criar, listar o que já existe (`GET /api/issues?projectId=…`) para não duplicar.
+
 ## Git Workflow
 
 When the user types "github", perform these steps:
