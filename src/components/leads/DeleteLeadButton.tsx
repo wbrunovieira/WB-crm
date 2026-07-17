@@ -18,6 +18,7 @@ export function DeleteLeadButton({ leadId }: { leadId: string }) {
             await deleteMutation.mutateAsync(leadId);
             toast.success("Lead excluído com sucesso!");
             router.push("/leads");
+            router.refresh();
           } catch (error) {
             toast.error(
               error instanceof Error ? error.message : "Erro ao excluir lead"
