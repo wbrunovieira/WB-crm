@@ -16,7 +16,7 @@ function handleError(err: Left<Error, unknown>): never {
   throw new UnprocessableEntityException(msg);
 }
 
-@ApiTags("leads")
+@ApiTags("Leads")
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard)
 @Controller("leads")
