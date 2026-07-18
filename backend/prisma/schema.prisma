@@ -3022,11 +3022,28 @@ model EmailCampaignStep {
   bodyHtml   String
   delayDays  Int    @default(0)
 
-  campaign EmailCampaign       @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  sends    EmailCampaignSend[]
+  campaign     EmailCampaign                  @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  sends        EmailCampaignSend[]
+  translations EmailCampaignStepTranslation[]
 
   @@index([campaignId, order])
   @@map("email_campaign_steps")
+}
+
+// Per-language content of a step. The step's own subject/bodyHtml is the default
+// (pt) fallback; each translation overrides it for one language.
+model EmailCampaignStepTranslation {
+  id       String @id @default(cuid())
+  stepId   String
+  language String // pt | en | es | it
+  subject  String
+  bodyHtml String
+
+  step EmailCampaignStep @relation(fields: [stepId], references: [id], onDelete: Cascade)
+
+  @@unique([stepId, language])
+  @@index([stepId])
+  @@map("email_campaign_step_translations")
 }
 
 model EmailCampaignRecipient {

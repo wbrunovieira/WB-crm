@@ -25,6 +25,9 @@ import { ListEmailCampaignsUseCase, DeleteEmailCampaignUseCase, StartEmailCampai
 import { RemoveSuppressionUseCase } from "./application/use-cases/remove-suppression.use-case";
 import { TrackEmailOpenUseCase, TrackEmailClickUseCase } from "./application/use-cases/email-tracking.use-cases";
 import { UpdateEmailCampaignUseCase, UpdateCampaignStepUseCase, GetCampaignStepsUseCase } from "./application/use-cases/update-campaign.use-cases";
+import { UpsertStepTranslationUseCase, ListStepTranslationsUseCase, RemoveStepTranslationUseCase } from "./application/use-cases/step-translations.use-cases";
+import { EmailCampaignStepTranslationsRepository } from "./application/repositories/email-campaign-step-translations.repository";
+import { PrismaEmailCampaignStepTranslationsRepository } from "@/infra/database/prisma/repositories/email-campaigns/prisma-email-campaign-step-translations.repository";
 import { VariableResolverService } from "./application/services/variable-resolver.service";
 
 import { EmailCampaignsRepository } from "./application/repositories/email-campaigns.repository";
@@ -78,9 +81,13 @@ import { PrismaRecipientContextAdapter } from "@/infra/database/prisma/adapters/
     UpdateEmailCampaignUseCase,
     UpdateCampaignStepUseCase,
     GetCampaignStepsUseCase,
+    UpsertStepTranslationUseCase,
+    ListStepTranslationsUseCase,
+    RemoveStepTranslationUseCase,
 
     { provide: EmailCampaignsRepository, useClass: PrismaEmailCampaignsRepository },
     { provide: EmailCampaignStepsRepository, useClass: PrismaEmailCampaignStepsRepository },
+    { provide: EmailCampaignStepTranslationsRepository, useClass: PrismaEmailCampaignStepTranslationsRepository },
     { provide: EmailCampaignRecipientsRepository, useClass: PrismaEmailCampaignRecipientsRepository },
     { provide: EmailCampaignSendsRepository, useClass: PrismaEmailCampaignSendsRepository },
     { provide: EmailSuppressionsRepository, useClass: PrismaEmailSuppressionsRepository },

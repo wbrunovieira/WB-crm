@@ -1,6 +1,6 @@
 import * as path from "path";
 import * as fs from "fs";
-import { Body, ConflictException, Controller, Delete, ForbiddenException, Get, HttpCode, HttpStatus, NotFoundException, Param, Patch, Post, Query, Res, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, ConflictException, Controller, Delete, ForbiddenException, Get, HttpCode, HttpStatus, NotFoundException, Param, Patch, Post, Put, Query, Res, UseGuards } from "@nestjs/common";
 import { ApiOperation, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
@@ -36,7 +36,9 @@ import {
   GetCampaignStepsUseCase,
   CampaignNotFoundError,
   CampaignStepNotFoundError,
+  CampaignAccessDeniedError,
 } from "@/domain/email-campaigns/application/use-cases/update-campaign.use-cases";
+import { UpsertStepTranslationUseCase, ListStepTranslationsUseCase, RemoveStepTranslationUseCase } from "@/domain/email-campaigns/application/use-cases/step-translations.use-cases";
 
 const TRACKING_BASE_URL = process.env.BACKEND_URL ?? "https://crm-api.wbdigitalsolutions.com";
 
@@ -71,6 +73,9 @@ export class EmailCampaignsController {
     private readonly updateCampaignUC: UpdateEmailCampaignUseCase,
     private readonly updateStepUC: UpdateCampaignStepUseCase,
     private readonly getSteps: GetCampaignStepsUseCase,
+    private readonly upsertTranslationUC: UpsertStepTranslationUseCase,
+    private readonly listTranslationsUC: ListStepTranslationsUseCase,
+    private readonly removeTranslationUC: RemoveStepTranslationUseCase,
   ) {}
 
   // ─── Campaigns ──────────────────────────────────────────────────────────────
@@ -170,6 +175,46 @@ export class EmailCampaignsController {
     }
     const s = r.value;
     return { id: s.id.toString(), order: s.order, subject: s.subject, bodyHtml: s.bodyHtml, delayDays: s.delayDays };
+  }
+
+  // ─── Step translations (per-language content) ────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Get(":id/steps/:stepId/translations")
+  @ApiOperation({ summary: "List a step's per-language translations (base step = pt)" })
+  async listStepTranslations(@CurrentUser() user: AuthenticatedUser, @Param("stepId") stepId: string) {
+    const r = await this.listTranslationsUC.execute({ stepId, ownerId: user.id });
+    if (r.isLeft()) throw this.mapTranslationError(r.value);
+    return r.value.map((t) => ({ language: t.language, subject: t.subject, bodyHtml: t.bodyHtml }));
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Put(":id/steps/:stepId/translations/:language")
+  @ApiOperation({ summary: "Create/update a step's content for a language (en/es/it; pt is the base step)" })
+  async upsertStepTranslation(
+    @CurrentUser() user: AuthenticatedUser,
+    @Param("stepId") stepId: string,
+    @Param("language") language: string,
+    @Body() body: { subject: string; bodyHtml: string },
+  ) {
+    const r = await this.upsertTranslationUC.execute({ stepId, ownerId: user.id, language, subject: body.subject, bodyHtml: body.bodyHtml });
+    if (r.isLeft()) throw this.mapTranslationError(r.value);
+    return r.value;
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Delete(":id/steps/:stepId/translations/:language")
+  @ApiOperation({ summary: "Remove a step's translation for a language" })
+  async removeStepTranslation(@CurrentUser() user: AuthenticatedUser, @Param("stepId") stepId: string, @Param("language") language: string) {
+    const r = await this.removeTranslationUC.execute({ stepId, ownerId: user.id, language });
+    if (r.isLeft()) throw this.mapTranslationError(r.value);
+    return { ok: true };
+  }
+
+  private mapTranslationError(err: Error) {
+    if (err instanceof CampaignStepNotFoundError) return new NotFoundException(err.message);
+    if (err instanceof CampaignAccessDeniedError) return new ForbiddenException(err.message);
+    return new BadRequestException(err.message);
   }
 
   // ─── Recipients ─────────────────────────────────────────────────────────────
