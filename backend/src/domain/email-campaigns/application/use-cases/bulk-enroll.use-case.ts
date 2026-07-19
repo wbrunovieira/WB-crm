@@ -56,6 +56,7 @@ export class BulkEnrollUseCase {
           name: c.name,
           company: c.company,
           role: c.role,
+          language: c.language,
           customVars: c.customVars,
         }),
       );

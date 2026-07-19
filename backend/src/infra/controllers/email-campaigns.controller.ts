@@ -225,7 +225,7 @@ export class EmailCampaignsController {
   @ApiOperation({ summary: "Add recipients to campaign" })
   async addCampaignRecipients(
     @Param("id") campaignId: string,
-    @Body() body: { recipients: { recipientType: "LEAD" | "CONTACT"; recipientId: string; email: string; name?: string; company?: string; role?: string; customVars?: Record<string, string> }[] },
+    @Body() body: { recipients: { recipientType: "LEAD" | "CONTACT" | "PARTNER"; recipientId: string; email: string; name?: string; company?: string; role?: string; language?: string; customVars?: Record<string, string> }[] },
   ) {
     const result = await this.addRecipients.execute({ campaignId, recipients: body.recipients });
     if (result.isLeft()) throw new Error(result.value.message);

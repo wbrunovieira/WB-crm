@@ -49,6 +49,12 @@ export class PrismaRecipientContextAdapter extends RecipientContextPort {
       return {};
     }
 
+    if (recipientType === "PARTNER") {
+      const partner = await this.prisma.partner.findUnique({ where: { id: recipientId }, select: { id: true } });
+      if (partner) return { partnerId: recipientId };
+      return {};
+    }
+
     return {};
   }
 }

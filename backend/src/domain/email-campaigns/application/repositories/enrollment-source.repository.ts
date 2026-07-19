@@ -10,6 +10,7 @@ export interface EnrollableContact {
   name: string | null;
   email: string | null;
   role: string | null;
+  language?: string;
 }
 
 export interface LeadEnrollmentView {
@@ -18,6 +19,7 @@ export interface LeadEnrollmentView {
   email: string | null;
   segment: string | null;
   sourceGroup: string | null;
+  language?: string;
   contacts: EnrollableContact[]; // leadContacts with a non-null email
 }
 
@@ -27,6 +29,7 @@ export interface OrgEnrollmentView {
   email: string | null;
   segment: string | null;
   sourceGroup: string | null;
+  language?: string;
   contacts: EnrollableContact[]; // contacts with a non-null email
 }
 
@@ -38,12 +41,13 @@ export interface OrgEnrollmentView {
 export interface EnrollmentCandidate {
   /** Exact dedup key, e.g. "LEAD:<id>", "LEAD_CONTACT:<id>", "CONTACT:<id>". */
   dedupKey: string;
-  recipientType: "LEAD" | "CONTACT";
+  recipientType: "LEAD" | "CONTACT" | "PARTNER";
   recipientId: string;
   email: string;
   name?: string;
   company?: string;
   role?: string;
+  language?: string;
   customVars?: Record<string, string>;
 }
 

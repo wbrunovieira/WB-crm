@@ -1,7 +1,7 @@
 import { Entity } from "@/core/entity";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 
-export type RecipientType = "LEAD" | "CONTACT";
+export type RecipientType = "LEAD" | "CONTACT" | "PARTNER";
 export type RecipientStatus = "PENDING" | "ACTIVE" | "COMPLETED" | "UNSUBSCRIBED" | "BOUNCED" | "SUPPRESSED" | "DELAYED";
 
 interface EmailCampaignRecipientProps {
@@ -12,6 +12,7 @@ interface EmailCampaignRecipientProps {
   name?: string;
   company?: string;
   role?: string;
+  language?: string;
   customVars?: Record<string, string>;
   currentStep: number;
   status: RecipientStatus;
@@ -26,6 +27,7 @@ export class EmailCampaignRecipient extends Entity<EmailCampaignRecipientProps> 
   get name()          { return this.props.name; }
   get company()       { return this.props.company; }
   get role()          { return this.props.role; }
+  get language()      { return this.props.language ?? "pt"; }
   get customVars()    { return this.props.customVars ?? {}; }
   get currentStep()     { return this.props.currentStep; }
   get status()          { return this.props.status; }

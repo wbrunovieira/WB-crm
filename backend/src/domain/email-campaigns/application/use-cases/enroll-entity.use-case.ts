@@ -49,6 +49,7 @@ export class EnrollEntityUseCase {
               email: lead.email,
               name: lead.businessName ?? undefined,
               company: lead.businessName ?? undefined,
+              language: lead.language,
               customVars: {
                 ...(lead.segment ? { setor: lead.segment } : {}),
                 ...(lead.sourceGroup ? { sourceGroup: lead.sourceGroup } : {}),
@@ -76,6 +77,7 @@ export class EnrollEntityUseCase {
             name: lc.name ?? undefined,
             company: lead.businessName ?? undefined,
             role: lc.role ?? undefined,
+            language: lc.language,
             customVars: {
               ...(lead.segment ? { setor: lead.segment } : {}),
               ...(lead.sourceGroup ? { sourceGroup: lead.sourceGroup } : {}),
@@ -104,6 +106,7 @@ export class EnrollEntityUseCase {
               email: org.email,
               name: org.name ?? undefined,
               company: org.name ?? undefined,
+              language: org.language,
               customVars: {
                 ...(org.segment ? { setor: org.segment } : {}),
                 ...(org.sourceGroup ? { sourceGroup: org.sourceGroup } : {}),
@@ -131,6 +134,7 @@ export class EnrollEntityUseCase {
             name: c.name ?? undefined,
             company: org.name ?? undefined,
             role: c.role ?? undefined,
+            language: c.language,
             customVars: {
               ...(org.segment ? { setor: org.segment } : {}),
               ...(org.sourceGroup ? { sourceGroup: org.sourceGroup } : {}),

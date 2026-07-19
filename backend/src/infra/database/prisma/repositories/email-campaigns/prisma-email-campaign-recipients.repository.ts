@@ -18,6 +18,7 @@ export class PrismaEmailCampaignRecipientsRepository implements EmailCampaignRec
         name: raw.name ?? undefined,
         company: raw.company ?? undefined,
         role: raw.role ?? undefined,
+        language: raw.language ?? "pt",
         customVars: raw.customVars ? JSON.parse(raw.customVars) : undefined,
         currentStep: raw.currentStep,
         status: raw.status as RecipientStatus,
@@ -61,6 +62,7 @@ export class PrismaEmailCampaignRecipientsRepository implements EmailCampaignRec
         name: recipient.name,
         company: recipient.company,
         role: recipient.role,
+        language: recipient.language,
         customVars: recipient.customVars ? JSON.stringify(recipient.customVars) : null,
         currentStep: recipient.currentStep,
         status: recipient.status,
@@ -73,6 +75,7 @@ export class PrismaEmailCampaignRecipientsRepository implements EmailCampaignRec
         name: recipient.name,
         company: recipient.company,
         role: recipient.role,
+        language: recipient.language,
         customVars: recipient.customVars ? JSON.stringify(recipient.customVars) : null,
       },
     });

@@ -11,6 +11,7 @@ interface RecipientInput {
   name?: string;
   company?: string;
   role?: string;
+  language?: string;
   customVars?: Record<string, string>;
 }
 

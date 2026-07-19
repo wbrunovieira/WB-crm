@@ -208,6 +208,30 @@ describe("AddRecipientsUseCase", () => {
 
     expect(recipients.items).toHaveLength(1);
   });
+
+  it("adiciona um PARTNER com idioma en (snapshot do recipient)", async () => {
+    const createSut = new CreateEmailCampaignUseCase(campaigns);
+    const created = await createSut.execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const campaignId = (created.value as { id: string }).id;
+
+    await sut.execute({
+      campaignId,
+      recipients: [{ recipientType: "PARTNER", recipientId: "partner-1", email: "en@partner.com", name: "EN Partner", language: "en" }],
+    });
+
+    expect(recipients.items).toHaveLength(1);
+    expect(recipients.items[0].recipientType).toBe("PARTNER");
+    expect(recipients.items[0].language).toBe("en");
+  });
+
+  it("recipient sem idioma → default 'pt'", async () => {
+    const createSut = new CreateEmailCampaignUseCase(campaigns);
+    const created = await createSut.execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const campaignId = (created.value as { id: string }).id;
+
+    await sut.execute({ campaignId, recipients: [{ recipientType: "LEAD", recipientId: "lead-9", email: "x@y.com" }] });
+    expect(recipients.items[0].language).toBe("pt");
+  });
 });
 
 describe("SendCampaignStepUseCase", () => {
