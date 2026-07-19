@@ -110,6 +110,25 @@ describe("BulkEnroll — all sources", () => {
     expect(recipients.map((r) => r.email)).toContain("joao@leadcontact.com");
   });
 
+  it("faz snapshot do commLanguage (en) e tipa o partner como PARTNER", async () => {
+    const campaignId = await createCampaign();
+    await prisma.lead.create({ data: { businessName: "Lead EN", email: "lead-en@x.com", commLanguage: "en", ownerId: userId } });
+    await prisma.partner.create({ data: { name: "Partner EN", email: "partner-en@x.com", commLanguage: "en", partnerType: "agencia_digital", ownerId: userId } });
+
+    const res = await request(app.getHttpServer())
+      .post(`/email-campaigns/${campaignId}/enroll`)
+      .set("Authorization", `Bearer ${token}`)
+      .send({ mode: "all" });
+    expect(res.status).toBe(200);
+
+    const recipients = await prisma.emailCampaignRecipient.findMany({ where: { campaignId } });
+    const leadR = recipients.find((r) => r.email === "lead-en@x.com");
+    expect(leadR?.language).toBe("en"); // snapshot do commLanguage do lead
+    const partnerR = recipients.find((r) => r.email === "partner-en@x.com");
+    expect(partnerR?.recipientType).toBe("PARTNER"); // partner tipado corretamente
+    expect(partnerR?.language).toBe("en");
+  });
+
   it("deduplicates when Lead.email == LeadContact.email", async () => {
     const campaignId = await createCampaign();
 
