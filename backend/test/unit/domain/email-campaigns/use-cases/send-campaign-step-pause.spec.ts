@@ -40,7 +40,7 @@ describe("SendCampaignStepUseCase — honors pause mid-send", () => {
     const context = new FakeRecipientContextPort();
 
     const sut = new SendCampaignStepUseCase(
-      campaigns, steps, recipients, sends,
+      campaigns, steps, recipients, ({ findByStep: async () => [] } as never), sends,
       gmail as never, resolver, suppressions, activities as never, context as never,
     );
 

@@ -16,6 +16,7 @@ import { InMemoryEmailSuppressionsRepository } from "../fakes/in-memory-email-su
 import { VariableResolverService } from "@/domain/email-campaigns/application/services/variable-resolver.service";
 import { EmailCampaignRecipient } from "@/domain/email-campaigns/enterprise/entities/email-campaign-recipient.entity";
 import { EmailCampaignStep } from "@/domain/email-campaigns/enterprise/entities/email-campaign-step.entity";
+import { EmailCampaignStepTranslation } from "@/domain/email-campaigns/enterprise/entities/email-campaign-step-translation.entity";
 import { EmailCampaignSend } from "@/domain/email-campaigns/enterprise/entities/email-campaign-send.entity";
 import { UniqueEntityID } from "@/core/unique-entity-id";
 import { EmailSuppression } from "@/domain/email-campaigns/enterprise/entities/email-suppression.entity";
@@ -252,7 +253,7 @@ describe("SendCampaignStepUseCase", () => {
     suppressions = new InMemoryEmailSuppressionsRepository();
     gmail = new FakeGmailPortForCampaigns();
     resolver = new VariableResolverService();
-    sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
+    sut = new SendCampaignStepUseCase(campaigns, steps, recipients, ({ findByStep: async () => [] } as never), sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
   });
 
   it("should send step 0 to all pending recipients with variable substitution", async () => {
@@ -277,6 +278,37 @@ describe("SendCampaignStepUseCase", () => {
     expect(gmail.sentEmails[0].subject).toBe("Oi Alice");
     expect(gmail.sentEmails[1].subject).toBe("Oi Bob");
     expect(sends.items).toHaveLength(2);
+  });
+
+  it("envia a versão do idioma do destinatário (en) e o base (pt) pra quem não tem tradução", async () => {
+    const createSut = new CreateEmailCampaignUseCase(campaigns);
+    const created = await createSut.execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
+    const campaignId = (created.value as { id: string }).id;
+    const campaign = await campaigns.findById(campaignId);
+    campaign!.start(); await campaigns.save(campaign!);
+
+    const step = EmailCampaignStep.create({ campaignId, order: 0, subject: "Assunto PT", bodyHtml: "<p>Corpo PT</p>", delayDays: 0 });
+    await steps.save(step);
+    const enTranslation = EmailCampaignStepTranslation.create({ stepId: step.id.toString(), language: "en", subject: "EN subject", bodyHtml: "<p>EN body</p>" });
+
+    // sut com um fake de traduções que devolve a versão EN do step
+    const langSut = new SendCampaignStepUseCase(
+      campaigns, steps, recipients, ({ findByStep: async () => [enTranslation] } as never), sends, gmail, resolver, suppressions,
+      new InMemoryActivitiesRepository(), new FakeRecipientContextPort(),
+    );
+
+    await recipients.saveMany([
+      EmailCampaignRecipient.create({ campaignId, recipientType: "PARTNER", recipientId: "p-en", email: "en@x.com", language: "en" }),
+      EmailCampaignRecipient.create({ campaignId, recipientType: "LEAD", recipientId: "l-pt", email: "pt@x.com", language: "pt" }),
+    ]);
+
+    await langSut.execute({ campaignId, stepOrder: 0, delayRange: { min: 0, max: 0 } });
+
+    const byTo = Object.fromEntries(gmail.sentEmails.map((e) => [e.to, e]));
+    expect(byTo["en@x.com"].subject).toBe("EN subject");   // versão en
+    expect(byTo["en@x.com"].bodyHtml).toContain("EN body");
+    expect(byTo["pt@x.com"].subject).toBe("Assunto PT");   // fallback base (pt)
+    expect(byTo["pt@x.com"].bodyHtml).toContain("Corpo PT");
   });
 
   it("should advance recipient step after sending (multi-step sequence)", async () => {
@@ -546,7 +578,7 @@ describe("SendCampaignStep — duplicate send guard", () => {
     const suppressions = new InMemoryEmailSuppressionsRepository();
     const gmail = new FakeGmailPortForCampaigns();
     const resolver = new VariableResolverService();
-    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, ({ findByStep: async () => [] } as never), sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
 
     const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
     const campaignId = (created.value as { id: string }).id;
@@ -584,7 +616,7 @@ describe("SendCampaignStep — duplicate send guard", () => {
     const suppressions = new InMemoryEmailSuppressionsRepository();
     const gmail = new FakeGmailPortForCampaigns();
     const resolver = new VariableResolverService();
-    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, ({ findByStep: async () => [] } as never), sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
 
     const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
     const campaignId = (created.value as { id: string }).id;
@@ -622,7 +654,7 @@ describe("SendCampaignStep — suppression check", () => {
     const suppressions = new InMemoryEmailSuppressionsRepository();
     const gmail = new FakeGmailPortForCampaigns();
     const resolver = new VariableResolverService();
-    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, ({ findByStep: async () => [] } as never), sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
 
     const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
     const campaignId = (created.value as { id: string }).id;
@@ -688,7 +720,7 @@ describe("SendCampaignStep — send failures go to suppression list", () => {
     const suppressions = new InMemoryEmailSuppressionsRepository();
     const gmail = new FakeGmailPortForCampaigns();
     const resolver = new VariableResolverService();
-    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, ({ findByStep: async () => [] } as never), sends, gmail, resolver, suppressions, new InMemoryActivitiesRepository(), new FakeRecipientContextPort());
 
     const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
     const campaignId = (created.value as { id: string }).id;
@@ -1020,7 +1052,7 @@ describe("SendCampaignStep — campaign_email activity creation", () => {
     const recipientContext = new FakeRecipientContextPort();
 
     const sut = new SendCampaignStepUseCase(
-      campaigns, steps, recipients, sends, gmail, resolver, suppressions,
+      campaigns, steps, recipients, ({ findByStep: async () => [] } as never), sends, gmail, resolver, suppressions,
       activities, recipientContext,
     );
 
@@ -1168,7 +1200,7 @@ describe("SendCampaignStep — invalid email pre-validation", () => {
     const resolver = new VariableResolverService();
     const activities = new InMemoryActivitiesRepository();
     const recipientContext = new FakeRecipientContextPort();
-    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, sends, gmail, resolver, suppressions, activities, recipientContext);
+    const sut = new SendCampaignStepUseCase(campaigns, steps, recipients, ({ findByStep: async () => [] } as never), sends, gmail, resolver, suppressions, activities, recipientContext);
 
     const created = await new CreateEmailCampaignUseCase(campaigns).execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
     const campaignId = (created.value as { id: string }).id;
