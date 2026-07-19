@@ -72,6 +72,7 @@ export interface CreateLeadPayload {
   sourceGroup?: string | null;
   primaryCNAEId?: string | null;
   internationalActivity?: string | null;
+  commLanguage?: string | null;
   referredByPartnerId?: string | null;
   driveFolderId?: string | null;
   parentLeadId?: string | null;

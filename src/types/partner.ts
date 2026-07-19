@@ -62,6 +62,7 @@ export interface Partner {
   primaryCNAEId: string | null;
   primaryCNAE: { id: string; code: string; description: string } | null;
   internationalActivity: string | null;
+  commLanguage: string | null;
   emailVerified: boolean | null;
   emailVerifiedAt: string | null;
   emailVerificationStatus: string | null;

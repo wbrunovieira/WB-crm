@@ -141,6 +141,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
       businessStatus: getString("businessStatus"),
       primaryCNAEId: primaryCNAE?.id || undefined,
       internationalActivity: getString("internationalActivity"),
+      commLanguage: getString("commLanguage") || "pt",
       source: getString("source"),
       segment: getString("segment"),
       legalNature: getString("legalNature"),
@@ -751,6 +752,24 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               defaultValue={lead?.website || ""}
               className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-300">
+              Idioma de comunicação (e-mail)
+            </label>
+            <select
+              name="commLanguage"
+              defaultValue={lead?.commLanguage ?? "pt"}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            >
+              <option value="pt">Português</option>
+              <option value="en">English</option>
+              <option value="es">Español</option>
+              <option value="it">Italiano</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-400">
+              Idioma em que campanhas e newsletters são enviadas (diferente de &quot;Idiomas falados&quot;)
+            </p>
           </div>
         </div>
       </div>

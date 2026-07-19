@@ -46,6 +46,7 @@ interface OrganizationFormProps {
       code: string;
       description: string;
     } | null;
+    commLanguage?: string | null;
     // Hosting fields
     hasHosting: boolean;
     hostingRenewalDate: Date | string | null;
@@ -109,6 +110,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         companySize: formData.get("companySize") as string,
         primaryCNAEId: primaryCNAE?.id || undefined,
         internationalActivity: formData.get("internationalActivity") as string,
+        commLanguage: (formData.get("commLanguage") as string) || "pt",
         instagram: formData.get("instagram") as string,
         linkedin: formData.get("linkedin") as string,
         facebook: formData.get("facebook") as string,
@@ -284,6 +286,29 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               defaultValue={organization?.whatsapp || ""}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
+          </div>
+
+          <div>
+            <label
+              htmlFor="commLanguage"
+              className="block text-sm font-medium text-gray-700"
+            >
+              Idioma de comunicação (e-mail)
+            </label>
+            <select
+              id="commLanguage"
+              name="commLanguage"
+              defaultValue={organization?.commLanguage ?? "pt"}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="pt">Português</option>
+              <option value="en">English</option>
+              <option value="es">Español</option>
+              <option value="it">Italiano</option>
+            </select>
+            <p className="mt-1 text-xs text-gray-500">
+              Idioma em que campanhas e newsletters são enviadas (diferente de &quot;Idiomas falados&quot;)
+            </p>
           </div>
         </div>
       </div>

@@ -55,6 +55,7 @@ export type Lead = {
   businessStatus?: string | null;
   primaryCNAEId?: string | null;
   internationalActivity?: string | null;
+  commLanguage?: string | null;
   phone2?: string | null;
   source?: string | null;
   segment?: string | null;

@@ -66,6 +66,7 @@ export interface Organization {
   labels?: { id: string; name: string; color: string }[];
   primaryCNAEId: string | null;
   internationalActivity: string | null;
+  commLanguage?: string | null;
   primaryCNAE?: { id: string; code: string; description: string } | null;
   hasHosting: boolean;
   hostingRenewalDate: Date | string | null;

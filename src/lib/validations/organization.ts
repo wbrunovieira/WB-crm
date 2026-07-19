@@ -31,6 +31,9 @@ export const organizationSchema = z.object({
   primaryCNAEId: z.string().optional(),
   internationalActivity: z.string().optional(),
 
+  // Idioma de comunicação (e-mail/newsletter)
+  commLanguage: z.string().optional(),
+
   // Social Media
   instagram: z.string().optional(),
   linkedin: z.string().optional(),

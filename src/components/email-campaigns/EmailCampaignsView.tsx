@@ -15,6 +15,7 @@ import { CampaignProgressPanel } from "./CampaignProgressPanel";
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 import type { Campaign, CampaignStep, CampaignStats, Suppression, EmailTemplate, RecipientCandidate, Props, Tab, EnrollMode } from "./email-campaigns-types";
+import { CAMPAIGN_LANGS } from "./email-campaigns-types";
 import { StatusBadge } from "./StatusBadge";
 
 // ── Main view ─────────────────────────────────────────────────────────────────
@@ -131,11 +132,18 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
 
   const applyTemplate = async (stepIdx: number, templateName: string) => {
     setOpenTemplatePicker(null);
+    const lang = stepLang(stepIdx);
     try {
       const { content, subject } = await apiFetch<{ content: string; subject?: string }>(`/email-campaigns/templates/${templateName}`, token);
-      setSteps((p) => p.map((s, i) => i === stepIdx
-        ? { ...s, bodyHtml: content, ...(subject ? { subject } : {}) }
-        : s));
+      setSteps((p) => p.map((s, i) => {
+        if (i !== stepIdx) return s;
+        // Apply to the language tab currently selected (pt = base step content).
+        if (lang === "pt") {
+          return { ...s, bodyHtml: content, ...(subject ? { subject } : {}) };
+        }
+        const prev = s.translations?.[lang] ?? { subject: "", bodyHtml: "" };
+        return { ...s, translations: { ...s.translations, [lang]: { subject: subject ?? prev.subject, bodyHtml: content } } };
+      }));
     } catch {
       toast.error("Erro ao carregar template");
     }
@@ -302,23 +310,96 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
 
   const removeStep = (i: number) => {
     setSteps((p) => p.filter((_, idx) => idx !== i).map((s, idx) => ({ ...s, order: idx })));
+    // stepLangs is keyed by array index — reindex it the same way as the steps so
+    // each surviving step keeps its own active-language tab.
+    setStepLangs((prev) => {
+      const next: Record<number, string> = {};
+      for (const [k, v] of Object.entries(prev)) {
+        const idx = Number(k);
+        if (idx < i) next[idx] = v;
+        else if (idx > i) next[idx - 1] = v;
+      }
+      return next;
+    });
   };
 
   const updateStep = (i: number, field: keyof CampaignStep, value: string | number) => {
     setSteps((p) => p.map((s, idx) => idx === i ? { ...s, [field]: value } : s));
   };
 
+  // Per-step active language tab (pt = base step content; en/es/it = translations).
+  const [stepLangs, setStepLangs] = useState<Record<number, string>>({});
+  const stepLang = (i: number) => stepLangs[i] ?? "pt";
+  const setStepLang = (i: number, lang: string) => setStepLangs((p) => ({ ...p, [i]: lang }));
+  const updateTranslation = (i: number, lang: string, field: "subject" | "bodyHtml", value: string) => {
+    setSteps((p) => p.map((s, idx) => idx === i
+      ? { ...s, translations: { ...s.translations, [lang]: { subject: "", bodyHtml: "", ...s.translations?.[lang], [field]: value } } }
+      : s));
+  };
+
   const resetForm = () => {
     setForm({ name: "", description: "", fromEmail: "bruno@wbdigitalsolutions.com" });
     setSteps([{ order: 0, subject: "", bodyHtml: "", delayDays: 0 }]);
     setEditingId(null);
+    setStepLangs({});
+  };
+
+  // Non-base languages. pt is always the base step subject/bodyHtml.
+  const TRANSLATION_LANGS = ["en", "es", "it"] as const;
+
+  // Upsert (or clear) each en/es/it translation for a saved step. A translation
+  // needs BOTH subject and bodyHtml (the backend rejects empty); an empty one is
+  // deleted so recipients of that language fall back to the base (pt) content.
+  //
+  // `translations === undefined` means "not loaded / never touched" — we skip
+  // entirely so a step whose translations failed to load (or a brand-new step)
+  // can never DELETE existing backend translations. Only a defined object (from
+  // a successful load or an in-form edit) drives PUT/DELETE.
+  const saveStepTranslations = async (campaignId: string, stepId: string, translations?: CampaignStep["translations"]) => {
+    if (!translations) return;
+    for (const code of TRANSLATION_LANGS) {
+      const t = translations?.[code];
+      const subject = t?.subject?.trim() ?? "";
+      const bodyHtml = t?.bodyHtml?.trim() ?? "";
+      const url = `/email-campaigns/${campaignId}/steps/${stepId}/translations/${code}`;
+      if (subject && bodyHtml) {
+        await apiFetch(url, token, { method: "PUT", body: JSON.stringify({ subject: t!.subject, bodyHtml: t!.bodyHtml }) });
+      } else {
+        // Nothing (or partial) to save — remove any prior translation for this language.
+        try { await apiFetch(url, token, { method: "DELETE" }); } catch { /* none existed */ }
+      }
+    }
   };
 
   const startEdit = async (c: Campaign) => {
     try {
       const stepsData = await apiFetch<CampaignStep[]>(`/email-campaigns/${c.id}/steps`, token);
+      // Pull each step's per-language translations so the tabs pre-fill on edit.
+      // On failure we leave `translations` undefined (NOT {}), so the save path
+      // skips that step and never wipes translations we simply couldn't load.
+      let anyTranslationLoadFailed = false;
+      const withTranslations = await Promise.all(
+        stepsData.map(async (step) => {
+          if (!step.id) return step;
+          try {
+            const list = await apiFetch<{ language: string; subject: string; bodyHtml: string }[]>(
+              `/email-campaigns/${c.id}/steps/${step.id}/translations`,
+              token,
+            );
+            const translations = Object.fromEntries(list.map((t) => [t.language, { subject: t.subject, bodyHtml: t.bodyHtml }]));
+            return { ...step, translations };
+          } catch {
+            anyTranslationLoadFailed = true;
+            return step;
+          }
+        }),
+      );
+      if (anyTranslationLoadFailed) {
+        toast.warning("Não foi possível carregar as traduções de alguns passos; elas serão preservadas mas não aparecerão aqui.");
+      }
       setForm({ name: c.name, description: c.description ?? "", fromEmail: c.fromEmail });
-      setSteps(stepsData.length ? stepsData : [{ order: 0, subject: "", bodyHtml: "", delayDays: 0 }]);
+      setSteps(withTranslations.length ? withTranslations : [{ order: 0, subject: "", bodyHtml: "", delayDays: 0 }]);
+      setStepLangs({});
       setEditingId(c.id);
       setActiveTab("criar");
     } catch (err: unknown) {
@@ -332,6 +413,19 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
       toast.error("Preencha nome e todos os passos");
       return;
     }
+    // A translation needs both subject and body, or neither. Reject half-filled ones.
+    const hasPartialTranslation = steps.some((s) =>
+      TRANSLATION_LANGS.some((code) => {
+        const t = s.translations?.[code];
+        const hasSubject = Boolean(t?.subject?.trim());
+        const hasBody = Boolean(t?.bodyHtml?.trim());
+        return hasSubject !== hasBody;
+      }),
+    );
+    if (hasPartialTranslation) {
+      toast.error("Traduções: preencha assunto E corpo, ou deixe ambos vazios");
+      return;
+    }
     setCreating(true);
     try {
       if (editingId) {
@@ -341,17 +435,20 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
           body: JSON.stringify(form),
         });
         for (const step of steps) {
+          let stepId = step.id;
           if (step.id) {
             await apiFetch(`/email-campaigns/${editingId}/steps/${step.id}`, token, {
               method: "PATCH",
               body: JSON.stringify({ subject: step.subject, bodyHtml: step.bodyHtml, delayDays: step.delayDays }),
             });
           } else {
-            await apiFetch(`/email-campaigns/${editingId}/steps`, token, {
+            const created = await apiFetch<{ id: string }>(`/email-campaigns/${editingId}/steps`, token, {
               method: "POST",
               body: JSON.stringify(step),
             });
+            stepId = created.id;
           }
+          if (stepId) await saveStepTranslations(editingId, stepId, step.translations);
         }
         toast.success("Campanha atualizada!");
         resetForm();
@@ -365,10 +462,11 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
         body: JSON.stringify(form),
       });
       for (const step of steps) {
-        await apiFetch(`/email-campaigns/${campaign.id}/steps`, token, {
+        const created = await apiFetch<{ id: string }>(`/email-campaigns/${campaign.id}/steps`, token, {
           method: "POST",
           body: JSON.stringify(step),
         });
+        await saveStepTranslations(campaign.id, created.id, step.translations);
       }
       toast.success("Campanha criada! Agora adicione os destinatários.");
       resetForm();
@@ -725,7 +823,14 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
               </button>
             </div>
             <div className="space-y-4">
-              {steps.map((step, i) => (
+              {steps.map((step, i) => {
+                const lang = stepLang(i);
+                const isBase = lang === "pt";
+                const curSubject = isBase ? step.subject : (step.translations?.[lang]?.subject ?? "");
+                const curBody = isBase ? step.bodyHtml : (step.translations?.[lang]?.bodyHtml ?? "");
+                const onSubject = (v: string) => isBase ? updateStep(i, "subject", v) : updateTranslation(i, lang, "subject", v);
+                const onBody = (v: string) => isBase ? updateStep(i, "bodyHtml", v) : updateTranslation(i, lang, "bodyHtml", v);
+                return (
                 <div key={i} className="bg-gray-700/40 border border-gray-600 rounded-xl p-4 space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-300">
@@ -741,16 +846,45 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                       </button>
                     )}
                   </div>
+                  {/* Language tabs — pt is the base/fallback; en/es/it are optional translations sent to recipients in that language. */}
+                  <div className="flex items-center gap-1 border-b border-gray-600/60">
+                    {CAMPAIGN_LANGS.map((l) => {
+                      const filled = l.code !== "pt"
+                        && Boolean(step.translations?.[l.code]?.subject || step.translations?.[l.code]?.bodyHtml);
+                      return (
+                        <button
+                          key={l.code}
+                          type="button"
+                          onClick={() => setStepLang(i, l.code)}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-t-lg transition-colors ${
+                            lang === l.code
+                              ? "bg-gray-700/60 text-white border-b-2 border-purple-500"
+                              : "text-gray-400 hover:text-gray-200"
+                          }`}
+                        >
+                          {l.label}
+                          {l.code === "pt"
+                            ? <span className="ml-1 text-[10px] text-gray-500">(base)</span>
+                            : filled && <span className="ml-1 inline-block w-1.5 h-1.5 rounded-full bg-purple-400 align-middle" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {!isBase && (
+                    <p className="text-[11px] text-gray-500">
+                      Tradução opcional. Se ficar vazia, quem for desse idioma recebe a versão base (Português).
+                    </p>
+                  )}
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="sm:col-span-2">
-                      <label className="block text-xs text-gray-400 mb-1">Assunto *</label>
+                      <label className="block text-xs text-gray-400 mb-1">Assunto {isBase ? "*" : `(${lang.toUpperCase()})`}</label>
                       <input
                         type="text"
-                        value={step.subject}
-                        onChange={(e) => updateStep(i, "subject", e.target.value)}
+                        value={curSubject}
+                        onChange={(e) => onSubject(e.target.value)}
                         placeholder="Assunto do email"
                         className="w-full bg-gray-600/50 border border-gray-500 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-purple-500"
-                        required
+                        required={isBase}
                       />
                     </div>
                     <div>
@@ -769,7 +903,7 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                   </div>
                   <div>
                     <div className="flex items-center justify-between mb-1">
-                      <label className="text-xs text-gray-400">Corpo do email (HTML ou texto) *</label>
+                      <label className="text-xs text-gray-400">Corpo do email (HTML ou texto) {isBase ? "*" : `(${lang.toUpperCase()})`}</label>
                       <div className="relative">
                         <button
                           type="button"
@@ -803,16 +937,17 @@ export function EmailCampaignsView({ campaigns: initialCampaigns, suppressions: 
                       </div>
                     </div>
                     <textarea
-                      value={step.bodyHtml}
-                      onChange={(e) => updateStep(i, "bodyHtml", e.target.value)}
+                      value={curBody}
+                      onChange={(e) => onBody(e.target.value)}
                       placeholder={`Olá {{nome}},\n\nGostaria de apresentar nossos serviços...\n\n{{link_descadastro}}`}
                       rows={6}
                       className="w-full bg-gray-600/50 border border-gray-500 rounded-lg px-3 py-2 text-white text-sm font-mono focus:outline-none focus:border-purple-500 resize-y"
-                      required
+                      required={isBase}
                     />
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 

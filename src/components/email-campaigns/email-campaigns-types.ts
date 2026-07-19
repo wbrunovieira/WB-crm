@@ -7,13 +7,25 @@ export interface Campaign {
   createdAt: string;
 }
 
+/** Localized versions of a step. Keyed by language (en/es/it); pt is the base subject/bodyHtml. */
+export type StepTranslations = Record<string, { subject: string; bodyHtml: string }>;
+
 export interface CampaignStep {
   id?: string;
   order: number;
   subject: string;
   bodyHtml: string;
   delayDays: number;
+  translations?: StepTranslations;
 }
+
+/** Languages a campaign step can be written in. pt = the base step content. */
+export const CAMPAIGN_LANGS: { code: string; label: string }[] = [
+  { code: "pt", label: "Português" },
+  { code: "en", label: "English" },
+  { code: "es", label: "Español" },
+  { code: "it", label: "Italiano" },
+];
 
 export interface CampaignStats {
   campaignId: string;

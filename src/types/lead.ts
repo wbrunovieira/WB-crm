@@ -86,6 +86,7 @@ export interface Lead {
   primaryCNAEId?: string | null;
   primaryCNAE?: { id: string; code: string; description: string } | null;
   internationalActivity?: string | null;
+  commLanguage?: string | null;
   languages?: string | null;
   phone2?: string | null;
   segment?: string | null;

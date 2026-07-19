@@ -60,6 +60,7 @@ export interface PartnerPayload {
   languages?: string | null;
   primaryCNAEId?: string | null;
   internationalActivity?: string | null;
+  commLanguage?: string | null;
 }
 
 // ─── Mutations ────────────────────────────────────────────────────────────────
