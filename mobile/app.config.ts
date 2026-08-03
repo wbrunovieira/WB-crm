@@ -51,6 +51,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           "O app usa sua localização para encontrar negócios próximos para prospecção.",
       },
     ],
+    [
+      "expo-image-picker",
+      {
+        cameraPermission: "O app usa a câmera para fotografar cartões e panfletos e extrair os dados.",
+        photosPermission: "O app acessa suas fotos para importar imagens de cartões e panfletos.",
+      },
+    ],
   ],
   extra: {
     // Read at build/start time from the environment; never committed.

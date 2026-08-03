@@ -7,6 +7,8 @@ import { createLeadWithVisit, manualLeadBody, googleLeadBody, type ContactType }
 import { getCurrentAddress, LocationPermissionError } from "@/lib/location";
 import { checkGoogleId, type Place } from "@/lib/places";
 import { getSelectedPlace, clearSelectedPlace } from "@/lib/selected-place";
+import { scanCard, OcrUnavailableError } from "@/lib/ocr";
+import * as ImagePicker from "expo-image-picker";
 
 const ALREADY_EXISTS = "ALREADY_EXISTS";
 
@@ -79,6 +81,7 @@ export function ManualLeadForm({ autoLocate = false, fromGoogle = false }: { aut
   const [sel] = useState(() => (fromGoogle ? getSelectedPlace() : null));
   const [f, setF] = useState<FormState>(() => (sel ? seedFromPlace(sel.place) : initial()));
   const [locating, setLocating] = useState(false);
+  const [scanning, setScanning] = useState(false);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
   // The place is already captured into `sel`; drop it from the store so backing out without
@@ -111,6 +114,53 @@ export function ManualLeadForm({ autoLocate = false, fromGoogle = false }: { aut
       }
     } finally {
       if (mounted.current) setLocating(false);
+    }
+  }
+
+  function onPhoto() {
+    Alert.alert("Foto do cartão / panfleto", "De onde?", [
+      { text: "Tirar foto", onPress: () => capture("camera") },
+      { text: "Escolher da galeria", onPress: () => capture("library") },
+      { text: "Cancelar", style: "cancel" },
+    ]);
+  }
+
+  async function capture(source: "camera" | "library") {
+    try {
+      let res: ImagePicker.ImagePickerResult;
+      if (source === "camera") {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) return Alert.alert("Câmera", "Permissão de câmera negada.");
+        res = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+      } else {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) return Alert.alert("Galeria", "Permissão de galeria negada.");
+        res = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, mediaTypes: ["images"] });
+      }
+      if (res.canceled || !res.assets?.[0]) return;
+
+      setScanning(true);
+      const p = await scanCard(res.assets[0].uri);
+      if (!mounted.current) return;
+      // Fill only empty fields — never overwrite what GPS/Google/the user already set.
+      setF((cur) => ({
+        ...cur,
+        businessName: cur.businessName || p.businessName || "",
+        website: cur.website || p.website || "",
+        phone: cur.phone || p.phone || "",
+        contactName: cur.contactName || p.contactName || "",
+        contactRole: cur.contactRole || p.contactRole || "",
+        contactMobile: cur.contactMobile || p.contactMobile || "",
+        contactEmail: cur.contactEmail || p.contactEmail || "",
+      }));
+    } catch (e) {
+      if (e instanceof OcrUnavailableError) {
+        Alert.alert("Leitura indisponível", "A leitura do cartão só funciona no app instalado (build), não no Expo Go. Preencha os campos manualmente.");
+      } else {
+        Alert.alert("Erro", "Não foi possível ler o cartão. Tente outra foto ou preencha manualmente.");
+      }
+    } finally {
+      if (mounted.current) setScanning(false);
     }
   }
 
@@ -201,16 +251,21 @@ export function ManualLeadForm({ autoLocate = false, fromGoogle = false }: { aut
     mutation.mutate();
   }
 
-  const busy = mutation.isPending || locating;
+  const busy = mutation.isPending || locating || scanning;
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
       {/* ── EMPRESA ── */}
       <Text style={styles.section}>Empresa</Text>
       <Field label="Nome do negócio *" value={f.businessName} onChangeText={(v) => set("businessName", v)} placeholder="Ex.: Padaria do João" />
-      <Pressable style={({ pressed }) => [styles.ghost, pressed && styles.pressed]} onPress={fillLocation} disabled={locating}>
-        {locating ? <ActivityIndicator size="small" color="#c9b3d6" /> : <Text style={styles.ghostText}>📍 Usar minha localização</Text>}
-      </Pressable>
+      <View style={styles.chipsRow}>
+        <Pressable style={({ pressed }) => [styles.ghost, pressed && styles.pressed]} onPress={fillLocation} disabled={busy}>
+          {locating ? <ActivityIndicator size="small" color="#c9b3d6" /> : <Text style={styles.ghostText}>📍 Usar localização</Text>}
+        </Pressable>
+        <Pressable style={({ pressed }) => [styles.ghost, pressed && styles.pressed]} onPress={onPhoto} disabled={busy}>
+          {scanning ? <ActivityIndicator size="small" color="#c9b3d6" /> : <Text style={styles.ghostText}>📷 Foto do cartão</Text>}
+        </Pressable>
+      </View>
       <Field label="Endereço" value={f.address} onChangeText={(v) => set("address", v)} placeholder="Rua, número" />
       <Field label="Bairro" value={f.neighborhood} onChangeText={(v) => set("neighborhood", v)} />
       <View style={styles.row}>
