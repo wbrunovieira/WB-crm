@@ -30,6 +30,7 @@ export default function RootLayout() {
         >
           <Stack.Screen name="index" options={{ title: "WB Prospecção" }} />
           <Stack.Screen name="google" options={{ title: "Google Meus Negócios" }} />
+          <Stack.Screen name="confirm-lead" options={{ title: "Confirmar lead" }} />
           <Stack.Screen name="card" options={{ title: "Cartão / Panfleto" }} />
           <Stack.Screen name="gps" options={{ title: "Endereço por GPS" }} />
           <Stack.Screen name="manual" options={{ title: "Cadastro manual" }} />

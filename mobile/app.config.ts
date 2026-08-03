@@ -42,6 +42,13 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         backgroundColor: "#762991",
       },
     ],
+    [
+      "expo-location",
+      {
+        locationWhenInUsePermission:
+          "O app usa sua localização para encontrar negócios próximos para prospecção.",
+      },
+    ],
   ],
   extra: {
     // Read at build/start time from the environment; never committed.
