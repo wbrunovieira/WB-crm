@@ -9,41 +9,33 @@ export interface CreatedLead {
   businessName?: string;
 }
 
-/** Builds the `POST /leads` body from a Google place (mirrors the web import mapping). */
-export function placeToLeadBody(place: Place, searchTerm: string) {
+/** Google-only fields that enrich a lead sourced from a Google place (not editable in the form). */
+function googleEnrichment(place: Place, searchTerm: string) {
   return {
     googleId: place.placeId,
-    businessName: place.businessName,
-    address: place.address,
-    city: place.city,
-    state: place.state,
-    zipCode: place.zipCode,
-    country: place.country,
-    vicinity: place.neighborhood,
-    phone: place.internationalPhone ?? place.phone,
-    // whatsapp is left unset on purpose: Google's number is often a landline, and a
-    // non-mobile in `whatsapp` would break WhatsApp flows. Confirm/set it in the CRM.
-    website: place.website,
+    source: "google_places",
+    searchTerm,
     rating: place.rating,
     userRatingsTotal: place.userRatingCount,
     priceLevel: place.priceLevel,
     businessStatus: place.businessStatus,
     types: place.types ? JSON.stringify(place.types) : undefined,
     categories: place.primaryType,
-    description: place.description,
-    latitude: place.latitude,
-    longitude: place.longitude,
     googleMapsUrl: place.googleMapsUrl,
     openingHours: place.openingHours,
-    source: "google_places",
-    searchTerm,
-    isProspect: false, // shows up directly in the main /leads list
-    sourceGroup: SOURCE_GROUP,
   };
 }
 
-/** The two shapes accepted by `POST /leads`: from a Google place or from the manual form. */
-export type LeadBody = ReturnType<typeof placeToLeadBody> | ReturnType<typeof manualLeadBody>;
+/**
+ * Lead body for the Google flow: the form fields are the source of truth (seeded from the
+ * place, possibly edited by the user) + the contact person + the Google-only enrichment.
+ */
+export function googleLeadBody(f: ManualLeadFields, contact: ContactInput | undefined, place: Place, searchTerm: string) {
+  return { ...manualLeadBody(f, contact), ...googleEnrichment(place, searchTerm) };
+}
+
+/** The shapes accepted by `POST /leads`: from the manual form or the Google flow. */
+export type LeadBody = ReturnType<typeof manualLeadBody> | ReturnType<typeof googleLeadBody>;
 
 /** Creates a lead (accepts either the Google-place body or the manual body). */
 export function createLead(body: LeadBody): Promise<CreatedLead> {

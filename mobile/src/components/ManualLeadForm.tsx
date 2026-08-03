@@ -3,8 +3,12 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, Activi
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { createLeadWithVisit, manualLeadBody, type ContactType } from "@/lib/leads";
+import { createLeadWithVisit, manualLeadBody, googleLeadBody, type ContactType } from "@/lib/leads";
 import { getCurrentAddress, LocationPermissionError } from "@/lib/location";
+import { checkGoogleId, type Place } from "@/lib/places";
+import { getSelectedPlace, clearSelectedPlace } from "@/lib/selected-place";
+
+const ALREADY_EXISTS = "ALREADY_EXISTS";
 
 interface FormState {
   // Empresa
@@ -46,13 +50,40 @@ function initial(): FormState {
   };
 }
 
-/** Unified field-capture hub. `autoLocate` runs the GPS address fill on mount (GPS mode). */
-export function ManualLeadForm({ autoLocate = false }: { autoLocate?: boolean }) {
+/** Pre-fills the Empresa section from a Google place (the person/visit/follow-up stay empty). */
+function seedFromPlace(place: Place): FormState {
+  return {
+    ...initial(),
+    businessName: place.businessName ?? "",
+    address: place.address ?? "",
+    neighborhood: place.neighborhood ?? "",
+    city: place.city ?? "",
+    state: place.state ?? "",
+    zipCode: place.zipCode ?? "",
+    country: place.country ?? "",
+    phone: place.internationalPhone ?? place.phone ?? "",
+    website: place.website ?? "",
+    description: place.description ?? "",
+    latitude: place.latitude,
+    longitude: place.longitude,
+  };
+}
+
+/**
+ * Unified field-capture hub. `autoLocate` runs the GPS address fill on mount (GPS mode);
+ * `fromGoogle` seeds the Empresa section from the selected Google place (Google mode).
+ */
+export function ManualLeadForm({ autoLocate = false, fromGoogle = false }: { autoLocate?: boolean; fromGoogle?: boolean }) {
   const router = useRouter();
-  const [f, setF] = useState<FormState>(initial);
+  // Read the selected place once (Google mode). Manual/GPS never touch the store.
+  const [sel] = useState(() => (fromGoogle ? getSelectedPlace() : null));
+  const [f, setF] = useState<FormState>(() => (sel ? seedFromPlace(sel.place) : initial()));
   const [locating, setLocating] = useState(false);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
+  // The place is already captured into `sel`; drop it from the store so backing out without
+  // saving never leaves a stale place pinned (and no later capture can pick it up).
+  useEffect(() => { if (fromGoogle) clearSelectedPlace(); }, [fromGoogle]);
 
   const set = <K extends keyof FormState>(key: K, value: FormState[K]) => setF((p) => ({ ...p, [key]: value }));
 
@@ -89,26 +120,32 @@ export function ManualLeadForm({ autoLocate = false }: { autoLocate?: boolean })
   }, []);
 
   const mutation = useMutation({
-    mutationFn: () =>
-      createLeadWithVisit(
-        manualLeadBody(
-          f,
-          f.contactName.trim() ? { name: f.contactName, role: f.contactRole, email: f.contactEmail, phone: f.contactMobile, whatsapp: f.contactMobile } : undefined,
-        ),
-        {
-          notes: f.notes,
-          contactType: f.contactType || undefined,
-          followUp: f.followUpEnabled
-            ? {
-                type: f.followUpType,
-                subject: f.followUpSubject.trim() || `Retornar — ${f.businessName.trim()}`,
-                dueAtISO: f.followUpAt.toISOString(),
-                remindAtISO: f.remindEnabled ? f.followUpAt.toISOString() : undefined,
-              }
-            : undefined,
-        },
-      ),
+    mutationFn: async () => {
+      const contact = f.contactName.trim()
+        ? { name: f.contactName, role: f.contactRole, email: f.contactEmail, phone: f.contactMobile, whatsapp: f.contactMobile }
+        : undefined;
+      const opts = {
+        notes: f.notes,
+        contactType: f.contactType || undefined,
+        followUp: f.followUpEnabled
+          ? {
+              type: f.followUpType,
+              subject: f.followUpSubject.trim() || `Retornar — ${f.businessName.trim()}`,
+              dueAtISO: f.followUpAt.toISOString(),
+              remindAtISO: f.remindEnabled ? f.followUpAt.toISOString() : undefined,
+            }
+          : undefined,
+      };
+      if (sel) {
+        // Google mode: guard against duplicates (googleId is unique) before creating.
+        const { exists } = await checkGoogleId(sel.place.placeId);
+        if (exists) throw new Error(ALREADY_EXISTS);
+        return createLeadWithVisit(googleLeadBody(f, contact, sel.place, sel.searchTerm), opts);
+      }
+      return createLeadWithVisit(manualLeadBody(f, contact), opts);
+    },
     onSuccess: ({ lead, visitLogged, followUpLogged }) => {
+      clearSelectedPlace();
       const name = lead.businessName ?? f.businessName;
       const warn: string[] = [];
       if (!visitLogged) warn.push("a visita");
@@ -121,7 +158,15 @@ export function ManualLeadForm({ autoLocate = false }: { autoLocate?: boolean })
       setF(initial());
       router.back();
     },
-    onError: () => Alert.alert("Erro", "Não foi possível cadastrar. Verifique a conexão e tente de novo."),
+    onError: (e) => {
+      if (e instanceof Error && e.message === ALREADY_EXISTS) {
+        clearSelectedPlace();
+        Alert.alert("Já cadastrado", "Este lugar já é um lead no CRM. Nenhum duplicado foi criado.");
+        router.back();
+      } else {
+        Alert.alert("Erro", "Não foi possível cadastrar. Verifique a conexão e tente de novo.");
+      }
+    },
   });
 
   // Enabling the follow-up: bump a stale/now default to a sensible future time so we never
@@ -136,6 +181,10 @@ export function ManualLeadForm({ autoLocate = false }: { autoLocate?: boolean })
 
   function onSubmit() {
     if (locating) return;
+    if (fromGoogle && !sel) {
+      Alert.alert("Selecione um lugar", "Volte e escolha o negócio no Google de novo.");
+      return;
+    }
     if (!f.businessName.trim()) {
       Alert.alert("Falta o nome", "Informe o nome do negócio.");
       return;
