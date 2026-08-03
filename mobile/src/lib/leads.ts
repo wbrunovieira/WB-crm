@@ -50,22 +50,68 @@ export function createLead(body: LeadBody): Promise<CreatedLead> {
   return apiFetch<CreatedLead>("/leads", { method: "POST", body });
 }
 
-/** Logs the door-to-door visit as a completed `physical_visit` activity on the lead. */
-export function createVisitActivity(leadId: string, businessName: string, notes?: string): Promise<{ id: string }> {
+/** "decisor" = decision-maker, "gatekeeper" = attendant/receptionist (mirrors the CRM field). */
+export type ContactType = "decisor" | "gatekeeper";
+
+const clean = (s?: string) => (s && s.trim() ? s.trim() : undefined);
+
+/**
+ * Logs the door-to-door visit as a completed `physical_visit` activity. `contactType` records
+ * whether the person spoken to was the decision-maker or a gatekeeper (CRM `callContactType`).
+ */
+export function createVisitActivity(
+  leadId: string,
+  businessName: string,
+  notes?: string,
+  contactType?: ContactType,
+): Promise<{ id: string }> {
   return apiFetch<{ id: string }>("/activities", {
     method: "POST",
     body: {
       type: "physical_visit",
       subject: `Visita porta a porta — ${businessName}`,
       leadId,
-      description: notes?.trim() || undefined,
+      description: clean(notes),
       completed: true,
       completedAt: new Date().toISOString(),
+      callContactType: contactType,
     },
   });
 }
 
-/** Fields captured in the manual / GPS lead form. */
+/** A scheduled follow-up. Same mechanism as the CRM's "Criar atividade" + 🔔 Notificar-me. */
+export interface FollowUp {
+  type: string; // task | call | meeting | whatsapp
+  subject: string;
+  dueAtISO: string;
+  remindAtISO?: string; // set = shows in the bell
+}
+
+/** Creates the (not-completed) follow-up activity with an optional reminder. */
+export function createFollowUpActivity(leadId: string, f: FollowUp): Promise<{ id: string }> {
+  return apiFetch<{ id: string }>("/activities", {
+    method: "POST",
+    body: {
+      type: f.type,
+      subject: f.subject,
+      leadId,
+      dueDate: f.dueAtISO,
+      remindAt: f.remindAtISO,
+      completed: false,
+    },
+  });
+}
+
+/** The person spoken to, saved as the lead's primary contact. */
+export interface ContactInput {
+  name: string;
+  role?: string;
+  email?: string;
+  phone?: string;
+  whatsapp?: string;
+}
+
+/** Fields captured in the manual / GPS lead form (company only; the person is separate). */
 export interface ManualLeadFields {
   businessName: string;
   address?: string;
@@ -81,9 +127,9 @@ export interface ManualLeadFields {
   longitude?: number;
 }
 
-/** Builds the `POST /leads` body from a manually-entered (or GPS-filled) form. */
-export function manualLeadBody(f: ManualLeadFields) {
-  const clean = (s?: string) => (s && s.trim() ? s.trim() : undefined);
+/** Builds the `POST /leads` body from the manual form, embedding the contact person if given. */
+export function manualLeadBody(f: ManualLeadFields, contact?: ContactInput) {
+  const hasContact = Boolean(contact && contact.name.trim());
   return {
     businessName: f.businessName.trim(),
     address: clean(f.address),
@@ -100,24 +146,51 @@ export function manualLeadBody(f: ManualLeadFields) {
     source: "door_to_door",
     isProspect: false,
     sourceGroup: SOURCE_GROUP,
+    contacts: hasContact
+      ? [{
+          name: contact!.name.trim(),
+          role: clean(contact!.role),
+          email: clean(contact!.email),
+          phone: clean(contact!.phone),
+          whatsapp: clean(contact!.whatsapp),
+          isPrimary: true,
+        }]
+      : undefined,
   };
 }
 
+export interface CaptureOptions {
+  notes?: string;
+  contactType?: ContactType;
+  followUp?: FollowUp;
+}
+
 /**
- * Creates the lead and logs the visit. The visit activity is NON-FATAL: if it fails, the
- * lead still exists and we report the partial outcome (visitLogged=false) instead of failing
- * the whole operation. `body.businessName` is used for the activity subject.
+ * Creates the lead, logs the visit, and (optionally) schedules a follow-up. Each activity is
+ * NON-FATAL: a created lead is never undone by a failed activity — the partial outcome is
+ * reported instead. `body.businessName` is used for the visit subject.
  */
 export async function createLeadWithVisit(
   body: LeadBody,
-  notes?: string,
-): Promise<{ lead: CreatedLead; visitLogged: boolean }> {
+  opts: CaptureOptions = {},
+): Promise<{ lead: CreatedLead; visitLogged: boolean; followUpLogged: boolean }> {
   const lead = await createLead(body);
+
   let visitLogged = true;
   try {
-    await createVisitActivity(lead.id, body.businessName, notes);
+    await createVisitActivity(lead.id, body.businessName, opts.notes, opts.contactType);
   } catch {
     visitLogged = false;
   }
-  return { lead, visitLogged };
+
+  let followUpLogged = true;
+  if (opts.followUp) {
+    try {
+      await createFollowUpActivity(lead.id, opts.followUp);
+    } catch {
+      followUpLogged = false;
+    }
+  }
+
+  return { lead, visitLogged, followUpLogged };
 }

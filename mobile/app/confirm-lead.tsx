@@ -23,7 +23,7 @@ export default function ConfirmLeadScreen() {
       if (exists) throw new Error(ALREADY_EXISTS);
       // createLeadWithVisit keeps the visit non-fatal: a created lead is never undone by a
       // failed activity — it reports partial success instead (see leads.ts).
-      return createLeadWithVisit(placeToLeadBody(place, searchTerm), notes);
+      return createLeadWithVisit(placeToLeadBody(place, searchTerm), { notes });
     },
     onSuccess: ({ lead, visitLogged }) => {
       const name = lead.businessName ?? selected?.place.businessName;

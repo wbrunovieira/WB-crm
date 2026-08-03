@@ -52,6 +52,34 @@ Formulário enxuto (só `businessName` obrigatório) + atividade. Fallback quand
 
 Todos os 4 terminam no mesmo **resumo de confirmação** → salvar → toast → volta pra tela inicial.
 
+### Hub unificado de captura (desenho travado 2026-08-03)
+Os 4 modos da Home são **4 formas de COMEÇAR**; todos desembocam no **mesmo formulário-hub**,
+que é onde o lead é montado e salvo. Cada modo só **pré-preenche um pedaço**; os aceleradores
+(foto/GPS/Google) também ficam **disponíveis dentro do hub** (comecei manual e a pessoa me deu o
+cartão → tiro foto ali mesmo; endereço errado → 📍 GPS). O card/nota fiscal/Google **nunca
+substituem o vendedor** — só reduzem digitação.
+
+O hub tem 4 seções e um único "Salvar tudo":
+- **Empresa** — nome (obrigatório) + endereço (via 📍 GPS) + telefone/site.
+- **Pessoa (com quem falei)** — nome, cargo, **celular/WhatsApp (que não está no cartão)**,
+  e-mail, e marcador **Decisor / Atendente** (→ `callContactType` da atividade). Vira o
+  **contato primário** do lead (`contacts[]` no `POST /leads`).
+- **Visita** — observações → atividade `physical_visit` **concluída**.
+- **Próximo passo (opcional)** — agendar retorno: tipo (tarefa/ligação) + data/hora +
+  **🔔 Notificar-me** (mesmo mecanismo do CRM → `remindAt`, cai no sino). Vira uma 2ª atividade.
+
+**Rotas: todas já existentes.** Um `POST /leads` (empresa + contato) + `POST /activities`
+(visita) + `POST /activities` (retorno, se marcado). Cada atividade é **não-fatal** ao lead
+(sucesso parcial é reportado, o lead nunca é desfeito por uma atividade que falhou). O **único**
+backend potencialmente novo é a estruturação do OCR do cartão (opcional — ver §4.1); todo o
+resto do fluxo **não cria rota nenhuma**.
+
+**Estado (2026-08-03):** o hub (`src/components/ManualLeadForm.tsx`) já tem as 4 seções, o
+lembrete via `@react-native-community/datetimepicker`, e o orquestrador `createLeadWithVisit`
+(lead + visita + retorno, não-fatais). Falta **convergir o fluxo do Google** (hoje termina na
+tela própria `confirm-lead`) para semear a seção Empresa do hub, e plugar o botão de **foto**
+(Fase 3).
+
 ---
 
 ## 3. Arquitetura
