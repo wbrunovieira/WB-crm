@@ -1,5 +1,5 @@
-import { Placeholder } from "@/components/Placeholder";
+import { ManualLeadForm } from "@/components/ManualLeadForm";
 
 export default function ManualScreen() {
-  return <Placeholder emoji="✍️" title="Cadastro manual" phase="Fase 2" />;
+  return <ManualLeadForm />;
 }

@@ -7,6 +7,17 @@ export class LocationPermissionError extends Error {
   }
 }
 
+/** Requests permission, gets the position and reverse-geocodes it on-device (free, no key). */
+async function currentPlace(): Promise<{ place: Location.LocationGeocodedAddress | undefined; latitude: number; longitude: number }> {
+  const { status } = await Location.requestForegroundPermissionsAsync();
+  if (status !== "granted") throw new LocationPermissionError();
+
+  const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+  const { latitude, longitude } = pos.coords;
+  const [place] = await Location.reverseGeocodeAsync({ latitude, longitude });
+  return { place, latitude, longitude };
+}
+
 export interface NearbyContext {
   /** Human-readable area, e.g. "Alto, Teresópolis, RJ". */
   label: string;
@@ -18,25 +29,42 @@ export interface NearbyContext {
   longitude: number;
 }
 
-/**
- * Asks for foreground location, gets the current position and reverse-geocodes it
- * **on-device** (Apple/Google OS geocoder — free, no API key). Returns the neighborhood +
- * city so the search can be biased to "near me". Throws LocationPermissionError if denied.
- */
+/** Neighborhood + city of the current location, to bias the Google search to "near me". */
 export async function getNearbyContext(): Promise<NearbyContext> {
-  const { status } = await Location.requestForegroundPermissionsAsync();
-  if (status !== "granted") throw new LocationPermissionError();
-
-  const pos = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-  const { latitude, longitude } = pos.coords;
-
-  const [place] = await Location.reverseGeocodeAsync({ latitude, longitude });
-  const neighborhood = place?.district ?? place?.subregion ?? undefined;
+  const { place, latitude, longitude } = await currentPlace();
+  // Don't fall back to `subregion` for the neighborhood — it's usually the same as the city
+  // in small towns, which would duplicate the value across both fields.
+  const neighborhood = place?.district ?? undefined;
   const city = place?.city ?? place?.subregion ?? undefined;
   const uf = place?.region ?? undefined;
 
   const parts = [neighborhood, city, uf].filter((p): p is string => Boolean(p));
-  const label = parts.join(", ") || "sua localização";
+  return { label: parts.join(", ") || "sua localização", queryArea: parts.join(", "), latitude, longitude };
+}
 
-  return { label, queryArea: parts.join(", "), latitude, longitude };
+export interface AddressFields {
+  address: string;
+  neighborhood: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+}
+
+/** Structured address of the current location, to pre-fill the manual lead form (all editable). */
+export async function getCurrentAddress(): Promise<AddressFields> {
+  const { place, latitude, longitude } = await currentPlace();
+  const street = [place?.street, place?.streetNumber].filter(Boolean).join(", ");
+  return {
+    address: street || place?.name || "",
+    neighborhood: place?.district ?? "", // not `subregion` — that would duplicate the city
+    city: place?.city ?? place?.subregion ?? "",
+    state: place?.region ?? "",
+    zipCode: place?.postalCode ?? "",
+    country: place?.country ?? "",
+    latitude,
+    longitude,
+  };
 }

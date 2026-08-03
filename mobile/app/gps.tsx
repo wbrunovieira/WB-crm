@@ -1,5 +1,6 @@
-import { Placeholder } from "@/components/Placeholder";
+import { ManualLeadForm } from "@/components/ManualLeadForm";
 
+// Same form as manual capture, but pre-fills the address from GPS on mount.
 export default function GpsScreen() {
-  return <Placeholder emoji="📍" title="Endereço por GPS" phase="Fase 2" />;
+  return <ManualLeadForm autoLocate />;
 }

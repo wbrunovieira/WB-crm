@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, Activi
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { checkGoogleId } from "@/lib/places";
-import { placeToLeadBody, createLead, createVisitActivity } from "@/lib/leads";
+import { placeToLeadBody, createLeadWithVisit } from "@/lib/leads";
 import { getSelectedPlace, clearSelectedPlace } from "@/lib/selected-place";
 
 const ALREADY_EXISTS = "ALREADY_EXISTS";
@@ -21,17 +21,9 @@ export default function ConfirmLeadScreen() {
       const { place, searchTerm } = selected;
       const { exists } = await checkGoogleId(place.placeId);
       if (exists) throw new Error(ALREADY_EXISTS);
-      const lead = await createLead(placeToLeadBody(place, searchTerm));
-      // The visit activity must NOT undo a created lead: if it fails, we still succeed
-      // (the lead exists) and report the partial outcome, instead of a retry later
-      // hitting "already exists" and silently dropping the visit forever.
-      let visitLogged = true;
-      try {
-        await createVisitActivity(lead.id, place.businessName, notes);
-      } catch {
-        visitLogged = false;
-      }
-      return { lead, visitLogged };
+      // createLeadWithVisit keeps the visit non-fatal: a created lead is never undone by a
+      // failed activity — it reports partial success instead (see leads.ts).
+      return createLeadWithVisit(placeToLeadBody(place, searchTerm), notes);
     },
     onSuccess: ({ lead, visitLogged }) => {
       const name = lead.businessName ?? selected?.place.businessName;
