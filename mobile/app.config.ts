@@ -11,13 +11,15 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: "wb-crm-mobile",
   scheme: "wbcrm",
   version: "0.1.0",
-  orientation: "portrait",
+  // "default" allows rotation (so the iPad can be used in landscape). The RN layouts are
+  // flex/ScrollView based and adapt to both orientations.
+  orientation: "default",
   userInterfaceStyle: "automatic",
   // App icon = WB Digital Solutions mark (white on brand purple). Generated from the
   // official logo.svg of the wbdigitalsolutionsnextjsthreejs project. See assets/icon.svg.
   icon: "./assets/icon.png",
   ios: {
-    supportsTablet: false,
+    supportsTablet: true, // universal build: same app runs on iPhone and iPad (iOS 15.1+)
     bundleIdentifier: "com.wbdigitalsolutions.crmprospect",
     icon: "./assets/icon.png",
   },
