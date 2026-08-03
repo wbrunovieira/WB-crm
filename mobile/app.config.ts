@@ -58,6 +58,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         photosPermission: "O app acessa suas fotos para importar imagens de cartões e panfletos.",
       },
     ],
+    [
+      // Expo SDK 57 requires ios.deploymentTarget >= 16.4 (also covers ML Kit's >=15.5).
+      // Both target devices support it: iPhone 12 Pro and iPad 5 on iPadOS 16.7.16.
+      "expo-build-properties",
+      { ios: { deploymentTarget: "16.4" } },
+    ],
   ],
   extra: {
     // Read at build/start time from the environment; never committed.
