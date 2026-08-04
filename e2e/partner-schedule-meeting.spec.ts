@@ -10,6 +10,14 @@ import {
 
 test.use({ timezoneId: "America/Sao_Paulo" });
 
+// The modal rejects a start date in the past, so a hardcoded date silently starts
+// failing once real time catches up to it — always schedule well into the future.
+function futureDateInput(daysAhead: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + daysAhead);
+  return d.toISOString().slice(0, 10);
+}
+
 let mock: MeetingMock;
 test.beforeAll(async () => {
   mock = await startMeetingMockBackend(3010);
@@ -47,7 +55,7 @@ test.describe("Agendar reunião na página do partner (E2E UI)", () => {
 
     // Fill title + date + time.
     await page.getByPlaceholder(/Apresentação da proposta/).fill("Call com o cliente (E2E)");
-    await page.locator('input[type="date"]').first().fill("2026-07-20");
+    await page.locator('input[type="date"]').first().fill(futureDateInput(30));
     await page.locator('input[type="time"]').first().fill("14:00");
 
     // Add the client as attendee via its suggested-contact chip. The name is
