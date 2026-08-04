@@ -41,7 +41,6 @@ src/lib/
   config.ts          # environment config (API URL, token)
   auth.ts            # token -> Keychain (expo-secure-store)
   api.ts             # authenticated fetch client (Bearer + error handling)
-src/components/Placeholder.tsx
 ```
 
 ## Getting started

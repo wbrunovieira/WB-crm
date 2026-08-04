@@ -44,6 +44,10 @@ export interface ParsedCard {
 const EMAIL_RE = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
 const URL_RE = /((https?:\/\/)?www\.[^\s]+|[a-z0-9-]+\.(com|net|io|co|dev|app)(\.br)?)/i;
 const PHONE_RE = /\+?\d[\d\s().-]{7,}\d/g;
+// Non-global twin of PHONE_RE for boolean checks: `.test()` on a global regex is stateful
+// (mutates lastIndex), so reusing PHONE_RE across lines in a loop can silently return false
+// on a real match once an earlier line has advanced its lastIndex past the current line's length.
+const PHONE_TEST_RE = /\+?\d[\d\s().-]{7,}\d/;
 const LEGAL_SUFFIX = /\b(ltda|me|eireli|s\.?a\.?|epp|mei)\b/i;
 const ROLE_WORDS = [
   "ceo", "cto", "cfo", "coo", "diretor", "diretora", "gerente", "sócio", "socio", "proprietár",
@@ -114,7 +118,7 @@ export function parseCardText(text: string): ParsedCard {
   // Business name: a legal-suffix line, else the first unused non-contact line.
   let bizIdx = lines.findIndex((l) => LEGAL_SUFFIX.test(l));
   if (bizIdx < 0) {
-    bizIdx = lines.findIndex((l, i) => !used.has(i) && !EMAIL_RE.test(l) && !URL_RE.test(l) && !PHONE_RE.test(l) && !isPersonName(l));
+    bizIdx = lines.findIndex((l, i) => !used.has(i) && !EMAIL_RE.test(l) && !URL_RE.test(l) && !PHONE_TEST_RE.test(l) && !isPersonName(l));
   }
   if (bizIdx >= 0) out.businessName = lines[bizIdx];
 

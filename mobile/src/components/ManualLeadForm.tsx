@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator, Platform } from "react-native";
+import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator, Platform, InteractionManager } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -147,6 +147,7 @@ export function ManualLeadForm({
         res = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, mediaTypes: ["images"] });
       }
       if (res.canceled || !res.assets?.[0]) return;
+      if (!mounted.current) return;
 
       setScanning(true);
       const p = await scanCard(res.assets[0].uri);
@@ -175,7 +176,9 @@ export function ManualLeadForm({
 
   useEffect(() => {
     if (autoLocate) fillLocation();
-    if (autoOpenCamera) onPhoto();
+    // Defer past the screen's push transition — firing Alert.alert synchronously on mount
+    // races expo-router's native-stack animation and can fail to present on slower devices.
+    if (autoOpenCamera) InteractionManager.runAfterInteractions(() => { if (mounted.current) onPhoto(); });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
