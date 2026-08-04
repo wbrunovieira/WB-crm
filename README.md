@@ -26,6 +26,7 @@
 - **Visual bot-flows** — node-based flow builder (`@xyflow/react`) for lead qualification and automation.
 - **Native Google integrations** — Gmail, Google Meet and Google Places (lead discovery) via `google-auth-library` / `googleapis`.
 - **Lead tech-stack profiling** — models a lead's stack (languages, frameworks, hosting, database, ERP, CRM) to tailor the pitch.
+- **Mobile companion app** — Expo/React Native app (`/mobile`) for door-to-door prospecting: Google Places search, GPS/manual lead capture, and on-device card/flyer OCR (Google ML Kit), all against the same NestJS API.
 
 ## Architecture
 
@@ -42,6 +43,7 @@ Monorepo — Next.js frontend + NestJS/Prisma backend, DDD:
 │   │       ├── application/   # use-cases · repository ports
 │   │       └── infra/         # controllers · prisma repositories · adapters
 │   └── prisma/schema.prisma
+├── mobile/                    # Expo/React Native prospecting app (client of the same API)
 ├── e2e/                       # Playwright end-to-end tests
 ├── tests/                     # test setup & helpers
 ├── deploy/                    # deployment (Ansible / IaC)
@@ -57,6 +59,7 @@ Structuring each context this way keeps business rules independent of the framew
 |---|---|
 | **Frontend** | Next.js · React · next-auth · TanStack React Query · @dnd-kit (kanban) · @xyflow/react (flow builder) · Tailwind CSS |
 | **Backend** | NestJS · Prisma · PostgreSQL · DDD / Clean Architecture · Swagger (next-swagger-doc) |
+| **Mobile** | Expo (React Native) · TypeScript · expo-router · React Query · Google ML Kit (on-device OCR) |
 | **Integrations** | Google APIs (Gmail · Meet · Places) · AWS S3 · WhatsApp (Evolution API) |
 | **Testing** | Vitest (unit) · Playwright (E2E) |
 | **Infra** | Docker Compose · Ansible |

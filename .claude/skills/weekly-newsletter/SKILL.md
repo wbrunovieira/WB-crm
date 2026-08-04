@@ -42,6 +42,7 @@ E-mail recorrente (≈1×/semana) enviado a **leads e clientes**. **Não é pros
    - Cada notícia leva um link **(fonte)** clicável no HTML.
 
 ## Passo 2 — Escrever a copy (regras editoriais)
+- **NUNCA use travessão (`—`)** na copy. As pessoas associam o travessão a texto de IA. Use vírgula, ponto, dois-pontos, parênteses ou reescreva.
 - **Parceria, não medo.** Reconheça o que o lead já faz bem ("seu Instagram trabalha — e isso é ótimo"), aí mostre a lacuna.
 - **Linha de relevância** pra qualquer negócio: "vende produto, presta serviço ou atende presencial — muda o jogo nos três".
 - **Linha de prova da WB** antes do CTA: "já colocamos no ar sites/lojas/sistemas para dezenas de negócios como o seu".
@@ -110,7 +111,7 @@ O construtor de campanha lê **arquivos HTML** de `backend/src/domain/email-camp
 ## Passo 5 — CRÍTICA e ANÁLISE final (sempre, depois de pronto)
 1. **Leia como o lead** (dono de PME, ocupado): qual a impressão em 5 segundos? O tom é parceria ou medo? Tem prova da WB? O CTA é leve? Fala com o negócio dele?
 2. **Verifique fonte por fonte**: liste cada afirmação/número → veredito (✅ confirma / ⚠️ corrigir / ❌ remover) → link da fonte. Corrija o e-mail antes de concluir.
-3. **Cheque o checklist**: assunto ≤45 chars + preheader; 1 CTA; logos certos no fundo certo; merge tags válidas; sem redundância; notícias datadas com fonte; IA não é o herói.
+3. **Cheque o checklist**: assunto ≤45 chars + preheader; 1 CTA; logos certos no fundo certo; merge tags válidas; sem redundância; notícias datadas com fonte; IA não é o herói; sem travessão (`—`).
 4. Resuma ao usuário: tema, as 3 notícias (com fonte verificada), o assunto, e o que ajustou.
 
 ## Notas

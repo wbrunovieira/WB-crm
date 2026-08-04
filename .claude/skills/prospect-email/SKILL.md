@@ -84,6 +84,7 @@ Para **follow-up** e **nurture**, encurtar bastante e ajustar o tom (agradecer, 
 
 ## Regras (lições já aprendidas)
 
+- **NUNCA use travessão (`—`)** em nenhum e-mail ou mensagem. As pessoas associam o travessão a texto de IA e isso quebra o tom humano. Use vírgula, ponto, dois-pontos, parênteses ou reescreva a frase.
 - **Nunca invente** dados (nome, e-mail, site). Cuidado com **homônimos** — só use site/contato confirmado pelo CRM/fonte da cidade certa. Ver `[[feedback_prospect_data_quality]]`.
 - **Não enviar** nada; só **entregar o texto** (assunto + corpo) para o usuário enviar pela plataforma. Se gerar rascunho no Gmail, confirmar antes.
 - Reenvio após bounce: texto limpo, sem tracking/co-branding (ex.: evitar 554/URIBL); remetente `bruno@wbdigitalsolutions.com`.

@@ -1,0 +1,24 @@
+# Secrets — the embedded CRM JWT lives here and must NEVER be committed (public repo)
+.env
+.env.local
+*.local
+
+# Expo / RN
+node_modules/
+.expo/
+dist/
+web-build/
+*.orig.*
+.DS_Store
+
+# Native
+ios/
+android/
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# EAS
+.easignore

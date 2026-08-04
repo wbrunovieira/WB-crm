@@ -1,0 +1,35 @@
+{
+  "name": "wb-crm-mobile",
+  "version": "0.1.0",
+  "main": "expo-router/entry",
+  "private": true,
+  "scripts": {
+    "start": "expo start --port 8082",
+    "ios": "xcrun simctl boot 'iPhone 12 Pro' 2>/dev/null; open -a Simulator; expo start --ios --port 8082",
+    "android": "expo start --android --port 8082",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@react-native-community/datetimepicker": "9.1.0",
+    "@react-native-ml-kit/text-recognition": "^2.0.0",
+    "@tanstack/react-query": "^5.62.0",
+    "expo": "^57.0.0",
+    "expo-build-properties": "~57.0.8",
+    "expo-constants": "~57.0.8",
+    "expo-image-picker": "~57.0.7",
+    "expo-linking": "~57.0.4",
+    "expo-location": "~57.0.7",
+    "expo-router": "~57.0.9",
+    "expo-secure-store": "~57.0.1",
+    "expo-splash-screen": "~57.0.5",
+    "expo-status-bar": "~57.0.1",
+    "react": "19.2.3",
+    "react-native": "0.86.2",
+    "react-native-safe-area-context": "~5.7.0",
+    "react-native-screens": "~4.26.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.1",
+    "typescript": "~5.6.0"
+  }
+}
