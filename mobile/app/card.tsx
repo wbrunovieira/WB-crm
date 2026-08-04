@@ -1,5 +1,6 @@
-import { Placeholder } from "@/components/Placeholder";
+import { ManualLeadForm } from "@/components/ManualLeadForm";
 
+// Same form as manual capture, but opens the photo source picker on mount.
 export default function CardScreen() {
-  return <Placeholder emoji="📇" title="Cartão / Panfleto" phase="Fase 3" />;
+  return <ManualLeadForm autoOpenCamera />;
 }

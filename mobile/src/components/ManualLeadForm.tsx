@@ -73,9 +73,18 @@ function seedFromPlace(place: Place): FormState {
 
 /**
  * Unified field-capture hub. `autoLocate` runs the GPS address fill on mount (GPS mode);
- * `fromGoogle` seeds the Empresa section from the selected Google place (Google mode).
+ * `fromGoogle` seeds the Empresa section from the selected Google place (Google mode);
+ * `autoOpenCamera` opens the photo source picker on mount (Card/flyer mode).
  */
-export function ManualLeadForm({ autoLocate = false, fromGoogle = false }: { autoLocate?: boolean; fromGoogle?: boolean }) {
+export function ManualLeadForm({
+  autoLocate = false,
+  fromGoogle = false,
+  autoOpenCamera = false,
+}: {
+  autoLocate?: boolean;
+  fromGoogle?: boolean;
+  autoOpenCamera?: boolean;
+}) {
   const router = useRouter();
   // Read the selected place once (Google mode). Manual/GPS never touch the store.
   const [sel] = useState(() => (fromGoogle ? getSelectedPlace() : null));
@@ -166,6 +175,7 @@ export function ManualLeadForm({ autoLocate = false, fromGoogle = false }: { aut
 
   useEffect(() => {
     if (autoLocate) fillLocation();
+    if (autoOpenCamera) onPhoto();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
