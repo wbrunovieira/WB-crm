@@ -3,11 +3,14 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, Activi
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { createLeadWithVisit, manualLeadBody, googleLeadBody, type ContactType } from "@/lib/leads";
+import { createLeadWithVisit, manualLeadBody, googleLeadBody, type ContactType, type CreatedLead } from "@/lib/leads";
 import { getCurrentAddress, LocationPermissionError } from "@/lib/location";
 import { checkGoogleId, type Place } from "@/lib/places";
 import { getSelectedPlace, clearSelectedPlace } from "@/lib/selected-place";
 import { scanCard, OcrUnavailableError } from "@/lib/ocr";
+import { isOnline } from "@/lib/net";
+import { enqueue } from "@/lib/outbox";
+import { ApiError } from "@/lib/api";
 import * as ImagePicker from "expo-image-picker";
 
 const ALREADY_EXISTS = "ALREADY_EXISTS";
@@ -182,8 +185,12 @@ export function ManualLeadForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  type SubmitResult =
+    | { status: "created"; lead: CreatedLead; visitLogged: boolean; followUpLogged: boolean }
+    | { status: "queued" };
+
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<SubmitResult> => {
       const contact = f.contactName.trim()
         ? { name: f.contactName, role: f.contactRole, email: f.contactEmail, phone: f.contactMobile, whatsapp: f.contactMobile }
         : undefined;
@@ -199,16 +206,53 @@ export function ManualLeadForm({
             }
           : undefined,
       };
-      if (sel) {
-        // Google mode: guard against duplicates (googleId is unique) before creating.
-        const { exists } = await checkGoogleId(sel.place.placeId);
+      const body = sel ? googleLeadBody(f, contact, sel.place, sel.searchTerm) : manualLeadBody(f, contact);
+      const online = await isOnline();
+
+      if (sel && online) {
+        // Google mode: guard against duplicates (googleId is unique) before creating. Dedup
+        // can't be verified without connectivity, so this only runs online — offline (or a
+        // network flake here despite isOnline() saying yes) falls through to queueing below,
+        // and drainOutbox() reconfirms before replaying (a rare resulting duplicate is still
+        // caught by the DB's unique constraint at that point).
+        let exists = false;
+        try {
+          exists = (await checkGoogleId(sel.place.placeId)).exists;
+        } catch (e) {
+          if (e instanceof ApiError) throw e; // real rejection (e.g. auth) — surface it
+          // else: network flake — proceed to the create attempt/queue fallback below
+        }
         if (exists) throw new Error(ALREADY_EXISTS);
-        return createLeadWithVisit(googleLeadBody(f, contact, sel.place, sel.searchTerm), opts);
       }
-      return createLeadWithVisit(manualLeadBody(f, contact), opts);
+
+      if (online) {
+        try {
+          const result = await createLeadWithVisit(body, opts);
+          return { status: "created", ...result };
+        } catch (e) {
+          if (e instanceof ApiError) throw e; // real rejection — user must fix, don't queue
+          // else: raw network failure — fall through to queueing below
+        }
+      }
+
+      // Offline, or the online attempt above failed on a raw network error: save locally
+      // instead of losing the capture. drainOutbox() (wired in app/_layout.tsx) replays it
+      // once connectivity returns.
+      await enqueue(body, opts);
+      return { status: "queued" };
     },
-    onSuccess: ({ lead, visitLogged, followUpLogged }) => {
+    onSuccess: (result) => {
       clearSelectedPlace();
+      if (result.status === "queued") {
+        Alert.alert(
+          "Sem conexão 📴",
+          "O lead foi salvo no seu aparelho e será enviado automaticamente quando a conexão voltar.",
+        );
+        setF(initial());
+        router.back();
+        return;
+      }
+      const { lead, visitLogged, followUpLogged } = result;
       const name = lead.businessName ?? f.businessName;
       const warn: string[] = [];
       if (!visitLogged) warn.push("a visita");

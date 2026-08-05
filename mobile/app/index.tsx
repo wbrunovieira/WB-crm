@@ -4,6 +4,7 @@ import { useRouter, type Href } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api";
 import { hasToken } from "@/lib/auth";
+import { countOutbox, drainOutbox } from "@/lib/outbox";
 
 type Mode = { key: string; route: Href; title: string; subtitle: string; emoji: string };
 
@@ -39,12 +40,29 @@ export default function Home() {
     return { tone: "ok", label: "Conectado ao CRM" } as const;
   }, [tokenQuery.isLoading, tokenQuery.data, check.isLoading, check.isError, check.error]);
 
+  // Reflects Fase 4's offline outbox (mobile/src/lib/outbox.ts). The invalidateQueries call
+  // inside outbox.ts already refreshes this on every enqueue/drain; the interval is just a
+  // cheap safety net (array-length read from AsyncStorage).
+  const outboxQuery = useQuery({ queryKey: ["outbox", "count"], queryFn: countOutbox, refetchInterval: 15_000 });
+  const pendingCount = outboxQuery.data ?? 0;
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={[styles.pill, pillTone[status.tone]]}>
         {status.tone === "muted" && <ActivityIndicator size="small" color="#c9b3d6" />}
         <Text style={styles.pillText}>{status.label}</Text>
       </View>
+
+      {pendingCount > 0 && (
+        <View style={[styles.pill, pillTone.warn]}>
+          <Text style={styles.pillText}>
+            {pendingCount} cadastro{pendingCount > 1 ? "s" : ""} pendente{pendingCount > 1 ? "s" : ""} de sincronização
+          </Text>
+          <Pressable onPress={() => drainOutbox()} hitSlop={8}>
+            <Text style={styles.syncNowText}>🔄 Sincronizar agora</Text>
+          </Pressable>
+        </View>
+      )}
 
       <Text style={styles.heading}>Cadastrar lead</Text>
       <Text style={styles.sub}>Escolha como capturar o lead em campo.</Text>
@@ -87,6 +105,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   pillText: { color: "#e9dcf0", fontSize: 12, fontWeight: "600" },
+  syncNowText: { color: "#f4c860", fontSize: 12, fontWeight: "700", textDecorationLine: "underline" },
   heading: { color: "#fff", fontSize: 26, fontWeight: "700" },
   sub: { color: "#b79ec6", fontSize: 14, marginBottom: 12 },
   grid: { gap: 12 },

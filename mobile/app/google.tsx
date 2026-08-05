@@ -5,6 +5,7 @@ import { searchPlaces, type Place } from "@/lib/places";
 import { ApiError } from "@/lib/api";
 import { getNearbyContext, LocationPermissionError, type NearbyContext } from "@/lib/location";
 import { setSelectedPlace } from "@/lib/selected-place";
+import { isOnline } from "@/lib/net";
 
 export default function GoogleSearchScreen() {
   const router = useRouter();
@@ -21,6 +22,13 @@ export default function GoogleSearchScreen() {
   async function runSearch(query: string, pageToken?: string) {
     setLoading(true);
     setError(null);
+    // Fail fast instead of waiting out a timeout — search always needs a live request (no
+    // offline cache), so tell the user up front and point at the modes that work without one.
+    if (!(await isOnline())) {
+      setError("Sem conexão — a busca no Google exige internet. Use 📍 GPS ou o cadastro manual enquanto estiver offline.");
+      setLoading(false);
+      return;
+    }
     try {
       const res = await searchPlaces(query, pageToken);
       setResults((prev) => {

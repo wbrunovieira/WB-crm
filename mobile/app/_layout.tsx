@@ -1,25 +1,47 @@
+import { useEffect } from "react";
+import { AppState } from "react-native";
+import NetInfo from "@react-native-community/netinfo";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { SafeAreaProvider } from "react-native-safe-area-context";
-import { ApiError } from "@/lib/api";
+import { queryClient } from "@/lib/query-client";
+import { drainOutbox } from "@/lib/outbox";
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      // Don't waste a retry on auth failures — a bad/expired token won't fix itself.
-      retry: (failureCount, error) =>
-        error instanceof ApiError && (error.status === 401 || error.status === 403) ? false : failureCount < 1,
-    },
-  },
-});
+/**
+ * Wires every trigger that should attempt to flush the offline outbox: a NetInfo
+ * connectivity-regained event, a periodic safety-net poll (iOS suspends JS timers/listeners
+ * while backgrounded, so a reconnect event can be missed entirely), a foreground transition,
+ * and once on cold start in case items were left over from a previous session.
+ */
+function OutboxDrainListener() {
+  useEffect(() => {
+    drainOutbox();
+
+    const netSub = NetInfo.addEventListener((state) => {
+      if (state.isConnected && state.isInternetReachable !== false) drainOutbox();
+    });
+    const appStateSub = AppState.addEventListener("change", (s) => {
+      if (s === "active") drainOutbox();
+    });
+    const interval = setInterval(drainOutbox, 60_000);
+
+    return () => {
+      netSub();
+      appStateSub.remove();
+      clearInterval(interval);
+    };
+  }, []);
+
+  return null;
+}
 
 export default function RootLayout() {
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
         <StatusBar style="light" />
+        <OutboxDrainListener />
         <Stack
           screenOptions={{
             headerStyle: { backgroundColor: "#792990" },

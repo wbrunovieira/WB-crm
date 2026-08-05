@@ -64,6 +64,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       "expo-build-properties",
       { ios: { deploymentTarget: "16.4" } },
     ],
+    // Debug builds fail to link (SwiftUICore "not an allowed client") with Xcode's Debug Dylib
+    // enabled, because of the SwiftUI-based pods (ExpoUI/ExpoGlassEffect) this project links.
+    // See the plugin file for details.
+    "./plugins/withDisableDebugDylib",
   ],
   extra: {
     // Read at build/start time from the environment; never committed.
