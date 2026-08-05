@@ -84,6 +84,21 @@ describe("POST /leads/check-duplicates (e2e)", () => {
     expect(res.body.duplicates[0].matchedFields).toContain("cnpj");
   });
 
+  it("detecta duplicata por telefone mesmo com formatos diferentes (E.164 vs nacional)", async () => {
+    await prisma.lead.create({
+      data: { ownerId, businessName: "Acme Tech", phone: "+5524999998888", status: "new" },
+    });
+
+    const res = await request(app.getHttpServer())
+      .post("/leads/check-duplicates")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ phone: "24999998888" })
+      .expect(200);
+
+    expect(res.body.hasDuplicates).toBe(true);
+    expect(res.body.duplicates[0].matchedFields).toContain("phone");
+  });
+
   it("detecta duplicata por email (case-insensitive)", async () => {
     await prisma.lead.create({
       data: { ownerId, businessName: "Acme Tech", email: "acme@acme.com", status: "new" },

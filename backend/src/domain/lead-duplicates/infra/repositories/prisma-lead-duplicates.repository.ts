@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "@/infra/database/prisma.service";
+import { normalizePhoneE164 } from "@/infra/shared/phone/phone-normalizer";
 import { LeadDuplicatesRepository, DuplicateCheckInput, DuplicateMatch } from "../../application/repositories/lead-duplicates.repository";
 
 @Injectable()
@@ -8,9 +9,13 @@ export class PrismaLeadDuplicatesRepository extends LeadDuplicatesRepository {
 
   async findDuplicates(input: DuplicateCheckInput): Promise<DuplicateMatch[]> {
     const orConditions: object[] = [];
+    // Stored phones are E.164 (see phone-normalizer.ts); callers (mobile, web forms) may send
+    // a bare national number — normalize before comparing or the exact-match below silently
+    // misses a real duplicate typed in a different format than what's on file.
+    const phone = normalizePhoneE164(input.phone);
 
     if (input.cnpj) orConditions.push({ companyRegistrationID: input.cnpj });
-    if (input.phone) orConditions.push({ phone: input.phone });
+    if (phone) orConditions.push({ phone });
     if (input.email) orConditions.push({ email: { equals: input.email, mode: "insensitive" } });
     if (input.name) {
       // forward: existing name contains input query
@@ -34,7 +39,7 @@ export class PrismaLeadDuplicatesRepository extends LeadDuplicatesRepository {
     return rows.map((r) => {
       const matched: string[] = [];
       if (input.cnpj && r.companyRegistrationID === input.cnpj) matched.push("cnpj");
-      if (input.phone && r.phone === input.phone) matched.push("phone");
+      if (phone && r.phone === phone) matched.push("phone");
       if (input.email && r.email?.toLowerCase() === input.email.toLowerCase()) matched.push("email");
       if (input.name) {
         const existingLower = r.businessName.toLowerCase();
