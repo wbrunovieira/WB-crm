@@ -3,7 +3,17 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, Activi
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { createLeadWithVisit, addVisitToExistingLead, manualLeadBody, googleLeadBody, uploadActivityPhoto, type ContactType, type CreatedLead } from "@/lib/leads";
+import {
+  createLeadWithVisit,
+  addVisitToExistingLead,
+  manualLeadBody,
+  googleLeadBody,
+  uploadActivityPhoto,
+  checkLeadDuplicates,
+  type ContactType,
+  type CreatedLead,
+  type DuplicateMatch,
+} from "@/lib/leads";
 import { getCurrentAddress, LocationPermissionError } from "@/lib/location";
 import { checkGoogleId, type Place } from "@/lib/places";
 import { getSelectedPlace, clearSelectedPlace } from "@/lib/selected-place";
@@ -14,6 +24,15 @@ import { ApiError } from "@/lib/api";
 import * as ImagePicker from "expo-image-picker";
 
 const ALREADY_EXISTS = "ALREADY_EXISTS";
+
+/** Same wording as the web CRM's DuplicateWarningPanel — matchedFields values from the backend. */
+const DUPLICATE_MATCH_LABELS: Record<string, string> = {
+  cnpj: "Mesmo CNPJ",
+  name: "Nome similar",
+  phone: "Mesmo telefone / WhatsApp",
+  email: "Mesmo e-mail",
+  address: "Mesmo logradouro e cidade",
+};
 
 interface FormState {
   // Empresa
@@ -95,6 +114,8 @@ export function ManualLeadForm({
   const [locating, setLocating] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [facadePhotoUri, setFacadePhotoUri] = useState<string | null>(null);
+  const [checkingDuplicates, setCheckingDuplicates] = useState(false);
+  const [duplicates, setDuplicates] = useState<DuplicateMatch[] | null>(null);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
   // The place is already captured into `sel`; drop it from the store so backing out without
@@ -376,7 +397,7 @@ export function ManualLeadForm({
     });
   }
 
-  function onSubmit() {
+  async function onSubmit() {
     if (locating) return;
     if (fromGoogle && !sel) {
       Alert.alert("Selecione um lugar", "Volte e escolha o negócio no Google de novo.");
@@ -395,10 +416,91 @@ export function ManualLeadForm({
       Alert.alert("Retorno", "Escolha uma data/hora futura para o retorno.");
       return;
     }
+
+    // Google mode already has its own dedup path (checkGoogleId, inside mutationFn) — this
+    // fuzzy name/phone check fills the gap for manual/GPS/card, which had none. Warn, don't
+    // block (same UX as the web CRM's create-lead form) — fails open on error/offline so a
+    // flaky connection never prevents a capture in the field.
+    if (!fromGoogle) {
+      const online = await isOnline();
+      if (online) {
+        setCheckingDuplicates(true);
+        try {
+          const phone = f.phone.trim() || f.contactMobile.trim() || undefined;
+          const result = await checkLeadDuplicates({ name: f.businessName.trim(), phone });
+          if (!mounted.current) return;
+          if (result.hasDuplicates) {
+            setDuplicates(result.duplicates);
+            return;
+          }
+        } catch {
+          // network flake or backend error — proceed to create rather than block the capture
+        } finally {
+          if (mounted.current) setCheckingDuplicates(false);
+        }
+      }
+    }
+
     mutation.mutate();
   }
 
-  const busy = mutation.isPending || locating || scanning;
+  const busy = mutation.isPending || locating || scanning || checkingDuplicates;
+
+  if (duplicates) {
+    return (
+      <ScrollView contentContainerStyle={styles.container}>
+        <Text style={styles.dupTitle}>⚠ Possíveis leads duplicados encontrados</Text>
+        <Text style={styles.dupSub}>
+          Revise os leads abaixo antes de salvar. Você pode abrir cada um para conferir ou cadastrar mesmo assim.
+        </Text>
+        {duplicates.map((d) => (
+          <View key={d.leadId} style={styles.dupCard}>
+            <Text style={styles.dupName}>
+              {d.businessName}
+              {d.isArchived ? " (arquivado)" : ""}
+            </Text>
+            {!!(d.city || d.state) && <Text style={styles.dupMeta}>{[d.city, d.state].filter(Boolean).join(" / ")}</Text>}
+            {!!d.phone && <Text style={styles.dupMeta}>📞 {d.phone}</Text>}
+            <View style={styles.chipsRow}>
+              {d.matchedFields.map((mf) => (
+                <View key={mf} style={styles.dupBadge}>
+                  <Text style={styles.dupBadgeText}>{DUPLICATE_MATCH_LABELS[mf] ?? mf}</Text>
+                </View>
+              ))}
+            </View>
+            <Pressable
+              style={({ pressed }) => [styles.ghost, styles.dupViewBtn, pressed && styles.pressed]}
+              onPress={() => {
+                setDuplicates(null);
+                router.push(`/lead/${d.leadId}`);
+              }}
+            >
+              <Text style={styles.ghostText}>Ver lead</Text>
+            </Pressable>
+          </View>
+        ))}
+        <View style={styles.dupActions}>
+          <Pressable
+            style={({ pressed }) => [styles.ghost, pressed && styles.pressed]}
+            onPress={() => setDuplicates(null)}
+            disabled={mutation.isPending}
+          >
+            <Text style={styles.ghostText}>Voltar e revisar</Text>
+          </Pressable>
+          <Pressable
+            style={({ pressed }) => [styles.saveBtn, styles.dupConfirmBtn, (pressed || mutation.isPending) && styles.pressed]}
+            onPress={() => {
+              setDuplicates(null);
+              mutation.mutate();
+            }}
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Cadastrar mesmo assim</Text>}
+          </Pressable>
+        </View>
+      </ScrollView>
+    );
+  }
 
   return (
     <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
@@ -473,7 +575,7 @@ export function ManualLeadForm({
       )}
 
       <Pressable style={({ pressed }) => [styles.saveBtn, (pressed || busy) && styles.pressed]} disabled={busy} onPress={onSubmit}>
-        {mutation.isPending ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Salvar tudo</Text>}
+        {mutation.isPending || checkingDuplicates ? <ActivityIndicator color="#fff" /> : <Text style={styles.saveBtnText}>Salvar tudo</Text>}
       </Pressable>
     </ScrollView>
   );
@@ -522,4 +624,22 @@ const styles = StyleSheet.create({
   followUp: { gap: 8, marginTop: 4, paddingLeft: 4 },
   saveBtn: { backgroundColor: "#762991", borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 16 },
   saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
+  dupTitle: { color: "#f4c860", fontSize: 17, fontWeight: "700" },
+  dupSub: { color: "#e9dcf0", fontSize: 13, marginTop: 4 },
+  dupCard: {
+    backgroundColor: "#2a1533",
+    borderColor: "#8a6d1f",
+    borderWidth: 1,
+    borderRadius: 14,
+    padding: 14,
+    marginTop: 12,
+    gap: 4,
+  },
+  dupName: { color: "#fff", fontSize: 16, fontWeight: "600" },
+  dupMeta: { color: "#b79ec6", fontSize: 13 },
+  dupBadge: { backgroundColor: "#3a2e12", borderColor: "#8a6d1f", borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  dupBadgeText: { color: "#f4c860", fontSize: 11, fontWeight: "600" },
+  dupViewBtn: { marginTop: 8, alignSelf: "flex-start" },
+  dupActions: { flexDirection: "row", gap: 10, marginTop: 20 },
+  dupConfirmBtn: { flex: 1, marginTop: 0 },
 });

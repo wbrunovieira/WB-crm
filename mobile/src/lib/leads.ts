@@ -380,3 +380,28 @@ export interface LeadEditPatch {
 export async function updateLead(id: string, patch: LeadEditPatch): Promise<void> {
   await apiFetch(`/leads/${id}`, { method: "PATCH", body: patch });
 }
+
+/** A possible duplicate returned by `POST /leads/check-duplicates` — same fuzzy name/phone/CNPJ/
+ *  email/address matching (scored, OR'd) the web CRM's lead-creation form already warns with. */
+export interface DuplicateMatch {
+  leadId: string;
+  businessName: string;
+  phone: string | null;
+  city: string | null;
+  state: string | null;
+  isArchived: boolean;
+  matchedFields: string[];
+  score: number;
+}
+
+/** Pre-flight duplicate check (warn, don't block — same UX as the web CRM's create-lead form).
+ *  At least one of name/phone/cnpj must be given or the backend rejects with 422. */
+export async function checkLeadDuplicates(input: { name?: string; phone?: string; cnpj?: string }): Promise<{
+  duplicates: DuplicateMatch[];
+  hasDuplicates: boolean;
+}> {
+  return apiFetch<{ duplicates: DuplicateMatch[]; hasDuplicates: boolean }>(`/leads/check-duplicates`, {
+    method: "POST",
+    body: input,
+  });
+}
