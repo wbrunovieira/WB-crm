@@ -22,6 +22,7 @@ const BASE: Omit<ActivitySummary, "id" | "dueDate" | "completed" | "lead"> = {
   partnerId: null,
   callContactType: null,
   meetingNoShow: false,
+  photoKey: null,
   gotoCallId: null,
   gotoCallOutcome: null,
   gotoDuration: null,

@@ -57,6 +57,7 @@ export function createVisitActivity(
   notes?: string,
   contactType?: ContactType,
 ): Promise<{ id: string }> {
+  const completedAt = new Date().toISOString();
   return apiFetch<{ id: string }>("/activities", {
     method: "POST",
     body: {
@@ -65,7 +66,10 @@ export function createVisitActivity(
       leadId,
       description: clean(notes),
       completed: true,
-      completedAt: new Date().toISOString(),
+      completedAt,
+      // GET /activities filters dateFrom/dateTo by dueDate, not createdAt — set it so
+      // "Meus cadastros do dia" (mobile/app/today.tsx) can query today's visits.
+      dueDate: completedAt,
       callContactType: contactType,
     },
   });
@@ -157,6 +161,32 @@ export interface CaptureOptions {
   followUp?: FollowUp;
 }
 
+async function logVisitAndFollowUp(
+  leadId: string,
+  businessName: string,
+  opts: CaptureOptions,
+): Promise<{ visitLogged: boolean; followUpLogged: boolean; visitActivityId?: string }> {
+  let visitLogged = true;
+  let visitActivityId: string | undefined;
+  try {
+    const visit = await createVisitActivity(leadId, businessName, opts.notes, opts.contactType);
+    visitActivityId = visit.id;
+  } catch {
+    visitLogged = false;
+  }
+
+  let followUpLogged = true;
+  if (opts.followUp) {
+    try {
+      await createFollowUpActivity(leadId, opts.followUp);
+    } catch {
+      followUpLogged = false;
+    }
+  }
+
+  return { visitLogged, followUpLogged, visitActivityId };
+}
+
 /**
  * Creates the lead, logs the visit, and (optionally) schedules a follow-up. Each activity is
  * NON-FATAL: a created lead is never undone by a failed activity — the partial outcome is
@@ -165,24 +195,91 @@ export interface CaptureOptions {
 export async function createLeadWithVisit(
   body: LeadBody,
   opts: CaptureOptions = {},
-): Promise<{ lead: CreatedLead; visitLogged: boolean; followUpLogged: boolean }> {
+): Promise<{ lead: CreatedLead; visitLogged: boolean; followUpLogged: boolean; visitActivityId?: string }> {
   const lead = await createLead(body);
+  const rest = await logVisitAndFollowUp(lead.id, body.businessName, opts);
+  return { lead, ...rest };
+}
 
-  let visitLogged = true;
-  try {
-    await createVisitActivity(lead.id, body.businessName, opts.notes, opts.contactType);
-  } catch {
-    visitLogged = false;
-  }
+/** Adds a contact to an existing lead (`POST /leads/:id/contacts`) — used when a Google-mode
+ *  capture hits a dedup (`checkGoogleId` → exists), since the contact can no longer be embedded
+ *  into a create call. Not fatal: caller reports contactLogged separately. */
+async function addLeadContact(leadId: string, contact: ContactInput): Promise<void> {
+  await apiFetch(`/leads/${leadId}/contacts`, {
+    method: "POST",
+    body: {
+      name: contact.name.trim(),
+      role: clean(contact.role),
+      email: clean(contact.email),
+      phone: clean(contact.phone),
+      whatsapp: clean(contact.whatsapp),
+    },
+  });
+}
 
-  let followUpLogged = true;
-  if (opts.followUp) {
+/**
+ * A Google-mode capture that turned out to already be a lead (`checkGoogleId` → exists): rather
+ * than refusing the whole capture, add the contact/visit/follow-up to the EXISTING lead. This is
+ * the common "revisiting a known business" case in door-to-door work, not an error.
+ */
+export async function addVisitToExistingLead(
+  leadId: string,
+  businessName: string,
+  contact: ContactInput | undefined,
+  opts: CaptureOptions = {},
+): Promise<{
+  lead: CreatedLead;
+  visitLogged: boolean;
+  followUpLogged: boolean;
+  contactLogged: boolean;
+  visitActivityId?: string;
+}> {
+  let contactLogged = true;
+  if (contact && contact.name.trim()) {
     try {
-      await createFollowUpActivity(lead.id, opts.followUp);
+      await addLeadContact(leadId, contact);
     } catch {
-      followUpLogged = false;
+      contactLogged = false;
     }
   }
 
-  return { lead, visitLogged, followUpLogged };
+  const rest = await logVisitAndFollowUp(leadId, businessName, opts);
+  return { lead: { id: leadId, businessName }, contactLogged, ...rest };
+}
+
+/** Attaches the storefront photo to the visit activity. Not queued offline (Fase 4's outbox is
+ *  JSON-only) — a failure here just shows a warning; the lead/visit are already saved. */
+export async function uploadActivityPhoto(activityId: string, photoUri: string): Promise<void> {
+  const form = new FormData();
+  form.append("file", {
+    uri: photoUri,
+    name: "fachada.jpg",
+    type: "image/jpeg",
+  } as unknown as Blob);
+  await apiFetch(`/activities/${activityId}/upload-photo`, { method: "POST", body: form });
+}
+
+/** A door-to-door visit already confirmed synced to the CRM (for "Meus cadastros do dia"). */
+export interface TodayVisit {
+  id: string;
+  businessName: string;
+  completedAt: string | null;
+}
+
+/** Visits logged today by the current user — relies on createVisitActivity setting `dueDate`. */
+export async function listTodayVisits(): Promise<TodayVisit[]> {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 1);
+
+  const activities = await apiFetch<
+    Array<{ id: string; completedAt: string | null; lead: { businessName: string } | null }>
+  >(
+    `/activities?type=physical_visit&owner=mine&dateFrom=${encodeURIComponent(start.toISOString())}&dateTo=${encodeURIComponent(end.toISOString())}`,
+  );
+
+  return activities
+    .filter((a) => a.lead)
+    .map((a) => ({ id: a.id, businessName: a.lead!.businessName, completedAt: a.completedAt }));
 }

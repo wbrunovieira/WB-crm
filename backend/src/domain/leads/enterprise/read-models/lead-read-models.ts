@@ -81,6 +81,7 @@ export interface LeadActivity {
   emailThreadId: string | null;
   emailSubject: string | null;
   emailFromAddress: string | null;
+  photoKey: string | null;
   emailFromName: string | null;
   emailReplied: boolean;
   emailOpenCount: number;

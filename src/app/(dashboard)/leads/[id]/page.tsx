@@ -19,6 +19,7 @@ import { LeadFocusedResearchButton } from "@/components/leads/LeadFocusedResearc
 import { LeadGooglePlacesLinkButton } from "@/components/leads/LeadGooglePlacesLinkButton";
 import { CopyBookingLinkButton } from "@/components/leads/CopyBookingLinkButton";
 import { LeadStarRatingInline } from "@/components/leads/LeadStarRatingInline";
+import { LeadFacadePhoto } from "@/components/leads/LeadFacadePhoto";
 import { LeadWebsiteAlertToast } from "@/components/leads/LeadWebsiteAlertToast";
 import {
   LeadEditInfoBasica,
@@ -165,7 +166,9 @@ export default async function LeadDetailPage({
 
         <div className="flex flex-col gap-3">
           {/* Title block */}
-          <div className="min-w-0">
+          <div className="flex items-start gap-3 min-w-0">
+            <LeadFacadePhoto leadId={lead.id} hasGoogleId={!!lead.googleId} activities={lead.activities ?? []} />
+            <div className="min-w-0">
             {/* Name — primary hierarchy */}
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 leading-tight mb-2 break-words">
               {lead.businessName}
@@ -212,6 +215,7 @@ export default async function LeadDetailPage({
             <div className="mt-2 flex items-center gap-2">
               <span className="text-xs text-gray-500">Classificação:</span>
               <LeadStarRatingInline leadId={lead.id} initialValue={lead.starRating ?? null} />
+            </div>
             </div>
           </div>
 

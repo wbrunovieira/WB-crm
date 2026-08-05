@@ -21,6 +21,7 @@ export interface ActivitySummary {
   partnerId: string | null;
   callContactType: string | null;
   meetingNoShow: boolean;
+  photoKey: string | null;
   gotoCallId: string | null;
   gotoCallOutcome: string | null;
   gotoDuration: number | null;

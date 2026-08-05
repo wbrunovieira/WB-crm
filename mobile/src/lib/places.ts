@@ -39,7 +39,13 @@ export function searchPlaces(textQuery: string, pageToken?: string): Promise<Pla
   });
 }
 
-/** Whether a place is already a lead (`Lead.googleId` is unique) — avoids duplicates. */
-export function checkGoogleId(googleId: string): Promise<{ exists: boolean }> {
-  return apiFetch<{ exists: boolean }>(`/leads/check-google-id?googleId=${encodeURIComponent(googleId)}`);
+/** Whether a place is already a lead (`Lead.googleId` is unique). When it is, `leadId`/
+ *  `businessName` identify the existing lead so the caller can still log a visit/contact
+ *  against it instead of refusing the capture outright. */
+export function checkGoogleId(
+  googleId: string,
+): Promise<{ exists: boolean; leadId?: string; businessName?: string }> {
+  return apiFetch<{ exists: boolean; leadId?: string; businessName?: string }>(
+    `/leads/check-google-id?googleId=${encodeURIComponent(googleId)}`,
+  );
 }

@@ -65,6 +65,7 @@ export interface Activity {
   gotoCallId?: string | null;
   gotoCallOutcome?: string | null;
   gotoDuration?: number | null;
+  photoKey?: string | null;
   gotoRecordingUrl?: string | null;
   gotoRecordingUrl2?: string | null;
   gotoTranscriptText?: string | null;

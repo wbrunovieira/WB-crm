@@ -60,8 +60,13 @@ export class UpdateGooglePlacesSearchUseCase {
 export class CheckLeadGoogleIdExistsUseCase {
   constructor(private readonly repo: GooglePlacesSearchesRepository) {}
 
-  async execute(googleId: string): Promise<Either<never, { exists: boolean }>> {
+  async execute(
+    googleId: string,
+  ): Promise<Either<never, { exists: boolean; leadId?: string; businessName?: string }>> {
     const found = await this.repo.findLeadByGoogleId(googleId);
-    return right({ exists: !!found });
+    if (!found) return right({ exists: false });
+    // Callers (mobile door-to-door capture) use leadId/businessName to add a visit/contact to
+    // the existing lead instead of just refusing the whole capture on a dedup hit.
+    return right({ exists: true, leadId: found.id, businessName: found.businessName });
   }
 }

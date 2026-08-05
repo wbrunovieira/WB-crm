@@ -3,7 +3,7 @@ import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, Activi
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
-import { createLeadWithVisit, manualLeadBody, googleLeadBody, type ContactType, type CreatedLead } from "@/lib/leads";
+import { createLeadWithVisit, addVisitToExistingLead, manualLeadBody, googleLeadBody, uploadActivityPhoto, type ContactType, type CreatedLead } from "@/lib/leads";
 import { getCurrentAddress, LocationPermissionError } from "@/lib/location";
 import { checkGoogleId, type Place } from "@/lib/places";
 import { getSelectedPlace, clearSelectedPlace } from "@/lib/selected-place";
@@ -94,6 +94,7 @@ export function ManualLeadForm({
   const [f, setF] = useState<FormState>(() => (sel ? seedFromPlace(sel.place) : initial()));
   const [locating, setLocating] = useState(false);
   const [scanning, setScanning] = useState(false);
+  const [facadePhotoUri, setFacadePhotoUri] = useState<string | null>(null);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
   // The place is already captured into `sel`; drop it from the store so backing out without
@@ -177,6 +178,36 @@ export function ManualLeadForm({
     }
   }
 
+  function onFacadePhoto() {
+    Alert.alert("Foto da fachada", "De onde?", [
+      { text: "Tirar foto", onPress: () => captureFacadePhoto("camera") },
+      { text: "Escolher da galeria", onPress: () => captureFacadePhoto("library") },
+      { text: "Cancelar", style: "cancel" },
+    ]);
+  }
+
+  // Same permission/picker pattern as capture() above, but no OCR — just keeps the uri to
+  // attach to the visit activity on submit (see mutationFn).
+  async function captureFacadePhoto(source: "camera" | "library") {
+    try {
+      let res: ImagePicker.ImagePickerResult;
+      if (source === "camera") {
+        const perm = await ImagePicker.requestCameraPermissionsAsync();
+        if (!perm.granted) return Alert.alert("Câmera", "Permissão de câmera negada.");
+        res = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+      } else {
+        const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!perm.granted) return Alert.alert("Galeria", "Permissão de galeria negada.");
+        res = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, mediaTypes: ["images"] });
+      }
+      if (res.canceled || !res.assets?.[0]) return;
+      if (!mounted.current) return;
+      setFacadePhotoUri(res.assets[0].uri);
+    } catch {
+      Alert.alert("Erro", "Não foi possível capturar a foto. Tente de novo.");
+    }
+  }
+
   useEffect(() => {
     if (autoLocate) fillLocation();
     // Defer past the screen's push transition — firing Alert.alert synchronously on mount
@@ -186,7 +217,15 @@ export function ManualLeadForm({
   }, []);
 
   type SubmitResult =
-    | { status: "created"; lead: CreatedLead; visitLogged: boolean; followUpLogged: boolean }
+    | {
+        status: "created";
+        existing: boolean;
+        lead: CreatedLead;
+        visitLogged: boolean;
+        followUpLogged: boolean;
+        contactLogged: boolean;
+        photoUploaded: boolean;
+      }
     | { status: "queued" };
 
   const mutation = useMutation({
@@ -209,26 +248,62 @@ export function ManualLeadForm({
       const body = sel ? googleLeadBody(f, contact, sel.place, sel.searchTerm) : manualLeadBody(f, contact);
       const online = await isOnline();
 
+      // Google mode: check for a dedup hit (googleId is unique) before creating. Dedup can't be
+      // verified without connectivity, so this only runs online — offline (or a network flake
+      // here despite isOnline() saying yes) falls through to queueing below, and drainOutbox()
+      // reconfirms before replaying (a rare resulting duplicate is still caught by the DB's
+      // unique constraint at that point).
+      let existingLeadId: string | undefined;
+      let existingBusinessName: string | undefined;
       if (sel && online) {
-        // Google mode: guard against duplicates (googleId is unique) before creating. Dedup
-        // can't be verified without connectivity, so this only runs online — offline (or a
-        // network flake here despite isOnline() saying yes) falls through to queueing below,
-        // and drainOutbox() reconfirms before replaying (a rare resulting duplicate is still
-        // caught by the DB's unique constraint at that point).
-        let exists = false;
         try {
-          exists = (await checkGoogleId(sel.place.placeId)).exists;
+          const check = await checkGoogleId(sel.place.placeId);
+          if (check.exists) {
+            if (check.leadId) {
+              // Already a lead — don't refuse the capture, add the visit/contact to it instead
+              // (revisiting a known business is the common case in door-to-door work).
+              existingLeadId = check.leadId;
+              existingBusinessName = check.businessName;
+            } else {
+              // Older backend without leadId in the response — fall back to the hard stop.
+              throw new Error(ALREADY_EXISTS);
+            }
+          }
         } catch (e) {
+          if (e instanceof Error && e.message === ALREADY_EXISTS) throw e;
           if (e instanceof ApiError) throw e; // real rejection (e.g. auth) — surface it
           // else: network flake — proceed to the create attempt/queue fallback below
         }
-        if (exists) throw new Error(ALREADY_EXISTS);
       }
 
       if (online) {
         try {
-          const result = await createLeadWithVisit(body, opts);
-          return { status: "created", ...result };
+          type LeadResult = { lead: CreatedLead; visitLogged: boolean; followUpLogged: boolean; contactLogged: boolean; visitActivityId?: string };
+          let result: LeadResult;
+          if (existingLeadId) {
+            result = await addVisitToExistingLead(existingLeadId, existingBusinessName ?? f.businessName, contact, opts);
+          } else {
+            result = { ...(await createLeadWithVisit(body, opts)), contactLogged: true };
+          }
+          const { contactLogged } = result;
+          let photoUploaded = !facadePhotoUri; // nothing to upload counts as "done"
+          if (facadePhotoUri && result.visitActivityId) {
+            try {
+              await uploadActivityPhoto(result.visitActivityId, facadePhotoUri);
+              photoUploaded = true;
+            } catch {
+              photoUploaded = false; // non-fatal — lead/visit are already saved
+            }
+          }
+          return {
+            status: "created",
+            existing: !!existingLeadId,
+            lead: result.lead,
+            visitLogged: result.visitLogged,
+            followUpLogged: result.followUpLogged,
+            contactLogged,
+            photoUploaded,
+          };
         } catch (e) {
           if (e instanceof ApiError) throw e; // real rejection — user must fix, don't queue
           // else: raw network failure — fall through to queueing below
@@ -244,25 +319,40 @@ export function ManualLeadForm({
     onSuccess: (result) => {
       clearSelectedPlace();
       if (result.status === "queued") {
+        // The offline outbox only holds the JSON lead+visit body — the photo file itself isn't
+        // queued (see uploadActivityPhoto's comment), so it's lost here, not just delayed.
+        const photoNote = facadePhotoUri ? " A foto da fachada não foi salva — tire de novo quando reconectar." : "";
         Alert.alert(
           "Sem conexão 📴",
-          "O lead foi salvo no seu aparelho e será enviado automaticamente quando a conexão voltar.",
+          `O lead foi salvo no seu aparelho e será enviado automaticamente quando a conexão voltar.${photoNote}`,
         );
         setF(initial());
+        setFacadePhotoUri(null);
         router.back();
         return;
       }
-      const { lead, visitLogged, followUpLogged } = result;
+      const { lead, existing, visitLogged, followUpLogged, contactLogged, photoUploaded } = result;
       const name = lead.businessName ?? f.businessName;
       const warn: string[] = [];
       if (!visitLogged) warn.push("a visita");
+      if (existing && !contactLogged) warn.push("o contato");
       if (f.followUpEnabled && !followUpLogged) warn.push("o retorno");
+      if (!photoUploaded) warn.push("a foto da fachada");
       if (warn.length) {
-        Alert.alert("Lead cadastrado ⚠️", `"${name}" foi criado, mas ${warn.join(" e ")} não foi registrado. Registre pelo CRM.`);
+        Alert.alert(
+          existing ? "Lead já existia ⚠️" : "Lead cadastrado ⚠️",
+          `"${name}" ${existing ? "já estava no CRM, mas" : "foi criado, mas"} ${warn.join(" e ")} não foi registrado${warn.length > 1 ? "s" : ""}. Tente de novo pelo CRM.`,
+        );
+      } else if (existing) {
+        Alert.alert(
+          "Lead já existia ℹ️",
+          `"${name}" já estava no CRM — visita${f.contactName.trim() ? " e contato" : ""} registrada${f.followUpEnabled ? " e retorno agendado" : ""}.`,
+        );
       } else {
         Alert.alert("Pronto! ✅", `Lead "${name}" cadastrado${f.followUpEnabled ? ", visita e retorno registrados" : " e visita registrada"}.`);
       }
       setF(initial());
+      setFacadePhotoUri(null);
       router.back();
     },
     onError: (e) => {
@@ -321,6 +411,9 @@ export function ManualLeadForm({
         </Pressable>
         <Pressable style={({ pressed }) => [styles.ghost, pressed && styles.pressed]} onPress={onPhoto} disabled={busy}>
           {scanning ? <ActivityIndicator size="small" color="#c9b3d6" /> : <Text style={styles.ghostText}>📷 Foto do cartão</Text>}
+        </Pressable>
+        <Pressable style={({ pressed }) => [styles.ghost, pressed && styles.pressed]} onPress={onFacadePhoto} disabled={busy}>
+          <Text style={styles.ghostText}>{facadePhotoUri ? "✅ Fachada anexada" : "🏬 Foto da fachada"}</Text>
         </Pressable>
       </View>
       <Field label="Endereço" value={f.address} onChangeText={(v) => set("address", v)} placeholder="Rua, número" />

@@ -80,6 +80,13 @@ export default function Home() {
           </Pressable>
         ))}
       </View>
+
+      <Pressable
+        style={({ pressed }) => [styles.todayLink, pressed && styles.cardPressed]}
+        onPress={() => router.push("/today")}
+      >
+        <Text style={styles.todayLinkText}>📋 Meus cadastros do dia</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -120,4 +127,13 @@ const styles = StyleSheet.create({
   emoji: { fontSize: 28, marginBottom: 8 },
   cardTitle: { color: "#fff", fontSize: 18, fontWeight: "600" },
   cardSub: { color: "#b79ec6", fontSize: 13, marginTop: 4 },
+  todayLink: {
+    marginTop: 20,
+    alignItems: "center",
+    borderColor: "#4d2b5d",
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingVertical: 12,
+  },
+  todayLinkText: { color: "#c9b3d6", fontSize: 14, fontWeight: "600" },
 });

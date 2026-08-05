@@ -817,6 +817,7 @@ model Activity {
   gotoDuration            Int? // Call duration in seconds (from GoTo webhook)
   callContactType         String? // "gatekeeper" | "decisor" — only for type="call"
   meetingNoShow           Boolean              @default(false) // only for type="meeting"
+  photoKey                String? // S3 key — foto da fachada anexada à visita (app mobile)
   emailMessageId          String?              @unique // Gmail Message-ID — previne Activity duplicada
   emailThreadId           String? // Gmail Thread-ID — para agrupar e responder na mesma thread
   emailSubject            String? // Assunto do e-mail (para busca e exibição)

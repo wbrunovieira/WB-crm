@@ -255,6 +255,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
             emailLinkClickCount: true,
             emailLinkClickedAt: true,
             emailCampaignSendId: true,
+            photoKey: true,
           },
           orderBy: { createdAt: "desc" },
           take: 50,
@@ -481,6 +482,7 @@ export class PrismaLeadsRepository extends LeadsRepository {
           emailLinkClickedAt: a.emailLinkClickedAt,
           emailToAddress,
           clickUrls,
+          photoKey: (a as unknown as { photoKey?: string | null }).photoKey ?? null,
         };
       }),
       secondaryCNAEs: row.secondaryCNAEs.map((sc) => ({

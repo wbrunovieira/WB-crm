@@ -40,12 +40,14 @@ import { PrismaLeadContactsRepository } from "@/infra/database/prisma/repositori
 import { PrismaLeadDropdownOptionsRepository } from "@/infra/database/prisma/repositories/leads/prisma-lead-dropdown-options.repository";
 import { PrismaGooglePlacesSearchesRepository } from "@/infra/database/prisma/repositories/leads/prisma-google-places-searches.repository";
 import { LeadsController } from "@/infra/controllers/leads.controller";
+import { LeadGooglePhotoController } from "@/infra/controllers/lead-google-photo.controller";
 import { GooglePlacesPort } from "./application/ports/google-places.port";
 import { GooglePlacesClient } from "./infra/google-places.client";
+import { GetLeadGooglePhotoUseCase } from "./application/use-cases/get-lead-google-photo.use-case";
 
 @Module({
   imports: [AuthModule],
-  controllers: [LeadsController],
+  controllers: [LeadsController, LeadGooglePhotoController],
   providers: [
     { provide: LeadsRepository, useClass: PrismaLeadsRepository },
     { provide: LeadContactsRepository, useClass: PrismaLeadContactsRepository },
@@ -74,6 +76,7 @@ import { GooglePlacesClient } from "./infra/google-places.client";
     FindOrCreateGooglePlacesSearchUseCase,
     UpdateGooglePlacesSearchUseCase,
     CheckLeadGoogleIdExistsUseCase,
+    GetLeadGooglePhotoUseCase,
     { provide: GooglePlacesPort, useClass: GooglePlacesClient },
   ],
   exports: [LeadsRepository, LeadContactsRepository, GetLeadSourceGroupsUseCase],

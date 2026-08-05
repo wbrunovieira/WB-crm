@@ -45,6 +45,7 @@ beforeEach(() => {
     updateActivity as never,
     null as never, null as never, null as never, null as never,
     null as never, null as never, null as never, null as never, null as never,
+    null as never, // uploadActivityPhoto
   );
 });
 

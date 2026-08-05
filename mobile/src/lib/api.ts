@@ -20,15 +20,18 @@ type Options = Omit<RequestInit, "body"> & { body?: unknown };
 export async function apiFetch<T = unknown>(path: string, opts: Options = {}): Promise<T> {
   const token = await getToken();
   const { body, headers, ...rest } = opts;
+  // FormData (multipart uploads): pass through as-is and let fetch set its own
+  // Content-Type with the boundary — JSON.stringify-ing it would lose the file.
+  const isFormData = body instanceof FormData;
 
   const res = await fetch(`${API_URL}${path}`, {
     ...rest,
     headers: {
-      ...(body === undefined ? {} : { "Content-Type": "application/json" }),
+      ...(body === undefined || isFormData ? {} : { "Content-Type": "application/json" }),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...(headers ?? {}),
     },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : isFormData ? (body as FormData) : JSON.stringify(body),
   });
 
   if (!res.ok) {

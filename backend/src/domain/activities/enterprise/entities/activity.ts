@@ -49,6 +49,9 @@ export interface ActivityProps {
   callContactType?: string;
   meetingNoShow: boolean;
 
+  // Field capture (mobile app "foto da fachada")
+  photoKey?: string; // S3 key
+
   // Campaign email
   emailCampaignSendId?: string;
   emailCampaignId?: string;
@@ -107,6 +110,7 @@ export class Activity extends AggregateRoot<ActivityProps> {
   get gotoDuration()         { return this.props.gotoDuration; }
   get callContactType()      { return this.props.callContactType; }
   get meetingNoShow()        { return this.props.meetingNoShow; }
+  get photoKey()             { return this.props.photoKey; }
   get emailCampaignSendId()  { return this.props.emailCampaignSendId; }
   get emailCampaignId()      { return this.props.emailCampaignId; }
   get emailMessageId()       { return this.props.emailMessageId; }

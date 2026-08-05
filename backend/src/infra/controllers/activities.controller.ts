@@ -1,7 +1,8 @@
 import {
-  Body, Controller, Delete, ForbiddenException, Get, HttpCode, NotFoundException,
-  Param, Patch, Post, Query, UnauthorizedException, UseGuards,
+  BadRequestException, Body, Controller, Delete, ForbiddenException, Get, HttpCode, NotFoundException,
+  Param, Patch, Post, Query, UnauthorizedException, UploadedFile, UseGuards, UseInterceptors,
 } from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
 import {
   ApiBearerAuth, ApiBody, ApiOperation, ApiParam, ApiQuery,
   ApiResponse, ApiTags, ApiProperty, ApiPropertyOptional,
@@ -16,6 +17,7 @@ import { CreateActivityUseCase } from "@/domain/activities/application/use-cases
 import { UpdateActivityUseCase } from "@/domain/activities/application/use-cases/update-activity.use-case";
 import { DeleteActivityUseCase } from "@/domain/activities/application/use-cases/delete-activity.use-case";
 import { PurgeActivityUseCase, ActivityNotFoundError, ActivityForbiddenError } from "@/domain/activities/application/use-cases/purge-activity.use-case";
+import { UploadActivityPhotoUseCase } from "@/domain/activities/application/use-cases/upload-activity-photo.use-case";
 import { ToggleActivityCompletedUseCase } from "@/domain/activities/application/use-cases/toggle-activity-completed.use-case";
 import { MarkActivityFailedUseCase } from "@/domain/activities/application/use-cases/mark-activity-failed.use-case";
 import { MarkActivitySkippedUseCase } from "@/domain/activities/application/use-cases/mark-activity-skipped.use-case";
@@ -135,6 +137,7 @@ export class ActivitiesController {
     private readonly unlinkFromDeal: UnlinkActivityFromDealUseCase,
     private readonly markThreadReplied: MarkThreadRepliedUseCase,
     private readonly purgeActivity: PurgeActivityUseCase,
+    private readonly uploadActivityPhoto: UploadActivityPhotoUseCase,
   ) {}
 
   @Get()
@@ -212,6 +215,27 @@ export class ActivitiesController {
     });
     if (result.isLeft()) handleError(result);
     return serializeActivity(result.value.activity);
+  }
+
+  @Post(":id/upload-photo")
+  @ApiOperation({ summary: "Anexar foto da fachada à atividade (visita)" })
+  @UseInterceptors(FileInterceptor("file"))
+  async uploadPhoto(
+    @Param("id") id: string,
+    @UploadedFile() file: { buffer: Buffer; originalname: string; mimetype: string },
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    if (!file) throw new BadRequestException("Arquivo obrigatório");
+    const result = await this.uploadActivityPhoto.execute({
+      activityId: id,
+      buffer: file.buffer,
+      filename: file.originalname,
+      contentType: file.mimetype,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) handleError(result);
+    return result.value;
   }
 
   @Patch(":id")

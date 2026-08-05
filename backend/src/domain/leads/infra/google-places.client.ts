@@ -82,8 +82,43 @@ function mapPlace(raw: Record<string, unknown>): PlaceResult {
   };
 }
 
+// In-memory cache — avoids re-hitting Google every time a lead page reloads. Small TTL is
+// enough (this is a personal CRM, not high-traffic), no infra beyond a plain Map needed.
+const PHOTO_CACHE_TTL_MS = 60 * 60 * 1000; // 1h
+const photoCache = new Map<string, { buffer: Buffer | null; expiresAt: number }>();
+
 @Injectable()
 export class GooglePlacesClient extends GooglePlacesPort {
+  async getPhoto(placeId: string): Promise<Buffer | null> {
+    const cached = photoCache.get(placeId);
+    if (cached && cached.expiresAt > Date.now()) return cached.buffer;
+
+    const apiKey = process.env.GOOGLE_PLACES_API_KEY;
+    if (!apiKey) throw new Error("GOOGLE_PLACES_API_KEY não configurada");
+
+    const buffer = await this.fetchPhoto(placeId, apiKey);
+    photoCache.set(placeId, { buffer, expiresAt: Date.now() + PHOTO_CACHE_TTL_MS });
+    return buffer;
+  }
+
+  private async fetchPhoto(placeId: string, apiKey: string): Promise<Buffer | null> {
+    const detailsRes = await fetch(`https://places.googleapis.com/v1/places/${placeId}?fields=photos`, {
+      headers: { "X-Goog-Api-Key": apiKey },
+    });
+    if (!detailsRes.ok) return null;
+
+    const details = (await detailsRes.json()) as { photos?: Array<{ name: string }> };
+    const photoName = details.photos?.[0]?.name;
+    if (!photoName) return null;
+
+    const photoRes = await fetch(
+      `https://places.googleapis.com/v1/${photoName}/media?maxHeightPx=800&key=${apiKey}`,
+    );
+    if (!photoRes.ok) return null;
+
+    return Buffer.from(await photoRes.arrayBuffer());
+  }
+
   async search(input: SearchPlacesInput): Promise<SearchPlacesOutput> {
     const apiKey = process.env.GOOGLE_PLACES_API_KEY;
     if (!apiKey) throw new Error("GOOGLE_PLACES_API_KEY não configurada");

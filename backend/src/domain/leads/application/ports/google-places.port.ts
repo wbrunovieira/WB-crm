@@ -45,4 +45,6 @@ export class PlacesRateLimitError extends Error {
 
 export abstract class GooglePlacesPort {
   abstract search(input: SearchPlacesInput): Promise<SearchPlacesOutput>;
+  /** First photo for a place (Place Details → Photo Media), or null if the place has none. */
+  abstract getPhoto(placeId: string): Promise<Buffer | null>;
 }

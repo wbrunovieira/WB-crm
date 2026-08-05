@@ -51,10 +51,10 @@ export class PrismaGooglePlacesSearchesRepository extends GooglePlacesSearchesRe
     });
   }
 
-  async findLeadByGoogleId(googleId: string): Promise<{ id: string } | null> {
+  async findLeadByGoogleId(googleId: string): Promise<{ id: string; businessName: string } | null> {
     return this.prisma.lead.findFirst({
       where: { googleId },
-      select: { id: true },
+      select: { id: true, businessName: true },
     });
   }
 }

@@ -1,5 +1,5 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { createLeadWithVisit, type LeadBody, type CaptureOptions } from "./leads";
+import { createLeadWithVisit, addVisitToExistingLead, type LeadBody, type CaptureOptions, type ContactInput } from "./leads";
 import { checkGoogleId } from "./places";
 import { ApiError } from "./api";
 import { isOnline } from "./net";
@@ -129,10 +129,17 @@ export async function drainOutbox(): Promise<void> {
       if (item.attempts >= MAX_AUTO_ATTEMPTS) continue; // paused, still counted as pending
       try {
         // Google-sourced item: the dedup check may have been skipped at capture time (offline),
-        // so reconfirm before replaying — avoids creating a duplicate lead.
+        // so reconfirm before replaying — avoids creating a duplicate lead. A hit doesn't mean
+        // discard: add the queued visit/contact to the existing lead instead (see ManualLeadForm
+        // for why — revisiting a known business is the common case, not an error).
         if ("googleId" in item.body && item.body.googleId) {
-          const { exists } = await withTimeout(checkGoogleId(item.body.googleId as string), REPLAY_TIMEOUT_MS);
-          if (exists) {
+          const check = await withTimeout(checkGoogleId(item.body.googleId as string), REPLAY_TIMEOUT_MS);
+          if (check.exists && check.leadId) {
+            const contact = (item.body.contacts as ContactInput[] | undefined)?.[0];
+            await withTimeout(
+              addVisitToExistingLead(check.leadId, check.businessName ?? item.body.businessName, contact, item.opts),
+              REPLAY_TIMEOUT_MS,
+            );
             await removeItem(item.id);
             continue;
           }

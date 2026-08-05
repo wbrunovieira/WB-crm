@@ -23,14 +23,19 @@ import { LinkActivityToDealUseCase } from "./application/use-cases/link-activity
 import { UnlinkActivityFromDealUseCase } from "./application/use-cases/unlink-activity-from-deal.use-case";
 import { MarkThreadRepliedUseCase } from "./application/use-cases/mark-thread-replied.use-case";
 import { PurgeActivityUseCase } from "./application/use-cases/purge-activity.use-case";
+import { UploadActivityPhotoUseCase } from "./application/use-cases/upload-activity-photo.use-case";
+import { GetActivityPhotoKeyUseCase } from "./application/use-cases/get-activity-photo-key.use-case";
+import { ActivityPhotoStoragePort } from "./application/ports/activity-photo-storage.port";
+import { ActivityPhotoS3Adapter } from "./infra/activity-photo-s3.adapter";
 import { ActivitiesController } from "@/infra/controllers/activities.controller";
+import { ActivityPhotoController } from "@/infra/controllers/activity-photo.controller";
 import { NotificationsModule } from "@/domain/notifications/notifications.module";
 import { ProcessActivityRemindersUseCase } from "./application/use-cases/process-activity-reminders.use-case";
 import { ActivityRemindersCronService } from "./infra/scheduled/activity-reminders-cron.service";
 
 @Module({
   imports: [AuthModule, SharedInfraModule, CallAnalysisModule, NotificationsModule],
-  controllers: [ActivitiesController],
+  controllers: [ActivitiesController, ActivityPhotoController],
   providers: [
     { provide: ActivitiesRepository, useClass: PrismaActivitiesRepository },
     ProcessActivityRemindersUseCase,
@@ -48,7 +53,10 @@ import { ActivityRemindersCronService } from "./infra/scheduled/activity-reminde
     UnlinkActivityFromDealUseCase,
     MarkThreadRepliedUseCase,
     PurgeActivityUseCase,
+    UploadActivityPhotoUseCase,
+    GetActivityPhotoKeyUseCase,
     { provide: S3StoragePort, useClass: S3RecordingClient },
+    { provide: ActivityPhotoStoragePort, useClass: ActivityPhotoS3Adapter },
     { provide: GmailPort, useClass: GmailClient },
     { provide: GoogleOAuthPort, useClass: GoogleOAuthService },
   ],
