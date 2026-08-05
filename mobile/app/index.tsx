@@ -87,6 +87,13 @@ export default function Home() {
       >
         <Text style={styles.todayLinkText}>📋 Meus cadastros do dia</Text>
       </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [styles.todayLink, pressed && styles.cardPressed]}
+        onPress={() => router.push("/lead-search")}
+      >
+        <Text style={styles.todayLinkText}>🔍 Ver leads existentes</Text>
+      </Pressable>
     </ScrollView>
   );
 }

@@ -203,8 +203,9 @@ export async function createLeadWithVisit(
 
 /** Adds a contact to an existing lead (`POST /leads/:id/contacts`) — used when a Google-mode
  *  capture hits a dedup (`checkGoogleId` → exists), since the contact can no longer be embedded
- *  into a create call. Not fatal: caller reports contactLogged separately. */
-async function addLeadContact(leadId: string, contact: ContactInput): Promise<void> {
+ *  into a create call (not fatal there: caller reports contactLogged separately), and by the
+ *  lead detail screen's "novo contato" form. */
+export async function addLeadContact(leadId: string, contact: ContactInput): Promise<void> {
   await apiFetch(`/leads/${leadId}/contacts`, {
     method: "POST",
     body: {
@@ -215,6 +216,18 @@ async function addLeadContact(leadId: string, contact: ContactInput): Promise<vo
       whatsapp: clean(contact.whatsapp),
     },
   });
+}
+
+/** Basic-fields edit for one existing lead contact (`PATCH /leads/:id/contacts/:contactId`). */
+export interface ContactEditPatch {
+  name?: string;
+  role?: string;
+  phone?: string;
+  whatsapp?: string;
+}
+
+export async function updateLeadContact(leadId: string, contactId: string, patch: ContactEditPatch): Promise<void> {
+  await apiFetch(`/leads/${leadId}/contacts/${contactId}`, { method: "PATCH", body: patch });
 }
 
 /**
@@ -282,4 +295,88 @@ export async function listTodayVisits(): Promise<TodayVisit[]> {
   return activities
     .filter((a) => a.lead)
     .map((a) => ({ id: a.id, businessName: a.lead!.businessName, completedAt: a.completedAt }));
+}
+
+/** A row in the "search existing leads" list — the fields `GET /leads` already returns. */
+export interface LeadSearchResult {
+  id: string;
+  businessName: string;
+  phone: string | null;
+  whatsapp: string | null;
+  status: string;
+  quality: string | null;
+  city: string | null;
+  state: string | null;
+}
+
+/** Searches leads by name, scoped to the current user (`owner=mine`, same convention as the
+ *  rest of the app — see mobile/CLAUDE.md). GET /leads is paginated; only `leads` is used here. */
+export async function searchLeads(query: string): Promise<LeadSearchResult[]> {
+  const result = await apiFetch<{ leads: LeadSearchResult[] }>(
+    `/leads?search=${encodeURIComponent(query)}&owner=mine`,
+  );
+  return result.leads;
+}
+
+/** A recent activity embedded in the lead detail — trimmed to what the field screen shows. */
+export interface LeadActivitySummary {
+  id: string;
+  type: string;
+  subject: string;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+/** The subset of `GET /leads/:id` (LeadDetail) the field screen actually renders — the full
+ *  response has 100+ fields (ICP, deep research, tech profile, Receita Federal data, deals…)
+ *  irrelevant to a door-to-door rep; this only types what's used. */
+export interface LeadDetail {
+  id: string;
+  businessName: string;
+  status: string;
+  quality: string | null;
+  address: string | null;
+  city: string | null;
+  state: string | null;
+  zipCode: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  website: string | null;
+  activities: LeadActivitySummary[];
+}
+
+export function getLeadDetail(id: string): Promise<LeadDetail> {
+  return apiFetch<LeadDetail>(`/leads/${id}`);
+}
+
+export interface LeadContact {
+  id: string;
+  name: string;
+  role: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  isPrimary: boolean;
+}
+
+export function getLeadContacts(id: string): Promise<LeadContact[]> {
+  return apiFetch<LeadContact[]>(`/leads/${id}/contacts`);
+}
+
+/** Basic-fields edit from the field screen — a partial `PATCH /leads/:id` (same endpoint/DTO
+ *  the web edit form uses; only send what actually changed). */
+export interface LeadEditPatch {
+  businessName?: string;
+  phone?: string;
+  whatsapp?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  website?: string;
+}
+
+/** The caller refetches `getLeadDetail` after this to pick up the change — the PATCH response's
+ *  serialization shape isn't guaranteed to match `LeadDetail` (e.g. no `activities`). */
+export async function updateLead(id: string, patch: LeadEditPatch): Promise<void> {
+  await apiFetch(`/leads/${id}`, { method: "PATCH", body: patch });
 }
