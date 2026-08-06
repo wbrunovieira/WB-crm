@@ -359,21 +359,37 @@ export function ManualLeadForm({
       if (existing && !contactLogged) warn.push("o contato");
       if (f.followUpEnabled && !followUpLogged) warn.push("o retorno");
       if (!photoUploaded) warn.push("a foto da fachada");
+
+      let title: string;
+      let message: string;
       if (warn.length) {
-        Alert.alert(
-          existing ? "Lead já existia ⚠️" : "Lead cadastrado ⚠️",
-          `"${name}" ${existing ? "já estava no CRM, mas" : "foi criado, mas"} ${warn.join(" e ")} não foi registrado${warn.length > 1 ? "s" : ""}. Tente de novo pelo CRM.`,
-        );
+        title = existing ? "Lead já existia ⚠️" : "Lead cadastrado ⚠️";
+        message = `"${name}" ${existing ? "já estava no CRM, mas" : "foi criado, mas"} ${warn.join(" e ")} não foi registrado${warn.length > 1 ? "s" : ""}. Tente de novo pelo CRM.`;
       } else if (existing) {
-        Alert.alert(
-          "Lead já existia ℹ️",
-          `"${name}" já estava no CRM — visita${f.contactName.trim() ? " e contato" : ""} registrada${f.followUpEnabled ? " e retorno agendado" : ""}.`,
-        );
+        title = "Lead já existia ℹ️";
+        message = `"${name}" já estava no CRM — visita${f.contactName.trim() ? " e contato" : ""} registrada${f.followUpEnabled ? " e retorno agendado" : ""}.`;
       } else {
-        Alert.alert("Pronto! ✅", `Lead "${name}" cadastrado${f.followUpEnabled ? ", visita e retorno registrados" : " e visita registrada"}.`);
+        title = "Pronto! ✅";
+        message = `Lead "${name}" cadastrado${f.followUpEnabled ? ", visita e retorno registrados" : " e visita registrada"}.`;
       }
-      setF(initial());
-      setFacadePhotoUri(null);
+
+      const finish = () => {
+        setF(initial());
+        setFacadePhotoUri(null);
+      };
+
+      if (existing) {
+        // Merged into an already-known lead (exact googleId match) — offer a way to jump
+        // straight into it, same as the fuzzy-match duplicate-warning screen's "Ver lead".
+        Alert.alert(title, message, [
+          { text: "Ver lead", onPress: () => { finish(); router.push(`/lead/${lead.id}`); } },
+          { text: "OK", onPress: () => { finish(); router.back(); } },
+        ]);
+        return;
+      }
+
+      Alert.alert(title, message);
+      finish();
       router.back();
     },
     onError: (e) => {
