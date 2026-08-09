@@ -5,6 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { apiFetch, ApiError } from "@/lib/api";
 import { hasToken } from "@/lib/auth";
 import { countOutbox, drainOutbox } from "@/lib/outbox";
+import { listTodayVisits } from "@/lib/leads";
+import { getDailyGoal } from "@/lib/goals";
 
 type Mode = { key: string; route: Href; title: string; subtitle: string; emoji: string };
 
@@ -46,12 +48,29 @@ export default function Home() {
   const outboxQuery = useQuery({ queryKey: ["outbox", "count"], queryFn: countOutbox, refetchInterval: 15_000 });
   const pendingCount = outboxQuery.data ?? 0;
 
+  // Same query keys today.tsx uses — shares the cache, so opening either screen keeps both in sync.
+  const goalQuery = useQuery({ queryKey: ["daily-goal"], queryFn: getDailyGoal });
+  const todayQuery = useQuery({ queryKey: ["today-visits"], queryFn: listTodayVisits, refetchInterval: 30_000 });
+  const todayCount = todayQuery.data?.length ?? 0;
+  const goal = goalQuery.data ?? 0;
+  const goalMet = goal > 0 && todayCount >= goal;
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={[styles.pill, pillTone[status.tone]]}>
         {status.tone === "muted" && <ActivityIndicator size="small" color="#c9b3d6" />}
         <Text style={styles.pillText}>{status.label}</Text>
       </View>
+
+      {goal > 0 && (
+        <Pressable onPress={() => router.push("/today")}>
+          <View style={[styles.pill, goalMet ? pillTone.ok : pillTone.muted]}>
+            <Text style={styles.pillText}>
+              {goalMet ? "🎉" : "🎯"} {todayCount}/{goal} empresas hoje
+            </Text>
+          </View>
+        </Pressable>
+      )}
 
       {pendingCount > 0 && (
         <View style={[styles.pill, pillTone.warn]}>

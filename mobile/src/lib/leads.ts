@@ -297,6 +297,50 @@ export async function listTodayVisits(): Promise<TodayVisit[]> {
     .map((a) => ({ id: a.id, businessName: a.lead!.businessName, completedAt: a.completedAt }));
 }
 
+/** Visit count for one local calendar day — powers the home screen's goal/streak gamification. */
+export interface DayVisitCount {
+  day: string; // YYYY-MM-DD, local calendar day
+  count: number;
+}
+
+function localDayKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Visit counts per local day for the last `days` days (oldest first, today last) — same
+ *  `physical_visit` activities `listTodayVisits` uses, just a wider range grouped client-side.
+ *  No backend change needed. */
+export async function listVisitCountsByDay(days: number): Promise<DayVisitCount[]> {
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const rangeStart = new Date(todayStart);
+  rangeStart.setDate(rangeStart.getDate() - (days - 1));
+  const rangeEnd = new Date(todayStart);
+  rangeEnd.setDate(rangeEnd.getDate() + 1); // exclusive upper bound
+
+  const activities = await apiFetch<Array<{ completedAt: string | null; lead: unknown }>>(
+    `/activities?type=physical_visit&owner=mine&dateFrom=${encodeURIComponent(rangeStart.toISOString())}&dateTo=${encodeURIComponent(rangeEnd.toISOString())}`,
+  );
+
+  const counts = new Map<string, number>();
+  for (const a of activities) {
+    // Same "only counts as a visit if it has a lead" filter as listTodayVisits — keeps the two
+    // functions' definition of "visit" consistent (they're shown side by side on today.tsx).
+    if (!a.completedAt || !a.lead) continue;
+    const key = localDayKey(new Date(a.completedAt));
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+
+  const result: DayVisitCount[] = [];
+  for (let i = 0; i < days; i++) {
+    const d = new Date(rangeStart);
+    d.setDate(d.getDate() + i);
+    const key = localDayKey(d);
+    result.push({ day: key, count: counts.get(key) ?? 0 });
+  }
+  return result;
+}
+
 /** A row in the "search existing leads" list — the fields `GET /leads` already returns. */
 export interface LeadSearchResult {
   id: string;
