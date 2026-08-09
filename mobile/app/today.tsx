@@ -30,6 +30,10 @@ export default function TodayScreen() {
   let streak = 0;
   if (goal > 0) {
     for (let i = counts.length - 1; i >= 0; i--) {
+      // No door-to-door on weekends — skip Sat/Sun entirely, they neither extend nor break it.
+      const dow = new Date(`${counts[i].day}T00:00:00`).getDay();
+      if (dow === 0 || dow === 6) continue;
+
       const isToday = i === counts.length - 1;
       if (counts[i].count >= goal) {
         streak++;
