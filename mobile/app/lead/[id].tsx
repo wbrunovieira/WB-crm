@@ -55,6 +55,14 @@ function digits(s: string): string {
   return s.replace(/\D/g, "");
 }
 
+/** `tel:` needs the leading "+" to be recognized as an international number — stripping it
+ *  (like wa.me's digits-only format wants) makes iOS silently fail to place the call. Phones
+ *  are stored E.164 (+55...) so the "+" is normally there; preserved if present, omitted only
+ *  for genuinely local/malformed numbers that never had one. */
+function telHref(raw: string): string {
+  return `tel:${raw.trim().startsWith("+") ? "+" : ""}${digits(raw)}`;
+}
+
 function contactsKey(id: string) {
   return ["lead-contacts", id];
 }
@@ -315,7 +323,7 @@ function InfoRow({ label, value, kind = "text" }: { label: string; value: string
 
   function openPrimary() {
     if (!hasValue) return;
-    if (kind === "phone") Linking.openURL(`tel:${digits(trimmed)}`);
+    if (kind === "phone") Linking.openURL(telHref(trimmed));
     else if (kind === "whatsapp") Linking.openURL(`https://wa.me/${digits(trimmed)}`);
     // Only bare domains get "https://" prepended — an already-explicit scheme (ftp:, mailto:, ...)
     // is left as-is instead of getting "https://" wrongly stacked in front of it.
@@ -435,7 +443,7 @@ function ContactRow({ leadId, contact, queryClient }: { leadId: string; contact:
       </View>
       <View style={styles.contactActions}>
         {!!contact.phone && (
-          <Pressable onPress={() => Linking.openURL(`tel:${digits(contact.phone!)}`)} hitSlop={8}>
+          <Pressable onPress={() => Linking.openURL(telHref(contact.phone!))} hitSlop={8}>
             <Text style={styles.actionIcon}>📞</Text>
           </Pressable>
         )}
