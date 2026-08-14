@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking, Alert } from "react-native";
+import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams } from "expo-router";
 import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import {
@@ -179,9 +180,9 @@ export default function LeadDetailScreen() {
         {!editing || !edit ? (
           <View style={styles.readRows}>
             <InfoRow label="Endereço" value={[lead.address, lead.city, lead.state, lead.zipCode].filter(Boolean).join(", ")} />
-            <InfoRow label="Telefone" value={lead.phone} />
-            <InfoRow label="WhatsApp" value={lead.whatsapp} />
-            <InfoRow label="Site" value={lead.website} />
+            <InfoRow label="Telefone" value={lead.phone} kind="phone" />
+            <InfoRow label="WhatsApp" value={lead.whatsapp} kind="whatsapp" />
+            <InfoRow label="Site" value={lead.website} kind="url" />
           </View>
         ) : (
           <View style={styles.readRows}>
@@ -296,11 +297,59 @@ export default function LeadDetailScreen() {
   );
 }
 
-function InfoRow({ label, value }: { label: string; value: string | null | undefined }) {
+type InfoKind = "text" | "phone" | "whatsapp" | "url";
+
+/** label/value row with a copy action, plus a kind-specific quick action (call, open WhatsApp,
+ *  open site) — mirrors the tel:/wa.me actions already on each contact row below. */
+function InfoRow({ label, value, kind = "text" }: { label: string; value: string | null | undefined; kind?: InfoKind }) {
+  const [copied, setCopied] = useState(false);
+  const hasValue = !!(value && value.trim());
+  const trimmed = hasValue ? value!.trim() : "";
+
+  async function copy() {
+    if (!hasValue) return;
+    await Clipboard.setStringAsync(trimmed);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1200);
+  }
+
+  function openPrimary() {
+    if (!hasValue) return;
+    if (kind === "phone") Linking.openURL(`tel:${digits(trimmed)}`);
+    else if (kind === "whatsapp") Linking.openURL(`https://wa.me/${digits(trimmed)}`);
+    // Only bare domains get "https://" prepended — an already-explicit scheme (ftp:, mailto:, ...)
+    // is left as-is instead of getting "https://" wrongly stacked in front of it.
+    else if (kind === "url") Linking.openURL(/^[a-z][a-z0-9+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`);
+  }
+
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
-      <Text style={styles.value}>{value && value.trim() ? value : "—"}</Text>
+      <View style={styles.infoValueRow}>
+        <Text style={styles.value}>{hasValue ? trimmed : "—"}</Text>
+        {hasValue && (
+          <View style={styles.infoActions}>
+            <Pressable onPress={copy} hitSlop={8}>
+              <Text style={styles.actionIcon}>{copied ? "✅" : "📋"}</Text>
+            </Pressable>
+            {kind === "phone" && (
+              <Pressable onPress={openPrimary} hitSlop={8}>
+                <Text style={styles.actionIcon}>📞</Text>
+              </Pressable>
+            )}
+            {kind === "whatsapp" && (
+              <Pressable onPress={openPrimary} hitSlop={8}>
+                <Text style={styles.actionIcon}>💬</Text>
+              </Pressable>
+            )}
+            {kind === "url" && (
+              <Pressable onPress={openPrimary} hitSlop={8}>
+                <Text style={styles.actionIcon}>🌐</Text>
+              </Pressable>
+            )}
+          </View>
+        )}
+      </View>
     </View>
   );
 }
@@ -484,7 +533,9 @@ const styles = StyleSheet.create({
   readRows: { gap: 10 },
   field: { gap: 4 },
   label: { color: "#b79ec6", fontSize: 13 },
-  value: { color: "#fff", fontSize: 15 },
+  value: { color: "#fff", fontSize: 15, flex: 1 },
+  infoValueRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
+  infoActions: { flexDirection: "row", gap: 12 },
   input: { backgroundColor: "#1a0022", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: "#fff", fontSize: 15 },
   multiline: { minHeight: 80, textAlignVertical: "top" },
   row: { flexDirection: "row", gap: 10 },
