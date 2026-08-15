@@ -5,6 +5,28 @@
  * JS and works everywhere. A smarter cloud structuring (Gemini) can be layered later (see plan §4.1).
  */
 
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+
+// EXIF orientation is metadata, not a pixel transform — ML Kit (like most native decoders)
+// reads the raw pixel buffer and ignores it, so a card photographed sideways (very common:
+// holding the phone upright to shoot a landscape card) comes out with the text literally
+// rotated 90° and OCR quality collapses. `ImageManipulator.manipulate()` fixes this on its
+// own — it unconditionally redraws the image "right side up" as soon as the context is
+// created, before any chained operation — so calling `renderAsync()`/`saveAsync()` with zero
+// ops is enough; no `.rotate()` needed. Best-effort: on failure, fall back to the original URI
+// rather than blocking the scan (recognizeText's own catch turns a truly bad URI into the same
+// OcrUnavailableError the user already sees for other OCR failures).
+async function normalizeOrientation(imageUri: string): Promise<string> {
+  try {
+    const rendered = await ImageManipulator.manipulate(imageUri).renderAsync();
+    const result = await rendered.saveAsync({ format: SaveFormat.JPEG });
+    return result.uri;
+  } catch (e) {
+    if (__DEV__) console.warn("normalizeOrientation failed, using original image", e);
+    return imageUri;
+  }
+}
+
 export class OcrUnavailableError extends Error {
   constructor() {
     super("ocr-unavailable");
@@ -127,5 +149,6 @@ export function parseCardText(text: string): ParsedCard {
 
 /** Full pipeline: image → on-device OCR → heuristic fields. */
 export async function scanCard(imageUri: string): Promise<ParsedCard> {
-  return parseCardText(await recognizeText(imageUri));
+  const normalized = await normalizeOrientation(imageUri);
+  return parseCardText(await recognizeText(normalized));
 }
