@@ -15,6 +15,7 @@ const MODES: Mode[] = [
   { key: "card", route: "/card", title: "Cartão / Panfleto", subtitle: "Tirar foto e transcrever os dados", emoji: "📇" },
   { key: "gps", route: "/gps", title: "Endereço por GPS", subtitle: "Preencher o endereço pela localização", emoji: "📍" },
   { key: "manual", route: "/manual", title: "Cadastro manual", subtitle: "Digitar os dados do lead", emoji: "✍️" },
+  { key: "partner", route: "/partner", title: "Parceiro", subtitle: "Cadastrar um parceiro conhecido pessoalmente", emoji: "🤝" },
 ];
 
 export default function Home() {

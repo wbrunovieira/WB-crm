@@ -56,6 +56,7 @@ export default function RootLayout() {
           <Stack.Screen name="card" options={{ title: "Cartão / Panfleto" }} />
           <Stack.Screen name="gps" options={{ title: "Endereço por GPS" }} />
           <Stack.Screen name="manual" options={{ title: "Cadastro manual" }} />
+          <Stack.Screen name="partner" options={{ title: "Parceiro" }} />
           <Stack.Screen name="today" options={{ title: "Meus cadastros do dia" }} />
           <Stack.Screen name="lead-search" options={{ title: "Buscar lead" }} />
           <Stack.Screen name="lead/[id]" options={{ title: "Lead" }} />
