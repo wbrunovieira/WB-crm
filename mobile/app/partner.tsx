@@ -52,11 +52,12 @@ export default function PartnerScreen() {
       if (source === "camera") {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
         if (!perm.granted) return Alert.alert("Câmera", "Permissão de câmera negada.");
-        res = await ImagePicker.launchCameraAsync({ quality: 0.7 });
+        // Max quality — fine print (email, phone, website) needs every bit of sharpness OCR can get.
+        res = await ImagePicker.launchCameraAsync({ quality: 1 });
       } else {
         const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
         if (!perm.granted) return Alert.alert("Galeria", "Permissão de galeria negada.");
-        res = await ImagePicker.launchImageLibraryAsync({ quality: 0.7, mediaTypes: ["images"] });
+        res = await ImagePicker.launchImageLibraryAsync({ quality: 1, mediaTypes: ["images"] });
       }
       if (res.canceled || !res.assets?.[0]) return;
       if (!mounted.current) return;
