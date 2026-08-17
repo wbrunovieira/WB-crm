@@ -7,6 +7,17 @@ export const metadata: Metadata = {
   icons: {
     icon: "/favicon.svg",
   },
+  // Internal tool — nothing here (including /login) should ever be indexed.
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+    googleBot: {
+      index: false,
+      follow: false,
+      noimageindex: true,
+    },
+  },
 };
 
 export default function RootLayout({
