@@ -275,6 +275,7 @@ export async function uploadActivityPhoto(activityId: string, photoUri: string):
 /** A door-to-door visit already confirmed synced to the CRM (for "Meus cadastros do dia"). */
 export interface TodayVisit {
   id: string;
+  leadId: string;
   businessName: string;
   completedAt: string | null;
 }
@@ -287,14 +288,14 @@ export async function listTodayVisits(): Promise<TodayVisit[]> {
   end.setDate(end.getDate() + 1);
 
   const activities = await apiFetch<
-    Array<{ id: string; completedAt: string | null; lead: { businessName: string } | null }>
+    Array<{ id: string; completedAt: string | null; lead: { id: string; businessName: string } | null }>
   >(
     `/activities?type=physical_visit&owner=mine&dateFrom=${encodeURIComponent(start.toISOString())}&dateTo=${encodeURIComponent(end.toISOString())}`,
   );
 
   return activities
     .filter((a) => a.lead)
-    .map((a) => ({ id: a.id, businessName: a.lead!.businessName, completedAt: a.completedAt }));
+    .map((a) => ({ id: a.id, leadId: a.lead!.id, businessName: a.lead!.businessName, completedAt: a.completedAt }));
 }
 
 /** Visit count for one local calendar day — powers the home screen's goal/streak gamification. */

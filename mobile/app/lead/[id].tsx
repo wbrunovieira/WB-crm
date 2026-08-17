@@ -153,7 +153,11 @@ export default function LeadDetailScreen() {
     setEdit((p) => (p ? { ...p, [key]: value } : p));
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
+    >
       <Text style={styles.name}>{lead.businessName}</Text>
       <View style={styles.badgeRow}>
         <View style={styles.badge}>

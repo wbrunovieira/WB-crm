@@ -131,7 +131,11 @@ export default function PartnerScreen() {
   const busy = mutation.isPending || scanning;
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
+    >
       <Text style={styles.section}>Parceiro</Text>
       <Field label="Nome *" value={f.name} onChangeText={(v) => set("name", v)} placeholder="Ex.: Agência Prisma" />
 

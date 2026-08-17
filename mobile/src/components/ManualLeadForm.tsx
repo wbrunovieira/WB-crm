@@ -521,7 +521,11 @@ export function ManualLeadForm({
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+      automaticallyAdjustKeyboardInsets
+    >
       {/* ── EMPRESA ── */}
       <Text style={styles.section}>Empresa</Text>
       <Field label="Nome do negócio *" value={f.businessName} onChangeText={(v) => set("businessName", v)} placeholder="Ex.: Padaria do João" />

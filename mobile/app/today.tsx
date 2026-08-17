@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert } from "react-native";
+import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listOutbox } from "@/lib/outbox";
 import { listTodayVisits, listVisitCountsByDay } from "@/lib/leads";
@@ -7,6 +8,7 @@ import { getDailyGoal, setDailyGoal } from "@/lib/goals";
 const RECORD_WINDOW_DAYS = 30;
 
 export default function TodayScreen() {
+  const router = useRouter();
   const queryClient = useQueryClient();
   const outboxQuery = useQuery({ queryKey: ["outbox", "list"], queryFn: listOutbox, refetchInterval: 15_000 });
   const visitsQuery = useQuery({ queryKey: ["today-visits"], queryFn: listTodayVisits, refetchInterval: 30_000 });
@@ -120,7 +122,11 @@ export default function TodayScreen() {
       {visitsQuery.isLoading && <ActivityIndicator color="#c9b3d6" />}
       {!visitsQuery.isLoading && synced.length === 0 && <Text style={styles.empty}>Nada sincronizado ainda hoje.</Text>}
       {synced.map((v) => (
-        <View key={v.id} style={styles.card}>
+        <Pressable
+          key={v.id}
+          style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+          onPress={() => router.push(`/lead/${v.leadId}`)}
+        >
           <Text style={styles.name}>{v.businessName}</Text>
           {v.completedAt && (
             <Text style={styles.meta}>
@@ -128,7 +134,7 @@ export default function TodayScreen() {
             </Text>
           )}
           <Text style={styles.badgeOk}>✅ sincronizado</Text>
-        </View>
+        </Pressable>
       ))}
     </ScrollView>
   );
@@ -147,6 +153,7 @@ const styles = StyleSheet.create({
     padding: 14,
     marginBottom: 10,
   },
+  cardPressed: { opacity: 0.7 },
   name: { color: "#fff", fontSize: 16, fontWeight: "600" },
   meta: { color: "#b79ec6", fontSize: 12, marginTop: 2 },
   badgePending: { color: "#f4c860", fontSize: 12, fontWeight: "700", marginTop: 6 },
