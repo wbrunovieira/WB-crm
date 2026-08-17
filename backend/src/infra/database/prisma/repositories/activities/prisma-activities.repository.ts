@@ -54,13 +54,19 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
         }
       : {};
 
-    // Date filter
+    // Date filter — dateFrom/dateTo accept either a bare "YYYY-MM-DD" (end-of-day inclusive,
+    // for callers like the web date-range picker) or a full ISO datetime (used as-is, e.g. the
+    // mobile app's local-midnight-to-next-midnight range). Concatenating "T23:59:59.999Z" onto
+    // an already-full ISO string (which has its own trailing "Z") produced an invalid Date and
+    // crashed Prisma with a 500 — this only ever surfaced for full-ISO callers.
     const dateFilter =
       filters.dateFrom || filters.dateTo
         ? {
             dueDate: {
               ...(filters.dateFrom && { gte: new Date(filters.dateFrom) }),
-              ...(filters.dateTo && { lte: new Date(`${filters.dateTo}T23:59:59.999Z`) }),
+              ...(filters.dateTo && {
+                lte: filters.dateTo.includes("T") ? new Date(filters.dateTo) : new Date(`${filters.dateTo}T23:59:59.999Z`),
+              }),
             },
           }
         : {};

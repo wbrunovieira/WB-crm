@@ -81,6 +81,50 @@ describe("Activities API (e2e)", () => {
       expect(res.body[0].subject).toBe(BASE_PAYLOAD.subject);
     });
 
+    it("filtra por dateFrom/dateTo com datetime ISO completo (formato que o app mobile envia)", async () => {
+      const today = new Date();
+      today.setHours(12, 0, 0, 0);
+
+      await request(app.getHttpServer())
+        .post("/activities")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ type: "physical_visit", subject: "Visita porta a porta", dueDate: today.toISOString() });
+
+      // Mirrors mobile's listTodayVisits()/listVisitCountsByDay(): local-midnight-to-next-midnight
+      // range sent as full ISO datetimes, not bare YYYY-MM-DD dates.
+      const start = new Date(today);
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+
+      const res = await request(app.getHttpServer())
+        .get(`/activities?type=physical_visit&dateFrom=${encodeURIComponent(start.toISOString())}&dateTo=${encodeURIComponent(end.toISOString())}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].subject).toBe("Visita porta a porta");
+    });
+
+    it("filtra por dateFrom/dateTo com data pura YYYY-MM-DD (formato que o web usa)", async () => {
+      const dueDate = new Date();
+      dueDate.setUTCHours(12, 0, 0, 0);
+      const bareDate = dueDate.toISOString().slice(0, 10);
+
+      await request(app.getHttpServer())
+        .post("/activities")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ type: "physical_visit", subject: "Visita com data pura", dueDate: dueDate.toISOString() });
+
+      const res = await request(app.getHttpServer())
+        .get(`/activities?type=physical_visit&dateFrom=${bareDate}&dateTo=${bareDate}`)
+        .set("Authorization", `Bearer ${token}`);
+
+      expect(res.status).toBe(200);
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].subject).toBe("Visita com data pura");
+    });
+
     it("filtra por type", async () => {
       await request(app.getHttpServer())
         .post("/activities")
