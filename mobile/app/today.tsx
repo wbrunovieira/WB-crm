@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listOutbox } from "@/lib/outbox";
 import { listVisitsForDay, listVisitCountsByDay } from "@/lib/leads";
-import { getDailyGoal, setDailyGoal } from "@/lib/goals";
+import { getDailyGoal, setDailyGoal, getGoalHistory, resolveGoalForDay } from "@/lib/goals";
 
 const RECORD_WINDOW_DAYS = 30;
 
@@ -32,6 +32,10 @@ export default function TodayScreen() {
     refetchInterval: 30_000,
   });
   const goalQuery = useQuery({ queryKey: ["daily-goal"], queryFn: getDailyGoal });
+  // Full goal-change history — each PAST day's streak/record check uses whichever goal was
+  // actually in effect THAT day (resolveGoalForDay), not today's current value. Otherwise
+  // raising today's goal would retroactively make an already-met past day look like it missed.
+  const goalHistoryQuery = useQuery({ queryKey: ["daily-goal-history"], queryFn: getGoalHistory });
   const countsQuery = useQuery({
     queryKey: ["visit-counts", RECORD_WINDOW_DAYS],
     queryFn: () => listVisitCountsByDay(RECORD_WINDOW_DAYS),
@@ -41,6 +45,7 @@ export default function TodayScreen() {
   const pending = outboxQuery.data ?? [];
   const synced = visitsQuery.data ?? [];
   const goal = goalQuery.data ?? 0;
+  const goalHistory = goalHistoryQuery.data ?? {};
   const counts = countsQuery.data ?? [];
 
   const todayCount = counts.length ? counts[counts.length - 1].count : 0;
@@ -49,20 +54,19 @@ export default function TodayScreen() {
   const record = counts.reduce((max, c) => Math.max(max, c.count), 0);
 
   let streak = 0;
-  if (goal > 0) {
-    for (let i = counts.length - 1; i >= 0; i--) {
-      // No door-to-door on weekends — skip Sat/Sun entirely, they neither extend nor break it.
-      const dow = new Date(`${counts[i].day}T00:00:00`).getDay();
-      if (dow === 0 || dow === 6) continue;
+  for (let i = counts.length - 1; i >= 0; i--) {
+    // No door-to-door on weekends — skip Sat/Sun entirely, they neither extend nor break it.
+    const dow = new Date(`${counts[i].day}T00:00:00`).getDay();
+    if (dow === 0 || dow === 6) continue;
 
-      const isToday = i === counts.length - 1;
-      if (counts[i].count >= goal) {
-        streak++;
-      } else if (isToday) {
-        continue; // today isn't over yet — don't let it zero out an existing streak
-      } else {
-        break;
-      }
+    const dayGoal = resolveGoalForDay(counts[i].day, goalHistory);
+    const isToday = i === counts.length - 1;
+    if (counts[i].count >= dayGoal) {
+      streak++;
+    } else if (isToday) {
+      continue; // today isn't over yet — don't let it zero out an existing streak
+    } else {
+      break;
     }
   }
 
@@ -83,6 +87,7 @@ export default function TodayScreen() {
             try {
               await setDailyGoal(n);
               queryClient.invalidateQueries({ queryKey: ["daily-goal"] });
+              queryClient.invalidateQueries({ queryKey: ["daily-goal-history"] });
             } catch {
               Alert.alert("Erro", "Não foi possível salvar a meta. Tente de novo.");
             }
@@ -104,7 +109,7 @@ export default function TodayScreen() {
             <Text style={styles.editLink}>✏️ Ajustar</Text>
           </Pressable>
         </View>
-        {goalQuery.isLoading || countsQuery.isLoading ? (
+        {goalQuery.isLoading || countsQuery.isLoading || goalHistoryQuery.isLoading ? (
           <ActivityIndicator color="#c9b3d6" style={{ marginTop: 8 }} />
         ) : (
           <>
