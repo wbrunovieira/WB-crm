@@ -9,9 +9,11 @@ import {
   updateLead,
   addLeadContact,
   updateLeadContact,
-  createVisitActivity,
+  logOrMergeVisit,
+  findTodaysVisitId,
   type LeadDetail,
   type LeadContact,
+  type LeadActivitySummary,
   type LeadEditPatch,
   type ContactEditPatch,
   type ContactType,
@@ -92,14 +94,24 @@ export default function LeadDetailScreen() {
   });
 
   const visitMutation = useMutation({
-    mutationFn: (vars: { businessName: string; notes: string; contactType: ContactType | "" }) =>
-      createVisitActivity(id, vars.businessName, vars.notes || undefined, vars.contactType || undefined),
-    onSuccess: () => {
+    mutationFn: (vars: { businessName: string; notes: string; contactType: ContactType | ""; activities: LeadActivitySummary[] }) =>
+      logOrMergeVisit(id, vars.businessName, vars.notes || undefined, vars.contactType || undefined, vars.activities),
+    onSuccess: ({ merged, updated }) => {
       queryClient.invalidateQueries({ queryKey: ["lead-detail", id] });
       setLoggingVisit(false);
       setVisitNotes("");
       setVisitContactType("");
-      Alert.alert("Visita registrada", "A visita foi registrada com sucesso.");
+      // A visit was already logged today for this lead — the note was appended to it instead of
+      // creating a second "Visita porta a porta" activity for the same day. If nothing was
+      // actually filled in, don't claim a note was added — just acknowledge the existing visit.
+      Alert.alert(
+        merged ? (updated ? "Observação adicionada" : "Já registrado hoje") : "Visita registrada",
+        merged
+          ? updated
+            ? "Já havia uma visita hoje — a observação foi adicionada a ela."
+            : "Você já tinha registrado uma visita aqui hoje."
+          : "A visita foi registrada com sucesso.",
+      );
     },
     onError: () => Alert.alert("Erro", "Não foi possível registrar a visita. Tente novamente."),
   });
@@ -123,6 +135,9 @@ export default function LeadDetailScreen() {
   const lead = detailQuery.data;
   const contacts = contactsQuery.data ?? [];
   const activities = [...(lead.activities ?? [])].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 8);
+  // Drives "Registrar visita" vs "Adicionar observação" below — a same-day revisit (e.g. came
+  // back to note something forgotten) merges into today's visit instead of creating another one.
+  const hasVisitToday = !!findTodaysVisitId(lead.activities ?? []);
 
   function startEdit() {
     setEdit(toEditState(lead));
@@ -241,16 +256,20 @@ export default function LeadDetailScreen() {
           <Text style={styles.section}>Visita</Text>
           {!loggingVisit && (
             <Pressable onPress={() => setLoggingVisit(true)} hitSlop={8}>
-              <Text style={styles.editLink}>📍 Registrar visita</Text>
+              <Text style={styles.editLink}>{hasVisitToday ? "✏️ Adicionar observação" : "📍 Registrar visita"}</Text>
             </Pressable>
           )}
         </View>
         {!loggingVisit ? (
-          <Text style={styles.empty}>Registre a visita porta a porta e o que foi conversado.</Text>
+          <Text style={styles.empty}>
+            {hasVisitToday
+              ? "Já tem uma visita registrada hoje — toque acima para adicionar mais alguma observação a ela."
+              : "Registre a visita porta a porta e o que foi conversado."}
+          </Text>
         ) : (
           <View style={styles.readRows}>
             <Field
-              label="O que conversamos / pontos de interesse"
+              label={hasVisitToday ? "O que você quer adicionar" : "O que conversamos / pontos de interesse"}
               value={visitNotes}
               onChangeText={setVisitNotes}
               placeholder="Anote os pontos que o cliente se interessou"
@@ -281,11 +300,15 @@ export default function LeadDetailScreen() {
                 <Text style={styles.cancelLink}>Cancelar</Text>
               </Pressable>
               <Pressable
-                onPress={() => visitMutation.mutate({ businessName: lead.businessName, notes: visitNotes, contactType: visitContactType })}
+                onPress={() =>
+                  visitMutation.mutate({ businessName: lead.businessName, notes: visitNotes, contactType: visitContactType, activities: lead.activities ?? [] })
+                }
                 hitSlop={8}
                 disabled={visitMutation.isPending}
               >
-                <Text style={styles.saveLink}>{visitMutation.isPending ? "Salvando…" : "💾 Salvar visita"}</Text>
+                <Text style={styles.saveLink}>
+                  {visitMutation.isPending ? "Salvando…" : hasVisitToday ? "💾 Adicionar" : "💾 Salvar visita"}
+                </Text>
               </Pressable>
             </View>
           </View>

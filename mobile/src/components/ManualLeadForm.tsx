@@ -248,6 +248,8 @@ export function ManualLeadForm({
         followUpLogged: boolean;
         contactLogged: boolean;
         photoUploaded: boolean;
+        visitMerged: boolean;
+        visitUpdated: boolean;
       }
     | { status: "queued" };
 
@@ -301,7 +303,7 @@ export function ManualLeadForm({
 
       if (online) {
         try {
-          type LeadResult = { lead: CreatedLead; visitLogged: boolean; followUpLogged: boolean; contactLogged: boolean; visitActivityId?: string };
+          type LeadResult = { lead: CreatedLead; visitLogged: boolean; followUpLogged: boolean; contactLogged: boolean; visitActivityId?: string; visitMerged?: boolean; visitUpdated?: boolean };
           let result: LeadResult;
           if (existingLeadId) {
             result = await addVisitToExistingLead(existingLeadId, existingBusinessName ?? f.businessName, contact, opts);
@@ -326,6 +328,8 @@ export function ManualLeadForm({
             followUpLogged: result.followUpLogged,
             contactLogged,
             photoUploaded,
+            visitMerged: result.visitMerged ?? false,
+            visitUpdated: result.visitUpdated ?? true,
           };
         } catch (e) {
           if (e instanceof ApiError) throw e; // real rejection — user must fix, don't queue
@@ -354,10 +358,10 @@ export function ManualLeadForm({
         router.back();
         return;
       }
-      const { lead, existing, visitLogged, followUpLogged, contactLogged, photoUploaded } = result;
+      const { lead, existing, visitLogged, followUpLogged, contactLogged, photoUploaded, visitMerged, visitUpdated } = result;
       const name = lead.businessName ?? f.businessName;
       const warn: string[] = [];
-      if (!visitLogged) warn.push("a visita");
+      if (!visitLogged) warn.push(visitMerged ? "a observação" : "a visita");
       if (existing && !contactLogged) warn.push("o contato");
       if (f.followUpEnabled && !followUpLogged) warn.push("o retorno");
       if (!photoUploaded) warn.push("a foto da fachada");
@@ -368,8 +372,18 @@ export function ManualLeadForm({
         title = existing ? "Lead já existia ⚠️" : "Lead cadastrado ⚠️";
         message = `"${name}" ${existing ? "já estava no CRM, mas" : "foi criado, mas"} ${warn.join(" e ")} não foi registrado${warn.length > 1 ? "s" : ""}. Tente de novo pelo CRM.`;
       } else if (existing) {
-        title = "Lead já existia ℹ️";
-        message = `"${name}" já estava no CRM — visita${f.contactName.trim() ? " e contato" : ""} registrada${f.followUpEnabled ? " e retorno agendado" : ""}.`;
+        title = visitMerged ? "Já visitado hoje ℹ️" : "Lead já existia ℹ️";
+        // A merge that wrote nothing (no notes/contact type filled in) isn't "added" — just
+        // acknowledge the lead was already visited today, don't claim a note was recorded.
+        const visitPart = visitMerged
+          ? visitUpdated
+            ? "observação adicionada à visita de hoje"
+            : "você já tinha visitado hoje"
+          : "visita registrada";
+        const parts: string[] = [visitPart];
+        if (f.contactName.trim()) parts.push("contato registrado");
+        if (f.followUpEnabled) parts.push("retorno agendado");
+        message = `"${name}" já estava no CRM — ${parts.join(", ")}.`;
       } else {
         title = "Pronto! ✅";
         message = `Lead "${name}" cadastrado${f.followUpEnabled ? ", visita e retorno registrados" : " e visita registrada"}.`;

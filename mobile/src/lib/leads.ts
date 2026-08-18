@@ -161,6 +161,68 @@ export interface CaptureOptions {
   followUp?: FollowUp;
 }
 
+/** True if `iso` falls on today's local calendar day. */
+function isToday(iso: string): boolean {
+  return localDayKey(new Date(iso)) === localDayKey(new Date());
+}
+
+/** Finds an already-logged physical_visit today among a lead's activities, if any — also used by
+ *  the lead detail screen to switch "Registrar visita" into "Adicionar observação" mode. Keys off
+ *  `completedAt` (same field `listVisitsForDay`/`listVisitCountsByDay` use to define "a visit"),
+ *  not `createdAt`, for consistency across the app. */
+export function findTodaysVisitId(activities: LeadActivitySummary[]): string | undefined {
+  return activities.find((a) => a.type === "physical_visit" && a.completedAt && isToday(a.completedAt))?.id;
+}
+
+async function getActivityDescription(activityId: string): Promise<string | null> {
+  const activity = await apiFetch<{ description: string | null }>(`/activities/${activityId}`);
+  return activity.description;
+}
+
+/** Merges new info into an already-logged visit instead of creating a duplicate activity: the
+ *  note is appended (time-stamped, so repeat same-day additions stay legible, never overwriting
+ *  what was already noted) and, if a contact type was given, it's overwritten — unlike notes,
+ *  it's a single classification, not free text to accumulate, so the latest read wins. Returns
+ *  whether anything was actually written, so callers don't claim a note was added when the rep
+ *  submitted with nothing filled in (e.g. re-searching Google just to double-check a lead). */
+async function mergeIntoVisit(activityId: string, notes: string | undefined, contactType: ContactType | undefined): Promise<boolean> {
+  const patch: { description?: string; callContactType?: string } = {};
+  if (notes && notes.trim()) {
+    const current = await getActivityDescription(activityId);
+    const stamp = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    patch.description = current && current.trim() ? `${current.trim()}\n[${stamp}] ${notes.trim()}` : notes.trim();
+  }
+  if (contactType) patch.callContactType = contactType;
+  if (Object.keys(patch).length === 0) return false;
+  await apiFetch(`/activities/${activityId}`, { method: "PATCH", body: patch });
+  return true;
+}
+
+/**
+ * Logs a visit for a lead — or, if one was already logged today, merges the new note into that
+ * existing visit instead of creating a duplicate "Visita porta a porta" activity. This is the
+ * common "came back to add something I forgot" case, not a fresh visit: without this, re-capturing
+ * a business already visited today (e.g. via the Google-mode dedup merge, or hitting "Registrar
+ * visita" again from the lead page) silently created a second, near-identical activity every time.
+ * `merged` is whether an existing visit was matched at all; `updated` is whether the merge
+ * actually wrote anything (false when both notes and contactType were empty).
+ */
+export async function logOrMergeVisit(
+  leadId: string,
+  businessName: string,
+  notes: string | undefined,
+  contactType: ContactType | undefined,
+  activities: LeadActivitySummary[],
+): Promise<{ visitActivityId?: string; merged: boolean; updated: boolean }> {
+  const existingVisitId = findTodaysVisitId(activities);
+  if (existingVisitId) {
+    const updated = await mergeIntoVisit(existingVisitId, notes, contactType);
+    return { visitActivityId: existingVisitId, merged: true, updated };
+  }
+  const created = await createVisitActivity(leadId, businessName, notes, contactType);
+  return { visitActivityId: created.id, merged: false, updated: true };
+}
+
 async function logVisitAndFollowUp(
   leadId: string,
   businessName: string,
@@ -246,6 +308,8 @@ export async function addVisitToExistingLead(
   followUpLogged: boolean;
   contactLogged: boolean;
   visitActivityId?: string;
+  visitMerged: boolean;
+  visitUpdated: boolean;
 }> {
   let contactLogged = true;
   if (contact && contact.name.trim()) {
@@ -256,8 +320,40 @@ export async function addVisitToExistingLead(
     }
   }
 
-  const rest = await logVisitAndFollowUp(leadId, businessName, opts);
-  return { lead: { id: leadId, businessName }, contactLogged, ...rest };
+  // Look up today's activities to decide merge-vs-create below — best-effort: if this fails,
+  // `activities` stays empty and logOrMergeVisit just creates a normal new visit, same as before
+  // this check existed.
+  let activities: LeadActivitySummary[] = [];
+  try {
+    activities = (await getLeadDetail(leadId)).activities;
+  } catch {
+    // ignore — see comment above
+  }
+
+  // Decided upfront (not just read off a successful result) so a failed merge attempt still
+  // reports "a observação" rather than "a visita" wasn't saved — see visitLogged's warn message.
+  const visitMerged = !!findTodaysVisitId(activities);
+  let visitLogged = true;
+  let visitActivityId: string | undefined;
+  let visitUpdated = true;
+  try {
+    const result = await logOrMergeVisit(leadId, businessName, opts.notes, opts.contactType, activities);
+    visitActivityId = result.visitActivityId;
+    visitUpdated = result.updated;
+  } catch {
+    visitLogged = false;
+  }
+
+  let followUpLogged = true;
+  if (opts.followUp) {
+    try {
+      await createFollowUpActivity(leadId, opts.followUp);
+    } catch {
+      followUpLogged = false;
+    }
+  }
+
+  return { lead: { id: leadId, businessName }, contactLogged, visitLogged, followUpLogged, visitActivityId, visitMerged, visitUpdated };
 }
 
 /** Attaches the storefront photo to the visit activity. Not queued offline (Fase 4's outbox is
