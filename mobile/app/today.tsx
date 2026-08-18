@@ -1,17 +1,36 @@
+import { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { listOutbox } from "@/lib/outbox";
-import { listTodayVisits, listVisitCountsByDay } from "@/lib/leads";
+import { listVisitsForDay, listVisitCountsByDay } from "@/lib/leads";
 import { getDailyGoal, setDailyGoal } from "@/lib/goals";
 
 const RECORD_WINDOW_DAYS = 30;
 
+/** "Hoje"/"Ontem" for the first two days back, else a short weekday + dd/mm. */
+function dayLabel(daysAgo: number): string {
+  if (daysAgo === 0) return "Hoje";
+  if (daysAgo === 1) return "Ontem";
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - daysAgo);
+  return d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+}
+
 export default function TodayScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  // 0 = today, 1 = yesterday, ... — lets the rep browse prior days' prospecting, not just today's.
+  const [daysAgo, setDaysAgo] = useState(0);
   const outboxQuery = useQuery({ queryKey: ["outbox", "list"], queryFn: listOutbox, refetchInterval: 15_000 });
-  const visitsQuery = useQuery({ queryKey: ["today-visits"], queryFn: listTodayVisits, refetchInterval: 30_000 });
+  // Same query key as the home screen's "X/Y hoje" pill when viewing today — shares its cache
+  // instead of double-fetching the same data.
+  const visitsQuery = useQuery({
+    queryKey: daysAgo === 0 ? ["today-visits"] : ["visits-for-day", daysAgo],
+    queryFn: () => listVisitsForDay(daysAgo),
+    refetchInterval: 30_000,
+  });
   const goalQuery = useQuery({ queryKey: ["daily-goal"], queryFn: getDailyGoal });
   const countsQuery = useQuery({
     queryKey: ["visit-counts", RECORD_WINDOW_DAYS],
@@ -104,23 +123,37 @@ export default function TodayScreen() {
         )}
       </View>
 
-      <Text style={styles.section}>⏳ Pendentes de sincronização ({pending.length})</Text>
-      {pending.length === 0 && <Text style={styles.empty}>Nada pendente.</Text>}
-      {pending.map((item) => (
-        <View key={item.id} style={styles.card}>
-          <Text style={styles.name}>{item.body.businessName}</Text>
-          <Text style={styles.meta}>
-            {new Date(item.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
-          </Text>
-          <Text style={item.attempts > 0 ? styles.badgeWarn : styles.badgePending}>
-            {item.attempts > 0 ? `⚠️ com erro (${item.attempts}x)` : "⏳ pendente"}
-          </Text>
-        </View>
-      ))}
+      {daysAgo === 0 && (
+        <>
+          <Text style={styles.section}>⏳ Pendentes de sincronização ({pending.length})</Text>
+          {pending.length === 0 && <Text style={styles.empty}>Nada pendente.</Text>}
+          {pending.map((item) => (
+            <View key={item.id} style={styles.card}>
+              <Text style={styles.name}>{item.body.businessName}</Text>
+              <Text style={styles.meta}>
+                {new Date(item.createdAt).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+              </Text>
+              <Text style={item.attempts > 0 ? styles.badgeWarn : styles.badgePending}>
+                {item.attempts > 0 ? `⚠️ com erro (${item.attempts}x)` : "⏳ pendente"}
+              </Text>
+            </View>
+          ))}
+        </>
+      )}
 
-      <Text style={[styles.section, styles.sectionSpaced]}>✅ Sincronizados hoje ({synced.length})</Text>
+      <View style={[styles.dayNav, styles.sectionSpaced]}>
+        <Pressable onPress={() => setDaysAgo((d) => d + 1)} hitSlop={8}>
+          <Text style={styles.dayNavArrow}>◀</Text>
+        </Pressable>
+        <Text style={styles.dayNavLabel}>{dayLabel(daysAgo)}</Text>
+        <Pressable onPress={() => setDaysAgo((d) => Math.max(0, d - 1))} disabled={daysAgo === 0} hitSlop={8}>
+          <Text style={[styles.dayNavArrow, daysAgo === 0 && styles.dayNavArrowDisabled]}>▶</Text>
+        </Pressable>
+      </View>
+
+      <Text style={styles.section}>✅ Visitas ({synced.length})</Text>
       {visitsQuery.isLoading && <ActivityIndicator color="#c9b3d6" />}
-      {!visitsQuery.isLoading && synced.length === 0 && <Text style={styles.empty}>Nada sincronizado ainda hoje.</Text>}
+      {!visitsQuery.isLoading && synced.length === 0 && <Text style={styles.empty}>Nenhuma visita nesse dia.</Text>}
       {synced.map((v) => (
         <Pressable
           key={v.id}
@@ -184,4 +217,14 @@ const styles = StyleSheet.create({
   progressFillMet: { backgroundColor: "#3fae6f" },
   statsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 12 },
   statText: { color: "#c9b3d6", fontSize: 12, fontWeight: "600" },
+  dayNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 20,
+    marginBottom: 8,
+  },
+  dayNavArrow: { color: "#c9b3d6", fontSize: 18, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 4 },
+  dayNavArrowDisabled: { color: "#4d2b5d" },
+  dayNavLabel: { color: "#fff", fontSize: 15, fontWeight: "700", textTransform: "capitalize", minWidth: 110, textAlign: "center" },
 });

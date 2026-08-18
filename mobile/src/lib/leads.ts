@@ -280,10 +280,12 @@ export interface TodayVisit {
   completedAt: string | null;
 }
 
-/** Visits logged today by the current user — relies on createVisitActivity setting `dueDate`. */
-export async function listTodayVisits(): Promise<TodayVisit[]> {
+/** Visits logged on one local calendar day (0 = today, 1 = yesterday, ...) — powers "Meus
+ *  cadastros do dia"'s day navigator. Relies on createVisitActivity setting `dueDate`. */
+export async function listVisitsForDay(daysAgo: number): Promise<TodayVisit[]> {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() - daysAgo);
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
 
@@ -296,6 +298,12 @@ export async function listTodayVisits(): Promise<TodayVisit[]> {
   return activities
     .filter((a) => a.lead)
     .map((a) => ({ id: a.id, leadId: a.lead!.id, businessName: a.lead!.businessName, completedAt: a.completedAt }));
+}
+
+/** Visits logged today — the home screen's "X/Y hoje" pill and the default day shown by
+ *  "Meus cadastros do dia" both use this. */
+export function listTodayVisits(): Promise<TodayVisit[]> {
+  return listVisitsForDay(0);
 }
 
 /** Visit count for one local calendar day — powers the home screen's goal/streak gamification. */
