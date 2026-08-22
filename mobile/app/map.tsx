@@ -22,6 +22,10 @@ interface MapPin {
   longitude: number;
   title: string;
   description?: string;
+  // Source of truth for "does this marker represent an open follow-up" — `color` is DERIVED
+  // from this (see buildMapPins), never the reverse, so counting/filtering pending pins never
+  // depends on comparing hex strings (fragile if the palette ever changes).
+  hasPending: boolean;
   color: string;
 }
 
@@ -48,6 +52,7 @@ function buildMapPins(leadPins: LeadMapPin[], pending: PendingActivityMapPin[]):
       description: openFollowUp
         ? `⏰ ${openFollowUp.subject}${openFollowUp.dueDate ? ` — até ${new Date(openFollowUp.dueDate).toLocaleDateString("pt-BR")}` : ""}`
         : [lead.city, lead.state].filter(Boolean).join(" - ") || undefined,
+      hasPending: !!openFollowUp,
       color: openFollowUp ? PENDING_COLOR : leadPinColor(lead),
     };
   });
@@ -60,6 +65,7 @@ function buildMapPins(leadPins: LeadMapPin[], pending: PendingActivityMapPin[]):
       longitude: p.longitude,
       title: p.businessName,
       description: `⏰ ${p.subject}${p.dueDate ? ` — até ${new Date(p.dueDate).toLocaleDateString("pt-BR")}` : ""}`,
+      hasPending: true,
       color: PENDING_COLOR,
     });
   }
@@ -86,7 +92,7 @@ export default function MapScreen() {
   const leadPins = leadsQuery.data ?? [];
   const pendingPins = pendingQuery.data ?? [];
   const pins = buildMapPins(leadPins, pendingPins);
-  const pendingCount = pins.filter((p) => p.color === PENDING_COLOR).length;
+  const pendingCount = pins.filter((p) => p.hasPending).length;
 
   useEffect(() => {
     (async () => {
