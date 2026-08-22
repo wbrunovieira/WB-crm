@@ -752,6 +752,8 @@ export class LeadsController {
   @ApiQuery({ name: "hasCadence", required: false, enum: ["yes", "no"], description: "Filtrar leads com (yes) ou sem (no) cadência" })
   @ApiQuery({ name: "hasDeepResearch", required: false, enum: ["yes", "no"], description: "Filtrar leads com (yes) ou sem (no) pesquisa do agente IA" })
   @ApiQuery({ name: "sourceGroup", required: false, description: "Filtrar leads pelo grupo/lote de importação" })
+  @ApiQuery({ name: "dateFrom", required: false, description: "Filtrar leads capturados a partir desta data (YYYY-MM-DD ou ISO datetime)" })
+  @ApiQuery({ name: "dateTo", required: false, description: "Filtrar leads capturados até esta data (YYYY-MM-DD ou ISO datetime)" })
   @ApiQuery({ name: "page", required: false, type: Number, description: "Página (default: 1)" })
   @ApiQuery({ name: "pageSize", required: false, type: Number, description: "Itens por página (default: 50, max: 200)" })
   @ApiQuery({ name: "sortBy", required: false, enum: ["businessName", "city", "quality", "status", "hasCadence", "starRating"], description: "Campo de ordenação" })
@@ -770,6 +772,8 @@ export class LeadsController {
     @Query("hasCadence") hasCadence?: string,
     @Query("hasDeepResearch") hasDeepResearch?: string,
     @Query("sourceGroup") sourceGroup?: string,
+    @Query("dateFrom") dateFrom?: string,
+    @Query("dateTo") dateTo?: string,
     @Query("page") pageStr?: string,
     @Query("pageSize") pageSizeStr?: string,
     @Query("sortBy") sortBy?: string,
@@ -802,6 +806,8 @@ export class LeadsController {
         hasCadence: hasCadenceFilter,
         hasDeepResearch: hasDeepResearchFilter,
         sourceGroup,
+        dateFrom,
+        dateTo,
         page,
         pageSize,
         sortBy: (["businessName", "city", "quality", "status", "hasCadence", "starRating"].includes(sortBy ?? "") ? sortBy : undefined) as "businessName" | "city" | "quality" | "status" | "hasCadence" | "starRating" | undefined,

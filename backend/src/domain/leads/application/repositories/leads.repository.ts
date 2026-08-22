@@ -13,6 +13,10 @@ export interface LeadFilters {
   hasCadence?: "yes" | "no";
   hasDeepResearch?: "yes" | "no";
   sourceGroup?: string;
+  /** Filters by createdAt (when the lead was captured) — bare "YYYY-MM-DD" (end-of-day inclusive)
+   *  or a full ISO datetime. */
+  dateFrom?: string;
+  dateTo?: string;
   page?: number;
   pageSize?: number;
   sortBy?: "businessName" | "city" | "quality" | "status" | "hasCadence" | "starRating";

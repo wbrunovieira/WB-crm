@@ -116,6 +116,18 @@ export class PrismaLeadsRepository extends LeadsRepository {
       where.sourceGroup = filters.sourceGroup;
     }
 
+    // dateFrom/dateTo — filters by createdAt (when the lead was captured). Accepts either a bare
+    // "YYYY-MM-DD" (end-of-day inclusive, e.g. a web date-range picker) or a full ISO datetime
+    // (e.g. a local-midnight range) — same shape as activities' dateFrom/dateTo.
+    if (filters.dateFrom || filters.dateTo) {
+      where.createdAt = {
+        ...(filters.dateFrom && { gte: new Date(filters.dateFrom) }),
+        ...(filters.dateTo && {
+          lte: filters.dateTo.includes("T") ? new Date(filters.dateTo) : new Date(`${filters.dateTo}T23:59:59.999Z`),
+        }),
+      };
+    }
+
     return where;
   }
 

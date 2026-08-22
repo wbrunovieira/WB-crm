@@ -30,6 +30,8 @@ export default async function LeadsPage({
     archived?: string;
     hasDeepResearch?: string;
     sourceGroup?: string;
+    dateFrom?: string;
+    dateTo?: string;
     page?: string;
     sortBy?: string;
     sortDir?: string;
@@ -67,6 +69,8 @@ export default async function LeadsPage({
   if (searchParams.hasCadence) leadsQs.set("hasCadence", searchParams.hasCadence);
   if (searchParams.hasDeepResearch) leadsQs.set("hasDeepResearch", searchParams.hasDeepResearch);
   if (searchParams.sourceGroup) leadsQs.set("sourceGroup", searchParams.sourceGroup);
+  if (searchParams.dateFrom) leadsQs.set("dateFrom", searchParams.dateFrom);
+  if (searchParams.dateTo) leadsQs.set("dateTo", searchParams.dateTo);
   if (searchParams.page) leadsQs.set("page", searchParams.page);
   if (searchParams.sortBy) leadsQs.set("sortBy", searchParams.sortBy);
   if (searchParams.sortDir) leadsQs.set("sortDir", searchParams.sortDir);

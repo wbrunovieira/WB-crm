@@ -196,6 +196,42 @@ export function LeadsFilters({ icps = [], sourceGroups = [] }: LeadsFiltersProps
             ))}
           </select>
         </div>
+
+        {/* Data de captura (createdAt) */}
+        <div className="min-w-[130px]">
+          <FilterLabel>Capturado de</FilterLabel>
+          <input
+            type="date"
+            value={searchParams.get("dateFrom")?.toString() || ""}
+            onChange={(e) => handleFilterChange("dateFrom", e.target.value)}
+            className={selectClass}
+          />
+        </div>
+        <div className="min-w-[130px]">
+          <FilterLabel>Até</FilterLabel>
+          <input
+            type="date"
+            value={searchParams.get("dateTo")?.toString() || ""}
+            onChange={(e) => handleFilterChange("dateTo", e.target.value)}
+            className={selectClass}
+          />
+        </div>
+        {(searchParams.get("dateFrom") || searchParams.get("dateTo")) && (
+          <div className="flex items-end pb-2">
+            <button
+              type="button"
+              onClick={() => {
+                const params = new URLSearchParams(searchParams);
+                params.delete("dateFrom");
+                params.delete("dateTo");
+                router.replace(`${pathname}?${params.toString()}`);
+              }}
+              className="text-sm text-gray-500 hover:text-gray-700"
+            >
+              Limpar datas
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

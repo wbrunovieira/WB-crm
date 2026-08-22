@@ -146,6 +146,56 @@ describe("Leads API (e2e)", () => {
       expect(res.body.leads.every((l: { status: string }) => l.status === "contacted")).toBe(true);
     });
 
+    it("filtra por dateFrom/dateTo (createdAt) com data pura YYYY-MM-DD", async () => {
+      await request(app.getHttpServer())
+        .post("/leads")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ businessName: "Lead Capturado Hoje" })
+        .expect(201);
+
+      const today = new Date().toISOString().slice(0, 10);
+      const yesterday = new Date(Date.now() - 86_400_000).toISOString().slice(0, 10);
+      const tomorrow = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+
+      const withinRange = await request(app.getHttpServer())
+        .get(`/leads?dateFrom=${today}&dateTo=${today}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+      expect(withinRange.body.leads.some((l: { businessName: string }) => l.businessName === "Lead Capturado Hoje")).toBe(true);
+
+      const beforeRange = await request(app.getHttpServer())
+        .get(`/leads?dateFrom=${yesterday}&dateTo=${yesterday}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+      expect(beforeRange.body.leads.some((l: { businessName: string }) => l.businessName === "Lead Capturado Hoje")).toBe(false);
+
+      const afterOnly = await request(app.getHttpServer())
+        .get(`/leads?dateFrom=${tomorrow}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+      expect(afterOnly.body.leads.some((l: { businessName: string }) => l.businessName === "Lead Capturado Hoje")).toBe(false);
+    });
+
+    it("filtra por dateFrom/dateTo com datetime ISO completo (formato que o app mobile envia)", async () => {
+      await request(app.getHttpServer())
+        .post("/leads")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ businessName: "Lead ISO Datetime" })
+        .expect(201);
+
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 1);
+
+      const res = await request(app.getHttpServer())
+        .get(`/leads?dateFrom=${encodeURIComponent(start.toISOString())}&dateTo=${encodeURIComponent(end.toISOString())}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.leads.some((l: { businessName: string }) => l.businessName === "Lead ISO Datetime")).toBe(true);
+    });
+
     it("filtra por quality", async () => {
       await request(app.getHttpServer())
         .post("/leads")
