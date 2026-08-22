@@ -44,6 +44,9 @@ beforeAll(async () => {
 
 afterEach(async () => {
   await prisma.activity.deleteMany({ where: { ownerId } });
+  // Only the lead-coordinates test creates a Lead; clean it up too so afterAll's user delete
+  // doesn't trip a FK constraint and leftover leads don't leak into other test runs.
+  await prisma.lead.deleteMany({ where: { ownerId } });
 });
 
 afterAll(async () => {
@@ -123,6 +126,30 @@ describe("Activities API (e2e)", () => {
       expect(res.status).toBe(200);
       expect(res.body).toHaveLength(1);
       expect(res.body[0].subject).toBe("Visita com data pura");
+    });
+
+    it("retorna latitude/longitude do lead vinculado (usado pelo mapa do app mobile)", async () => {
+      const leadRes = await request(app.getHttpServer())
+        .post("/leads")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ businessName: "Lead Com Coordenadas Para Atividade", latitude: -22.5089, longitude: -43.1789 })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post("/activities")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ type: "task", subject: "Retornar contato", leadId: leadRes.body.id, completed: false })
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get(`/activities?leadId=${leadRes.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].lead).toBeDefined();
+      expect(res.body[0].lead.latitude).toBe(-22.5089);
+      expect(res.body[0].lead.longitude).toBe(-43.1789);
     });
 
     it("filtra por type", async () => {

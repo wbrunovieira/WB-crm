@@ -93,7 +93,7 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
         owner: { select: { id: true, name: true, email: true } },
         deal: { select: { id: true, title: true, organization: { select: { id: true, name: true } } } },
         contact: { select: { id: true, name: true, organization: { select: { id: true, name: true } }, partner: { select: { id: true, name: true } } } },
-        lead: { select: { id: true, businessName: true, isArchived: true, starRating: true } },
+        lead: { select: { id: true, businessName: true, isArchived: true, starRating: true, latitude: true, longitude: true } },
         partner: { select: { id: true, name: true } },
         organization: { select: { id: true, name: true } },
         cadenceActivity: {
@@ -198,7 +198,7 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
         owner: { select: { id: true, name: true, email: true } },
         deal: { select: { id: true, title: true, organization: { select: { id: true, name: true } } } },
         contact: { select: { id: true, name: true, organization: { select: { id: true, name: true } }, partner: { select: { id: true, name: true } } } },
-        lead: { select: { id: true, businessName: true, isArchived: true, starRating: true } },
+        lead: { select: { id: true, businessName: true, isArchived: true, starRating: true, latitude: true, longitude: true } },
         partner: { select: { id: true, name: true } },
         organization: { select: { id: true, name: true } },
         cadenceActivity: {
