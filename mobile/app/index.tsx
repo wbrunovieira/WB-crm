@@ -114,6 +114,13 @@ export default function Home() {
       >
         <Text style={styles.todayLinkText}>🔍 Ver leads existentes</Text>
       </Pressable>
+
+      <Pressable
+        style={({ pressed }) => [styles.todayLink, pressed && styles.cardPressed]}
+        onPress={() => router.push("/map")}
+      >
+        <Text style={styles.todayLinkText}>🗺️ Ver leads no mapa</Text>
+      </Pressable>
     </ScrollView>
   );
 }

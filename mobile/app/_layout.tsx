@@ -60,6 +60,7 @@ export default function RootLayout() {
           <Stack.Screen name="today" options={{ title: "Meus cadastros do dia" }} />
           <Stack.Screen name="lead-search" options={{ title: "Buscar lead" }} />
           <Stack.Screen name="lead/[id]" options={{ title: "Lead" }} />
+          <Stack.Screen name="map" options={{ title: "Mapa de leads" }} />
         </Stack>
       </SafeAreaProvider>
     </QueryClientProvider>
