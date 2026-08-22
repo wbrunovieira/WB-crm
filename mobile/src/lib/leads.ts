@@ -508,6 +508,47 @@ export async function listLeadsForMap(): Promise<LeadMapPin[]> {
     }));
 }
 
+/** A pending follow-up on the map — the second pin type (Fase 3), alongside already-captured
+ *  leads (LeadMapPin). Distinguished by `activityId`/`subject`/`dueDate` instead of `status`. */
+export interface PendingActivityMapPin {
+  activityId: string;
+  leadId: string;
+  businessName: string;
+  subject: string;
+  dueDate: string | null;
+  latitude: number;
+  longitude: number;
+}
+
+interface ActivityMapRow {
+  id: string;
+  subject: string;
+  dueDate: string | null;
+  lead: { id: string; businessName: string; latitude: number | null; longitude: number | null } | null;
+}
+
+/** Pending (not completed, not failed/skipped — same semantics `completed=false` already has
+ *  server-side) follow-ups whose lead has a captured GPS position. Every activity type (task,
+ *  call, meeting, whatsapp...) is included, not just physical_visit — any open follow-up on a
+ *  mappable lead is useful to see "near me". */
+export async function listPendingActivitiesForMap(): Promise<PendingActivityMapPin[]> {
+  const activities = await apiFetch<ActivityMapRow[]>(`/activities?completed=false&owner=mine`);
+  return activities
+    .filter(
+      (a): a is ActivityMapRow & { lead: { id: string; businessName: string; latitude: number; longitude: number } } =>
+        a.lead != null && a.lead.latitude != null && a.lead.longitude != null,
+    )
+    .map((a) => ({
+      activityId: a.id,
+      leadId: a.lead.id,
+      businessName: a.lead.businessName,
+      subject: a.subject,
+      dueDate: a.dueDate,
+      latitude: a.lead.latitude,
+      longitude: a.lead.longitude,
+    }));
+}
+
 /** A recent activity embedded in the lead detail — trimmed to what the field screen shows. */
 export interface LeadActivitySummary {
   id: string;
