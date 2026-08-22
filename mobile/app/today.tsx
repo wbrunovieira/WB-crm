@@ -8,14 +8,25 @@ import { getDailyGoal, setDailyGoal, getGoalHistory, resolveGoalForDay } from "@
 
 const RECORD_WINDOW_DAYS = 30;
 
+function dayOffsetDate(daysAgo: number): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() - daysAgo);
+  return d;
+}
+
 /** "Hoje"/"Ontem" for the first two days back, else a short weekday + dd/mm. */
 function dayLabel(daysAgo: number): string {
   if (daysAgo === 0) return "Hoje";
   if (daysAgo === 1) return "Ontem";
-  const d = new Date();
-  d.setHours(0, 0, 0, 0);
-  d.setDate(d.getDate() - daysAgo);
-  return d.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+  return dayOffsetDate(daysAgo).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
+}
+
+/** "YYYY-MM-DD" for `daysAgo` — same format as DayVisitCount.day / goal-history keys, so a day
+ *  being browsed can resolve the goal that was actually in effect for it. */
+function dayKey(daysAgo: number): string {
+  const d = dayOffsetDate(daysAgo);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 export default function TodayScreen() {
@@ -52,6 +63,13 @@ export default function TodayScreen() {
   const goalMet = goal > 0 && todayCount >= goal;
   const progress = goal > 0 ? Math.min(1, todayCount / goal) : 0;
   const record = counts.reduce((max, c) => Math.max(max, c.count), 0);
+
+  // The day being browsed via the ◀ ▶ navigator — its OWN goal (resolveGoalForDay), not today's
+  // current one, so flipping through past days shows what was actually being aimed for then.
+  const viewedGoal = resolveGoalForDay(dayKey(daysAgo), goalHistory);
+  const viewedCount = synced.length;
+  const viewedPercent = viewedGoal > 0 ? Math.round((viewedCount / viewedGoal) * 100) : 0;
+  const viewedGoalMet = viewedGoal > 0 && viewedCount >= viewedGoal;
 
   let streak = 0;
   for (let i = counts.length - 1; i >= 0; i--) {
@@ -156,6 +174,23 @@ export default function TodayScreen() {
         </Pressable>
       </View>
 
+      {!visitsQuery.isLoading && !goalHistoryQuery.isLoading && (
+        <View style={styles.dayProgress}>
+          <Text style={styles.dayProgressText}>
+            {viewedGoalMet ? "🎉" : "🎯"} {viewedCount}/{viewedGoal} empresas — {viewedPercent}% da meta do dia
+          </Text>
+          <View style={styles.dayProgressTrack}>
+            <View
+              style={[
+                styles.dayProgressFill,
+                viewedGoalMet && styles.progressFillMet,
+                { width: `${Math.min(100, viewedPercent)}%` },
+              ]}
+            />
+          </View>
+        </View>
+      )}
+
       <Text style={styles.section}>✅ Visitas ({synced.length})</Text>
       {visitsQuery.isLoading && <ActivityIndicator color="#c9b3d6" />}
       {!visitsQuery.isLoading && synced.length === 0 && <Text style={styles.empty}>Nenhuma visita nesse dia.</Text>}
@@ -232,4 +267,13 @@ const styles = StyleSheet.create({
   dayNavArrow: { color: "#c9b3d6", fontSize: 18, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 4 },
   dayNavArrowDisabled: { color: "#4d2b5d" },
   dayNavLabel: { color: "#fff", fontSize: 15, fontWeight: "700", textTransform: "capitalize", minWidth: 110, textAlign: "center" },
+  dayProgress: { marginBottom: 16 },
+  dayProgressText: { color: "#c9b3d6", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 6 },
+  dayProgressTrack: {
+    height: 6,
+    borderRadius: 999,
+    backgroundColor: "#1a0022",
+    overflow: "hidden",
+  },
+  dayProgressFill: { height: "100%", borderRadius: 999, backgroundColor: "#762991" },
 });
