@@ -12,6 +12,8 @@ export interface LeadSummary {
   city: string | null;
   state: string | null;
   country: string | null;
+  latitude: number | null;
+  longitude: number | null;
   starRating: number | null;
   fieldsFilled: number | null;
   convertedToOrganizationId: string | null;

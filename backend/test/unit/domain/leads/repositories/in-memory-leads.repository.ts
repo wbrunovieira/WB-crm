@@ -91,6 +91,8 @@ export class InMemoryLeadsRepository extends LeadsRepository {
       city: l.city ?? null,
       state: l.state ?? null,
       country: l.country ?? null,
+      latitude: l.latitude ?? null,
+      longitude: l.longitude ?? null,
       starRating: l.starRating ?? null,
       fieldsFilled: l.fieldsFilled ?? null,
       convertedToOrganizationId: l.convertedToOrganizationId ?? null,

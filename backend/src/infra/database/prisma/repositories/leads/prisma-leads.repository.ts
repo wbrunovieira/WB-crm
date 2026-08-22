@@ -180,6 +180,8 @@ export class PrismaLeadsRepository extends LeadsRepository {
       city: row.city,
       state: row.state,
       country: row.country,
+      latitude: row.latitude,
+      longitude: row.longitude,
       starRating: row.starRating,
       fieldsFilled: row.fieldsFilled,
       convertedToOrganizationId: row.convertedToOrganizationId,

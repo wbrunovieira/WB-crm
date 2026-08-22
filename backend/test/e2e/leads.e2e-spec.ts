@@ -124,6 +124,24 @@ describe("Leads API (e2e)", () => {
       expect(item.labels).toBeInstanceOf(Array);
     });
 
+    it("retorna latitude/longitude na listagem (usado pelo mapa do app mobile)", async () => {
+      await request(app.getHttpServer())
+        .post("/leads")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ businessName: "Lead Com Coordenadas", latitude: -22.5089, longitude: -43.1789 })
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get("/leads")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const item = res.body.leads.find((l: { businessName: string }) => l.businessName === "Lead Com Coordenadas");
+      expect(item).toBeDefined();
+      expect(item.latitude).toBe(-22.5089);
+      expect(item.longitude).toBe(-43.1789);
+    });
+
     it("filtra por status", async () => {
       await request(app.getHttpServer())
         .post("/leads")
