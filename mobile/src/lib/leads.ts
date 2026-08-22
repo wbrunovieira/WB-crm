@@ -467,6 +467,47 @@ export async function searchLeads(query: string): Promise<LeadSearchResult[]> {
   return result.leads;
 }
 
+/** A pin on the leads map — only leads with a captured GPS position have one. */
+export interface LeadMapPin {
+  id: string;
+  businessName: string;
+  latitude: number;
+  longitude: number;
+  status: string;
+  quality: string | null;
+  city: string | null;
+  state: string | null;
+}
+
+interface LeadMapRow extends LeadSearchResult {
+  latitude: number | null;
+  longitude: number | null;
+}
+
+/** Door-to-door leads (sourceGroup=porta-a-porta — everything this app creates) that have a
+ *  captured GPS position, for the map screen. Leads without coordinates (manual/card capture
+ *  without tapping "Usar minha localização") are silently skipped — no pin to place for them.
+ *  pageSize=200 (the API's max) — a personal-use rep's door-to-door leads shouldn't exceed that;
+ *  no pagination UI on the map, this is a best-effort "recent captures nearby" view, not an
+ *  exhaustive list. */
+export async function listLeadsForMap(): Promise<LeadMapPin[]> {
+  const result = await apiFetch<{ leads: LeadMapRow[] }>(
+    `/leads?sourceGroup=porta-a-porta&owner=mine&pageSize=200`,
+  );
+  return result.leads
+    .filter((l): l is LeadMapRow & { latitude: number; longitude: number } => l.latitude != null && l.longitude != null)
+    .map((l) => ({
+      id: l.id,
+      businessName: l.businessName,
+      latitude: l.latitude,
+      longitude: l.longitude,
+      status: l.status,
+      quality: l.quality,
+      city: l.city,
+      state: l.state,
+    }));
+}
+
 /** A recent activity embedded in the lead detail — trimmed to what the field screen shows. */
 export interface LeadActivitySummary {
   id: string;
