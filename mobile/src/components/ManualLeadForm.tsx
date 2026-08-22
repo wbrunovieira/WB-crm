@@ -14,7 +14,7 @@ import {
   type CreatedLead,
   type DuplicateMatch,
 } from "@/lib/leads";
-import { getCurrentAddress, LocationPermissionError } from "@/lib/location";
+import { getCurrentAddress, geocodeAddress, GeocodeNotFoundError, LocationPermissionError } from "@/lib/location";
 import { checkGoogleId, type Place } from "@/lib/places";
 import { getSelectedPlace, clearSelectedPlace } from "@/lib/selected-place";
 import { scanCard, OcrUnavailableError } from "@/lib/ocr";
@@ -112,6 +112,7 @@ export function ManualLeadForm({
   const [sel] = useState(() => (fromGoogle ? getSelectedPlace() : null));
   const [f, setF] = useState<FormState>(() => (sel ? seedFromPlace(sel.place) : initial()));
   const [locating, setLocating] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
   const [scanning, setScanning] = useState(false);
   const [facadePhotoUri, setFacadePhotoUri] = useState<string | null>(null);
   const [checkingDuplicates, setCheckingDuplicates] = useState(false);
@@ -148,6 +149,44 @@ export function ManualLeadForm({
       }
     } finally {
       if (mounted.current) setLocating(false);
+    }
+  }
+
+  // Optional alternative to "Usar localização" — forward-geocodes whatever address is already
+  // TYPED, for a lead captured away from the actual place (a card scanned elsewhere, or filling
+  // in details later at home). Never overwrites the typed fields, only fills coordinates.
+  async function geocodeFromTypedAddress() {
+    if (!f.address.trim() && !f.city.trim()) {
+      Alert.alert("Endereço", "Preencha ao menos o endereço ou a cidade antes de buscar as coordenadas.");
+      return;
+    }
+    // No street ("Endereço") typed — geocoding falls back to a city-wide centroid, which can be
+    // off by a significant distance. Warn so the rep doesn't mistake it for a precise pin.
+    const isCoarse = !f.address.trim();
+    setGeocoding(true);
+    try {
+      const { latitude, longitude } = await geocodeAddress(f);
+      if (!mounted.current) return;
+      setF((p) => ({ ...p, latitude, longitude }));
+      Alert.alert(
+        "Coordenadas encontradas",
+        isCoarse
+          ? "A localização foi preenchida, mas como só a cidade foi informada, pode ser aproximada — informe o endereço para mais precisão."
+          : "A localização foi preenchida a partir do endereço.",
+      );
+    } catch (e) {
+      if (mounted.current) {
+        Alert.alert(
+          "Endereço",
+          e instanceof LocationPermissionError
+            ? "Permissão de localização negada. Ative nos Ajustes."
+            : e instanceof GeocodeNotFoundError
+              ? "Não foi possível encontrar coordenadas para esse endereço."
+              : "Não foi possível buscar as coordenadas. Tente de novo.",
+        );
+      }
+    } finally {
+      if (mounted.current) setGeocoding(false);
     }
   }
 
@@ -476,7 +515,7 @@ export function ManualLeadForm({
     mutation.mutate();
   }
 
-  const busy = mutation.isPending || locating || scanning || checkingDuplicates;
+  const busy = mutation.isPending || locating || geocoding || scanning || checkingDuplicates;
 
   if (duplicates) {
     return (
@@ -561,6 +600,17 @@ export function ManualLeadForm({
         <View style={styles.uf}><Field label="UF" value={f.state} onChangeText={(v) => set("state", v)} autoCapitalize="characters" maxLength={2} /></View>
       </View>
       <Field label="CEP" value={f.zipCode} onChangeText={(v) => set("zipCode", v)} keyboardType="numbers-and-punctuation" />
+      {/* Optional — for a lead captured away from the actual place (card scanned elsewhere,
+          filled in later). "Usar localização" above already covers the on-site case. */}
+      <Pressable style={({ pressed }) => [styles.ghost, pressed && styles.pressed]} onPress={geocodeFromTypedAddress} disabled={busy}>
+        {geocoding ? (
+          <ActivityIndicator size="small" color="#c9b3d6" />
+        ) : (
+          <Text style={styles.ghostText}>
+            {f.latitude != null ? "✅ Coordenadas definidas" : "📍 Buscar coordenadas pelo endereço"}
+          </Text>
+        )}
+      </Pressable>
       <Field label="Telefone (fixo)" value={f.phone} onChangeText={(v) => set("phone", v)} keyboardType="phone-pad" />
       <Field label="Site" value={f.website} onChangeText={(v) => set("website", v)} autoCapitalize="none" keyboardType="url" />
 

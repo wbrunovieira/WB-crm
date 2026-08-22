@@ -1,9 +1,17 @@
+import { Platform } from "react-native";
 import * as Location from "expo-location";
 
 export class LocationPermissionError extends Error {
   constructor() {
     super("location-permission-denied");
     this.name = "LocationPermissionError";
+  }
+}
+
+export class GeocodeNotFoundError extends Error {
+  constructor() {
+    super("geocode-not-found");
+    this.name = "GeocodeNotFoundError";
   }
 }
 
@@ -51,6 +59,40 @@ export interface AddressFields {
   country: string;
   latitude: number;
   longitude: number;
+}
+
+/** Forward-geocodes a TYPED address into coordinates — on-device (Apple's geocoder on iOS,
+ *  free, no key), unlike `getCurrentAddress` this never touches the device's GPS sensor. For
+ *  leads captured away from the actual location (filling in a card scanned elsewhere, or typing
+ *  a manual entry back at the car/home) — an alternative to "Usar minha localização", not a
+ *  replacement: optional, only makes sense once an address has been typed. */
+export async function geocodeAddress(fields: {
+  address?: string;
+  neighborhood?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
+  country?: string;
+}): Promise<{ latitude: number; longitude: number }> {
+  // Android requires location permission before geocoding; iOS's CLGeocoder doesn't. This app
+  // is iOS-only (see mobile/CLAUDE.md), so skip the check entirely rather than hard-blocking the
+  // one feature meant as an ALTERNATIVE to GPS for a rep who denied location permission on
+  // purpose (e.g. doesn't want the app tracking their live position, but is fine typing an
+  // address) — gated behind Platform.OS in case Android is ever added.
+  if (Platform.OS === "android") {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") throw new LocationPermissionError();
+  }
+
+  const query = [fields.address, fields.neighborhood, fields.city, fields.state, fields.zipCode, fields.country]
+    .filter((p): p is string => Boolean(p && p.trim()))
+    .join(", ");
+  if (!query) throw new GeocodeNotFoundError();
+
+  const results = await Location.geocodeAsync(query);
+  if (!results.length) throw new GeocodeNotFoundError();
+  const { latitude, longitude } = results[0];
+  return { latitude, longitude };
 }
 
 /** Structured address of the current location, to pre-fill the manual lead form (all editable). */
