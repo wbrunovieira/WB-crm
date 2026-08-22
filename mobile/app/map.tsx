@@ -4,19 +4,72 @@ import MapView, { Marker, type Region } from "react-native-maps";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
-import { listLeadsForMap, type LeadMapPin } from "@/lib/leads";
+import { listLeadsForMap, listPendingActivitiesForMap, type LeadMapPin, type PendingActivityMapPin } from "@/lib/leads";
 
 const DEFAULT_DELTA = { latitudeDelta: 0.05, longitudeDelta: 0.05 };
+const PENDING_COLOR = "#3b82f6"; // takes visual priority over quality — "something to do here" beats "how hot is it"
 
-function pinColor(pin: LeadMapPin): string {
+function leadPinColor(pin: LeadMapPin): string {
   if (pin.quality === "hot") return "#ef4444";
   if (pin.quality === "warm") return "#f4c860";
   return "#c9b3d6";
 }
 
-/** Leads-on-a-map view (Apple Maps, no API key/billing — react-native-maps' default provider on
- *  iOS). Only leads with a captured GPS position show up; manual/card captures without one are
- *  invisible here (see listLeadsForMap). */
+interface MapPin {
+  key: string;
+  leadId: string;
+  latitude: number;
+  longitude: number;
+  title: string;
+  description?: string;
+  color: string;
+}
+
+/** Merges leads + pending follow-ups into one marker list, keyed by lead — a lead with an open
+ *  follow-up gets ONE marker (recolored + annotated), not two overlapping pins at the same
+ *  coordinate. A pending activity whose lead isn't in `leadPins` (e.g. not sourceGroup
+ *  porta-a-porta, so absent from listLeadsForMap) still gets its own marker as a fallback, so
+ *  nothing is silently dropped from the map. */
+function buildMapPins(leadPins: LeadMapPin[], pending: PendingActivityMapPin[]): MapPin[] {
+  const pendingByLead = new Map<string, PendingActivityMapPin>();
+  for (const p of pending) {
+    if (!pendingByLead.has(p.leadId)) pendingByLead.set(p.leadId, p); // first/soonest wins
+  }
+
+  const pins: MapPin[] = leadPins.map((lead) => {
+    const openFollowUp = pendingByLead.get(lead.id);
+    pendingByLead.delete(lead.id); // consumed — leftovers below are the fallback markers
+    return {
+      key: lead.id,
+      leadId: lead.id,
+      latitude: lead.latitude,
+      longitude: lead.longitude,
+      title: lead.businessName,
+      description: openFollowUp
+        ? `⏰ ${openFollowUp.subject}${openFollowUp.dueDate ? ` — até ${new Date(openFollowUp.dueDate).toLocaleDateString("pt-BR")}` : ""}`
+        : [lead.city, lead.state].filter(Boolean).join(" - ") || undefined,
+      color: openFollowUp ? PENDING_COLOR : leadPinColor(lead),
+    };
+  });
+
+  for (const p of pendingByLead.values()) {
+    pins.push({
+      key: `pending-${p.activityId}`,
+      leadId: p.leadId,
+      latitude: p.latitude,
+      longitude: p.longitude,
+      title: p.businessName,
+      description: `⏰ ${p.subject}${p.dueDate ? ` — até ${new Date(p.dueDate).toLocaleDateString("pt-BR")}` : ""}`,
+      color: PENDING_COLOR,
+    });
+  }
+
+  return pins;
+}
+
+/** Leads + pending follow-ups on a map (Apple Maps, no API key/billing — react-native-maps'
+ *  default provider on iOS). Only leads with a captured GPS position show up; manual/card
+ *  captures without one are invisible here (see listLeadsForMap). */
 export default function MapScreen() {
   const router = useRouter();
   const [gpsRegion, setGpsRegion] = useState<Region | null>(null);
@@ -25,7 +78,15 @@ export default function MapScreen() {
   useEffect(() => () => { mounted.current = false; }, []);
 
   const leadsQuery = useQuery({ queryKey: ["leads-map"], queryFn: listLeadsForMap, refetchInterval: 30_000 });
-  const pins = leadsQuery.data ?? [];
+  const pendingQuery = useQuery({
+    queryKey: ["pending-activities-map"],
+    queryFn: listPendingActivitiesForMap,
+    refetchInterval: 30_000,
+  });
+  const leadPins = leadsQuery.data ?? [];
+  const pendingPins = pendingQuery.data ?? [];
+  const pins = buildMapPins(leadPins, pendingPins);
+  const pendingCount = pins.filter((p) => p.color === PENDING_COLOR).length;
 
   useEffect(() => {
     (async () => {
@@ -51,7 +112,10 @@ export default function MapScreen() {
     : undefined;
   const initialRegion = gpsRegion ?? fallbackRegion;
 
-  if (locating || leadsQuery.isLoading) {
+  // pendingQuery isn't gated on its own error — a failed pending-activities fetch just means no
+  // pin gets the "has a follow-up" treatment (pendingPins defaults to []), not a blocked map;
+  // still waited on here so pins don't visibly recolor right after first paint.
+  if (locating || leadsQuery.isLoading || pendingQuery.isLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator color="#c9b3d6" size="large" />
@@ -83,17 +147,20 @@ export default function MapScreen() {
       <MapView style={styles.map} initialRegion={initialRegion} showsUserLocation showsMyLocationButton>
         {pins.map((pin) => (
           <Marker
-            key={pin.id}
+            key={pin.key}
             coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
-            title={pin.businessName}
-            description={[pin.city, pin.state].filter(Boolean).join(" - ") || undefined}
-            pinColor={pinColor(pin)}
-            onPress={() => router.push(`/lead/${pin.id}`)}
+            title={pin.title}
+            description={pin.description}
+            pinColor={pin.color}
+            onPress={() => router.push(`/lead/${pin.leadId}`)}
           />
         ))}
       </MapView>
       <View style={styles.countPill}>
-        <Text style={styles.countPillText}>📍 {pins.length} {pins.length === 1 ? "lead" : "leads"} no mapa</Text>
+        <Text style={styles.countPillText}>
+          📍 {pins.length} {pins.length === 1 ? "lead" : "leads"}
+          {pendingCount > 0 ? ` · ⏰ ${pendingCount} ${pendingCount === 1 ? "pendência" : "pendências"}` : ""}
+        </Text>
       </View>
     </View>
   );
