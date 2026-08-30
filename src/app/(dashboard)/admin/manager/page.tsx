@@ -22,6 +22,14 @@ function getTargetDay(offset: number): Date {
   return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset));
 }
 
+/** First/last day of a calendar month given a month offset (0 = current, -1 = last, ...) */
+function getMonthRange(offset: number): { start: Date; end: Date } {
+  const now = new Date();
+  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
+  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset + 1, 0));
+  return { start, end };
+}
+
 interface PageProps {
   searchParams: Promise<{
     period?: string;
@@ -29,6 +37,7 @@ interface PageProps {
     endDate?: string;
     weekOffset?: string;
     dayOffset?: string;
+    monthOffset?: string;
   }>;
 }
 
@@ -48,6 +57,7 @@ export default async function ManagerPage({ searchParams }: PageProps) {
   const period = (params.period as PeriodOption) || "month";
   const weekOffset = Math.min(0, parseInt(params.weekOffset ?? "0", 10));
   const dayOffset = Math.min(0, parseInt(params.dayOffset ?? "0", 10));
+  const monthOffset = Math.min(0, parseInt(params.monthOffset ?? "0", 10));
 
   let startDate = params.startDate;
   let endDate = params.endDate;
@@ -65,6 +75,13 @@ export default async function ManagerPage({ searchParams }: PageProps) {
     startDate = day.toISOString().slice(0, 10);
     endDate = startDate;
     backendPeriod = "custom";
+  } else if (period === "month") {
+    // Calendar month (not a rolling 30-day window) — lets the rep/admin browse a specific
+    // past month's closed-deal results, same navigable pattern as week/today above.
+    const { start, end } = getMonthRange(monthOffset);
+    startDate = start.toISOString().slice(0, 10);
+    endDate = end.toISOString().slice(0, 10);
+    backendPeriod = "custom";
   }
 
   const qs = new URLSearchParams({ period: backendPeriod });
@@ -81,6 +98,7 @@ export default async function ManagerPage({ searchParams }: PageProps) {
         endDate={endDate}
         weekOffset={weekOffset}
         dayOffset={dayOffset}
+        monthOffset={monthOffset}
       />
     </div>
   );

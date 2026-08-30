@@ -31,12 +31,20 @@ function getDayLabel(offset: number): string {
   return target.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: "UTC" });
 }
 
+function getMonthLabel(offset: number): string {
+  const now = new Date();
+  const target = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
+  const label = target.toLocaleDateString("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" });
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
 interface DateRangePickerProps {
   currentPeriod: PeriodOption;
   startDate?: string;
   endDate?: string;
   weekOffset?: number;
   dayOffset?: number;
+  monthOffset?: number;
 }
 
 export function DateRangePicker({
@@ -45,6 +53,7 @@ export function DateRangePicker({
   endDate,
   weekOffset = 0,
   dayOffset = 0,
+  monthOffset = 0,
 }: DateRangePickerProps) {
   const router = useRouter();
   const [showCustom, setShowCustom] = useState(currentPeriod === "custom");
@@ -111,6 +120,30 @@ export function DateRangePicker({
             disabled={weekOffset >= 0}
             className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
             title="Próxima semana"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      )}
+
+      {/* Month navigation */}
+      {currentPeriod === "month" && (
+        <div className="flex items-center gap-1 bg-[#1a0022] border border-[#792990]/30 rounded-lg px-2 py-1">
+          <button
+            onClick={() => navigate({ period: "month", monthOffset: String(monthOffset - 1) })}
+            className="p-1 text-gray-400 hover:text-white transition-colors rounded"
+            title="Mês anterior"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <span className="text-sm text-gray-300 min-w-[140px] text-center">
+            {getMonthLabel(monthOffset)}
+          </span>
+          <button
+            onClick={() => navigate({ period: "month", monthOffset: String(monthOffset + 1) })}
+            disabled={monthOffset >= 0}
+            className="p-1 text-gray-400 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-colors rounded"
+            title="Próximo mês"
           >
             <ChevronRight className="h-4 w-4" />
           </button>
