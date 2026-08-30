@@ -4,7 +4,7 @@ import MapView, { Marker, type Region } from "react-native-maps";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
-import { listTodayScheduledVisits, resolveTodayVisitPins, type TodayScheduledVisit } from "@/lib/visits";
+import { listScheduledVisitsForDay, resolveTodayVisitPins, type TodayScheduledVisit } from "@/lib/visits";
 
 const DEFAULT_DELTA = { latitudeDelta: 0.05, longitudeDelta: 0.05 };
 const LEAD_COLOR = "#14b8a6"; // same teal the web CRM uses for physical_visit activities
@@ -12,6 +12,24 @@ const ORG_COLOR = "#f59e0b";
 
 function typeIcon(type: string): string {
   return type === "meeting" ? "🤝" : "📍";
+}
+
+function dayOffsetDate(dayOffset: number): Date {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + dayOffset);
+  return d;
+}
+
+/** "Hoje"/"Ontem"/"Amanhã" for the adjacent days, else a short weekday + dd/mm — same labeling
+ *  convention as today.tsx's day navigator, extended to also cover future days (positive
+ *  dayOffset) since scheduled visits/meetings can be due tomorrow or later, unlike that
+ *  screen's synced-visits history which only ever looks backward. */
+function dayLabel(dayOffset: number): string {
+  if (dayOffset === 0) return "Hoje";
+  if (dayOffset === -1) return "Ontem";
+  if (dayOffset === 1) return "Amanhã";
+  return dayOffsetDate(dayOffset).toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit" });
 }
 
 function digits(s: string): string {
@@ -28,18 +46,21 @@ function dueTime(dueDate: string | null): string | null {
   return new Date(dueDate).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
 }
 
-/** Everything pending today, leads + organizations — list mode (default) or map mode. */
+/** Everything pending on a given day, leads + organizations — list mode (default) or map mode,
+ *  with a ◀ ▶ navigator to browse other days (past = overdue/already handled, future = upcoming). */
 export default function TodayVisitsScreen() {
   const router = useRouter();
   const [mode, setMode] = useState<"list" | "map">("list");
+  const [dayOffset, setDayOffset] = useState(0);
   const [gpsRegion, setGpsRegion] = useState<Region | null>(null);
   const [locating, setLocating] = useState(true);
   const mounted = useRef(true);
   useEffect(() => () => { mounted.current = false; }, []);
 
   const visitsQuery = useQuery({
-    queryKey: ["today-scheduled-visits"],
-    queryFn: listTodayScheduledVisits,
+    // Same key the home hub's pill would use for today (dayOffset 0) — shares its cache.
+    queryKey: dayOffset === 0 ? ["today-scheduled-visits"] : ["scheduled-visits-for-day", dayOffset],
+    queryFn: () => listScheduledVisitsForDay(dayOffset),
     refetchInterval: 30_000,
   });
   const visits = visitsQuery.data ?? [];
@@ -47,7 +68,7 @@ export default function TodayVisitsScreen() {
   // Only geocode organization addresses (Fase 2's geocodeAddress) when the rep actually switches
   // to map mode — no point spending on-device geocoding calls for a screen they may never open.
   const pinsQuery = useQuery({
-    queryKey: ["today-scheduled-visits-pins", visits.map((v) => v.activityId).join(",")],
+    queryKey: ["scheduled-visits-pins", dayOffset, visits.map((v) => v.activityId).join(",")],
     queryFn: () => resolveTodayVisitPins(visits),
     enabled: mode === "map" && visits.length > 0,
     // Addresses/coordinates don't change within a workday for this screen's purpose — a long
@@ -103,6 +124,16 @@ export default function TodayVisitsScreen() {
           onPress={() => setMode("map")}
         >
           <Text style={[styles.tabText, mode === "map" && styles.tabTextActive]}>🗺️ Mapa</Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.dayNav}>
+        <Pressable onPress={() => setDayOffset((d) => d - 1)} hitSlop={8}>
+          <Text style={styles.dayNavArrow}>◀</Text>
+        </Pressable>
+        <Text style={styles.dayNavLabel}>{dayLabel(dayOffset)}</Text>
+        <Pressable onPress={() => setDayOffset((d) => d + 1)} hitSlop={8}>
+          <Text style={styles.dayNavArrow}>▶</Text>
         </Pressable>
       </View>
 
@@ -251,6 +282,15 @@ const styles = StyleSheet.create({
   },
   tabActive: { backgroundColor: "#762991", borderColor: "#762991" },
   tabText: { color: "#c9b3d6", fontWeight: "600", fontSize: 14 },
+  dayNav: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 20,
+    paddingBottom: 12,
+  },
+  dayNavArrow: { color: "#c9b3d6", fontSize: 18, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 4 },
+  dayNavLabel: { color: "#fff", fontSize: 15, fontWeight: "700", textTransform: "capitalize", minWidth: 110, textAlign: "center" },
   tabTextActive: { color: "#fff" },
   listContent: { padding: 16, paddingTop: 8, gap: 10 },
   errorText: { color: "#f2a5a5", textAlign: "center", marginTop: 24 },

@@ -49,13 +49,16 @@ interface ActivityRow {
   } | null;
 }
 
-/** Pending physical_visit/meeting activities due today, across BOTH leads and organizations —
- *  "estou na rua, o que tenho pra visitar hoje". No backend filter for "type is one of several"
- *  or "has a lead OR organization" exists, so this fetches broadly (today's pending activities)
- *  and filters client-side — today's volume for a single rep is always small. */
-export async function listTodayScheduledVisits(): Promise<TodayScheduledVisit[]> {
+/** Pending physical_visit/meeting activities due on a given day, across BOTH leads and
+ *  organizations — "estou na rua, o que tenho pra visitar hoje" (and "o que fica pra amanhã /
+ *  o que ficou atrasado de ontem", via dayOffset — negative for past days, positive for future).
+ *  No backend filter for "type is one of several" or "has a lead OR organization" exists, so
+ *  this fetches broadly (that day's pending activities) and filters client-side — a single
+ *  rep's daily volume is always small. */
+export async function listScheduledVisitsForDay(dayOffset: number = 0): Promise<TodayScheduledVisit[]> {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
+  start.setDate(start.getDate() + dayOffset);
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
 
