@@ -39,6 +39,11 @@ beforeAll(async () => {
     },
   });
   ownerId = user.id;
+  // Self-clean at START, not just afterEach — the dev DB is shared across runs, so a previous
+  // run that crashed mid-test can leave rows behind and pollute the very first assertion here.
+  await prisma.activity.deleteMany({ where: { ownerId } });
+  await prisma.lead.deleteMany({ where: { ownerId } });
+  await prisma.organization.deleteMany({ where: { ownerId } });
   token = jwt.sign({ sub: user.id, name: user.name, email: user.email, role: user.role });
 });
 

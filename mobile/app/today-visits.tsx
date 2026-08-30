@@ -50,6 +50,9 @@ export default function TodayVisitsScreen() {
     queryKey: ["today-scheduled-visits-pins", visits.map((v) => v.activityId).join(",")],
     queryFn: () => resolveTodayVisitPins(visits),
     enabled: mode === "map" && visits.length > 0,
+    // Addresses/coordinates don't change within a workday for this screen's purpose — a long
+    // staleTime keeps toggling list/map back and forth from re-hammering the on-device geocoder.
+    staleTime: 5 * 60_000,
   });
   const pins = pinsQuery.data ?? [];
 
@@ -126,7 +129,7 @@ export default function TodayVisitsScreen() {
               </View>
               <Text style={styles.cardSubject}>{v.subject}</Text>
               {dueTime(v.dueDate) && <Text style={styles.cardMeta}>⏰ {dueTime(v.dueDate)}</Text>}
-              {v.kind === "organization" && (v.phone || v.whatsapp) && (
+              {(v.phone || v.whatsapp) && (
                 <View style={styles.orgActions}>
                   {v.phone && (
                     <Pressable onPress={() => Linking.openURL(telHref(v.phone!))} hitSlop={8}>
@@ -147,7 +150,7 @@ export default function TodayVisitsScreen() {
         <MapModeContent
           locating={locating}
           gpsRegion={gpsRegion}
-          pinsLoading={pinsQuery.isLoading}
+          pinsLoading={visitsQuery.isLoading || pinsQuery.isLoading}
           pins={pins}
           visitsCount={visits.length}
           onSelect={onSelect}

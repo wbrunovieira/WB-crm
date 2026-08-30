@@ -66,6 +66,10 @@ export async function listTodayScheduledVisits(): Promise<TodayScheduledVisit[]>
   const visits: TodayScheduledVisit[] = [];
   for (const a of activities) {
     if (!VISIT_TYPES.has(a.type)) continue;
+    // An activity can carry BOTH leadId and organizationId (e.g. a presential meeting scheduled
+    // against a lead that was later converted). Navigation still prefers the lead (it has a
+    // dedicated detail screen), but the organization's call/WhatsApp actions must not be
+    // silently dropped in that case — they're often the only actionable contact info here.
     if (a.lead) {
       visits.push({
         activityId: a.id,
@@ -78,8 +82,8 @@ export async function listTodayScheduledVisits(): Promise<TodayScheduledVisit[]>
         latitude: a.lead.latitude,
         longitude: a.lead.longitude,
         address: null,
-        phone: null,
-        whatsapp: null,
+        phone: a.organization?.phone ?? null,
+        whatsapp: a.organization?.whatsapp ?? null,
       });
     } else if (a.organization) {
       visits.push({
