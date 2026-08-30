@@ -140,16 +140,21 @@ export class GetManagerStatsUseCase {
         const uLeads = raw.leads.filter(l => l.ownerId === user.id);
         const uOrgs = raw.organizations.filter(o => o.ownerId === user.id);
         const uDeals = raw.deals.filter(d => d.ownerId === user.id);
+        // Won/lost/value come from closedDeals (closedAt-based) — a deal closed this period
+        // counts here regardless of when it was created, and one created this period but closed
+        // earlier/later does not.
+        const uClosedDeals = raw.closedDeals.filter(d => d.ownerId === user.id);
         const uContacts = raw.contacts.filter(c => c.ownerId === user.id);
         const uPartners = raw.partners.filter(p => p.ownerId === user.id);
         const uActivities = raw.activities.filter(a => a.ownerId === user.id);
         const uStageChanges = raw.stageChanges.filter(s => s.changedById === user.id);
 
         const converted = uLeads.filter(l => l.convertedAt !== null).length;
-        const won = uDeals.filter(d => d.status === "won").length;
-        const lost = uDeals.filter(d => d.status === "lost").length;
+        const uWonDeals = uClosedDeals.filter(d => d.status === "won");
+        const won = uWonDeals.length;
+        const lost = uClosedDeals.filter(d => d.status === "lost").length;
         const open = uDeals.filter(d => d.status === "open").length;
-        const totalValue = uDeals.reduce((s, d) => s + (d.value ?? 0), 0);
+        const totalValue = uWonDeals.reduce((s, d) => s + (d.value ?? 0), 0);
         const completed = uActivities.filter(a => a.completed).length;
         const overdue = uActivities.filter(a => !a.completed && a.dueDate && new Date(a.dueDate) < now).length;
         const byType: Record<string, number> = {};
@@ -161,7 +166,7 @@ export class GetManagerStatsUseCase {
           userEmail: user.email,
           leads: { created: uLeads.length, converted, conversionRate: uLeads.length > 0 ? Math.round((converted / uLeads.length) * 100) : 0 },
           organizations: { created: uOrgs.length },
-          deals: { created: uDeals.length, won, lost, open, totalValue, avgValue: uDeals.length > 0 ? totalValue / uDeals.length : 0 },
+          deals: { created: uDeals.length, won, lost, open, totalValue, avgValue: won > 0 ? totalValue / won : 0 },
           contacts: { created: uContacts.length },
           partners: { created: uPartners.length },
           activities: { total: uActivities.length, completed, pending: uActivities.length - completed, overdue, byType },
@@ -172,7 +177,9 @@ export class GetManagerStatsUseCase {
 
     // Totals
     const convTotal = raw.leads.filter(l => l.convertedAt !== null).length;
-    const totalDealValue = raw.deals.reduce((s, d) => s + (d.value ?? 0), 0);
+    const wonDealsAll = raw.closedDeals.filter(d => d.status === "won");
+    const lostDealsAll = raw.closedDeals.filter(d => d.status === "lost");
+    const totalDealValue = wonDealsAll.reduce((s, d) => s + (d.value ?? 0), 0);
     const partnersByType: Record<string, number> = {};
     raw.partners.forEach(p => { if (p.partnerType) partnersByType[p.partnerType] = (partnersByType[p.partnerType] ?? 0) + 1; });
     const actByType: Record<string, number> = {};
@@ -200,11 +207,11 @@ export class GetManagerStatsUseCase {
       organizations: { total: raw.organizations.length },
       deals: {
         total: raw.deals.length,
-        won: raw.deals.filter(d => d.status === "won").length,
-        lost: raw.deals.filter(d => d.status === "lost").length,
+        won: wonDealsAll.length,
+        lost: lostDealsAll.length,
         open: raw.deals.filter(d => d.status === "open").length,
         totalValue: totalDealValue,
-        avgValue: raw.deals.length > 0 ? totalDealValue / raw.deals.length : 0,
+        avgValue: wonDealsAll.length > 0 ? totalDealValue / wonDealsAll.length : 0,
         byStage: dealsByStage,
       },
       contacts: { total: raw.contacts.length },

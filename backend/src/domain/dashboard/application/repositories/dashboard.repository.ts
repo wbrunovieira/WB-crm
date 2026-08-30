@@ -11,6 +11,10 @@ export interface DashboardStatsRawData {
   leads: Array<{ ownerId: string; convertedAt: Date | null }>;
   organizations: Array<{ ownerId: string }>;
   deals: Array<{ ownerId: string; status: string | null; value: number | null; stageId: string | null; stageName: string | null }>;
+  // Deals actually WON/LOST within the period, filtered by closedAt — not createdAt. `deals`
+  // above answers "created in period"; this answers "closed (won/lost) in period", which is
+  // what "resultado da semana/mês" (revenue actually closed) needs.
+  closedDeals: Array<{ ownerId: string; status: string | null; value: number | null; stageId: string | null; stageName: string | null }>;
   contacts: Array<{ ownerId: string }>;
   partners: Array<{ ownerId: string; partnerType: string | null }>;
   activities: Array<{ ownerId: string; type: string; completed: boolean; dueDate: Date | null }>;
@@ -20,6 +24,8 @@ export interface DashboardStatsRawData {
     leads: number;
     organizations: number;
     dealsCount: number;
+    // Previous period's WON revenue (closedAt-based) — pairs with the now closedAt-based
+    // `totals.deals.totalValue` for an apples-to-apples % comparison.
     dealsValue: number;
     contacts: number;
     partners: number;

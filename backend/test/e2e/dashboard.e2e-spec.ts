@@ -203,6 +203,56 @@ describe("GET /dashboard/stats (e2e)", () => {
     expect(res.body.totals.leads.total).toBe(0);
     expect(res.body.totals.deals.total).toBe(0);
   });
+
+  it("conta negócio ganho pela data de fechamento (closedAt), não pela data de criação", async () => {
+    const now = new Date();
+    const insidePeriod = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000); // 2 dias atrás — dentro de "week"
+    const outsidePeriod = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000); // 40 dias atrás — fora de "week"
+
+    const before = await request(app.getHttpServer())
+      .get("/dashboard/stats?period=week")
+      .set("Authorization", `Bearer ${adminToken}`)
+      .expect(200);
+    const baselineValue = before.body.totals.deals.totalValue;
+    const baselineWon = before.body.totals.deals.won;
+
+    // Criado há muito tempo, mas GANHO recentemente — deve contar nas estatísticas da semana.
+    const wonRecently = await prisma.deal.create({
+      data: {
+        title: "E2E Won Recently",
+        ownerId: adminId,
+        stageId,
+        value: 5000,
+        status: "won",
+        createdAt: outsidePeriod,
+        closedAt: insidePeriod,
+      },
+    });
+    // Criado recentemente, mas GANHO há muito tempo — NÃO deve contar nas estatísticas da semana.
+    const wonLongAgo = await prisma.deal.create({
+      data: {
+        title: "E2E Won Long Ago",
+        ownerId: adminId,
+        stageId,
+        value: 9999,
+        status: "won",
+        createdAt: insidePeriod,
+        closedAt: outsidePeriod,
+      },
+    });
+
+    try {
+      const res = await request(app.getHttpServer())
+        .get("/dashboard/stats?period=week")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.totals.deals.totalValue).toBe(baselineValue + 5000);
+      expect(res.body.totals.deals.won).toBe(baselineWon + 1);
+    } finally {
+      await prisma.deal.deleteMany({ where: { id: { in: [wonRecently.id, wonLongAgo.id] } } });
+    }
+  });
 });
 
 // ── GET /dashboard/timeline ───────────────────────────────────────────────────

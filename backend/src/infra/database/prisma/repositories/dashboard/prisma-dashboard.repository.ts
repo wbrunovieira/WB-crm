@@ -20,7 +20,7 @@ export class PrismaDashboardRepository extends DashboardRepository {
     const { startDate, endDate, ownerFilter, prevStartDate, prevEndDate } = input;
     const dateFilter = { createdAt: { gte: startDate, lte: endDate } };
 
-    const [users, leads, organizations, deals, contacts, partners, activities, stageChanges, stages] =
+    const [users, leads, organizations, deals, closedDeals, contacts, partners, activities, stageChanges, stages] =
       await Promise.all([
         this.prisma.user.findMany({ select: { id: true, name: true, email: true } }),
         this.prisma.lead.findMany({
@@ -33,6 +33,14 @@ export class PrismaDashboardRepository extends DashboardRepository {
         }),
         this.prisma.deal.findMany({
           where: { ...ownerFilter, ...dateFilter },
+          select: {
+            ownerId: true, status: true, value: true, stageId: true,
+            stage: { select: { name: true } },
+          },
+        }),
+        // Won/lost by closedAt, independent of when the deal was created — see closedDeals doc.
+        this.prisma.deal.findMany({
+          where: { ...ownerFilter, status: { in: ["won", "lost"] }, closedAt: { gte: startDate, lte: endDate } },
           select: {
             ownerId: true, status: true, value: true, stageId: true,
             stage: { select: { name: true } },
@@ -64,13 +72,13 @@ export class PrismaDashboardRepository extends DashboardRepository {
     const prevDateFilter = { createdAt: { gte: prevStartDate, lte: prevEndDate } };
     const prevOwnerFilter = ownerFilter;
 
-    const [prevLeads, prevOrgs, prevDealsAgg, prevContacts, prevPartners, prevActivities] =
+    const [prevLeads, prevOrgs, prevDealsCount, prevWonAgg, prevContacts, prevPartners, prevActivities] =
       await Promise.all([
         this.prisma.lead.count({ where: { ...prevOwnerFilter, ...prevDateFilter } }),
         this.prisma.organization.count({ where: { ...prevOwnerFilter, ...prevDateFilter } }),
+        this.prisma.deal.count({ where: { ...prevOwnerFilter, ...prevDateFilter } }),
         this.prisma.deal.aggregate({
-          where: { ...prevOwnerFilter, ...prevDateFilter },
-          _count: true,
+          where: { ...prevOwnerFilter, status: "won", closedAt: { gte: prevStartDate, lte: prevEndDate } },
           _sum: { value: true },
         }),
         this.prisma.contact.count({ where: { ...prevOwnerFilter, ...prevDateFilter } }),
@@ -89,6 +97,13 @@ export class PrismaDashboardRepository extends DashboardRepository {
         stageId: d.stageId,
         stageName: d.stage?.name ?? null,
       })),
+      closedDeals: closedDeals.map(d => ({
+        ownerId: d.ownerId,
+        status: d.status,
+        value: d.value,
+        stageId: d.stageId,
+        stageName: d.stage?.name ?? null,
+      })),
       contacts,
       partners,
       activities,
@@ -101,8 +116,8 @@ export class PrismaDashboardRepository extends DashboardRepository {
       prevCounts: {
         leads: prevLeads,
         organizations: prevOrgs,
-        dealsCount: prevDealsAgg._count,
-        dealsValue: prevDealsAgg._sum.value ?? 0,
+        dealsCount: prevDealsCount,
+        dealsValue: prevWonAgg._sum.value ?? 0,
         contacts: prevContacts,
         partners: prevPartners,
         activities: prevActivities,
