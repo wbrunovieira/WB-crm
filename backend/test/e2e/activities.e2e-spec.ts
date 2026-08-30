@@ -44,9 +44,10 @@ beforeAll(async () => {
 
 afterEach(async () => {
   await prisma.activity.deleteMany({ where: { ownerId } });
-  // Only the lead-coordinates test creates a Lead; clean it up too so afterAll's user delete
-  // doesn't trip a FK constraint and leftover leads don't leak into other test runs.
+  // Only a couple of tests create a Lead/Organization; clean up both so afterAll's user delete
+  // doesn't trip a FK constraint and leftover records don't leak into other test runs.
   await prisma.lead.deleteMany({ where: { ownerId } });
+  await prisma.organization.deleteMany({ where: { ownerId } });
 });
 
 afterAll(async () => {
@@ -150,6 +151,43 @@ describe("Activities API (e2e)", () => {
       expect(res.body[0].lead).toBeDefined();
       expect(res.body[0].lead.latitude).toBe(-22.5089);
       expect(res.body[0].lead.longitude).toBe(-43.1789);
+    });
+
+    it("retorna endereço/telefone da organization vinculada (usado pela tela de visitas do dia)", async () => {
+      const orgRes = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          name: "Organization Com Endereço Para Atividade",
+          streetAddress: "Rua das Flores, 123",
+          city: "Petrópolis",
+          state: "RJ",
+          zipCode: "25600-000",
+          country: "Brasil",
+          phone: "+5524999998888",
+        })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post("/activities")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ type: "meeting", subject: "Reunião de acompanhamento", organizationId: orgRes.body.id, completed: false })
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get("/activities?type=meeting")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      const item = res.body.find((a: { subject: string }) => a.subject === "Reunião de acompanhamento");
+      expect(item).toBeDefined();
+      expect(item.organization).toBeDefined();
+      expect(item.organization.streetAddress).toBe("Rua das Flores, 123");
+      expect(item.organization.city).toBe("Petrópolis");
+      expect(item.organization.state).toBe("RJ");
+      expect(item.organization.zipCode).toBe("25600-000");
+      expect(item.organization.country).toBe("Brasil");
+      expect(item.organization.phone).toBe("+5524999998888");
     });
 
     it("filtra por type", async () => {

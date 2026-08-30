@@ -45,7 +45,17 @@ export interface ActivitySummary {
   contact: { id: string; name: string; organization: { id: string; name: string } | null; partner: { id: string; name: string } | null } | null;
   lead: { id: string; businessName: string; isArchived: boolean; starRating: number | null; latitude: number | null; longitude: number | null } | null;
   partner: { id: string; name: string } | null;
-  organization: { id: string; name: string } | null;
+  organization: {
+    id: string;
+    name: string;
+    streetAddress: string | null;
+    city: string | null;
+    state: string | null;
+    zipCode: string | null;
+    country: string | null;
+    phone: string | null;
+    whatsapp: string | null;
+  } | null;
   cadenceActivity: { id: string; leadCadence: { cadence: { id: string; name: string; icp: { id: string; name: string } | null } } } | null;
 }
 

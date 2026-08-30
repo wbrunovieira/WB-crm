@@ -95,7 +95,19 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
         contact: { select: { id: true, name: true, organization: { select: { id: true, name: true } }, partner: { select: { id: true, name: true } } } },
         lead: { select: { id: true, businessName: true, isArchived: true, starRating: true, latitude: true, longitude: true } },
         partner: { select: { id: true, name: true } },
-        organization: { select: { id: true, name: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            streetAddress: true,
+            city: true,
+            state: true,
+            zipCode: true,
+            country: true,
+            phone: true,
+            whatsapp: true,
+          },
+        },
         cadenceActivity: {
           select: {
             id: true,
@@ -200,7 +212,19 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
         contact: { select: { id: true, name: true, organization: { select: { id: true, name: true } }, partner: { select: { id: true, name: true } } } },
         lead: { select: { id: true, businessName: true, isArchived: true, starRating: true, latitude: true, longitude: true } },
         partner: { select: { id: true, name: true } },
-        organization: { select: { id: true, name: true } },
+        organization: {
+          select: {
+            id: true,
+            name: true,
+            streetAddress: true,
+            city: true,
+            state: true,
+            zipCode: true,
+            country: true,
+            phone: true,
+            whatsapp: true,
+          },
+        },
         cadenceActivity: {
           select: {
             id: true,
