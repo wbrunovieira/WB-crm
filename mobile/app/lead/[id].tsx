@@ -206,7 +206,13 @@ export default function LeadDetailScreen() {
 
         {!editing || !edit ? (
           <View style={styles.readRows}>
-            <InfoRow label="Endereço" value={[lead.address, lead.city, lead.state, lead.zipCode].filter(Boolean).join(", ")} />
+            <InfoRow
+              label="Endereço"
+              value={[lead.address, lead.city, lead.state, lead.zipCode].filter(Boolean).join(", ")}
+              kind="address"
+              latitude={lead.latitude}
+              longitude={lead.longitude}
+            />
             <InfoRow label="Telefone" value={lead.phone} kind="phone" />
             <InfoRow label="WhatsApp" value={lead.whatsapp} kind="whatsapp" />
             <InfoRow label="Site" value={lead.website} kind="url" />
@@ -332,11 +338,24 @@ export default function LeadDetailScreen() {
   );
 }
 
-type InfoKind = "text" | "phone" | "whatsapp" | "url";
+type InfoKind = "text" | "phone" | "whatsapp" | "url" | "address";
 
 /** label/value row with a copy action, plus a kind-specific quick action (call, open WhatsApp,
- *  open site) — mirrors the tel:/wa.me actions already on each contact row below. */
-function InfoRow({ label, value, kind = "text" }: { label: string; value: string | null | undefined; kind?: InfoKind }) {
+ *  open site, navigate with Waze) — mirrors the tel:/wa.me actions already on each contact row
+ *  below. */
+function InfoRow({
+  label,
+  value,
+  kind = "text",
+  latitude,
+  longitude,
+}: {
+  label: string;
+  value: string | null | undefined;
+  kind?: InfoKind;
+  latitude?: number | null;
+  longitude?: number | null;
+}) {
   const [copied, setCopied] = useState(false);
   const hasValue = !!(value && value.trim());
   const trimmed = hasValue ? value!.trim() : "";
@@ -355,6 +374,16 @@ function InfoRow({ label, value, kind = "text" }: { label: string; value: string
     // Only bare domains get "https://" prepended — an already-explicit scheme (ftp:, mailto:, ...)
     // is left as-is instead of getting "https://" wrongly stacked in front of it.
     else if (kind === "url") Linking.openURL(/^[a-z][a-z0-9+.-]*:/i.test(trimmed) ? trimmed : `https://${trimmed}`);
+    // Prefer coordinates (already captured for this lead) over the address text — more precise
+    // and works even for a business without a clean, geocodable street address. The universal
+    // waze.com/ul link works whether or not Waze is installed (falls back to app-store/web).
+    else if (kind === "address") {
+      const url =
+        latitude != null && longitude != null
+          ? `https://waze.com/ul?ll=${latitude},${longitude}&navigate=yes`
+          : `https://waze.com/ul?q=${encodeURIComponent(trimmed)}&navigate=yes`;
+      Linking.openURL(url);
+    }
   }
 
   return (
@@ -380,6 +409,11 @@ function InfoRow({ label, value, kind = "text" }: { label: string; value: string
             {kind === "url" && (
               <Pressable onPress={openPrimary} hitSlop={8}>
                 <Text style={styles.actionIcon}>🌐</Text>
+              </Pressable>
+            )}
+            {kind === "address" && (
+              <Pressable onPress={openPrimary} hitSlop={8}>
+                <Text style={styles.actionIcon}>🚗</Text>
               </Pressable>
             )}
           </View>

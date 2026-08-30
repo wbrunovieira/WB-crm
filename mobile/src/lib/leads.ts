@@ -573,6 +573,8 @@ export interface LeadDetail {
   phone: string | null;
   whatsapp: string | null;
   website: string | null;
+  latitude: number | null;
+  longitude: number | null;
   activities: LeadActivitySummary[];
 }
 
