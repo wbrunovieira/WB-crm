@@ -21,6 +21,11 @@ const COLORS = {
 };
 
 export function DealsChart({ deals }: DealsChartProps) {
+  // "Em aberto" comes from deals CREATED in the period; "Ganhos"/"Perdidos" come from deals
+  // CLOSED in the period (closedAt-based) — they're disjoint sets, not slices of `deals.total`
+  // (which only counts deals created). The summary below must total the pie's own slices, not
+  // `deals.total`, or the two numbers visibly won't add up.
+  const pieTotal = deals.open + deals.won + deals.lost;
   const chartData = [
     { name: "Em aberto", value: deals.open, key: "open" },
     { name: "Ganhos", value: deals.won, key: "won" },
@@ -90,7 +95,7 @@ export function DealsChart({ deals }: DealsChartProps) {
         </div>
         <div>
           <p className="text-gray-400">Total</p>
-          <p className="text-white font-semibold">{deals.total}</p>
+          <p className="text-white font-semibold">{pieTotal}</p>
         </div>
       </div>
     </div>

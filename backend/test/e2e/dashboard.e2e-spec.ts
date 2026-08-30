@@ -253,6 +253,64 @@ describe("GET /dashboard/stats (e2e)", () => {
       await prisma.deal.deleteMany({ where: { id: { in: [wonRecently.id, wonLongAgo.id] } } });
     }
   });
+
+  it("período custom com data sem hora (YYYY-MM-DD, como o front envia) inclui o dia inteiro", async () => {
+    // O front (admin/manager) sempre manda startDate/endDate como "YYYY-MM-DD" — sem isso,
+    // new Date("YYYY-MM-DD") vira meia-noite UTC e um endDate assim exclui o resto do dia
+    // (no caso de period=today, onde startDate === endDate, a janela vira vazia sempre).
+    const todayDateOnly = new Date().toISOString().slice(0, 10);
+
+    const before = await request(app.getHttpServer())
+      .get(`/dashboard/stats?period=custom&startDate=${todayDateOnly}&endDate=${todayDateOnly}`)
+      .set("Authorization", `Bearer ${adminToken}`)
+      .expect(200);
+    const baselineWon = before.body.totals.deals.won;
+
+    const wonToday = await prisma.deal.create({
+      data: { title: "E2E Won Today", ownerId: adminId, stageId, value: 1234, status: "won", closedAt: new Date() },
+    });
+
+    try {
+      const res = await request(app.getHttpServer())
+        .get(`/dashboard/stats?period=custom&startDate=${todayDateOnly}&endDate=${todayDateOnly}`)
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+
+      expect(res.body.totals.deals.won).toBe(baselineWon + 1);
+    } finally {
+      await prisma.deal.deleteMany({ where: { id: wonToday.id } });
+    }
+  });
+
+  it("inclui em byUser um usuário que só fechou um negócio antigo no período (sem criar nada novo)", async () => {
+    const outsidePeriod = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000); // criado fora da semana
+
+    const sdrClosedOld = await prisma.deal.create({
+      data: {
+        title: "E2E SDR Closed Old Deal",
+        ownerId: sdrId,
+        stageId,
+        value: 777,
+        status: "won",
+        createdAt: outsidePeriod, // não conta como "criado" nesta semana
+        closedAt: new Date(), // mas foi fechado agora — deve aparecer
+      },
+    });
+
+    try {
+      const res = await request(app.getHttpServer())
+        .get("/dashboard/stats?period=week")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+
+      const sdrRow = res.body.byUser.find((u: any) => u.userId === sdrId);
+      expect(sdrRow).toBeDefined();
+      expect(sdrRow.deals.won).toBeGreaterThanOrEqual(1);
+      expect(sdrRow.deals.created).toBe(0);
+    } finally {
+      await prisma.deal.deleteMany({ where: { id: sdrClosedOld.id } });
+    }
+  });
 });
 
 // ── GET /dashboard/timeline ───────────────────────────────────────────────────

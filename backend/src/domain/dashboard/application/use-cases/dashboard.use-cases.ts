@@ -13,7 +13,20 @@ function resolveDateRange(
   startDate?: Date,
   endDate?: Date,
 ): { startDate: Date; endDate: Date } {
-  if (period === "custom" && startDate && endDate) return { startDate, endDate };
+  // The frontend's navigable periods (today/week/month) all resolve client-side to explicit
+  // "YYYY-MM-DD" dates (built via Date.UTC — see page.tsx's getWeekMonday/getTargetDay/
+  // getMonthRange) sent as period=custom. `new Date("YYYY-MM-DD")` parses to midnight UTC, so
+  // this must normalize in UTC too (setHours would use the server's local TZ, e.g.
+  // America/Sao_Paulo, shifting the intended UTC calendar day by hours) — otherwise endDate
+  // cuts off virtually the entire last day, and a single-day range like period=today (where
+  // start === end) matches nothing at all.
+  if (period === "custom" && startDate && endDate) {
+    const start = new Date(startDate);
+    start.setUTCHours(0, 0, 0, 0);
+    const end = new Date(endDate);
+    end.setUTCHours(23, 59, 59, 999);
+    return { startDate: start, endDate: end };
+  }
   const now = new Date();
   const end = new Date(now);
   end.setHours(23, 59, 59, 999);
@@ -173,7 +186,10 @@ export class GetManagerStatsUseCase {
           stageChanges: uStageChanges.length,
         };
       })
-      .filter(u => u.leads.created + u.organizations.created + u.deals.created + u.contacts.created + u.partners.created + u.activities.total + u.stageChanges > 0);
+      // Includes deals.won/lost (closedAt-based) alongside deals.created (createdAt-based) — a
+      // rep who only closed an older deal this period, without creating anything new, must not
+      // be dropped from the table (and its totals row) despite having real period activity.
+      .filter(u => u.leads.created + u.organizations.created + u.deals.created + u.deals.won + u.deals.lost + u.contacts.created + u.partners.created + u.activities.total + u.stageChanges > 0);
 
     // Totals
     const convTotal = raw.leads.filter(l => l.convertedAt !== null).length;

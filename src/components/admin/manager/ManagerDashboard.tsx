@@ -30,12 +30,15 @@ export function ManagerDashboard({
   dayOffset = 0,
   monthOffset = 0,
 }: ManagerDashboardProps) {
-  // Format period display
+  // Format period display — timeZone: "UTC" matches how DateRangePicker's own labels
+  // (getWeekLabel/getDayLabel/getMonthLabel) are built with Date.UTC; without it, a
+  // Brazil-timezone browser shifts these dates back a day (e.g. "01 de ago." → "31 de jul.").
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString("pt-BR", {
       day: "2-digit",
       month: "short",
       year: "numeric",
+      timeZone: "UTC",
     });
   };
 
