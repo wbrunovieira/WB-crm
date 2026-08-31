@@ -5,12 +5,21 @@ import { StatsOverview } from "./StatsOverview";
 import { LeadsChart } from "./LeadsChart";
 import { DealsChart } from "./DealsChart";
 import { WonDealsList } from "./WonDealsList";
+import { ForecastDealsList } from "./ForecastDealsList";
 import { ActivitiesChart } from "./ActivitiesChart";
 import { StageChangesChart } from "./StageChangesChart";
 import { UserPerformanceTable } from "./UserPerformanceTable";
 import { ActivityCalendar } from "./ActivityCalendar";
-import type { ManagerStats } from "@/types/admin-manager";
+import type { DealsForecast, ManagerStats } from "@/types/admin-manager";
 import type { PeriodOption } from "@/lib/validations/manager";
+
+// Falls back when the separately-deployed backend is older than this frontend.
+const EMPTY_FORECAST: DealsForecast = {
+  deals: [],
+  totalValue: 0,
+  overdue: { count: 0, value: 0 },
+  withoutDate: { count: 0, value: 0 },
+};
 
 interface ManagerDashboardProps {
   stats: ManagerStats;
@@ -81,11 +90,18 @@ export function ManagerDashboard({
         </div>
       </div>
 
-      {/* Won deals in the period — the deals behind the "Ganhos" slice / "Valor Total",
-          so a weekly result can be checked deal by deal. */}
-      <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
-        <h2 className="text-lg font-semibold text-white mb-4">Negócios ganhos no período</h2>
-        <WonDealsList wonDeals={stats.totals.deals.wonDeals ?? []} />
+      {/* Result vs pipeline, side by side: what was actually closed in the period, and what
+          is still open and expected to close in it. */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+          <h2 className="text-lg font-semibold text-white mb-4">Negócios ganhos no período</h2>
+          <WonDealsList wonDeals={stats.totals.deals.wonDeals ?? []} />
+        </div>
+
+        <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+          <h2 className="text-lg font-semibold text-white mb-4">Negócios previstos para o período</h2>
+          <ForecastDealsList forecast={stats.totals.deals.forecast ?? EMPTY_FORECAST} />
+        </div>
       </div>
 
       {/* Charts Row 2 */}

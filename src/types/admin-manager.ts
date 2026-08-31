@@ -1,3 +1,19 @@
+export interface ForecastDealSummary {
+  id: string;
+  title: string;
+  value: number;
+  currency: string;
+  expectedCloseDate: string | null;
+  stageName: string | null;
+}
+
+export interface DealsForecast {
+  deals: ForecastDealSummary[];
+  totalValue: number;
+  overdue: { count: number; value: number };
+  withoutDate: { count: number; value: number };
+}
+
 export interface WonDealSummary {
   id: string;
   title: string;
@@ -65,6 +81,8 @@ export interface TotalMetrics {
      * backend: during a deploy window the frontend can be ahead of it.
      */
     wonDeals?: WonDealSummary[];
+    /** Open pipeline sliced by expectedCloseDate. Optional for the same reason. */
+    forecast?: DealsForecast;
   };
   contacts: {
     total: number;

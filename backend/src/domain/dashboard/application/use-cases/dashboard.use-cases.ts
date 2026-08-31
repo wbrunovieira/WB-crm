@@ -79,6 +79,15 @@ export interface WonDealSummary {
   closedAt: string | null;
 }
 
+export interface ForecastDealSummary {
+  id: string;
+  title: string;
+  value: number;
+  currency: string;
+  expectedCloseDate: string | null;
+  stageName: string | null;
+}
+
 export interface TotalMetrics {
   leads: { total: number; converted: number; conversionRate: number };
   organizations: { total: number };
@@ -88,6 +97,16 @@ export interface TotalMetrics {
     // The individual deals behind the `won` count / `totalValue` sum, most recently closed
     // first — so "resultado da semana" can be checked deal by deal, not just as a figure.
     wonDeals: WonDealSummary[];
+    // Pipeline still OPEN, sliced by expectedCloseDate: what is expected to close in this
+    // period (soonest first), what was expected earlier and is still open, and how much of
+    // the pipeline carries no forecast date at all — the last two matter because a list of
+    // in-period deals alone would silently hide both.
+    forecast: {
+      deals: ForecastDealSummary[];
+      totalValue: number;
+      overdue: { count: number; value: number };
+      withoutDate: { count: number; value: number };
+    };
   };
   contacts: { total: number };
   partners: { total: number; byType: Record<string, number> };
@@ -216,6 +235,28 @@ export class GetManagerStatsUseCase {
         currency: d.currency ?? "BRL",
         closedAt: d.closedAt ? d.closedAt.toISOString() : null,
       }));
+    const toForecastSummary = (d: (typeof raw.openDeals)[number]): ForecastDealSummary => ({
+      id: d.id,
+      title: d.title,
+      value: d.value ?? 0,
+      currency: d.currency ?? "BRL",
+      expectedCloseDate: d.expectedCloseDate ? d.expectedCloseDate.toISOString() : null,
+      stageName: d.stageName,
+    });
+    const forecastInPeriod = raw.openDeals
+      .filter(d => d.expectedCloseDate && d.expectedCloseDate >= startDate && d.expectedCloseDate <= endDate)
+      // Soonest first: this list is read as a to-do for the period, not as history.
+      .sort((a, b) => (a.expectedCloseDate?.getTime() ?? 0) - (b.expectedCloseDate?.getTime() ?? 0))
+      .map(toForecastSummary);
+    const overdueDeals = raw.openDeals.filter(d => d.expectedCloseDate && d.expectedCloseDate < startDate);
+    const undatedDeals = raw.openDeals.filter(d => !d.expectedCloseDate);
+    const sumValue = (deals: Array<{ value: number | null }>) => deals.reduce((s, d) => s + (d.value ?? 0), 0);
+    const forecast = {
+      deals: forecastInPeriod,
+      totalValue: forecastInPeriod.reduce((s, d) => s + d.value, 0),
+      overdue: { count: overdueDeals.length, value: sumValue(overdueDeals) },
+      withoutDate: { count: undatedDeals.length, value: sumValue(undatedDeals) },
+    };
     const partnersByType: Record<string, number> = {};
     raw.partners.forEach(p => { if (p.partnerType) partnersByType[p.partnerType] = (partnersByType[p.partnerType] ?? 0) + 1; });
     const actByType: Record<string, number> = {};
@@ -250,6 +291,7 @@ export class GetManagerStatsUseCase {
         avgValue: wonDealsAll.length > 0 ? totalDealValue / wonDealsAll.length : 0,
         byStage: dealsByStage,
         wonDeals: wonDealsList,
+        forecast,
       },
       contacts: { total: raw.contacts.length },
       partners: { total: raw.partners.length, byType: partnersByType },

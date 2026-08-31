@@ -20,7 +20,7 @@ export class PrismaDashboardRepository extends DashboardRepository {
     const { startDate, endDate, ownerFilter, prevStartDate, prevEndDate } = input;
     const dateFilter = { createdAt: { gte: startDate, lte: endDate } };
 
-    const [users, leads, organizations, deals, closedDeals, contacts, partners, activities, stageChanges, stages] =
+    const [users, leads, organizations, deals, closedDeals, openDeals, contacts, partners, activities, stageChanges, stages] =
       await Promise.all([
         this.prisma.user.findMany({ select: { id: true, name: true, email: true } }),
         this.prisma.lead.findMany({
@@ -44,6 +44,15 @@ export class PrismaDashboardRepository extends DashboardRepository {
           select: {
             id: true, title: true, ownerId: true, status: true, value: true,
             currency: true, closedAt: true, stageId: true,
+            stage: { select: { name: true } },
+          },
+        }),
+        // All open deals, no date filter — the forecast slices them by expectedCloseDate.
+        this.prisma.deal.findMany({
+          where: { ...ownerFilter, status: "open" },
+          select: {
+            id: true, title: true, ownerId: true, value: true, currency: true,
+            expectedCloseDate: true,
             stage: { select: { name: true } },
           },
         }),
@@ -107,6 +116,15 @@ export class PrismaDashboardRepository extends DashboardRepository {
         currency: d.currency,
         closedAt: d.closedAt,
         stageId: d.stageId,
+        stageName: d.stage?.name ?? null,
+      })),
+      openDeals: openDeals.map(d => ({
+        id: d.id,
+        title: d.title,
+        ownerId: d.ownerId,
+        value: d.value,
+        currency: d.currency,
+        expectedCloseDate: d.expectedCloseDate,
         stageName: d.stage?.name ?? null,
       })),
       contacts,

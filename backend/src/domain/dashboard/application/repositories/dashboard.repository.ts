@@ -25,6 +25,19 @@ export interface DashboardStatsRawData {
     stageId: string | null;
     stageName: string | null;
   }>;
+  // Every OPEN deal for the owner, regardless of when it was created — the basis for the
+  // forecast ("what is expected to close in this period"), which is a different question
+  // from `deals` (created in period) and `closedDeals` (closed in period). Sliced by the
+  // use case into in-period / overdue / undated.
+  openDeals: Array<{
+    id: string;
+    title: string;
+    ownerId: string;
+    value: number | null;
+    currency: string | null;
+    expectedCloseDate: Date | null;
+    stageName: string | null;
+  }>;
   contacts: Array<{ ownerId: string }>;
   partners: Array<{ ownerId: string; partnerType: string | null }>;
   activities: Array<{ ownerId: string; type: string; completed: boolean; dueDate: Date | null }>;

@@ -5,6 +5,7 @@ export { MetricCard } from "./MetricCard";
 export { LeadsChart } from "./LeadsChart";
 export { DealsChart } from "./DealsChart";
 export { WonDealsList } from "./WonDealsList";
+export { ForecastDealsList } from "./ForecastDealsList";
 export { ActivitiesChart } from "./ActivitiesChart";
 export { StageChangesChart } from "./StageChangesChart";
 export { UserPerformanceTable } from "./UserPerformanceTable";

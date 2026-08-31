@@ -332,6 +332,84 @@ describe("GET /dashboard/stats (e2e)", () => {
     }
   });
 
+  it("lista os negócios ABERTOS previstos para o período, e separa atrasados / sem data", async () => {
+    // "Devo prospectar mais ou focar nos fechamentos?" precisa do pipeline previsto para a
+    // semana — não dos negócios criados nela (o que a métrica de negócios já mostrava).
+    const now = new Date();
+    const insidePeriod = new Date(now.getTime() - 2 * 24 * 60 * 60 * 1000); // dentro de "week"
+    const beforePeriod = new Date(now.getTime() - 40 * 24 * 60 * 60 * 1000); // antes da semana
+
+    const expected = await prisma.deal.create({
+      data: {
+        title: "E2E Forecast This Week",
+        ownerId: adminId,
+        stageId,
+        value: 700,
+        currency: "BRL",
+        status: "open",
+        expectedCloseDate: insidePeriod,
+      },
+    });
+    // Previsto para antes do período e ainda aberto → atrasado, não previsto.
+    const overdue = await prisma.deal.create({
+      data: {
+        title: "E2E Forecast Overdue",
+        ownerId: adminId,
+        stageId,
+        value: 200,
+        status: "open",
+        expectedCloseDate: beforePeriod,
+      },
+    });
+    // Sem data prevista → invisível numa previsão; precisa ser contado à parte.
+    const undated = await prisma.deal.create({
+      data: { title: "E2E Forecast No Date", ownerId: adminId, stageId, value: 900, status: "open" },
+    });
+    // Já ganho dentro do período: é resultado, não previsão.
+    const alreadyWon = await prisma.deal.create({
+      data: {
+        title: "E2E Forecast Already Won",
+        ownerId: adminId,
+        stageId,
+        value: 1500,
+        status: "won",
+        closedAt: insidePeriod,
+        expectedCloseDate: insidePeriod,
+      },
+    });
+
+    try {
+      const res = await request(app.getHttpServer())
+        .get("/dashboard/stats?period=week")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+
+      const forecast = res.body.totals.deals.forecast;
+      const ids = forecast.deals.map((d: any) => d.id);
+
+      expect(ids).toContain(expected.id);
+      expect(ids).not.toContain(overdue.id);
+      expect(ids).not.toContain(undated.id);
+      expect(ids).not.toContain(alreadyWon.id);
+
+      const listed = forecast.deals.find((d: any) => d.id === expected.id);
+      expect(listed.title).toBe("E2E Forecast This Week");
+      expect(listed.value).toBe(700);
+      expect(listed.currency).toBe("BRL");
+      expect(listed.stageName).toBeTruthy();
+      expect(new Date(listed.expectedCloseDate).getTime()).toBe(insidePeriod.getTime());
+
+      expect(forecast.overdue.count).toBeGreaterThanOrEqual(1);
+      expect(forecast.overdue.value).toBeGreaterThanOrEqual(200);
+      expect(forecast.withoutDate.count).toBeGreaterThanOrEqual(1);
+      expect(forecast.withoutDate.value).toBeGreaterThanOrEqual(900);
+    } finally {
+      await prisma.deal.deleteMany({
+        where: { id: { in: [expected.id, overdue.id, undated.id, alreadyWon.id] } },
+      });
+    }
+  });
+
   it("inclui em byUser um usuário que só fechou um negócio antigo no período (sem criar nada novo)", async () => {
     const outsidePeriod = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000); // criado fora da semana
 
