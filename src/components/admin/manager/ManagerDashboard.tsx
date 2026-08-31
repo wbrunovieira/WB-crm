@@ -4,6 +4,7 @@ import { DateRangePicker } from "./DateRangePicker";
 import { StatsOverview } from "./StatsOverview";
 import { LeadsChart } from "./LeadsChart";
 import { DealsChart } from "./DealsChart";
+import { WonDealsList } from "./WonDealsList";
 import { ActivitiesChart } from "./ActivitiesChart";
 import { StageChangesChart } from "./StageChangesChart";
 import { UserPerformanceTable } from "./UserPerformanceTable";
@@ -78,6 +79,13 @@ export function ManagerDashboard({
           <h2 className="text-lg font-semibold text-white mb-4">Negócios por Status</h2>
           <DealsChart deals={stats.totals.deals} />
         </div>
+      </div>
+
+      {/* Won deals in the period — the deals behind the "Ganhos" slice / "Valor Total",
+          so a weekly result can be checked deal by deal. */}
+      <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+        <h2 className="text-lg font-semibold text-white mb-4">Negócios ganhos no período</h2>
+        <WonDealsList wonDeals={stats.totals.deals.wonDeals ?? []} />
       </div>
 
       {/* Charts Row 2 */}

@@ -1,3 +1,11 @@
+export interface WonDealSummary {
+  id: string;
+  title: string;
+  value: number;
+  currency: string;
+  closedAt: string | null;
+}
+
 export interface UserMetrics {
   userId: string;
   userName: string;
@@ -51,6 +59,12 @@ export interface TotalMetrics {
     totalValue: number;
     avgValue: number;
     byStage: { stageId: string; stageName: string; count: number; value: number }[];
+    /**
+     * The individual deals behind `won`/`totalValue`, most recently closed first.
+     * Optional because this type describes a response from the separately-deployed
+     * backend: during a deploy window the frontend can be ahead of it.
+     */
+    wonDeals?: WonDealSummary[];
   };
   contacts: {
     total: number;

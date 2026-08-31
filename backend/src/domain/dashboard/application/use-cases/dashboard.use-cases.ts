@@ -71,12 +71,23 @@ export interface UserMetrics {
   stageChanges: number;
 }
 
+export interface WonDealSummary {
+  id: string;
+  title: string;
+  value: number;
+  currency: string;
+  closedAt: string | null;
+}
+
 export interface TotalMetrics {
   leads: { total: number; converted: number; conversionRate: number };
   organizations: { total: number };
   deals: {
     total: number; won: number; lost: number; open: number; totalValue: number; avgValue: number;
     byStage: { stageId: string; stageName: string; count: number; value: number }[];
+    // The individual deals behind the `won` count / `totalValue` sum, most recently closed
+    // first — so "resultado da semana" can be checked deal by deal, not just as a figure.
+    wonDeals: WonDealSummary[];
   };
   contacts: { total: number };
   partners: { total: number; byType: Record<string, number> };
@@ -196,6 +207,15 @@ export class GetManagerStatsUseCase {
     const wonDealsAll = raw.closedDeals.filter(d => d.status === "won");
     const lostDealsAll = raw.closedDeals.filter(d => d.status === "lost");
     const totalDealValue = wonDealsAll.reduce((s, d) => s + (d.value ?? 0), 0);
+    const wonDealsList = [...wonDealsAll]
+      .sort((a, b) => (b.closedAt?.getTime() ?? 0) - (a.closedAt?.getTime() ?? 0))
+      .map(d => ({
+        id: d.id,
+        title: d.title,
+        value: d.value ?? 0,
+        currency: d.currency ?? "BRL",
+        closedAt: d.closedAt ? d.closedAt.toISOString() : null,
+      }));
     const partnersByType: Record<string, number> = {};
     raw.partners.forEach(p => { if (p.partnerType) partnersByType[p.partnerType] = (partnersByType[p.partnerType] ?? 0) + 1; });
     const actByType: Record<string, number> = {};
@@ -229,6 +249,7 @@ export class GetManagerStatsUseCase {
         totalValue: totalDealValue,
         avgValue: wonDealsAll.length > 0 ? totalDealValue / wonDealsAll.length : 0,
         byStage: dealsByStage,
+        wonDeals: wonDealsList,
       },
       contacts: { total: raw.contacts.length },
       partners: { total: raw.partners.length, byType: partnersByType },

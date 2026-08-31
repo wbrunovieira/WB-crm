@@ -282,6 +282,56 @@ describe("GET /dashboard/stats (e2e)", () => {
     }
   });
 
+  it("lista os negócios ganhos no período (wonDeals) com título, valor e data de fechamento", async () => {
+    // O dashboard mostrava só a CONTAGEM de ganhos — sem saber QUAIS negócios entraram no
+    // número, não dá para conferir o resultado da semana sem consultar o banco.
+    const closedAt = new Date();
+
+    const won = await prisma.deal.create({
+      data: {
+        title: "E2E Won Deal Listed",
+        ownerId: adminId,
+        stageId,
+        value: 4321,
+        currency: "BRL",
+        status: "won",
+        closedAt,
+      },
+    });
+    // Perdido no período: não pode aparecer na lista de ganhos.
+    const lost = await prisma.deal.create({
+      data: {
+        title: "E2E Lost Deal Not Listed",
+        ownerId: adminId,
+        stageId,
+        value: 1111,
+        status: "lost",
+        closedAt,
+      },
+    });
+
+    try {
+      const res = await request(app.getHttpServer())
+        .get("/dashboard/stats?period=week")
+        .set("Authorization", `Bearer ${adminToken}`)
+        .expect(200);
+
+      const wonDeals = res.body.totals.deals.wonDeals;
+      expect(Array.isArray(wonDeals)).toBe(true);
+
+      const listed = wonDeals.find((d: any) => d.id === won.id);
+      expect(listed).toBeDefined();
+      expect(listed.title).toBe("E2E Won Deal Listed");
+      expect(listed.value).toBe(4321);
+      expect(listed.currency).toBe("BRL");
+      expect(new Date(listed.closedAt).getTime()).toBe(closedAt.getTime());
+
+      expect(wonDeals.some((d: any) => d.id === lost.id)).toBe(false);
+    } finally {
+      await prisma.deal.deleteMany({ where: { id: { in: [won.id, lost.id] } } });
+    }
+  });
+
   it("inclui em byUser um usuário que só fechou um negócio antigo no período (sem criar nada novo)", async () => {
     const outsidePeriod = new Date(Date.now() - 40 * 24 * 60 * 60 * 1000); // criado fora da semana
 
