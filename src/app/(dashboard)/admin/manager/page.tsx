@@ -5,30 +5,7 @@ import { backendFetch } from "@/lib/backend/client";
 import type { ManagerStats } from "@/types/admin-manager";
 import { ManagerDashboard } from "@/components/admin/manager";
 import { type PeriodOption } from "@/lib/validations/manager";
-
-/** Monday of a given week offset (0 = current, -1 = last, ...) */
-function getWeekMonday(offset: number): Date {
-  const now = new Date();
-  const day = now.getUTCDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diff));
-  monday.setUTCDate(monday.getUTCDate() + offset * 7);
-  return monday;
-}
-
-/** Target date given day offset (0 = today, -1 = yesterday, ...) */
-function getTargetDay(offset: number): Date {
-  const now = new Date();
-  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset));
-}
-
-/** First/last day of a calendar month given a month offset (0 = current, -1 = last, ...) */
-function getMonthRange(offset: number): { start: Date; end: Date } {
-  const now = new Date();
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
-  const end = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset + 1, 0));
-  return { start, end };
-}
+import { getDayRange, getMonthRange, getWeekRange } from "@/lib/manager-periods";
 
 interface PageProps {
   searchParams: Promise<{
@@ -63,24 +40,18 @@ export default async function ManagerPage({ searchParams }: PageProps) {
   let endDate = params.endDate;
   let backendPeriod = period;
 
-  // Resolve navigable periods to explicit date ranges
-  if (period === "week") {
-    const monday = getWeekMonday(weekOffset);
-    const friday = new Date(monday.getTime() + 4 * 24 * 60 * 60 * 1000);
-    startDate = monday.toISOString().slice(0, 10);
-    endDate = friday.toISOString().slice(0, 10);
-    backendPeriod = "custom";
-  } else if (period === "today") {
-    const day = getTargetDay(dayOffset);
-    startDate = day.toISOString().slice(0, 10);
-    endDate = startDate;
-    backendPeriod = "custom";
-  } else if (period === "month") {
-    // Calendar month (not a rolling 30-day window) — lets the rep/admin browse a specific
-    // past month's closed-deal results, same navigable pattern as week/today above.
-    const { start, end } = getMonthRange(monthOffset);
-    startDate = start.toISOString().slice(0, 10);
-    endDate = end.toISOString().slice(0, 10);
+  // Resolve navigable periods to explicit date ranges. The week is Monday–Sunday and the
+  // month is a calendar month (not rolling windows), so a given past week/month can be
+  // browsed and no closed deal falls outside every period — see @/lib/manager-periods.
+  const range =
+    period === "week" ? getWeekRange(weekOffset)
+    : period === "today" ? getDayRange(dayOffset)
+    : period === "month" ? getMonthRange(monthOffset)
+    : null;
+
+  if (range) {
+    startDate = range.start;
+    endDate = range.end;
     backendPeriod = "custom";
   }
 

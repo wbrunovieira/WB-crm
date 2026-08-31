@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { type PeriodOption } from "@/lib/validations/manager";
+import { getDayRange, getMonthRange, getWeekRange } from "@/lib/manager-periods";
 
 const periodButtons: { value: PeriodOption; label: string }[] = [
   { value: "today", label: "Hoje" },
@@ -13,27 +14,25 @@ const periodButtons: { value: PeriodOption; label: string }[] = [
   { value: "custom", label: "Personalizado" },
 ];
 
+// Labels are derived from the very same ranges the page sends to the backend, so the
+// button can never claim a different window than the numbers below it describe.
+const fmtDayMonth = (dateOnly: string) =>
+  new Date(dateOnly).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "UTC" });
+
 function getWeekLabel(offset: number): string {
-  const now = new Date();
-  const day = now.getUTCDay();
-  const diff = day === 0 ? -6 : 1 - day;
-  const monday = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + diff + offset * 7));
-  const friday = new Date(monday.getTime() + 4 * 24 * 60 * 60 * 1000);
-  const fmt = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "UTC" });
-  return `${fmt(monday)} – ${fmt(friday)}`;
+  const { start, end } = getWeekRange(offset);
+  return `${fmtDayMonth(start)} – ${fmtDayMonth(end)}`;
 }
 
 function getDayLabel(offset: number): string {
-  const now = new Date();
-  const target = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + offset));
+  const target = new Date(getDayRange(offset).start);
   if (offset === 0) return `Hoje, ${target.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "UTC" })}`;
   if (offset === -1) return `Ontem, ${target.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", timeZone: "UTC" })}`;
   return target.toLocaleDateString("pt-BR", { weekday: "short", day: "2-digit", month: "2-digit", timeZone: "UTC" });
 }
 
 function getMonthLabel(offset: number): string {
-  const now = new Date();
-  const target = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + offset, 1));
+  const target = new Date(getMonthRange(offset).start);
   const label = target.toLocaleDateString("pt-BR", { month: "long", year: "numeric", timeZone: "UTC" });
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
