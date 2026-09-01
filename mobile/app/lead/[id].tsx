@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking, Alert } from "react-native";
 import * as Clipboard from "expo-clipboard";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery, useMutation, useQueryClient, type QueryClient } from "@tanstack/react-query";
 import {
   getLeadDetail,
@@ -71,6 +71,7 @@ function contactsKey(id: string) {
 
 export default function LeadDetailScreen() {
   const { id: rawId } = useLocalSearchParams<{ id: string | string[] }>();
+  const router = useRouter();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
   const queryClient = useQueryClient();
   const [editing, setEditing] = useState(false);
@@ -325,13 +326,22 @@ export default function LeadDetailScreen() {
         <Text style={styles.section}>Atividades recentes</Text>
         {activities.length === 0 && <Text style={styles.empty}>Nenhuma atividade registrada.</Text>}
         {activities.map((a) => (
-          <View key={a.id} style={styles.activityRow}>
-            <Text style={styles.activitySubject}>{a.subject}</Text>
-            <Text style={styles.activityMeta}>
-              {a.type} · {new Date(a.createdAt).toLocaleDateString("pt-BR")}
-              {a.completedAt ? " · concluída" : ""}
-            </Text>
-          </View>
+          <Pressable
+            key={a.id}
+            style={({ pressed }) => [styles.activityRow, pressed && styles.activityRowPressed]}
+            onPress={() => router.push(`/activity/${a.id}`)}
+          >
+            <View style={styles.activityRowInner}>
+              <View style={styles.activityRowText}>
+                <Text style={styles.activitySubject}>{a.subject}</Text>
+                <Text style={styles.activityMeta}>
+                  {a.type} · {new Date(a.createdAt).toLocaleDateString("pt-BR")}
+                  {a.completedAt ? " · concluída" : ""}
+                </Text>
+              </View>
+              <Text style={styles.activityChevron}>›</Text>
+            </View>
+          </Pressable>
         ))}
       </View>
     </ScrollView>
@@ -622,6 +632,10 @@ const styles = StyleSheet.create({
   chipOn: { backgroundColor: "#762991", borderColor: "#762991" },
   chipText: { color: "#c9b3d6", fontWeight: "600", fontSize: 13 },
   chipTextOn: { color: "#fff" },
+  activityRowPressed: { opacity: 0.6 },
+  activityRowInner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  activityRowText: { flex: 1 },
+  activityChevron: { color: "#9b86a8", fontSize: 20 },
   activityRow: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#4d2b5d" },
   activitySubject: { color: "#fff", fontSize: 14 },
   activityMeta: { color: "#8a6d9c", fontSize: 12, marginTop: 2, textTransform: "capitalize" },

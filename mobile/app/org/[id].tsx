@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking } from "react-native";
-import { useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import {
   getOrganization,
@@ -50,6 +50,7 @@ function formatDate(iso: string | null): string | null {
  *  to go, and what has already been done here. */
 export default function OrgDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
 
   const orgQuery = useQuery({
     queryKey: ["organization", id],
@@ -176,7 +177,11 @@ export default function OrgDetailScreen() {
         {activities.map((a) => {
           const status = activityStatus(a);
           return (
-            <View key={a.id} style={styles.activityRow}>
+            <Pressable
+              key={a.id}
+              style={({ pressed }) => [styles.activityRow, pressed && styles.activityRowPressed]}
+              onPress={() => router.push(`/activity/${a.id}`)}
+            >
               <View style={styles.activityHeader}>
                 <Text style={styles.activitySubject}>
                   {activityIcon(a.type)} {a.subject}
@@ -185,11 +190,12 @@ export default function OrgDetailScreen() {
               </View>
               {formatDate(a.dueDate) && <Text style={styles.activityMeta}>{formatDate(a.dueDate)}</Text>}
               {a.description ? (
-                <Text style={styles.activityDescription} numberOfLines={4}>
+                <Text style={styles.activityDescription} numberOfLines={2}>
                   {a.description}
                 </Text>
               ) : null}
-            </View>
+              <Text style={styles.activityMore}>Ver detalhes ›</Text>
+            </Pressable>
           );
         })}
       </View>
@@ -246,6 +252,8 @@ const styles = StyleSheet.create({
   contactRole: { color: "#c9b3d6", fontSize: 12 },
   contactActions: { flexDirection: "row", gap: 14 },
   contactIcon: { fontSize: 20 },
+  activityRowPressed: { opacity: 0.6 },
+  activityMore: { color: "#c9a3e0", fontSize: 12, fontWeight: "600", marginTop: 2 },
   activityRow: {
     borderTopColor: "#4d2b5d",
     borderTopWidth: StyleSheet.hairlineWidth,
