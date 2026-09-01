@@ -61,6 +61,7 @@ export default function RootLayout() {
           <Stack.Screen name="today-visits" options={{ title: "Visitas do dia" }} />
           <Stack.Screen name="lead-search" options={{ title: "Buscar lead" }} />
           <Stack.Screen name="lead/[id]" options={{ title: "Lead" }} />
+          <Stack.Screen name="org/[id]" options={{ title: "Empresa" }} />
           <Stack.Screen name="map" options={{ title: "Mapa de leads" }} />
         </Stack>
       </SafeAreaProvider>

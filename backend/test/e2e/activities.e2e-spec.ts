@@ -158,6 +158,45 @@ describe("Activities API (e2e)", () => {
       expect(res.body[0].lead.longitude).toBe(-43.1789);
     });
 
+    it("filtra por organizationId (histórico de atividades de uma organização)", async () => {
+      // Sem esse filtro não há como listar o histórico de uma organização pela API — o que
+      // deixa a tela de organização do app móvel sem o que mostrar.
+      const orgRes = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Org Historico De Atividades" })
+        .expect(201);
+
+      const otherOrgRes = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Org Que Nao Deve Aparecer" })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post("/activities")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ type: "meeting", subject: "Reunião de alinhamento", organizationId: orgRes.body.id })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .post("/activities")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ type: "call", subject: "Ligação para outra org", organizationId: otherOrgRes.body.id })
+        .expect(201);
+
+      const res = await request(app.getHttpServer())
+        .get(`/activities?organizationId=${orgRes.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body).toHaveLength(1);
+      expect(res.body[0].subject).toBe("Reunião de alinhamento");
+      // A listagem usa o read-model resumido, que traz a organização aninhada (não o id solto).
+      expect(res.body[0].organization.id).toBe(orgRes.body.id);
+      expect(res.body[0].organization.name).toBe("Org Historico De Atividades");
+    });
+
     it("retorna endereço/telefone da organization vinculada (usado pela tela de visitas do dia)", async () => {
       const orgRes = await request(app.getHttpServer())
         .post("/organizations")

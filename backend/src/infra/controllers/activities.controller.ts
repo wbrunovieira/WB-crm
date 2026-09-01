@@ -147,6 +147,7 @@ export class ActivitiesController {
   @ApiQuery({ name: "dealId", required: false })
   @ApiQuery({ name: "contactId", required: false })
   @ApiQuery({ name: "leadId", required: false })
+  @ApiQuery({ name: "organizationId", required: false })
   @ApiQuery({ name: "owner", required: false })
   @ApiQuery({ name: "dateFrom", required: false })
   @ApiQuery({ name: "dateTo", required: false })
@@ -160,6 +161,7 @@ export class ActivitiesController {
     @Query("dealId") dealId?: string,
     @Query("contactId") contactId?: string,
     @Query("leadId") leadId?: string,
+    @Query("organizationId") organizationId?: string,
     @Query("owner") owner?: string,
     @Query("dateFrom") dateFrom?: string,
     @Query("dateTo") dateTo?: string,
@@ -178,6 +180,7 @@ export class ActivitiesController {
         dealId,
         contactId,
         leadId,
+        organizationId,
         owner,
         dateFrom,
         dateTo,

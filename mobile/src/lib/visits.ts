@@ -8,6 +8,11 @@ const VISIT_TYPES = new Set(["physical_visit", "meeting"]);
 
 export type TodayVisitKind = "lead" | "organization";
 
+/** What already happened to a visit on its day. The screen used to fetch only pending ones,
+ *  so a visit vanished from the list the moment it was marked done — exactly when the rep
+ *  wanted to confirm they had been there. */
+export type TodayVisitStatus = "pending" | "done" | "failed" | "skipped";
+
 /** One pending visit/meeting due today, for a lead OR an organization. */
 export interface TodayScheduledVisit {
   activityId: string;
@@ -16,6 +21,7 @@ export interface TodayScheduledVisit {
   name: string;
   subject: string;
   type: string;
+  status: TodayVisitStatus;
   dueDate: string | null;
   // Leads already have coordinates (captured via GPS/Google/geocoded address); organizations
   // never do (no lat/lng column), so their raw address is carried instead, resolved on demand
@@ -35,6 +41,9 @@ interface ActivityRow {
   type: string;
   subject: string;
   dueDate: string | null;
+  completed: boolean;
+  failedAt: string | null;
+  skippedAt: string | null;
   lead: { id: string; businessName: string; latitude: number | null; longitude: number | null } | null;
   organization: {
     id: string;
@@ -49,7 +58,7 @@ interface ActivityRow {
   } | null;
 }
 
-/** Pending physical_visit/meeting activities due on a given day, across BOTH leads and
+/** physical_visit/meeting activities due on a given day, across BOTH leads and
  *  organizations — "estou na rua, o que tenho pra visitar hoje" (and "o que fica pra amanhã /
  *  o que ficou atrasado de ontem", via dayOffset — negative for past days, positive for future).
  *  No backend filter for "type is one of several" or "has a lead OR organization" exists, so
@@ -62,12 +71,16 @@ export async function listScheduledVisitsForDay(dayOffset: number = 0): Promise<
   const end = new Date(start);
   end.setDate(end.getDate() + 1);
 
+  // No `completed` filter on purpose: the screen shows the whole day, done and pending alike.
+  // Filtering to completed=false made a visit vanish the moment the rep marked it as visited —
+  // precisely when they wanted to confirm they had been there.
   const activities = await apiFetch<ActivityRow[]>(
-    `/activities?completed=false&owner=mine&dateFrom=${encodeURIComponent(start.toISOString())}&dateTo=${encodeURIComponent(end.toISOString())}`,
+    `/activities?owner=mine&dateFrom=${encodeURIComponent(start.toISOString())}&dateTo=${encodeURIComponent(end.toISOString())}`,
   );
 
   const visits: TodayScheduledVisit[] = [];
   for (const a of activities) {
+    const status = visitStatus(a);
     if (!VISIT_TYPES.has(a.type)) continue;
     // An activity can carry BOTH leadId and organizationId (e.g. a presential meeting scheduled
     // against a lead that was later converted). Navigation still prefers the lead (it has a
@@ -81,6 +94,7 @@ export async function listScheduledVisitsForDay(dayOffset: number = 0): Promise<
         name: a.lead.businessName,
         subject: a.subject,
         type: a.type,
+        status,
         dueDate: a.dueDate,
         latitude: a.lead.latitude,
         longitude: a.lead.longitude,
@@ -96,6 +110,7 @@ export async function listScheduledVisitsForDay(dayOffset: number = 0): Promise<
         name: a.organization.name,
         subject: a.subject,
         type: a.type,
+        status,
         dueDate: a.dueDate,
         latitude: null,
         longitude: null,
@@ -111,7 +126,22 @@ export async function listScheduledVisitsForDay(dayOffset: number = 0): Promise<
       });
     }
   }
-  return visits;
+  // Still-to-do first, then by time — the same "completed sinks to the end of its day" rule the
+  // web CRM applies to activity lists.
+  return visits.sort((a, b) => {
+    const pending = Number(b.status === "pending") - Number(a.status === "pending");
+    if (pending !== 0) return pending;
+    return (a.dueDate ?? "").localeCompare(b.dueDate ?? "");
+  });
+}
+
+/** `completed` wins over the outcome timestamps: an activity can be both failed and later
+ *  completed, and what the rep needs to see is the final state. */
+function visitStatus(a: ActivityRow): TodayVisitStatus {
+  if (a.completed) return "done";
+  if (a.failedAt) return "failed";
+  if (a.skippedAt) return "skipped";
+  return "pending";
 }
 
 /** A today's-visit pin ready to place on the map (coordinates resolved). */
@@ -121,6 +151,7 @@ export interface TodayVisitMapPin {
   entityId: string;
   name: string;
   subject: string;
+  status: TodayVisitStatus;
   dueDate: string | null;
   latitude: number;
   longitude: number;
@@ -141,6 +172,7 @@ export async function resolveTodayVisitPins(visits: TodayScheduledVisit[]): Prom
         entityId: v.entityId,
         name: v.name,
         subject: v.subject,
+        status: v.status,
         dueDate: v.dueDate,
         latitude: v.latitude,
         longitude: v.longitude,
@@ -162,6 +194,7 @@ export async function resolveTodayVisitPins(visits: TodayScheduledVisit[]): Prom
           entityId: v.entityId,
           name: v.name,
           subject: v.subject,
+          status: v.status,
           dueDate: v.dueDate,
           latitude,
           longitude,

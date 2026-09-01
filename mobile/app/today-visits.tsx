@@ -1,14 +1,24 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking, Alert } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking } from "react-native";
 import MapView, { Marker, type Region } from "react-native-maps";
 import { useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import * as Location from "expo-location";
-import { listScheduledVisitsForDay, resolveTodayVisitPins, type TodayScheduledVisit } from "@/lib/visits";
+import { listScheduledVisitsForDay, resolveTodayVisitPins, type TodayScheduledVisit, type TodayVisitStatus, type TodayVisitMapPin } from "@/lib/visits";
 
 const DEFAULT_DELTA = { latitudeDelta: 0.05, longitudeDelta: 0.05 };
 const LEAD_COLOR = "#14b8a6"; // same teal the web CRM uses for physical_visit activities
 const ORG_COLOR = "#f59e0b";
+// A visit already handled must not look like one still to do — on the map it would otherwise
+// send the rep driving somewhere they had already been.
+const DONE_COLOR = "#6b7280";
+
+const STATUS_LABEL: Record<TodayVisitStatus, { label: string; color: string }> = {
+  pending: { label: "Pendente", color: "#f59e0b" },
+  done: { label: "✓ Concluída", color: "#22c55e" },
+  failed: { label: "Falhou", color: "#ef4444" },
+  skipped: { label: "Pulada", color: "#94a3b8" },
+};
 
 function typeIcon(type: string): string {
   return type === "meeting" ? "🤝" : "📍";
@@ -39,6 +49,19 @@ function digits(s: string): string {
 /** `tel:` needs the leading "+" to be recognized as international — same fix as lead/[id].tsx. */
 function telHref(raw: string): string {
   return `tel:${raw.trim().startsWith("+") ? "+" : ""}${digits(raw)}`;
+}
+
+/** "3 pendentes · 2 concluídas" — the answer to "já fiz tudo hoje?", which a list of only the
+ *  pending ones could never give (an empty list looked identical to nothing being scheduled). */
+function summaryLine(visits: TodayScheduledVisit[]): string {
+  const count = (s: TodayVisitStatus) => visits.filter((v) => v.status === s).length;
+  const parts: string[] = [];
+  const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+  if (count("pending") > 0) parts.push(plural(count("pending"), "pendente", "pendentes"));
+  if (count("done") > 0) parts.push(plural(count("done"), "concluída", "concluídas"));
+  if (count("failed") > 0) parts.push(plural(count("failed"), "falhou", "falharam"));
+  if (count("skipped") > 0) parts.push(plural(count("skipped"), "pulada", "puladas"));
+  return parts.join(" · ");
 }
 
 function dueTime(dueDate: string | null): string | null {
@@ -94,20 +117,8 @@ export default function TodayVisitsScreen() {
     })();
   }, [mode]);
 
-  function openOrgActions(v: TodayScheduledVisit) {
-    const buttons: { text: string; onPress?: () => void; style?: "cancel" }[] = [];
-    if (v.phone) buttons.push({ text: "📞 Ligar", onPress: () => Linking.openURL(telHref(v.phone!)) });
-    if (v.whatsapp) buttons.push({ text: "💬 WhatsApp", onPress: () => Linking.openURL(`https://wa.me/${digits(v.whatsapp!)}`) });
-    buttons.push({ text: "Fechar", style: "cancel" });
-    Alert.alert(v.name, v.subject, buttons);
-  }
-
   function onSelect(v: { kind: string; entityId: string }) {
-    if (v.kind === "lead") {
-      router.push(`/lead/${v.entityId}`);
-    }
-    // Organizations have no mobile detail screen yet — handled inline (list: card actions,
-    // map: openOrgActions via marker press) instead of navigating anywhere.
+    router.push(v.kind === "lead" ? `/lead/${v.entityId}` : `/org/${v.entityId}`);
   }
 
   return (
@@ -142,12 +153,17 @@ export default function TodayVisitsScreen() {
           {visitsQuery.isLoading && <ActivityIndicator color="#c9b3d6" style={{ marginTop: 24 }} />}
           {visitsQuery.isError && <Text style={styles.errorText}>Não foi possível carregar as visitas de hoje.</Text>}
           {!visitsQuery.isLoading && !visitsQuery.isError && visits.length === 0 && (
-            <Text style={styles.emptyText}>Nada agendado para hoje.</Text>
+            <Text style={styles.emptyText}>Nada agendado para {dayLabel(dayOffset).toLowerCase()}.</Text>
           )}
+          {visits.length > 0 && <Text style={styles.summary}>{summaryLine(visits)}</Text>}
           {visits.map((v) => (
             <Pressable
               key={v.activityId}
-              style={({ pressed }) => [styles.card, pressed && v.kind === "lead" && styles.cardPressed]}
+              style={({ pressed }) => [
+                styles.card,
+                pressed && styles.cardPressed,
+                v.status !== "pending" && styles.cardDone,
+              ]}
               onPress={() => onSelect(v)}
             >
               <View style={styles.cardHeader}>
@@ -159,7 +175,12 @@ export default function TodayVisitsScreen() {
                 </View>
               </View>
               <Text style={styles.cardSubject}>{v.subject}</Text>
-              {dueTime(v.dueDate) && <Text style={styles.cardMeta}>⏰ {dueTime(v.dueDate)}</Text>}
+              <View style={styles.cardMetaRow}>
+                {dueTime(v.dueDate) && <Text style={styles.cardMeta}>⏰ {dueTime(v.dueDate)}</Text>}
+                <Text style={[styles.statusText, { color: STATUS_LABEL[v.status].color }]}>
+                  {STATUS_LABEL[v.status].label}
+                </Text>
+              </View>
               {(v.phone || v.whatsapp) && (
                 <View style={styles.orgActions}>
                   {v.phone && (
@@ -185,8 +206,7 @@ export default function TodayVisitsScreen() {
           pins={pins}
           visitsCount={visits.length}
           onSelect={onSelect}
-          onOrgPress={openOrgActions}
-          visits={visits}
+          emptyLabel={dayLabel(dayOffset).toLowerCase()}
         />
       )}
     </View>
@@ -200,17 +220,15 @@ function MapModeContent({
   pins,
   visitsCount,
   onSelect,
-  onOrgPress,
-  visits,
+  emptyLabel,
 }: {
   locating: boolean;
   gpsRegion: Region | null;
   pinsLoading: boolean;
-  pins: Array<{ activityId: string; kind: string; entityId: string; name: string; subject: string; latitude: number; longitude: number }>;
+  pins: TodayVisitMapPin[];
   visitsCount: number;
   onSelect: (v: { kind: string; entityId: string }) => void;
-  onOrgPress: (v: TodayScheduledVisit) => void;
-  visits: TodayScheduledVisit[];
+  emptyLabel: string;
 }) {
   const fallbackRegion: Region | undefined = pins.length
     ? { latitude: pins[0].latitude, longitude: pins[0].longitude, ...DEFAULT_DELTA }
@@ -228,7 +246,7 @@ function MapModeContent({
   if (visitsCount === 0) {
     return (
       <View style={styles.center}>
-        <Text style={styles.emptyText}>Nada agendado para hoje.</Text>
+        <Text style={styles.emptyText}>Nada agendado para {emptyLabel}.</Text>
       </View>
     );
   }
@@ -237,7 +255,7 @@ function MapModeContent({
     return (
       <View style={styles.center}>
         <Text style={styles.emptyText}>
-          Sem localização disponível e nenhuma das visitas de hoje tem coordenadas.
+          Sem localização disponível e nenhuma das visitas tem coordenadas.
         </Text>
       </View>
     );
@@ -246,19 +264,16 @@ function MapModeContent({
   return (
     <View style={styles.mapContainer}>
       <MapView style={styles.map} initialRegion={initialRegion} showsUserLocation showsMyLocationButton>
-        {pins.map((pin) => {
-          const visit = visits.find((v) => v.activityId === pin.activityId);
-          return (
+        {pins.map((pin) => (
             <Marker
               key={pin.activityId}
               coordinate={{ latitude: pin.latitude, longitude: pin.longitude }}
               title={pin.name}
               description={pin.subject}
-              pinColor={pin.kind === "lead" ? LEAD_COLOR : ORG_COLOR}
-              onPress={() => (pin.kind === "lead" ? onSelect(pin) : visit && onOrgPress(visit))}
+              pinColor={pin.status !== "pending" ? DONE_COLOR : pin.kind === "lead" ? LEAD_COLOR : ORG_COLOR}
+              onPress={() => onSelect(pin)}
             />
-          );
-        })}
+        ))}
       </MapView>
       <View style={styles.countPill}>
         <Text style={styles.countPillText}>
@@ -270,6 +285,10 @@ function MapModeContent({
 }
 
 const styles = StyleSheet.create({
+  summary: { color: "#c9b3d6", fontSize: 13, marginBottom: 6 },
+  cardMetaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
+  statusText: { fontSize: 12, fontWeight: "700" },
+  cardDone: { opacity: 0.62 },
   container: { flex: 1 },
   tabsRow: { flexDirection: "row", gap: 8, padding: 16, paddingBottom: 8 },
   tab: {
