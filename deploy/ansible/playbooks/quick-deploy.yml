@@ -36,12 +36,12 @@
           Branch: {{ github_branch }}
 
     - name: Fetch latest from GitHub
-      raw: cd {{ app_dir }} && git fetch origin {{ github_branch }}
+      raw: cd {{ app_dir }} && GIT_TERMINAL_PROMPT=0 git fetch origin {{ github_branch }}
 
     - name: Apply latest code
       raw: |
         cd {{ app_dir }} && \
-        git reset --hard origin/{{ github_branch }} && \
+        GIT_TERMINAL_PROMPT=0 git reset --hard origin/{{ github_branch }} && \
         git --no-pager log -1 --oneline
       register: git_pull
 
