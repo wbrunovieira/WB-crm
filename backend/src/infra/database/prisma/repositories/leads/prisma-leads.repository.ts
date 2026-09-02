@@ -67,6 +67,10 @@ export class PrismaLeadsRepository extends LeadsRepository {
     // isArchived
     if (filters.isArchived !== undefined) where.isArchived = filters.isArchived;
 
+    // Converted leads stopped being prospecting work — they are the customer's own record now,
+    // reachable through the organization. Hidden unless explicitly requested.
+    if (!filters.includeConverted) where.convertedToOrganizationId = null;
+
     // isProspect
     if (filters.isProspect !== undefined) where.isProspect = filters.isProspect;
 

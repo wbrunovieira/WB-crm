@@ -93,6 +93,7 @@ export class PrismaLeadConversionRepository extends LeadConversionRepository {
           internationalActivity: organization.internationalActivity ?? null,
           referredByPartnerId: organization.referredByPartnerId ?? null,
           sourceLeadId: organization.sourceLeadId ?? null,
+          convertedAt: organization.convertedAt ?? new Date(),
           hasHosting: false,
           hostingReminderDays: 30,
         },
@@ -151,10 +152,26 @@ export class PrismaLeadConversionRepository extends LeadConversionRepository {
         });
       }
 
-      // 5. Update Lead: status = qualified + link to org
+      // 5. Move the lead's deals and activities to the organization. Both keep their leadId:
+      //    it is the provenance record, the same role Organization.sourceLeadId plays. Without
+      //    this the rep had to re-point every deal by hand after each conversion, and the
+      //    organization screen showed no history of the prospecting that won the customer.
+      const leadId = lead.id.toString();
+      await tx.deal.updateMany({ where: { leadId }, data: { organizationId: orgId } });
+      await tx.activity.updateMany({ where: { leadId }, data: { organizationId: orgId } });
+
+      // 6. Close the lead: converted + archived (the entity owns that transition).
       await tx.lead.update({
-        where: { id: lead.id.toString() },
-        data: { status: "qualified", convertedToOrganizationId: orgId, updatedAt: new Date() },
+        where: { id: leadId },
+        data: {
+          status: lead.status,
+          convertedToOrganizationId: orgId,
+          convertedAt: lead.convertedAt ?? new Date(),
+          isArchived: lead.isArchived,
+          archivedAt: lead.archivedAt ?? new Date(),
+          archivedReason: lead.archivedReason ?? null,
+          updatedAt: new Date(),
+        },
       });
 
       return { organizationId: orgId, contactIds };

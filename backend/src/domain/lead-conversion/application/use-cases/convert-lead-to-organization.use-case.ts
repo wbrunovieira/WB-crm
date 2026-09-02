@@ -67,6 +67,8 @@ export class ConvertLeadToOrganizationUseCase {
       internationalActivity: lead.internationalActivity,
       referredByPartnerId: lead.referredByPartnerId,
       sourceLeadId: lead.id.toString(),
+      // "cliente desde": the moment it stopped being a lead.
+      convertedAt: now,
       hasHosting: false,
       hostingReminderDays: 30,
       createdAt: now,

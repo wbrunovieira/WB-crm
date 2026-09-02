@@ -7,6 +7,8 @@ export interface LeadFilters {
   status?: string;
   quality?: string;
   isArchived?: boolean;
+  /** Converted leads are customers, not prospects: excluded from the list unless asked for. */
+  includeConverted?: boolean;
   isProspect?: boolean;
   ownerIdFilter?: string; // "all", "mine", or userId
   icpId?: string;

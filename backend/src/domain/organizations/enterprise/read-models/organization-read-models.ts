@@ -14,6 +14,8 @@ export interface OrganizationSummary {
   hasHosting: boolean;
   hostingRenewalDate: Date | null;
   sourceLeadId: string | null;
+  /** Quando deixou de ser lead ("cliente desde"). Nulo se nunca foi lead. */
+  convertedAt: Date | null;
   driveFolderId: string | null;
   inOperationsAt: Date | null;
   createdAt: Date;

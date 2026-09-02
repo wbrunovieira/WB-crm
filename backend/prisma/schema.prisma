@@ -486,6 +486,9 @@ model Organization {
 
   // Lead tracking
   sourceLeadId String?
+  // Quando este cliente deixou de ser lead. Preenchido pela conversão; nulo em organizações
+  // criadas direto (que nunca foram lead).
+  convertedAt  DateTime?
 
   // Referral tracking — parceiro que indicou esta organização
   referredByPartnerId String?

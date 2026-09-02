@@ -25,10 +25,13 @@ export class PrismaActivitiesRepository extends ActivitiesRepository {
           ? { ownerId: filters.owner }
           : { ownerId: requesterId };
 
-    // Archived leads filter
+    // Archived leads filter. Hides prospecting noise from DEAD leads only — a converted lead is
+    // archived too, but it is a customer, not a dead end: hiding its history would silently drop
+    // the pending follow-ups carried over from the prospecting phase (and the visits the mobile
+    // app lists for the day).
     const archivedLeadFilter = filters.includeArchivedLeads
       ? {}
-      : { NOT: { lead: { isArchived: true } } };
+      : { NOT: { lead: { isArchived: true, convertedToOrganizationId: null } } };
 
     // Outcome filter
     const outcomeFilter =

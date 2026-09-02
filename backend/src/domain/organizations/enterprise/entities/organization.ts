@@ -50,6 +50,8 @@ export interface OrganizationProps {
 
   // Lead tracking
   sourceLeadId?: string;
+  /** When this customer stopped being a lead. Null for organizations created directly. */
+  convertedAt?: Date;
 
   // Partner referral
   referredByPartnerId?: string;
@@ -118,6 +120,7 @@ export class Organization extends AggregateRoot<OrganizationProps> {
   get twitter()               { return this.props.twitter; }
   get tiktok()                { return this.props.tiktok; }
   get sourceLeadId()            { return this.props.sourceLeadId; }
+  get convertedAt()             { return this.props.convertedAt; }
   get referredByPartnerId()     { return this.props.referredByPartnerId; }
   get externalProjectIds()      { return this.props.externalProjectIds; }
   get driveFolderId()         { return this.props.driveFolderId; }

@@ -272,10 +272,16 @@ export class Lead extends AggregateRoot<LeadProps> {
     this.touch();
   }
 
+  /** Conversion is the end of this record's life as a lead: it stops being prospecting work and
+   *  becomes a customer. `convertedAt` was written by the original implementation and was lost in
+   *  the migration to NestJS; archiving is what removes it from the prospecting lists. The row is
+   *  kept (not deleted) because it holds what the organization has nowhere to store — GPS
+   *  coordinates, Google enrichment, source/searchTerm — and because Activity cascades on delete. */
   markAsConverted(organizationId: string) {
     this.props.status = "qualified";
     this.props.convertedToOrganizationId = organizationId;
-    this.touch();
+    this.props.convertedAt = new Date();
+    this.archive("Convertido em organização");
   }
 
   static create(
