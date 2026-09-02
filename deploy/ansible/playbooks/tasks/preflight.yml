@@ -1,0 +1,71 @@
+---
+# Preflight — tudo o que precisa estar verdadeiro ANTES de o deploy tocar em qualquer coisa.
+#
+# Existe porque um deploy descobria tarde demais que não conseguia falar com o GitHub: em
+# 02/09/2026 o CD queimou os 30 minutos de timeout num `git fetch` que esperava senha, e o
+# GitHub Actions reportou apenas "cancelled", sem erro em lugar nenhum. Falhar aqui custa
+# ~15 segundos e diz exatamente o que está errado.
+
+- name: "Preflight | diretório da aplicação existe"
+  ansible.builtin.stat:
+    path: "{{ app_dir }}/.git"
+  register: preflight_repo
+
+- name: "Preflight | abortar se o diretório não é um repositório git"
+  ansible.builtin.fail:
+    msg: "{{ app_dir }} não é um repositório git. Deploy abortado."
+  when: not preflight_repo.stat.exists
+
+- name: "Preflight | o servidor consegue BUSCAR código do GitHub"
+  # `fetch --dry-run`, não `ls-remote`: são caminhos diferentes no servidor do GitHub.
+  # O ls-remote faz só o GET /info/refs, que continuou respondendo 200 durante todo o
+  # incidente de 02/09 — um preflight baseado nele daria "tudo certo" e o deploy morreria
+  # logo depois. Quem leva 401 é o POST /git-upload-pack, e é ele que o dry-run exercita.
+  # (Confirmado na máquina: ls-remote ok, fetch --dry-run 401.)
+  ansible.builtin.command:
+    cmd: git fetch --dry-run origin {{ github_branch }}
+    chdir: "{{ app_dir }}"
+  register: preflight_lsremote
+  changed_when: false
+  failed_when: false
+  timeout: 30
+
+- name: "Preflight | abortar com diagnóstico se o GitHub recusou"
+  ansible.builtin.fail:
+    msg: |
+      ❌ O servidor não consegue buscar código do GitHub. Deploy abortado ANTES de mexer em nada.
+
+      Saída: {{ preflight_lsremote.stderr | default(preflight_lsremote.stdout) | trim }}
+
+      Causa provável, se a mensagem fala em "could not read Username":
+      o servidor busca de forma anônima e o GitHub passou a recusar (401 no git-upload-pack).
+      Correção: dar uma deploy key somente-leitura ao servidor e trocar o remote para SSH.
+      Ver a issue #1135.
+  when: preflight_lsremote.rc != 0
+
+- name: "Preflight | Docker respondendo"
+  ansible.builtin.command: docker info --format '{{ "{{" }}.ServerVersion{{ "}}" }}'
+  register: preflight_docker
+  changed_when: false
+  failed_when: preflight_docker.rc != 0
+  timeout: 30
+
+- name: "Preflight | espaço em disco"
+  ansible.builtin.shell: >
+    df --output=avail -BG {{ app_dir }} | tail -1 | tr -dc '0-9'
+  register: preflight_disk
+  changed_when: false
+  timeout: 30
+
+- name: "Preflight | abortar se o disco está apertado"
+  # Um build de Next.js + imagem Docker não cabe em pouco espaço, e o modo de falha
+  # (build morrendo no meio) é bem pior do que não começar.
+  ansible.builtin.fail:
+    msg: "❌ Apenas {{ preflight_disk.stdout }}GB livres em {{ app_dir }}. Mínimo de {{ min_free_gb }}GB para buildar. Deploy abortado."
+  when: preflight_disk.stdout | int < min_free_gb | int
+
+- name: "Preflight | OK"
+  ansible.builtin.debug:
+    msg: >-
+      ✅ Preflight: repo ok, GitHub acessível, Docker {{ preflight_docker.stdout | trim }},
+      {{ preflight_disk.stdout }}GB livres.

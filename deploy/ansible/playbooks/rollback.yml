@@ -30,6 +30,15 @@
     code_only: false
     commits_back: 1
 
+  # Este playbook ainda usa `raw` (é o caminho de emergência e não dá para exercitá-lo com
+  # segurança, então não foi reescrito junto com os outros em 02/09/2026). O `raw` aloca um
+  # PTY, então basta um prompt do git para pendurar um rollback — exatamente quando não se
+  # pode esperar. Estas variáveis desarmam todos os prompts do git de uma vez.
+  environment:
+    GIT_TERMINAL_PROMPT: "0"
+    GIT_ASKPASS: /bin/true
+    GIT_PAGER: cat
+
   tasks:
     - name: Display rollback info
       debug:
@@ -69,6 +78,7 @@
 
     # ============ DATABASE ROLLBACK ============
     - name: Restore database from backup
+      timeout: 1800
       raw: |
         DATABASE_URL=$(grep -E "^DATABASE_URL=" {{ app_dir }}/.env | cut -d'=' -f2-)
         DB_USER=$(echo "$DATABASE_URL" | sed -E 's|postgresql://([^:]+):.*|\1|')
@@ -91,6 +101,7 @@
 
     # ============ CODE ROLLBACK ============
     - name: Revert code to previous commits
+      timeout: 180
       raw: |
         cd {{ app_dir }} && \
         git reset --hard HEAD~{{ commits_back }} && \
@@ -103,6 +114,7 @@
 
     # ============ REBUILD ============
     - name: Build Next.js (frontend — no Prisma)
+      timeout: 1200
       raw: cd {{ app_dir }} && NODE_ENV=production npm run build
       register: build_result
 

@@ -1,15 +1,18 @@
 ---
-# Deploy Backend NestJS
+# Deploy do backend NestJS COM migração de schema.
 #
-# O que faz:
-#   1. Git pull no servidor
-#   2. docker compose build --profile backend
-#   3. Backup do DB + prisma migrate deploy (backend é a autoridade de migração)
-#   4. up --profile backend
-#   5. Health check em /health
+# Ordem: preflight → git → build → backup → migrate → trocar container → health.
+# A migração roda ANTES da troca: se falhar, o container antigo continua servindo.
 #
-# CRM Next.js NÃO é afetado — roda em PM2 independente.
-# As migrações Prisma rodam AQUI (a partir do backend/prisma), não mais pelo frontend.
+# Endurecido em 02/09/2026 (ver o cabeçalho de quick-deploy.yml para o porquê de sair
+# do `raw`). Além daquilo, aqui há duas proteções específicas:
+#
+#   1. `timeout` na migração. Ela não tinha nenhum: uma migração pendurada travava o job
+#      até o teto de 30 min do CD e aparecia como "cancelled", sem erro.
+#   2. Rollback do container. O playbook fazia `docker rm -f` e só depois `up -d`; se o
+#      `up` ou o health check falhassem, o backend ficava FORA DO AR sem nada para
+#      levantá-lo. Agora a imagem anterior é anotada antes e restaurada se a nova não
+#      subir saudável.
 #
 # Uso:
 #   ansible-playbook -i inventory/production.yml playbooks/deploy-backend.yml
@@ -24,106 +27,175 @@
     backend_domain: crm-api.wbdigitalsolutions.com
     github_branch: main
     backup_script: /opt/backups/backup-crm.sh
+    min_free_gb: 5
+
+  environment:
+    GIT_TERMINAL_PROMPT: "0"
+    GIT_ASKPASS: /bin/true
+    GIT_PAGER: cat
 
   tasks:
-    # ── 1. Código ──────────────────────────────────────────────────────────────
+    - name: Preflight
+      ansible.builtin.import_tasks: tasks/preflight.yml
 
-    - name: Git pull
-      raw: |
-        cd {{ app_dir }} && \
-        GIT_TERMINAL_PROMPT=0 git fetch origin {{ github_branch }} && \
-        git reset --hard origin/{{ github_branch }} && \
-        git --no-pager log -1 --oneline
-      register: git_result
+    # ── 1. Código ─────────────────────────────────────────────────────────────
+
+    - name: Buscar código do GitHub
+      ansible.builtin.command:
+        cmd: git fetch origin {{ github_branch }}
+        chdir: "{{ app_dir }}"
+      register: git_fetch
+      changed_when: false
+      timeout: 120
+      retries: 3
+      delay: 10
+      until: git_fetch.rc == 0
+
+    - name: Aplicar código
+      ansible.builtin.command:
+        cmd: git reset --hard origin/{{ github_branch }}
+        chdir: "{{ app_dir }}"
+      timeout: 120
 
     - name: Commit deployado
-      debug:
-        msg: "{{ git_result.stdout_lines | last }}"
+      ansible.builtin.command:
+        cmd: git --no-pager log -1 --oneline
+        chdir: "{{ app_dir }}"
+      register: git_commit
+      changed_when: false
+      timeout: 30
 
-    # ── 2. Docker build + up ───────────────────────────────────────────────────
+    # ── 2. Imagem atual (para poder voltar atrás) ─────────────────────────────
 
-    - name: Verificar Docker
-      raw: docker --version
-      register: docker_check
-      failed_when: docker_check.rc != 0
+    - name: Marcar a imagem atual como :previous (ponto de retorno)
+      # Feito ANTES do build, que sobrescreve wb-crm-backend:latest. A tag :previous é o
+      # que permite voltar — e voltar pelo COMPOSE, não por `docker run` na mão: o serviço
+      # publica em 127.0.0.1:3010, monta backend/.env como volume (é onde os tokens OAuth
+      # do GoTo persistem) e define ENV_FILE_PATH. Recriar isso à mão erraria em silêncio.
+      ansible.builtin.command: docker tag wb-crm-backend:latest wb-crm-backend:previous
+      register: previous_image
+      changed_when: false
+      failed_when: false
+      timeout: 60
+
+    # ── 3. Build ──────────────────────────────────────────────────────────────
 
     - name: Build da imagem do backend
-      raw: cd {{ app_dir }} && docker compose --profile backend build backend
-      register: docker_build
-      timeout: 600
+      ansible.builtin.command:
+        cmd: docker compose --profile backend build backend
+        chdir: "{{ app_dir }}"
+      timeout: 900
 
-    - name: Mostrar output do build
-      debug:
-        msg: "{{ docker_build.stdout_lines | last }}"
+    # ── 4. Backup + migração ──────────────────────────────────────────────────
 
-    # ── 2b. Migração do banco (backend = autoridade de migração) ───────────────
-    # Roda ANTES de trocar o container ativo: backup → migrate deploy com a imagem
-    # nova (usa env_file + rede do serviço via `compose run`). Se a migração falhar,
-    # o play aborta e o container antigo continua servindo.
-
-    - name: Backup do banco antes da migração (Google Drive via backup-crm.sh)
-      # sudo: o script usa o rclone config do root (Google Drive). Sudoers escopado
-      # do usuário `deploy` (CD) permite exatamente este script; como root é no-op.
-      raw: sudo {{ backup_script }} 2>&1
+    - name: Backup do banco antes da migração
+      # sudo: o script usa o rclone config do root (Google Drive). Sudoers escopado do
+      # usuário `deploy` (CD) permite exatamente este script; como root é no-op.
+      ansible.builtin.command: sudo {{ backup_script }}
       register: backup_result
+      timeout: 900
 
-    - name: Verificar backup
-      fail:
-        msg: |
-          ❌ Backup falhou — abortando antes de migrar.
-          {{ backup_result.stdout }}
+    - name: Abortar se o backup falhou
+      ansible.builtin.fail:
+        msg: "❌ Backup falhou — abortando ANTES de migrar.\n{{ backup_result.stdout | default('') }}"
       when: backup_result.rc != 0
 
-    - name: Aplicar migrações Prisma (prisma migrate deploy)
-      raw: cd {{ app_dir }} && docker compose --profile backend run --rm backend npx prisma migrate deploy 2>&1
+    - name: Aplicar migrações Prisma
+      ansible.builtin.command:
+        cmd: docker compose --profile backend run --rm backend npx prisma migrate deploy
+        chdir: "{{ app_dir }}"
       register: migrate_result
+      failed_when: false
+      timeout: 600
 
     - name: Resultado da migração
-      debug:
-        msg: "{{ migrate_result.stdout_lines | default(['(sem saída)']) | join('\n') }}"
+      ansible.builtin.debug:
+        msg: "{{ migrate_result.stdout_lines | default(['(sem saída)']) }}"
 
     - name: Abortar se a migração falhou
-      fail:
+      ansible.builtin.fail:
         msg: |
-          ❌ Migração falhou. Container antigo segue ativo. Restaure o backup se necessário.
-          {{ migrate_result.stdout }}
+          ❌ Migração falhou. O container antigo SEGUE ATIVO e servindo.
+          Backup recém-criado disponível para restaurar, se necessário.
+          {{ migrate_result.stdout | default('') }}
+          {{ migrate_result.stderr | default('') }}
       when: migrate_result.rc != 0
 
-    - name: Remover container existente (qualquer estado)
-      raw: docker rm -f wb-crm-backend 2>/dev/null || true
-      ignore_errors: yes
+    # ── 5. Troca do container, com rollback ───────────────────────────────────
 
-    - name: Subir container do backend
-      raw: cd {{ app_dir }} && docker compose --profile backend up -d --force-recreate backend
-      register: docker_up
+    - name: Trocar o container do backend
+      block:
+        - name: Subir o container novo
+          ansible.builtin.command:
+            cmd: docker compose --profile backend up -d --force-recreate backend
+            chdir: "{{ app_dir }}"
+          timeout: 300
 
-    # ── 3. Health check ────────────────────────────────────────────────────────
+        - name: Aguardar o backend ficar saudável (boot frio leva até ~2min)
+          ansible.builtin.uri:
+            url: "http://localhost:{{ backend_port }}/health"
+            timeout: 10
+          register: health_check
+          retries: 24
+          delay: 5
+          until: health_check.status is defined and health_check.status == 200
 
-    - name: Aguardar backend inicializar (até 120s — boot frio do NestJS)
-      raw: |
-        for i in $(seq 1 24); do
-          result=$(curl -sf http://localhost:{{ backend_port }}/health 2>/dev/null)
-          if echo "$result" | grep -q '"ok":true'; then
-            echo "HEALTHY: $result"
-            exit 0
-          fi
-          sleep 5
-        done
-        echo "NOT_READY"
-        exit 1
-      register: health_check
+      rescue:
+        - name: "ROLLBACK | a versão nova não subiu — restaurando a anterior"
+          ansible.builtin.debug:
+            msg: "⚠️ Backend novo não ficou saudável. Restaurando wb-crm-backend:previous."
+
+        - name: "ROLLBACK | devolver a tag :latest para a imagem anterior"
+          ansible.builtin.command: docker tag wb-crm-backend:previous wb-crm-backend:latest
+          when: previous_image.rc == 0
+          failed_when: false
+          timeout: 60
+
+        - name: "ROLLBACK | subir pelo compose (mantém portas, env_file e volumes)"
+          ansible.builtin.command:
+            cmd: docker compose --profile backend up -d --force-recreate backend
+            chdir: "{{ app_dir }}"
+          when: previous_image.rc == 0
+          failed_when: false
+          timeout: 300
+
+        - name: "ROLLBACK | conferir se a versão anterior voltou a responder"
+          ansible.builtin.uri:
+            url: "http://localhost:{{ backend_port }}/health"
+            timeout: 10
+          register: rollback_health
+          retries: 12
+          delay: 5
+          until: rollback_health.status is defined and rollback_health.status == 200
+          failed_when: false
+
+        - name: "ROLLBACK | falhar com instruções"
+          ansible.builtin.fail:
+            msg: |
+              ❌ DEPLOY DO BACKEND FALHOU e o rollback do container foi tentado.
+
+              A MIGRAÇÃO JÁ FOI APLICADA no banco — se o código antigo for incompatível
+              com o novo schema, restaure o backup feito neste deploy:
+                ansible-playbook -i inventory/production.yml playbooks/rollback.yml \
+                  -e "backup_file=<arquivo em /opt/backups/crm/>"
+
+              Rollback do container: {{ "voltou a responder 200" if (rollback_health.status | default(0)) == 200 else "NÃO respondeu — o backend pode estar fora do ar" }}
+              Confira o estado: docker ps | grep wb-crm-backend
+
+    # ── 6. Resultado ──────────────────────────────────────────────────────────
 
     - name: Status dos containers
-      raw: cd {{ app_dir }} && docker compose --profile backend ps
+      ansible.builtin.command:
+        cmd: docker compose --profile backend ps
+        chdir: "{{ app_dir }}"
       register: docker_status
+      changed_when: false
+      timeout: 60
 
     - name: Resultado do deploy
-      debug:
+      ansible.builtin.debug:
         msg: |
           ✅ BACKEND DEPLOY CONCLUÍDO
-          ===========================
-          Commit   : {{ git_result.stdout_lines | last }}
-          Health   : {{ health_check.stdout | trim }}
-          URL      : https://{{ backend_domain }}/health
-          Containers:
+          Commit: {{ git_commit.stdout }}
+          Health: {{ health_check.status }} — https://{{ backend_domain }}/health
           {{ docker_status.stdout }}

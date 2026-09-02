@@ -1,20 +1,24 @@
 ---
-# Quick Deploy - Fast code update (frontend PM2 + backend container)
+# Quick Deploy — atualização de código (frontend PM2 + container do backend)
 #
-# Use this for:
-#   - Frontend code/UI changes, security patches, bug fixes
-#   - Backend CODE changes WITHOUT schema migrations
+# Use para:
+#   - Mudanças de frontend/UI, correções, patches
+#   - Mudanças de CÓDIGO do backend SEM migração de schema
 #
-# ⚠️  DATABASE MIGRATIONS run via deploy-backend.yml (the backend owns Prisma).
-#     For any schema change, deploy the backend with that playbook.
+# ⚠️  MIGRAÇÕES rodam em deploy-backend.yml (o backend é a autoridade do Prisma).
 #
-# What it does:
-#   1. Git pull
-#   2. npm ci + npm run build (Next.js frontend — no Prisma)
-#   3. PM2 restart (frontend)
-#   4. Rebuild + restart the NestJS backend container (no migration here)
+# Endurecido em 02/09/2026. O que mudou e por quê:
+#   - `raw` → `command`/`shell`. O `raw` existe para hosts sem Python; este tem
+#     (python3.9, confirmado). O preço do `raw` era um PTY em toda tarefa: qualquer
+#     comando que peça input trava para sempre. Foi o pager do `git log` e depois o
+#     prompt de senha do `git fetch`, que queimou os 30 min de timeout do CD.
+#   - `environment:` desarma qualquer prompt do git de uma vez, em vez de repetir a
+#     variável em cada comando e esquecer em um.
+#   - Preflight antes de tocar em qualquer coisa (tasks/preflight.yml).
+#   - `timeout:` em toda tarefa que fala com a rede ou compila.
+#   - `retries` nas tarefas de rede, que são as que falham de forma intermitente.
 #
-# Usage:
+# Uso:
 #   ansible-playbook -i inventory/production.yml playbooks/quick-deploy.yml
 
 - name: Quick Deploy - Code Update Only
@@ -25,93 +29,137 @@
     app_dir: /opt/wb-crm
     app_name: wb-crm
     github_branch: main
+    min_free_gb: 5
+
+  # Vale para TODAS as tarefas: o git nunca pode esperar por input num deploy não
+  # interativo. Sem terminal ele falha em segundos com mensagem legível; com terminal
+  # (o que o `raw` dava) ele esperava até o job morrer.
+  environment:
+    GIT_TERMINAL_PROMPT: "0"
+    GIT_ASKPASS: /bin/true
+    GIT_PAGER: cat
 
   tasks:
-    - name: Display quick deploy info
-      debug:
-        msg: |
-          🚀 QUICK DEPLOY
-          ================
-          App: {{ app_name }}
-          Branch: {{ github_branch }}
+    - name: Info
+      ansible.builtin.debug:
+        msg: "🚀 QUICK DEPLOY — {{ app_name }} @ {{ github_branch }}"
 
-    - name: Fetch latest from GitHub
-      raw: cd {{ app_dir }} && GIT_TERMINAL_PROMPT=0 git fetch origin {{ github_branch }}
+    - name: Preflight
+      ansible.builtin.import_tasks: tasks/preflight.yml
 
-    - name: Apply latest code
-      raw: |
-        cd {{ app_dir }} && \
-        GIT_TERMINAL_PROMPT=0 git reset --hard origin/{{ github_branch }} && \
-        git --no-pager log -1 --oneline
-      register: git_pull
+    # ── Código ────────────────────────────────────────────────────────────────
 
-    - name: Display commit
-      debug:
-        msg: "Latest commit: {{ git_pull.stdout_lines | last }}"
-
-    - name: Remove dev-only files from production
-      raw: |
-        rm -rf {{ app_dir }}/tests \
-               {{ app_dir }}/docs \
-               {{ app_dir }}/vitest.config.ts \
-               {{ app_dir }}/CLAUDE.md \
-               {{ app_dir }}/.vscode \
-               {{ app_dir }}/.eslintrc.json \
-               {{ app_dir }}/.prettierrc.json
-        # Nota: docker-compose.yml e backend/ são mantidos — necessários para o container NestJS
-
-    - name: Install dependencies (including dev deps needed for build)
-      raw: cd {{ app_dir }} && npm ci --production=false
-      register: npm_install
-
-    - name: Build Next.js
-      raw: cd {{ app_dir }} && NODE_OPTIONS="--max-old-space-size=4096" NODE_ENV=production npm run build
-      register: build_result
-
-    - name: Remove dev dependencies after build
-      raw: cd {{ app_dir }} && npm prune --production
-
-    - name: Restart PM2 (Next.js frontend)
-      # sudo com caminho absoluto: o PM2 do frontend roda no daemon do root. Funciona
-      # tanto como root (local) quanto como o usuário `deploy` do CD (sudoers escopado
-      # em /etc/sudoers.d/deploy permite exatamente estes comandos).
-      raw: sudo /usr/bin/pm2 restart {{ app_name }} && sleep 3 && sudo /usr/bin/pm2 status {{ app_name }}
-      register: pm2_status
-
-    - name: Display PM2 status
-      debug:
-        msg: "{{ pm2_status.stdout_lines }}"
-
-    - name: Rebuild NestJS backend Docker image
-      raw: cd {{ app_dir }} && docker compose --profile backend build backend 2>&1 | tail -5
-
-    - name: Restart NestJS backend container
-      raw: cd {{ app_dir }} && docker compose --profile backend up -d backend 2>&1 | tail -3
-
-    - name: Wait for backend container startup
-      raw: sleep 20
-
-    - name: Health check (Next.js frontend)
-      raw: curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000"
-      register: health_check
+    - name: Buscar código do GitHub
+      ansible.builtin.command:
+        cmd: git fetch origin {{ github_branch }}
+        chdir: "{{ app_dir }}"
+      register: git_fetch
+      changed_when: false
+      timeout: 120
       retries: 3
-      delay: 5
-      until: health_check.stdout | trim == "200" or health_check.stdout | trim == "307"
+      delay: 10
+      until: git_fetch.rc == 0
 
-    - name: Health check (NestJS backend) — até ~120s (boot frio do NestJS)
-      raw: curl -s -o /dev/null -w "%{http_code}" http://localhost:3010/health || echo "000"
-      register: backend_health
+    - name: Aplicar código
+      ansible.builtin.command:
+        cmd: git reset --hard origin/{{ github_branch }}
+        chdir: "{{ app_dir }}"
+      timeout: 120
+
+    - name: Commit deployado
+      ansible.builtin.command:
+        cmd: git --no-pager log -1 --oneline
+        chdir: "{{ app_dir }}"
+      register: git_commit
+      changed_when: false
+      timeout: 30
+
+    - name: Mostrar commit
+      ansible.builtin.debug:
+        msg: "Commit: {{ git_commit.stdout }}"
+
+    - name: Remover arquivos de desenvolvimento
+      # docker-compose.yml e backend/ ficam — são necessários para o container NestJS.
+      ansible.builtin.file:
+        path: "{{ app_dir }}/{{ item }}"
+        state: absent
+      loop:
+        - tests
+        - docs
+        - vitest.config.ts
+        - CLAUDE.md
+        - .vscode
+        - .eslintrc.json
+        - .prettierrc.json
+
+    # ── Frontend ──────────────────────────────────────────────────────────────
+
+    - name: Instalar dependências (inclui dev, necessárias para o build)
+      ansible.builtin.command:
+        cmd: npm ci --production=false
+        chdir: "{{ app_dir }}"
+      timeout: 900
+
+    - name: Build do Next.js
+      ansible.builtin.command:
+        cmd: npm run build
+        chdir: "{{ app_dir }}"
+      environment:
+        NODE_OPTIONS: "--max-old-space-size=4096"
+        NODE_ENV: production
+      timeout: 1200
+
+    - name: Remover dependências de desenvolvimento
+      ansible.builtin.command:
+        cmd: npm prune --production
+        chdir: "{{ app_dir }}"
+      timeout: 600
+
+    - name: Reiniciar PM2 (frontend)
+      # sudo com caminho absoluto: o PM2 roda no daemon do root. Funciona como root
+      # (local) e como o usuário `deploy` do CD (sudoers escopado).
+      ansible.builtin.command: sudo /usr/bin/pm2 restart {{ app_name }}
+      timeout: 120
+
+    # ── Backend ───────────────────────────────────────────────────────────────
+
+    - name: Rebuild da imagem do backend
+      ansible.builtin.command:
+        cmd: docker compose --profile backend build backend
+        chdir: "{{ app_dir }}"
+      timeout: 900
+
+    - name: Subir o container do backend
+      ansible.builtin.command:
+        cmd: docker compose --profile backend up -d backend
+        chdir: "{{ app_dir }}"
+      timeout: 300
+
+    # ── Health checks ─────────────────────────────────────────────────────────
+
+    - name: Health check do frontend
+      ansible.builtin.uri:
+        url: http://localhost:3000
+        status_code: [200, 307, 302]
+        timeout: 10
+      register: front_health
+      retries: 12
+      delay: 5
+      until: front_health.status is defined and front_health.status in [200, 307, 302]
+
+    - name: Health check do backend (boot frio do NestJS leva até ~2min)
+      ansible.builtin.uri:
+        url: http://localhost:3010/health
+        timeout: 10
+      register: back_health
       retries: 24
       delay: 5
-      until: backend_health.stdout | trim == "200"
+      until: back_health.status is defined and back_health.status == 200
 
-    - name: Deploy result
-      debug:
+    - name: Resultado
+      ansible.builtin.debug:
         msg: |
-          ✅ QUICK DEPLOY COMPLETE
-          ========================
-          Commit: {{ git_pull.stdout_lines | last }}
-          Frontend: {{ 'OK' if health_check.stdout | trim in ['200', '307'] else 'FAILED' }}
-          Backend:  {{ 'OK' if backend_health.stdout | trim == '200' else 'FAILED' }}
-          Frontend URL: https://crm.wbdigitalsolutions.com
-          Backend URL:  https://crm-api.wbdigitalsolutions.com
+          ✅ QUICK DEPLOY CONCLUÍDO
+          Commit  : {{ git_commit.stdout }}
+          Frontend: {{ front_health.status }} — https://crm.wbdigitalsolutions.com
+          Backend : {{ back_health.status }} — https://crm-api.wbdigitalsolutions.com
