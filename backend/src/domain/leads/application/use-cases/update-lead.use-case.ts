@@ -123,7 +123,14 @@ export class UpdateLeadUseCase {
       fields.commLanguage = langR.value.value;
     }
 
-    lead.update(fields as Partial<Omit<LeadProps, "ownerId" | "createdAt" | "updatedAt">>);
+    // `undefined` significa "não mexer", nunca "apagar" — ver o comentário equivalente em
+    // UpdateOrganizationUseCase. O controller cria foundationDate/inOperationsAt como
+    // undefined quando ausentes, e Object.assign copiaria isso por cima do valor gravado.
+    const definedFields = Object.fromEntries(
+      Object.entries(fields).filter(([, value]) => value !== undefined),
+    );
+
+    lead.update(definedFields as Partial<Omit<LeadProps, "ownerId" | "createdAt" | "updatedAt">>);
 
     const hasRelations = labelIds !== undefined || icpId !== undefined;
 

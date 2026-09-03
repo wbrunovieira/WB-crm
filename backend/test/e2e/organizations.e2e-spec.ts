@@ -383,6 +383,68 @@ describe("Organizations API (e2e)", () => {
       await request(app.getHttpServer()).patch("/organizations/qualquer-id").send({ name: "X" }).expect(401);
     });
 
+    it("PATCH parcial NÃO apaga as datas que não foram enviadas", async () => {
+      // Bug relatado em produção: qualquer PATCH parcial zerava todas as datas ausentes do
+      // corpo, respondendo 200 sem erro. hostingRenewalDate é o gatilho do alerta de cobrança
+      // de renovação — editar o telefone de um cliente apagava a data e o alerta nunca
+      // disparava, sem nenhum sinal. Texto/número/boolean sobreviviam; só as datas caíam.
+      const created = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          name: "Org Datas Preservadas E2E",
+          foundationDate: "2020-01-15T00:00:00.000Z",
+          hasHosting: true,
+          hostingRenewalDate: "2027-08-25T00:00:00.000Z",
+          hostingPlan: "Básico",
+        })
+        .expect(201);
+
+      // Um PATCH que não menciona data nenhuma — nem sequer o bloco de hospedagem.
+      await request(app.getHttpServer())
+        .patch(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ city: "Petrópolis" })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.city).toBe("Petrópolis");
+      expect(res.body.foundationDate).not.toBeNull();
+      expect(res.body.hostingRenewalDate).not.toBeNull();
+      expect(new Date(res.body.hostingRenewalDate).toISOString()).toBe("2027-08-25T00:00:00.000Z");
+      expect(new Date(res.body.foundationDate).toISOString()).toBe("2020-01-15T00:00:00.000Z");
+    });
+
+    it("PATCH com data explícita continua atualizando a data", async () => {
+      // A correção não pode virar "datas nunca mudam": enviar o campo tem de gravar.
+      const created = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          name: "Org Data Atualizavel E2E",
+          hasHosting: true,
+          hostingRenewalDate: "2027-08-25T00:00:00.000Z",
+        })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ hostingRenewalDate: "2028-03-10T00:00:00.000Z" })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(new Date(res.body.hostingRenewalDate).toISOString()).toBe("2028-03-10T00:00:00.000Z");
+    });
+
     it("atualiza organização existente", async () => {
       const created = await request(app.getHttpServer())
         .post("/organizations")

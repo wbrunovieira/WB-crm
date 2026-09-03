@@ -447,6 +447,35 @@ describe("Leads API (e2e)", () => {
   // ─── PATCH /leads/:id ─────────────────────────────────────────────────────
 
   describe("PATCH /leads/:id", () => {
+    it("PATCH parcial NÃO apaga as datas que não foram enviadas", async () => {
+      // Mesmo bug encontrado na Organization (#1211): o controller cria as chaves
+      // foundationDate/inOperationsAt explicitamente como undefined quando ausentes, e
+      // `lead.update` faz Object.assign, que copia undefined por cima do valor gravado.
+      const created = await request(app.getHttpServer())
+        .post("/leads")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          businessName: "Lead Datas Preservadas E2E",
+          foundationDate: "2019-06-10T00:00:00.000Z",
+        })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/leads/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ city: "Petrópolis" })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get(`/leads/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.city).toBe("Petrópolis");
+      expect(res.body.foundationDate).not.toBeNull();
+      expect(new Date(res.body.foundationDate).toISOString()).toBe("2019-06-10T00:00:00.000Z");
+    });
+
     it("atualiza businessName do lead", async () => {
       const created = await request(app.getHttpServer())
         .post("/leads")

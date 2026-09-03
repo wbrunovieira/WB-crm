@@ -85,7 +85,18 @@ export class UpdateOrganizationUseCase {
     if (fields.phone2 !== undefined) fields.phone2 = normalizePhoneE164(fields.phone2) ?? undefined;
     if (fields.whatsapp !== undefined) fields.whatsapp = normalizePhoneE164(fields.whatsapp) ?? undefined;
 
-    organization.update(fields as Partial<Omit<OrganizationProps, "ownerId" | "createdAt" | "updatedAt">>);
+    // `undefined` significa "não mexer", nunca "apagar". Sem esta filtragem, um PATCH parcial
+    // zerava silenciosamente todas as datas ausentes do corpo: o controller cria as chaves
+    // foundationDate/hostingRenewalDate/inOperationsAt explicitamente (`? new Date(x) : undefined`),
+    // e `organization.update` faz Object.assign, que COPIA chave existente com valor undefined
+    // por cima do valor atual. Campos de texto escapavam só porque, quando não enviados, a
+    // chave sequer existe (vêm do spread do body). É a mesma semântica que UpdateDealUseCase
+    // já aplica montando o objeto campo a campo — por isso o Deal nunca teve o bug.
+    const definedFields = Object.fromEntries(
+      Object.entries(fields).filter(([, value]) => value !== undefined),
+    );
+
+    organization.update(definedFields as Partial<Omit<OrganizationProps, "ownerId" | "createdAt" | "updatedAt">>);
 
     if (labelIds !== undefined) {
       await this.organizations.saveWithLabels(organization, labelIds);
