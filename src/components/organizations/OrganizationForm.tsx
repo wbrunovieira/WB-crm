@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { normalizeCNPJ, validateCNPJ } from "@/lib/validations/cnpj";
 import { useRouter } from "next/navigation";
 import { OrganizationFormData } from "@/lib/validations/organization";
 import { useCreateOrganization, useUpdateOrganization } from "@/hooks/organizations/use-organizations";
@@ -19,8 +20,16 @@ interface OrganizationFormProps {
     foundationDate: Date | string | null;
     website: string | null;
     phone: string | null;
+    phone2: string | null;
     whatsapp: string | null;
     email: string | null;
+    segment: string | null;
+    legalNature: string | null;
+    branchType: string | null;
+    simplesNacional: boolean | null;
+    isMei: boolean | null;
+    revenueRange: string | null;
+    sourceGroup: string | null;
     country: string | null;
     state: string | null;
     city: string | null;
@@ -84,51 +93,80 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
 
     try {
       const formData = new FormData(e.currentTarget);
+
+      // Mesmo helper do LeadForm: campo apagado precisa virar null, não "". Enviar a string
+      // crua gravava vazio no banco em vez de limpar o dado.
+      const getString = (key: string): string | null | undefined => {
+        const value = formData.get(key);
+        if (value === null) return undefined;
+        return value !== "" ? (value as string) : null;
+      };
+
       const data: OrganizationFormData = {
         name: formData.get("name") as string,
-        legalName: formData.get("legalName") as string,
-        foundationDate: formData.get("foundationDate") as string,
-        website: formData.get("website") as string,
-        phone: formData.get("phone") as string,
-        whatsapp: formData.get("whatsapp") as string,
-        email: formData.get("email") as string,
-        country: formData.get("country") as string,
-        state: formData.get("state") as string,
-        city: formData.get("city") as string,
-        zipCode: formData.get("zipCode") as string,
-        streetAddress: formData.get("streetAddress") as string,
-        industry: formData.get("industry") as string,
+        legalName: getString("legalName"),
+        foundationDate: getString("foundationDate"),
+        website: getString("website"),
+        phone: getString("phone"),
+        whatsapp: getString("whatsapp"),
+        email: getString("email"),
+        country: getString("country"),
+        state: getString("state"),
+        city: getString("city"),
+        zipCode: getString("zipCode"),
+        streetAddress: getString("streetAddress"),
+        industry: getString("industry"),
         employeeCount: formData.get("employeeCount")
           ? parseInt(formData.get("employeeCount") as string)
           : undefined,
         annualRevenue: formData.get("annualRevenue")
           ? parseFloat(formData.get("annualRevenue") as string)
           : undefined,
-        taxId: formData.get("taxId") as string,
-        description: formData.get("description") as string,
-        companyOwner: formData.get("companyOwner") as string,
-        companySize: formData.get("companySize") as string,
+        taxId: getString("taxId") ? normalizeCNPJ(getString("taxId")!) : getString("taxId"),
+        description: getString("description"),
+        companyOwner: getString("companyOwner"),
+        companySize: getString("companySize"),
+        // Cadastrais/fiscais que vêm do lead na conversão — o backend já aceitava, o form
+        // é que não os expunha, então o dado chegava e ficava invisível e não editável.
+        segment: getString("segment"),
+        legalNature: getString("legalNature"),
+        branchType: getString("branchType"),
+        simplesNacional: formData.get("simplesNacional") === "on",
+        isMei: formData.get("isMei") === "on",
+        revenueRange: getString("revenueRange"),
+        phone2: getString("phone2"),
+        sourceGroup: getString("sourceGroup"),
         primaryCNAEId: primaryCNAE?.id || undefined,
-        internationalActivity: formData.get("internationalActivity") as string,
+        internationalActivity: getString("internationalActivity"),
         commLanguage: (formData.get("commLanguage") as string) || "pt",
-        instagram: formData.get("instagram") as string,
-        linkedin: formData.get("linkedin") as string,
-        facebook: formData.get("facebook") as string,
-        twitter: formData.get("twitter") as string,
-        tiktok: formData.get("tiktok") as string,
+        instagram: getString("instagram"),
+        linkedin: getString("linkedin"),
+        facebook: getString("facebook"),
+        twitter: getString("twitter"),
+        tiktok: getString("tiktok"),
         languages: orgLanguages.length > 0 ? orgLanguages : null,
         // Hosting
         hasHosting: hasHosting,
-        hostingRenewalDate: formData.get("hostingRenewalDate") as string,
-        hostingPlan: formData.get("hostingPlan") as string,
+        hostingRenewalDate: getString("hostingRenewalDate"),
+        hostingPlan: getString("hostingPlan"),
         hostingValue: formData.get("hostingValue")
           ? parseFloat(formData.get("hostingValue") as string)
           : undefined,
         hostingReminderDays: formData.get("hostingReminderDays")
           ? parseInt(formData.get("hostingReminderDays") as string)
           : undefined,
-        hostingNotes: formData.get("hostingNotes") as string,
+        hostingNotes: getString("hostingNotes"),
       };
+
+      // Mesma validação do lead: sem isso a organização aceitava qualquer string como CNPJ,
+      // e o mesmo CNPJ virava duas coisas diferentes conforme a origem do registro.
+      if (data.taxId && !validateCNPJ(data.taxId)) {
+        // Usa o mesmo mecanismo de erro que o resto deste form (banner inline), não o toast
+        // do LeadForm — padronizar os dois é outro item (#1194).
+        setError("CNPJ inválido. Verifique os dígitos verificadores ou deixe o campo em branco.");
+        setIsLoading(false);
+        return;
+      }
 
       if (organization) {
         await updateMutation.mutateAsync({ id: organization.id, ...data, labelIds });
@@ -268,6 +306,19 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="phone"
               name="phone"
               defaultValue={organization?.phone || ""}
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+
+          <div>
+            <label htmlFor="phone2" className="block text-sm font-medium text-gray-700">
+              Telefone 2
+            </label>
+            <input
+              type="tel"
+              id="phone2"
+              name="phone2"
+              defaultValue={organization?.phone2 || ""}
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
@@ -536,6 +587,94 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 </option>
               ))}
             </select>
+          </div>
+        </div>
+
+        {/* Cadastrais/fiscais — mesmos campos e rótulos do LeadForm, para o dado herdado na
+            conversão continuar visível e editável na conta do cliente. */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <div>
+            <label htmlFor="segment" className="mb-2 block text-sm font-medium text-gray-700">
+              Segmento Comercial
+            </label>
+            <input
+              type="text"
+              id="segment"
+              name="segment"
+              defaultValue={organization?.segment ?? ""}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label htmlFor="legalNature" className="mb-2 block text-sm font-medium text-gray-700">
+              Natureza Jurídica
+            </label>
+            <input
+              type="text"
+              id="legalNature"
+              name="legalNature"
+              defaultValue={organization?.legalNature ?? ""}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label htmlFor="branchType" className="mb-2 block text-sm font-medium text-gray-700">
+              Tipo de Filial
+            </label>
+            <select
+              id="branchType"
+              name="branchType"
+              defaultValue={organization?.branchType ?? ""}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="">Selecione...</option>
+              <option value="matriz">Matriz</option>
+              <option value="filial">Filial</option>
+            </select>
+          </div>
+          <div>
+            <label htmlFor="revenueRange" className="mb-2 block text-sm font-medium text-gray-700">
+              Faixa de Faturamento
+            </label>
+            <input
+              type="text"
+              id="revenueRange"
+              name="revenueRange"
+              defaultValue={organization?.revenueRange ?? ""}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div>
+            <label htmlFor="sourceGroup" className="mb-2 block text-sm font-medium text-gray-700">
+              Lote / Grupo
+            </label>
+            <input
+              type="text"
+              id="sourceGroup"
+              name="sourceGroup"
+              defaultValue={organization?.sourceGroup ?? ""}
+              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            />
+          </div>
+          <div className="flex items-end gap-6">
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                name="simplesNacional"
+                defaultChecked={organization?.simplesNacional ?? false}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              Simples Nacional
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="checkbox"
+                name="isMei"
+                defaultChecked={organization?.isMei ?? false}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              MEI
+            </label>
           </div>
         </div>
 

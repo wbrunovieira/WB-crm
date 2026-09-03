@@ -2,44 +2,55 @@ import { z } from "zod";
 
 export const organizationSchema = z.object({
   name: z.string().min(2, "Nome Fantasia deve ter no mínimo 2 caracteres"),
-  legalName: z.string().optional(),
-  foundationDate: z.string().optional(),
+  legalName: z.string().nullish(),
+  foundationDate: z.string().nullish(),
 
   // Contact Info
-  website: z.string().optional(),
-  phone: z.string().optional(),
-  whatsapp: z.string().optional(),
-  email: z.string().email("Email inválido").optional().or(z.literal("")),
+  website: z.string().nullish(),
+  phone: z.string().nullish(),
+  whatsapp: z.string().nullish(),
+  email: z.string().email("Email inválido").nullish().or(z.literal("")),
 
   // Location
-  country: z.string().optional(),
-  state: z.string().optional(),
-  city: z.string().optional(),
-  zipCode: z.string().optional(),
-  streetAddress: z.string().optional(),
+  country: z.string().nullish(),
+  state: z.string().nullish(),
+  city: z.string().nullish(),
+  zipCode: z.string().nullish(),
+  streetAddress: z.string().nullish(),
 
   // Business Info
-  industry: z.string().optional(),
+  industry: z.string().nullish(),
   employeeCount: z.number().int().positive().optional(),
   annualRevenue: z.number().positive().optional(),
-  taxId: z.string().optional(),
-  description: z.string().optional(),
-  companyOwner: z.string().optional(),
-  companySize: z.string().optional(),
+  taxId: z.string().nullish(),
+  description: z.string().nullish(),
+  companyOwner: z.string().nullish(),
+  companySize: z.string().nullish(),
+
+  // Cadastrais/fiscais herdados do lead na conversão. As colunas e a entidade do backend já
+  // existiam; faltava o frontend expor os campos.
+  segment: z.string().nullish(),
+  legalNature: z.string().nullish(),
+  branchType: z.string().nullish(),
+  simplesNacional: z.boolean().nullish(),
+  isMei: z.boolean().nullish(),
+  revenueRange: z.string().nullish(),
+  phone2: z.string().nullish(),
+  sourceGroup: z.string().nullish(),
 
   // CNAE
-  primaryCNAEId: z.string().optional(),
-  internationalActivity: z.string().optional(),
+  primaryCNAEId: z.string().nullish(),
+  internationalActivity: z.string().nullish(),
 
   // Idioma de comunicação (e-mail/newsletter)
-  commLanguage: z.string().optional(),
+  commLanguage: z.string().nullish(),
 
   // Social Media
-  instagram: z.string().optional(),
-  linkedin: z.string().optional(),
-  facebook: z.string().optional(),
-  twitter: z.string().optional(),
-  tiktok: z.string().optional(),
+  instagram: z.string().nullish(),
+  linkedin: z.string().nullish(),
+  facebook: z.string().nullish(),
+  twitter: z.string().nullish(),
+  tiktok: z.string().nullish(),
 
   // Idiomas (JSON)
   languages: z.array(z.object({ code: z.string(), isPrimary: z.boolean() })).optional().nullable(),
