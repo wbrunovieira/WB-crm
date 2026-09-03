@@ -66,6 +66,18 @@ export class ConvertLeadToOrganizationUseCase {
       primaryCNAEId: lead.primaryCNAEId,
       internationalActivity: lead.internationalActivity,
       referredByPartnerId: lead.referredByPartnerId,
+      // Campos cadastrais/fiscais que a Organization já tem coluna para guardar. Ficavam de
+      // fora da cópia, então evaporavam na conversão — sem erro, sem aviso. Note a troca de
+      // nome: no Lead é `employeesCount`, na Organization é `employeeCount`.
+      employeeCount: lead.employeesCount,
+      segment: lead.segment,
+      legalNature: lead.legalNature,
+      branchType: lead.branchType,
+      simplesNacional: lead.simplesNacional,
+      isMei: lead.isMei,
+      revenueRange: lead.revenueRange,
+      phone2: lead.phone2,
+      sourceGroup: lead.sourceGroup,
       sourceLeadId: lead.id.toString(),
       // "cliente desde": the moment it stopped being a lead.
       convertedAt: now,

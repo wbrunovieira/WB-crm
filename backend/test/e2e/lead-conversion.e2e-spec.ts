@@ -192,6 +192,40 @@ describe("POST /leads/:id/convert (e2e)", () => {
     }
   });
 
+  it("copia para a organização os campos fiscais/cadastrais que ela já tem coluna para guardar", async () => {
+    // Nenhum destes precisa de migração: as colunas existem nos dois modelos. A conversão
+    // copiava 22 campos e ignorava estes, então o dado evaporava a cada conversão — inclusive
+    // o número de funcionários, que muda de nome no caminho (employeesCount → employeeCount).
+    const lead = await createLead({
+      companyRegistrationID: `CNPJ-FISC-${Date.now()}`,
+      employeesCount: 42,
+      segment: "Panificação",
+      legalNature: "Sociedade Empresária Limitada",
+      branchType: "matriz",
+      simplesNacional: true,
+      isMei: false,
+      revenueRange: "1M-5M",
+      phone2: "+551133334444",
+      sourceGroup: "porta-a-porta",
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(`/leads/${lead.id}/convert`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const org = await prisma.organization.findUnique({ where: { id: res.body.organizationId } });
+    expect(org!.employeeCount).toBe(42);
+    expect(org!.segment).toBe("Panificação");
+    expect(org!.legalNature).toBe("Sociedade Empresária Limitada");
+    expect(org!.branchType).toBe("matriz");
+    expect(org!.simplesNacional).toBe(true);
+    expect(org!.isMei).toBe(false);
+    expect(org!.revenueRange).toBe("1M-5M");
+    expect(org!.phone2).toBe("+551133334444");
+    expect(org!.sourceGroup).toBe("porta-a-porta");
+  });
+
   it("preenche convertedAt no lead e na organização, e arquiva o lead", async () => {
     // convertedAt no lead era gravado pela Server Action original e caiu na migração M14
     // (commit 11c18411). O da organização é novo: "desde quando esta empresa é cliente".

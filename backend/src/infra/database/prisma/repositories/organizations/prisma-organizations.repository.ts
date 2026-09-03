@@ -133,6 +133,9 @@ export class PrismaOrganizationsRepository extends OrganizationsRepository {
             role: true,
             isPrimary: true,
             status: true,
+            // A página passava `languages` adiante e o badge nunca renderizava: o campo não
+            // era selecionado aqui, e o tipo do front o declarava, escondendo o erro do TS.
+            languages: true,
           },
         },
         deals: {
@@ -140,8 +143,13 @@ export class PrismaOrganizationsRepository extends OrganizationsRepository {
             id: true,
             title: true,
             value: true,
+            currency: true,
             status: true,
             createdAt: true,
+            // A página já renderizava deal.stage?.name, mas o stage nunca era selecionado —
+            // código morto que o TypeScript não pegava porque o tipo do front declarava o
+            // campo como obrigatório.
+            stage: { select: { id: true, name: true, pipeline: { select: { id: true, name: true } } } },
           },
           orderBy: { createdAt: "desc" },
           take: 50,
@@ -243,6 +251,14 @@ export class PrismaOrganizationsRepository extends OrganizationsRepository {
       zipCode: row.zipCode,
       streetAddress: row.streetAddress,
       employeeCount: row.employeeCount,
+      segment: row.segment,
+      legalNature: row.legalNature,
+      branchType: row.branchType,
+      simplesNacional: row.simplesNacional,
+      isMei: row.isMei,
+      revenueRange: row.revenueRange,
+      phone2: row.phone2,
+      sourceGroup: row.sourceGroup,
       annualRevenue: row.annualRevenue,
       taxId: row.taxId,
       description: row.description,
@@ -270,13 +286,18 @@ export class PrismaOrganizationsRepository extends OrganizationsRepository {
         role: c.role,
         isPrimary: c.isPrimary,
         status: c.status ?? "active",
+        languages: c.languages,
       })),
       deals: row.deals.map((d) => ({
         id: d.id,
         title: d.title,
         value: d.value,
+        currency: d.currency,
         status: d.status,
         createdAt: d.createdAt,
+        stage: d.stage
+          ? { id: d.stage.id, name: d.stage.name, pipeline: d.stage.pipeline ?? null }
+          : null,
       })),
       secondaryCNAEs: row.secondaryCNAEs.map((sc) => ({
         id: sc.cnae.id,

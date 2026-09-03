@@ -45,6 +45,16 @@ export interface OrganizationDetail extends OrganizationSummary {
   zipCode: string | null;
   streetAddress: string | null;
   employeeCount: number | null;
+  // Campos cadastrais/fiscais herdados do lead na conversão. Existiam no schema e na entidade,
+  // mas não eram serializados — o dado ficava gravado e invisível.
+  segment: string | null;
+  legalNature: string | null;
+  branchType: string | null;
+  simplesNacional: boolean | null;
+  isMei: boolean | null;
+  revenueRange: string | null;
+  phone2: string | null;
+  sourceGroup: string | null;
   annualRevenue: number | null;
   taxId: string | null;
   description: string | null;
@@ -71,13 +81,16 @@ export interface OrganizationDetail extends OrganizationSummary {
     whatsapp: string | null;
     role: string | null;
     isPrimary: boolean;
+    languages: string | null;
   }>;
   deals: Array<{
     id: string;
     title: string;
     value: number | null;
+    currency: string;
     status: string;
     createdAt: Date;
+    stage: { id: string; name: string; pipeline: { id: string; name: string } | null } | null;
   }>;
   secondaryCNAEs: Array<{ id: string; code: string; description: string }>;
   sectors: Array<{ id: string; name: string }>;
