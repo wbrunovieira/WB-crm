@@ -627,9 +627,11 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               defaultValue={organization?.branchType ?? ""}
               className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             >
-              <option value="">Selecione...</option>
-              <option value="matriz">Matriz</option>
-              <option value="filial">Filial</option>
+              {/* Mesmos valores gravados pelo LeadForm — em minúsculo, o dado convertido do
+                  lead ("Matriz") não casaria e o select abriria vazio. */}
+              <option value="">Não informado</option>
+              <option value="Matriz">Matriz</option>
+              <option value="Filial">Filial</option>
             </select>
           </div>
           <div>

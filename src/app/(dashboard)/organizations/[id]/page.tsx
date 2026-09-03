@@ -289,10 +289,10 @@ export default async function OrganizationDetailPage({
               )}
               {organization.branchType && (
                 <div>
-                  <dt className="text-sm font-medium text-gray-500">Tipo de Filial</dt>
-                  <dd className="mt-1 text-sm text-gray-900">
-                    {organization.branchType === "matriz" ? "Matriz" : "Filial"}
-                  </dd>
+                  <dt className="text-sm font-medium text-gray-500">Matriz / Filial</dt>
+                  {/* Valor cru, como o lead faz: os dados reais incluem "Matriz", "Filial" e
+                      até "EPP". Comparar com uma string fixa exibia "Filial" para todos. */}
+                  <dd className="mt-1 text-sm text-gray-900">{organization.branchType}</dd>
                 </div>
               )}
               {(organization.simplesNacional || organization.isMei) && (
