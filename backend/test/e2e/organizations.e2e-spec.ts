@@ -419,6 +419,23 @@ describe("Organizations API (e2e)", () => {
       expect(new Date(res.body.foundationDate).toISOString()).toBe("2020-01-15T00:00:00.000Z");
     });
 
+    it("PATCH com data inválida responde 400, não 500", async () => {
+      // Entrada malformada do cliente é erro do cliente. `new Date("nao-eh-data")` produz um
+      // Invalid Date que só estoura mais adiante, no Prisma, virando 500 — o servidor
+      // assumindo a culpa por um corpo que ele deveria ter recusado.
+      const created = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ name: "Org Data Invalida E2E" })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ foundationDate: "nao-eh-data" })
+        .expect(400);
+    });
+
     it("PATCH com null LIMPA a data (ausente ≠ null)", async () => {
       // Regressão da correção do #1211: o controller faz `body.x ? new Date(body.x) : undefined`,
       // então um null explícito caía no ramo falso e virava undefined — que passou a significar
