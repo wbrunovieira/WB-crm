@@ -72,6 +72,7 @@ export interface Organization {
   revenueRange: string | null;
   phone2: string | null;
   sourceGroup: string | null;
+  referredByPartnerId: string | null;
   taxId: string | null;
   description: string | null;
   companyOwner: string | null;

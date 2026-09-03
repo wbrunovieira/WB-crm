@@ -55,6 +55,7 @@ export interface OrganizationDetail extends OrganizationSummary {
   revenueRange: string | null;
   phone2: string | null;
   sourceGroup: string | null;
+  referredByPartnerId: string | null;
   annualRevenue: number | null;
   taxId: string | null;
   description: string | null;

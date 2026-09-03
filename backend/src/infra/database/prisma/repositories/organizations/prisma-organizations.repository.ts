@@ -259,6 +259,7 @@ export class PrismaOrganizationsRepository extends OrganizationsRepository {
       revenueRange: row.revenueRange,
       phone2: row.phone2,
       sourceGroup: row.sourceGroup,
+      referredByPartnerId: row.referredByPartnerId,
       annualRevenue: row.annualRevenue,
       taxId: row.taxId,
       description: row.description,

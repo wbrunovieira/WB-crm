@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { normalizeCNPJ, validateCNPJ } from "@/lib/validations/cnpj";
+import { usePartnersForSelect } from "@/hooks/partners/use-partners";
 import { useRouter } from "next/navigation";
 import { OrganizationFormData } from "@/lib/validations/organization";
 import { useCreateOrganization, useUpdateOrganization } from "@/hooks/organizations/use-organizations";
@@ -30,6 +31,7 @@ interface OrganizationFormProps {
     isMei: boolean | null;
     revenueRange: string | null;
     sourceGroup: string | null;
+    referredByPartnerId: string | null;
     country: string | null;
     state: string | null;
     city: string | null;
@@ -79,6 +81,10 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
     organization?.primaryCNAE || null
   );
   const [hasHosting, setHasHosting] = useState(organization?.hasHosting || false);
+  const [referredByPartnerId, setReferredByPartnerId] = useState<string>(
+    organization?.referredByPartnerId ?? ""
+  );
+  const { data: partners = [] } = usePartnersForSelect();
   const [orgLanguages, setOrgLanguages] = useState<LanguageEntry[]>(() => {
     if (organization?.languages) {
       try { return JSON.parse(organization.languages); } catch { return []; }
@@ -131,11 +137,12 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         segment: getString("segment"),
         legalNature: getString("legalNature"),
         branchType: getString("branchType"),
-        simplesNacional: formData.get("simplesNacional") === "on",
-        isMei: formData.get("isMei") === "on",
+        simplesNacional: formData.get("simplesNacional") === "true",
+        isMei: formData.get("isMei") === "true",
         revenueRange: getString("revenueRange"),
         phone2: getString("phone2"),
         sourceGroup: getString("sourceGroup"),
+        referredByPartnerId: referredByPartnerId || null,
         primaryCNAEId: primaryCNAE?.id || undefined,
         internationalActivity: getString("internationalActivity"),
         commLanguage: (formData.get("commLanguage") as string) || "pt",
@@ -186,7 +193,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-8">
+    <form onSubmit={handleSubmit} className="space-y-6">
       {error && (
         <div className="rounded-md bg-red-50 p-4 text-sm text-red-600">
           {error}
@@ -194,17 +201,17 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
       )}
 
       {/* Basic Information */}
-      <div className="space-y-6">
-        <h3 className="text-lg font-semibold text-gray-900">
+      <div className="rounded-lg bg-[#1a0022] p-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Informações Básicas
-        </h3>
+        </h2>
 
         <div>
           <label
             htmlFor="name"
-            className="block text-sm font-medium text-gray-700"
+            className="block text-sm font-medium text-gray-300"
           >
-            Nome Fantasia *
+            Nome Comercial *
           </label>
           <input
             type="text"
@@ -212,25 +219,25 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             name="name"
             required
             defaultValue={organization?.name}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-300 mb-1">
             Labels
           </label>
           <MultiLabelSelect
             value={labelIds}
             onChange={setLabelIds}
-            placeholder="Selecione ou crie labels..."
+            placeholder="Selecione labels..."
           />
         </div>
 
         <div>
           <label
             htmlFor="legalName"
-            className="block text-sm font-medium text-gray-700"
+            className="block text-sm font-medium text-gray-300"
           >
             Razão Social
           </label>
@@ -239,14 +246,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             id="legalName"
             name="legalName"
             defaultValue={organization?.legalName || ""}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
           />
         </div>
 
         <div>
           <label
             htmlFor="foundationDate"
-            className="block text-sm font-medium text-gray-700"
+            className="block text-sm font-medium text-gray-300"
           >
             Data de Fundação
           </label>
@@ -255,15 +262,15 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             id="foundationDate"
             name="foundationDate"
             defaultValue={organization?.foundationDate ? new Date(organization.foundationDate).toISOString().split('T')[0] : ""}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
           />
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label
               htmlFor="website"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Website
             </label>
@@ -273,14 +280,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="website"
               placeholder="www.exemplo.com.br ou https://exemplo.com.br"
               defaultValue={organization?.website || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Email
             </label>
@@ -288,16 +295,15 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               type="email"
               id="email"
               name="email"
-              placeholder="contato@empresa.com"
-              defaultValue={organization?.email || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                            defaultValue={organization?.email || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="phone"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Telefone
             </label>
@@ -306,12 +312,12 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="phone"
               name="phone"
               defaultValue={organization?.phone || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
-            <label htmlFor="phone2" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="phone2" className="block text-sm font-medium text-gray-300">
               Telefone 2
             </label>
             <input
@@ -319,14 +325,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="phone2"
               name="phone2"
               defaultValue={organization?.phone2 || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="whatsapp"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               WhatsApp
             </label>
@@ -335,14 +341,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="whatsapp"
               name="whatsapp"
               defaultValue={organization?.whatsapp || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="commLanguage"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Idioma de comunicação (e-mail)
             </label>
@@ -350,14 +356,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="commLanguage"
               name="commLanguage"
               defaultValue={organization?.commLanguage ?? "pt"}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             >
               <option value="pt">Português</option>
               <option value="en">English</option>
               <option value="es">Español</option>
               <option value="it">Italiano</option>
             </select>
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-400">
               Idioma em que campanhas e newsletters são enviadas (diferente de &quot;Idiomas falados&quot;)
             </p>
           </div>
@@ -365,14 +371,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
       </div>
 
       {/* Location */}
-      <div className="space-y-6">
-        <h3 className="text-lg font-semibold text-gray-900">Localização</h3>
+      <div className="rounded-lg bg-[#1a0022] p-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-200">Localização</h2>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label
               htmlFor="country"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               País
             </label>
@@ -381,7 +387,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="country"
               value={selectedCountry}
               onChange={(e) => setSelectedCountry(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             >
               <option value="">Selecione...</option>
               {countries.map((country) => (
@@ -395,7 +401,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
           <div>
             <label
               htmlFor="state"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               {selectedCountry === "BR" ? "Estado" : "Estado/Província/Região"}
             </label>
@@ -404,7 +410,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 id="state"
                 name="state"
                 defaultValue={organization?.state || ""}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
               >
                 <option value="">Selecione...</option>
                 {brazilianStates.map((state) => (
@@ -420,7 +426,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 name="state"
                 defaultValue={organization?.state || ""}
                 placeholder="Digite o estado, província ou região"
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
               />
             )}
           </div>
@@ -428,7 +434,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
           <div>
             <label
               htmlFor="city"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Cidade
             </label>
@@ -437,14 +443,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="city"
               name="city"
               defaultValue={organization?.city || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="zipCode"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               CEP
             </label>
@@ -453,7 +459,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="zipCode"
               name="zipCode"
               defaultValue={organization?.zipCode || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
         </div>
@@ -461,7 +467,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         <div>
           <label
             htmlFor="streetAddress"
-            className="block text-sm font-medium text-gray-700"
+            className="block text-sm font-medium text-gray-300"
           >
             Endereço
           </label>
@@ -470,22 +476,22 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             id="streetAddress"
             name="streetAddress"
             defaultValue={organization?.streetAddress || ""}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
           />
         </div>
       </div>
 
       {/* Business Information */}
-      <div className="space-y-6">
-        <h3 className="text-lg font-semibold text-gray-900">
+      <div className="rounded-lg bg-[#1a0022] p-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Informações de Negócio
-        </h3>
+        </h2>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label
               htmlFor="industry"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Setor
             </label>
@@ -495,14 +501,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="industry"
               placeholder="Ex: Tecnologia, Varejo, Saúde"
               defaultValue={organization?.industry || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="employeeCount"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Número de Funcionários
             </label>
@@ -512,14 +518,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="employeeCount"
               min="0"
               defaultValue={organization?.employeeCount || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="annualRevenue"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Receita Anual (R$)
             </label>
@@ -530,14 +536,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               min="0"
               step="0.01"
               defaultValue={organization?.annualRevenue || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="taxId"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               CNPJ
             </label>
@@ -546,39 +552,38 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="taxId"
               name="taxId"
               defaultValue={organization?.taxId || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="companyOwner"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
-              Proprietário da Empresa
+              Proprietário/CEO
             </label>
             <input
               type="text"
               id="companyOwner"
               name="companyOwner"
-              placeholder="Nome do proprietário"
-              defaultValue={organization?.companyOwner || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                            defaultValue={organization?.companyOwner || ""}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="companySize"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
-              Porte da Empresa
+              Tamanho da Empresa
             </label>
             <select
               id="companySize"
               name="companySize"
               defaultValue={organization?.companySize || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             >
               <option value="">Selecione...</option>
               {companySizes.map((size) => (
@@ -592,40 +597,62 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
 
         {/* Cadastrais/fiscais — mesmos campos e rótulos do LeadForm, para o dado herdado na
             conversão continuar visível e editável na conta do cliente. */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           <div>
-            <label htmlFor="segment" className="mb-2 block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Indicado por (parceiro)
+            </label>
+            <select
+              value={referredByPartnerId}
+              onChange={(e) => setReferredByPartnerId(e.target.value)}
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            >
+              <option value="">Nenhum parceiro (opcional)</option>
+              {partners.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.name}
+                </option>
+              ))}
+            </select>
+            <p className="mt-1 text-xs text-gray-400">
+              Registre o parceiro que indicou esta organização
+            </p>
+          </div>
+          <div>
+            <label htmlFor="segment" className="block text-sm font-medium text-gray-300">
               Segmento Comercial
             </label>
             <input
               type="text"
               id="segment"
               name="segment"
+              placeholder="Ex: Materiais de Construção, Saúde..."
               defaultValue={organization?.segment ?? ""}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
           <div>
-            <label htmlFor="legalNature" className="mb-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="legalNature" className="block text-sm font-medium text-gray-300">
               Natureza Jurídica
             </label>
             <input
               type="text"
               id="legalNature"
               name="legalNature"
+              placeholder="Ex: Sociedade Limitada, EIRELI..."
               defaultValue={organization?.legalNature ?? ""}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
           <div>
-            <label htmlFor="branchType" className="mb-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="branchType" className="block text-sm font-medium text-gray-300">
               Tipo de Filial
             </label>
             <select
               id="branchType"
               name="branchType"
               defaultValue={organization?.branchType ?? ""}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             >
               {/* Mesmos valores gravados pelo LeadForm — em minúsculo, o dado convertido do
                   lead ("Matriz") não casaria e o select abriria vazio. */}
@@ -635,19 +662,20 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             </select>
           </div>
           <div>
-            <label htmlFor="revenueRange" className="mb-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="revenueRange" className="block text-sm font-medium text-gray-300">
               Faixa de Faturamento
             </label>
             <input
               type="text"
               id="revenueRange"
               name="revenueRange"
+              placeholder="Ex: R$ 360 mil a R$ 4,8 milhões"
               defaultValue={organization?.revenueRange ?? ""}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
           <div>
-            <label htmlFor="sourceGroup" className="mb-2 block text-sm font-medium text-gray-700">
+            <label htmlFor="sourceGroup" className="block text-sm font-medium text-gray-300">
               Lote / Grupo
             </label>
             <input
@@ -655,32 +683,34 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="sourceGroup"
               name="sourceGroup"
               defaultValue={organization?.sourceGroup ?? ""}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
-          <div className="flex items-end gap-6">
-            <label className="flex items-center gap-2 text-sm text-gray-700">
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
               <input
                 type="checkbox"
                 name="simplesNacional"
+                value="true"
                 defaultChecked={organization?.simplesNacional ?? false}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990] focus:ring-[#792990]"
               />
               Simples Nacional
             </label>
-            <label className="flex items-center gap-2 text-sm text-gray-700">
+            <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
               <input
                 type="checkbox"
                 name="isMei"
+                value="true"
                 defaultChecked={organization?.isMei ?? false}
-                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990] focus:ring-[#792990]"
               />
               MEI
             </label>
           </div>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           <div className="md:col-span-2">
             <CNAEAutocomplete
               value={primaryCNAE}
@@ -693,7 +723,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
           <div className="md:col-span-2">
             <label
               htmlFor="internationalActivity"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Atividade Internacional (Empresas Estrangeiras)
             </label>
@@ -703,9 +733,9 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="internationalActivity"
               placeholder="Ex: Software Development, Digital Marketing, E-commerce..."
               defaultValue={organization?.internationalActivity || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-gray-400">
               Use este campo para empresas não-brasileiras ou se não encontrar o CNAE adequado
             </p>
           </div>
@@ -714,7 +744,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         <div>
           <label
             htmlFor="description"
-            className="block text-sm font-medium text-gray-700"
+            className="block text-sm font-medium text-gray-300"
           >
             Descrição
           </label>
@@ -723,14 +753,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             name="description"
             rows={3}
             defaultValue={organization?.description || ""}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
           />
         </div>
       </div>
 
       {/* Hosting */}
-      <div className="space-y-6">
-        <h3 className="text-lg font-semibold text-gray-900">Hospedagem</h3>
+      <div className="rounded-lg bg-[#1a0022] p-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-200">Hospedagem</h2>
 
         <div className="flex items-center gap-3">
           <input
@@ -738,9 +768,9 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             id="hasHosting"
             checked={hasHosting}
             onChange={(e) => setHasHosting(e.target.checked)}
-            className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+            className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990] focus:ring-[#792990]"
           />
-          <label htmlFor="hasHosting" className="text-sm font-medium text-gray-700">
+          <label htmlFor="hasHosting" className="text-sm font-medium text-gray-300">
             Cliente possui hospedagem conosco
           </label>
         </div>
@@ -750,7 +780,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             <div>
               <label
                 htmlFor="hostingRenewalDate"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-300"
               >
                 Data de Vencimento *
               </label>
@@ -760,14 +790,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 name="hostingRenewalDate"
                 required={hasHosting}
                 defaultValue={organization?.hostingRenewalDate ? new Date(organization.hostingRenewalDate).toISOString().split('T')[0] : ""}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
               />
             </div>
 
             <div>
               <label
                 htmlFor="hostingPlan"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-300"
               >
                 Plano
               </label>
@@ -775,7 +805,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 id="hostingPlan"
                 name="hostingPlan"
                 defaultValue={organization?.hostingPlan || ""}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
               >
                 <option value="">Selecione...</option>
                 <option value="Básico">Básico</option>
@@ -788,7 +818,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             <div>
               <label
                 htmlFor="hostingValue"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-300"
               >
                 Valor Anual (R$)
               </label>
@@ -799,14 +829,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 min="0"
                 step="0.01"
                 defaultValue={organization?.hostingValue || ""}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
               />
             </div>
 
             <div>
               <label
                 htmlFor="hostingReminderDays"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-300"
               >
                 Lembrar com Antecedência (dias)
               </label>
@@ -814,7 +844,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 id="hostingReminderDays"
                 name="hostingReminderDays"
                 defaultValue={organization?.hostingReminderDays || 30}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
               >
                 <option value="7">7 dias</option>
                 <option value="15">15 dias</option>
@@ -827,7 +857,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             <div className="md:col-span-2">
               <label
                 htmlFor="hostingNotes"
-                className="block text-sm font-medium text-gray-700"
+                className="block text-sm font-medium text-gray-300"
               >
                 Observações
               </label>
@@ -837,7 +867,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 rows={2}
                 placeholder="Ex: Renovação automática, contato financeiro@empresa.com"
                 defaultValue={organization?.hostingNotes || ""}
-                className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
               />
             </div>
           </div>
@@ -845,19 +875,19 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
       </div>
 
       {/* Languages */}
-      <div className="space-y-6">
-        <LanguageSelector value={orgLanguages} onChange={setOrgLanguages} />
+      <div className="rounded-lg bg-[#1a0022] p-6">
+        <LanguageSelector value={orgLanguages} onChange={setOrgLanguages} darkMode />
       </div>
 
       {/* Social Media */}
-      <div className="space-y-6">
-        <h3 className="text-lg font-semibold text-gray-900">Redes Sociais</h3>
+      <div className="rounded-lg bg-[#1a0022] p-6">
+        <h2 className="mb-4 text-lg font-semibold text-gray-200">Redes Sociais</h2>
 
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-4 md:grid-cols-2">
           <div>
             <label
               htmlFor="instagram"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Instagram
             </label>
@@ -867,14 +897,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="instagram"
               placeholder="@usuario"
               defaultValue={organization?.instagram || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="linkedin"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               LinkedIn
             </label>
@@ -884,14 +914,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="linkedin"
               placeholder="linkedin.com/company/..."
               defaultValue={organization?.linkedin || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="facebook"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Facebook
             </label>
@@ -901,14 +931,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="facebook"
               placeholder="facebook.com/..."
               defaultValue={organization?.facebook || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="twitter"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               Twitter/X
             </label>
@@ -918,14 +948,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="twitter"
               placeholder="@usuario"
               defaultValue={organization?.twitter || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
 
           <div>
             <label
               htmlFor="tiktok"
-              className="block text-sm font-medium text-gray-700"
+              className="block text-sm font-medium text-gray-300"
             >
               TikTok
             </label>
@@ -935,24 +965,24 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="tiktok"
               placeholder="@usuario"
               defaultValue={organization?.tiktok || ""}
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
             />
           </div>
         </div>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex justify-end gap-4">
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-md border border-gray-300 px-4 py-2 text-gray-700 hover:bg-gray-50"
+          className="rounded-md border border-gray-600 px-6 py-2 text-gray-300 hover:bg-[#2d1b3d]"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="rounded-md bg-primary px-4 py-2 text-white hover:bg-purple-700 disabled:opacity-50"
+          className="rounded-md bg-[#792990] px-6 py-2 text-white hover:bg-[#9333b8] disabled:opacity-50"
         >
           {isLoading
             ? "Salvando..."

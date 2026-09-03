@@ -17,15 +17,13 @@ export default async function EditOrganizationPage({
   return (
     <div className="p-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold">Editar Organização</h1>
-        <p className="mt-2 text-gray-600">
+        <h1 className="text-3xl font-bold text-gray-200">Editar Organização</h1>
+        <p className="mt-2 text-gray-400">
           Atualize as informações da organização
         </p>
       </div>
 
-      <div className="max-w-2xl rounded-lg bg-white p-6 shadow">
-        <OrganizationForm organization={organization} />
-      </div>
+      <OrganizationForm organization={organization} />
     </div>
   );
 }
