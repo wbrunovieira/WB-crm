@@ -71,8 +71,8 @@ export function OrganizationProjects({
 
   if (loading) {
     return (
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="mb-4 border-b border-gray-200 pb-3">
+      <div className="rounded-xl bg-[#1a0022] p-6 shadow-md">
+        <div className="mb-4 border-b-2 border-[#3d2b4d] pb-3">
           <h2 className="text-lg font-bold text-gray-900">Projetos</h2>
         </div>
         <p className="text-sm text-gray-500">Carregando projetos...</p>
@@ -82,8 +82,8 @@ export function OrganizationProjects({
 
   if (error) {
     return (
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="mb-4 border-b border-gray-200 pb-3">
+      <div className="rounded-xl bg-[#1a0022] p-6 shadow-md">
+        <div className="mb-4 border-b-2 border-[#3d2b4d] pb-3">
           <h2 className="text-lg font-bold text-gray-900">Projetos</h2>
         </div>
         <p className="text-sm text-red-600">{error}</p>
@@ -95,15 +95,15 @@ export function OrganizationProjects({
   const completedProjects = projects.filter((p) => p.status === "COMPLETED");
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
-      <div className="mb-4 border-b border-gray-200 pb-3">
+    <div className="rounded-xl bg-[#1a0022] p-6 shadow-md">
+      <div className="mb-4 border-b-2 border-[#3d2b4d] pb-3">
         <h2 className="text-lg font-bold text-gray-900">
           Projetos ({projects.length})
         </h2>
       </div>
 
       {projects.length === 0 ? (
-        <div className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
+        <div className="rounded-lg border border-dashed border-[#3d2b4d] p-8 text-center">
           <p className="text-sm text-gray-500">Nenhum projeto vinculado. Ganhe um negócio para criar um projeto.</p>
         </div>
       ) : (

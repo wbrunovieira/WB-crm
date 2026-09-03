@@ -87,7 +87,7 @@ export function OrganizationTechProfileSection({ organizationId }: OrganizationT
   return (
     <>
       <div className="mt-6 rounded-xl bg-white p-6 shadow-md hover:shadow-lg transition-shadow duration-200">
-        <div className="flex items-center justify-between mb-5 pb-3 border-b-2 border-gray-100">
+        <div className="flex items-center justify-between mb-5 pb-3 border-b-2 border-[#3d2b4d]">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🔧</span>
             <h2 className="text-xl font-bold text-gray-900">Perfil Tecnológico</h2>

@@ -587,25 +587,25 @@ export default async function OrganizationDetailPage({
           </h2>
         {organization.primaryCNAE && (
           <div className="mb-6 rounded-lg border border-purple-500/40 bg-purple-900/30 p-4">
-            <dt className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-300">
+            <dt className={dtCls}>
               Atividade Primária
             </dt>
             <dd className="flex items-center gap-3">
-              <span className="rounded-md bg-purple-950/60 px-3 py-1 font-mono text-sm font-bold text-purple-200">
+              <span className="rounded-md border border-purple-600/50 bg-purple-900/60 px-2.5 py-1 font-mono text-xs font-bold text-purple-200">
                 {organization.primaryCNAE.code}
               </span>
-              <span className="text-base font-medium text-gray-100">
+              <span className="text-sm font-medium text-gray-300">
                 {organization.primaryCNAE.description}
               </span>
             </dd>
           </div>
         )}
         {organization.internationalActivity && (
-          <div className="mb-6 rounded-lg border border-blue-500/40 bg-blue-900/30 p-4">
-            <dt className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-300">
+          <div className="mb-6 rounded-lg border border-purple-800/40 bg-purple-900/20 p-4">
+            <dt className={dtCls}>
               Atividade Internacional
             </dt>
-            <dd className="text-base font-medium text-gray-100">
+            <dd className="text-sm font-medium text-gray-300">
               {organization.internationalActivity}
             </dd>
           </div>

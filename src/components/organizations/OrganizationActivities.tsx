@@ -70,8 +70,8 @@ export function OrganizationActivities({
   const daysSinceLastActivity = calculateDaysSinceLastActivity(activities);
 
   return (
-    <div className="rounded-lg bg-white p-6 shadow">
-      <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
+    <div className="rounded-xl bg-[#1a0022] p-6 shadow-md">
+      <div className="mb-4 flex items-center justify-between border-b-2 border-[#3d2b4d] pb-3">
         <div>
           <h2 className="text-lg font-bold text-gray-900">
             Atividades ({activities.length})
@@ -108,7 +108,7 @@ export function OrganizationActivities({
       </div>
 
       {activities.length === 0 ? (
-        <div className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center">
+        <div className="rounded-lg border border-dashed border-[#3d2b4d] p-8 text-center">
           <p className="text-sm text-gray-500 mb-3">
             Nenhuma atividade registrada para esta organização
           </p>
