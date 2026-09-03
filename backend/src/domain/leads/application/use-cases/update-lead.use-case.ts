@@ -13,7 +13,8 @@ export interface UpdateLeadInput {
   requesterRole: string;
   businessName?: string;
   registeredName?: string;
-  foundationDate?: Date;
+  /** `null` limpa o campo; ausente não mexe. */
+  foundationDate?: Date | null;
   companyRegistrationID?: string;
   address?: string;
   city?: string;
@@ -81,7 +82,8 @@ export interface UpdateLeadInput {
   referredByPartnerId?: string;
   activityOrder?: string;
   driveFolderId?: string;
-  inOperationsAt?: Date;
+  /** `null` limpa o campo; ausente não mexe. */
+  inOperationsAt?: Date | null;
   sourceGroup?: string;
   notes?: string | null;
   parentLeadId?: string | null;

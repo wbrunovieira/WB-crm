@@ -26,6 +26,7 @@ import {
   ApiPropertyOptional,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
+import { parsePatchDate } from "./shared/parse-patch-date";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { Left } from "@/core/either";
@@ -900,8 +901,8 @@ export class LeadsController {
       id,
       requesterId: user.id,
       requesterRole: user.role ?? "sdr",
-      foundationDate: body.foundationDate ? new Date(body.foundationDate) : undefined,
-      inOperationsAt: body.inOperationsAt ? new Date(body.inOperationsAt) : undefined,
+      foundationDate: parsePatchDate(body as Record<string, unknown>, "foundationDate"),
+      inOperationsAt: parsePatchDate(body as Record<string, unknown>, "inOperationsAt"),
     });
     if (result.isLeft()) handleError(result);
     return serialize(result.value.lead);

@@ -419,6 +419,38 @@ describe("Organizations API (e2e)", () => {
       expect(new Date(res.body.foundationDate).toISOString()).toBe("2020-01-15T00:00:00.000Z");
     });
 
+    it("PATCH com null LIMPA a data (ausente ≠ null)", async () => {
+      // Regressão da correção do #1211: o controller faz `body.x ? new Date(body.x) : undefined`,
+      // então um null explícito caía no ramo falso e virava undefined — que passou a significar
+      // "não mexer". Resultado: dava para sobrescrever a data, nunca esvaziar. Os três estados
+      // precisam ser distintos: ausente = não mexer, null = limpar, valor = gravar.
+      const created = await request(app.getHttpServer())
+        .post("/organizations")
+        .set("Authorization", `Bearer ${token}`)
+        .send({
+          name: "Org Limpar Data E2E",
+          foundationDate: "2020-01-15T00:00:00.000Z",
+          hasHosting: true,
+          hostingRenewalDate: "2027-08-25T00:00:00.000Z",
+        })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ hostingRenewalDate: null })
+        .expect(200);
+
+      const res = await request(app.getHttpServer())
+        .get(`/organizations/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+
+      expect(res.body.hostingRenewalDate).toBeNull();
+      // E o que não foi mencionado continua intacto.
+      expect(res.body.foundationDate).not.toBeNull();
+    });
+
     it("PATCH com data explícita continua atualizando a data", async () => {
       // A correção não pode virar "datas nunca mudam": enviar o campo tem de gravar.
       const created = await request(app.getHttpServer())

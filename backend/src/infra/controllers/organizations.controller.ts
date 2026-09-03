@@ -24,6 +24,7 @@ import {
   ApiPropertyOptional,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
+import { parsePatchDate } from "./shared/parse-patch-date";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 import { Left } from "@/core/either";
@@ -406,9 +407,9 @@ export class OrganizationsController {
     const result = await this.createOrganization.execute({
       ...rest,
       ownerId: user.id,
-      foundationDate: rest.foundationDate ? new Date(rest.foundationDate) : undefined,
-      hostingRenewalDate: rest.hostingRenewalDate ? new Date(rest.hostingRenewalDate) : undefined,
-      inOperationsAt: rest.inOperationsAt ? new Date(rest.inOperationsAt) : undefined,
+      foundationDate: parsePatchDate(rest, "foundationDate"),
+      hostingRenewalDate: parsePatchDate(rest, "hostingRenewalDate"),
+      inOperationsAt: parsePatchDate(rest, "inOperationsAt"),
       labelIds,
     });
     if (result.isLeft()) handleError(result);
@@ -434,9 +435,9 @@ export class OrganizationsController {
       id,
       requesterId: user.id,
       requesterRole: user.role ?? "sdr",
-      foundationDate: rest.foundationDate ? new Date(rest.foundationDate) : undefined,
-      hostingRenewalDate: rest.hostingRenewalDate ? new Date(rest.hostingRenewalDate) : undefined,
-      inOperationsAt: rest.inOperationsAt ? new Date(rest.inOperationsAt) : undefined,
+      foundationDate: parsePatchDate(rest, "foundationDate"),
+      hostingRenewalDate: parsePatchDate(rest, "hostingRenewalDate"),
+      inOperationsAt: parsePatchDate(rest, "inOperationsAt"),
       labelIds,
     });
     if (result.isLeft()) handleError(result);

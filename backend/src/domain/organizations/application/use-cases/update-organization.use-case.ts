@@ -12,7 +12,8 @@ export interface UpdateOrganizationInput {
   requesterRole: string;
   name?: string;
   legalName?: string;
-  foundationDate?: Date;
+  /** `null` limpa o campo; ausente não mexe. */
+  foundationDate?: Date | null;
   website?: string;
   phone?: string;
   whatsapp?: string;
@@ -42,12 +43,14 @@ export interface UpdateOrganizationInput {
   externalProjectIds?: string;
   driveFolderId?: string;
   hasHosting?: boolean;
-  hostingRenewalDate?: Date;
+  /** `null` limpa o campo; ausente não mexe. */
+  hostingRenewalDate?: Date | null;
   hostingPlan?: string;
   hostingValue?: number;
   hostingReminderDays?: number;
   hostingNotes?: string;
-  inOperationsAt?: Date;
+  /** `null` limpa o campo; ausente não mexe. */
+  inOperationsAt?: Date | null;
   segment?: string;
   legalNature?: string;
   branchType?: string;
