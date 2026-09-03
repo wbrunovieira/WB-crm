@@ -3,6 +3,7 @@ import type { Organization } from "@/types/organization";
 import MeetingsList from "@/components/meetings/MeetingsList";
 import type { Meeting } from "@/components/meetings/MeetingsList";
 import GmailButton from "@/components/gmail/GmailButton";
+import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { PhoneLink } from "@/components/ui/phone-link";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
@@ -43,7 +44,38 @@ export default async function OrganizationDetailPage({
       <div className="mb-8 flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">{organization.name}</h1>
-          <p className="mt-2 text-gray-600">Detalhes da organização</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-gray-600">
+            <span>Detalhes da organização</span>
+            {organization.convertedAt && (
+              <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
+                Cliente desde {formatDate(organization.convertedAt)}
+              </span>
+            )}
+            {organization.sourceLeadId && (
+              // O histórico de prospecção (GPS da captura, dados do Google, verificações de
+              // telefone/e-mail) não tem coluna na Organization e continua vivendo no lead.
+              // Sem este link não havia como chegar até ele.
+              <Link
+                href={`/leads/${organization.sourceLeadId}`}
+                className="text-xs text-primary hover:underline"
+              >
+                ver lead de origem →
+              </Link>
+            )}
+          </div>
+          {organization.labels && organization.labels.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1.5">
+              {organization.labels.map((label) => (
+                <span
+                  key={label.id}
+                  className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
+                  style={{ backgroundColor: label.color }}
+                >
+                  {label.name}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
         <div className="flex gap-4">
           <Link
@@ -59,10 +91,10 @@ export default async function OrganizationDetailPage({
       {organization.inOperationsAt && (
         <div className="mb-6 rounded-lg bg-amber-50 border border-amber-200 p-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="font-semibold text-amber-800">In Operations</span>
-            <span className="text-amber-700">since {formatDate(organization.inOperationsAt)}</span>
+            <span className="font-semibold text-amber-800">Em operação</span>
+            <span className="text-amber-700">desde {formatDate(organization.inOperationsAt)}</span>
             <span className="text-amber-600 text-sm">
-              — automated communication activities are paused
+              — comunicações automáticas pausadas
             </span>
           </div>
         </div>
@@ -125,6 +157,28 @@ export default async function OrganizationDetailPage({
                 {!organization.phone && "-"}
               </dd>
             </div>
+            {organization.whatsapp && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">WhatsApp</dt>
+                <dd className="mt-1 flex items-center gap-2 text-sm text-gray-900">
+                  <PhoneLink phone={organization.whatsapp} className="text-gray-900 hover:text-primary" />
+                  <WhatsAppButton
+                    to={organization.whatsapp}
+                    name={organization.name}
+                    organizationId={organization.id}
+                    variant="icon"
+                  />
+                </dd>
+              </div>
+            )}
+            {organization.phone2 && (
+              <div>
+                <dt className="text-sm font-medium text-gray-500">Telefone 2</dt>
+                <dd className="mt-1 text-sm text-gray-900">
+                  <PhoneLink phone={organization.phone2} className="text-gray-900 hover:text-primary" />
+                </dd>
+              </div>
+            )}
             <div>
               <dt className="text-sm font-medium text-gray-500">Setor</dt>
               <dd className="mt-1 text-sm text-gray-900">
@@ -133,8 +187,8 @@ export default async function OrganizationDetailPage({
             </div>
             <div>
               <dt className="text-sm font-medium text-gray-500">CNPJ</dt>
-              <dd className="mt-1 text-sm text-gray-900">
-                {organization.taxId || "-"}
+              <dd className="mt-1 text-sm font-mono text-gray-900">
+                {organization.taxId || "—"}
               </dd>
             </div>
             <div>
@@ -207,11 +261,63 @@ export default async function OrganizationDetailPage({
                   Receita Anual
                 </dt>
                 <dd className="mt-1 text-sm text-gray-900">
+                  {/* Intl, como no lead — a concatenação manual perdia os centavos. */}
                   {organization.annualRevenue
-                    ? `R$ ${organization.annualRevenue.toLocaleString("pt-BR")}`
-                    : "-"}
+                    ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                        organization.annualRevenue,
+                      )
+                    : "—"}
                 </dd>
               </div>
+              {organization.revenueRange && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Faixa de Faturamento</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{organization.revenueRange}</dd>
+                </div>
+              )}
+              {organization.segment && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Segmento Comercial</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{organization.segment}</dd>
+                </div>
+              )}
+              {organization.legalNature && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Natureza Jurídica</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{organization.legalNature}</dd>
+                </div>
+              )}
+              {organization.branchType && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Tipo de Filial</dt>
+                  <dd className="mt-1 text-sm text-gray-900">
+                    {organization.branchType === "matriz" ? "Matriz" : "Filial"}
+                  </dd>
+                </div>
+              )}
+              {(organization.simplesNacional || organization.isMei) && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Regime</dt>
+                  <dd className="mt-1 flex flex-wrap gap-1.5 text-sm">
+                    {organization.simplesNacional && (
+                      <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                        Simples Nacional
+                      </span>
+                    )}
+                    {organization.isMei && (
+                      <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
+                        MEI
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              )}
+              {organization.sourceGroup && (
+                <div>
+                  <dt className="text-sm font-medium text-gray-500">Lote / Grupo</dt>
+                  <dd className="mt-1 text-sm text-gray-900">{organization.sourceGroup}</dd>
+                </div>
+              )}
               {organization.description && (
                 <div>
                   <dt className="text-sm font-medium text-gray-500">
@@ -224,6 +330,51 @@ export default async function OrganizationDetailPage({
               )}
             </dl>
           </div>
+
+          {/* Hospedagem: editável no formulário, filtrável na listagem e cobrada no widget de
+              renovações do dashboard — e, até aqui, invisível na página do cliente. */}
+          {organization.hasHosting && (
+            <div className="rounded-lg bg-white p-6 shadow">
+              <h2 className="mb-4 text-lg font-semibold">Hospedagem</h2>
+              <dl className="space-y-4">
+                {organization.hostingPlan && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Plano</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{organization.hostingPlan}</dd>
+                  </div>
+                )}
+                {organization.hostingRenewalDate && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Renovação</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {formatDate(organization.hostingRenewalDate)}
+                      <span className="ml-2 text-xs text-gray-500">
+                        (lembrete {organization.hostingReminderDays} dias antes)
+                      </span>
+                    </dd>
+                  </div>
+                )}
+                {organization.hostingValue != null && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Valor</dt>
+                    <dd className="mt-1 text-sm text-gray-900">
+                      {new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                        organization.hostingValue,
+                      )}
+                    </dd>
+                  </div>
+                )}
+                {organization.hostingNotes && (
+                  <div>
+                    <dt className="text-sm font-medium text-gray-500">Observações</dt>
+                    <dd className="mt-1 whitespace-pre-wrap text-sm text-gray-900">
+                      {organization.hostingNotes}
+                    </dd>
+                  </div>
+                )}
+              </dl>
+            </div>
+          )}
 
           <div className="rounded-lg bg-white p-6 shadow">
             <h2 className="mb-4 text-lg font-semibold">Redes Sociais</h2>
@@ -289,6 +440,10 @@ export default async function OrganizationDetailPage({
             id: c.id,
             name: c.name,
             email: c.email,
+            phone: c.phone,
+            whatsapp: c.whatsapp,
+            role: c.role,
+            isPrimary: c.isPrimary,
             status: c.status,
             languages: c.languages,
           }))}
@@ -327,8 +482,16 @@ export default async function OrganizationDetailPage({
                     {deal.title}
                   </Link>
                   <span className="ml-2 text-gray-400">
-                    {deal.stage?.name ? `• ${deal.stage.name} ` : ""}• R${" "}
-                    {deal.value.toLocaleString("pt-BR")}
+                    {deal.stage?.pipeline?.name ? `• ${deal.stage.pipeline.name} › ` : "• "}
+                    {deal.stage?.name ? `${deal.stage.name} • ` : ""}
+                    {/* Intl com a moeda do próprio negócio, como no lead — antes era
+                        "R$" concatenado à mão, ignorando currency e os centavos. */}
+                    {deal.value != null
+                      ? new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: deal.currency || "BRL",
+                        }).format(deal.value)
+                      : "—"}
                   </span>
                 </li>
               ))}
@@ -356,26 +519,26 @@ export default async function OrganizationDetailPage({
       <div className="mt-6 rounded-lg bg-white p-6 shadow">
         <h2 className="mb-4 text-lg font-semibold">Atividades Econômicas (CNAE)</h2>
         {organization.primaryCNAE && (
-          <div className="mb-6 rounded-lg border-2 border-purple-200 bg-purple-50 p-4">
-            <dt className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-700">
+          <div className="mb-6 rounded-lg border border-purple-500/40 bg-purple-900/30 p-4">
+            <dt className="mb-2 text-xs font-semibold uppercase tracking-wide text-purple-300">
               Atividade Primária
             </dt>
             <dd className="flex items-center gap-3">
-              <span className="rounded-md bg-white px-3 py-1 font-mono text-sm font-bold text-purple-900 shadow-sm">
+              <span className="rounded-md bg-purple-950/60 px-3 py-1 font-mono text-sm font-bold text-purple-200">
                 {organization.primaryCNAE.code}
               </span>
-              <span className="text-base font-medium text-gray-900">
+              <span className="text-base font-medium text-gray-100">
                 {organization.primaryCNAE.description}
               </span>
             </dd>
           </div>
         )}
         {organization.internationalActivity && (
-          <div className="mb-6 rounded-lg border-2 border-blue-200 bg-blue-50 p-4">
-            <dt className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-700">
+          <div className="mb-6 rounded-lg border border-blue-500/40 bg-blue-900/30 p-4">
+            <dt className="mb-2 text-xs font-semibold uppercase tracking-wide text-blue-300">
               Atividade Internacional
             </dt>
-            <dd className="text-base font-medium text-gray-900">
+            <dd className="text-base font-medium text-gray-100">
               {organization.internationalActivity}
             </dd>
           </div>

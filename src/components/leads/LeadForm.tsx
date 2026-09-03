@@ -34,7 +34,11 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [labelIds, setLabelIds] = useState<string[]>(lead?.labels?.map(l => l.id) || []);
   const [selectedCountry, setSelectedCountry] = useState<string>(lead?.country || "");
-  const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(null);
+  // Inicializa com o CNAE já gravado — antes começava em null e o autocomplete abria vazio
+  // na edição, como se o lead não tivesse CNAE. O OrganizationForm sempre fez assim.
+  const [primaryCNAE, setPrimaryCNAE] = useState<{ id: string; code: string; description: string } | null>(
+    lead?.primaryCNAE ?? null
+  );
   const [selectedIcpId, setSelectedIcpId] = useState<string>("");
   const [originalIcpId, setOriginalIcpId] = useState<string>("");
   const [referredByPartnerId, setReferredByPartnerId] = useState<string>(lead?.referredByPartnerId ?? "");
@@ -152,9 +156,6 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
       quality: getString("quality") as "cold" | "warm" | "hot" | undefined,
       searchTerm: getString("searchTerm"),
       sourceGroup: getString("sourceGroup"),
-      fieldsFilled: formData.get("fieldsFilled")
-        ? parseInt(formData.get("fieldsFilled") as string)
-        : undefined,
       category: getString("category"),
       radius: formData.get("radius")
         ? parseInt(formData.get("radius") as string)

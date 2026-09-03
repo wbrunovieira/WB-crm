@@ -54,6 +54,8 @@ export type Lead = {
   equityCapital?: number | null;
   businessStatus?: string | null;
   primaryCNAEId?: string | null;
+  /** O CNAE resolvido, usado para pré-preencher o autocomplete na edição. */
+  primaryCNAE?: { id: string; code: string; description: string } | null;
   internationalActivity?: string | null;
   commLanguage?: string | null;
   phone2?: string | null;

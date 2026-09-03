@@ -6,11 +6,19 @@ import Link from "next/link";
 import { useToggleContactStatus } from "@/hooks/contacts/use-contacts";
 import { UserX, UserCheck, Loader2 } from "lucide-react";
 import { LanguageBadges } from "@/components/shared/LanguageSelector";
+import { PhoneLink } from "@/components/ui/phone-link";
+import GmailButton from "@/components/gmail/GmailButton";
+import WhatsAppButton from "@/components/whatsapp/WhatsAppButton";
 
 type Contact = {
   id: string;
   name: string;
   email: string | null;
+  // Sempre vieram no payload; o tipo não os declarava e a página os descartava.
+  phone: string | null;
+  whatsapp: string | null;
+  role: string | null;
+  isPrimary: boolean;
   status: string;
   languages: string | null;
 };
@@ -71,7 +79,7 @@ export function OrganizationContactsList({
                   isActive ? "" : "opacity-50 bg-gray-50"
                 }`}
               >
-                <div className="flex items-center gap-2 text-sm">
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                   <Link
                     href={`/contacts/${contact.id}`}
                     className={`font-medium hover:underline ${
@@ -82,8 +90,40 @@ export function OrganizationContactsList({
                   >
                     {contact.name}
                   </Link>
+                  {contact.isPrimary && (
+                    <span
+                      className="text-xs text-amber-400"
+                      title="Contato principal"
+                    >
+                      ★
+                    </span>
+                  )}
+                  {contact.role && (
+                    <span className="text-xs text-gray-500">{contact.role}</span>
+                  )}
                   {contact.email && (
-                    <span className="text-gray-400">• {contact.email}</span>
+                    <span className="flex items-center gap-1 text-gray-400">
+                      • {contact.email}
+                      <GmailButton
+                        to={contact.email}
+                        name={contact.name}
+                        contactId={contact.id}
+                        variant="icon"
+                      />
+                    </span>
+                  )}
+                  {contact.phone && (
+                    <span className="text-gray-400">
+                      • <PhoneLink phone={contact.phone} className="text-gray-400 hover:text-primary" />
+                    </span>
+                  )}
+                  {contact.whatsapp && (
+                    <WhatsAppButton
+                      to={contact.whatsapp}
+                      name={contact.name}
+                      contactId={contact.id}
+                      variant="icon"
+                    />
                   )}
                   {contact.languages && (
                     <LanguageBadges languages={contact.languages} />
