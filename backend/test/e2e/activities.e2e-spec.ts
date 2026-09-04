@@ -158,6 +158,68 @@ describe("Activities API (e2e)", () => {
       expect(res.body[0].lead.longitude).toBe(-43.1789);
     });
 
+    it("devolve remindAt no detalhe e na listagem (o sino tem de ser visível)", async () => {
+      // O valor SEMPRE foi gravado — 174 atividades em produção têm remindAt, e o cron de
+      // lembretes lê direto do banco, então o sino dispara. O que faltava era a leitura: os
+      // read-models não carregavam o campo, então a API devolvia null no detalhe e nem a
+      // chave na listagem. Parecia perda de dado; era invisibilidade.
+      const remindAt = "2026-10-15T11:00:00.000Z";
+
+      const created = await request(app.getHttpServer())
+        .post("/activities")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ type: "task", subject: "Atividade com lembrete", remindAt })
+        .expect(201);
+
+      const detail = await request(app.getHttpServer())
+        .get(`/activities/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+      expect(detail.body.remindAt).not.toBeNull();
+      expect(new Date(detail.body.remindAt).toISOString()).toBe(remindAt);
+
+      const list = await request(app.getHttpServer())
+        .get("/activities?owner=mine")
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+      const row = list.body.find((a: { id: string }) => a.id === created.body.id);
+      expect(row).toBeDefined();
+      expect(row.remindAt).not.toBeUndefined();
+      expect(new Date(row.remindAt).toISOString()).toBe(remindAt);
+    });
+
+    it("PATCH grava e limpa o remindAt", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/activities")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ type: "task", subject: "Lembrete via PATCH" })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/activities/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ remindAt: "2026-11-20T09:30:00.000Z" })
+        .expect(200);
+
+      let res = await request(app.getHttpServer())
+        .get(`/activities/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+      expect(new Date(res.body.remindAt).toISOString()).toBe("2026-11-20T09:30:00.000Z");
+
+      await request(app.getHttpServer())
+        .patch(`/activities/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ remindAt: null })
+        .expect(200);
+
+      res = await request(app.getHttpServer())
+        .get(`/activities/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .expect(200);
+      expect(res.body.remindAt).toBeNull();
+    });
+
     it("filtra por organizationId (histórico de atividades de uma organização)", async () => {
       // Sem esse filtro não há como listar o histórico de uma organização pela API — o que
       // deixa a tela de organização do app móvel sem o que mostrar.

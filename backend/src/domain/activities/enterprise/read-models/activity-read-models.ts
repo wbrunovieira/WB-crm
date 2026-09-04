@@ -5,6 +5,12 @@ export interface ActivitySummary {
   subject: string;
   description: string | null;
   dueDate: Date | null;
+  /** Lembrete "notificar-me". Sempre foi gravado e o cron sempre o leu direto do banco, mas
+   *  não estava nos read-models — a API devolvia null e a lista nem trazia a chave, fazendo
+   *  parecer que o sino nunca fora ligado. */
+  remindAt: Date | null;
+  /** Quando o lembrete efetivamente disparou; é o que prova que ele funcionou. */
+  remindedAt: Date | null;
   scheduledSendAt: Date | null;
   completed: boolean;
   completedAt: Date | null;

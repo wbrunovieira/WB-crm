@@ -8,6 +8,8 @@ const BASE: Omit<ActivitySummary, "id" | "dueDate" | "completed" | "lead"> = {
   subject: "",
   description: null,
   scheduledSendAt: null,
+      remindAt: null,
+      remindedAt: null,
   completedAt: null,
   failedAt: null,
   failReason: null,
