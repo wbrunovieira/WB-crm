@@ -14,6 +14,7 @@ import { OrganizationICPSection } from "@/components/icps/OrganizationICPSection
 import { OrganizationSectorSection } from "@/components/sectors/OrganizationSectorSection";
 import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
+import { EntityNotesBlock } from "@/components/shared/EntityNotesBlock";
 import { EntityDealsList } from "@/components/shared/EntityDealsList";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
@@ -152,6 +153,15 @@ export default async function OrganizationDetailPage({
           </div>
         </div>
       )}
+
+      {/* EntityNotesBlock já é genérico (recebe patchUrl); só faltava a coluna `notes` na
+          organização, que a paridade acabou de criar. */}
+      <EntityNotesBlock
+        patchUrl={`/organizations/${organization.id}`}
+        initialNotes={organization.notes}
+        entityLabel="cliente"
+        title="Notas"
+      />
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Basic Information */}
@@ -297,6 +307,10 @@ export default async function OrganizationDetailPage({
               </dd>
             </div>
             <div>
+              <dt className={dtCls}>Bairro/Região</dt>
+              <dd className={ddCls}>{organization.vicinity || dash}</dd>
+            </div>
+            <div>
               <dt className={dtCls}>Cidade</dt>
               <dd className={ddCls}>
                 {organization.city || dash}
@@ -368,6 +382,20 @@ export default async function OrganizationDetailPage({
                   <dd className={ddCls}>{organization.segment}</dd>
                 </div>
               )}
+              <div>
+                <dt className={dtCls}>Capital Social</dt>
+                <dd className={ddCls}>
+                  {organization.equityCapital != null
+                    ? new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(
+                        organization.equityCapital,
+                      )
+                    : dash}
+                </dd>
+              </div>
+              <div>
+                <dt className={dtCls}>Situação Cadastral</dt>
+                <dd className={ddCls}>{organization.businessStatus || dash}</dd>
+              </div>
               {organization.legalNature && (
                 <div>
                   <dt className={dtCls}>Natureza Jurídica</dt>
@@ -628,9 +656,143 @@ export default async function OrganizationDetailPage({
         />
       </div>
 
+      {/* Seções herdadas do lead na conversão. São dados de prospecção: a organização agora tem
+          onde guardá-los, e a ficha do cliente deixa de nascer mais pobre que a do prospect que
+          a originou. Os botões de "checar agora" continuam só no lead — são ações de
+          prospecção, e chamam rotas do lead. */}
+      <CollapsibleSection id="presenca-digital" icon={<Globe size={14} />} title="Presença Digital" defaultOpen={false}>
+        <div className="grid gap-4 md:grid-cols-3">
+          <div className="rounded-lg border border-purple-800/40 bg-purple-900/20 p-4">
+            <dt className={dtCls}>Redes Sociais</dt>
+            <dd className={`mt-1 ${organization.socialMedia ? ddCls : "text-sm text-gray-600"}`}>
+              {organization.socialMedia || "—"}
+            </dd>
+          </div>
+          <div className="rounded-lg border border-purple-800/40 bg-purple-900/20 p-4">
+            <dt className={dtCls}>Meta Ads</dt>
+            <dd className={`mt-1 ${organization.metaAds ? ddCls : "text-sm text-gray-600"}`}>
+              {organization.metaAds || "—"}
+            </dd>
+          </div>
+          <div className="rounded-lg border border-purple-800/40 bg-purple-900/20 p-4">
+            <dt className={dtCls}>Google Ads</dt>
+            <dd className={`mt-1 ${organization.googleAds ? ddCls : "text-sm text-gray-600"}`}>
+              {organization.googleAds || "—"}
+            </dd>
+          </div>
+        </div>
+      </CollapsibleSection>
+
+      <CollapsibleSection id="agente-ia" icon={<BrainCircuit size={14} />} title="Pesquisa do Agente IA" defaultOpen={false}>
+        <dl className="grid gap-4 md:grid-cols-2">
+          <div className="md:col-span-2">
+            <dt className={dtCls}>Resumo</dt>
+            <dd className="whitespace-pre-wrap text-sm leading-relaxed text-gray-400">
+              {organization.agentSummary || dash}
+            </dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Campos preenchidos pelo agente</dt>
+            <dd className={ddCls}>{organization.agentUpdatedFields || dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Pesquisado em</dt>
+            <dd className={ddCls}>
+              {organization.agentResearchAt ? formatDate(organization.agentResearchAt) : dash}
+            </dd>
+          </div>
+        </dl>
+      </CollapsibleSection>
+
+      <CollapsibleSection id="google-places" icon={<MapPin size={14} />} title="Google Places" defaultOpen={false}>
+        <dl className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <dt className={dtCls}>Avaliação</dt>
+            <dd className={ddCls}>{organization.rating ?? dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Avaliações</dt>
+            <dd className={ddCls}>{organization.userRatingsTotal ?? dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Nível de Preço</dt>
+            <dd className={ddCls}>{organization.priceLevel ?? dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Categorias</dt>
+            <dd className={ddCls}>{organization.categories || dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Tipos</dt>
+            <dd className={ddCls}>{organization.types || dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Google Places ID</dt>
+            <dd className={`font-mono ${ddCls}`}>{organization.googleId || dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Horário de Funcionamento</dt>
+            <dd className={`whitespace-pre-wrap ${ddCls}`}>{organization.openingHours || dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Coordenadas</dt>
+            <dd className={`font-mono ${ddCls}`}>
+              {organization.latitude != null && organization.longitude != null
+                ? `${organization.latitude}, ${organization.longitude}`
+                : dash}
+            </dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Mapa</dt>
+            <dd className={ddCls}>
+              {organization.googleMapsUrl ? (
+                <a
+                  href={organization.googleMapsUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-purple-300 hover:text-purple-200 hover:underline"
+                >
+                  <Globe size={12} />
+                  abrir no Google Maps
+                </a>
+              ) : (
+                dash
+              )}
+            </dd>
+          </div>
+        </dl>
+      </CollapsibleSection>
+
+      <CollapsibleSection id="metadados" icon={<FileText size={14} />} title="Metadados de Busca" defaultOpen={false}>
+        <dl className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          <div>
+            <dt className={dtCls}>Lote / Grupo</dt>
+            <dd className={ddCls}>{organization.sourceGroup || dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Fonte</dt>
+            <dd className={ddCls}>{organization.source || dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Termo de Busca</dt>
+            <dd className={ddCls}>{organization.searchTerm || dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Categoria</dt>
+            <dd className={ddCls}>{organization.category || dash}</dd>
+          </div>
+          <div>
+            <dt className={dtCls}>Raio de Busca</dt>
+            <dd className={ddCls}>{organization.radius != null ? `${organization.radius} km` : dash}</dd>
+          </div>
+        </dl>
+      </CollapsibleSection>
+
       {/* Entity Management Panel (Admin Only) */}
       {isAdmin && organization.owner && (
-        <CollapsibleSection id="acesso" icon={<ShieldCheck size={14} />} title="Gerenciamento de Acesso" defaultOpen={false}>
+  
+
+      <CollapsibleSection id="acesso" icon={<ShieldCheck size={14} />} title="Gerenciamento de Acesso" defaultOpen={false}>
           <EntityManagementPanel
             entityType="organization"
             entityId={organization.id}

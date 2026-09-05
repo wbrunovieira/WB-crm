@@ -192,6 +192,57 @@ describe("POST /leads/:id/convert (e2e)", () => {
     }
   });
 
+  it("leva para a organização o histórico de prospecção: GPS, Google Places, verificações e agente", async () => {
+    // Antes da paridade, converter um lead descartava tudo isto — a ficha do cliente nascia
+    // mais pobre que a do prospect que a originou, e não havia onde guardar. Agora há coluna.
+    const lead = await createLead({
+      companyRegistrationID: `CNPJ-PAR-${Date.now()}`,
+      latitude: -22.5089,
+      longitude: -43.1789,
+      googleId: `place-${Date.now()}`,
+      googleMapsUrl: "https://maps.google.com/?cid=123",
+      rating: 4.7,
+      userRatingsTotal: 231,
+      openingHours: "Seg-Sex 09:00-18:00",
+      vicinity: "Centro",
+      source: "google_places",
+      searchTerm: "padaria petrópolis",
+      notes: "Anotação livre da prospecção",
+      quality: "hot",
+      starRating: 5,
+      equityCapital: 50000,
+      businessStatus: "Ativa",
+      whatsappVerified: true,
+      emailVerified: true,
+      agentSummary: "Resumo da pesquisa do agente",
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(`/leads/${lead.id}/convert`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const org = await prisma.organization.findUnique({ where: { id: res.body.organizationId } });
+    expect(org!.latitude).toBe(-22.5089);
+    expect(org!.longitude).toBe(-43.1789);
+    expect(org!.googleId).toBe(lead.googleId);
+    expect(org!.googleMapsUrl).toBe("https://maps.google.com/?cid=123");
+    expect(org!.rating).toBe(4.7);
+    expect(org!.userRatingsTotal).toBe(231);
+    expect(org!.openingHours).toBe("Seg-Sex 09:00-18:00");
+    expect(org!.vicinity).toBe("Centro");
+    expect(org!.source).toBe("google_places");
+    expect(org!.searchTerm).toBe("padaria petrópolis");
+    expect(org!.notes).toBe("Anotação livre da prospecção");
+    expect(org!.quality).toBe("hot");
+    expect(org!.starRating).toBe(5);
+    expect(org!.equityCapital).toBe(50000);
+    expect(org!.businessStatus).toBe("Ativa");
+    expect(org!.whatsappVerified).toBe(true);
+    expect(org!.emailVerified).toBe(true);
+    expect(org!.agentSummary).toBe("Resumo da pesquisa do agente");
+  });
+
   it("copia para a organização os campos fiscais/cadastrais que ela já tem coluna para guardar", async () => {
     // Nenhum destes precisa de migração: as colunas existem nos dois modelos. A conversão
     // copiava 22 campos e ignorava estes, então o dado evaporava a cada conversão — inclusive

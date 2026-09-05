@@ -484,6 +484,58 @@ model Organization {
   twitter   String?
   tiktok    String?
 
+
+  // ── Paridade com o Lead ────────────────────────────────────────────────────
+  // Campos herdados na conversão: coordenadas da captura porta a porta, enriquecimento
+  // do Google Places, verificação de contato e pesquisa do agente. Sem eles, converter um
+  // lead descartava esse histórico — e a ficha do cliente ficava mais pobre que a do
+  // prospect que a originou.
+
+  activityOrder            String?
+  agentResearchAt          DateTime?
+  agentSummary             String?
+  agentUpdatedFields       String?
+  businessStatus           String?
+  categories               String?
+  category                 String?
+  emailVerificationReason  String?
+  emailVerificationStatus  String?
+  emailVerified            Boolean?
+  emailVerifiedAt          DateTime?
+  equityCapital            Float?
+  fieldsFilled             Int?
+  googleAds                String?
+  googleId                 String?
+  googleMapsUrl            String?
+  isProspect               Boolean  @default(false)
+  latitude                 Float?
+  longitude                Float?
+  metaAds                  String?
+  notes                    String?
+  openingHours             String?
+  permanentlyClosed        Boolean  @default(false)
+  phone2Type               String?
+  phone2Valid              Boolean?
+  phoneType                String?
+  phoneValid               Boolean?
+  priceLevel               Int?
+  quality                  String?
+  radius                   Int?
+  rating                   Float?
+  searchTerm               String?
+  socialMedia              String?
+  source                   String?
+  starRating               Int?
+  status                   String?
+  types                    String?
+  userRatingsTotal         Int?
+  vicinity                 String?
+  whatsappPhoneType        String?
+  whatsappPhoneValid       Boolean?
+  whatsappVerified         Boolean  @default(false)
+  whatsappVerifiedAt       DateTime?
+  whatsappVerifiedNumber   String?
+
   // Lead tracking
   sourceLeadId String?
   // Quando este cliente deixou de ser lead. Preenchido pela conversão; nulo em organizações

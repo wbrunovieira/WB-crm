@@ -1,0 +1,47 @@
+-- Paridade Organization ↔ Lead: campos que só existiam no Lead e se perdiam na conversão.
+-- Todos nullable (ou com default) — nenhuma linha existente precisa ser reescrita.
+
+ALTER TABLE "organizations" ADD COLUMN "activityOrder" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "agentResearchAt" TIMESTAMP(3);
+ALTER TABLE "organizations" ADD COLUMN "agentSummary" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "agentUpdatedFields" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "businessStatus" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "categories" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "category" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "emailVerificationReason" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "emailVerificationStatus" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "emailVerified" BOOLEAN;
+ALTER TABLE "organizations" ADD COLUMN "emailVerifiedAt" TIMESTAMP(3);
+ALTER TABLE "organizations" ADD COLUMN "equityCapital" DOUBLE PRECISION;
+ALTER TABLE "organizations" ADD COLUMN "fieldsFilled" INTEGER;
+ALTER TABLE "organizations" ADD COLUMN "googleAds" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "googleId" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "googleMapsUrl" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "isProspect" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "organizations" ADD COLUMN "latitude" DOUBLE PRECISION;
+ALTER TABLE "organizations" ADD COLUMN "longitude" DOUBLE PRECISION;
+ALTER TABLE "organizations" ADD COLUMN "metaAds" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "notes" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "openingHours" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "permanentlyClosed" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "organizations" ADD COLUMN "phone2Type" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "phone2Valid" BOOLEAN;
+ALTER TABLE "organizations" ADD COLUMN "phoneType" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "phoneValid" BOOLEAN;
+ALTER TABLE "organizations" ADD COLUMN "priceLevel" INTEGER;
+ALTER TABLE "organizations" ADD COLUMN "quality" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "radius" INTEGER;
+ALTER TABLE "organizations" ADD COLUMN "rating" DOUBLE PRECISION;
+ALTER TABLE "organizations" ADD COLUMN "searchTerm" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "socialMedia" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "source" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "starRating" INTEGER;
+ALTER TABLE "organizations" ADD COLUMN "status" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "types" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "userRatingsTotal" INTEGER;
+ALTER TABLE "organizations" ADD COLUMN "vicinity" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "whatsappPhoneType" TEXT;
+ALTER TABLE "organizations" ADD COLUMN "whatsappPhoneValid" BOOLEAN;
+ALTER TABLE "organizations" ADD COLUMN "whatsappVerified" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "organizations" ADD COLUMN "whatsappVerifiedAt" TIMESTAMP(3);
+ALTER TABLE "organizations" ADD COLUMN "whatsappVerifiedNumber" TEXT;

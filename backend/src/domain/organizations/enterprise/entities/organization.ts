@@ -49,6 +49,51 @@ export interface OrganizationProps {
   tiktok?: string;
 
   // Lead tracking
+  // Paridade com o Lead — herdados na conversão (GPS, Google Places, verificações, agente IA).
+  activityOrder?: string;
+  agentResearchAt?: Date;
+  agentSummary?: string;
+  agentUpdatedFields?: string;
+  businessStatus?: string;
+  categories?: string;
+  category?: string;
+  emailVerificationReason?: string;
+  emailVerificationStatus?: string;
+  emailVerified?: boolean;
+  emailVerifiedAt?: Date;
+  equityCapital?: number;
+  fieldsFilled?: number;
+  googleAds?: string;
+  googleId?: string;
+  googleMapsUrl?: string;
+  isProspect?: boolean;
+  latitude?: number;
+  longitude?: number;
+  metaAds?: string;
+  notes?: string;
+  openingHours?: string;
+  permanentlyClosed?: boolean;
+  phone2Type?: string;
+  phone2Valid?: boolean;
+  phoneType?: string;
+  phoneValid?: boolean;
+  priceLevel?: number;
+  quality?: string;
+  radius?: number;
+  rating?: number;
+  searchTerm?: string;
+  socialMedia?: string;
+  source?: string;
+  starRating?: number;
+  status?: string;
+  types?: string;
+  userRatingsTotal?: number;
+  vicinity?: string;
+  whatsappPhoneType?: string;
+  whatsappPhoneValid?: boolean;
+  whatsappVerified?: boolean;
+  whatsappVerifiedAt?: Date;
+  whatsappVerifiedNumber?: string;
   sourceLeadId?: string;
   /** When this customer stopped being a lead. Null for organizations created directly. */
   convertedAt?: Date;
@@ -119,6 +164,50 @@ export class Organization extends AggregateRoot<OrganizationProps> {
   get facebook()              { return this.props.facebook; }
   get twitter()               { return this.props.twitter; }
   get tiktok()                { return this.props.tiktok; }
+  get activityOrder           () { return this.props.activityOrder; }
+  get agentResearchAt         () { return this.props.agentResearchAt; }
+  get agentSummary            () { return this.props.agentSummary; }
+  get agentUpdatedFields      () { return this.props.agentUpdatedFields; }
+  get businessStatus          () { return this.props.businessStatus; }
+  get categories              () { return this.props.categories; }
+  get category                () { return this.props.category; }
+  get emailVerificationReason () { return this.props.emailVerificationReason; }
+  get emailVerificationStatus () { return this.props.emailVerificationStatus; }
+  get emailVerified           () { return this.props.emailVerified; }
+  get emailVerifiedAt         () { return this.props.emailVerifiedAt; }
+  get equityCapital           () { return this.props.equityCapital; }
+  get fieldsFilled            () { return this.props.fieldsFilled; }
+  get googleAds               () { return this.props.googleAds; }
+  get googleId                () { return this.props.googleId; }
+  get googleMapsUrl           () { return this.props.googleMapsUrl; }
+  get isProspect              () { return this.props.isProspect; }
+  get latitude                () { return this.props.latitude; }
+  get longitude               () { return this.props.longitude; }
+  get metaAds                 () { return this.props.metaAds; }
+  get notes                   () { return this.props.notes; }
+  get openingHours            () { return this.props.openingHours; }
+  get permanentlyClosed       () { return this.props.permanentlyClosed; }
+  get phone2Type              () { return this.props.phone2Type; }
+  get phone2Valid             () { return this.props.phone2Valid; }
+  get phoneType               () { return this.props.phoneType; }
+  get phoneValid              () { return this.props.phoneValid; }
+  get priceLevel              () { return this.props.priceLevel; }
+  get quality                 () { return this.props.quality; }
+  get radius                  () { return this.props.radius; }
+  get rating                  () { return this.props.rating; }
+  get searchTerm              () { return this.props.searchTerm; }
+  get socialMedia             () { return this.props.socialMedia; }
+  get source                  () { return this.props.source; }
+  get starRating              () { return this.props.starRating; }
+  get status                  () { return this.props.status; }
+  get types                   () { return this.props.types; }
+  get userRatingsTotal        () { return this.props.userRatingsTotal; }
+  get vicinity                () { return this.props.vicinity; }
+  get whatsappPhoneType       () { return this.props.whatsappPhoneType; }
+  get whatsappPhoneValid      () { return this.props.whatsappPhoneValid; }
+  get whatsappVerified        () { return this.props.whatsappVerified; }
+  get whatsappVerifiedAt      () { return this.props.whatsappVerifiedAt; }
+  get whatsappVerifiedNumber  () { return this.props.whatsappVerifiedNumber; }
   get sourceLeadId()            { return this.props.sourceLeadId; }
   get convertedAt()             { return this.props.convertedAt; }
   get referredByPartnerId()     { return this.props.referredByPartnerId; }
