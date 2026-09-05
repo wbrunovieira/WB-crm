@@ -26,6 +26,11 @@ import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 import { LanguageBadges } from "@/components/shared/LanguageSelector";
 
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  const org = await backendFetch<{ name: string }>(`/organizations/${params.id}`).catch(() => null);
+  return { title: org ? `${org.name} · Cliente | WB CRM` : "Cliente | WB CRM" };
+}
+
 export default async function OrganizationDetailPage({
   params,
 }: {
@@ -58,7 +63,8 @@ export default async function OrganizationDetailPage({
     <div className="min-h-screen bg-[#350045] p-4 md:p-8">
       {/* Header sticky no molde da página do lead (leads/[id]/page.tsx:165-296): identidade,
           badges e ações sempre visíveis, com a navegação por âncoras abaixo. */}
-      <div className="sticky top-16 z-40 mb-6 rounded-2xl border border-purple-900/40 bg-white px-4 py-4 shadow-lg md:px-6 md:py-5">
+      {/* Faixa lateral verde = cliente, contra o roxo do lead. Ver leads/[id]/page.tsx. */}
+      <div className="sticky top-16 z-40 mb-6 rounded-2xl border border-l-4 border-purple-900/40 border-l-emerald-500 bg-white px-4 py-4 shadow-lg md:px-6 md:py-5">
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">

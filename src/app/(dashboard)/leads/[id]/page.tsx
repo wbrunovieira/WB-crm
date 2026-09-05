@@ -74,6 +74,11 @@ import {
   TrendingUp,
 } from "lucide-react";
 
+export async function generateMetadata({ params }: { params: { id: string } }) {
+  const lead = await backendFetch<{ businessName: string }>(`/leads/${params.id}`).catch(() => null);
+  return { title: lead ? `${lead.businessName} · Lead | WB CRM` : "Lead | WB CRM" };
+}
+
 export default async function LeadDetailPage({
   params,
 }: {
@@ -162,7 +167,10 @@ export default async function LeadDetailPage({
       {websiteAlert && <LeadWebsiteAlertToast leadId={lead.id} message={websiteAlert} />}
 
       {/* ── Header card ──────────────────────────────────────────────── */}
-      <div className="sticky top-16 z-40 mb-6 rounded-2xl bg-white shadow-lg border border-purple-900/40 px-4 py-4 md:px-6 md:py-5">
+      {/* Faixa lateral roxa = prospecção. A organização usa a mesma barra em verde: as duas
+          páginas são propositalmente idênticas, e esta é a marca que diz qual é qual sem
+          precisar ler nada. */}
+      <div className="sticky top-16 z-40 mb-6 rounded-2xl border border-l-4 border-purple-900/40 border-l-purple-500 bg-white px-4 py-4 shadow-lg md:px-6 md:py-5">
 
         <div className="flex flex-col gap-3">
           {/* Title block */}
