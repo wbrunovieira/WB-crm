@@ -2,7 +2,7 @@ import { backendFetch } from "@/lib/backend/client";
 import type { Lead } from "@/types/lead";
 import ProposalsList from "@/components/proposals/ProposalsList";
 import type { Proposal } from "@/components/proposals/ProposalsList";
-import { LeadDealsList } from "@/components/leads/LeadDealsList";
+import { EntityDealsList } from "@/components/shared/EntityDealsList";
 import MeetingsList from "@/components/meetings/MeetingsList";
 import type { Meeting } from "@/components/meetings/MeetingsList";
 import { PhoneLink } from "@/components/ui/phone-link";
@@ -823,7 +823,7 @@ export default async function LeadDetailPage({
       </div>
 
       <div id="negocios" className="mt-6">
-        <LeadDealsList deals={deals ?? []} leadId={lead.id} leadName={lead.businessName} />
+        <EntityDealsList deals={deals ?? []} newDealHref={`/deals/new?leadId=${lead.id}&returnTo=/leads/${lead.id}`} />
       </div>
 
       <div id="propostas" className="mt-6">

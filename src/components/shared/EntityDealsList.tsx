@@ -22,8 +22,10 @@ interface DealItem {
 
 interface Props {
   deals: DealItem[];
-  leadId: string;
-  leadName: string;
+  /** Para onde aponta o botão "Novo Negócio", já com o returnTo da entidade dona da lista.
+   *  Antes o componente recebia `leadId` (e um `leadName` que nunca era usado), o que o
+   *  prendia ao lead; a organização precisa exatamente da mesma lista. */
+  newDealHref: string;
 }
 
 const statusLabel: Record<string, { label: string; cls: string }> = {
@@ -166,7 +168,7 @@ function DealEditModal({ deal, onClose }: { deal: DealItem; onClose: () => void 
   );
 }
 
-export function LeadDealsList({ deals, leadId }: Props) {
+export function EntityDealsList({ deals, newDealHref }: Props) {
   const [editing, setEditing] = useState<DealItem | null>(null);
 
   const formatCurrency = (value: number, currency: string) =>
@@ -182,7 +184,7 @@ export function LeadDealsList({ deals, leadId }: Props) {
             {deals.length}
           </span>
           <Link
-            href={`/deals/new?leadId=${leadId}&returnTo=/leads/${leadId}`}
+            href={newDealHref}
             className="ml-auto flex items-center gap-1 rounded-lg bg-purple-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-purple-600 transition-colors"
           >
             <Plus size={12} />

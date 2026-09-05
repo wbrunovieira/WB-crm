@@ -13,12 +13,14 @@ import { OrganizationTechProfileSection } from "@/components/organizations/Organ
 import { OrganizationICPSection } from "@/components/icps/OrganizationICPSection";
 import { OrganizationSectorSection } from "@/components/sectors/OrganizationSectorSection";
 import { SecondaryCNAEsManager } from "@/components/shared/SecondaryCNAEsManager";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
+import { EntityDealsList } from "@/components/shared/EntityDealsList";
 import { EntityManagementPanel } from "@/components/shared/entity-management";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { OrganizationContactsList } from "@/components/organizations/OrganizationContactsList";
 import Link from "next/link";
-import { Building2, MapPin, Share2, Globe, BarChart2, ShieldCheck, Users, TrendingUp, Video, Activity, FileText, BrainCircuit } from "lucide-react";
+import { Building2, Phone, MapPin, Share2, Globe, BarChart2, ShieldCheck, Users, TrendingUp, Video, Activity, FileText, BrainCircuit } from "lucide-react";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 import { LanguageBadges } from "@/components/shared/LanguageSelector";
@@ -28,10 +30,15 @@ export default async function OrganizationDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [organization, session, meetings] = await Promise.all([
+  const [organization, session, meetings, deals] = await Promise.all([
     backendFetch<Organization>(`/organizations/${params.id}`).catch(() => null),
     getServerSession(authOptions),
     backendFetch<Meeting[]>(`/meetings?organizationId=${params.id}`).catch((): Meeting[] => []),
+    // Busca própria, como o lead faz: o payload da organização traz os negócios sem contato
+    // nem contagem de atividades, que a lista compartilhada exibe.
+    backendFetch<{ id: string; title: string; value: number; currency: string; status: string; stage: { id: string; name: string; pipeline?: { id: string; name: string } } | null; contact: { id: string; name: string } | null; _count: { activities: number } }[]>(
+      `/deals?organizationId=${params.id}&closedMonth=all`,
+    ).catch(() => []),
   ]);
 
   if (!organization) {
@@ -95,6 +102,7 @@ export default async function OrganizationDetailPage({
           <div className="flex flex-wrap gap-1.5 border-t border-purple-900/40 pt-4">
             {[
               { href: "#info-basica", icon: <Building2 size={11} />, label: "Informações" },
+              { href: "#contato", icon: <Phone size={11} />, label: "Contato" },
               { href: "#contatos", icon: <Users size={11} />, label: "Contatos" },
               { href: "#negocios", icon: <TrendingUp size={11} />, label: "Negócios" },
               { href: "#reunioes", icon: <Video size={11} />, label: "Reuniões" },
@@ -147,6 +155,8 @@ export default async function OrganizationDetailPage({
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Basic Information */}
+        {/* Mesma divisão da página do lead (leads/[id]/page.tsx:328-465): identidade e cadastro
+            num card, meios de contato em outro, localização no terceiro. */}
         <div id="info-basica" className="rounded-xl border border-purple-900/40 bg-white p-5 shadow-md">
           <h2 className="mb-4 flex items-center gap-2 border-b border-purple-900/40 pb-3 text-xs font-bold uppercase tracking-wider text-purple-400">
             <Building2 size={14} />
@@ -154,15 +164,96 @@ export default async function OrganizationDetailPage({
           </h2>
           <dl className="space-y-4">
             <div>
-              <dt className={dtCls}>Nome Fantasia</dt>
-              <dd className={ddCls}>
-                {organization.name}
-              </dd>
+              <dt className={dtCls}>Nome Comercial</dt>
+              <dd className={ddCls}>{organization.name}</dd>
             </div>
             <div>
               <dt className={dtCls}>Razão Social</dt>
+              <dd className={ddCls}>{organization.legalName || dash}</dd>
+            </div>
+            <div>
+              <dt className={dtCls}>CNPJ</dt>
+              <dd className={`font-mono ${ddCls}`}>{organization.taxId || dash}</dd>
+            </div>
+            <div>
+              <dt className={dtCls}>Fundação</dt>
               <dd className={ddCls}>
-                {organization.legalName || dash}
+                {organization.foundationDate ? formatDate(organization.foundationDate) : dash}
+              </dd>
+            </div>
+            <div>
+              <dt className={dtCls}>Segmento</dt>
+              <dd className={ddCls}>{organization.segment || dash}</dd>
+            </div>
+            <div>
+              <dt className={dtCls}>Criado em</dt>
+              <dd className={ddCls}>{formatDate(organization.createdAt)}</dd>
+            </div>
+            <div>
+              <dt className={dtCls}>Descrição</dt>
+              <dd className="text-sm leading-relaxed text-gray-400">
+                {organization.description || dash}
+              </dd>
+            </div>
+          </dl>
+        </div>
+
+        <div id="contato" className="scroll-mt-32 rounded-xl border border-purple-900/40 bg-white p-5 shadow-md">
+          <h2 className="mb-4 flex items-center gap-2 border-b border-purple-900/40 pb-3 text-xs font-bold uppercase tracking-wider text-purple-400">
+            <Phone size={14} />
+            Contato da Empresa
+          </h2>
+          <dl className="space-y-4">
+            <div>
+              <dt className={dtCls}>Telefone</dt>
+              <dd className={ddCls}>
+                <PhoneLink phone={organization.phone} className="text-gray-300 hover:text-purple-200" />
+                {!organization.phone && dash}
+              </dd>
+            </div>
+            <div>
+              <dt className={dtCls}>Telefone 2</dt>
+              <dd className={ddCls}>
+                <PhoneLink phone={organization.phone2} className="text-gray-300 hover:text-purple-200" />
+                {!organization.phone2 && dash}
+              </dd>
+            </div>
+            <div>
+              <dt className={dtCls}>WhatsApp</dt>
+              <dd className={`flex items-center gap-2 ${ddCls}`}>
+                {organization.whatsapp ? (
+                  <>
+                    <PhoneLink phone={organization.whatsapp} className="text-gray-300 hover:text-purple-200" />
+                    <WhatsAppButton
+                      to={organization.whatsapp}
+                      name={organization.name}
+                      organizationId={organization.id}
+                      variant="icon"
+                    />
+                  </>
+                ) : (
+                  dash
+                )}
+              </dd>
+            </div>
+            <div>
+              <dt className={dtCls}>Email</dt>
+              <dd className={`flex items-center gap-2 ${ddCls}`}>
+                {organization.email ? (
+                  <>
+                    <a href={`mailto:${organization.email}`} className="hover:text-purple-200 hover:underline">
+                      {organization.email}
+                    </a>
+                    <GmailButton
+                      to={organization.email}
+                      name={organization.name}
+                      organizationId={organization.id}
+                      variant="icon"
+                    />
+                  </>
+                ) : (
+                  dash
+                )}
               </dd>
             </div>
             <div>
@@ -170,7 +261,7 @@ export default async function OrganizationDetailPage({
               <dd className={ddCls}>
                 {organization.website ? (
                   <a
-                    href={organization.website}
+                    href={organization.website.startsWith("http") ? organization.website : `https://${organization.website}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1 text-purple-300 hover:text-purple-200 hover:underline"
@@ -183,78 +274,11 @@ export default async function OrganizationDetailPage({
                 )}
               </dd>
             </div>
-            {organization.email && (
-              <div>
-                <dt className={dtCls}>Email</dt>
-                <dd className={`flex items-center gap-2 ${ddCls}`}>
-                  <a href={`mailto:${organization.email}`} className="hover:text-primary hover:underline">
-                    {organization.email}
-                  </a>
-                  <GmailButton
-                    to={organization.email}
-                    name={organization.name}
-                    organizationId={organization.id}
-                    variant="icon"
-                  />
-                </dd>
-              </div>
-            )}
-            <div>
-              <dt className={dtCls}>Telefone</dt>
-              <dd className={ddCls}>
-                <PhoneLink phone={organization.phone} className="text-gray-300 hover:text-purple-200" />
-                {!organization.phone && dash}
-              </dd>
-            </div>
-            {organization.whatsapp && (
-              <div>
-                <dt className={dtCls}>WhatsApp</dt>
-                <dd className={`flex items-center gap-2 ${ddCls}`}>
-                  <PhoneLink phone={organization.whatsapp} className="text-gray-300 hover:text-purple-200" />
-                  <WhatsAppButton
-                    to={organization.whatsapp}
-                    name={organization.name}
-                    organizationId={organization.id}
-                    variant="icon"
-                  />
-                </dd>
-              </div>
-            )}
-            {organization.phone2 && (
-              <div>
-                <dt className={dtCls}>Telefone 2</dt>
-                <dd className={ddCls}>
-                  <PhoneLink phone={organization.phone2} className="text-gray-300 hover:text-purple-200" />
-                </dd>
-              </div>
-            )}
-            <div>
-              <dt className={dtCls}>Setor</dt>
-              <dd className={ddCls}>
-                {organization.industry || dash}
-              </dd>
-            </div>
-            <div>
-              <dt className={dtCls}>CNPJ</dt>
-              <dd className={`font-mono ${ddCls}`}>
-                {organization.taxId || "—"}
-              </dd>
-            </div>
-            <div>
-              <dt className={dtCls}>Fundação</dt>
-              <dd className={ddCls}>
-                {organization.foundationDate ? formatDate(organization.foundationDate) : dash}
-              </dd>
-            </div>
-            <div>
-              <dt className={dtCls}>Criado em</dt>
-              <dd className={ddCls}>
-                {formatDate(organization.createdAt)}
-              </dd>
-            </div>
             <div>
               <dt className={dtCls}>Idiomas</dt>
-              <dd className="mt-1"><LanguageBadges languages={organization.languages ?? null} /></dd>
+              <dd className="mt-1">
+                <LanguageBadges languages={organization.languages ?? null} />
+              </dd>
             </div>
           </dl>
         </div>
@@ -301,11 +325,7 @@ export default async function OrganizationDetailPage({
 
         {/* Business Info & Social */}
         <div className="space-y-6">
-          <div className="rounded-xl border border-purple-900/40 bg-white p-5 shadow-md">
-            <h2 className="mb-4 flex items-center gap-2 border-b border-purple-900/40 pb-3 text-xs font-bold uppercase tracking-wider text-purple-400">
-              <Building2 size={14} />
-              Informações de Negócio
-            </h2>
+          <CollapsibleSection id="empresa" icon={<Building2 size={14} />} title="Informações da Empresa" defaultOpen={true}>
             <dl className="space-y-4">
               <div>
                 <dt className={dtCls}>Proprietário/Sócio</dt>
@@ -344,7 +364,7 @@ export default async function OrganizationDetailPage({
               )}
               {organization.segment && (
                 <div>
-                  <dt className={dtCls}>Segmento Comercial</dt>
+                  <dt className={dtCls}>Segmento</dt>
                   <dd className={ddCls}>{organization.segment}</dd>
                 </div>
               )}
@@ -362,23 +382,22 @@ export default async function OrganizationDetailPage({
                   <dd className={ddCls}>{organization.branchType}</dd>
                 </div>
               )}
-              {(organization.simplesNacional || organization.isMei) && (
-                <div>
-                  <dt className={dtCls}>Regime</dt>
-                  <dd className="mt-1 flex flex-wrap gap-1.5 text-sm">
-                    {organization.simplesNacional && (
-                      <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-                        Simples Nacional
-                      </span>
-                    )}
-                    {organization.isMei && (
-                      <span className="rounded bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800">
-                        MEI
-                      </span>
-                    )}
-                  </dd>
-                </div>
-              )}
+              <div>
+                <dt className={dtCls}>Simples Nacional</dt>
+                <dd className={ddCls}>
+                  {organization.simplesNacional == null
+                    ? dash
+                    : organization.simplesNacional
+                      ? "Sim"
+                      : "Não"}
+                </dd>
+              </div>
+              <div>
+                <dt className={dtCls}>MEI</dt>
+                <dd className={ddCls}>
+                  {organization.isMei == null ? dash : organization.isMei ? "Sim" : "Não"}
+                </dd>
+              </div>
               {organization.sourceGroup && (
                 <div>
                   <dt className={dtCls}>Lote / Grupo</dt>
@@ -396,16 +415,12 @@ export default async function OrganizationDetailPage({
                 </div>
               )}
             </dl>
-          </div>
+          </CollapsibleSection>
 
           {/* Hospedagem: editável no formulário, filtrável na listagem e cobrada no widget de
               renovações do dashboard — e, até aqui, invisível na página do cliente. */}
           {organization.hasHosting && (
-            <div className="rounded-xl border border-purple-900/40 bg-white p-5 shadow-md">
-              <h2 className="mb-4 flex items-center gap-2 border-b border-purple-900/40 pb-3 text-xs font-bold uppercase tracking-wider text-purple-400">
-            <Globe size={14} />
-            Hospedagem
-          </h2>
+            <CollapsibleSection id="hospedagem" icon={<Globe size={14} />} title="Hospedagem" defaultOpen={true}>
               <dl className="space-y-4">
                 {organization.hostingPlan && (
                   <div>
@@ -443,14 +458,10 @@ export default async function OrganizationDetailPage({
                   </div>
                 )}
               </dl>
-            </div>
+            </CollapsibleSection>
           )}
 
-          <div className="rounded-xl border border-purple-900/40 bg-white p-5 shadow-md">
-            <h2 className="mb-4 flex items-center gap-2 border-b border-purple-900/40 pb-3 text-xs font-bold uppercase tracking-wider text-purple-400">
-            <Share2 size={14} />
-            Redes Sociais
-          </h2>
+          <CollapsibleSection id="redes" icon={<Share2 size={14} />} title="Redes Sociais" defaultOpen={false}>
             <dl className="space-y-4">
               {/* Mesmo padrão do lead: sempre exibe os 5, com link normalizado quando o valor
                   é um handle em vez de URL completa. Antes era texto puro, sem TikTok. */}
@@ -489,7 +500,7 @@ export default async function OrganizationDetailPage({
                 );
               })}
             </dl>
-          </div>
+          </CollapsibleSection>
         </div>
       </div>
 
@@ -511,54 +522,11 @@ export default async function OrganizationDetailPage({
           }))}
         />
 
-        <div id="negocios" className="scroll-mt-32 rounded-xl border border-purple-900/40 bg-white p-5 shadow-md">
-          <div className="mb-4 flex items-center justify-between border-b border-purple-900/40 pb-3">
-            <h2 className="text-lg font-bold text-gray-900">
-              Negócios ({organization.deals.length})
-            </h2>
-            <Link
-              href={`/deals/new?organizationId=${organization.id}`}
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
-            >
-              + Novo Negócio
-            </Link>
-          </div>
-          {organization.deals.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-purple-900/40 p-8 text-center">
-              <p className="text-sm text-gray-500 mb-3">Nenhum negócio vinculado</p>
-              <Link
-                href={`/deals/new?organizationId=${organization.id}`}
-                className="inline-block rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700"
-              >
-                Criar Primeiro Negócio
-              </Link>
-            </div>
-          ) : (
-            <ul className="space-y-2">
-              {organization.deals.map((deal) => (
-                <li key={deal.id} className="text-sm">
-                  <Link
-                    href={`/deals/${deal.id}`}
-                    className="font-medium text-gray-100 hover:text-purple-200 hover:underline"
-                  >
-                    {deal.title}
-                  </Link>
-                  <span className="ml-2 text-gray-400">
-                    {deal.stage?.pipeline?.name ? `• ${deal.stage.pipeline.name} › ` : "• "}
-                    {deal.stage?.name ? `${deal.stage.name} • ` : ""}
-                    {/* Intl com a moeda do próprio negócio, como no lead — antes era
-                        "R$" concatenado à mão, ignorando currency e os centavos. */}
-                    {deal.value != null
-                      ? new Intl.NumberFormat("pt-BR", {
-                          style: "currency",
-                          currency: deal.currency || "BRL",
-                        }).format(deal.value)
-                      : "—"}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div id="negocios" className="scroll-mt-32">
+          <EntityDealsList
+            deals={deals ?? []}
+            newDealHref={`/deals/new?organizationId=${organization.id}&returnTo=/organizations/${organization.id}`}
+          />
         </div>
       </div>
 
@@ -580,11 +548,7 @@ export default async function OrganizationDetailPage({
 
       <div id="cnae" className="scroll-mt-32" />
       {/* CNAE Management */}
-      <div className="mt-6 rounded-xl border border-purple-900/40 bg-white p-5 shadow-md">
-        <h2 className="mb-4 flex items-center gap-2 border-b border-purple-900/40 pb-3 text-xs font-bold uppercase tracking-wider text-purple-400">
-            <BarChart2 size={14} />
-            Atividades Econômicas (CNAE)
-          </h2>
+      <CollapsibleSection id="cnae" icon={<BarChart2 size={14} />} title="Atividades Econômicas (CNAE)" defaultOpen={false}>
         {organization.primaryCNAE && (
           <div className="mb-6 rounded-lg border border-purple-500/40 bg-purple-900/30 p-4">
             <dt className={dtCls}>
@@ -616,7 +580,7 @@ export default async function OrganizationDetailPage({
             entityType="organization"
           />
         </div>
-      </div>
+      </CollapsibleSection>
 
       {/* Meetings */}
       <div className="mt-6">
@@ -666,11 +630,7 @@ export default async function OrganizationDetailPage({
 
       {/* Entity Management Panel (Admin Only) */}
       {isAdmin && organization.owner && (
-        <div className="mt-6 rounded-xl border border-purple-900/40 bg-white p-5 shadow-md">
-          <h2 className="mb-4 flex items-center gap-2 border-b border-purple-900/40 pb-3 text-xs font-bold uppercase tracking-wider text-purple-400">
-            <ShieldCheck size={14} />
-            Gerenciamento de Acesso
-          </h2>
+        <CollapsibleSection id="acesso" icon={<ShieldCheck size={14} />} title="Gerenciamento de Acesso" defaultOpen={false}>
           <EntityManagementPanel
             entityType="organization"
             entityId={organization.id}
@@ -680,7 +640,7 @@ export default async function OrganizationDetailPage({
             ownerEmail={organization.owner.email ?? undefined}
             isAdmin={isAdmin}
           />
-        </div>
+        </CollapsibleSection>
       )}
     </div>
   );
