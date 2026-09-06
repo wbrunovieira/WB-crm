@@ -4,6 +4,7 @@ import { SyncDealToFinanceUseCase } from "./sync-deal-to-finance.use-case";
 import { DealsRepository } from "../repositories/deals.repository";
 import type { Deal } from "../../enterprise/entities/deal";
 import { PartnerOwnershipValidator } from "@/domain/partners/application/services/partner-ownership.validator";
+import { EnsureLeadConvertedUseCase } from "@/domain/lead-conversion/application/use-cases/ensure-lead-converted.use-case";
 
 export interface UpdateDealInput {
   id: string;
@@ -31,6 +32,7 @@ export class UpdateDealUseCase {
     private readonly deals: DealsRepository,
     private readonly partnerOwnership: PartnerOwnershipValidator,
     private readonly syncToFinance: SyncDealToFinanceUseCase,
+    private readonly ensureLeadConverted: EnsureLeadConvertedUseCase,
   ) {}
 
   async execute(input: UpdateDealInput): Promise<Output> {
@@ -99,6 +101,25 @@ export class UpdateDealUseCase {
         toStatus: statusMudou ? (updates.status ?? null) : (deal.status ?? null),
         changedById: input.requesterId,
       });
+    }
+
+    // A venda transforma o prospect em cliente. Só na TRANSIÇÃO para "won": a conversão
+    // arquiva o lead e é irreversível na prática, então perder e reabrir não podem disparar.
+    // Antes do deal.update() de propósito — o disparo para o financeiro logo abaixo lê
+    // deal.organizationId, e sem isto o primeiro envio sairia sem organização.
+    const virouGanho = statusMudou && input.status === "won";
+    const organizacaoEfetiva =
+      input.organizationId !== undefined ? input.organizationId : deal.organizationId;
+
+    if (virouGanho && deal.leadId && !organizacaoEfetiva) {
+      const organizationId = await this.ensureLeadConverted.execute({
+        leadId: deal.leadId,
+        requesterId: input.requesterId,
+        requesterRole: input.requesterRole,
+      });
+      // Conversão falhou: o negócio continua ganho. A venda é fato do usuário e não pode ser
+      // desfeita por um problema de cópia de dados; o caso de uso já registrou o motivo.
+      if (organizationId) updates.organizationId = organizationId;
     }
 
     deal.update(updates);

@@ -13,6 +13,14 @@ import { UniqueEntityID } from "@/core/unique-entity-id";
 export class PrismaLeadConversionRepository extends LeadConversionRepository {
   constructor(private readonly prisma: PrismaService) { super(); }
 
+  async findConvertedOrganizationId(leadId: string): Promise<string | null> {
+    const lead = await this.prisma.lead.findUnique({
+      where: { id: leadId },
+      select: { convertedToOrganizationId: true },
+    });
+    return lead?.convertedToOrganizationId ?? null;
+  }
+
   async findLeadWithContacts(leadId: string): Promise<LeadWithContacts | null> {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const raw: any = await this.prisma.lead.findUnique({

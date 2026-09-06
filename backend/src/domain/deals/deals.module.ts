@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "@/infra/auth/auth.module";
 import { PartnersModule } from "@/domain/partners/partners.module";
+import { LeadConversionModule } from "@/domain/lead-conversion/lead-conversion.module";
 import { DealsRepository } from "./application/repositories/deals.repository";
 import { PrismaDealsRepository } from "@/infra/database/prisma/repositories/deals/prisma-deals.repository";
 import { GetDealsUseCase } from "./application/use-cases/get-deals.use-case";
@@ -21,7 +22,7 @@ import {
 import { DealsController } from "@/infra/controllers/deals.controller";
 
 @Module({
-  imports: [AuthModule, PartnersModule],
+  imports: [AuthModule, PartnersModule, LeadConversionModule],
   controllers: [DealsController],
   providers: [
     { provide: DealsRepository, useClass: PrismaDealsRepository },

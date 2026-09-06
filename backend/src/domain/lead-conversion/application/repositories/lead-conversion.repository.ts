@@ -48,5 +48,7 @@ export interface ConversionResult {
 
 export abstract class LeadConversionRepository {
   abstract findLeadWithContacts(leadId: string): Promise<LeadWithContacts | null>;
+  /** Organização em que este lead já foi convertido, se houver. Evita converter duas vezes. */
+  abstract findConvertedOrganizationId(leadId: string): Promise<string | null>;
   abstract execute(payload: ConversionPayload): Promise<ConversionResult>;
 }

@@ -17,6 +17,16 @@ export class FakeLeadConversionRepository extends LeadConversionRepository {
     this.leadsWithContacts.set(data.lead.id.toString(), data);
   }
 
+  convertedOrganizationIds: Map<string, string> = new Map();
+
+  async findConvertedOrganizationId(leadId: string): Promise<string | null> {
+    return (
+      this.convertedOrganizationIds.get(leadId) ??
+      this.convertedLeads.get(leadId)?.organizationId ??
+      null
+    );
+  }
+
   async findLeadWithContacts(leadId: string): Promise<LeadWithContacts | null> {
     return this.leadsWithContacts.get(leadId) ?? null;
   }
