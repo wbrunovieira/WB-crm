@@ -87,6 +87,61 @@ describe("Deals API (e2e)", () => {
   // ─── GET /deals ────────────────────────────────────────────────────────────
 
   describe("GET /deals", () => {
+    it("alterar valor de um negócio grava o histórico com autor, antes e depois", async () => {
+      // Ponta a ponta: o rastro precisa chegar ao banco, não só existir na use case. É este
+      // registro que torna interpretável uma divergência entre o CRM e o financeiro.
+      const created = await request(app.getHttpServer())
+        .post("/deals")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ title: "Contrato E2E Histórico", value: 2500, currency: "BRL", stageId })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/deals/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ value: 3000 })
+        .expect(200);
+
+      // Reabrir depois de ganhar: hoje isso limpa o closedAt e não deixava rastro nenhum.
+      await request(app.getHttpServer())
+        .patch(`/deals/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ status: "won" })
+        .expect(200);
+      await request(app.getHttpServer())
+        .patch(`/deals/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ status: "open" })
+        .expect(200);
+
+      const historico = await prisma.dealValueHistory.findMany({
+        where: { dealId: created.body.id },
+        orderBy: { changedAt: "asc" },
+      });
+
+      expect(historico.length, "esperava 3 registros: valor, won e reabertura").toBe(3);
+      expect(historico[0]).toMatchObject({ fromValue: 2500, toValue: 3000, changedById: ownerId });
+      expect(historico[1]).toMatchObject({ fromStatus: "open", toStatus: "won" });
+      expect(historico[2]).toMatchObject({ fromStatus: "won", toStatus: "open" });
+    });
+
+    it("editar um campo qualquer NÃO gera registro de histórico", async () => {
+      const created = await request(app.getHttpServer())
+        .post("/deals")
+        .set("Authorization", `Bearer ${token}`)
+        .send({ title: "Contrato E2E Sem Historico", value: 1000, currency: "BRL", stageId })
+        .expect(201);
+
+      await request(app.getHttpServer())
+        .patch(`/deals/${created.body.id}`)
+        .set("Authorization", `Bearer ${token}`)
+        .send({ title: "Só o título mudou" })
+        .expect(200);
+
+      const historico = await prisma.dealValueHistory.findMany({ where: { dealId: created.body.id } });
+      expect(historico.length, "histórico deve registrar valor/status, não qualquer edição").toBe(0);
+    });
+
     it("retorna 200 com lista vazia", async () => {
       const res = await request(app.getHttpServer())
         .get("/deals")

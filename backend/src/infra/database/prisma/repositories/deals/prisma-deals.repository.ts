@@ -5,6 +5,7 @@ import {
   type DealFilters,
   type StageData,
   type CreateStageHistoryInput,
+  CreateValueHistoryInput,
   type DealTechStackRecord,
 } from "@/domain/deals/application/repositories/deals.repository";
 import type { Deal } from "@/domain/deals/enterprise/entities/deal";
@@ -259,6 +260,21 @@ export class PrismaDealsRepository extends DealsRepository {
 
   async delete(id: string): Promise<void> {
     await this.prisma.deal.delete({ where: { id } });
+  }
+
+  async createValueHistory(input: CreateValueHistoryInput): Promise<void> {
+    await this.prisma.dealValueHistory.create({
+      data: {
+        dealId: input.dealId,
+        fromValue: input.fromValue,
+        toValue: input.toValue,
+        fromCurrency: input.fromCurrency,
+        toCurrency: input.toCurrency,
+        fromStatus: input.fromStatus,
+        toStatus: input.toStatus,
+        changedById: input.changedById,
+      },
+    });
   }
 
   async createStageHistory(input: CreateStageHistoryInput): Promise<void> {

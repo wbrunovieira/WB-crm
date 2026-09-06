@@ -30,6 +30,19 @@ export interface CreateStageHistoryInput {
   changedById: string;
 }
 
+/** Rastro de alteração de valor/status de um negócio já existente.
+ *  Espelha CreateStageHistoryInput — mesmo padrão, outro eixo. */
+export interface CreateValueHistoryInput {
+  dealId: string;
+  fromValue: number | null;
+  toValue: number | null;
+  fromCurrency: string | null;
+  toCurrency: string | null;
+  fromStatus: string | null;
+  toStatus: string | null;
+  changedById: string;
+}
+
 export interface DealTechStackRecord {
   categories: { id: string; categoryId: string; categoryName: string }[];
   languages: { id: string; languageId: string; languageName: string; isPrimary: boolean }[];
@@ -44,6 +57,7 @@ export abstract class DealsRepository {
   abstract save(deal: Deal): Promise<void>;
   abstract delete(id: string): Promise<void>;
   abstract createStageHistory(input: CreateStageHistoryInput): Promise<void>;
+  abstract createValueHistory(input: CreateValueHistoryInput): Promise<void>;
   abstract updateStageHistoryDate(historyId: string, changedAt: Date): Promise<{ dealId: string } | null>;
 
   // Tech stack

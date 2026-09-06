@@ -79,6 +79,26 @@ export class UpdateDealUseCase {
       }
     }
 
+    // Rastro ANTES de aplicar: depois do update os valores anteriores já se perderam.
+    // Uma entrada por operação, mesmo que valor e status mudem juntos — o que aconteceu foi
+    // uma edição, não duas.
+    const valorMudou = updates.value !== undefined && updates.value !== deal.value;
+    const moedaMudou = updates.currency !== undefined && updates.currency !== deal.currency;
+    const statusMudou = updates.status !== undefined && updates.status !== deal.status;
+
+    if (valorMudou || moedaMudou || statusMudou) {
+      await this.deals.createValueHistory({
+        dealId: deal.id.toString(),
+        fromValue: deal.value ?? null,
+        toValue: valorMudou ? (updates.value ?? null) : (deal.value ?? null),
+        fromCurrency: deal.currency ?? null,
+        toCurrency: moedaMudou ? (updates.currency ?? null) : (deal.currency ?? null),
+        fromStatus: deal.status ?? null,
+        toStatus: statusMudou ? (updates.status ?? null) : (deal.status ?? null),
+        changedById: input.requesterId,
+      });
+    }
+
     deal.update(updates);
     await this.deals.save(deal);
     return right({ deal });

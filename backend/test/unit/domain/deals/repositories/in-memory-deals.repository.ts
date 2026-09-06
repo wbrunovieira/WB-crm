@@ -3,12 +3,19 @@ import {
   type DealFilters,
   type StageData,
   type CreateStageHistoryInput,
+  type CreateValueHistoryInput,
   type DealTechStackRecord,
 } from "@/domain/deals/application/repositories/deals.repository";
 import type { Deal } from "@/domain/deals/enterprise/entities/deal";
 import type { DealSummary, DealDetail } from "@/domain/deals/enterprise/read-models/deal-read-models";
 
 export class InMemoryDealsRepository extends DealsRepository {
+  public valueHistory: CreateValueHistoryInput[] = [];
+
+  async createValueHistory(input: CreateValueHistoryInput): Promise<void> {
+    this.valueHistory.push(input);
+  }
+
   public items: Deal[] = [];
   public stages: StageData[] = [];
   public stageHistories: CreateStageHistoryInput[] = [];

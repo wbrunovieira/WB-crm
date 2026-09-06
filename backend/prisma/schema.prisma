@@ -33,6 +33,7 @@ model User {
   labels           Label[]
   partners         Partner[]
   dealStageChanges DealStageHistory[]
+  dealValueChanges DealValueHistory[]
 
   // Shared entities relations
   sharedWithMe SharedEntity[] @relation("SharedWithUser")
@@ -779,6 +780,7 @@ model Deal {
   dealLanguages  DealLanguage[] // Linguagens de programação
   dealFrameworks DealFramework[] // Frameworks utilizados
   stageHistory   DealStageHistory[] // Histórico de mudanças de etapa
+  valueHistory  DealValueHistory[]
   proposals      Proposal[] // Propostas vinculadas ao deal
   meetings       Meeting[] // Reuniões vinculadas ao deal
 
@@ -3266,4 +3268,27 @@ model BookingLink {
   // The partial UNIQUE index enforcing a single default public link is created in
   // the migration (Prisma can't express a filtered/partial unique index in-schema).
   @@map("booking_links")
+}
+
+/// Rastro de alteração de VALOR e STATUS de um negócio. Espelha DealStageHistory, que cobre
+/// apenas mudança de etapa. Existe porque editar negócio já fechado é rotina (5 de 8 ganhos em
+/// produção) e não deixava registro algum — o que torna impossível reconstruir uma divergência
+/// entre o CRM e o financeiro depois que ela aparece.
+model DealValueHistory {
+  id           String   @id @default(cuid())
+  dealId       String
+  fromValue    Float?
+  toValue      Float?
+  fromCurrency String?
+  toCurrency   String?
+  fromStatus   String?
+  toStatus     String?
+  changedById  String
+  changedAt    DateTime @default(now())
+
+  deal      Deal @relation(fields: [dealId], references: [id], onDelete: Cascade)
+  changedBy User @relation(fields: [changedById], references: [id], onDelete: Cascade)
+
+  @@index([dealId])
+  @@index([changedAt])
 }
