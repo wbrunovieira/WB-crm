@@ -12,6 +12,12 @@ import type { DealSummary, DealDetail } from "@/domain/deals/enterprise/read-mod
 export class InMemoryDealsRepository extends DealsRepository {
   public valueHistory: CreateValueHistoryInput[] = [];
 
+  public organizationNames = new Map<string, string>();
+
+  async findOrganizationName(organizationId: string): Promise<string | null> {
+    return this.organizationNames.get(organizationId) ?? null;
+  }
+
   async createValueHistory(input: CreateValueHistoryInput): Promise<void> {
     this.valueHistory.push(input);
   }

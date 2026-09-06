@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { left, right, type Either } from "@/core/either";
+import { SyncDealToFinanceUseCase } from "./sync-deal-to-finance.use-case";
 import { DealsRepository } from "../repositories/deals.repository";
 import type { Deal } from "../../enterprise/entities/deal";
 import { PartnerOwnershipValidator } from "@/domain/partners/application/services/partner-ownership.validator";
@@ -29,6 +30,7 @@ export class UpdateDealUseCase {
   constructor(
     private readonly deals: DealsRepository,
     private readonly partnerOwnership: PartnerOwnershipValidator,
+    private readonly syncToFinance: SyncDealToFinanceUseCase,
   ) {}
 
   async execute(input: UpdateDealInput): Promise<Output> {
@@ -101,6 +103,29 @@ export class UpdateDealUseCase {
 
     deal.update(updates);
     await this.deals.save(deal);
+
+    // Espelha o contrato no financeiro na MESMA condição do histórico: mudou valor, moeda ou
+    // status. Editar título ou descrição não altera o que o cliente deve, e disparar nesses
+    // casos só geraria ruído do outro lado.
+    if (valorMudou || moedaMudou || statusMudou) {
+      const organizationId = deal.organizationId ?? null;
+      const organizationName = organizationId
+        ? await this.deals.findOrganizationName(organizationId)
+        : null;
+
+      await this.syncToFinance.execute({
+        id: deal.id.toString(),
+        title: deal.title,
+        value: deal.value ?? null,
+        currency: deal.currency,
+        status: deal.status,
+        closedAt: deal.closedAt ?? null,
+        updatedAt: deal.updatedAt,
+        organizationId,
+        organizationName,
+      });
+    }
+
     return right({ deal });
   }
 }

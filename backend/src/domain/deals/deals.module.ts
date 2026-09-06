@@ -7,6 +7,9 @@ import { GetDealsUseCase } from "./application/use-cases/get-deals.use-case";
 import { GetDealByIdUseCase } from "./application/use-cases/get-deal-by-id.use-case";
 import { CreateDealUseCase } from "./application/use-cases/create-deal.use-case";
 import { UpdateDealUseCase } from "./application/use-cases/update-deal.use-case";
+import { SyncDealToFinanceUseCase } from "./application/use-cases/sync-deal-to-finance.use-case";
+import { FinanceSyncPort } from "./application/ports/finance-sync.port";
+import { FinanceHttpClient } from "./infra/finance-http.client";
 import { DeleteDealUseCase } from "./application/use-cases/delete-deal.use-case";
 import { UpdateDealStageUseCase } from "./application/use-cases/update-deal-stage.use-case";
 import { UpdateStageHistoryDateUseCase } from "./application/use-cases/update-stage-history-date.use-case";
@@ -26,6 +29,8 @@ import { DealsController } from "@/infra/controllers/deals.controller";
     GetDealByIdUseCase,
     CreateDealUseCase,
     UpdateDealUseCase,
+    SyncDealToFinanceUseCase,
+    { provide: FinanceSyncPort, useClass: FinanceHttpClient },
     DeleteDealUseCase,
     UpdateDealStageUseCase,
     UpdateStageHistoryDateUseCase,

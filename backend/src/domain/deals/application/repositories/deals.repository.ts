@@ -58,6 +58,9 @@ export abstract class DealsRepository {
   abstract delete(id: string): Promise<void>;
   abstract createStageHistory(input: CreateStageHistoryInput): Promise<void>;
   abstract createValueHistory(input: CreateValueHistoryInput): Promise<void>;
+  /** Nome da organização, para o payload do financeiro. Consulta leve: carregar o DealDetail
+   *  inteiro só para obter um nome seria desperdício no caminho de escrita. */
+  abstract findOrganizationName(organizationId: string): Promise<string | null>;
   abstract updateStageHistoryDate(historyId: string, changedAt: Date): Promise<{ dealId: string } | null>;
 
   // Tech stack

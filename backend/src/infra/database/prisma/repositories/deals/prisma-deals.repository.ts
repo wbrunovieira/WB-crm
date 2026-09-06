@@ -262,6 +262,14 @@ export class PrismaDealsRepository extends DealsRepository {
     await this.prisma.deal.delete({ where: { id } });
   }
 
+  async findOrganizationName(organizationId: string): Promise<string | null> {
+    const org = await this.prisma.organization.findUnique({
+      where: { id: organizationId },
+      select: { name: true },
+    });
+    return org?.name ?? null;
+  }
+
   async createValueHistory(input: CreateValueHistoryInput): Promise<void> {
     await this.prisma.dealValueHistory.create({
       data: {

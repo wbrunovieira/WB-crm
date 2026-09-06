@@ -46,7 +46,8 @@ describe("Deals Use Cases", () => {
     getList = new GetDealsUseCase(repo);
     getById = new GetDealByIdUseCase(repo);
     create = new CreateDealUseCase(repo, partnerOwnership);
-    update = new UpdateDealUseCase(repo, partnerOwnership);
+    // O sync com o financeiro é efeito colateral e não participa destes casos.
+    update = new UpdateDealUseCase(repo, partnerOwnership, { execute: async () => {} } as never);
     deleteDeal = new DeleteDealUseCase(repo);
     updateStage = new UpdateDealStageUseCase(repo);
   });

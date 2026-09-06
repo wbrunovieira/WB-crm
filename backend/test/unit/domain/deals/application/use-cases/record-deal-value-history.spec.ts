@@ -22,6 +22,7 @@ import { right } from "@/core/either";
 
 let repo: InMemoryDealsRepository;
 let sut: UpdateDealUseCase;
+let sincronizados: { id: string; status: string; organizationId: string | null; organizationName: string | null }[];
 const OWNER = "user-1";
 
 async function criarNegocio(props: Partial<{ value: number; status: "open" | "won" | "lost" }> = {}) {
@@ -33,6 +34,7 @@ async function criarNegocio(props: Partial<{ value: number; status: "open" | "wo
       currency: "BRL",
       status: props.status ?? "won",
       stageId: "stage-1",
+      organizationId: "org-1",
       closedAt: new Date("2026-08-25T00:00:00.000Z"),
     },
     new UniqueEntityID("deal-1"),
@@ -45,7 +47,14 @@ beforeEach(() => {
   repo = new InMemoryDealsRepository();
   // O validador de posse de parceiro não participa deste comportamento; um stub que sempre
   // aprova mantém o teste focado no histórico.
-  sut = new UpdateDealUseCase(repo, { validate: async () => right(undefined) } as never);
+  sincronizados = [];
+  repo.organizationNames.set("org-1", "Gomez Studio");
+  const syncFake = {
+    execute: async (deal: { id: string; status: string; organizationId: string | null; organizationName: string | null }) => {
+      sincronizados.push(deal);
+    },
+  };
+  sut = new UpdateDealUseCase(repo, { validate: async () => right(undefined) } as never, syncFake as never);
 });
 
 describe("UpdateDealUseCase — histórico de valor", () => {
@@ -119,5 +128,61 @@ describe("UpdateDealUseCase — histórico de valor", () => {
       fromStatus: "won",
       toStatus: "open",
     });
+  });
+});
+
+describe("UpdateDealUseCase — disparo para o financeiro", () => {
+  it("sincroniza o contrato quando o valor muda", async () => {
+    await criarNegocio({ value: 2500 });
+
+    await sut.execute({
+      id: "deal-1",
+      requesterId: OWNER,
+      requesterRole: "admin",
+      value: 3000,
+    });
+
+    expect(sincronizados).toHaveLength(1);
+    expect(sincronizados[0].id).toBe("deal-1");
+  });
+
+  it("sincroniza também na reabertura (won → open)", async () => {
+    // O caso que um gatilho só-no-won perderia: a venda caiu e o razão precisa saber.
+    await criarNegocio({ status: "won" });
+
+    await sut.execute({
+      id: "deal-1",
+      requesterId: OWNER,
+      requesterRole: "admin",
+      status: "open",
+    });
+
+    expect(sincronizados).toHaveLength(1);
+    expect(sincronizados[0].status).toBe("open");
+  });
+
+  it("não sincroniza quando a edição é irrelevante para o contrato", async () => {
+    await criarNegocio({ value: 2500 });
+
+    await sut.execute({
+      id: "deal-1",
+      requesterId: OWNER,
+      requesterRole: "admin",
+      description: "só uma anotação",
+    });
+
+    expect(sincronizados).toHaveLength(0);
+  });
+
+  it("resolve o NOME da organização — sem ele o sync é descartado em silêncio", async () => {
+    // Guarda contra um erro que quase entrou: passar organizationName: null faria o
+    // SyncDealToFinanceUseCase pular sempre, e o disparo nunca aconteceria em produção sem
+    // nenhum erro aparecer. Todos os outros testes deste bloco continuariam verdes.
+    await criarNegocio({ value: 2500 });
+
+    await sut.execute({ id: "deal-1", requesterId: OWNER, requesterRole: "admin", value: 3000 });
+
+    expect(sincronizados[0].organizationId).toBe("org-1");
+    expect(sincronizados[0].organizationName).toBe("Gomez Studio");
   });
 });
