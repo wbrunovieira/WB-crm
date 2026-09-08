@@ -174,6 +174,35 @@ export function findTodaysVisitId(activities: LeadActivitySummary[]): string | u
   return activities.find((a) => a.type === "physical_visit" && a.completedAt && isToday(a.completedAt))?.id;
 }
 
+/** Finds a physical_visit SCHEDULED for today that hasn't been done yet. This is the visit the
+ *  rep planned in advance ("Ir mostrar o site pronto na Refrigeracao Garrido"), as opposed to the
+ *  "Visita porta a porta — X" the app creates on the spot. Registering a visit must CLOSE this
+ *  one, not create a second activity beside it: otherwise the scheduled card stays pending
+ *  forever even though the rep was there. Keys off dueDate, since completedAt is null by
+ *  definition while it is still pending. */
+export function findTodaysPendingVisitId(activities: LeadActivitySummary[]): string | undefined {
+  return activities.find(
+    (a) => a.type === "physical_visit" && !a.completedAt && a.dueDate && isToday(a.dueDate),
+  )?.id;
+}
+
+/** Closes a scheduled visit as done, carrying the notes into it. The activity keeps its original
+ *  subject on purpose — "Ir mostrar o site pronto" says what the visit was FOR, which is worth
+ *  more in the history than a generic "Visita porta a porta". */
+async function completeScheduledVisit(
+  activityId: string,
+  notes: string | undefined,
+  contactType: ContactType | undefined,
+): Promise<void> {
+  const body: Record<string, unknown> = { completed: true, completedAt: new Date().toISOString() };
+  if (notes && notes.trim()) {
+    const current = await getActivityDescription(activityId);
+    body.description = current && current.trim() ? `${current.trim()}\n${notes.trim()}` : notes.trim();
+  }
+  if (contactType) body.callContactType = contactType;
+  await apiFetch(`/activities/${activityId}`, { method: "PATCH", body });
+}
+
 async function getActivityDescription(activityId: string): Promise<string | null> {
   const activity = await apiFetch<{ description: string | null }>(`/activities/${activityId}`);
   return activity.description;
@@ -213,11 +242,18 @@ export async function logOrMergeVisit(
   notes: string | undefined,
   contactType: ContactType | undefined,
   activities: LeadActivitySummary[],
-): Promise<{ visitActivityId?: string; merged: boolean; updated: boolean }> {
+): Promise<{ visitActivityId?: string; merged: boolean; updated: boolean; closedScheduled?: boolean }> {
   const existingVisitId = findTodaysVisitId(activities);
   if (existingVisitId) {
     const updated = await mergeIntoVisit(existingVisitId, notes, contactType);
     return { visitActivityId: existingVisitId, merged: true, updated };
+  }
+  // Havia visita MARCADA para hoje: essa visita acabou de acontecer, entao ela e o registro.
+  // Criar uma atividade nova aqui deixaria a agendada pendente para sempre.
+  const scheduledVisitId = findTodaysPendingVisitId(activities);
+  if (scheduledVisitId) {
+    await completeScheduledVisit(scheduledVisitId, notes, contactType);
+    return { visitActivityId: scheduledVisitId, merged: false, updated: true, closedScheduled: true };
   }
   const created = await createVisitActivity(leadId, businessName, notes, contactType);
   return { visitActivityId: created.id, merged: false, updated: true };
@@ -556,6 +592,11 @@ export interface LeadActivitySummary {
   subject: string;
   createdAt: string;
   completedAt: string | null;
+  // Uma visita AGENDADA para hoje tem completedAt null e dueDate hoje. Sem estes dois campos
+  // o app so enxergava visita ja concluida e criava uma segunda atividade, deixando a agendada
+  // pendente para sempre (era o bug do card que nao saia de "pendente").
+  dueDate?: string | null;
+  completed?: boolean;
 }
 
 /** The subset of `GET /leads/:id` (LeadDetail) the field screen actually renders — the full

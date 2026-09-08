@@ -98,6 +98,12 @@ describe("Contrato de ida e volta dos campos (e2e)", () => {
       dueDate: "2026-10-15T12:00:00.000Z",
       remindAt: "2026-10-15T11:00:00.000Z",
       scheduledSendAt: "2026-10-16T08:00:00.000Z",
+      // completed/completedAt entraram depois: o PATCH os anunciava no DTO e os descartava em
+      // silêncio (HTTP 200, nada gravado). A primeira versão deste conjunto só cobria datas —
+      // testou os campos em que se estava pensando, não o contrato inteiro. Foi essa lacuna
+      // que deixou uma visita concluída em campo aparecer como pendente no app.
+      completed: true,
+      completedAt: "2026-10-15T14:00:00.000Z",
     };
 
     it("POST → GET por id devolve todos os campos gravados", async () => {

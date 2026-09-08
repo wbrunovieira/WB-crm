@@ -22,6 +22,8 @@ export interface UpdateActivityInput {
   meetingNoShow?: boolean;
   gotoCallOutcome?: string | null;
   remindAt?: Date | null;
+  completed?: boolean;
+  completedAt?: Date | null;
 }
 
 type Output = Either<Error, { activity: Activity }>;
@@ -54,6 +56,18 @@ export class UpdateActivityUseCase {
     if (input.organizationId !== undefined) updates.organizationId = input.organizationId ?? undefined;
     if (input.partnerId !== undefined)      updates.partnerId = input.partnerId ?? undefined;
     if (input.callContactType !== undefined) updates.callContactType = input.callContactType ?? undefined;
+    // Concluir/reabrir pelo PATCH. O DTO sempre anunciou estes dois campos, mas eles nunca
+    // eram mapeados: a requisicao respondia 200, o updatedAt mudava e nada era gravado. Marcar
+    // "feito" no celular so precisa de completed: true — o carimbo de hora e preenchido aqui
+    // quando nao vem, e reabrir limpa a data para nao sobrar conclusao orfa.
+    if (input.completed !== undefined) {
+      updates.completed = input.completed;
+      updates.completedAt = input.completed
+        ? (input.completedAt ?? new Date())
+        : undefined;
+    } else if (input.completedAt !== undefined) {
+      updates.completedAt = input.completedAt ?? undefined;
+    }
     if (input.meetingNoShow !== undefined)   updates.meetingNoShow = input.meetingNoShow;
     if (input.gotoCallOutcome !== undefined) updates.gotoCallOutcome = input.gotoCallOutcome ?? undefined;
     if (input.remindAt !== undefined) {

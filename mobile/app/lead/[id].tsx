@@ -97,21 +97,36 @@ export default function LeadDetailScreen() {
   const visitMutation = useMutation({
     mutationFn: (vars: { businessName: string; notes: string; contactType: ContactType | ""; activities: LeadActivitySummary[] }) =>
       logOrMergeVisit(id, vars.businessName, vars.notes || undefined, vars.contactType || undefined, vars.activities),
-    onSuccess: ({ merged, updated }) => {
+    onSuccess: ({ merged, updated, closedScheduled }) => {
       queryClient.invalidateQueries({ queryKey: ["lead-detail", id] });
+      // Sem isto o card continua "pendente" na tela de Visitas do dia até um refresh manual —
+      // que era exatamente o sintoma relatado.
+      queryClient.invalidateQueries({ queryKey: ["today-scheduled-visits"] });
+      queryClient.invalidateQueries({ queryKey: ["scheduled-visits-for-day"] });
       setLoggingVisit(false);
       setVisitNotes("");
       setVisitContactType("");
       // A visit was already logged today for this lead — the note was appended to it instead of
       // creating a second "Visita porta a porta" activity for the same day. If nothing was
       // actually filled in, don't claim a note was added — just acknowledge the existing visit.
+      // closedScheduled: a visita que estava MARCADA para hoje foi concluída, em vez de nascer
+      // uma segunda atividade ao lado dela. Vale dizer isso explicitamente, porque é o que
+      // explica o card sair de "pendente" na lista de visitas do dia.
       Alert.alert(
-        merged ? (updated ? "Observação adicionada" : "Já registrado hoje") : "Visita registrada",
+        merged
+          ? updated
+            ? "Observação adicionada"
+            : "Já registrado hoje"
+          : closedScheduled
+            ? "Visita concluída"
+            : "Visita registrada",
         merged
           ? updated
             ? "Já havia uma visita hoje — a observação foi adicionada a ela."
             : "Você já tinha registrado uma visita aqui hoje."
-          : "A visita foi registrada com sucesso.",
+          : closedScheduled
+            ? "A visita que estava agendada para hoje foi marcada como concluída."
+            : "A visita foi registrada com sucesso.",
       );
     },
     onError: () => Alert.alert("Erro", "Não foi possível registrar a visita. Tente novamente."),
