@@ -77,6 +77,10 @@ export class PrismaLeadConversionRepository extends LeadConversionRepository {
           name: organization.name,
           legalName: organization.legalName ?? null,
           foundationDate: organization.foundationDate ?? null,
+          // Persistidos explicitamente: a use case ja os carregava do lead, mas este create
+          // enumera campo a campo, entao o que nao esta listado aqui e descartado em silencio.
+          inOperationsAt: organization.inOperationsAt ?? null,
+          driveFolderId: organization.driveFolderId ?? null,
           website: organization.website ?? null,
           phone: organization.phone ?? null,
           whatsapp: organization.whatsapp ?? null,

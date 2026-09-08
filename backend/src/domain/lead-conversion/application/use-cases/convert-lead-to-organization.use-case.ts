@@ -116,6 +116,13 @@ export class ConvertLeadToOrganizationUseCase {
       socialMedia: lead.socialMedia,
       source: lead.source,
       starRating: lead.starRating,
+      // Transferencia para operacoes: sem isto, um lead ja entregue para operacoes voltava a
+      // parecer ativo no CRM assim que virava cliente — e as automacoes que a transferencia
+      // pausou voltavam a rodar em cima de quem ja esta sendo atendido.
+      inOperationsAt: lead.inOperationsAt,
+      // A pasta de documentos reunida na prospeccao. O lead e arquivado na conversao, entao
+      // isto e entrega e nao duplicacao: sem levar, a organizacao nasce sem o historico.
+      driveFolderId: lead.driveFolderId,
       types: lead.types,
       userRatingsTotal: lead.userRatingsTotal,
       vicinity: lead.vicinity,

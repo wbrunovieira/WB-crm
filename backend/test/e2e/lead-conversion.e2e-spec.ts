@@ -370,4 +370,46 @@ describe("POST /leads/:id/convert (e2e)", () => {
     const rows = Array.isArray(res.body) ? res.body : res.body.leads ?? res.body.data ?? [];
     expect(rows.map((l: { id: string }) => l.id)).not.toContain(lead.id);
   });
+
+  /**
+   * Caso concreto de producao (08/09/2026): lead transferido para operacoes as 15:23,
+   * convertido as 15:31, organizacao nasceu com inOperationsAt nulo. A transferencia sumiu
+   * no caminho sem erro nenhum — HTTP 200 dos dois lados.
+   */
+  it("leva a transferencia para operacoes e a pasta de documentos para a organizacao", async () => {
+    const emOperacoes = "2026-09-08T15:23:08.129Z";
+    const lead = await prisma.lead.create({
+      data: {
+        ownerId,
+        businessName: `E2E Operacoes ${Date.now()}`,
+        inOperationsAt: new Date(emOperacoes),
+        driveFolderId: "1AbCdEfGhIjKlMnOpQrStUv",
+      },
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(`/leads/${lead.id}/convert`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const orgId = res.body.organizationId;
+    const org = await prisma.organization.findUnique({ where: { id: orgId } });
+
+    expect(org?.inOperationsAt?.toISOString()).toBe(emOperacoes);
+    expect(org?.driveFolderId).toBe("1AbCdEfGhIjKlMnOpQrStUv");
+  });
+
+  it("mantem nulo quando o lead nao estava em operacoes", async () => {
+    const lead = await prisma.lead.create({
+      data: { ownerId, businessName: `E2E Sem Operacoes ${Date.now()}` },
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(`/leads/${lead.id}/convert`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const org = await prisma.organization.findUnique({ where: { id: res.body.organizationId } });
+    expect(org?.inOperationsAt).toBeNull();
+  });
 });
