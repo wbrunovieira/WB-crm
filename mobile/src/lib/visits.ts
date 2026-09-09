@@ -23,6 +23,10 @@ export interface TodayScheduledVisit {
   type: string;
   status: TodayVisitStatus;
   dueDate: string | null;
+  /** Quantas vezes a visita ja foi adiada — sai da propria descricao (ver MARCA_ADIAMENTO).
+   *  Visita empurrada varias vezes e sinal de lead que nao vai fechar, e o vendedor merece
+   *  ver isso sem abrir a atividade. */
+  postponedCount: number;
   // Leads already have coordinates (captured via GPS/Google/geocoded address); organizations
   // never do (no lat/lng column), so their raw address is carried instead, resolved on demand
   // for the map — see resolveTodayVisitPins.
@@ -37,6 +41,7 @@ export interface TodayScheduledVisit {
 }
 
 interface ActivityRow {
+  description?: string | null;
   id: string;
   type: string;
   subject: string;
@@ -64,6 +69,34 @@ interface ActivityRow {
  *  No backend filter for "type is one of several" or "has a lead OR organization" exists, so
  *  this fetches broadly (that day's pending activities) and filters client-side — a single
  *  rep's daily volume is always small. */
+/** Marca deixada na descricao a cada adiamento — e tambem como o contador e calculado.
+ *  Guardar na descricao evita coluna nova no schema para uma informacao que so o vendedor le. */
+export const MARCA_ADIAMENTO = "[adiada";
+
+function contarAdiamentos(description: string | null): number {
+  if (!description) return 0;
+  return description.split(MARCA_ADIAMENTO).length - 1;
+}
+
+/** Visitas PENDENTES cujo dia ja passou. Existem porque a lista do dia e estrita: sem isto,
+ *  uma visita que o vendedor nao fez fica no dia dela e some da vista — esquecer de adiar
+ *  equivalia a perder a visita. Limite de 30 dias para tras: mais que isso nao e atraso, e
+ *  abandono, e poluiria a tela do dia. */
+export async function listOverdueVisits(): Promise<TodayScheduledVisit[]> {
+  const inicioDeHoje = new Date();
+  inicioDeHoje.setHours(0, 0, 0, 0);
+  const trintaDiasAtras = new Date(inicioDeHoje);
+  trintaDiasAtras.setDate(trintaDiasAtras.getDate() - 30);
+
+  const activities = await apiFetch<ActivityRow[]>(
+    `/activities?owner=mine&dateFrom=${encodeURIComponent(trintaDiasAtras.toISOString())}&dateTo=${encodeURIComponent(inicioDeHoje.toISOString())}`,
+  );
+
+  return mapearVisitas(activities)
+    .filter((v) => v.status === "pending")
+    .sort((a, b) => (a.dueDate ?? "").localeCompare(b.dueDate ?? ""));
+}
+
 export async function listScheduledVisitsForDay(dayOffset: number = 0): Promise<TodayScheduledVisit[]> {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
@@ -78,6 +111,17 @@ export async function listScheduledVisitsForDay(dayOffset: number = 0): Promise<
     `/activities?owner=mine&dateFrom=${encodeURIComponent(start.toISOString())}&dateTo=${encodeURIComponent(end.toISOString())}`,
   );
 
+  return mapearVisitas(activities).sort((a, b) => {
+    const pending = Number(b.status === "pending") - Number(a.status === "pending");
+    if (pending !== 0) return pending;
+    return (a.dueDate ?? "").localeCompare(b.dueDate ?? "");
+  });
+}
+
+/** Converte as atividades cruas em visitas, descartando o que nao e visita/reuniao e o que nao
+ *  tem lead nem organizacao. Compartilhado entre a lista do dia e a das atrasadas para que as
+ *  duas telas nunca discordem sobre o que conta como visita. */
+function mapearVisitas(activities: ActivityRow[]): TodayScheduledVisit[] {
   const visits: TodayScheduledVisit[] = [];
   for (const a of activities) {
     const status = visitStatus(a);
@@ -96,6 +140,7 @@ export async function listScheduledVisitsForDay(dayOffset: number = 0): Promise<
         type: a.type,
         status,
         dueDate: a.dueDate,
+        postponedCount: contarAdiamentos(a.description ?? null),
         latitude: a.lead.latitude,
         longitude: a.lead.longitude,
         address: null,
@@ -112,6 +157,7 @@ export async function listScheduledVisitsForDay(dayOffset: number = 0): Promise<
         type: a.type,
         status,
         dueDate: a.dueDate,
+        postponedCount: contarAdiamentos(a.description ?? null),
         latitude: null,
         longitude: null,
         address: {
@@ -126,13 +172,7 @@ export async function listScheduledVisitsForDay(dayOffset: number = 0): Promise<
       });
     }
   }
-  // Still-to-do first, then by time — the same "completed sinks to the end of its day" rule the
-  // web CRM applies to activity lists.
-  return visits.sort((a, b) => {
-    const pending = Number(b.status === "pending") - Number(a.status === "pending");
-    if (pending !== 0) return pending;
-    return (a.dueDate ?? "").localeCompare(b.dueDate ?? "");
-  });
+  return visits;
 }
 
 /** `completed` wins over the outcome timestamps: an activity can be both failed and later
@@ -205,4 +245,41 @@ export async function resolveTodayVisitPins(visits: TodayScheduledVisit[]): Prom
     }
   }
   return pins;
+}
+
+
+/** Adia a visita para outro dia. Uma atividade so, com a data trocada e o movimento anotado na
+ *  descricao — em vez de pular a antiga e criar outra, que encheria o historico de duplicatas.
+ *  O rastro e automatico de proposito: exigir motivo digitado na rua garante motivo inutil. */
+export async function adiarVisita(activityId: string, novaData: Date): Promise<void> {
+  const atual = await apiFetch<{ description: string | null; dueDate: string | null }>(
+    `/activities/${activityId}`,
+  );
+
+  const de = atual.dueDate ? new Date(atual.dueDate) : null;
+  const fmt = (d: Date) => d.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" });
+  const linha = `${MARCA_ADIAMENTO} de ${de ? fmt(de) : "?"} para ${fmt(novaData)}]`;
+  const anterior = atual.description?.trim();
+
+  // Preserva a hora original: adiar e mudar de DIA, nao remarcar o horario combinado.
+  const destino = new Date(novaData);
+  if (de) destino.setHours(de.getHours(), de.getMinutes(), 0, 0);
+
+  await apiFetch(`/activities/${activityId}`, {
+    method: "PATCH",
+    body: {
+      dueDate: destino.toISOString(),
+      description: anterior ? `${anterior}\n${linha}` : linha,
+    },
+  });
+}
+
+/** Desiste da visita — "mudei de ideia", diferente de "nao deu tempo". Sem isto, um lead ja
+ *  descartado voltaria a aparecer na lista para sempre. Motivo e opcional por decisao: cobrar
+ *  texto de quem esta na rua produz texto vazio, nao informacao. */
+export async function desistirDaVisita(activityId: string, motivo?: string): Promise<void> {
+  await apiFetch(`/activities/${activityId}/skip`, {
+    method: "PATCH",
+    body: { reason: motivo?.trim() || "Sem motivo informado" },
+  });
 }

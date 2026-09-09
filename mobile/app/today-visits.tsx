@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking } from "react-native";
+import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking, Alert } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import MapView, { Marker, type Region } from "react-native-maps";
 import { useRouter } from "expo-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import * as Location from "expo-location";
-import { listScheduledVisitsForDay, resolveTodayVisitPins, type TodayScheduledVisit, type TodayVisitStatus, type TodayVisitMapPin } from "@/lib/visits";
+import { listScheduledVisitsForDay, listOverdueVisits, adiarVisita, desistirDaVisita, resolveTodayVisitPins, type TodayScheduledVisit, type TodayVisitStatus, type TodayVisitMapPin } from "@/lib/visits";
 
 const DEFAULT_DELTA = { latitudeDelta: 0.05, longitudeDelta: 0.05 };
 const LEAD_COLOR = "#14b8a6"; // same teal the web CRM uses for physical_visit activities
@@ -71,6 +72,72 @@ function dueTime(dueDate: string | null): string | null {
 
 /** Everything pending on a given day, leads + organizations — list mode (default) or map mode,
  *  with a ◀ ▶ navigator to browse other days (past = overdue/already handled, future = upcoming). */
+/** Um card de visita. Extraido para ser usado por DUAS listas — as do dia e as atrasadas —
+ *  de modo que as duas nunca divirjam no que mostram nem nas acoes que oferecem. */
+function CartaoVisita({
+  visita, onSelect, onAdiar, onDesistir,
+}: {
+  visita: TodayScheduledVisit;
+  onSelect: (v: { kind: string; entityId: string }) => void;
+  onAdiar: (v: TodayScheduledVisit) => void;
+  onDesistir: (v: TodayScheduledVisit) => void;
+}) {
+  return (
+          <Pressable
+            key={visita.activityId}
+            style={({ pressed }) => [
+              styles.card,
+              pressed && styles.cardPressed,
+              visita.status !== "pending" && styles.cardDone,
+            ]}
+            onPress={() => onSelect(visita)}
+          >
+            <View style={styles.cardHeader}>
+              <Text style={styles.cardTitle}>
+                {typeIcon(visita.type)} {visita.name}
+              </Text>
+              <View style={[styles.kindBadge, visita.kind === "lead" ? styles.kindBadgeLead : styles.kindBadgeOrg]}>
+                <Text style={styles.kindBadgeText}>{visita.kind === "lead" ? "Lead" : "Cliente"}</Text>
+              </View>
+            </View>
+            <Text style={styles.cardSubject}>{visita.subject}</Text>
+            <View style={styles.cardMetaRow}>
+              {dueTime(visita.dueDate) && <Text style={styles.cardMeta}>⏰ {dueTime(visita.dueDate)}</Text>}
+              <Text style={[styles.statusText, { color: STATUS_LABEL[visita.status].color }]}>
+                {STATUS_LABEL[visita.status].label}
+              </Text>
+            </View>
+      {visita.postponedCount > 0 && (
+        <Text style={styles.adiadaBadge}>adiada {visita.postponedCount}x</Text>
+      )}
+      {visita.status === "pending" && (
+        <View style={styles.acoes}>
+          <Pressable onPress={() => onAdiar(visita)} hitSlop={8} style={({ pressed }) => [styles.acaoBotao, pressed && styles.acaoPressed]}>
+            <Text style={styles.acaoTexto}>Adiar</Text>
+          </Pressable>
+          <Pressable onPress={() => onDesistir(visita)} hitSlop={8} style={({ pressed }) => [styles.acaoBotao, pressed && styles.acaoPressed]}>
+            <Text style={[styles.acaoTexto, styles.acaoDescartar]}>Não vou</Text>
+          </Pressable>
+        </View>
+      )}
+            {(visita.phone || visita.whatsapp) && (
+              <View style={styles.orgActions}>
+                {visita.phone && (
+                  <Pressable onPress={() => Linking.openURL(telHref(visita.phone!))} hitSlop={8}>
+                    <Text style={styles.orgActionIcon}>📞</Text>
+                  </Pressable>
+                )}
+                {visita.whatsapp && (
+                  <Pressable onPress={() => Linking.openURL(`https://wa.me/${digits(visita.whatsapp!)}`)} hitSlop={8}>
+                    <Text style={styles.orgActionIcon}>💬</Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+          </Pressable>
+  );
+}
+
 export default function TodayVisitsScreen() {
   const router = useRouter();
   const [mode, setMode] = useState<"list" | "map">("list");
@@ -87,6 +154,66 @@ export default function TodayVisitsScreen() {
     refetchInterval: 30_000,
   });
   const visits = visitsQuery.data ?? [];
+
+  // Rede de seguranca. A lista do dia e estrita por data, entao uma visita nao feita fica no dia
+  // dela e some da vista: esquecer de adiar equivalia a perder a visita. E justamente nos dias
+  // corridos, quando a visita nao acontece, que ninguem para para reagendar.
+  const overdueQuery = useQuery({
+    queryKey: ["overdue-visits"],
+    queryFn: listOverdueVisits,
+    enabled: dayOffset === 0,
+    refetchInterval: 60_000,
+  });
+  const atrasadas = dayOffset === 0 ? (overdueQuery.data ?? []) : [];
+
+  const queryClient = useQueryClient();
+  const [escolhendoData, setEscolhendoData] = useState<string | null>(null);
+
+  const recarregar = () => {
+    queryClient.invalidateQueries({ queryKey: ["today-scheduled-visits"] });
+    queryClient.invalidateQueries({ queryKey: ["scheduled-visits-for-day"] });
+    queryClient.invalidateQueries({ queryKey: ["overdue-visits"] });
+  };
+
+  const adiar = useMutation({
+    mutationFn: ({ activityId, data }: { activityId: string; data: Date }) => adiarVisita(activityId, data),
+    onSuccess: recarregar,
+    onError: () => Alert.alert("Erro", "Não foi possível adiar a visita. Tente novamente."),
+  });
+  const desistir = useMutation({
+    mutationFn: (activityId: string) => desistirDaVisita(activityId),
+    onSuccess: recarregar,
+    onError: () => Alert.alert("Erro", "Não foi possível atualizar a visita. Tente novamente."),
+  });
+
+  const emDias = (dias: number) => {
+    const d = new Date();
+    d.setHours(0, 0, 0, 0);
+    d.setDate(d.getDate() + dias);
+    return d;
+  };
+
+  // Alert nativo em vez de folha propria: sao poucas escolhas e ele aparece instantaneo, com o
+  // aparelho na mao. A data mais provavel vem primeiro.
+  const abrirAdiar = (v: TodayScheduledVisit) => {
+    Alert.alert("Adiar visita", v.name, [
+      { text: "Amanhã", onPress: () => adiar.mutate({ activityId: v.activityId, data: emDias(1) }) },
+      { text: "Depois de amanhã", onPress: () => adiar.mutate({ activityId: v.activityId, data: emDias(2) }) },
+      { text: "Outra data...", onPress: () => setEscolhendoData(v.activityId) },
+      { text: "Cancelar", style: "cancel" },
+    ]);
+  };
+
+  const abrirDesistir = (v: TodayScheduledVisit) => {
+    Alert.alert(
+      "Não vou fazer esta visita",
+      `${v.name}\n\nEla sai da sua lista de pendências.`,
+      [
+        { text: "Não vou", style: "destructive", onPress: () => desistir.mutate(v.activityId) },
+        { text: "Cancelar", style: "cancel" },
+      ],
+    );
+  };
 
   // Only geocode organization addresses (Fase 2's geocodeAddress) when the rep actually switches
   // to map mode — no point spending on-device geocoding calls for a screen they may never open.
@@ -155,47 +282,18 @@ export default function TodayVisitsScreen() {
           {!visitsQuery.isLoading && !visitsQuery.isError && visits.length === 0 && (
             <Text style={styles.emptyText}>Nada agendado para {dayLabel(dayOffset).toLowerCase()}.</Text>
           )}
+          {atrasadas.length > 0 && (
+            <>
+              <Text style={styles.atrasadasTitulo}>⚠ Atrasadas ({atrasadas.length})</Text>
+              {atrasadas.map((v) => (
+                <CartaoVisita key={v.activityId} visita={v} onSelect={onSelect} onAdiar={abrirAdiar} onDesistir={abrirDesistir} />
+              ))}
+              <View style={styles.atrasadasSeparador} />
+            </>
+          )}
           {visits.length > 0 && <Text style={styles.summary}>{summaryLine(visits)}</Text>}
           {visits.map((v) => (
-            <Pressable
-              key={v.activityId}
-              style={({ pressed }) => [
-                styles.card,
-                pressed && styles.cardPressed,
-                v.status !== "pending" && styles.cardDone,
-              ]}
-              onPress={() => onSelect(v)}
-            >
-              <View style={styles.cardHeader}>
-                <Text style={styles.cardTitle}>
-                  {typeIcon(v.type)} {v.name}
-                </Text>
-                <View style={[styles.kindBadge, v.kind === "lead" ? styles.kindBadgeLead : styles.kindBadgeOrg]}>
-                  <Text style={styles.kindBadgeText}>{v.kind === "lead" ? "Lead" : "Cliente"}</Text>
-                </View>
-              </View>
-              <Text style={styles.cardSubject}>{v.subject}</Text>
-              <View style={styles.cardMetaRow}>
-                {dueTime(v.dueDate) && <Text style={styles.cardMeta}>⏰ {dueTime(v.dueDate)}</Text>}
-                <Text style={[styles.statusText, { color: STATUS_LABEL[v.status].color }]}>
-                  {STATUS_LABEL[v.status].label}
-                </Text>
-              </View>
-              {(v.phone || v.whatsapp) && (
-                <View style={styles.orgActions}>
-                  {v.phone && (
-                    <Pressable onPress={() => Linking.openURL(telHref(v.phone!))} hitSlop={8}>
-                      <Text style={styles.orgActionIcon}>📞</Text>
-                    </Pressable>
-                  )}
-                  {v.whatsapp && (
-                    <Pressable onPress={() => Linking.openURL(`https://wa.me/${digits(v.whatsapp!)}`)} hitSlop={8}>
-                      <Text style={styles.orgActionIcon}>💬</Text>
-                    </Pressable>
-                  )}
-                </View>
-              )}
-            </Pressable>
+            <CartaoVisita key={v.activityId} visita={v} onSelect={onSelect} onAdiar={abrirAdiar} onDesistir={abrirDesistir} />
           ))}
         </ScrollView>
       ) : (
@@ -207,6 +305,18 @@ export default function TodayVisitsScreen() {
           visitsCount={visits.length}
           onSelect={onSelect}
           emptyLabel={dayLabel(dayOffset).toLowerCase()}
+        />
+      )}
+      {escolhendoData && (
+        <DateTimePicker
+          value={new Date()}
+          mode="date"
+          minimumDate={new Date()}
+          onChange={(_evento, data) => {
+            const id = escolhendoData;
+            setEscolhendoData(null);
+            if (data && id) adiar.mutate({ activityId: id, data });
+          }}
         />
       )}
     </View>
@@ -285,6 +395,39 @@ function MapModeContent({
 }
 
 const styles = StyleSheet.create({
+  adiadaBadge: {
+    color: "#f59e0b",
+    fontSize: 11,
+    fontWeight: "600",
+    marginTop: 6,
+  },
+  acoes: {
+    flexDirection: "row",
+    gap: 8,
+    marginTop: 10,
+  },
+  acaoBotao: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: "#3f3550",
+  },
+  acaoPressed: { opacity: 0.6 },
+  acaoTexto: { color: "#c9b3d6", fontSize: 13, fontWeight: "600" },
+  acaoDescartar: { color: "#94a3b8" },
+  atrasadasTitulo: {
+    color: "#f59e0b",
+    fontSize: 13,
+    fontWeight: "700",
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  atrasadasSeparador: {
+    height: 1,
+    backgroundColor: "#3f3550",
+    marginVertical: 14,
+  },
   summary: { color: "#c9b3d6", fontSize: 13, marginBottom: 6 },
   cardMetaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   statusText: { fontSize: 12, fontWeight: "700" },
