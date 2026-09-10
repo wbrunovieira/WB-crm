@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator, Platform, InteractionManager } from "react-native";
+import { Field } from "./Field";
+import { View, Text, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator, Platform, InteractionManager } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -612,7 +613,7 @@ export function ManualLeadForm({
         )}
       </Pressable>
       <Field label="Telefone (fixo)" value={f.phone} onChangeText={(v) => set("phone", v)} keyboardType="phone-pad" />
-      <Field label="Site" value={f.website} onChangeText={(v) => set("website", v)} autoCapitalize="none" keyboardType="url" />
+      <Field label="Site" value={f.website} onChangeText={(v) => set("website", v)} autoCapitalize="none" keyboardType="url" abrirComoLink />
 
       {/* ── PESSOA ── */}
       <Text style={styles.section}>Pessoa (com quem falei)</Text>
@@ -667,14 +668,6 @@ export function ManualLeadForm({
   );
 }
 
-function Field({ label, multiline, ...props }: { label: string; multiline?: boolean } & React.ComponentProps<typeof TextInput>) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput placeholderTextColor="#8a6d9c" style={[styles.input, multiline && styles.multiline]} multiline={multiline} {...props} />
-    </View>
-  );
-}
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (

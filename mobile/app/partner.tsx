@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect } from "react";
-import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
+import { Field } from "@/components/Field";
+import { View, Text, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useMutation } from "@tanstack/react-query";
 import { createPartnerWithContact, partnerBody, PARTNER_TYPES } from "@/lib/partners";
@@ -150,7 +151,7 @@ export default function PartnerScreen() {
         ))}
       </View>
 
-      <Field label="Site" value={f.website} onChangeText={(v) => set("website", v)} autoCapitalize="none" keyboardType="url" />
+      <Field label="Site" value={f.website} onChangeText={(v) => set("website", v)} autoCapitalize="none" keyboardType="url" abrirComoLink />
       <Field label="Telefone" value={f.phone} onChangeText={(v) => set("phone", v)} keyboardType="phone-pad" />
       <Field label="Notas" value={f.notes} onChangeText={(v) => set("notes", v)} placeholder="Onde conheci, do que conversamos…" multiline />
 
@@ -167,14 +168,6 @@ export default function PartnerScreen() {
   );
 }
 
-function Field({ label, multiline, ...props }: { label: string; multiline?: boolean } & React.ComponentProps<typeof TextInput>) {
-  return (
-    <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
-      <TextInput placeholderTextColor="#8a6d9c" style={[styles.input, multiline && styles.multiline]} multiline={multiline} {...props} />
-    </View>
-  );
-}
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
