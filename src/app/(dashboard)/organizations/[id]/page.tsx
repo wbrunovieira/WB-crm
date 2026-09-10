@@ -710,6 +710,13 @@ export default async function OrganizationDetailPage({
         </CollapsibleSection>
       )}
 
+      {/* NAO existe secao de Cadencia aqui, e a ausencia e deliberada (decisao do Bruno,
+          10/09/2026). Cadencia e uma sequencia de PROSPECCAO — e-mail, follow-up, ligacao ate a
+          pessoa responder — e por definicao termina quando o lead vira cliente. Uma cadencia
+          para quem ja compra seria outra coisa (renovacao, upsell), com conteudo e ritmo
+          proprios: funcionalidade nova, nao paridade de pagina. Se alguem comparar esta pagina
+          com a do lead e notar a falta, nao e esquecimento. */}
+
       {/* Produtos: mesma posicao da pagina do lead (depois de acesso, antes de tech). No lead o
           vinculo registra INTERESSE; aqui registra HISTORICO DE COMPRA — equivalente, nao copia. */}
       <div id="produtos" className="mt-6">
@@ -718,7 +725,6 @@ export default async function OrganizationDetailPage({
 
       {/* Tech Profile */}
       <div id="tech" className="mt-6">
-        <div id="tech" className="scroll-mt-32" />
         <OrganizationTechProfileSection organizationId={organization.id} />
       </div>
 
@@ -732,7 +738,6 @@ export default async function OrganizationDetailPage({
         <OrganizationICPSection organizationId={organization.id} />
       </div>
 
-      <div id="cnae" className="scroll-mt-32" />
       {/* CNAE Management */}
       <CollapsibleSection id="cnae" icon={<BarChart2 size={14} />} title="Atividades Econômicas (CNAE)" defaultOpen={false}>
         {organization.primaryCNAE && (
