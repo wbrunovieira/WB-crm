@@ -538,9 +538,11 @@ export default async function OrganizationDetailPage({
         </div>
       </div>
 
-      {/* Contacts, Deals, and Projects */}
-      <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <div id="contatos" className="scroll-mt-32" />
+      {/* Contatos e Negocios: EMPILHADOS em largura cheia, igual a pagina do lead.
+          Antes ficavam num grid de 2 colunas cujo primeiro slot era uma ancora vazia — o que
+          deixava um buraco a esquerda, os contatos empurrados para a direita e os negocios com
+          meia largura na linha de baixo. */}
+      <div id="contatos" className="mt-6">
         <OrganizationContactsList
           organizationId={organization.id}
           contacts={organization.contacts.map((c) => ({
@@ -556,12 +558,13 @@ export default async function OrganizationDetailPage({
           }))}
         />
 
-        <div id="negocios" className="scroll-mt-32">
-          <EntityDealsList
-            deals={deals ?? []}
-            newDealHref={`/deals/new?organizationId=${organization.id}&returnTo=/organizations/${organization.id}`}
-          />
-        </div>
+      </div>
+
+      <div id="negocios" className="mt-6">
+        <EntityDealsList
+          deals={deals ?? []}
+          newDealHref={`/deals/new?organizationId=${organization.id}&returnTo=/organizations/${organization.id}`}
+        />
       </div>
 
       {/* Tech Profile */}

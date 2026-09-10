@@ -32,6 +32,10 @@ import { GetOrganizationsUseCase } from "@/domain/organizations/application/use-
 import { GetOrganizationByIdUseCase } from "@/domain/organizations/application/use-cases/get-organization-by-id.use-case";
 import { CreateOrganizationUseCase, type CreateOrganizationInput } from "@/domain/organizations/application/use-cases/create-organization.use-case";
 import { UpdateOrganizationUseCase, type UpdateOrganizationInput } from "@/domain/organizations/application/use-cases/update-organization.use-case";
+import {
+  UpdateOrganizationActivityOrderUseCase,
+  ResetOrganizationActivityOrderUseCase,
+} from "@/domain/organizations/application/use-cases/update-organization-activity-order.use-case";
 import { DeleteOrganizationUseCase } from "@/domain/organizations/application/use-cases/delete-organization.use-case";
 import { LinkExternalProjectUseCase, UnlinkExternalProjectUseCase } from "@/domain/organizations/application/use-cases/link-external-project.use-case";
 import type { Organization } from "@/domain/organizations/enterprise/entities/organization";
@@ -354,6 +358,8 @@ export class OrganizationsController {
     private readonly deleteOrganization: DeleteOrganizationUseCase,
     private readonly linkExternalProject: LinkExternalProjectUseCase,
     private readonly unlinkExternalProject: UnlinkExternalProjectUseCase,
+    private readonly updateActivityOrder: UpdateOrganizationActivityOrderUseCase,
+    private readonly resetActivityOrder: ResetOrganizationActivityOrderUseCase,
   ) {}
 
   @Get()
@@ -502,5 +508,40 @@ export class OrganizationsController {
     });
     if (result.isLeft()) handleError(result);
     return result.value;
+  }
+  /* ─── Ordem manual das atividades ─────────────────────────────────────────
+     Espelho do que a pagina do lead ja fazia. A coluna activityOrder existia nos dois
+     modelos; so a rota da organizacao nunca foi escrita. */
+
+  @Patch(":id/activity-order")
+  @HttpCode(204)
+  @ApiOperation({ summary: "Definir ordem das atividades da organização" })
+  @ApiParam({ name: "id", description: "ID da organização" })
+  @ApiBody({ schema: { properties: { activityIds: { type: "array", items: { type: "string" } } } } })
+  async setActivityOrder(
+    @Param("id") id: string,
+    @Body("activityIds") activityIds: string[],
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    const result = await this.updateActivityOrder.execute({
+      organizationId: id,
+      activityIds,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) handleError(result);
+  }
+
+  @Delete(":id/activity-order")
+  @HttpCode(204)
+  @ApiOperation({ summary: "Resetar ordem das atividades da organização" })
+  @ApiParam({ name: "id", description: "ID da organização" })
+  async resetActivityOrderRoute(@Param("id") id: string, @CurrentUser() user: AuthenticatedUser) {
+    const result = await this.resetActivityOrder.execute({
+      organizationId: id,
+      requesterId: user.id,
+      requesterRole: user.role ?? "sdr",
+    });
+    if (result.isLeft()) handleError(result);
   }
 }

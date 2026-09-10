@@ -1,5 +1,9 @@
 import { Module } from "@nestjs/common";
 import { AuthModule } from "@/infra/auth/auth.module";
+import {
+  UpdateOrganizationActivityOrderUseCase,
+  ResetOrganizationActivityOrderUseCase,
+} from "./application/use-cases/update-organization-activity-order.use-case";
 import { OrganizationsRepository } from "./application/repositories/organizations.repository";
 import { GetOrganizationsUseCase } from "./application/use-cases/get-organizations.use-case";
 import { GetOrganizationByIdUseCase } from "./application/use-cases/get-organization-by-id.use-case";
@@ -14,6 +18,8 @@ import { OrganizationsController } from "@/infra/controllers/organizations.contr
   imports: [AuthModule],
   controllers: [OrganizationsController],
   providers: [
+    UpdateOrganizationActivityOrderUseCase,
+    ResetOrganizationActivityOrderUseCase,
     { provide: OrganizationsRepository, useClass: PrismaOrganizationsRepository },
     GetOrganizationsUseCase,
     GetOrganizationByIdUseCase,
