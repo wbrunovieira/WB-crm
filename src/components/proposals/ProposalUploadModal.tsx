@@ -26,6 +26,7 @@ interface Props {
   leadId?: string;
   dealId?: string;
   partnerId?: string;
+  organizationId?: string;
   onClose: () => void;
   onCreated: (proposal: ProposalResult) => void;
 }
@@ -48,7 +49,7 @@ async function fileToBase64(file: File): Promise<string> {
   });
 }
 
-export default function ProposalUploadModal({ leadId, dealId, partnerId, onClose, onCreated }: Props) {
+export default function ProposalUploadModal({ leadId, dealId, partnerId, organizationId, onClose, onCreated }: Props) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const [title, setTitle] = useState("");
@@ -85,6 +86,7 @@ export default function ProposalUploadModal({ leadId, dealId, partnerId, onClose
           title: title.trim(),
           description: description.trim() || undefined,
           leadId,
+          organizationId,
           dealId,
           partnerId,
           fileName,

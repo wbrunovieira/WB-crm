@@ -30,6 +30,7 @@ function serialize(p: Proposal) {
     leadId: p.leadId,
     dealId: p.dealId,
     partnerId: p.partnerId ?? null,
+    organizationId: p.organizationId ?? null,
     ownerId: p.ownerId,
     agentJobId: p.agentJobId ?? null,
     agentStatus: p.agentStatus ?? null,
@@ -68,10 +69,11 @@ export class ProposalsController {
     @Query("leadId") leadId: string | undefined,
     @Query("dealId") dealId: string | undefined,
     @Query("partnerId") partnerId: string | undefined,
+    @Query("organizationId") organizationId: string | undefined,
     @Query("status") status: string | undefined,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    const r = await this.getProposals.execute({ requesterId: user.id, filters: { leadId, dealId, partnerId, status } });
+    const r = await this.getProposals.execute({ requesterId: user.id, filters: { leadId, dealId, partnerId, organizationId, status } });
     if (r.isLeft()) handleError(r);
     return r.unwrap().map(serialize);
   }
@@ -97,6 +99,7 @@ export class ProposalsController {
     leadId?: string;
     dealId?: string;
     partnerId?: string;
+    organizationId?: string;
   }, @CurrentUser() user: AuthenticatedUser) {
     if (body.fileBase64 && body.fileName && body.fileMimeType) {
       const r = await this.uploadProposal.execute({
@@ -105,6 +108,7 @@ export class ProposalsController {
         leadId: body.leadId,
         dealId: body.dealId,
         partnerId: body.partnerId,
+        organizationId: body.organizationId,
         fileName: body.fileName,
         fileMimeType: body.fileMimeType,
         fileBase64: body.fileBase64,

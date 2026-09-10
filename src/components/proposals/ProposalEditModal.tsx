@@ -10,6 +10,7 @@ import type { Proposal } from "./ProposalsList";
 interface Props {
   proposal: Proposal;
   leadId?: string;
+  organizationId?: string;
   dealId?: string;
   partnerId?: string;
   onClose: () => void;
@@ -38,7 +39,7 @@ async function fileToBase64(file: File): Promise<string> {
   });
 }
 
-export default function ProposalEditModal({ proposal, leadId, dealId, partnerId, onClose, onSaved }: Props) {
+export default function ProposalEditModal({ proposal, leadId, dealId, partnerId, organizationId, onClose, onSaved }: Props) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const [title, setTitle] = useState(proposal.title);
@@ -74,6 +75,7 @@ export default function ProposalEditModal({ proposal, leadId, dealId, partnerId,
           description: description.trim() || undefined,
           status,
           leadId: leadId ?? proposal.leadId,
+          organizationId: organizationId ?? proposal.organizationId,
           dealId: dealId ?? proposal.dealId,
           partnerId: partnerId ?? proposal.partnerId,
           fileName,

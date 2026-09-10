@@ -16,6 +16,9 @@ export interface ProposalProps {
   leadId?: string;
   dealId?: string;
   partnerId?: string;
+  /** Proposta para quem ja e cliente. Antes so existia lead/deal/parceiro, entao proposta
+   *  para cliente so podia ser pendurada no lead arquivado que deu origem a ele. */
+  organizationId?: string;
   ownerId: string;
   // Agent fields
   agentJobId?: string;
@@ -41,6 +44,7 @@ export class Proposal extends AggregateRoot<ProposalProps> {
   get leadId(): string | undefined { return this.props.leadId; }
   get dealId(): string | undefined { return this.props.dealId; }
   get partnerId(): string | undefined { return this.props.partnerId; }
+  get organizationId(): string | undefined { return this.props.organizationId; }
   get ownerId(): string { return this.props.ownerId; }
   get agentJobId(): string | undefined { return this.props.agentJobId; }
   get agentStatus(): string | undefined { return this.props.agentStatus; }
@@ -63,6 +67,7 @@ export class Proposal extends AggregateRoot<ProposalProps> {
     leadId?: string;
     dealId?: string;
     partnerId?: string;
+    organizationId?: string;
     ownerId: string;
     agentJobId?: string;
     agentStatus?: string;
@@ -93,6 +98,7 @@ export class Proposal extends AggregateRoot<ProposalProps> {
       fileSize: data.fileSize,
       sentAt,
       leadId: data.leadId,
+      organizationId: data.organizationId,
       dealId: data.dealId,
       partnerId: data.partnerId,
       ownerId: data.ownerId,

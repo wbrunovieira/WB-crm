@@ -223,6 +223,10 @@ export class PrismaLeadConversionRepository extends LeadConversionRepository {
       const leadId = lead.id.toString();
       await tx.deal.updateMany({ where: { leadId }, data: { organizationId: orgId } });
       await tx.activity.updateMany({ where: { leadId }, data: { organizationId: orgId } });
+      // Propostas tambem: sem isto, tudo o que foi proposto durante a prospeccao ficava preso
+      // no lead ARQUIVADO e a pagina do cliente nascia sem historico comercial nenhum. Mesma
+      // classe do inOperationsAt — dado que existe de um lado e nao atravessa.
+      await tx.proposal.updateMany({ where: { leadId }, data: { organizationId: orgId } });
 
       // 6. Close the lead: converted + archived (the entity owns that transition).
       await tx.lead.update({

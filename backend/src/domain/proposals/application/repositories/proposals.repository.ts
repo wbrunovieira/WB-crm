@@ -4,6 +4,7 @@ export interface ProposalFilters {
   leadId?: string;
   dealId?: string;
   partnerId?: string;
+  organizationId?: string;
   status?: string;
 }
 

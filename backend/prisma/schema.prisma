@@ -153,9 +153,9 @@ model VerificationToken {
 // CRM Models
 
 model Lead {
-  commLanguage String @default("pt") // idioma de comunicação (campanhas/newsletter)
-  id       String  @id @default(cuid())
-  googleId String? @unique
+  commLanguage String  @default("pt") // idioma de comunicação (campanhas/newsletter)
+  id           String  @id @default(cuid())
+  googleId     String? @unique
 
   // Informações Básicas da Empresa
   businessName          String
@@ -397,8 +397,8 @@ model GooglePlacesSearch {
 
 model LeadContact {
   commLanguage String @default("pt") // idioma de comunicação (campanhas/newsletter)
-  id     String @id @default(cuid())
-  leadId String
+  id           String @id @default(cuid())
+  leadId       String
 
   // Informações do Contato
   name      String
@@ -441,7 +441,7 @@ model LeadContact {
 }
 
 model Organization {
-  commLanguage String @default("pt") // idioma de comunicação (campanhas/newsletter)
+  commLanguage   String    @default("pt") // idioma de comunicação (campanhas/newsletter)
   id             String    @id @default(cuid())
   name           String // Nome Fantasia (obrigatório)
   legalName      String? // Razão Social
@@ -485,57 +485,56 @@ model Organization {
   twitter   String?
   tiktok    String?
 
-
   // ── Paridade com o Lead ────────────────────────────────────────────────────
   // Campos herdados na conversão: coordenadas da captura porta a porta, enriquecimento
   // do Google Places, verificação de contato e pesquisa do agente. Sem eles, converter um
   // lead descartava esse histórico — e a ficha do cliente ficava mais pobre que a do
   // prospect que a originou.
 
-  activityOrder            String?
-  agentResearchAt          DateTime?
-  agentSummary             String?
-  agentUpdatedFields       String?
-  businessStatus           String?
-  categories               String?
-  category                 String?
-  emailVerificationReason  String?
-  emailVerificationStatus  String?
-  emailVerified            Boolean?
-  emailVerifiedAt          DateTime?
-  equityCapital            Float?
-  fieldsFilled             Int?
-  googleAds                String?
-  googleId                 String?
-  googleMapsUrl            String?
-  isProspect               Boolean  @default(false)
-  latitude                 Float?
-  longitude                Float?
-  metaAds                  String?
-  notes                    String?
-  openingHours             String?
-  permanentlyClosed        Boolean  @default(false)
-  phone2Type               String?
-  phone2Valid              Boolean?
-  phoneType                String?
-  phoneValid               Boolean?
-  priceLevel               Int?
-  quality                  String?
-  radius                   Int?
-  rating                   Float?
-  searchTerm               String?
-  socialMedia              String?
-  source                   String?
-  starRating               Int?
-  status                   String?
-  types                    String?
-  userRatingsTotal         Int?
-  vicinity                 String?
-  whatsappPhoneType        String?
-  whatsappPhoneValid       Boolean?
-  whatsappVerified         Boolean  @default(false)
-  whatsappVerifiedAt       DateTime?
-  whatsappVerifiedNumber   String?
+  activityOrder           String?
+  agentResearchAt         DateTime?
+  agentSummary            String?
+  agentUpdatedFields      String?
+  businessStatus          String?
+  categories              String?
+  category                String?
+  emailVerificationReason String?
+  emailVerificationStatus String?
+  emailVerified           Boolean?
+  emailVerifiedAt         DateTime?
+  equityCapital           Float?
+  fieldsFilled            Int?
+  googleAds               String?
+  googleId                String?
+  googleMapsUrl           String?
+  isProspect              Boolean   @default(false)
+  latitude                Float?
+  longitude               Float?
+  metaAds                 String?
+  notes                   String?
+  openingHours            String?
+  permanentlyClosed       Boolean   @default(false)
+  phone2Type              String?
+  phone2Valid             Boolean?
+  phoneType               String?
+  phoneValid              Boolean?
+  priceLevel              Int?
+  quality                 String?
+  radius                  Int?
+  rating                  Float?
+  searchTerm              String?
+  socialMedia             String?
+  source                  String?
+  starRating              Int?
+  status                  String?
+  types                   String?
+  userRatingsTotal        Int?
+  vicinity                String?
+  whatsappPhoneType       String?
+  whatsappPhoneValid      Boolean?
+  whatsappVerified        Boolean   @default(false)
+  whatsappVerifiedAt      DateTime?
+  whatsappVerifiedNumber  String?
 
   // Lead tracking
   sourceLeadId String?
@@ -614,6 +613,7 @@ model Organization {
 
   // Activities
   activities Activity[]
+  proposals  Proposal[]
 
   @@index([ownerId])
   @@index([sourceLeadId])
@@ -645,7 +645,7 @@ model Label {
 }
 
 model Contact {
-  commLanguage String @default("pt") // idioma de comunicação (campanhas/newsletter)
+  commLanguage            String    @default("pt") // idioma de comunicação (campanhas/newsletter)
   id                      String    @id @default(cuid())
   name                    String
   email                   String?
@@ -745,19 +745,19 @@ model Stage {
 }
 
 model Deal {
-  id             String    @id @default(cuid())
-  title          String
-  description    String?
-  value          Float     @default(0)
-  currency       String    @default("BRL")
-  status         String    @default("open") // open, won, lost
-  closedAt       DateTime? // When the deal was won/lost
-  stageId        String
-  contactId      String?
-  organizationId String?
-  leadId         String?
+  id                  String    @id @default(cuid())
+  title               String
+  description         String?
+  value               Float     @default(0)
+  currency            String    @default("BRL")
+  status              String    @default("open") // open, won, lost
+  closedAt            DateTime? // When the deal was won/lost
+  stageId             String
+  contactId           String?
+  organizationId      String?
+  leadId              String?
   // Partner as the deal's counterparty (agency buying a service for itself)
-  partnerId      String?
+  partnerId           String?
   // Partner that referred this deal (attribution; the customer may be a lead/org)
   referredByPartnerId String?
 
@@ -774,15 +774,15 @@ model Deal {
   lead              Lead?              @relation(fields: [leadId], references: [id], onDelete: SetNull)
   partner           Partner?           @relation("PartnerDeals", fields: [partnerId], references: [id], onDelete: SetNull)
   referredByPartner Partner?           @relation("PartnerReferredDeals", fields: [referredByPartnerId], references: [id], onDelete: SetNull)
-  activities     Activity[]
-  dealProducts   DealProduct[] // Produtos do Deal
-  dealTechStacks DealTechStack[] // Categorias técnicas (Frontend, Backend, etc)
-  dealLanguages  DealLanguage[] // Linguagens de programação
-  dealFrameworks DealFramework[] // Frameworks utilizados
-  stageHistory   DealStageHistory[] // Histórico de mudanças de etapa
-  valueHistory  DealValueHistory[]
-  proposals      Proposal[] // Propostas vinculadas ao deal
-  meetings       Meeting[] // Reuniões vinculadas ao deal
+  activities        Activity[]
+  dealProducts      DealProduct[] // Produtos do Deal
+  dealTechStacks    DealTechStack[] // Categorias técnicas (Frontend, Backend, etc)
+  dealLanguages     DealLanguage[] // Linguagens de programação
+  dealFrameworks    DealFramework[] // Frameworks utilizados
+  stageHistory      DealStageHistory[] // Histórico de mudanças de etapa
+  valueHistory      DealValueHistory[]
+  proposals         Proposal[] // Propostas vinculadas ao deal
+  meetings          Meeting[] // Reuniões vinculadas ao deal
 
   @@index([ownerId])
   @@index([stageId])
@@ -862,7 +862,7 @@ model Activity {
   // Cadence relation (if activity was generated by a cadence)
   cadenceActivity         LeadCadenceActivity?
   partnerCadenceActivity  PartnerCadenceActivity?
-  gotoCallId              String?              @unique // GoTo conversationSpaceId — previne Activity duplicada
+  gotoCallId              String?                 @unique // GoTo conversationSpaceId — previne Activity duplicada
   gotoRecordingId         String? // GoTo recording ID (agent track)
   gotoRecordingDriveId    String? // (deprecated) Google Drive file ID
   gotoRecordingUrl        String? // S3 key — agent track MP3
@@ -873,14 +873,14 @@ model Activity {
   gotoCallOutcome         String? // answered | voicemail | no_answer | busy | rejected | invalid_number | missed | unknown
   gotoDuration            Int? // Call duration in seconds (from GoTo webhook)
   callContactType         String? // "gatekeeper" | "decisor" — only for type="call"
-  meetingNoShow           Boolean              @default(false) // only for type="meeting"
+  meetingNoShow           Boolean                 @default(false) // only for type="meeting"
   photoKey                String? // S3 key — foto da fachada anexada à visita (app mobile)
-  emailMessageId          String?              @unique // Gmail Message-ID — previne Activity duplicada
+  emailMessageId          String?                 @unique // Gmail Message-ID — previne Activity duplicada
   emailThreadId           String? // Gmail Thread-ID — para agrupar e responder na mesma thread
   emailSubject            String? // Assunto do e-mail (para busca e exibição)
   emailFromAddress        String? // E-mail do remetente (para reply em e-mails recebidos)
   emailFromName           String? // Nome do remetente
-  emailReplied            Boolean              @default(false) // false = aguardando resposta; true = já respondido
+  emailReplied            Boolean                 @default(false) // false = aguardando resposta; true = já respondido
 
   // Email tracking — abertura (pixel) e clique em links
   emailTrackingToken     String?   @unique // Token único por e-mail enviado
@@ -916,10 +916,10 @@ model Activity {
 // PENDING vencidos; uma resposta do lead/contato cancela os pendentes.
 // (Distinto de ScheduledEmail, que são lembretes de reunião.)
 model ScheduledEmailSend {
-  id              String    @id @default(cuid())
+  id              String   @id @default(cuid())
   ownerId         String
-  activityId      String?   @unique // atividade "agendada" criada junto (concluída ao enviar)
-  status          String    @default("PENDING") // PENDING | SENT | CANCELLED | FAILED
+  activityId      String?  @unique // atividade "agendada" criada junto (concluída ao enviar)
+  status          String   @default("PENDING") // PENDING | SENT | CANCELLED | FAILED
   scheduledSendAt DateTime
 
   to              String
@@ -929,19 +929,19 @@ model ScheduledEmailSend {
   threadId        String?
   attachmentsJson String? // JSON: [{filename, mimeType, data(base64), size}]
 
-  leadId          String?
-  contactId       String? // contato principal (usado para cancelar ao responder)
-  contactIdsJson  String? // JSON: todos os contatos (passados ao envio)
-  organizationId  String?
-  dealId          String?
+  leadId         String?
+  contactId      String? // contato principal (usado para cancelar ao responder)
+  contactIdsJson String? // JSON: todos os contatos (passados ao envio)
+  organizationId String?
+  dealId         String?
 
-  sentMessageId   String?
-  sentThreadId    String?
-  failReason      String?
+  sentMessageId String?
+  sentThreadId  String?
+  failReason    String?
 
-  createdAt       DateTime  @default(now())
-  sentAt          DateTime?
-  cancelledAt     DateTime?
+  createdAt   DateTime  @default(now())
+  sentAt      DateTime?
+  cancelledAt DateTime?
 
   @@index([status, scheduledSendAt])
   @@index([ownerId])
@@ -1074,7 +1074,7 @@ model GatekeeperBatch {
 
 model Partner {
   commLanguage String @default("pt") // idioma de comunicação (campanhas/newsletter)
-  id String @id @default(cuid())
+  id           String @id @default(cuid())
 
   // Informações da Empresa Parceira
   name           String // Nome da empresa parceira
@@ -1140,16 +1140,16 @@ model Partner {
   updatedAt DateTime @updatedAt
 
   // Relations
-  owner                 User             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  owner                 User                   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   contacts              Contact[] // Contatos da empresa parceira
   activities            Activity[]
   meetings              Meeting[]
-  referredLeads         Lead[]           @relation("PartnerReferrals")
-  referredOrganizations Organization[]   @relation("OrganizationReferrals")
+  referredLeads         Lead[]                 @relation("PartnerReferrals")
+  referredOrganizations Organization[]         @relation("OrganizationReferrals")
   partnerProducts       PartnerProduct[] // Produtos/serviços do parceiro
-  deals                 Deal[]           @relation("PartnerDeals") // Negócios com o parceiro (parceiro-cliente)
-  referredDeals         Deal[]           @relation("PartnerReferredDeals") // Negócios indicados pelo parceiro
-  proposals             Proposal[]       @relation("PartnerProposals") // Propostas para o parceiro
+  deals                 Deal[]                 @relation("PartnerDeals") // Negócios com o parceiro (parceiro-cliente)
+  referredDeals         Deal[]                 @relation("PartnerReferredDeals") // Negócios indicados pelo parceiro
+  proposals             Proposal[]             @relation("PartnerProposals") // Propostas para o parceiro
   primaryCNAE           CNAE?                  @relation("PartnerPrimaryCNAE", fields: [primaryCNAEId], references: [id], onDelete: SetNull)
   secondaryCNAEs        PartnerSecondaryCNAE[]
   sectors               PartnerSector[]
@@ -1494,7 +1494,7 @@ model TechProfileFramework {
   // Relations
   leadFrameworks         LeadFramework[]
   organizationFrameworks OrganizationFramework[]
-  partnerFrameworks     PartnerFramework[]
+  partnerFrameworks      PartnerFramework[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1516,7 +1516,7 @@ model TechProfileHosting {
   // Relations
   leadHosting         LeadHosting[]
   organizationHosting OrganizationHosting[]
-  partnerHosting        PartnerHosting[]
+  partnerHosting      PartnerHosting[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1561,7 +1561,7 @@ model TechProfileERP {
   // Relations
   leadERPs         LeadERP[]
   organizationERPs OrganizationERP[]
-  partnerERPs           PartnerERP[]
+  partnerERPs      PartnerERP[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1582,7 +1582,7 @@ model TechProfileCRM {
   // Relations
   leadCRMs         LeadCRM[]
   organizationCRMs OrganizationCRM[]
-  partnerCRMs           PartnerCRM[]
+  partnerCRMs      PartnerCRM[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1603,7 +1603,7 @@ model TechProfileEcommerce {
   // Relations
   leadEcommerces         LeadEcommerce[]
   organizationEcommerces OrganizationEcommerce[]
-  partnerEcommerces     PartnerEcommerce[]
+  partnerEcommerces      PartnerEcommerce[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1871,13 +1871,13 @@ model OrganizationEcommerce {
 // ============ PARTNER TECH PROFILE (junctions, mirror Organization*) ============
 
 model PartnerLanguage {
-  id             String @id @default(cuid())
-  partnerId String
-  languageId     String
+  id         String @id @default(cuid())
+  partnerId  String
+  languageId String
 
   // Relations
-  partner      Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  language     TechProfileLanguage @relation(fields: [languageId], references: [id], onDelete: Cascade)
+  partner  Partner             @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  language TechProfileLanguage @relation(fields: [languageId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1889,13 +1889,13 @@ model PartnerLanguage {
 }
 
 model PartnerFramework {
-  id             String @id @default(cuid())
-  partnerId String
-  frameworkId    String
+  id          String @id @default(cuid())
+  partnerId   String
+  frameworkId String
 
   // Relations
-  partner      Partner         @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  framework    TechProfileFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
+  partner   Partner              @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  framework TechProfileFramework @relation(fields: [frameworkId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1907,13 +1907,13 @@ model PartnerFramework {
 }
 
 model PartnerHosting {
-  id             String @id @default(cuid())
+  id        String @id @default(cuid())
   partnerId String
-  hostingId      String
+  hostingId String
 
   // Relations
-  partner      Partner       @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  hosting      TechProfileHosting @relation(fields: [hostingId], references: [id], onDelete: Cascade)
+  partner Partner            @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  hosting TechProfileHosting @relation(fields: [hostingId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1925,13 +1925,13 @@ model PartnerHosting {
 }
 
 model PartnerDatabase {
-  id             String @id @default(cuid())
-  partnerId String
-  databaseId     String
+  id         String @id @default(cuid())
+  partnerId  String
+  databaseId String
 
   // Relations
-  partner      Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  database     TechProfileDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
+  partner  Partner             @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  database TechProfileDatabase @relation(fields: [databaseId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1943,13 +1943,13 @@ model PartnerDatabase {
 }
 
 model PartnerERP {
-  id             String @id @default(cuid())
+  id        String @id @default(cuid())
   partnerId String
-  erpId          String
+  erpId     String
 
   // Relations
-  partner      Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  erp          TechProfileERP @relation(fields: [erpId], references: [id], onDelete: Cascade)
+  partner Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  erp     TechProfileERP @relation(fields: [erpId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1961,13 +1961,13 @@ model PartnerERP {
 }
 
 model PartnerCRM {
-  id             String @id @default(cuid())
+  id        String @id @default(cuid())
   partnerId String
-  crmId          String
+  crmId     String
 
   // Relations
-  partner      Partner   @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  crm          TechProfileCRM @relation(fields: [crmId], references: [id], onDelete: Cascade)
+  partner Partner        @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  crm     TechProfileCRM @relation(fields: [crmId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1979,13 +1979,13 @@ model PartnerCRM {
 }
 
 model PartnerEcommerce {
-  id             String @id @default(cuid())
-  partnerId String
-  ecommerceId    String
+  id          String @id @default(cuid())
+  partnerId   String
+  ecommerceId String
 
   // Relations
-  partner      Partner         @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  ecommerce    TechProfileEcommerce @relation(fields: [ecommerceId], references: [id], onDelete: Cascade)
+  partner   Partner              @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  ecommerce TechProfileEcommerce @relation(fields: [ecommerceId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2301,13 +2301,13 @@ model OrganizationICP {
 }
 
 model PartnerICP {
-  id             String   @id @default(cuid())
-  partnerId String
-  icpId          String
-  matchScore     Int? // Score de fit (0-100)
-  notes          String? // Observações do link
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id         String   @id @default(cuid())
+  partnerId  String
+  icpId      String
+  matchScore Int? // Score de fit (0-100)
+  notes      String? // Observações do link
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   // Essential Fields
   icpFitStatus           String? // ideal, partial, out_of_icp
@@ -2331,7 +2331,7 @@ model PartnerICP {
 
   // Relations
   partner Partner @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  icp          ICP          @relation(fields: [icpId], references: [id], onDelete: Cascade)
+  icp     ICP     @relation(fields: [icpId], references: [id], onDelete: Cascade)
 
   @@unique([partnerId, icpId])
   @@index([partnerId])
@@ -2497,7 +2497,7 @@ model LeadCadenceActivity {
 
 model PartnerCadence {
   id        String @id @default(cuid())
-  partnerId    String
+  partnerId String
   cadenceId String
 
   // Execution tracking
@@ -2521,9 +2521,9 @@ model PartnerCadence {
   updatedAt DateTime @updatedAt
 
   // Relations
-  owner      User                  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  partner    Partner               @relation(fields: [partnerId], references: [id], onDelete: Cascade)
-  cadence    Cadence               @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
+  owner      User                     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  partner    Partner                  @relation(fields: [partnerId], references: [id], onDelete: Cascade)
+  cadence    Cadence                  @relation(fields: [cadenceId], references: [id], onDelete: Cascade)
   activities PartnerCadenceActivity[]
 
   @@unique([partnerId, cadenceId])
@@ -2533,11 +2533,12 @@ model PartnerCadence {
   @@index([status])
   @@map("partner_cadences")
 }
+
 model PartnerCadenceActivity {
-  id            String @id @default(cuid())
+  id               String @id @default(cuid())
   partnerCadenceId String
-  cadenceStepId String
-  activityId    String @unique
+  cadenceStepId    String
+  activityId       String @unique
 
   // Tracking
   scheduledDate DateTime // The calculated due date
@@ -2546,8 +2547,8 @@ model PartnerCadenceActivity {
 
   // Relations
   partnerCadence PartnerCadence @relation(fields: [partnerCadenceId], references: [id], onDelete: Cascade)
-  cadenceStep CadenceStep @relation(fields: [cadenceStepId], references: [id], onDelete: Cascade)
-  activity    Activity    @relation(fields: [activityId], references: [id], onDelete: Cascade)
+  cadenceStep    CadenceStep    @relation(fields: [cadenceStepId], references: [id], onDelete: Cascade)
+  activity       Activity       @relation(fields: [activityId], references: [id], onDelete: Cascade)
 
   @@index([partnerCadenceId])
   @@index([cadenceStepId])
@@ -2603,17 +2604,20 @@ model Proposal {
   revisionNumber       Int?
   originalProposalId   String?
   partnerId            String? // Proposta endereçada a um parceiro (parceiro-cliente)
+  organizationId       String? // Proposta para quem já é cliente (não só lead)
   createdAt            DateTime  @default(now())
   updatedAt            DateTime  @updatedAt
 
-  lead    Lead?    @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  deal    Deal?    @relation(fields: [dealId], references: [id], onDelete: SetNull)
-  partner Partner? @relation("PartnerProposals", fields: [partnerId], references: [id], onDelete: SetNull)
-  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  lead         Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  deal         Deal?         @relation(fields: [dealId], references: [id], onDelete: SetNull)
+  partner      Partner?      @relation("PartnerProposals", fields: [partnerId], references: [id], onDelete: SetNull)
+  organization Organization? @relation(fields: [organizationId], references: [id], onDelete: SetNull)
+  owner        User          @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([leadId])
   @@index([dealId])
   @@index([partnerId])
+  @@index([organizationId])
   @@index([ownerId])
   @@map("proposals")
 }
@@ -3247,19 +3251,19 @@ model BookingType {
 }
 
 model BookingLink {
-  id            String    @id @default(cuid())
-  token         String    @unique
-  ownerId       String
-  bookingTypeId String
-  leadId        String?
-  contactId     String?
-  partnerId     String?
-  label         String?
-  active        Boolean   @default(true)
-  isDefaultPublic Boolean @default(false) // served at the token-less /book URL
-  expiresAt     DateTime?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  token           String    @unique
+  ownerId         String
+  bookingTypeId   String
+  leadId          String?
+  contactId       String?
+  partnerId       String?
+  label           String?
+  active          Boolean   @default(true)
+  isDefaultPublic Boolean   @default(false) // served at the token-less /book URL
+  expiresAt       DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([ownerId])
   @@index([leadId])

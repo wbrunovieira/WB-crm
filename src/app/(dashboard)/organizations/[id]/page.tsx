@@ -9,6 +9,8 @@ import { PhoneLink } from "@/components/ui/phone-link";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { OrganizationProjects } from "@/components/organizations/OrganizationProjects";
 import { EntityActivitiesList } from "@/components/shared/EntityActivitiesList";
+import ProposalsList from "@/components/proposals/ProposalsList";
+import type { Proposal } from "@/components/proposals/ProposalsList";
 import { OrganizationTechProfileSection } from "@/components/organizations/OrganizationTechProfileSection";
 import { OrganizationICPSection } from "@/components/icps/OrganizationICPSection";
 import { OrganizationSectorSection } from "@/components/sectors/OrganizationSectorSection";
@@ -36,7 +38,7 @@ export default async function OrganizationDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [organization, session, meetings, deals, callAnalyses, meetAnalyses, gkAnalyses] = await Promise.all([
+  const [organization, session, meetings, deals, callAnalyses, meetAnalyses, gkAnalyses, proposals] = await Promise.all([
     backendFetch<Organization>(`/organizations/${params.id}`).catch(() => null),
     getServerSession(authOptions),
     backendFetch<Meeting[]>(`/meetings?organizationId=${params.id}`).catch((): Meeting[] => []),
@@ -48,6 +50,7 @@ export default async function OrganizationDetailPage({
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/call-analysis").catch(() => []),
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/meet-analysis").catch(() => []),
     backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/gatekeeper-analysis").catch(() => []),
+    backendFetch<Proposal[]>(`/proposals?organizationId=${params.id}`).catch((): Proposal[] => []),
   ]);
 
   // As rotas de analise sao agnosticas de entidade (devolvem tudo, indexado por activityId),
@@ -132,6 +135,7 @@ export default async function OrganizationDetailPage({
               { href: "#atividades", icon: <Activity size={11} />, label: "Atividades" },
               { href: "#reunioes", icon: <Video size={11} />, label: "Reuniões" },
               { href: "#negocios", icon: <TrendingUp size={11} />, label: "Negócios" },
+              { href: "#propostas", icon: <FileText size={11} />, label: "Propostas" },
               { href: "#google-places", icon: <MapPin size={11} />, label: "Google" },
               { href: "#projetos", icon: <FileText size={11} />, label: "Projetos" },
             ].map(({ href, icon, label }) => (
@@ -783,6 +787,13 @@ export default async function OrganizationDetailPage({
           deals={deals ?? []}
           newDealHref={`/deals/new?organizationId=${organization.id}&returnTo=/organizations/${organization.id}`}
         />
+      </div>
+
+      {/* Propostas: mesma posicao da pagina do lead (depois de negocios). O vinculo com
+          organizacao so passou a existir em 10/09/2026 — antes, proposta para quem ja era
+          cliente so podia ser pendurada no lead arquivado. */}
+      <div id="propostas" className="mt-6">
+        <ProposalsList proposals={proposals ?? []} organizationId={organization.id} />
       </div>
 
       {/* Projects */}

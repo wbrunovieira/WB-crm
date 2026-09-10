@@ -52,6 +52,7 @@ export interface Proposal {
   sentAt: string | Date | null;
   createdAt: string | Date;
   leadId?: string | null;
+  organizationId?: string | null;
   dealId?: string | null;
   partnerId?: string | null;
   // Agent fields
@@ -69,6 +70,9 @@ interface Props {
   leadId?: string;
   dealId?: string;
   partnerId?: string;
+  /** Proposta para quem ja e cliente. O vinculo com organizacao so passou a existir em
+   *  10/09/2026 (migracao proposal_organization); antes so havia lead/deal/parceiro. */
+  organizationId?: string;
   leadContacts?: LeadContact[];
 }
 
@@ -117,7 +121,7 @@ function formatBytes(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function ProposalsList({ proposals: initial, leadId, dealId, partnerId, leadContacts = [] }: Props) {
+export default function ProposalsList({ proposals: initial, leadId, dealId, partnerId, organizationId, leadContacts = [] }: Props) {
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const router = useRouter();
@@ -519,6 +523,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, part
           leadId={leadId}
           dealId={dealId}
           partnerId={partnerId}
+          organizationId={organizationId}
           onClose={() => setShowModal(false)}
           onCreated={handleCreated}
         />
@@ -530,6 +535,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, part
           leadId={leadId}
           dealId={dealId}
           partnerId={partnerId}
+          organizationId={organizationId}
           onClose={() => setEditing(null)}
           onSaved={handleSaved}
         />

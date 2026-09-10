@@ -37,6 +37,7 @@ beforeAll(async () => {
 
 afterEach(async () => {
   // Deals and activities first: they hold FKs to lead/organization.
+  await prisma.proposal.deleteMany({ where: { ownerId } });
   await prisma.deal.deleteMany({ where: { ownerId } });
   await prisma.activity.deleteMany({ where: { ownerId } });
   await prisma.leadContact.deleteMany({ where: { lead: { ownerId } } });
@@ -411,5 +412,50 @@ describe("POST /leads/:id/convert (e2e)", () => {
 
     const org = await prisma.organization.findUnique({ where: { id: res.body.organizationId } });
     expect(org?.inOperationsAt).toBeNull();
+  });
+
+  it("leva as propostas do lead para a organizacao", async () => {
+    // Sem isto, tudo o que foi proposto durante a prospeccao ficava preso no lead arquivado e
+    // a pagina do cliente nascia sem historico comercial. Mesma classe do inOperationsAt.
+    const lead = await prisma.lead.create({
+      data: { ownerId, businessName: `E2E Propostas ${Date.now()}` },
+    });
+    const proposta = await prisma.proposal.create({
+      data: { ownerId, title: "Proposta do site", leadId: lead.id, status: "sent" },
+    });
+
+    const res = await request(app.getHttpServer())
+      .post(`/leads/${lead.id}/convert`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const salva = await prisma.proposal.findUnique({ where: { id: proposta.id } });
+    expect(salva?.organizationId).toBe(res.body.organizationId);
+    // O leadId permanece: a organizacao mantem o rastro de onde a proposta nasceu.
+    expect(salva?.leadId).toBe(lead.id);
+  });
+
+  it("GET /proposals?organizationId= devolve as propostas do cliente", async () => {
+    const lead = await prisma.lead.create({
+      data: { ownerId, businessName: `E2E Filtro ${Date.now()}` },
+    });
+    await prisma.proposal.create({
+      data: { ownerId, title: "Proposta filtrada", leadId: lead.id, status: "draft" },
+    });
+
+    const conv = await request(app.getHttpServer())
+      .post(`/leads/${lead.id}/convert`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const lista = await request(app.getHttpServer())
+      .get(`/proposals?organizationId=${conv.body.organizationId}`)
+      .set("Authorization", `Bearer ${token}`)
+      .expect(200);
+
+    const titulos = (lista.body as { title: string; organizationId: string | null }[]).map((p) => p.title);
+    expect(titulos).toContain("Proposta filtrada");
+    // O campo precisa VOLTAR na leitura, nao so ser gravado.
+    expect(lista.body[0].organizationId).toBe(conv.body.organizationId);
   });
 });
