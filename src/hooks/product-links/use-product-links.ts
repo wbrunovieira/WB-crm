@@ -15,6 +15,21 @@ export interface ProductLink {
   status?: string;
 }
 
+/** Espelha exatamente o que GET /organizations/:id/products devolve (ver
+ *  prisma-product-links.repository.ts:41). Diferente do lead: aqui e historico de COMPRA. */
+export interface OrganizationProductLink {
+  id: string;
+  organizationId: string;
+  productId: string;
+  productName: string;
+  status: string;
+  firstPurchaseAt?: string | null;
+  lastPurchaseAt?: string | null;
+  totalPurchases: number;
+  totalRevenue: number;
+  notes?: string | null;
+}
+
 export interface PartnerProductLink {
   id: string;
   productId: string;
@@ -31,6 +46,7 @@ export const productLinkKeys = {
   lead: (leadId: string) => ["product-links", "lead", leadId] as const,
   deal: (dealId: string) => ["product-links", "deal", dealId] as const,
   partner: (partnerId: string) => ["product-links", "partner", partnerId] as const,
+  organization: (orgId: string) => ["product-links", "organization", orgId] as const,
 };
 
 export function usePartnerProducts(partnerId: string) {
@@ -115,5 +131,40 @@ export function useRemoveDealProduct() {
     mutationFn: ({ dealId, productId }: { dealId: string; productId: string }) =>
       apiFetch<void>(`/deals/${dealId}/products/${productId}`, token, { method: "DELETE" }),
     onSuccess: (_d, { dealId }) => qc.invalidateQueries({ queryKey: productLinkKeys.deal(dealId) }),
+  });
+}
+
+/** Produtos de um CLIENTE. As rotas ja existiam no backend (organizations/:id/products, os
+ *  quatro verbos) — faltavam os hooks e a secao na tela. Diferente do lead, aqui o vinculo e
+ *  historico de COMPRA (status, primeira/ultima compra, receita), nao interesse. */
+export function useOrganizationProducts(organizationId: string) {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  return useQuery({
+    queryKey: productLinkKeys.organization(organizationId),
+    queryFn: () => apiFetch<OrganizationProductLink[]>(`/organizations/${organizationId}/products`, token),
+    enabled: !!token && !!organizationId,
+  });
+}
+
+export function useAddOrganizationProduct() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ organizationId, productId, ...body }: { organizationId: string; productId: string; notes?: string; status?: string }) =>
+      apiFetch<OrganizationProductLink>(`/organizations/${organizationId}/products/${productId}`, token, { method: "POST", body: JSON.stringify(body) }),
+    onSuccess: (_d, { organizationId }) => qc.invalidateQueries({ queryKey: productLinkKeys.organization(organizationId) }),
+  });
+}
+
+export function useRemoveOrganizationProduct() {
+  const { data: session } = useSession();
+  const token = session?.user?.accessToken ?? "";
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ organizationId, productId }: { organizationId: string; productId: string }) =>
+      apiFetch<void>(`/organizations/${organizationId}/products/${productId}`, token, { method: "DELETE" }),
+    onSuccess: (_d, { organizationId }) => qc.invalidateQueries({ queryKey: productLinkKeys.organization(organizationId) }),
   });
 }

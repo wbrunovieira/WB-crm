@@ -9,6 +9,7 @@ import { PhoneLink } from "@/components/ui/phone-link";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { OrganizationProjects } from "@/components/organizations/OrganizationProjects";
 import { EntityActivitiesList } from "@/components/shared/EntityActivitiesList";
+import { OrganizationProductsSection } from "@/components/organizations/OrganizationProductsSection";
 import ProposalsList from "@/components/proposals/ProposalsList";
 import type { Proposal } from "@/components/proposals/ProposalsList";
 import { OrganizationTechProfileSection } from "@/components/organizations/OrganizationTechProfileSection";
@@ -23,7 +24,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { OrganizationContactsList } from "@/components/organizations/OrganizationContactsList";
 import Link from "next/link";
-import { Building2, Phone, MapPin, Share2, Globe, BarChart2, ShieldCheck, Users, TrendingUp, Video, Activity, FileText, BrainCircuit } from "lucide-react";
+import { Building2, Phone, MapPin, Share2, Globe, BarChart2, ShieldCheck, Users, TrendingUp, Video, Activity, FileText, BrainCircuit, Package } from "lucide-react";
 import { notFound } from "next/navigation";
 import { formatDate } from "@/lib/utils";
 import { LanguageBadges } from "@/components/shared/LanguageSelector";
@@ -136,6 +137,7 @@ export default async function OrganizationDetailPage({
               { href: "#reunioes", icon: <Video size={11} />, label: "Reuniões" },
               { href: "#negocios", icon: <TrendingUp size={11} />, label: "Negócios" },
               { href: "#propostas", icon: <FileText size={11} />, label: "Propostas" },
+              { href: "#produtos", icon: <Package size={11} />, label: "Produtos" },
               { href: "#google-places", icon: <MapPin size={11} />, label: "Google" },
               { href: "#projetos", icon: <FileText size={11} />, label: "Projetos" },
             ].map(({ href, icon, label }) => (
@@ -707,6 +709,12 @@ export default async function OrganizationDetailPage({
           />
         </CollapsibleSection>
       )}
+
+      {/* Produtos: mesma posicao da pagina do lead (depois de acesso, antes de tech). No lead o
+          vinculo registra INTERESSE; aqui registra HISTORICO DE COMPRA — equivalente, nao copia. */}
+      <div id="produtos" className="mt-6">
+        <OrganizationProductsSection organizationId={organization.id} />
+      </div>
 
       {/* Tech Profile */}
       <div id="tech" className="mt-6">
