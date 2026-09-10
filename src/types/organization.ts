@@ -28,22 +28,39 @@ export interface OrganizationActivity {
   type: string;
   subject: string;
   description: string | null;
-  dueDate: Date | string | null;
+  dueDate: string | null;
   completed: boolean;
-  completedAt: Date | string | null;
-  failedAt: Date | string | null;
+  completedAt: string | null;
+  failedAt: string | null;
   failReason: string | null;
-  skippedAt: Date | string | null;
+  skippedAt: string | null;
   skipReason: string | null;
   emailOpenCount: number;
-  emailOpenedAt: Date | string | null;
+  emailOpenedAt: string | null;
   emailLinkClickCount: number;
-  emailLinkClickedAt: Date | string | null;
+  emailLinkClickedAt: string | null;
   emailCampaignSendId: string | null;
   emailCampaignId: string | null;
-  createdAt: Date | string;
+  createdAt: string;
   deal: { title: string } | null;
   contact: { name: string } | null;
+  // Espelho do tipo Activity do lead: a pagina da organizacao usa a MESMA timeline, e sem
+  // estes campos ela caia numa versao pobre (sem gravacao, sem transcricao, sem thread).
+  contactId?: string | null;
+  leadContactIds?: string | null;
+  callContactType?: string | null;
+  gotoCallId?: string | null;
+  gotoCallOutcome?: string | null;
+  gotoDuration?: number | null;
+  gotoRecordingUrl?: string | null;
+  gotoRecordingUrl2?: string | null;
+  gotoTranscriptText?: string | null;
+  emailThreadId?: string | null;
+  emailSubject?: string | null;
+  emailFromAddress?: string | null;
+  emailFromName?: string | null;
+  emailReplied?: boolean;
+  photoKey?: string | null;
 }
 
 export interface Organization {

@@ -33,7 +33,7 @@ import { ConvertLeadButton } from "@/components/leads/ConvertLeadButton";
 import { DeleteLeadButton } from "@/components/leads/DeleteLeadButton";
 import { ArchiveLeadButton } from "@/components/leads/ArchiveLeadButton";
 import { LeadContactsList } from "@/components/leads/LeadContactsList";
-import { LeadActivitiesList } from "@/components/leads/LeadActivitiesList";
+import { EntityActivitiesList } from "@/components/shared/EntityActivitiesList";
 import { LeadProductsSection } from "@/components/leads/LeadProductsSection";
 import { LeadTechProfileSection } from "@/components/leads/LeadTechProfileSection";
 import { LeadICPSection } from "@/components/icps/LeadICPSection";
@@ -880,8 +880,9 @@ export default async function LeadDetailPage({
         <div className="mb-3 flex justify-end">
           <GmailSyncButton revalidateUrl={`/leads/${lead.id}`} />
         </div>
-        <LeadActivitiesList
-          leadId={lead.id}
+        <EntityActivitiesList
+          entityId={lead.id}
+          entityType="lead"
           activities={lead.activities ?? []}
           activityOrder={lead.activityOrder ?? null}
           callAnalysesMap={callAnalysesMap}

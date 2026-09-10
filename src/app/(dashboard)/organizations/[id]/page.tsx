@@ -8,7 +8,7 @@ import GmailSyncButton from "@/components/gmail/GmailSyncButton";
 import { PhoneLink } from "@/components/ui/phone-link";
 import { DeleteOrganizationButton } from "@/components/organizations/DeleteOrganizationButton";
 import { OrganizationProjects } from "@/components/organizations/OrganizationProjects";
-import { OrganizationActivities } from "@/components/organizations/OrganizationActivities";
+import { EntityActivitiesList } from "@/components/shared/EntityActivitiesList";
 import { OrganizationTechProfileSection } from "@/components/organizations/OrganizationTechProfileSection";
 import { OrganizationICPSection } from "@/components/icps/OrganizationICPSection";
 import { OrganizationSectorSection } from "@/components/sectors/OrganizationSectorSection";
@@ -36,7 +36,7 @@ export default async function OrganizationDetailPage({
 }: {
   params: { id: string };
 }) {
-  const [organization, session, meetings, deals] = await Promise.all([
+  const [organization, session, meetings, deals, callAnalyses, meetAnalyses, gkAnalyses] = await Promise.all([
     backendFetch<Organization>(`/organizations/${params.id}`).catch(() => null),
     getServerSession(authOptions),
     backendFetch<Meeting[]>(`/meetings?organizationId=${params.id}`).catch((): Meeting[] => []),
@@ -45,7 +45,26 @@ export default async function OrganizationDetailPage({
     backendFetch<{ id: string; title: string; value: number; currency: string; status: string; stage: { id: string; name: string; pipeline?: { id: string; name: string } } | null; contact: { id: string; name: string } | null; _count: { activities: number } }[]>(
       `/deals?organizationId=${params.id}&closedMonth=all`,
     ).catch(() => []),
+    backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/call-analysis").catch(() => []),
+    backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/meet-analysis").catch(() => []),
+    backendFetch<{ id: string; activityId: string; score: number | null; status: string }[]>("/gatekeeper-analysis").catch(() => []),
   ]);
+
+  // As rotas de analise sao agnosticas de entidade (devolvem tudo, indexado por activityId),
+  // entao a organizacao monta os mesmos mapas que o lead — sem isso a timeline dela ficaria
+  // sem os selos de analise de ligacao, reuniao e gatekeeper.
+  const callAnalysesMap = Object.fromEntries(
+    callAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
+  );
+  const meetAnalysesMap = Object.fromEntries(
+    meetAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
+  );
+  const gkAnalysesMap = Object.fromEntries(
+    gkAnalyses.map((a) => [a.activityId, { id: a.id, score: a.score, status: a.status }])
+  );
+  const meetTranscriptActivityIds = new Set(
+    (meetings ?? []).filter((m) => m.transcriptText && m.activityId).map((m) => m.activityId!)
+  );
 
   if (!organization) {
     notFound();
@@ -647,9 +666,22 @@ export default async function OrganizationDetailPage({
           <GmailSyncButton revalidateUrl={`/organizations/${organization.id}`} />
         </div>
         <div id="atividades" className="scroll-mt-32" />
-        <OrganizationActivities
+        <EntityActivitiesList
+          entityId={organization.id}
+          entityType="organization"
           activities={organization.activities}
-          organizationId={organization.id}
+          activityOrder={organization.activityOrder ?? null}
+          callAnalysesMap={callAnalysesMap}
+          meetAnalysesMap={meetAnalysesMap}
+          meetTranscriptActivityIds={meetTranscriptActivityIds}
+          gkAnalysesMap={gkAnalysesMap}
+          leadContacts={(organization.contacts ?? []).map((c) => ({
+            id: c.id,
+            name: c.name,
+            role: c.role ?? null,
+            isPrimary: c.isPrimary ?? false,
+            isActive: true,
+          }))}
         />
       </div>
 

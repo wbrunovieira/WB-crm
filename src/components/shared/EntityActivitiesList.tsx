@@ -33,13 +33,14 @@ import type {
   CallAnalysisSummary,
   MeetAnalysisSummary,
   GkAnalysisSummary,
-} from "./activities/activity-types";
-import { ActivityTypeIcon } from "./activities/activity-icons";
-import { groupUnproductiveCalls, CallGroupCard } from "./activities/call-grouping";
+} from "@/components/leads/activities/activity-types";
+import { ActivityTypeIcon } from "@/components/leads/activities/activity-icons";
+import { groupUnproductiveCalls, CallGroupCard } from "@/components/leads/activities/call-grouping";
 
-import { SortableActivityItem } from "./activities/SortableActivityItem";
-export function LeadActivitiesList({
-  leadId,
+import { SortableActivityItem } from "@/components/leads/activities/SortableActivityItem";
+export function EntityActivitiesList({
+  entityId,
+  entityType = "lead",
   activities,
   activityOrder,
   leadContacts = [],
@@ -48,7 +49,10 @@ export function LeadActivitiesList({
   meetTranscriptActivityIds,
   gkAnalysesMap = {},
 }: {
-  leadId: string;
+  /** Id do lead OU da organizacao — a timeline e a mesma para os dois. */
+  entityId: string;
+  /** Decide as rotas e quais acoes existem. Cadencia so existe em lead. */
+  entityType?: "lead" | "organization";
   activities: Activity[];
   activityOrder?: string | null;
   leadContacts?: LeadContact[];
@@ -57,6 +61,11 @@ export function LeadActivitiesList({
   meetTranscriptActivityIds?: Set<string>;
   gkAnalysesMap?: Record<string, GkAnalysisSummary>;
 }) {
+  // Uma variavel so decide rota e link: o resto do componente e identico para os dois lados,
+  // que e justamente o ponto de compartilha-lo em vez de manter duas timelines divergindo.
+  const base = entityType === "lead" ? "leads" : "organizations";
+  const ehLead = entityType === "lead";
+
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
   const isAdmin = session?.user?.role === "admin";
@@ -219,7 +228,7 @@ export function LeadActivitiesList({
 
     setSavingOrder(true);
     try {
-      await apiFetch(`/leads/${leadId}/activity-order`, token, { method: "PATCH", body: JSON.stringify({ activityIds: newOrder.map((a) => a.id) }) });
+      await apiFetch(`/${base}/${entityId}/activity-order`, token, { method: "PATCH", body: JSON.stringify({ activityIds: newOrder.map((a) => a.id) }) });
       router.refresh();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Erro ao salvar ordem");
@@ -232,7 +241,7 @@ export function LeadActivitiesList({
   const handleResetOrder = async () => {
     setSavingOrder(true);
     try {
-      await apiFetch(`/leads/${leadId}/activity-order`, token, { method: "DELETE" });
+      await apiFetch(`/${base}/${entityId}/activity-order`, token, { method: "DELETE" });
       toast.success("Ordem restaurada por data");
       router.refresh();
     } catch (err) {
@@ -408,7 +417,7 @@ export function LeadActivitiesList({
     setReplyLoading(true);
     try {
       const result = await apiFetch<{ activityId: string; cancelledCadences: number; skippedActivities: number }>(
-        `/cadences/lead/${leadId}/reply`,
+        `/cadences/lead/${entityId}/reply`,
         token,
         { method: "POST", body: JSON.stringify({ channel: replyChannel, notes: replyNotes || undefined }) },
       );
@@ -535,7 +544,7 @@ export function LeadActivitiesList({
               Arraste para reordenar
             </span>
           )}
-          {hasPendingActivities && (
+          {ehLead && hasPendingActivities && (
             <button
               onClick={() => setReplyModal(true)}
               className="inline-flex items-center gap-2 rounded-lg border-2 border-green-500/50 bg-green-500/10 px-4 py-2 text-sm font-semibold text-green-400 hover:bg-green-500/20 hover:shadow-md transition-all duration-200"
@@ -556,7 +565,7 @@ export function LeadActivitiesList({
             Sincronizar GoTo
           </button>
           <Link
-            href={`/activities/new?leadId=${leadId}&returnTo=/leads/${leadId}`}
+            href={`/activities/new?${ehLead ? "leadId" : "organizationId"}=${entityId}&returnTo=/${base}/${entityId}`}
             className="inline-flex items-center gap-2 rounded-lg bg-[#792990] px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
           >
             <span className="text-lg text-white">+</span>
@@ -1211,7 +1220,9 @@ export function LeadActivitiesList({
       )}
 
       {/* Reply Modal */}
-      {replyModal && (
+      {/* Cadencia so existe em lead: a rota e /cadences/lead/:id e organizacao nao tem cadencia.
+          Sem esta guarda, o botao apareceria no cliente e responderia 404 em silencio. */}
+      {ehLead && replyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setReplyModal(false)}>
           <div className="w-full max-w-sm rounded-xl bg-[#1a0022] shadow-2xl border border-[#3d2b4d]" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b p-4 text-white rounded-t-xl bg-gradient-to-r from-green-600 to-green-800">
@@ -1289,7 +1300,8 @@ export function LeadActivitiesList({
         <GmailComposeModal
           to={replyingToActivity.emailFromAddress}
           name={replyingToActivity.emailFromName ?? replyingToActivity.emailFromAddress}
-          leadId={leadId}
+          leadId={ehLead ? entityId : undefined}
+          organizationId={ehLead ? undefined : entityId}
           threadId={replyingToActivity.emailThreadId ?? undefined}
           initialSubject={replyingToActivity.emailSubject ? `Re: ${replyingToActivity.emailSubject}` : undefined}
           onClose={() => { setReplyingToActivity(null); router.refresh(); }}

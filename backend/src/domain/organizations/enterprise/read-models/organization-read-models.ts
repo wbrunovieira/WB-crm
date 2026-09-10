@@ -163,5 +163,21 @@ export interface OrganizationDetail extends OrganizationSummary {
     createdAt: Date;
     deal: { title: string } | null;
     contact: { name: string } | null;
+    // Espelho do read model do lead — a organizacao usa a mesma timeline.
+    contactId: string | null;
+    leadContactIds: string | null;
+    callContactType: string | null;
+    gotoCallId: string | null;
+    gotoCallOutcome: string | null;
+    gotoDuration: number | null;
+    gotoRecordingUrl: string | null;
+    gotoRecordingUrl2: string | null;
+    gotoTranscriptText: string | null;
+    emailThreadId: string | null;
+    emailSubject: string | null;
+    emailFromAddress: string | null;
+    emailFromName: string | null;
+    emailReplied: boolean;
+    photoKey: string | null;
   }>;
 }
