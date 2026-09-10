@@ -127,15 +127,13 @@ export default async function OrganizationDetailPage({
 
           <div className="flex flex-wrap gap-1.5 border-t border-purple-900/40 pt-4">
             {[
-              { href: "#info-basica", icon: <Building2 size={11} />, label: "Informações" },
-              { href: "#contato", icon: <Phone size={11} />, label: "Contato" },
+              { href: "#info-basica", icon: <Building2 size={11} />, label: "Informações Básicas" },
               { href: "#contatos", icon: <Users size={11} />, label: "Contatos" },
-              { href: "#negocios", icon: <TrendingUp size={11} />, label: "Negócios" },
-              { href: "#reunioes", icon: <Video size={11} />, label: "Reuniões" },
               { href: "#atividades", icon: <Activity size={11} />, label: "Atividades" },
+              { href: "#reunioes", icon: <Video size={11} />, label: "Reuniões" },
+              { href: "#negocios", icon: <TrendingUp size={11} />, label: "Negócios" },
+              { href: "#google-places", icon: <MapPin size={11} />, label: "Google" },
               { href: "#projetos", icon: <FileText size={11} />, label: "Projetos" },
-              { href: "#tech", icon: <BrainCircuit size={11} />, label: "Tecnologia" },
-              { href: "#cnae", icon: <BarChart2 size={11} />, label: "CNAE" },
             ].map(({ href, icon, label }) => (
               <a
                 key={href}
@@ -557,146 +555,6 @@ export default async function OrganizationDetailPage({
         </div>
       </div>
 
-      {/* Contatos e Negocios: EMPILHADOS em largura cheia, igual a pagina do lead.
-          Antes ficavam num grid de 2 colunas cujo primeiro slot era uma ancora vazia — o que
-          deixava um buraco a esquerda, os contatos empurrados para a direita e os negocios com
-          meia largura na linha de baixo. */}
-      <div id="contatos" className="mt-6">
-        <OrganizationContactsList
-          organizationId={organization.id}
-          contacts={organization.contacts.map((c) => ({
-            id: c.id,
-            name: c.name,
-            email: c.email,
-            phone: c.phone,
-            whatsapp: c.whatsapp,
-            role: c.role,
-            isPrimary: c.isPrimary,
-            status: c.status,
-            languages: c.languages,
-          }))}
-        />
-
-      </div>
-
-      <div id="negocios" className="mt-6">
-        <EntityDealsList
-          deals={deals ?? []}
-          newDealHref={`/deals/new?organizationId=${organization.id}&returnTo=/organizations/${organization.id}`}
-        />
-      </div>
-
-      {/* Tech Profile */}
-      <div className="mt-6">
-        <div id="tech" className="scroll-mt-32" />
-        <OrganizationTechProfileSection organizationId={organization.id} />
-      </div>
-
-      {/* Sector Section */}
-      <div className="mt-6">
-        <OrganizationSectorSection organizationId={organization.id} />
-      </div>
-
-      {/* ICP Section */}
-      <div className="mt-6">
-        <OrganizationICPSection organizationId={organization.id} />
-      </div>
-
-      <div id="cnae" className="scroll-mt-32" />
-      {/* CNAE Management */}
-      <CollapsibleSection id="cnae" icon={<BarChart2 size={14} />} title="Atividades Econômicas (CNAE)" defaultOpen={false}>
-        {organization.primaryCNAE && (
-          <div className="mb-6 rounded-lg border border-purple-500/40 bg-purple-900/30 p-4">
-            <dt className={dtCls}>
-              Atividade Primária
-            </dt>
-            <dd className="flex items-center gap-3">
-              <span className="rounded-md border border-purple-600/50 bg-purple-900/60 px-2.5 py-1 font-mono text-xs font-bold text-purple-200">
-                {organization.primaryCNAE.code}
-              </span>
-              <span className="text-sm font-medium text-gray-300">
-                {organization.primaryCNAE.description}
-              </span>
-            </dd>
-          </div>
-        )}
-        {organization.internationalActivity && (
-          <div className="mb-6 rounded-lg border border-purple-800/40 bg-purple-900/20 p-4">
-            <dt className={dtCls}>
-              Atividade Internacional
-            </dt>
-            <dd className="text-sm font-medium text-gray-300">
-              {organization.internationalActivity}
-            </dd>
-          </div>
-        )}
-        <div className="mt-6">
-          <SecondaryCNAEsManager
-            entityId={organization.id}
-            entityType="organization"
-          />
-        </div>
-      </CollapsibleSection>
-
-      {/* Meetings */}
-      <div className="mt-6">
-        <div id="reunioes" className="scroll-mt-32" />
-        <MeetingsList
-          meetings={meetings}
-          organizationId={organization.id}
-          suggestedContacts={[
-            ...(organization.email
-              ? [{ id: `org-${organization.id}`, name: organization.name, email: organization.email, role: "Empresa" }]
-              : []),
-            ...organization.contacts
-              .filter((c) => c.email)
-              .map((c) => ({
-                id: c.id,
-                name: c.name,
-                email: c.email!,
-                role: undefined,
-              })),
-          ]}
-        />
-      </div>
-
-      {/* Activities */}
-      <div className="mt-6">
-        <div className="mb-3 flex justify-end">
-          <GmailSyncButton revalidateUrl={`/organizations/${organization.id}`} />
-        </div>
-        <div id="atividades" className="scroll-mt-32" />
-        <EntityActivitiesList
-          entityId={organization.id}
-          entityType="organization"
-          activities={organization.activities}
-          activityOrder={organization.activityOrder ?? null}
-          callAnalysesMap={callAnalysesMap}
-          meetAnalysesMap={meetAnalysesMap}
-          meetTranscriptActivityIds={meetTranscriptActivityIds}
-          gkAnalysesMap={gkAnalysesMap}
-          leadContacts={(organization.contacts ?? []).map((c) => ({
-            id: c.id,
-            name: c.name,
-            role: c.role ?? null,
-            isPrimary: c.isPrimary ?? false,
-            isActive: true,
-          }))}
-        />
-      </div>
-
-      {/* Projects */}
-      <div className="mt-6">
-        <div id="projetos" className="scroll-mt-32" />
-        <OrganizationProjects
-          projectIds={
-            organization.externalProjectIds
-              ? JSON.parse(organization.externalProjectIds)
-              : []
-          }
-        />
-      </div>
-
       {/* Seções herdadas do lead na conversão. São dados de prospecção: a organização agora tem
           onde guardá-los, e a ficha do cliente deixa de nascer mais pobre que a do prospect que
           a originou. Os botões de "checar agora" continuam só no lead — são ações de
@@ -845,6 +703,147 @@ export default async function OrganizationDetailPage({
           />
         </CollapsibleSection>
       )}
+
+      {/* Tech Profile */}
+      <div id="tech" className="mt-6">
+        <div id="tech" className="scroll-mt-32" />
+        <OrganizationTechProfileSection organizationId={organization.id} />
+      </div>
+
+      {/* Sector Section */}
+      <div id="setor" className="mt-6">
+        <OrganizationSectorSection organizationId={organization.id} />
+      </div>
+
+      {/* ICP Section */}
+      <div id="icp" className="mt-6">
+        <OrganizationICPSection organizationId={organization.id} />
+      </div>
+
+      <div id="cnae" className="scroll-mt-32" />
+      {/* CNAE Management */}
+      <CollapsibleSection id="cnae" icon={<BarChart2 size={14} />} title="Atividades Econômicas (CNAE)" defaultOpen={false}>
+        {organization.primaryCNAE && (
+          <div className="mb-6 rounded-lg border border-purple-500/40 bg-purple-900/30 p-4">
+            <dt className={dtCls}>
+              Atividade Primária
+            </dt>
+            <dd className="flex items-center gap-3">
+              <span className="rounded-md border border-purple-600/50 bg-purple-900/60 px-2.5 py-1 font-mono text-xs font-bold text-purple-200">
+                {organization.primaryCNAE.code}
+              </span>
+              <span className="text-sm font-medium text-gray-300">
+                {organization.primaryCNAE.description}
+              </span>
+            </dd>
+          </div>
+        )}
+        {organization.internationalActivity && (
+          <div className="mb-6 rounded-lg border border-purple-800/40 bg-purple-900/20 p-4">
+            <dt className={dtCls}>
+              Atividade Internacional
+            </dt>
+            <dd className="text-sm font-medium text-gray-300">
+              {organization.internationalActivity}
+            </dd>
+          </div>
+        )}
+        <div className="mt-6">
+          <SecondaryCNAEsManager
+            entityId={organization.id}
+            entityType="organization"
+          />
+        </div>
+      </CollapsibleSection>
+
+      {/* Contatos e Negocios: EMPILHADOS em largura cheia, igual a pagina do lead.
+          Antes ficavam num grid de 2 colunas cujo primeiro slot era uma ancora vazia — o que
+          deixava um buraco a esquerda, os contatos empurrados para a direita e os negocios com
+          meia largura na linha de baixo. */}
+      <div id="contatos" className="mt-6">
+        <OrganizationContactsList
+          organizationId={organization.id}
+          contacts={organization.contacts.map((c) => ({
+            id: c.id,
+            name: c.name,
+            email: c.email,
+            phone: c.phone,
+            whatsapp: c.whatsapp,
+            role: c.role,
+            isPrimary: c.isPrimary,
+            status: c.status,
+            languages: c.languages,
+          }))}
+        />
+
+      </div>
+
+      <div id="negocios" className="mt-6">
+        <EntityDealsList
+          deals={deals ?? []}
+          newDealHref={`/deals/new?organizationId=${organization.id}&returnTo=/organizations/${organization.id}`}
+        />
+      </div>
+
+      {/* Projects */}
+      <div className="mt-6">
+        <div id="projetos" className="scroll-mt-32" />
+        <OrganizationProjects
+          projectIds={
+            organization.externalProjectIds
+              ? JSON.parse(organization.externalProjectIds)
+              : []
+          }
+        />
+      </div>
+
+      {/* Meetings */}
+      <div className="mt-6">
+        <div id="reunioes" className="scroll-mt-32" />
+        <MeetingsList
+          meetings={meetings}
+          organizationId={organization.id}
+          suggestedContacts={[
+            ...(organization.email
+              ? [{ id: `org-${organization.id}`, name: organization.name, email: organization.email, role: "Empresa" }]
+              : []),
+            ...organization.contacts
+              .filter((c) => c.email)
+              .map((c) => ({
+                id: c.id,
+                name: c.name,
+                email: c.email!,
+                role: undefined,
+              })),
+          ]}
+        />
+      </div>
+
+      {/* Activities */}
+      <div className="mt-6">
+        <div className="mb-3 flex justify-end">
+          <GmailSyncButton revalidateUrl={`/organizations/${organization.id}`} />
+        </div>
+        <div id="atividades" className="scroll-mt-32" />
+        <EntityActivitiesList
+          entityId={organization.id}
+          entityType="organization"
+          activities={organization.activities}
+          activityOrder={organization.activityOrder ?? null}
+          callAnalysesMap={callAnalysesMap}
+          meetAnalysesMap={meetAnalysesMap}
+          meetTranscriptActivityIds={meetTranscriptActivityIds}
+          gkAnalysesMap={gkAnalysesMap}
+          leadContacts={(organization.contacts ?? []).map((c) => ({
+            id: c.id,
+            name: c.name,
+            role: c.role ?? null,
+            isPrimary: c.isPrimary ?? false,
+            isActive: true,
+          }))}
+        />
+      </div>
+
     </div>
   );
 }
