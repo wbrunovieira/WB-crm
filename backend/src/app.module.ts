@@ -1,4 +1,5 @@
 import { Module } from "@nestjs/common";
+import { RecurringContractsModule } from "./domain/recurring-contracts/recurring-contracts.module";
 import { EventEmitterModule } from "@nestjs/event-emitter";
 import { ScheduleModule } from "@nestjs/schedule";
 import { AuthModule } from "./infra/auth/auth.module";
@@ -51,7 +52,7 @@ import { BotFlowsModule } from "./domain/bot-flows/bot-flows.module";
 import { LeadNotificationsModule } from "./domain/lead-notifications/lead-notifications.module";
 
 @Module({
-  imports: [EventEmitterModule.forRoot(), ScheduleModule.forRoot(), DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, PhoneModule, MetaAdsModule, MeetModule, LeadResearchModule, LeadDeepResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule, NotificationsModule, DashboardModule, FunnelModule, CallAnalysisModule, MeetAnalysisModule, GatekeeperAnalysisModule, TransferAnalysisModule, ProposalAgentModule, WarmingModule, EmailCampaignsModule, BotFlowsModule, SchedulingModule, LeadNotificationsModule],
+  imports: [EventEmitterModule.forRoot(), ScheduleModule.forRoot(), DatabaseModule, AuthModule, CampaignsModule, ContactsModule, LeadsModule, OrganizationsModule, PartnersModule, DealsModule, ActivitiesModule, PipelinesModule, AdminModule, SharedEntitiesModule, GoToModule, WhatsAppModule, EmailModule, PhoneModule, MetaAdsModule, MeetModule, LeadResearchModule, LeadDeepResearchModule, LabelsModule, CnaeModule, SectorsModule, ICPModule, TechProfileModule, ProductLinksModule, LeadConversionModule, LeadDuplicatesModule, OperationsModule, CadencesModule, DisqualificationReasonsModule, LeadImportModule, ProposalsModule, HostingRenewalsModule, NotificationsModule, DashboardModule, FunnelModule, CallAnalysisModule, MeetAnalysisModule, GatekeeperAnalysisModule, TransferAnalysisModule, ProposalAgentModule, WarmingModule, EmailCampaignsModule, BotFlowsModule, SchedulingModule, LeadNotificationsModule, RecurringContractsModule],
   controllers: [HealthController],
   providers: [],
 })

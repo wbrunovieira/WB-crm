@@ -86,7 +86,8 @@ model User {
   emailSuppressions    EmailSuppression[]
 
   // Bot Flows
-  botFlows BotFlow[]
+  botFlows           BotFlow[]
+  recurringContracts RecurringContract[]
 
   @@map("users")
 }
@@ -612,8 +613,9 @@ model Organization {
   meetings Meeting[]
 
   // Activities
-  activities Activity[]
-  proposals  Proposal[]
+  activities         Activity[]
+  proposals          Proposal[]
+  recurringContracts RecurringContract[]
 
   @@index([ownerId])
   @@index([sourceLeadId])
@@ -3295,4 +3297,62 @@ model DealValueHistory {
 
   @@index([dealId])
   @@index([changedAt])
+}
+
+/// Contrato recorrente de um cliente — dominio, hospedagem, servidor, manutencao.
+///
+/// Uma LINHA POR ITEM de proposito: um mesmo cliente pode ter dominio + hospedagem + servidor
+/// ao mesmo tempo, e campos fixos na Organization nunca comportariam isso. Foi a limitacao que
+/// deixou a mensalidade de R$235/mes do The Dark Film sem lugar (hostingValue e anual).
+model RecurringContract {
+  id             String @id @default(cuid())
+  organizationId String
+  ownerId        String
+
+  /// dominio | hospedagem | servidor | manutencao | outro
+  type     String
+  /// Rotulo livre para o cliente entender ("Hospedagem do site", "Loja online").
+  label    String?
+  value    Float
+  currency String  @default("BRL")
+  /// mensal | trimestral | anual
+  cycle    String
+
+  /// Proxima data de cobranca. E o que alimenta o aviso.
+  nextChargeAt DateTime?
+  /// Quando o contrato termina, se tiver fim previsto.
+  endsAt       DateTime?
+
+  /// true = o sistema segue renovando sozinho. false = alguem precisa ser avisado ANTES do
+  /// termino, senao o contrato simplesmente acaba (decisao do Bruno, 12/09/2026).
+  autoRenew  Boolean @default(true)
+  /// Dias de antecedencia do aviso.
+  remindDays Int     @default(30)
+
+  /// Repasse: entra e sai pelo mesmo valor, sem margem — caso do dominio (ver a chave
+  /// dominio:<org>:<ano>:in/out no financeiro). Nao pode somar como receita, senao a
+  /// recorrencia parece maior do que e. Para o dominio o que importa e o AVISO, nao o valor:
+  /// esquecer a renovacao derruba o site do cliente ou perde o dominio.
+  isPassThrough Boolean @default(false)
+
+  /// Servico que existe e NUNCA e cobrado, por decisao (hospedagem da Elaine Vieira).
+  /// Marcador proprio e nao status, porque cortesia esta ATIVA; e diferente de valor zero,
+  /// que nao distingue "de graca de proposito" de "ninguem preencheu".
+  isCourtesy Boolean @default(false)
+
+  /// ativo | cancelado | encerrado
+  status String  @default("ativo")
+  notes  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  organization Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  owner        User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId])
+  @@index([ownerId])
+  @@index([nextChargeAt])
+  @@index([status])
+  @@map("recurring_contracts")
 }
