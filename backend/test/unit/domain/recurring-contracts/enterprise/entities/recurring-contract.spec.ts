@@ -121,3 +121,40 @@ describe("RecurringContract — cortesia", () => {
     expect(contrato({ value: 0, isCourtesy: true }).monthlyValue).toBe(0);
   });
 });
+
+describe("RecurringContract — início condicionado a evento", () => {
+  /**
+   * Caso real: The Dark Film. A cláusula 7 da proposta WB-TDF-270826 diz que a hospedagem é
+   * gratuita por 12 meses A PARTIR DA PUBLICAÇÃO, e o site ainda não foi publicado. A data de
+   * renovação não é dado perdido — ela ainda não nasceu.
+   *
+   * Mesma lógica da cortesia: sem marcador, ausência de data é ambígua entre "ainda não
+   * aconteceu o evento" e "alguém esqueceu de preencher". A primeira não se corrige inventando
+   * data; a segunda sim. Confundi-las faz alguém chutar um vencimento.
+   */
+  it("contrato aguardando evento não precisa de aviso", () => {
+    const c = contrato({
+      nextChargeAt: undefined,
+      autoRenew: false,
+      startsAfterEvent: "publicação do site",
+    });
+    expect(c.aguardandoInicio).toBe(true);
+    expect(c.precisaAvisar()).toBe(false);
+  });
+
+  it("sem o marcador, ausência de data é só ausência", () => {
+    expect(contrato({ nextChargeAt: undefined }).aguardandoInicio).toBe(false);
+  });
+
+  it("deixa de aguardar quando a data chega", () => {
+    const c = contrato({ startsAfterEvent: "publicação do site" });
+    c.update({ nextChargeAt: new Date("2027-06-01"), startsAfterEvent: undefined });
+    expect(c.aguardandoInicio).toBe(false);
+  });
+
+  it("contrato aguardando início não soma na receita", () => {
+    // Cobrança que ainda não começou não é receita corrente.
+    const c = contrato({ value: 128, startsAfterEvent: "publicação do site" });
+    expect(c.monthlyValue).toBe(0);
+  });
+});

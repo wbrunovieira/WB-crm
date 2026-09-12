@@ -45,6 +45,18 @@ export interface RecurringContractProps {
    * alguem no futuro vai cobrar de quem nao deve.
    */
   isCourtesy: boolean;
+  /**
+   * Evento do qual a cobranca depende para comecar — "publicacao do site", por exemplo.
+   *
+   * Caso real: The Dark Film. A clausula 7 da proposta WB-TDF-270826 da 12 meses de hospedagem
+   * gratuita A PARTIR DA PUBLICACAO, e o site ainda nao foi publicado. A data de renovacao nao
+   * esta faltando: ela ainda nao nasceu.
+   *
+   * Mesma logica do isCourtesy: sem marcador, ausencia de data e ambigua entre "o evento nao
+   * aconteceu" e "alguem esqueceu". A primeira nao se corrige inventando data — e sem distinguir,
+   * alguem chuta um vencimento.
+   */
+  startsAfterEvent?: string;
   status: ContractStatus;
   notes?: string;
   createdAt: Date;
@@ -65,6 +77,10 @@ export class RecurringContract extends AggregateRoot<RecurringContractProps> {
   get remindDays()     { return this.props.remindDays; }
   get isPassThrough()  { return this.props.isPassThrough; }
   get isCourtesy()     { return this.props.isCourtesy; }
+  get startsAfterEvent() { return this.props.startsAfterEvent; }
+
+  /** Contratado, mas a cobranca ainda nao comecou porque depende de um evento. */
+  get aguardandoInicio(): boolean { return !!this.props.startsAfterEvent; }
   get status()         { return this.props.status; }
   get notes()          { return this.props.notes; }
   get createdAt()      { return this.props.createdAt; }
@@ -72,6 +88,8 @@ export class RecurringContract extends AggregateRoot<RecurringContractProps> {
 
   /** Valor normalizado por mes. Sem isto nao da para somar R$128/ano com R$235/mes. */
   get monthlyValue(): number {
+    // Cobranca que ainda nao comecou nao e receita corrente.
+    if (this.aguardandoInicio) return 0;
     return this.props.value / MESES_POR_CICLO[this.props.cycle];
   }
 
@@ -89,6 +107,8 @@ export class RecurringContract extends AggregateRoot<RecurringContractProps> {
     if (this.props.status !== "ativo") return false;
     // Cortesia nao gera cobranca, entao nao ha prazo a avisar.
     if (this.props.isCourtesy) return false;
+    // Nem contrato cuja cobranca ainda nao comecou: nao ha vencimento a vencer.
+    if (this.aguardandoInicio) return false;
     if (this.props.autoRenew) return false;
 
     const alvo = this.props.endsAt ?? this.props.nextChargeAt;

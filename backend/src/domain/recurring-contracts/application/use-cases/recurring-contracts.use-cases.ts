@@ -24,6 +24,7 @@ export interface ContractInput {
   remindDays?: number;
   isPassThrough?: boolean;
   isCourtesy?: boolean;
+  startsAfterEvent?: string;
   status?: string;
   notes?: string;
   requesterId: string;
@@ -58,6 +59,7 @@ export class CreateRecurringContractUseCase {
       remindDays: input.remindDays,
       isPassThrough: input.isPassThrough,
       isCourtesy: input.isCourtesy,
+      startsAfterEvent: input.startsAfterEvent,
       status: input.status as ContractStatus | undefined,
       notes: input.notes,
     });
@@ -103,6 +105,7 @@ export class UpdateRecurringContractUseCase {
         cycle: input.cycle, nextChargeAt: input.nextChargeAt, endsAt: input.endsAt,
         autoRenew: input.autoRenew, remindDays: input.remindDays,
         isPassThrough: input.isPassThrough, isCourtesy: input.isCourtesy,
+        startsAfterEvent: input.startsAfterEvent,
         status: input.status, notes: input.notes,
       }).filter(([, v]) => v !== undefined),
     );

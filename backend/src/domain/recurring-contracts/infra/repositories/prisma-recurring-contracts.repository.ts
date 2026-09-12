@@ -13,6 +13,7 @@ type Row = {
   id: string; organizationId: string; ownerId: string; type: string; label: string | null;
   value: number; currency: string; cycle: string; nextChargeAt: Date | null; endsAt: Date | null;
   autoRenew: boolean; remindDays: number; isPassThrough: boolean; isCourtesy: boolean;
+  startsAfterEvent: string | null;
   status: string; notes: string | null; createdAt: Date; updatedAt: Date;
 };
 
@@ -33,6 +34,7 @@ function paraDominio(r: Row): RecurringContract {
       remindDays: r.remindDays,
       isPassThrough: r.isPassThrough,
       isCourtesy: r.isCourtesy,
+      startsAfterEvent: r.startsAfterEvent ?? undefined,
       status: r.status as ContractStatus,
       notes: r.notes ?? undefined,
       createdAt: r.createdAt,
@@ -57,6 +59,7 @@ function paraPrisma(c: RecurringContract) {
     remindDays: c.remindDays,
     isPassThrough: c.isPassThrough,
     isCourtesy: c.isCourtesy,
+    startsAfterEvent: c.startsAfterEvent ?? null,
     status: c.status,
     notes: c.notes ?? null,
   };

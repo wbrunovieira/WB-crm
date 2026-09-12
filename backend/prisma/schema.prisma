@@ -3340,6 +3340,11 @@ model RecurringContract {
   /// que nao distingue "de graca de proposito" de "ninguem preencheu".
   isCourtesy Boolean @default(false)
 
+  /// Evento do qual a cobranca depende para comecar ("publicacao do site"). Ausencia de data
+  /// COM este campo preenchido significa "ainda nao aconteceu", nao "alguem esqueceu" — e a
+  /// diferenca impede que se invente um vencimento. Ver clausula 7 da WB-TDF-270826.
+  startsAfterEvent String?
+
   /// ativo | cancelado | encerrado
   status String  @default("ativo")
   notes  String?

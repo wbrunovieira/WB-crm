@@ -16,6 +16,7 @@ CREATE TABLE "recurring_contracts" (
     "remindDays"     INTEGER NOT NULL DEFAULT 30,
     "isPassThrough"  BOOLEAN NOT NULL DEFAULT false,
     "isCourtesy"     BOOLEAN NOT NULL DEFAULT false,
+    "startsAfterEvent" TEXT,
     "status"         TEXT NOT NULL DEFAULT 'ativo',
     "notes"          TEXT,
     "createdAt"      TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -40,7 +41,7 @@ ALTER TABLE "recurring_contracts" ADD CONSTRAINT "recurring_contracts_ownerId_fk
 -- o contrato existe e a renovacao nao pode ser esquecida.
 INSERT INTO "recurring_contracts" (
     "id", "organizationId", "ownerId", "type", "label", "value", "currency", "cycle",
-    "nextChargeAt", "autoRenew", "remindDays", "isPassThrough", "isCourtesy", "status", "notes",
+    "nextChargeAt", "autoRenew", "remindDays", "isPassThrough", "isCourtesy", "startsAfterEvent", "status", "notes",
     "createdAt", "updatedAt"
 )
 SELECT
@@ -63,6 +64,12 @@ SELECT
     -- Cortesia e decisao registrada, nao dado faltando: sem este marcador, alguem no futuro ve
     -- valor zero, conclui que falta preencher, e cobra de quem nunca deveria ser cobrado.
     (o."hostingPlan" ILIKE 'cortesia'),
+    -- Hospedagem contratada SEM data de renovacao nao e dado perdido: e o formato padrao do
+    -- bonus de 12 meses que o Bruno vendia, onde o prazo so comeca a correr na PUBLICACAO do
+    -- site (clausula 7 da WB-TDF-270826, caso do The Dark Film, ainda nao publicado). Marcar
+    -- como aguardando evento impede que alguem invente um vencimento para "corrigir" o vazio.
+    CASE WHEN o."hostingRenewalDate" IS NULL AND o."hostingPlan" NOT ILIKE 'cortesia'
+         THEN 'publicação do site (12 meses de bônus começam na publicação)' END,
     'ativo',
     -- Marca explicitamente o que a migracao NAO soube resolver, em vez de criar em silencio:
     -- contrato sem data nunca dispara aviso e desaparece (caso do The Dark Film, unico dos
@@ -71,8 +78,8 @@ SELECT
       o."hostingNotes",
       CASE WHEN o."hostingPlan" ILIKE 'cortesia' AND o."hostingRenewalDate" IS NOT NULL
            THEN '[migracao] data original (do dominio): ' || to_char(o."hostingRenewalDate", 'DD/MM/YYYY') END,
-      CASE WHEN o."hostingRenewalDate" IS NULL
-           THEN '[migracao] SEM data de renovacao — preencher, senao nunca avisa' END
+      CASE WHEN o."hostingRenewalDate" IS NULL AND o."hostingPlan" NOT ILIKE 'cortesia'
+           THEN '[migracao] sem data porque o prazo comeca na publicacao do site — preencher quando publicar' END
     )),
     now(),
     now()

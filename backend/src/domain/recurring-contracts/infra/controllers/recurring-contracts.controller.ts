@@ -36,6 +36,8 @@ function serialize(c: RecurringContract) {
     remindDays: c.remindDays,
     isPassThrough: c.isPassThrough,
     isCourtesy: c.isCourtesy,
+    startsAfterEvent: c.startsAfterEvent ?? null,
+    aguardandoInicio: c.aguardandoInicio,
     status: c.status,
     notes: c.notes ?? null,
     // Derivados: a tela nao deveria reimplementar a regra de negocio para exibir.
@@ -60,6 +62,7 @@ interface CorpoContrato {
   remindDays?: number;
   isPassThrough?: boolean;
   isCourtesy?: boolean;
+  startsAfterEvent?: string;
   status?: string;
   notes?: string;
 }
