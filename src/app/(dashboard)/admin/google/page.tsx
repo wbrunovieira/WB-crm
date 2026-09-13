@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { GoogleDisconnectButton } from "@/components/admin/GoogleDisconnectButton";
-import { CheckCircle, XCircle, Mail } from "lucide-react";
+import { CheckCircle, XCircle, Mail, AlertTriangle } from "lucide-react";
 
 const BACKEND_URL = process.env.BACKEND_URL ?? "http://localhost:3010";
 
@@ -29,6 +29,18 @@ export default async function GoogleAdminPage({
   const session = await getServerSession(authOptions);
   const token = await fetchGoogleToken(session?.user?.accessToken ?? "");
   const isConnected = !!token;
+
+  /**
+   * "Existe registro" NÃO é "está funcionando". Entre 25/08 e 13/09/2026 esta tela exibiu
+   * "Conectada" por 19 dias com o token revogado: 1835 falhas registradas, Gmail, Drive e Meet
+   * parados, e nada aqui dizia isso. Um indicador que não pode ficar vermelho não informa nada.
+   *
+   * A conexão está quebrada quando houve falha e nenhuma renovação bem-sucedida depois dela.
+   */
+  const falhouEm = token?.lastFailureAt ? new Date(token.lastFailureAt) : null;
+  const renovouEm = token?.lastRefreshOkAt ? new Date(token.lastRefreshOkAt) : null;
+  const comProblema = !!falhouEm && (!renovouEm || falhouEm > renovouEm);
+  const saudavel = isConnected && !comProblema;
 
   return (
     <div className="p-8">
@@ -64,6 +76,23 @@ export default async function GoogleAdminPage({
         </div>
       )}
 
+      {comProblema && (
+        <div className="mb-6 max-w-lg rounded-lg border border-red-200 bg-red-50 px-4 py-3">
+          <p className="flex items-center gap-2 font-semibold text-red-800">
+            <AlertTriangle className="h-5 w-5" />
+            A conexão caiu — reconecte
+          </p>
+          <p className="mt-1 text-sm text-red-700">
+            Última falha em{" "}
+            {falhouEm?.toLocaleString("pt-BR", { dateStyle: "short", timeStyle: "short" })}.
+            Enquanto estiver assim, e-mail, Drive e gravações de reunião não entram no CRM.
+          </p>
+          {token?.lastFailureReason && (
+            <p className="mt-2 text-xs text-red-600">{token.lastFailureReason}</p>
+          )}
+        </div>
+      )}
+
       <div className="max-w-lg rounded-lg bg-white p-6 shadow">
         <div className="flex items-center gap-4">
           <div className="rounded-lg bg-blue-100 p-3">
@@ -80,10 +109,15 @@ export default async function GoogleAdminPage({
             )}
           </div>
           <div className="ml-auto">
-            {isConnected ? (
+            {saudavel ? (
               <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-sm font-medium text-green-800">
                 <CheckCircle className="h-4 w-4" />
                 Conectada
+              </span>
+            ) : comProblema ? (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-sm font-medium text-red-800">
+                <AlertTriangle className="h-4 w-4" />
+                Com problema
               </span>
             ) : (
               <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-3 py-1 text-sm font-medium text-gray-600">

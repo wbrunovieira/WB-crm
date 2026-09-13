@@ -6,6 +6,12 @@ export interface GoogleTokenRecord {
   scope: string;
   email: string;
   gmailHistoryId: string | null;
+  // Diagnostico: a tela precisa poder dizer a VERDADE. Em 25/08/2026 ela exibiu "Conectada"
+  // por 19 dias com o token morto, porque so checava se existia registro no banco.
+  connectedAt?: Date | null;
+  lastRefreshOkAt?: Date | null;
+  lastFailureAt?: Date | null;
+  lastFailureReason?: string | null;
 }
 
 /**

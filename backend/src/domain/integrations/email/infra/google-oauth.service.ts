@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { deveAvisar, idadeEmDias, diagnostico } from "./google-token-health";
 import { GoogleOAuthPort } from "../application/ports/google-oauth.port";
 import { PrismaService } from "@/infra/database/prisma.service";
 
@@ -61,6 +62,13 @@ export class GoogleOAuthService extends GoogleOAuthPort {
         accessToken: tokens.accessToken,
         refreshToken: tokens.refreshToken,
         expiresAt: tokens.expiresAt,
+        // Consentimento novo = refresh token novo. connectedAt marca o nascimento dele, que e
+        // o que permite medir a idade na proxima falha; updatedAt nao serve porque muda a cada
+        // renovacao de access token. O estado de falha e limpo para o proximo aviso valer.
+        connectedAt: new Date(),
+        lastFailureAt: null,
+        lastFailureReason: null,
+        failureNotifiedAt: null,
       },
     });
   }
@@ -86,6 +94,9 @@ export class GoogleOAuthService extends GoogleOAuthPort {
 
     if (!response.ok) {
       const text = await response.text();
+      // Registra ANTES de lancar: em 25/08/2026 a falha existiu 19 dias so em log, o container
+      // reiniciou, e a causa ficou indeterminavel. Gravado no banco, sobrevive a restart.
+      await this.registrarFalha(tokenId, `${response.status} ${text}`);
       throw new Error(`Token refresh failed: ${response.status} ${text}`);
     }
 
@@ -102,9 +113,47 @@ export class GoogleOAuthService extends GoogleOAuthPort {
       data: {
         accessToken: newAccessToken,
         expiresAt: newExpiresAt,
+        lastRefreshOkAt: new Date(),
       },
     });
 
     return newAccessToken;
   }
+
+  /**
+   * Guarda a falha no banco com a IDADE do token e uma hipotese de causa.
+   *
+   * A idade e o diagnostico: ~7 dias sempre significa app em modo "Testing" no Google Cloud,
+   * que invalida refresh token semanalmente; meses significa evento unico. Sem isto, a proxima
+   * queda vai exigir a mesma investigacao que esta exigiu — e falhou, porque o log do periodo
+   * ja nao existia.
+   */
+  private async registrarFalha(tokenId: string, motivo: string): Promise<void> {
+    try {
+      const token = await this.prisma.googleToken.findUnique({ where: { id: tokenId } });
+      if (!token) return;
+
+      const agora = new Date();
+      const idade = idadeEmDias(token.connectedAt ?? null, agora);
+      const avisar = deveAvisar({ failureNotifiedAt: token.failureNotifiedAt ?? null });
+
+      await this.prisma.googleToken.update({
+        where: { id: tokenId },
+        data: {
+          lastFailureAt: agora,
+          lastFailureReason: `${motivo} | ${diagnostico(idade)}`,
+          ...(avisar ? { failureNotifiedAt: agora } : {}),
+        },
+      });
+
+      if (avisar) {
+        this.logger.error(
+          `CONEXAO GOOGLE CAIU. ${diagnostico(idade)} Reconectar em /admin/google.`,
+        );
+      }
+    } catch {
+      // Diagnostico nunca pode derrubar o fluxo que ele observa.
+    }
+  }
+
 }

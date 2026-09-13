@@ -2739,6 +2739,23 @@ model GoogleToken {
   scope          String
   email          String // email da conta Google conectada
   gmailHistoryId String? // último historyId processado pelo polling (Fase 2)
+
+  // ── Diagnóstico de queda ──────────────────────────────────────────────────
+  // Em 25/08/2026 o refresh token foi revogado e ninguém percebeu por 19 dias: 1835 falhas
+  // registradas, a tela dizendo "Conectada", e-mail e reunião sem entrar no CRM. Quando fomos
+  // investigar, o container já tinha reiniciado e os logs do período não existiam mais.
+  //
+  // connectedAt é quando o REFRESH token foi emitido — diferente de updatedAt, que muda a cada
+  // renovação de access token. A idade do token na hora da falha é o diagnóstico: ~7 dias
+  // sempre significa consentimento em modo "Testing" no Google Cloud, que invalida refresh
+  // token semanalmente; meses significa evento único (troca de senha, revogação).
+  connectedAt       DateTime?
+  lastRefreshOkAt   DateTime?
+  lastFailureAt     DateTime?
+  lastFailureReason String?
+  /// Evita repetir o aviso a cada ciclo do cron — foram 1835 falhas para uma unica causa.
+  failureNotifiedAt DateTime?
+
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
