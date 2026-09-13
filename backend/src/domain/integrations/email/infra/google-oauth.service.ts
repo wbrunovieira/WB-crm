@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { IntegrationHealthService } from "@/infra/shared/integration-health/integration-health.service";
 import { deveAvisar, idadeEmDias, diagnostico } from "./google-token-health";
 import { GoogleOAuthPort } from "../application/ports/google-oauth.port";
 import { PrismaService } from "@/infra/database/prisma.service";
@@ -9,7 +10,8 @@ const REFRESH_BUFFER_MS = 5 * 60 * 1000; // 5 minutes
 export class GoogleOAuthService extends GoogleOAuthPort {
   private readonly logger = new Logger(GoogleOAuthService.name);
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(private readonly prisma: PrismaService,
+    private readonly saude: IntegrationHealthService) {
     super();
   }
 
@@ -97,6 +99,7 @@ export class GoogleOAuthService extends GoogleOAuthPort {
       // Registra ANTES de lancar: em 25/08/2026 a falha existiu 19 dias so em log, o container
       // reiniciou, e a causa ficou indeterminavel. Gravado no banco, sobrevive a restart.
       await this.registrarFalha(tokenId, `${response.status} ${text}`);
+      await this.saude.registrarQueda("google", `${response.status} ${text}`);
       throw new Error(`Token refresh failed: ${response.status} ${text}`);
     }
 

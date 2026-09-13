@@ -1,4 +1,5 @@
 import { Injectable, Logger } from "@nestjs/common";
+import { IntegrationHealthService } from "@/infra/shared/integration-health/integration-health.service";
 import { GoToTokenPort } from "@/domain/integrations/goto/application/ports/goto-token.port";
 import { GoToApiPort } from "@/domain/integrations/goto/application/ports/goto-api.port";
 import { OAuthRepository } from "@/domain/auth/application/repositories/oauth.repository";
@@ -15,6 +16,7 @@ export class GoToTokenService extends GoToTokenPort {
   constructor(
     private readonly goToApi: GoToApiPort,
     private readonly oauthRepo: OAuthRepository,
+    private readonly saude: IntegrationHealthService
   ) {
     super();
   }
@@ -71,6 +73,11 @@ export class GoToTokenService extends GoToTokenPort {
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       const isRevoked = msg.includes("refresh.token.revoked");
+
+      // Avisa no sino, nao so no log. O GoTo ficou 39 dias fora com a tela de admin exibindo
+      // "Token expirado" corretamente — e ninguem viu, porque ninguem abre tela de admin para
+      // conferir se esta tudo bem. Custo: 3 semanas de ligacoes sem registro nem transcricao.
+      await this.saude.registrarQueda("goto", msg);
 
       if (isRevoked) {
         // Re-read from DB — another process may have already rotated the token

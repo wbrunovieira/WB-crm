@@ -3,6 +3,16 @@ import { GoToTokenService } from "@/domain/integrations/goto/infra/goto-token.se
 import { FakeGoToApiPort } from "../fakes/fake-goto-api.port";
 import { OAuthRepository, type GoToTokenRecord } from "@/domain/auth/application/repositories/oauth.repository";
 
+/** Duplo do servico de saude: registra as quedas avisadas para que os testes possam provar que
+ *  a falha de token NOTIFICA, e nao so lanca. Foi a falta desse aviso que deixou o GoTo 39
+ *  dias fora sem ninguem saber. */
+const quedasAvisadas: { integracao: string; motivo: string }[] = [];
+const saudeFake = {
+  registrarQueda: async (integracao: string, motivo: string) => {
+    quedasAvisadas.push({ integracao, motivo });
+  },
+} as never;
+
 class FakeOAuthRepository extends OAuthRepository {
   public stored: GoToTokenRecord | null = null;
   public storeGoToTokensCalls: GoToTokenRecord[] = [];
@@ -47,7 +57,7 @@ const originalEnv = { ...process.env };
 beforeEach(() => {
   goToApi = new FakeGoToApiPort();
   fakeOAuth = new FakeOAuthRepository();
-  service = new GoToTokenService(goToApi, fakeOAuth);
+  service = new GoToTokenService(goToApi, fakeOAuth, saudeFake);
 
   delete process.env.GOTO_ACCESS_TOKEN;
   delete process.env.GOTO_REFRESH_TOKEN;
@@ -199,7 +209,7 @@ describe("GoToTokenService", () => {
     process.env.GOTO_REFRESH_TOKEN = "shared-refresh-token";
     process.env.GOTO_TOKEN_EXPIRES_AT = String(Date.now() - 1000);
 
-    const svc = new GoToTokenService(slowGoToApi, fakeOAuth);
+    const svc = new GoToTokenService(slowGoToApi, fakeOAuth, saudeFake);
 
     const [t1, t2, t3] = await Promise.all([
       svc.getValidAccessToken(),
@@ -229,7 +239,7 @@ describe("GoToTokenService", () => {
       expiresAt: Date.now() + 60 * 60 * 1000,
     };
 
-    const svc = new GoToTokenService(revokingApi, fakeOAuth);
+    const svc = new GoToTokenService(revokingApi, fakeOAuth, saudeFake);
     const token = await svc.getValidAccessToken();
 
     // Deve recuperar do DB em vez de lançar erro
@@ -250,10 +260,46 @@ describe("GoToTokenService", () => {
       expiresAt: Date.now() - 1000,
     };
 
-    const svc = new GoToTokenService(revokingApi, fakeOAuth);
+    const svc = new GoToTokenService(revokingApi, fakeOAuth, saudeFake);
 
     await expect(svc.getValidAccessToken()).rejects.toThrow(
       /GoTo refresh token revogado.*re-autori/i,
     );
+  });
+});
+
+describe("GoToTokenService — avisa quando cai", () => {
+  /**
+   * O token do GoTo expirou em 05/08/2026 e a falha durou 39 dias. A tela de admin mostrava
+   * "Token expirado" corretamente o tempo todo — e não adiantou, porque ninguém abre tela de
+   * admin para conferir se está tudo bem. Perderam-se 3 semanas de ligações, sem transcrição
+   * nem análise, e a API do GoTo não devolve esse período retroativamente.
+   *
+   * Falhar em silêncio é o defeito; lançar o erro não basta.
+   */
+  it("registra a queda quando a renovação do token falha", async () => {
+    quedasAvisadas.length = 0;
+
+    const apiQueFalha = {
+      refreshToken: async () => {
+        throw new Error("refresh.token.revoked");
+      },
+    } as never;
+    // Token expirado no banco força o serviço a tentar renovar — que é onde a falha ocorre.
+    const repoComTokenVencido = {
+      loadGoToTokens: async () => ({
+        accessToken: "velho",
+        refreshToken: "token-morto",
+        expiresAt: Date.now() - 60_000,
+      }),
+      saveGoToTokens: async () => undefined,
+    } as never;
+
+    const sut = new GoToTokenService(apiQueFalha, repoComTokenVencido, saudeFake);
+    await expect(sut.getValidAccessToken()).rejects.toThrow();
+
+    expect(quedasAvisadas).toHaveLength(1);
+    expect(quedasAvisadas[0].integracao).toBe("goto");
+    expect(quedasAvisadas[0].motivo).toContain("revoked");
   });
 });

@@ -2933,6 +2933,16 @@ model IntegrationToken {
   accessToken  String
   refreshToken String?
   expiresAt    DateTime
+
+  // Mesmo diagnostico do GoogleToken, pelo mesmo motivo. O GoTo ficou 39 dias fora e a tela de
+  // admin dizia "Token expirado" o tempo todo — estava CERTA e nao adiantou, porque ninguem
+  // abre tela de admin para conferir se esta tudo bem. Custo: tres semanas de ligacoes sem
+  // registro, transcricao ou analise, irrecuperaveis (a API do GoTo nao devolve o periodo).
+  connectedAt       DateTime?
+  lastFailureAt     DateTime?
+  lastFailureReason String?
+  failureNotifiedAt DateTime?
+
   updatedAt    DateTime @updatedAt
 
   @@map("integration_tokens")
