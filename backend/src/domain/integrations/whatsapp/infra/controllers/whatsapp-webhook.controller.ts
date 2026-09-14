@@ -9,6 +9,7 @@ import {
 } from "@nestjs/common";
 import { ApiTags, ApiOperation } from "@nestjs/swagger";
 import { HandleWhatsAppWebhookUseCase } from "@/domain/integrations/whatsapp/application/use-cases/handle-whatsapp-webhook.use-case";
+import { resolverJid } from "./resolver-jid";
 
 interface EvolutionWebhookPayload {
   event?: string;
@@ -95,7 +96,13 @@ export class WhatsAppWebhookController {
 
     // 4. Extract fields from payload
     const event = body?.event ?? "";
-    const remoteJid = body?.data?.key?.remoteJid ?? "";
+    // O WhatsApp esta migrando para LID (`...@lid`), que nao contem telefone. Quando isso
+    // acontece, o Evolution manda o numero real em `remoteJidAlt` — e ignorar esse campo faz a
+    // mensagem ser descartada em silencio, com HTTP 200. Ver resolver-jid.ts.
+    const remoteJid = resolverJid({
+      remoteJid: body?.data?.key?.remoteJid,
+      remoteJidAlt: (body?.data?.key as { remoteJidAlt?: string } | undefined)?.remoteJidAlt,
+    });
     const messageId = body?.data?.key?.id;
     const fromMe = body?.data?.key?.fromMe ?? false;
     const messageType = body?.data?.messageType;

@@ -130,4 +130,52 @@ describe("Webhook do WhatsApp → atividade no CRM (e2e)", () => {
       await prisma.whatsAppMessage.deleteMany({ where: { messageId } });
     }
   });
+
+  it("mensagem com LID vincula pelo remoteJidAlt, não descarta", async () => {
+    /**
+     * O WhatsApp está migrando para LID (`...@lid`), identificador que NÃO contém telefone.
+     * Nesses casos o Evolution manda o número real em `remoteJidAlt`, e o CRM ignorava esse
+     * campo — a mensagem respondia HTTP 200 e era descartada por "No phone match found".
+     *
+     * Descoberto em 14/09/2026 ao reenviar um áudio guardado: o CRM leu "102138684420250"
+     * (o LID) como se fosse telefone e não achou vínculo nenhum.
+     */
+    const phone = "+5521987650003";
+    const lead = await prisma.lead.create({
+      data: { ownerId, businessName: "Lead Com LID", phone },
+    });
+    const messageId = `msg-lid-${Date.now()}`;
+
+    await request(app.getHttpServer())
+      .post("/webhooks/whatsapp")
+      .set("x-webhook-secret", WEBHOOK_SECRET)
+      .send({
+        event: "messages.upsert",
+        instance: "wbdigital",
+        data: {
+          key: {
+            id: messageId,
+            fromMe: false,
+            // O identificador principal NÃO tem o telefone...
+            remoteJid: "102138684420250@lid",
+            // ...mas o número verdadeiro vem aqui.
+            remoteJidAlt: "5521987650003@s.whatsapp.net",
+            addressingMode: "lid",
+          },
+          pushName: "Cliente LID",
+          messageType: "conversation",
+          message: { conversation: "mensagem que chegou por LID" },
+          messageTimestamp: Math.floor(Date.now() / 1000),
+        },
+      })
+      .expect(200);
+
+    try {
+      const activities = await prisma.activity.findMany({ where: { leadId: lead.id } });
+      expect(activities.length, "mensagem com LID foi descartada").toBeGreaterThan(0);
+      expect(activities[0].type).toBe("whatsapp");
+    } finally {
+      await prisma.whatsAppMessage.deleteMany({ where: { messageId } });
+    }
+  });
 });
