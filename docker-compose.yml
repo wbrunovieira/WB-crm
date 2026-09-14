@@ -37,6 +37,15 @@ services:
       NODE_ENV: production
       PORT: 3010
       ENV_FILE_PATH: /app/backend.env
+      # O container rodava em UTC, e todo `new Date().getHours()` devolvia hora de Londres.
+      # Efeitos visíveis: o carimbo das mensagens de WhatsApp aparecia 3h adiantado (08:23
+      # virava 11:23) e — pior — o dia virava às 21:00 do horário de Brasília, então um negócio
+      # ganho às 22:00 do dia 30 contava no mês seguinte no painel e no filtro de negócios.
+      #
+      # Definir o fuso aqui corrige os ~10 pontos que usam hora local de uma vez, e faz o
+      # código futuro nascer certo em vez de exigir que cada autor lembre de converter.
+      # Datas continuam gravadas em UTC no banco: isto muda só a leitura de hora LOCAL.
+      TZ: America/Sao_Paulo
       # Em desenvolvimento local o postgres sobe junto (service "postgres" acima).
       # Em produção o DATABASE_URL vem do backend/.env apontando para crm_postgres.
     env_file:

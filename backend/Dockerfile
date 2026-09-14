@@ -27,7 +27,10 @@ FROM node:22-alpine AS runtime
 
 WORKDIR /app
 
-RUN apk add --no-cache ffmpeg
+# tzdata: sem ele, a variavel TZ e IGNORADA EM SILENCIO no Alpine e o container continua em
+# UTC. Foi o que fez o carimbo do WhatsApp marcar 11:23 no que aconteceu as 08:23 — e, pior,
+# o dia virar as 21:00 de Brasilia, jogando negocio ganho no fim do mes para o mes seguinte.
+RUN apk add --no-cache ffmpeg tzdata
 
 # Cria usuário não-root para segurança
 RUN addgroup -S appgroup && adduser -S appuser -G appgroup
