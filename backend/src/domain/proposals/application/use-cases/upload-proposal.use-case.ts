@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { Either, left, right } from "@/core/either";
 import { Proposal } from "../../enterprise/entities/proposal";
 import { ProposalsRepository } from "../repositories/proposals.repository";
@@ -22,6 +22,8 @@ export interface UploadProposalInput {
 
 @Injectable()
 export class UploadProposalUseCase {
+  private readonly logger = new Logger(UploadProposalUseCase.name);
+
   constructor(
     private readonly repo: ProposalsRepository,
     private readonly drive: GoogleDrivePort,
@@ -85,7 +87,16 @@ export class UploadProposalUseCase {
   private async getOrCreateLeadFolder(leadId: string): Promise<string> {
     const lead = await this.leads.findDriveFolder(leadId);
 
-    if (lead?.driveFolderId) return lead.driveFolderId;
+    // Verifica em vez de confiar. O id guardado pode apontar para pasta APAGADA — foi o que
+    // aconteceu com a HMenezes em 15/09/2026: a pasta sumiu do Drive, o lead seguiu apontando
+    // para ela, e TODO upload daquele lead passou a falhar. Sem esta checagem o lead fica
+    // quebrado para sempre, porque o id morto nunca e revisto.
+    if (lead?.driveFolderId) {
+      if (await this.drive.folderExists(lead.driveFolderId)) return lead.driveFolderId;
+      this.logger.warn(
+        `Pasta ${lead.driveFolderId} do lead ${leadId} nao existe mais no Drive — recriando.`,
+      );
+    }
 
     const rootId = await this.drive.getOrCreateFolder("WB-CRM", undefined);
     const proposalsId = await this.drive.getOrCreateFolder("Propostas", rootId);

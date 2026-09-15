@@ -63,6 +63,23 @@ export class GoogleDriveService extends GoogleDrivePort {
     return { id: res.data.id!, webViewLink: res.data.webViewLink! };
   }
 
+  /**
+   * Verifica se a pasta existe e nao esta na lixeira.
+   *
+   * Nunca lanca: qualquer falha (404, permissao, rede) e tratada como "nao existe", porque quem
+   * chama vai simplesmente recriar. Propagar erro aqui transformaria uma pasta apagada em upload
+   * falhado — que foi exatamente o sintoma na HMenezes.
+   */
+  async folderExists(folderId: string): Promise<boolean> {
+    try {
+      const drive = await this.getDriveClient();
+      const { data } = await drive.files.get({ fileId: folderId, fields: "id,trashed" });
+      return !!data.id && data.trashed !== true;
+    } catch {
+      return false;
+    }
+  }
+
   async deleteFile(fileId: string): Promise<void> {
     const drive = await this.getDriveClient();
     await drive.files.delete({ fileId });

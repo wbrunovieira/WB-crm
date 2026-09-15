@@ -33,6 +33,13 @@ export class FakeGoogleDrivePort extends GoogleDrivePort {
     return this.folders.get(name)!;
   }
 
+  /** Pasta existe por padrao; os testes que precisam de pasta APAGADA sobrescrevem. */
+  folderExistsResult = true;
+
+  async folderExists(): Promise<boolean> {
+    return this.folderExistsResult;
+  }
+
   async deleteFile(fileId: string): Promise<void> {
     this.uploadedFiles = this.uploadedFiles.filter((f) => f.id !== fileId);
   }

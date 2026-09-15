@@ -6,9 +6,13 @@ import { PartnerOwnershipValidator } from "@/domain/partners/application/service
 
 const mockGetOrCreateFolder = vi.fn();
 const mockUploadFile = vi.fn();
+// Pasta existe por padrao. A checagem foi acrescentada depois que a pasta da HMenezes sumiu do
+// Drive (15/09/2026) e o lead ficou apontando para um id morto, quebrando todo upload dele.
+const mockFolderExists = vi.fn().mockResolvedValue(true);
 const mockDrive = {
   getOrCreateFolder: mockGetOrCreateFolder,
   uploadFile: mockUploadFile,
+  folderExists: mockFolderExists,
 };
 
 const mockFindLead = vi.fn();
