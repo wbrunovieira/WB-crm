@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { parseConversa } from "./parse-conversa";
 import {
   ChevronDown,
   ChevronUp,
@@ -47,25 +48,20 @@ interface ParsedLine {
 
 // ─── Parsing ──────────────────────────────────────────────────────────────────
 
-function parseLine(raw: string): ParsedLine | null {
-  const match = raw.match(/^\[(\d{2}:\d{2})\]\s+([^:]+):\s+(.+)$/);
-  if (!match) return null;
-  const [, time, sender, text] = match;
-  return {
-    time,
-    sender: sender.trim(),
-    text: text.trim(),
-    fromMe: sender.trim() === "Você",
-  };
-}
-
-/** Formato HH:MM em UTC — deve coincidir com o que o servidor grava na descrição */
-function toHHMM(date: Date): string {
-  return date.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    timeZone: "UTC",
-  });
+/**
+ * HH:MM possíveis para um mesmo instante, porque a descrição tem DUAS ERAS de carimbo.
+ *
+ * Até 14/09/2026 o container do backend rodava em UTC e escrevia "[15:13]"; depois da correção
+ * do fuso passou a escrever "[12:13]" para o mesmo instante. O timestamp da mídia no banco é
+ * sempre UTC. Comparar com um fuso só conserta uma era e quebra a outra — e conversas antigas
+ * ficariam sem áudio para sempre.
+ */
+function horasPossiveis(date: Date): string[] {
+  const fmt = (tz: string) =>
+    date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: tz });
+  const brasilia = fmt("America/Sao_Paulo");
+  const utc = fmt("UTC");
+  return brasilia === utc ? [brasilia] : [brasilia, utc];
 }
 
 /**
@@ -73,15 +69,17 @@ function toHHMM(date: Date): string {
  * baseando-se no HH:MM + fromMe. Tolerante a 1 minuto de diferença de relógio.
  */
 function mergeWithMedia(
-  lines: (ParsedLine | null)[],
+  lines: ParsedLine[],
   mediaMessages: WhatsAppMediaMessage[]
-): (ParsedLine | null)[] {
+): ParsedLine[] {
   if (!mediaMessages.length) return lines;
 
+  // Uma entrada por leitura de fuso: a linha casa com qualquer uma das duas.
   const mediaMap = new Map<string, WhatsAppMediaMessage>();
   for (const m of mediaMessages) {
-    const key = `${toHHMM(new Date(m.timestamp))}_${m.fromMe}`;
-    mediaMap.set(key, m);
+    for (const hora of horasPossiveis(new Date(m.timestamp))) {
+      mediaMap.set(`${hora}_${m.fromMe}`, m);
+    }
   }
 
   return lines.map((line) => {
@@ -89,7 +87,11 @@ function mergeWithMedia(
     const key = `${line.time}_${line.fromMe}`;
     const media = mediaMap.get(key);
     if (media) {
-      mediaMap.delete(key);
+      // Remove TODAS as chaves daquela mídia, senão a segunda leitura de fuso casaria de novo
+      // com outra linha e o mesmo áudio apareceria duas vezes.
+      for (const hora of horasPossiveis(new Date(media.timestamp))) {
+        mediaMap.delete(`${hora}_${media.fromMe}`);
+      }
       return { ...line, media };
     }
     return line;
@@ -606,10 +608,14 @@ function MessageRow({ line, token }: { line: ParsedLine; token: string }) {
 
         {/* Bubble */}
         <div
-          className={`relative w-full rounded-2xl px-3 pb-5 pt-2.5 text-xs leading-relaxed shadow-sm ${
+          // Cor no style, nao em classe: o globals.css força `.text-gray-*` para cinza CLARO com
+          // !important (tema escuro global), e o balao tem fundo claro — texto claro sobre fundo
+          // claro ficava ILEGÍVEL. style inline vence !important de classe.
+          style={{ color: "#111827" }}
+          className={`relative w-full whitespace-pre-wrap rounded-2xl px-3 pb-5 pt-2.5 text-xs leading-relaxed shadow-sm ${
             line.fromMe
-              ? "rounded-tr-sm bg-[#DCF8C6] text-gray-800"
-              : "rounded-tl-sm bg-white ring-1 ring-gray-200 text-gray-800"
+              ? "rounded-tr-sm bg-[#DCF8C6]"
+              : "rounded-tl-sm bg-white ring-1 ring-gray-200"
           }`}
         >
           {/* Text content */}
@@ -658,12 +664,9 @@ export default function WhatsAppMessageLog({
   const { data: session } = useSession();
   const token = session?.user?.accessToken ?? "";
 
-  const rawLines = description
-    .split("\n")
-    .map((l) => l.trim())
-    .filter(Boolean);
-
-  const parsedLines = rawLines.map(parseLine);
+  // parseConversa junta linhas de continuacao ao balao anterior: transcricao de audio vem com
+  // quebras, e o parser antigo devolvia null para elas — a continuacao aparecia solta na tela.
+  const parsedLines = parseConversa(description);
   const enrichedLines = mergeWithMedia(parsedLines, mediaMessages);
 
   const totalLines = enrichedLines.length;
@@ -673,15 +676,11 @@ export default function WhatsAppMessageLog({
 
   return (
     <div className="mt-2 space-y-2">
-      {visibleLines.map((line, i) =>
-        line ? (
-          <MessageRow key={i} line={line} token={token} />
-        ) : (
-          <p key={i} className="px-1 text-xs text-gray-500 italic">
-            {rawLines[i]}
-          </p>
-        )
-      )}
+      {/* Nao ha mais linha nula: parseConversa junta continuacao ao balao anterior. Este ramo
+          era o que renderizava a segunda linha de uma transcricao SOLTA, fora do balao. */}
+      {visibleLines.map((line, i) => (
+        <MessageRow key={i} line={line} token={token} />
+      ))}
 
       {hasMore && (
         <button
