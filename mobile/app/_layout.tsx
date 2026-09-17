@@ -59,7 +59,7 @@ export default function RootLayout() {
           <Stack.Screen name="partner" options={{ title: "Parceiro" }} />
           <Stack.Screen name="today" options={{ title: "Meus cadastros do dia" }} />
           <Stack.Screen name="today-visits" options={{ title: "Visitas do dia" }} />
-          <Stack.Screen name="lead-search" options={{ title: "Buscar lead" }} />
+          <Stack.Screen name="lead-search" options={{ title: "Buscar" }} />
           <Stack.Screen name="lead/[id]" options={{ title: "Lead" }} />
           <Stack.Screen name="org/[id]" options={{ title: "Empresa" }} />
           <Stack.Screen name="activity/[id]" options={{ title: "Atividade" }} />

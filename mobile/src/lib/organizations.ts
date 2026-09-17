@@ -60,3 +60,23 @@ export function formatOrgAddress(org: OrganizationDetail): string | null {
   const parts = [org.streetAddress, org.city, org.state, org.zipCode].filter(Boolean);
   return parts.length > 0 ? parts.join(", ") : null;
 }
+
+/** A row in the search list. `GET /organizations` returns the full record; these are the
+ *  fields the search card shows — the org counterpart of `LeadSearchResult`. */
+export interface OrganizationSearchResult {
+  id: string;
+  name: string;
+  phone: string | null;
+  whatsapp: string | null;
+  city: string | null;
+  state: string | null;
+}
+
+/** Searches organizations by name, scoped to the current user (`owner=mine`, same convention
+ *  as the rest of the app). Unlike `GET /leads`, this route returns a bare array, not a
+ *  paginated envelope. */
+export async function searchOrganizations(query: string): Promise<OrganizationSearchResult[]> {
+  return apiFetch<OrganizationSearchResult[]>(
+    `/organizations?search=${encodeURIComponent(query)}&owner=mine`,
+  );
+}

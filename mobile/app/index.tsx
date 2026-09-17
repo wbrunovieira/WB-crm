@@ -119,7 +119,7 @@ export default function Home() {
         style={({ pressed }) => [styles.todayLink, pressed && styles.cardPressed]}
         onPress={() => router.push("/lead-search")}
       >
-        <Text style={styles.todayLinkText}>🔍 Ver leads existentes</Text>
+        <Text style={styles.todayLinkText}>🔍 Buscar lead ou cliente</Text>
       </Pressable>
 
       <Pressable

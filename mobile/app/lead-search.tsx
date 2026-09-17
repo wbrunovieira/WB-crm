@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable, FlatList, StyleSheet, ActivityIndicator, Keyboard } from "react-native";
 import { useRouter } from "expo-router";
-import { searchLeads, type LeadSearchResult } from "@/lib/leads";
+import { searchLeadsAndOrgs, type SearchHit } from "@/lib/search";
 
-export default function LeadSearchScreen() {
+export default function BuscaScreen() {
   const router = useRouter();
   const [term, setTerm] = useState("");
-  const [results, setResults] = useState<LeadSearchResult[]>([]);
+  const [results, setResults] = useState<SearchHit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [searched, setSearched] = useState(false);
@@ -19,7 +19,7 @@ export default function LeadSearchScreen() {
     setError(null);
     setSearched(true);
     try {
-      setResults(await searchLeads(q));
+      setResults(await searchLeadsAndOrgs(q));
     } catch {
       setResults([]);
       setError("Erro ao buscar. Verifique a conexão.");
@@ -36,7 +36,7 @@ export default function LeadSearchScreen() {
           onChangeText={setTerm}
           onSubmitEditing={onSearch}
           returnKeyType="search"
-          placeholder="Nome do negócio"
+          placeholder="Nome do lead ou cliente"
           placeholderTextColor="#8a6d9c"
           style={styles.input}
           autoFocus
@@ -50,27 +50,37 @@ export default function LeadSearchScreen() {
 
       <FlatList
         data={results}
-        keyExtractor={(l) => l.id}
+        keyExtractor={(h) => `${h.kind}:${h.id}`}
         contentContainerStyle={styles.list}
         keyboardShouldPersistTaps="handled"
-        renderItem={({ item }) => (
-          <Pressable
-            style={({ pressed }) => [styles.card, pressed && styles.pressed]}
-            onPress={() => router.push(`/lead/${item.id}`)}
-          >
-            <Text style={styles.name}>{item.businessName}</Text>
-            {!!(item.city || item.state) && (
-              <Text style={styles.addr}>{[item.city, item.state].filter(Boolean).join(" - ")}</Text>
-            )}
-            <View style={styles.metaRow}>
-              <Text style={styles.meta}>{item.status}</Text>
-              {!!item.quality && <Text style={styles.meta}>⭐ {item.quality}</Text>}
-              {!!(item.whatsapp ?? item.phone) && <Text style={styles.meta}>📞 {item.whatsapp ?? item.phone}</Text>}
-            </View>
-          </Pressable>
-        )}
+        renderItem={({ item }) => {
+          const ehCliente = item.kind === "org";
+          return (
+            <Pressable
+              style={({ pressed }) => [
+                styles.card,
+                ehCliente ? styles.cardOrg : styles.cardLead,
+                pressed && styles.pressed,
+              ]}
+              onPress={() => router.push(ehCliente ? `/org/${item.id}` : `/lead/${item.id}`)}
+            >
+              <Text style={ehCliente ? styles.tagOrg : styles.tagLead}>
+                {ehCliente ? "CLIENTE" : "LEAD"}
+              </Text>
+              <Text style={styles.name}>{item.name}</Text>
+              {!!(item.city || item.state) && (
+                <Text style={styles.addr}>{[item.city, item.state].filter(Boolean).join(" - ")}</Text>
+              )}
+              <View style={styles.metaRow}>
+                {!!item.status && <Text style={styles.meta}>{item.status}</Text>}
+                {!!item.quality && <Text style={styles.meta}>⭐ {item.quality}</Text>}
+                {!!item.phone && <Text style={styles.meta}>📞 {item.phone}</Text>}
+              </View>
+            </Pressable>
+          );
+        }}
         ListFooterComponent={loading ? <ActivityIndicator color="#c9b3d6" style={styles.footer} /> : null}
-        ListEmptyComponent={!loading && searched ? <Text style={styles.empty}>Nenhum lead encontrado.</Text> : null}
+        ListEmptyComponent={!loading && searched ? <Text style={styles.empty}>Nenhum lead ou cliente encontrado.</Text> : null}
       />
     </View>
   );
@@ -96,6 +106,11 @@ const styles = StyleSheet.create({
   error: { color: "#f2a5a5", marginTop: 12 },
   list: { paddingVertical: 12, gap: 10 },
   card: { backgroundColor: "#2a1533", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 14, padding: 14 },
+  // Side stripe + label, the same lead/customer cue the web CRM uses.
+  cardLead: { borderLeftWidth: 4, borderLeftColor: "#762991" },
+  cardOrg: { borderLeftWidth: 4, borderLeftColor: "#2f9e6e" },
+  tagLead: { color: "#c9a2dd", fontSize: 10, fontWeight: "700", letterSpacing: 1, marginBottom: 2 },
+  tagOrg: { color: "#6fd8aa", fontSize: 10, fontWeight: "700", letterSpacing: 1, marginBottom: 2 },
   name: { color: "#fff", fontSize: 16, fontWeight: "600" },
   addr: { color: "#b79ec6", fontSize: 13, marginTop: 2 },
   metaRow: { flexDirection: "row", gap: 14, marginTop: 8, flexWrap: "wrap" },
