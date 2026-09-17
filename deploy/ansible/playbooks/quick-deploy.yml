@@ -94,6 +94,21 @@
 
     # ── Frontend ──────────────────────────────────────────────────────────────
 
+    # Um build rodado como root (deploy manual de emergência) deixa arquivos em .next
+    # que o usuário do CD não consegue sobrescrever: o Next abre com truncate e morre com
+    # EACCES em, p.ex., robots.txt.body — e o deploy inteiro falha por dois arquivos de
+    # sobra. Os diretórios pertencem ao usuário do deploy, então apagar dispensa sudo, e
+    # .next é artefato de build: o próprio build regera tudo.
+    - name: Limpar artefatos de build de outro dono (senão o build falha com EACCES)
+      ansible.builtin.shell:
+        cmd: |
+          set -o pipefail
+          find .next -xdev ! -user "$(id -un)" -print0 2>/dev/null | xargs -0 -r rm -rf
+        chdir: "{{ app_dir }}"
+        executable: /bin/bash
+      changed_when: false
+      failed_when: false
+
     - name: Instalar dependências (inclui dev, necessárias para o build)
       ansible.builtin.command:
         cmd: npm ci --production=false
