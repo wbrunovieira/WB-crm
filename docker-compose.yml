@@ -56,6 +56,7 @@ services:
       - default        # rede interna do compose (desenvolvimento)
       - crm-db         # rede externa onde vive crm_postgres em produção
       - evolution      # rede da Evolution API (WhatsApp)
+      - finance        # ponte dedicada ao calendar-finances (sync de contrato ganho)
     profiles:
       - backend
     healthcheck:
@@ -77,3 +78,10 @@ networks:
   evolution:
     external: true
     name: evolution_evolution_network
+  # Ponte dedicada ao par CRM <-> calendar-finances. Entrar na calendar-network daria
+  # alcance a 13 containers (banco financeiro, Authelia, os tres datastores do Langfuse)
+  # para usar UMA porta HTTP; esta rede existe so para os dois conversarem.
+  # Criar uma vez no servidor: docker network create crm-finance-bridge
+  finance:
+    external: true
+    name: crm-finance-bridge
