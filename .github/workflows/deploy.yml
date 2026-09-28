@@ -64,26 +64,41 @@ jobs:
           grep -v '^#' deploy/ci/known_hosts > ~/.ssh/known_hosts
           chmod 600 ~/.ssh/known_hosts
 
+      # Detecção pelo ESTADO DO BANCO, não por diff de SHA.
+      #
+      # O diff de SHA mentia. Em `workflow_run` o checkout traz o HEAD atual da main, não
+      # o commit que disparou o run; e o playbook faz reset para origin/main. Então, ao
+      # aprovar um run antigo, servidor e checkout acabavam no MESMO commit, o diff saía
+      # vazio e a migration era pulada — código novo no ar sem a coluna existir (#697).
+      # `_prisma_migrations` não tem esse problema: ela diz o que o banco realmente tem.
       - name: Detect pending migrations
         timeout-minutes: 5
         id: detect
         env:
           VPS: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
         run: |
-          DEPLOYED=$(ssh -o BatchMode=yes "$VPS" 'cd /opt/wb-crm && git rev-parse HEAD' || true)
-          echo "SHA deployado no servidor: ${DEPLOYED:-desconhecido}"
-          if [ -n "$DEPLOYED" ] && git cat-file -e "$DEPLOYED" 2>/dev/null; then
-            CHANGED=$(git diff --name-only "$DEPLOYED"..HEAD -- backend/prisma/migrations/)
-          else
-            echo "::warning::SHA deployado desconhecido — assumindo migrations pendentes (default seguro)"
-            CHANGED="(desconhecido — default seguro)"
-          fi
-          if [ -n "$CHANGED" ]; then
+          set -o pipefail
+          # Credenciais vêm do env do próprio container — nada de senha no workflow.
+          LIDAS=$(ssh -o BatchMode=yes "$VPS" \
+            'docker exec crm_postgres sh -c '"'"'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -A -c "SELECT migration_name FROM _prisma_migrations WHERE finished_at IS NOT NULL"'"'"'' \
+            2>/dev/null | tr -d '\r' | sed '/^$/d' | sort) || LIDAS=""
+
+          if [ -z "$LIDAS" ]; then
+            echo "::warning::Não consegui ler _prisma_migrations — assumindo migrations pendentes (default seguro)"
             echo "migrate=true" >> "$GITHUB_OUTPUT"
-            printf 'Migrations no diff:\n%s\n' "$CHANGED"
+            exit 0
+          fi
+
+          NO_REPO=$(ls backend/prisma/migrations/ | grep -v migration_lock | sort)
+          PENDENTES=$(comm -23 <(echo "$NO_REPO") <(echo "$LIDAS"))
+
+          echo "Aplicadas no banco: $(echo "$LIDAS" | wc -l) | no repositório: $(echo "$NO_REPO" | wc -l)"
+          if [ -n "$PENDENTES" ]; then
+            echo "migrate=true" >> "$GITHUB_OUTPUT"
+            printf '::notice::Migrations pendentes:\n%s\n' "$PENDENTES"
           else
             echo "migrate=false" >> "$GITHUB_OUTPUT"
-            echo "Sem migrations novas."
+            echo "Sem migrations pendentes."
           fi
 
       - name: Install Ansible
@@ -121,3 +136,36 @@ jobs:
         env:
           ANSIBLE_HOST_KEY_CHECKING: "True"
         run: ansible-playbook -i inventory/ci.yml playbooks/quick-deploy.yml
+
+      # Prova de que o deploy chegou ao ar. Sem isto, um deploy "verde" podia deixar a
+      # produção rodando outro commit e ninguém via — foi o que levou um agente a
+      # diagnosticar código que não estava rodando e relatar um bug inexistente (#1220).
+      - name: Confirmar o que ficou em produção
+        if: always() && (steps.detect.conclusion == 'success')
+        timeout-minutes: 5
+        env:
+          VPS: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+        run: |
+          NO_AR=$(ssh -o BatchMode=yes "$VPS" 'cd /opt/wb-crm && git --no-pager rev-parse HEAD' | tr -d '\r')
+          MAIN=$(git rev-parse origin/main)
+          echo "Em produção: $NO_AR"
+          echo "main:        $MAIN"
+
+          PENDENTES=$(ssh -o BatchMode=yes "$VPS" \
+            'docker exec crm_postgres sh -c '"'"'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB" -t -A -c "SELECT count(*) FROM _prisma_migrations WHERE finished_at IS NULL AND rolled_back_at IS NULL"'"'"'' \
+            2>/dev/null | tr -d '\r\n ') || PENDENTES="?"
+          # `rolled_back_at IS NULL` é essencial: há 6 migrations que falharam em 2026 e
+          # foram resolvidas como revertidas. Elas ficam para sempre com finished_at nulo.
+          # Sem esse filtro esta checagem falharia em TODO deploy — alarme falso permanente
+          # é pior que checagem nenhuma, porque ensina a ignorar o alarme.
+          echo "Migrations travadas (não finalizadas e não revertidas): $PENDENTES"
+
+          if [ "$NO_AR" != "$MAIN" ]; then
+            echo "::error::Produção está em $NO_AR, mas a main está em $MAIN. O deploy não levou o código esperado — NÃO trate esta versão como publicada."
+            exit 1
+          fi
+          if [ "$PENDENTES" != "0" ] && [ "$PENDENTES" != "?" ]; then
+            echo "::error::Há $PENDENTES migration(s) travada(s) no banco (iniciada, não finalizada, não revertida). Código novo pode estar no ar sem o schema correspondente."
+            exit 1
+          fi
+          echo "Confirmado: produção está no commit da main e o schema está íntegro."

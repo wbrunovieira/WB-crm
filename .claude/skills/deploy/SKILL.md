@@ -87,6 +87,41 @@ ps -u deploy -o pid,etimes,stat,wchan:20,cmd | grep -E 'git|npm|node'
 # destravar um run preso: kill <pid-do-pager>  (git ignora o exit do pager → segue o deploy)
 ```
 
+## A fila do CD (e por que existe o CD Guard)
+
+Isto já travou **cinco vezes**, sempre em silêncio. Um run em `waiting` (esperando sua
+aprovação) segura o grupo de concorrência `cd-production`. Todo CD disparado depois entra
+em **`pending` sem criar job** — não chega ao gate, não aparece como "Review deployments",
+e é cancelado quando o próximo é enfileirado. O sintoma é não haver sintoma: CI verde,
+nada sobe, nenhum erro em lugar nenhum. Na última vez um agente conferiu a correção em
+produção, viu que não funcionava e escreveu um relatório de bug — diagnosticando código
+que não estava rodando.
+
+**Regra: nunca deixe um run parado no gate.** Se não vai aprovar agora, cancele. Aprovar
+depois é pior que cancelar, porque o run antigo deployava o HEAD atual da main de qualquer
+forma — não o commit dele.
+
+O que hoje protege isso, sem depender de disciplina:
+
+- **`.github/workflows/cd-guard.yml`** — fora do grupo `cd-production` de propósito (se
+  estivesse dentro, travaria junto com o que deveria destravar). A cada CI verde na main
+  ele cancela runs em `waiting`, que por construção são de commits mais antigos. De 6 em 6
+  horas confere se a main ficou à frente do último deploy bem-sucedido e **falha** se sim.
+- **Detecção de migration pelo estado do banco**, não por diff de SHA. Comparar SHAs mentia:
+  em `workflow_run` o checkout traz o HEAD atual da main, e o playbook faz reset para
+  `origin/main` — então servidor e checkout terminavam no mesmo commit, o diff saía vazio e
+  a migration era pulada. Agora a fonte de verdade é `_prisma_migrations` no banco.
+- **Verificação pós-deploy** — o job confere que a produção está de fato no commit da main
+  e que não há migration travada, e falha em voz alta se não estiver.
+
+Dois detalhes medidos que parecem bug e não são:
+
+- `SELECT ... WHERE finished_at IS NULL` traz **6 migrations** que falharam em 2026 e foram
+  resolvidas como revertidas. O filtro tem de incluir `AND rolled_back_at IS NULL`, senão a
+  checagem falha em todo deploy — e alarme falso permanente ensina a ignorar o alarme.
+- `gh run list --status success` **não** devolve o run mais recente (medido: trouxe um de
+  08/09 enquanto o de hoje era success). Filtre `conclusion` no jq.
+
 ## Referências no repo
 
 - Workflows: `.github/workflows/ci.yml`, `.github/workflows/deploy.yml`

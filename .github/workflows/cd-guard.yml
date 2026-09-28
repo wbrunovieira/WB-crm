@@ -1,0 +1,99 @@
+name: CD Guard
+
+# Guarda da fila de deploy. Existe porque a fila do CD já travou cinco vezes, sempre em
+# silêncio: um run em `waiting` (esperando aprovação) segura o grupo `cd-production`, e
+# todo CD seguinte entra em `pending` SEM criar job — não chega ao gate, não aparece como
+# "Review deployments", e é cancelado quando o próximo é enfileirado. Resultado: CI verde,
+# nada sobe, nenhum erro em lugar nenhum (#919). Na última vez um agente conferiu a
+# correção em produção, viu que não funcionava e escreveu um relato de bug detalhado —
+# diagnosticando código que não estava rodando (#1220).
+#
+# Este workflow NÃO entra no grupo `cd-production` de propósito: se entrasse, travaria
+# junto com aquilo que deveria destravar.
+
+on:
+  # Um CI verde na main significa que um CD novo está a caminho: qualquer run ainda
+  # em `waiting` é de um commit mais antigo e está segurando a fila.
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  # Rede de segurança: se ninguém empurrar código por um tempo, ainda queremos saber que
+  # a produção ficou atrás da main.
+  schedule:
+    - cron: "0 */6 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write # cancelar runs obsoletos da fila
+
+concurrency:
+  group: cd-guard
+  cancel-in-progress: true
+
+jobs:
+  guard:
+    name: Destravar a fila e conferir a produção
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      # Um run em `waiting` só é obsoleto quando existe commit mais novo para deployar.
+      # No gatilho de CI isso é verdade por construção. No agendado NÃO é — ali um run
+      # esperando pode ser legítimo (o Bruno ainda vai aprovar), então só avisamos.
+      - name: Cancelar runs obsoletos que seguram a fila
+        if: github.event_name == 'workflow_run'
+        run: |
+          PRESOS=$(gh run list --workflow=deploy.yml --status waiting \
+                     --limit 30 --json databaseId,headSha,createdAt \
+                     -q '.[] | "\(.databaseId) \(.headSha[0:8]) \(.createdAt)"')
+          if [ -z "$PRESOS" ]; then
+            echo "Nenhum run em waiting — fila livre."
+            exit 0
+          fi
+          echo "$PRESOS" | while read -r id sha criado; do
+            echo "::warning::Cancelando CD $id ($sha, de $criado) — superado por um commit mais novo; ele estava segurando a fila."
+            gh run cancel "$id" || echo "  (já não era cancelável)"
+          done
+          echo "Fila liberada. O CD do commit novo vai chegar ao gate e aparecer para aprovação."
+
+      # Também pega runs em `pending`: são os que nunca criaram job porque a fila estava
+      # presa. Eles não são visíveis como "aguardando aprovação" em lugar nenhum.
+      - name: Conferir se a produção ficou atrás da main
+        run: |
+          set -o pipefail
+          MAIN=$(git rev-parse origin/main)
+          # `--status success` NÃO devolve o run mais recente (medido: trouxe um de 08/09
+          # enquanto o de hoje estava success). Filtrar por conclusion no jq, que respeita
+          # a ordem natural do mais novo para o mais antigo.
+          ULTIMO_OK=$(gh run list --workflow=deploy.yml --limit 50 \
+                        --json headSha,conclusion \
+                        -q 'map(select(.conclusion=="success")) | .[0].headSha // ""')
+          echo "main:                 $MAIN"
+          echo "último CD com sucesso: ${ULTIMO_OK:-nenhum}"
+
+          EMBARGADOS=$(gh run list --workflow=deploy.yml --limit 30 \
+                         --json databaseId,status,headSha,createdAt \
+                         -q '.[] | select(.status=="waiting" or .status=="pending") | "\(.status) \(.databaseId) \(.headSha[0:8]) \(.createdAt)"')
+          if [ -n "$EMBARGADOS" ]; then
+            echo "Runs de CD retidos:"; echo "$EMBARGADOS" | sed 's/^/  /'
+          fi
+
+          if [ -z "$ULTIMO_OK" ]; then
+            echo "Nenhum deploy bem-sucedido no histórico consultado — nada a comparar."
+            exit 0
+          fi
+          if [ "$ULTIMO_OK" = "$MAIN" ]; then
+            echo "Produção está no commit da main."
+            exit 0
+          fi
+
+          ATRAS=$(git rev-list --count "$ULTIMO_OK".."$MAIN" 2>/dev/null || echo "?")
+          echo "::error::A main está $ATRAS commit(s) à frente do último deploy bem-sucedido ($ULTIMO_OK). Se não há deploy em andamento, algo travou a fila em silêncio — confira os runs retidos acima e cancele os obsoletos."
+          exit 1
