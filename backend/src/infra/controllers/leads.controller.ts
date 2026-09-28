@@ -1109,6 +1109,17 @@ export class LeadsController {
   async searchGooglePlaces(
     @Body() body: { textQuery: string; pageToken?: string; languageCode?: string },
   ) {
+    // O tipo acima é do TypeScript e some em runtime: sem esta checagem um corpo errado
+    // seguia até o Google, que respondia "Empty text_query", e o erro cru virava 500
+    // "Internal server error". Um agente externo chamou com `query` em vez de `textQuery`
+    // e ficou sem saber o que corrigir — 500 diz que o servidor quebrou, quando quem
+    // errou foi o chamador. Nomear o campo que falta é o que torna o erro acionável.
+    if (typeof body?.textQuery !== "string" || body.textQuery.trim() === "") {
+      throw new BadRequestException(
+        "textQuery é obrigatório e deve ser um texto não vazio (ex.: { \"textQuery\": \"padaria em Petrópolis RJ\" })",
+      );
+    }
+
     try {
       return await this.googlePlaces.search({
         textQuery: body.textQuery,
