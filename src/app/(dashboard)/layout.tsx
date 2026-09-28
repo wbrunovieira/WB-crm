@@ -6,6 +6,7 @@ import { Toaster } from "sonner";
 import { LogoutButton } from "@/components/shared/LogoutButton";
 import { MainNav } from "@/components/shared/MainNav";
 import { NotificationBell } from "@/components/shared/NotificationBell";
+import { GlobalSearch } from "@/components/shared/GlobalSearch";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { SessionProvider } from "@/components/providers/session-provider";
 
@@ -33,6 +34,9 @@ export default async function DashboardLayout({
                 WB CRM
               </Link>
               <MainNav userRole={session.user?.role} />
+            </div>
+            <div className="hidden md:block w-full max-w-xs flex-shrink">
+              <GlobalSearch />
             </div>
             <div className="flex items-center gap-2 flex-shrink-0">
               <div className="hidden lg:block text-sm text-gray-300 font-medium truncate max-w-[150px]" title={session.user?.name || session.user?.email || ""}>
