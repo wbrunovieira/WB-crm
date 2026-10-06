@@ -47,21 +47,34 @@ jobs:
       # Um run em `waiting` só é obsoleto quando existe commit mais novo para deployar.
       # No gatilho de CI isso é verdade por construção. No agendado NÃO é — ali um run
       # esperando pode ser legítimo (o Bruno ainda vai aprovar), então só avisamos.
+      # SÓ cancela run de OUTRO commit. O CD deste mesmo commit entra em `waiting` no
+      # mesmo instante que este guard roda, então "tudo que está esperando é antigo" é
+      # falso — e na primeira execução real isso cancelou justamente o deploy que deveria
+      # proteger, deixando a fila pior do que sem guard nenhum.
       - name: Cancelar runs obsoletos que seguram a fila
         if: github.event_name == 'workflow_run'
+        env:
+          SHA_ATUAL: ${{ github.event.workflow_run.head_sha }}
         run: |
-          PRESOS=$(gh run list --workflow=deploy.yml --status waiting \
-                     --limit 30 --json databaseId,headSha,createdAt \
-                     -q '.[] | "\(.databaseId) \(.headSha[0:8]) \(.createdAt)"')
-          if [ -z "$PRESOS" ]; then
-            echo "Nenhum run em waiting — fila livre."
+          if [ -z "$SHA_ATUAL" ]; then
+            echo "::warning::Sem SHA do CI — não dá para saber o que é obsoleto; nada cancelado."
             exit 0
           fi
-          echo "$PRESOS" | while read -r id sha criado; do
-            echo "::warning::Cancelando CD $id ($sha, de $criado) — superado por um commit mais novo; ele estava segurando a fila."
+          echo "Commit atual: ${SHA_ATUAL:0:8} — runs deste commit são preservados."
+
+          OBSOLETOS=$(gh run list --workflow=deploy.yml --limit 30 \
+                        --json databaseId,headSha,status,createdAt \
+                        -q "map(select(.status==\"waiting\" and .headSha != \"$SHA_ATUAL\"))
+                            | .[] | \"\(.databaseId) \(.headSha[0:8]) \(.createdAt)\"")
+          if [ -z "$OBSOLETOS" ]; then
+            echo "Nenhum run obsoleto em waiting — fila livre."
+            exit 0
+          fi
+          echo "$OBSOLETOS" | while read -r id sha criado; do
+            echo "::warning::Cancelando CD $id ($sha, de $criado) — é de um commit anterior e estava segurando a fila."
             gh run cancel "$id" || echo "  (já não era cancelável)"
           done
-          echo "Fila liberada. O CD do commit novo vai chegar ao gate e aparecer para aprovação."
+          echo "Fila liberada. O CD de ${SHA_ATUAL:0:8} chega ao gate e aparece para aprovação."
 
       # Também pega runs em `pending`: são os que nunca criaram job porque a fila estava
       # presa. Eles não são visíveis como "aguardando aprovação" em lugar nenhum.
@@ -95,5 +108,16 @@ jobs:
           fi
 
           ATRAS=$(git rev-list --count "$ULTIMO_OK".."$MAIN" 2>/dev/null || echo "?")
-          echo "::error::A main está $ATRAS commit(s) à frente do último deploy bem-sucedido ($ULTIMO_OK). Se não há deploy em andamento, algo travou a fila em silêncio — confira os runs retidos acima e cancele os obsoletos."
+
+          # Esperando o Bruno aprovar NÃO é fila travada. Acusar deriva aqui transformaria
+          # todo deploy normal em falha vermelha, e alarme que toca sempre ninguém lê.
+          VIVO=$(gh run list --workflow=deploy.yml --limit 30 \
+                   --json headSha,status \
+                   -q "map(select(.headSha==\"$MAIN\" and (.status==\"waiting\" or .status==\"pending\" or .status==\"in_progress\" or .status==\"queued\"))) | length")
+          if [ "${VIVO:-0}" -gt 0 ]; then
+            echo "A main está $ATRAS commit(s) à frente, mas há deploy deste commit em andamento ou aguardando aprovação. Nada travado."
+            exit 0
+          fi
+
+          echo "::error::A main está $ATRAS commit(s) à frente do último deploy bem-sucedido ($ULTIMO_OK) e NÃO há deploy deste commit na fila. Algo travou em silêncio — confira os runs retidos acima e cancele os obsoletos."
           exit 1

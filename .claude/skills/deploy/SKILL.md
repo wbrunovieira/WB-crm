@@ -114,6 +114,14 @@ O que hoje protege isso, sem depender de disciplina:
 - **Verificação pós-deploy** — o job confere que a produção está de fato no commit da main
   e que não há migration travada, e falha em voz alta se não estiver.
 
+**Armadilha do próprio guard** (custou um deploy cancelado na primeira execução real): o CD
+do commit que acabou de passar no CI entra em `waiting` **no mesmo instante** em que o guard
+roda. Tratar "tudo que está em waiting é obsoleto" cancela justamente o deploy que se queria
+proteger. O guard compara `headSha` com o commit do CI e só cancela o que for de OUTRO commit.
+Pelo mesmo motivo, a checagem de deriva não acusa nada enquanto existir run do commit da main
+em `waiting`/`pending`/`in_progress` — esperar aprovação não é fila travada, e um alarme que
+toca em todo deploy normal é um alarme que ninguém lê.
+
 Dois detalhes medidos que parecem bug e não são:
 
 - `SELECT ... WHERE finished_at IS NULL` traz **6 migrations** que falharam em 2026 e foram
