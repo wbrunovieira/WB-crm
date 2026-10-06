@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { getCountries, getCountryCallingCode, type CountryCode } from "libphonenumber-js";
 
 interface Slot { start: string; end: string }
-interface BookingData {
+export interface BookingData {
   bookingType: { name: string; durationMinutes: number; timeZone: string };
   locationModes: ("online" | "presential")[];
   lead: { name: string; address: string | null; email: string | null } | null;
