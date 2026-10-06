@@ -24,7 +24,12 @@ git push (main)  →  CI (testes)  →  se verde: CD dispara  →  aprovação M
    host key pinada em `deploy/ci/known_hosts`, sudo escopado só a `pm2 restart/status` e ao backup).
    Faz frontend (PM2) + backend (container Docker) + health checks.
 
-> Deploy normal leva **~5 min**. Se passar de ~10 min, algo travou (ver "Debug" abaixo).
+> Deploy completo leva **~25-30 min** (medido 06/10: `npm ci` 10,5min, build do Next 7,4min,
+> imagem do backend depois disso). O teto do **job** é 60min e o do passo do quick-deploy, 45min.
+> Esses números vieram de um deploy que morreu no teto antigo de 30min **no meio do backend**:
+> o frontend subiu, o backend ficou com a imagem velha, e o workflow marcou falha sem deixar
+> claro que metade tinha ido. Se precisar apertar o tempo, ataque o `npm ci` (10 min é muito) —
+> não o teto, que é o que evita a falha pela metade.
 
 ### Migrations são automáticas
 O CD detecta se o diff (commit deployado no servidor → `main`) toca `backend/prisma/migrations/`:

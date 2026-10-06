@@ -36,7 +36,13 @@ jobs:
   deploy:
     name: Deploy → VPS Contabo
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    # Medido em 06/10, deploy completo: npm ci 10,5min + build do Next 7,4min + remoção de
+    # devDeps e PM2 ~1min = 19min ANTES de o backend começar; o docker build do backend ainda
+    # vinha depois. Com o teto de 30min o job morria no meio do backend e deixava produção
+    # com frontend novo e backend velho — falha parcial e silenciosa, que só não passou
+    # despercebida porque alguém foi conferir. O teto do JOB é o que manda: subir só o do
+    # passo não adiantaria nada.
+    timeout-minutes: 60
     # workflow_run: só se o CI concluiu com sucesso. workflow_dispatch: sempre permite
     # (o environment ainda exige aprovação manual).
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
@@ -122,7 +128,7 @@ jobs:
           EOF
 
       - name: Deploy backend com migração (backup → migrate → swap)
-        timeout-minutes: 25
+        timeout-minutes: 35
         if: (steps.detect.outputs.migrate == 'true' && inputs.playbook != 'quick-deploy') || inputs.playbook == 'deploy-backend'
         working-directory: deploy/ansible
         env:
@@ -130,7 +136,7 @@ jobs:
         run: ansible-playbook -i inventory/ci.yml playbooks/deploy-backend.yml
 
       - name: Deploy frontend + backend (quick-deploy)
-        timeout-minutes: 25
+        timeout-minutes: 45
         if: inputs.playbook != 'deploy-backend'
         working-directory: deploy/ansible
         env:
