@@ -43,7 +43,11 @@ export class WhatsAppTranscriptionCallbackController {
     const expectedSecret = process.env.TRANSCRIBER_CALLBACK_SECRET;
     const receivedSecret = body.secret ?? headerSecret;
 
-    if (expectedSecret && receivedSecret !== expectedSecret) {
+    // Falha fechada. Antes, se TRANSCRIBER_CALLBACK_SECRET não estivesse setado, o `&&`
+    // curto-circuitava e QUALQUER requisição era aceita — qualquer um podia injetar
+    // "transcrição" para qualquer job_id e envenenar a análise de IA. Sem segredo
+    // configurado, recusar.
+    if (!expectedSecret || receivedSecret !== expectedSecret) {
       this.logger.warn("Transcription callback: invalid secret", { jobId: body.job_id });
       throw new UnauthorizedException("Invalid callback secret");
     }

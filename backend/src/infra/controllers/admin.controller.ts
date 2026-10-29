@@ -8,6 +8,7 @@ import {
   ApiQuery, ApiResponse, ApiTags, ApiProperty, ApiPropertyOptional,
 } from "@nestjs/swagger";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
+import { AdminGuard } from "@/infra/auth/guards/admin.guard";
 import { Left } from "@/core/either";
 import { TECH_OPTION_TYPES, type TechOptionType } from "@/domain/admin/enterprise/entities/admin-tech-option";
 
@@ -158,6 +159,7 @@ export class AdminController {
     return serializeBL((result.value as { item: import("@/domain/admin/enterprise/entities/business-line").BusinessLine }).item);
   }
 
+  @UseGuards(AdminGuard)
   @Post("business-lines")
   @HttpCode(201)
   @ApiOperation({ summary: "Criar linha de negócio" })
@@ -168,6 +170,7 @@ export class AdminController {
     return serializeBL((result.value as { item: import("@/domain/admin/enterprise/entities/business-line").BusinessLine }).item);
   }
 
+  @UseGuards(AdminGuard)
   @Patch("business-lines/:id")
   @ApiOperation({ summary: "Atualizar linha de negócio" })
   @ApiParam({ name: "id" })
@@ -177,6 +180,7 @@ export class AdminController {
     return serializeBL((result.value as { item: import("@/domain/admin/enterprise/entities/business-line").BusinessLine }).item);
   }
 
+  @UseGuards(AdminGuard)
   @Delete("business-lines/:id")
   @HttpCode(204)
   @ApiOperation({ summary: "Excluir linha de negócio" })
@@ -185,6 +189,7 @@ export class AdminController {
     if (result.isLeft()) handleError(result);
   }
 
+  @UseGuards(AdminGuard)
   @Patch("business-lines/:id/toggle")
   @ApiOperation({ summary: "Ativar/desativar linha de negócio" })
   async toggleBL(@Param("id") id: string) {
@@ -217,6 +222,7 @@ export class AdminController {
     return serializeProduct((result.value as { item: import("@/domain/admin/enterprise/entities/product").Product }).item);
   }
 
+  @UseGuards(AdminGuard)
   @Post("products")
   @HttpCode(201)
   @ApiOperation({ summary: "Criar produto" })
@@ -227,6 +233,7 @@ export class AdminController {
     return serializeProduct((result.value as { item: import("@/domain/admin/enterprise/entities/product").Product }).item);
   }
 
+  @UseGuards(AdminGuard)
   @Patch("products/:id")
   @ApiOperation({ summary: "Atualizar produto" })
   async updateProd(@Param("id") id: string, @Body() body: UpdateProductDto) {
@@ -235,6 +242,7 @@ export class AdminController {
     return serializeProduct((result.value as { item: import("@/domain/admin/enterprise/entities/product").Product }).item);
   }
 
+  @UseGuards(AdminGuard)
   @Delete("products/:id")
   @HttpCode(204)
   @ApiOperation({ summary: "Excluir produto" })
@@ -243,6 +251,7 @@ export class AdminController {
     if (result.isLeft()) handleError(result);
   }
 
+  @UseGuards(AdminGuard)
   @Patch("products/:id/toggle")
   @ApiOperation({ summary: "Ativar/desativar produto" })
   async toggleProd(@Param("id") id: string) {
@@ -265,6 +274,7 @@ export class AdminController {
     return (result.value as { items: unknown[] }).items.map(serializeTechOption as never);
   }
 
+  @UseGuards(AdminGuard)
   @Post("tech-options/:type")
   @HttpCode(201)
   @ApiOperation({ summary: "Criar opção de tecnologia" })
@@ -277,6 +287,7 @@ export class AdminController {
     return serializeTechOption((result.value as { item: import("@/domain/admin/enterprise/entities/admin-tech-option").AdminTechOption }).item);
   }
 
+  @UseGuards(AdminGuard)
   @Patch("tech-options/:type/:id")
   @ApiOperation({ summary: "Atualizar opção de tecnologia" })
   @ApiParam({ name: "type" })
@@ -288,6 +299,7 @@ export class AdminController {
     return serializeTechOption((result.value as { item: import("@/domain/admin/enterprise/entities/admin-tech-option").AdminTechOption }).item);
   }
 
+  @UseGuards(AdminGuard)
   @Delete("tech-options/:type/:id")
   @HttpCode(204)
   @ApiOperation({ summary: "Excluir opção de tecnologia" })
@@ -299,6 +311,7 @@ export class AdminController {
     if (result.isLeft()) handleError(result);
   }
 
+  @UseGuards(AdminGuard)
   @Patch("tech-options/:type/:id/toggle")
   @ApiOperation({ summary: "Ativar/desativar opção de tecnologia" })
   @ApiParam({ name: "type" })

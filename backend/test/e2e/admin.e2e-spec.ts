@@ -10,6 +10,7 @@ let app: INestApplication;
 let prisma: PrismaService;
 let jwt: JwtService;
 let token: string;
+let sdrToken: string;
 
 beforeAll(async () => {
   const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -25,6 +26,14 @@ beforeAll(async () => {
     create: { email: "e2e-admin@test.com", name: "E2E Admin User", password: "hashed", role: "admin" },
   });
   token = jwt.sign({ sub: user.id, name: user.name, email: user.email, role: user.role });
+
+  // Um SDR para provar que mutações são admin-only mas leituras não.
+  const sdr = await prisma.user.upsert({
+    where: { email: "e2e-admin-sdr@test.com" },
+    update: {},
+    create: { email: "e2e-admin-sdr@test.com", name: "E2E SDR", password: "hashed", role: "sdr" },
+  });
+  sdrToken = jwt.sign({ sub: sdr.id, name: sdr.name, email: sdr.email, role: sdr.role });
 
   // Clear any leftover "e2e-" rows from prior crashed runs (unique slug collisions).
   await prisma.product.deleteMany({ where: { slug: { startsWith: "e2e-" } } });
@@ -52,7 +61,7 @@ afterEach(async () => {
 });
 
 afterAll(async () => {
-  await prisma.user.deleteMany({ where: { email: "e2e-admin@test.com" } });
+  await prisma.user.deleteMany({ where: { email: { in: ["e2e-admin@test.com", "e2e-admin-sdr@test.com"] } } });
   await app.close();
 });
 
@@ -73,6 +82,38 @@ describe("Admin API - Auth", () => {
 });
 
 // ─── BusinessLine ─────────────────────────────────────────────────────────────
+
+describe("AdminGuard — mutações são admin-only, leituras não", () => {
+  it("SDR PODE ler business-lines (GET livre)", async () => {
+    await request(app.getHttpServer())
+      .get("/admin/business-lines")
+      .set("Authorization", `Bearer ${sdrToken}`)
+      .expect(200);
+  });
+
+  it("SDR NÃO pode criar business-line (403)", async () => {
+    await request(app.getHttpServer())
+      .post("/admin/business-lines")
+      .set("Authorization", `Bearer ${sdrToken}`)
+      .send({ name: "E2E Hack", slug: "e2e-hack", isActive: true, order: 1 })
+      .expect(403);
+  });
+
+  it("SDR NÃO pode apagar produto (403)", async () => {
+    await request(app.getHttpServer())
+      .delete("/admin/products/qualquer-id")
+      .set("Authorization", `Bearer ${sdrToken}`)
+      .expect(403);
+  });
+
+  it("admin PODE criar business-line (200/201)", async () => {
+    const res = await request(app.getHttpServer())
+      .post("/admin/business-lines")
+      .set("Authorization", `Bearer ${token}`)
+      .send({ name: "E2E Admin OK", slug: "e2e-admin-ok", isActive: true, order: 1 });
+    expect([200, 201]).toContain(res.status);
+  });
+});
 
 describe("BusinessLine CRUD", () => {
   it("cria e lista linha de negócio", async () => {

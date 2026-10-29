@@ -13,8 +13,12 @@ async function bootstrap() {
   // ── Request logger ───────────────────────────────────────────────────────
   app.use((req: { method: string; url: string }, _res: unknown, next: () => void) => {
     const method = req.method;
-    if (["POST", "PATCH", "PUT", "DELETE"].includes(method) || req.url.includes("bulk-deep-research")) {
-      console.log(`[${new Date().toISOString()}] ${method} ${req.url}`);
+    // Só o pathname. Logar req.url inteiro gravava a query string nos logs do PM2, e os
+    // webhooks do GoTo passam o GOTO_WEBHOOK_SECRET como ?secret= — o segredo acabava
+    // escrito em texto puro no log a cada chamada.
+    const pathname = req.url.split("?")[0];
+    if (["POST", "PATCH", "PUT", "DELETE"].includes(method) || pathname.includes("bulk-deep-research")) {
+      console.log(`[${new Date().toISOString()}] ${method} ${pathname}`);
     }
     next();
   });
