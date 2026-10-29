@@ -62,26 +62,9 @@ function isAuthorized(headers: Record<string, string | undefined>): boolean {
   const webhookSecret = headers["x-webhook-secret"];
   if (webhookSecret && webhookSecret === process.env.WEBHOOK_SECRET) return true;
 
-  const forwardedFor = headers["x-forwarded-for"];
-  if (forwardedFor) {
-    const firstIp = forwardedFor.split(",")[0].trim();
-    if (
-      firstIp === "127.0.0.1" ||
-      firstIp === "::1" ||
-      firstIp === "localhost" ||
-      firstIp.startsWith("192.168.") ||
-      firstIp.startsWith("10.") ||
-      firstIp.startsWith("172.16.") ||
-      firstIp.startsWith("172.17.") ||
-      firstIp.startsWith("172.18.") ||
-      firstIp.startsWith("172.19.") ||
-      firstIp.startsWith("172.2") ||
-      firstIp.startsWith("172.30.") ||
-      firstIp.startsWith("172.31.")
-    ) {
-      return true;
-    }
-  }
+  // Autorização só por segredo. O x-forwarded-for é controlado pelo cliente — o nginx
+  // faz append, então um "127.0.0.1" forjado virava a primeira entrada e passava sem
+  // segredo nenhum (bypass explorável em produção). Nunca confiar em header de proxy.
 
   return false;
 }

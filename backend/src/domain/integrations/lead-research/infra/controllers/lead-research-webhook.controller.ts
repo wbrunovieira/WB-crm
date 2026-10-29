@@ -12,22 +12,6 @@ import {
 } from "../../application/use-cases/create-lead-research-notification.use-case";
 import type { LeadResearchPayload } from "../../application/use-cases/create-lead-research-notification.use-case";
 
-function isLocalIp(ip: string): boolean {
-  return (
-    ip === "127.0.0.1" ||
-    ip === "::1" ||
-    ip === "localhost" ||
-    ip.startsWith("192.168.") ||
-    ip.startsWith("10.") ||
-    ip.startsWith("172.16.") ||
-    ip.startsWith("172.17.") ||
-    ip.startsWith("172.18.") ||
-    ip.startsWith("172.19.") ||
-    ip.startsWith("172.2") ||
-    ip.startsWith("172.30.") ||
-    ip.startsWith("172.31.")
-  );
-}
 
 @Controller("webhooks/lead-research")
 export class LeadResearchWebhookController {
@@ -42,15 +26,9 @@ export class LeadResearchWebhookController {
     const webhookSecret = headers["x-webhook-secret"];
     if (webhookSecret && webhookSecret === process.env.WEBHOOK_SECRET) return true;
 
-    const forwardedFor = headers["x-forwarded-for"];
-    if (forwardedFor) {
-      const firstIp = forwardedFor.split(",")[0].trim();
-      if (isLocalIp(firstIp)) return true;
-    }
-
-    const realIp = headers["x-real-ip"];
-    if (realIp && isLocalIp(realIp)) return true;
-
+    // Autorização só por segredo. x-forwarded-for e x-real-ip são controlados pelo cliente —
+    // o nginx faz append, então um "127.0.0.1" forjado passava sem segredo nenhum (bypass
+    // explorável em produção). Nunca confiar em header de proxy.
     return false;
   }
 

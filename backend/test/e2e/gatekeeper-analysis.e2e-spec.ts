@@ -147,6 +147,25 @@ describe("Gatekeeper Analysis API (e2e)", () => {
         .expect(403);
     });
 
+    // Regressão de segurança: um x-forwarded-for forjado com IP local NÃO pode autorizar.
+    // Era um bypass explorável em produção — o header é controlado pelo cliente e o nginx
+    // faz append, então "127.0.0.1" virava a primeira entrada e passava sem segredo.
+    it("não autoriza por x-forwarded-for forjado (bypass fechado)", async () => {
+      await request(app.getHttpServer())
+        .post("/webhooks/gatekeeper-analysis")
+        .set("x-forwarded-for", "127.0.0.1")
+        .send({ jobId: "qualquer", status: "completed", score: 3 })
+        .expect(403);
+    });
+
+    it("não autoriza por x-real-ip forjado", async () => {
+      await request(app.getHttpServer())
+        .post("/webhooks/gatekeeper-analysis")
+        .set("x-real-ip", "10.0.0.5")
+        .send({ jobId: "qualquer", status: "completed", score: 3 })
+        .expect(403);
+    });
+
     it("salva análise via webhook e retorna 200", async () => {
       const gkAnalysis = await prisma.gatekeeperAnalysis.create({
         data: { activityId, ownerId, status: "pending", jobId: "gk-job-e2e-001" },

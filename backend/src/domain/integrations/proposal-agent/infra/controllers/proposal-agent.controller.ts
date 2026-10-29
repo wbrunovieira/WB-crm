@@ -23,15 +23,6 @@ import { AnswerProposalAgentQuestionUseCase } from "../../application/use-cases/
 import { CorrectProposalUseCase } from "../../application/use-cases/correct-proposal.use-case";
 import { ReviseProposalUseCase } from "../../application/use-cases/revise-proposal.use-case";
 
-function isLocalIp(ip: string): boolean {
-  return (
-    ip === "127.0.0.1" || ip === "::1" || ip === "localhost" ||
-    ip.startsWith("192.168.") || ip.startsWith("10.") ||
-    ip.startsWith("172.16.") || ip.startsWith("172.17.") ||
-    ip.startsWith("172.18.") || ip.startsWith("172.19.") ||
-    ip.startsWith("172.2") || ip.startsWith("172.30.") || ip.startsWith("172.31.")
-  );
-}
 
 @ApiTags("Proposal Agent")
 @Controller()
@@ -212,11 +203,9 @@ export class ProposalAgentController {
       if (process.env.PROPOSAL_AGENT_SECRET && webhookSecret === process.env.PROPOSAL_AGENT_SECRET) return true;
     }
 
-    const forwardedFor = headers["x-forwarded-for"];
-    if (forwardedFor) {
-      const firstIp = forwardedFor.split(",")[0].trim();
-      if (isLocalIp(firstIp)) return true;
-    }
+    // Autorização só por segredo. O x-forwarded-for é controlado pelo cliente — o nginx
+    // faz append, então um "127.0.0.1" forjado virava a primeira entrada e passava sem
+    // segredo nenhum (bypass explorável em produção). Nunca confiar em header de proxy.
 
     return false;
   }
