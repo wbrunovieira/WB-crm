@@ -1,6 +1,7 @@
 {
   "name": "wb-crm-mobile",
   "version": "0.1.0",
+  "license": "MIT",
   "main": "expo-router/entry",
   "private": true,
   "scripts": {
