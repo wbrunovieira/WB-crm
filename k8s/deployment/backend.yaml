@@ -1,0 +1,149 @@
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    component: backend
+  name: backend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: backend
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        component: backend
+    spec:
+      securityContext:
+        # GID 200 = appgroup pinado no backend/Dockerfile (USER 100:200)
+        fsGroup: 200
+      imagePullSecrets:
+        - name: images-pull-secret
+      initContainers:
+        # ENV_FILE_PATH target may not exist on a fresh volume; create it so
+        # the app can append OAuth tokens to it later.
+        - name: init-env-file
+          image: backend
+          command:
+            - sh
+            - -c
+            - touch /app/config/backend.env
+          securityContext: &backend-security
+            runAsUser: 100
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+          volumeMounts:
+            - mountPath: /app/config
+              name: backend-env
+      containers:
+        - name: backend
+          image: backend
+          env: &postgres-env
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  key: dbname
+                  name: database-app
+            - name: POSTGRES_HOST
+              valueFrom:
+                secretKeyRef:
+                  key: host
+                  name: database-app
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: password
+                  name: database-app
+            - name: POSTGRES_PORT
+              valueFrom:
+                secretKeyRef:
+                  key: port
+                  name: database-app
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  key: user
+                  name: database-app
+            # Composed from the POSTGRES_* vars above via k8s dependent-var
+            # expansion ($(VAR) references earlier entries in this list).
+            - name: DATABASE_URL
+              value: postgresql://$(POSTGRES_USER):$(POSTGRES_PASSWORD)@$(POSTGRES_HOST):$(POSTGRES_PORT)/$(POSTGRES_DB)
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: NEXTAUTH_JWT_SECRET
+                  name: application
+            - name: META_USER_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  key: META_USER_TOKEN
+                  name: application
+            - name: FINANCE_API_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: FINANCE_API_SECRET
+                  name: application
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  key: ADMIN_PASSWORD
+                  name: application
+          envFrom:
+            - configMapRef:
+                name: backend
+            - secretRef:
+                name: application
+          ports:
+            - containerPort: 3010
+              protocol: TCP
+              name: http
+          volumeMounts:
+            - mountPath: /app/config
+              name: backend-env
+            - mountPath: /tmp
+              name: backend-tmp
+          startupProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 500m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          securityContext: *backend-security
+      volumes:
+        - name: backend-env
+          persistentVolumeClaim:
+            claimName: backend-config
+        - name: backend-tmp
+          emptyDir:
+            sizeLimit: 500Mi

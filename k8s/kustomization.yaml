@@ -1,0 +1,27 @@
+---
+
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: crm
+resources:
+  - configmap/backend.yaml
+  - configmap/frontend.yaml
+  - database-cluster.yaml
+  - deployment/backend.yaml
+  - deployment/frontend.yaml
+  - ingress.yaml
+  - job/migrate.yaml
+  - persistentvolumeclaim/backend-config.yaml
+  - service/backend.yaml
+  - service/frontend.yaml
+images:
+  - name: backend
+    newName: registry.example.com/group/wb-crm/backend
+    newTag: 12345678-9012
+  - name: frontend
+    newName: registry.example.com/group/wb-crm/frontend
+    newTag: 12345678-9012
+labels:
+  - includeSelectors: true
+    pairs:
+      app: crm

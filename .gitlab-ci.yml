@@ -1,0 +1,275 @@
+# GitLab CI setup, stages:
+#
+#   prepare              → content-addressed tags for the deps images (git rev-list
+#                          over the inputs of each image: lockfiles, prisma schema,
+#                          Dockerfiles). A deps image is rebuilt ONLY when its
+#                          inputs change; otherwise the pipeline re-uses the one
+#                          already in the registry.
+#   build deps images    → deps-backend (node_modules + prisma client),
+#                          deps-frontend (node_modules).
+#   test                 → lint/unit/e2e jobs run INSIDE the deps images — no
+#                          `npm ci` at test time (it was costing ~10min per job
+#                          on these runners).
+#   build final images   → production backend + frontend images, built ON TOP of
+#                          the deps images (registry cache instead of npm), plus
+#                          test-frontend (deps + Playwright chromium baked in).
+#   final tests          → e2e-frontend, inside test-frontend.
+#   tag                  → :*-dev tags on the default branch (skopeo).
+#
+# Images produced in $CI_REGISTRY_IMAGE:
+#   deps-backend:deps-<stamp>-<count>-<hash>-<ref>      (intermediate, tests + prod build base)
+#   deps-frontend:deps-<stamp>-<count>-<hash>-<ref>     (intermediate, tests + build base)
+#   test-frontend:<same tag as deps-frontend>           (e2e runner image)
+#   backend:<commit>-<pipeline>                         (production)
+#   frontend:<commit>-<pipeline>                        (production)
+
+---
+
+stages:
+  - prepare
+  - build deps images
+  - test
+  - build final images
+  - final tests
+  - tag
+
+variables:
+  # Dummy/test secrets
+  JWT_SECRET: "ci-dummy-jwt-secret"
+  NEXTAUTH_SECRET: "ci-dummy-nextauth-secret"
+  NEXTAUTH_URL: "http://localhost:3000"
+  WEBHOOK_SECRET: "ci-dummy-webhook-secret"
+  META_USER_TOKEN: "ci-dummy-meta-token"  # MetaGraphApiAdapter exige no boot (DI)
+  BACKEND_URL: "http://localhost:3010"
+  NEXT_PUBLIC_BACKEND_URL: "http://localhost:3010"
+  # Bump to force rebuilding the deps images even when their inputs are unchanged.
+  DEPS_STAMP: "1"
+
+include:
+  - remote: https://gitlab.com/simevo/pipelines/-/raw/main/jobs/build_docker_image_buildkit.yml
+
+# ─────────────────────────────────────────────────────────────────────────────
+# prepare: compute the tags (content-addressed for deps images, commit+pipeline
+# for final images) and export them to the later jobs via dotenv artifact.
+# ─────────────────────────────────────────────────────────────────────────────
+
+prepare:
+  stage: prepare
+  image: docker.io/alpine/git
+  variables:
+    # disable shallow cloning or `git rev-list --count` used below won't work
+    GIT_DEPTH: 0
+  script:
+    - GIT_VERSION=$(git log -n1 --pretty='%h')
+    - TAG=${GIT_VERSION}-${CI_PIPELINE_ID}
+    # deps-backend inputs: lockfiles + prisma schema (the client is generated
+    # into node_modules) + the Dockerfile itself
+    - DEPS_BACKEND_COMMIT_HASH=$(git rev-list -1 HEAD -- backend/package.json backend/package-lock.json backend/prisma/schema.prisma backend/Dockerfile)
+    - DEPS_BACKEND_COMMIT_COUNT=$(git rev-list --count "$DEPS_BACKEND_COMMIT_HASH")
+    # deps-frontend inputs: lockfiles + the Dockerfile (which also defines the
+    # test-frontend stage — same inputs, so test-frontend reuses this tag)
+    - DEPS_FRONTEND_COMMIT_HASH=$(git rev-list -1 HEAD -- package.json package-lock.json frontend/Dockerfile)
+    - DEPS_FRONTEND_COMMIT_COUNT=$(git rev-list --count "$DEPS_FRONTEND_COMMIT_HASH")
+    # Tags like `deps-1-89-56fcfcc403a7-main` ensure that deps images are
+    # rebuilt when: 1) DEPS_STAMP is bumped; 2) a commit touches their inputs.
+    # Otherwise the existing image is re-used on a per-branch basis — skipping
+    # the npm ci (~10min on these runners) in every job.
+    - DEPS_BACKEND_TAG="deps-${DEPS_STAMP}-${DEPS_BACKEND_COMMIT_COUNT}-${DEPS_BACKEND_COMMIT_HASH}-${CI_COMMIT_REF_SLUG}"
+    - DEPS_FRONTEND_TAG="deps-${DEPS_STAMP}-${DEPS_FRONTEND_COMMIT_COUNT}-${DEPS_FRONTEND_COMMIT_HASH}-${CI_COMMIT_REF_SLUG}"
+    - echo "TAG=$TAG" | tee -a build-env.txt
+    - echo "DEPS_BACKEND_TAG=$DEPS_BACKEND_TAG" | tee -a build-env.txt
+    - echo "DEPS_FRONTEND_TAG=$DEPS_FRONTEND_TAG" | tee -a build-env.txt
+  artifacts:
+    reports:
+      dotenv: build-env.txt
+
+lint-dockerfile:
+  stage: prepare
+  image: docker.io/hadolint/hadolint:latest-debian
+  script:
+    - hadolint backend/Dockerfile
+    - hadolint --ignore DL3064 frontend/Dockerfile
+
+# ─────────────────────────────────────────────────────────────────────────────
+# deps images: node_modules (+ prisma client / browsers) baked in, reused by
+# every test job and as the base of the production images.
+# ─────────────────────────────────────────────────────────────────────────────
+
+build-docker-image-deps-backend:
+  extends: .build-docker-image
+  stage: build deps images
+  variables:
+    DOCKERFILE: ./backend/Dockerfile
+    REPO: $CI_REGISTRY_IMAGE/deps-backend
+    JOB_TAG: $DEPS_BACKEND_TAG
+    ARGS: '--target deps'
+
+build-docker-image-deps-frontend:
+  extends: .build-docker-image
+  stage: build deps images
+  variables:
+    DOCKERFILE: ./frontend/Dockerfile
+    REPO: $CI_REGISTRY_IMAGE/deps-frontend
+    JOB_TAG: $DEPS_FRONTEND_TAG
+    ARGS: '--target deps'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# tests — run inside the deps images; the repo is checked out in the job, and
+# node_modules comes from the image via a symlink (same trick as the multi
+# project). No npm ci, no cache management.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Frontend: lint + unit (Vitest). No DB. Must always be green. ──
+test-frontend:
+  stage: test
+  image: $CI_REGISTRY_IMAGE/deps-frontend:$DEPS_FRONTEND_TAG
+  before_script:
+    # make the node_modules dir from the deps-frontend image available in the build dir
+    - ln -s /app/node_modules/ node_modules
+  script:
+    - npm run lint
+    # Serial tests: the K8s runner pods have a small CPU budget and the default
+    # multi-worker pool hangs there ("Timeout waiting for worker to respond").
+    - npx vitest run --no-file-parallelism
+
+# ── Backend: build (nest/tsc, doubles as typecheck) + unit (Vitest, in-memory). No DB. ──
+test-backend:
+  stage: test
+  image: $CI_REGISTRY_IMAGE/deps-backend:$DEPS_BACKEND_TAG
+  before_script:
+    - cd backend/
+    - ln -s /app/node_modules/ node_modules
+  script:
+    - npm run build
+    - npm test
+
+# ── Backend E2E: Postgres + prisma db push + e2e suite (NestJS + real DB). ──
+test-backend-e2e:
+  stage: test
+  image: $CI_REGISTRY_IMAGE/deps-backend:$DEPS_BACKEND_TAG
+  variables:
+    DATABASE_URL: "postgresql://crm:crm@postgres:5432/crm_test"
+    TEST_DATABASE_URL: "postgresql://crm:crm@postgres:5432/crm_test"
+  services:
+    - name: docker.io/postgres:16
+      alias: postgres
+      variables:
+        POSTGRES_USER: "crm"
+        POSTGRES_PASSWORD: "crm"
+        POSTGRES_DB: "crm_test"
+  before_script:
+    - cd backend/
+    - ln -s /app/node_modules/ node_modules
+    # wait for postgres (no pg_isready in the image — plain node net check)
+    - |
+      for i in $(seq 1 30); do
+        node -e "require('net').createConnection({host:'postgres',port:5432}).on('connect',()=>process.exit(0)).on('error',()=>process.exit(1))" && break
+        echo "waiting for postgres..."; sleep 2
+      done
+  script:
+    # Migrations do not create the schema from scratch (the historical base
+    # came from db push); for an ephemeral test DB, db push materializes the
+    # current schema.
+    - npx prisma db push --skip-generate
+    - npm run test:e2e
+
+# ─────────────────────────────────────────────────────────────────────────────
+# final images: production backend + frontend (built on top of the deps images
+# pushed above — npm ci becomes registry cache), and test-frontend (deps +
+# Playwright chromium, so the e2e job does not download ~300MB per pipeline).
+# The frontend build failing here fails the pipeline — the `next build`
+# typecheck gate of the old frontend job is preserved by build-docker-image-frontend.
+# ─────────────────────────────────────────────────────────────────────────────
+
+build-docker-image-backend:
+  extends: .build-docker-image
+  stage: build final images
+  variables:
+    DOCKERFILE: ./backend/Dockerfile
+    REPO: $CI_REGISTRY_IMAGE/backend
+    JOB_TAG: $TAG
+    ARGS: '--target runtime --build-arg APP_BASE_IMAGE=$CI_REGISTRY_IMAGE/deps-backend:$DEPS_BACKEND_TAG'
+
+build-docker-image-frontend:
+  extends: .build-docker-image
+  stage: build final images
+  variables:
+    DOCKERFILE: ./frontend/Dockerfile
+    REPO: $CI_REGISTRY_IMAGE/frontend
+    JOB_TAG: $TAG
+    ARGS: '--target runtime --build-arg FRONTEND_BASE_IMAGE=$CI_REGISTRY_IMAGE/deps-frontend:$DEPS_FRONTEND_TAG'
+
+build-docker-image-test-frontend:
+  extends: .build-docker-image
+  stage: build final images
+  variables:
+    DOCKERFILE: ./frontend/Dockerfile
+    REPO: $CI_REGISTRY_IMAGE/test-frontend
+    # same content tag as deps-frontend: identical inputs (lockfiles + this
+    # Dockerfile, which defines the `test` stage)
+    JOB_TAG: $DEPS_FRONTEND_TAG
+    ARGS: '--target test --build-arg TEST_BASE_IMAGE=$CI_REGISTRY_IMAGE/deps-frontend:$DEPS_FRONTEND_TAG'
+
+# ─────────────────────────────────────────────────────────────────────────────
+# final tests
+# ─────────────────────────────────────────────────────────────────────────────
+
+# ── Frontend E2E: Playwright (login smoke, client-only — boots next dev). ──
+# Runs inside test-frontend: node_modules AND the chromium matching the pinned
+# @playwright/test are baked in (PLAYWRIGHT_BROWSERS_PATH default location).
+test-frontend-e2e:
+  stage: final tests
+  image: $CI_REGISTRY_IMAGE/test-frontend:$DEPS_FRONTEND_TAG
+  before_script:
+    - ln -s /app/node_modules/ node_modules
+  script:
+    - npm ci
+    - npx playwright install --with-deps chromium
+    - npm run test:e2e
+    # Raise the Playwright webServer timeout AT RUNTIME ONLY (playwright.config.ts
+    # stays at 120s, which is fine on GitHub's runners): on the K8s pod the
+    # `next dev` cold boot + on-demand compile doesn't fit in 120s
+    # ("Timed out waiting 120000ms from config.webServer" — process alive,
+    # URL never ready). Fail loudly if the sed stops matching, instead of
+    # silently falling back to the 120s default.
+    - |
+      sed -i 's/timeout: 120_000/timeout: 600_000/' playwright.config.ts \
+        && grep -q 'timeout: 600_000' playwright.config.ts \
+        || { echo 'playwright.config.ts no longer matches "timeout: 120_000" — update the sed in .gitlab-ci.yml'; exit 1; }
+    # pw:webserver debug: spawn/URL-polling/server output in the job log, so a
+    # future failure shows whether next dev is compiling slowly or stuck.
+    - DEBUG=pw:webserver npm run test:e2e
+  # Upload the report on failure (same as in the GitHub workflow).
+  # test-results/ holds screenshots/traces of the failing cases (the CI reporter
+  # is "github", which produces no HTML playwright-report/ — hence not listed).
+  artifacts:
+    when: on_failure
+    paths:
+      - test-results/
+    expire_in: 1 week
+
+# ─────────────────────────────────────────────────────────────────────────────
+# tag: mark the latest images built on the default branch as -dev
+# ─────────────────────────────────────────────────────────────────────────────
+
+tag-dev-docker-images:
+  stage: tag
+  image: quay.io/skopeo/stable
+  variables:
+    AUTH: $CI_REGISTRY_USER:$CI_REGISTRY_PASSWORD
+    TAG_NEW: -dev
+  rules:
+    - if: '$CI_MERGE_REQUEST_ID'
+      when: never
+    - if: '$CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH'
+      when: on_success
+    - when: never
+  script:
+    - |
+      for I in frontend backend
+      do
+        IMAGE="${CI_REGISTRY_IMAGE}/${I}"
+        echo Tagging "${IMAGE}:${TAG}"
+        skopeo copy --src-creds "$AUTH" --dest-creds "$AUTH" docker://"${IMAGE}:${TAG}" docker://"${IMAGE}:${TAG}${TAG_NEW}"
+        echo "🏷️ Tagged ${IMAGE}:${TAG}${TAG_NEW}"
+      done

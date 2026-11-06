@@ -1,0 +1,15 @@
+---
+
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: database
+  annotations:
+    # Argo CD: run in the PreSync phase, BEFORE the migrate Job (wave 0).
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  instances: 1
+  storage:
+    size: 5Gi
+    storageClass: ceph-block-2

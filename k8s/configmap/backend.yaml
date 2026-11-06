@@ -1,0 +1,26 @@
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend
+data:
+  NODE_ENV: production
+  PORT: "3010"
+  # Timezone-aware date handling, defaults to UTC
+  TZ: America/Sao_Paulo
+  # CORS allow-list origin of the Next.js frontend.
+  CRM_URL: https://crm.example.com
+  FRONTEND_URL: https://crm.example.com
+  # Public base URL of this backend — used to build webhook callbacks and
+  # presigned URLs handed to external services (AI agents, transcriber).
+  BACKEND_PUBLIC_URL: https://crm-api.example.com
+  # Writable file that persists OAuth tokens (GoTo etc.) across restarts.
+  # Backed by the backend-config PVC (see deployment/backend.yaml).
+  ENV_FILE_PATH: /app/config/backend.env
+  GOOGLE_REDIRECT_URI: https://crm.example.com/api/google/callback
+  # calendar-finance
+  FINANCE_API_URL: ""
+  # for seeding
+  ADMIN_EMAIL: "paolo.greppi@libpf.com"
+  ADMIN_NAME: "Admin User"

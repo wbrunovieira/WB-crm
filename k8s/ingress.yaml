@@ -1,0 +1,49 @@
+---
+
+# Two hosts, mirroring the production nginx topology:
+#
+#   crm.example.com      → Next.js frontend (UI, NextAuth, SSR)
+#   crm-api.example.com  → NestJS backend  (REST API, Swagger /docs,
+#                                /webhooks/*, /track/*, /health)
+#
+# The split exists because the browser (apiFetch in src/lib/api-client.ts),
+# the mobile app and external webhooks talk to the backend directly via
+# NEXT_PUBLIC_BACKEND_URL, and backend API paths (/leads, /deals, ...) collide
+# with frontend page routes — they cannot share a single host.
+#
+# External integrations configured elsewhere (Evolution API, GoTo webhooks,
+# cron jobs firing /webhooks/goto/sync, email tracking pixel URLs) must point
+# at the API host with the backend's native paths, e.g.
+#   https://crm-api.example.com/webhooks/whatsapp
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: crm
+  annotations:
+    traefik.ingress.kubernetes.io/router.tls: 'true'
+    traefik.ingress.kubernetes.io/router.tls.certresolver: default
+  labels:
+    app: crm
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: crm.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+    - host: crm-api.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: backend
+                port:
+                  number: 3010
