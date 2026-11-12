@@ -13,6 +13,8 @@ import {
 } from "@/domain/auth/application/use-cases/oauth.use-cases";
 import { GetGoToConnectionStatusUseCase } from "@/domain/auth/application/use-cases/get-goto-connection-status.use-case";
 import { JwtAuthGuard } from "@/infra/auth/guards/jwt-auth.guard";
+import { AdminGuard } from "@/infra/auth/guards/admin.guard";
+import { LoginThrottlerGuard } from "@/infra/auth/guards/login-throttler.guard";
 import { CurrentUser } from "@/infra/auth/decorators/current-user.decorator";
 import type { AuthenticatedUser } from "@/infra/auth/jwt.types";
 
@@ -67,14 +69,17 @@ export class AuthController {
     private readonly getGotoStatus: GetGoToConnectionStatusUseCase,
   ) {}
 
+  // Admin-only: era público, e qualquer um na internet criava conta com acesso de SDR.
+  // Num time pequeno e conhecido, criação de usuário é tarefa de admin, não auto-cadastro.
   @Post("register")
   @HttpCode(201)
-  @ApiOperation({ summary: "Registrar novo usuário" })
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @ApiOperation({ summary: "Registrar novo usuário (admin apenas)" })
   async doRegister(@Body() body: { name: string; email: string; password: string }) {
     if (!body.name || !body.email || !body.password) {
       throw new BadRequestException("name, email e password são obrigatórios");
     }
-    if (body.password.length < 6) throw new BadRequestException("Senha deve ter no mínimo 6 caracteres");
+    if (body.password.length < 8) throw new BadRequestException("Senha deve ter no mínimo 8 caracteres");
     const result = await this.register.execute(body);
     if (result.isLeft()) {
       if (result.value instanceof UserAlreadyExistsError) throw new ConflictException(result.value.message);
@@ -83,11 +88,14 @@ export class AuthController {
     return { user: result.value };
   }
 
+  // Rate limit por email (ver LoginThrottlerGuard): 5 tentativas/60s contra uma conta → 429.
   @Post("login")
   @HttpCode(200)
+  @UseGuards(LoginThrottlerGuard)
   @ApiOperation({ summary: "Autenticar usuário e obter JWT" })
   @ApiResponse({ status: 200, type: LoginResponseDto })
   @ApiResponse({ status: 401, description: "Credenciais inválidas" })
+  @ApiResponse({ status: 429, description: "Muitas tentativas — aguarde e tente de novo" })
   async doLogin(@Body() body: LoginDto): Promise<LoginResponseDto> {
     const result = await this.login.execute({ email: body.email, password: body.password });
     if (result.isLeft()) throw new UnauthorizedException(result.value.message);

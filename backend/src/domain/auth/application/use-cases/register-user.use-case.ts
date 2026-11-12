@@ -17,6 +17,12 @@ export class UserAlreadyExistsError extends Error {
   constructor() { super("Usuário já existe com este email"); this.name = "UserAlreadyExistsError"; }
 }
 
+export class WeakPasswordError extends Error {
+  constructor() { super("A senha deve ter no mínimo 8 caracteres"); this.name = "WeakPasswordError"; }
+}
+
+const MIN_PASSWORD_LENGTH = 8;
+
 @Injectable()
 export class RegisterUserUseCase {
   constructor(private readonly users: UsersRepository) {}
@@ -24,6 +30,12 @@ export class RegisterUserUseCase {
   async execute({ name, email, password }: Input): Promise<Output> {
     const emailResult = EmailAddress.create(email);
     if (emailResult.isLeft()) return left(emailResult.value);
+
+    // Mínimo de força de senha. O registro agora é admin-only, mas nem o admin deve criar
+    // uma conta com senha trivial — era aceitar "123" antes.
+    if (!password || password.length < MIN_PASSWORD_LENGTH) {
+      return left(new WeakPasswordError());
+    }
 
     const existing = await this.users.findByEmail(email);
     if (existing) return left(new UserAlreadyExistsError());

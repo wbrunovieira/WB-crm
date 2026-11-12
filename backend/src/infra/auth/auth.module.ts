@@ -1,7 +1,9 @@
 import { Module } from "@nestjs/common";
 import { JwtModule } from "@nestjs/jwt";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { JwtAuthGuard } from "./guards/jwt-auth.guard";
 import { SseJwtAuthGuard } from "./guards/sse-jwt-auth.guard";
+import { LoginThrottlerGuard } from "./guards/login-throttler.guard";
 import { LoginUseCase } from "@/domain/auth/application/use-cases/login.use-case";
 import { RegisterUserUseCase } from "@/domain/auth/application/use-cases/register-user.use-case";
 import { UsersRepository } from "@/domain/auth/application/repositories/users.repository";
@@ -24,11 +26,15 @@ import { GetUsersUseCase } from "@/domain/auth/application/use-cases/get-users.u
       secret: process.env.JWT_SECRET,
       signOptions: { expiresIn: "7d" },
     }),
+    // 5 tentativas de login por email a cada 60s. Só o /auth/login usa (via LoginThrottlerGuard
+    // aplicado no controller) — não é guard global, então webhooks e crons não são limitados.
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 5 }]),
   ],
   controllers: [AuthController, UsersController],
   providers: [
     JwtAuthGuard,
     SseJwtAuthGuard,
+    LoginThrottlerGuard,
     LoginUseCase,
     RegisterUserUseCase,
     GetUsersUseCase,

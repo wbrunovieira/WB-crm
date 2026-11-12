@@ -75,7 +75,7 @@ export const authOptions: NextAuthOptions = {
           sub: token.sub,
           name: token.name,
           email: token.email,
-          role: token.role ?? token.id,
+          role: token.role,
         })
           .setProtectedHeader({ alg: "HS256" })
           .setExpirationTime("7d")

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { RegisterUserUseCase, UserAlreadyExistsError } from "@/domain/auth/application/use-cases/register-user.use-case";
+import { RegisterUserUseCase, UserAlreadyExistsError, WeakPasswordError } from "@/domain/auth/application/use-cases/register-user.use-case";
 import { UsersRepository, type UserRecord } from "@/domain/auth/application/repositories/users.repository";
 import { InvalidEmailAddressError } from "@/domain/integrations/email/enterprise/value-objects/email-address.vo";
 
@@ -33,6 +33,19 @@ describe("RegisterUserUseCase", () => {
       expect(result.value.email).toBe("ana@example.com");
       expect(result.value.id).toBeDefined();
     }
+    expect(repo.items).toHaveLength(1);
+  });
+
+  it("rejeita senha com menos de 8 caracteres (sem persistir)", async () => {
+    const result = await sut.execute({ name: "Ana", email: "ana@example.com", password: "123" });
+    expect(result.isLeft()).toBe(true);
+    if (result.isLeft()) expect(result.value).toBeInstanceOf(WeakPasswordError);
+    expect(repo.items).toHaveLength(0);
+  });
+
+  it("aceita senha com exatamente 8 caracteres", async () => {
+    const result = await sut.execute({ name: "Ana", email: "ana@example.com", password: "12345678" });
+    expect(result.isRight()).toBe(true);
     expect(repo.items).toHaveLength(1);
   });
 
