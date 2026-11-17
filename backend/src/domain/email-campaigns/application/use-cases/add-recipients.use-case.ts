@@ -15,7 +15,7 @@ interface RecipientInput {
   customVars?: Record<string, string>;
 }
 
-interface Input { campaignId: string; recipients: RecipientInput[]; }
+interface Input { campaignId: string; ownerId: string; recipients: RecipientInput[]; }
 export interface Output { added: number; }
 
 @Injectable()
@@ -28,6 +28,7 @@ export class AddRecipientsUseCase {
   async execute(input: Input): Promise<Either<Error, Output>> {
     const campaign = await this.campaigns.findById(input.campaignId);
     if (!campaign) return left(new Error("Campaign not found"));
+    if (campaign.ownerId !== input.ownerId) return left(new Error("Não autorizado"));
 
     const existing = await this.recipients.findByCampaign(input.campaignId);
     const existingKeys = new Set(existing.map((r) => `${r.recipientType}:${r.recipientId}`));

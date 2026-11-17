@@ -26,6 +26,7 @@ import {
   StartEmailCampaignUseCase,
   PauseEmailCampaignUseCase,
   ActivateCampaignForSendNowUseCase,
+  AssertEmailCampaignOwnerUseCase,
 } from "@/domain/email-campaigns/application/use-cases/email-campaign-lifecycle.use-cases";
 import { RemoveSuppressionUseCase } from "@/domain/email-campaigns/application/use-cases/remove-suppression.use-case";
 import { TrackEmailOpenUseCase, TrackEmailClickUseCase } from "@/domain/email-campaigns/application/use-cases/email-tracking.use-cases";
@@ -67,6 +68,7 @@ export class EmailCampaignsController {
     private readonly startCampaignUC: StartEmailCampaignUseCase,
     private readonly pauseCampaignUC: PauseEmailCampaignUseCase,
     private readonly activateForSendNow: ActivateCampaignForSendNowUseCase,
+    private readonly assertCampaignOwner: AssertEmailCampaignOwnerUseCase,
     private readonly removeSuppressionUC: RemoveSuppressionUseCase,
     private readonly trackOpenUC: TrackEmailOpenUseCase,
     private readonly trackClickUC: TrackEmailClickUseCase,
@@ -105,6 +107,8 @@ export class EmailCampaignsController {
   @Get(":id/stats")
   @ApiOperation({ summary: "Get campaign stats" })
   async stats(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    const owner = await this.assertCampaignOwner.execute(id, user.id);
+    if (owner.isLeft()) throw new ForbiddenException(owner.value.message);
     const result = await this.getStats.execute({ campaignId: id });
     if (result.isLeft()) throw new Error(result.value.message);
     return result.value;
@@ -114,8 +118,9 @@ export class EmailCampaignsController {
   @Delete(":id")
   @HttpCode(204)
   @ApiOperation({ summary: "Delete campaign" })
-  async deleteCampaign(@Param("id") id: string) {
-    await this.deleteCampaignUC.execute(id);
+  async deleteCampaign(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    const result = await this.deleteCampaignUC.execute(id, user.id);
+    if (result.isLeft()) throw new ForbiddenException(result.value.message);
   }
 
   // ─── Steps ──────────────────────────────────────────────────────────────────
@@ -125,9 +130,12 @@ export class EmailCampaignsController {
   @HttpCode(201)
   @ApiOperation({ summary: "Add step to campaign" })
   async createStep(
+    @CurrentUser() user: AuthenticatedUser,
     @Param("id") campaignId: string,
     @Body() body: { order: number; subject: string; bodyHtml: string; delayDays: number },
   ) {
+    const owner = await this.assertCampaignOwner.execute(campaignId, user.id);
+    if (owner.isLeft()) throw new ForbiddenException(owner.value.message);
     const result = await this.addStep.execute({ campaignId, ...body });
     if (result.isLeft()) throw new Error(result.value.message);
     return result.value;
@@ -220,15 +228,17 @@ export class EmailCampaignsController {
   // ─── Recipients ─────────────────────────────────────────────────────────────
 
   @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard)
   @Post(":id/recipients")
   @HttpCode(201)
   @ApiOperation({ summary: "Add recipients to campaign" })
   async addCampaignRecipients(
+    @CurrentUser() user: AuthenticatedUser,
     @Param("id") campaignId: string,
     @Body() body: { recipients: { recipientType: "LEAD" | "CONTACT" | "PARTNER"; recipientId: string; email: string; name?: string; company?: string; role?: string; language?: string; customVars?: Record<string, string> }[] },
   ) {
-    const result = await this.addRecipients.execute({ campaignId, recipients: body.recipients });
-    if (result.isLeft()) throw new Error(result.value.message);
+    const result = await this.addRecipients.execute({ campaignId, ownerId: user.id, recipients: body.recipients });
+    if (result.isLeft()) throw new ForbiddenException(result.value.message);
     return result.value;
   }
 
@@ -238,8 +248,11 @@ export class EmailCampaignsController {
   @Post(":id/send/:stepOrder")
   @HttpCode(200)
   @ApiOperation({ summary: "Send a campaign step (fire-and-forget)" })
-  sendCampaignStep(@Param("id") campaignId: string, @Param("stepOrder") stepOrder: string) {
-    this.sendStep.execute({ campaignId, stepOrder: parseInt(stepOrder), trackingBaseUrl: TRACKING_BASE_URL })
+  async sendCampaignStep(@CurrentUser() user: AuthenticatedUser, @Param("id") campaignId: string, @Param("stepOrder") stepOrder: string) {
+    // Valida o dono de forma síncrona antes de disparar o envio em background.
+    const owner = await this.assertCampaignOwner.execute(campaignId, user.id);
+    if (owner.isLeft()) throw new ForbiddenException(owner.value.message);
+    this.sendStep.execute({ campaignId, stepOrder: parseInt(stepOrder), ownerId: user.id, trackingBaseUrl: TRACKING_BASE_URL })
       .catch((err) => console.error("[email-campaign/send] error:", err));
     return { started: true };
   }
@@ -248,8 +261,8 @@ export class EmailCampaignsController {
   @Post(":id/start")
   @HttpCode(200)
   @ApiOperation({ summary: "Start campaign (set ACTIVE and send step 0)" })
-  async startCampaign(@Param("id") id: string) {
-    const result = await this.startCampaignUC.execute(id);
+  async startCampaign(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    const result = await this.startCampaignUC.execute(id, user.id);
     if (result.isLeft()) throw new NotFoundException(result.value.message);
     this.sendStep.execute({ campaignId: id, stepOrder: 0, trackingBaseUrl: TRACKING_BASE_URL })
       .catch((err) => console.error("[email-campaign/start] error:", err));
@@ -259,8 +272,8 @@ export class EmailCampaignsController {
   @UseGuards(JwtAuthGuard)
   @Post(":id/pause")
   @HttpCode(200)
-  async pauseCampaign(@Param("id") id: string) {
-    const result = await this.pauseCampaignUC.execute(id);
+  async pauseCampaign(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
+    const result = await this.pauseCampaignUC.execute(id, user.id);
     if (result.isLeft()) throw new NotFoundException(result.value.message);
     return { status: result.value.status };
   }
@@ -297,13 +310,13 @@ export class EmailCampaignsController {
   @Post(":id/send-now")
   @HttpCode(HttpStatus.ACCEPTED)
   @ApiOperation({ summary: "Trigger immediate send for all steps of a campaign (fire-and-forget, 202)" })
-  async sendNow(@Param("id") id: string) {
+  async sendNow(@CurrentUser() user: AuthenticatedUser, @Param("id") id: string) {
     if (sendingInProgress.has(id)) {
       throw new ConflictException("Campaign send already in progress");
     }
 
     // Auto-activate if DRAFT/PAUSED so send-now works without requiring manual start
-    const activation = await this.activateForSendNow.execute(id);
+    const activation = await this.activateForSendNow.execute(id, user.id);
     if (activation.isLeft()) throw new NotFoundException(activation.value.message);
 
     // Fire-and-forget: do not await

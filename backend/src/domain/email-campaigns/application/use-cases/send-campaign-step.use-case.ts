@@ -28,6 +28,9 @@ interface DelayRange {
 interface Input {
   campaignId: string;
   stepOrder: number;
+  /** Quando presente, o envio só prossegue se a campanha for deste dono. Os chamadores
+   *  internos (start, send-now) já validaram antes e omitem; a rota direta passa o requester. */
+  ownerId?: string;
   trackingBaseUrl?: string;
   delayRange?: DelayRange;
 }
@@ -58,6 +61,7 @@ export class SendCampaignStepUseCase {
   async execute(input: Input): Promise<Either<Error, Output>> {
     const campaign = await this.campaigns.findById(input.campaignId);
     if (!campaign) return left(new Error("Campaign not found"));
+    if (input.ownerId && campaign.ownerId !== input.ownerId) return left(new Error("Não autorizado"));
     if (campaign.status !== "ACTIVE") return left(new Error("Campaign is not active"));
 
     const allSteps = await this.steps.findByCampaign(input.campaignId);

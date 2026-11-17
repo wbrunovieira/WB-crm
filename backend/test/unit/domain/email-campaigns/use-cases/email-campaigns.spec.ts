@@ -189,6 +189,7 @@ describe("AddRecipientsUseCase", () => {
 
     const result = await sut.execute({
       campaignId,
+      ownerId: OWNER,
       recipients: [
         { recipientType: "LEAD", recipientId: "lead-1", email: "a@b.com", name: "Alice", company: "Acme" },
         { recipientType: "CONTACT", recipientId: "contact-1", email: "b@b.com", name: "Bob" },
@@ -204,8 +205,8 @@ describe("AddRecipientsUseCase", () => {
     const created = await createSut.execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
     const campaignId = (created.value as { id: string }).id;
 
-    await sut.execute({ campaignId, recipients: [{ recipientType: "LEAD", recipientId: "lead-1", email: "a@b.com" }] });
-    await sut.execute({ campaignId, recipients: [{ recipientType: "LEAD", recipientId: "lead-1", email: "a@b.com" }] });
+    await sut.execute({ campaignId, ownerId: OWNER, recipients: [{ recipientType: "LEAD", recipientId: "lead-1", email: "a@b.com" }] });
+    await sut.execute({ campaignId, ownerId: OWNER, recipients: [{ recipientType: "LEAD", recipientId: "lead-1", email: "a@b.com" }] });
 
     expect(recipients.items).toHaveLength(1);
   });
@@ -217,6 +218,7 @@ describe("AddRecipientsUseCase", () => {
 
     await sut.execute({
       campaignId,
+      ownerId: OWNER,
       recipients: [{ recipientType: "PARTNER", recipientId: "partner-1", email: "en@partner.com", name: "EN Partner", language: "en" }],
     });
 
@@ -230,7 +232,7 @@ describe("AddRecipientsUseCase", () => {
     const created = await createSut.execute({ name: "C1", fromEmail: FROM, ownerId: OWNER });
     const campaignId = (created.value as { id: string }).id;
 
-    await sut.execute({ campaignId, recipients: [{ recipientType: "LEAD", recipientId: "lead-9", email: "x@y.com" }] });
+    await sut.execute({ campaignId, ownerId: OWNER, recipients: [{ recipientType: "LEAD", recipientId: "lead-9", email: "x@y.com" }] });
     expect(recipients.items[0].language).toBe("pt");
   });
 });
