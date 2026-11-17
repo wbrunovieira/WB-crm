@@ -1,0 +1,92 @@
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    component: frontend
+  name: frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      component: frontend
+  template:
+    metadata:
+      labels:
+        component: frontend
+    spec:
+      securityContext:
+        fsGroup: 1000
+      imagePullSecrets:
+        - name: images-pull-secret
+      containers:
+        - name: frontend
+          image: frontend
+          env:
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: NEXTAUTH_JWT_SECRET
+                  name: application
+          envFrom:
+            - configMapRef:
+                name: frontend
+            - secretRef:
+                name: application
+          ports:
+            - containerPort: 3000
+              protocol: TCP
+              name: http
+          volumeMounts:
+            - mountPath: /tmp
+              name: frontend-tmp
+            # next start writes ISR/fetch caches here at runtime.
+            - mountPath: /app/.next/cache
+              name: frontend-cache
+          startupProbe:
+            httpGet:
+              path: /api/auth/providers
+              port: http
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /api/auth/providers
+              port: http
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /api/auth/providers
+              port: http
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          securityContext:
+            runAsUser: 1000
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            # NOT readOnlyRootFilesystem: prepare.sh (ENTRYPOINT) rewrites
+            # /app/.next with the runtime NEXT_PUBLIC_BACKEND_URL at start,
+            # and `next start` writes to .next/cache during execution.
+            capabilities:
+              drop:
+                - ALL
+            privileged: false
+      volumes:
+        - name: frontend-tmp
+          emptyDir:
+            sizeLimit: 500Mi
+        - name: frontend-cache
+          emptyDir:
+            sizeLimit: 1Gi

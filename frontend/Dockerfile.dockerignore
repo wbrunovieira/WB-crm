@@ -1,0 +1,26 @@
+# Ignore específico do Dockerfile do frontend (o BuildKit usa
+# <Dockerfile>.dockerignore no mesmo diretório quando o build usa
+# -f frontend/Dockerfile). O .dockerignore da raiz permanece para o
+# backend/Dockerfile — que PRECISA do backend/ no contexto; este aqui exclui
+# tudo que o build do frontend não usa, mantendo o contexto pequeno.
+node_modules
+.next
+backend
+mobile
+tests
+e2e
+docs
+deploy
+coverage
+playwright-report
+test-results
+.git
+.github
+.env
+.env*.local
+frontend/Dockerfile.dockerignore
+k8s
+multi
+*.jsonl
+*.log
+npm-debug.log*

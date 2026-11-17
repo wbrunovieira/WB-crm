@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import { Bricolage_Grotesque, Hanken_Grotesk } from "next/font/google";
+import { bodyFont as body, displayFont as display } from "@/lib/fonts/book";
 import { BookingClient, type BookingData } from "@/components/booking/BookingClient";
 import { BACKEND_PUBLIC, fetchBooking } from "@/lib/booking-backend";
 
-const display = Bricolage_Grotesque({ subsets: ["latin"], weight: ["400", "500", "600", "700", "800"], variable: "--font-display", display: "swap" });
-const body = Hanken_Grotesk({ subsets: ["latin"], weight: ["400", "500", "600", "700"], variable: "--font-body", display: "swap" });
 
 
 // Busca interna, com retry e log: ver src/lib/booking-backend.ts para o porquê.

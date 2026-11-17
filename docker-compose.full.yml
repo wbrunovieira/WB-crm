@@ -1,0 +1,96 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: wb-crm-postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5499:5432"
+    environment:
+      POSTGRES_USER: crm_user
+      POSTGRES_PASSWORD: dev_password_123
+      POSTGRES_DB: crm_db
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U crm_user -d crm_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # One-shot migration runner
+  migrate:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    # Same tag as `backend`: reusing the image for both services.
+    image: wb-crm-backend:local
+    container_name: wb-crm-migrate
+    restart: "no"
+    environment:
+      # Override DATABASE_URL from dotenvs: the DB is the sibling `postgres` service, reached by compose hostname.
+      DATABASE_URL: postgresql://crm_user:dev_password_123@postgres:5432/crm_db?schema=public
+    env_file:
+      - ./backend/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # to be replaced with: npx prisma migrate deploy
+    command: >
+      npx prisma db push &&
+      for d in prisma/migrations/*/; do
+        npx prisma migrate resolve --applied "$$(basename "$$d")";
+      done
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: wb-crm-backend:local
+    container_name: wb-crm-backend
+    # tini as PID 1 — makes `docker compose down` / Ctrl+C fast.
+    init: true
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3010:3010"
+    environment:
+      # Override DATABASE_URL from dotenvs: the DB is the sibling `postgres` service, reached by compose hostname.
+      DATABASE_URL: postgresql://crm_user:dev_password_123@postgres:5432/crm_db?schema=public
+    env_file:
+      - ./backend/.env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    command: >
+      node dist/main.js
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3010/health || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 20s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      target: runtime
+    container_name: wb-crm-frontend
+    # tini as PID 1 — makes `docker compose down` / Ctrl+C fast.
+    init: true
+    restart: unless-stopped
+    user: root
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      BACKEND_URL: http://backend:3010
+      NEXT_PUBLIC_BACKEND_URL: http://localhost:3010
+    env_file:
+      - ./.env
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

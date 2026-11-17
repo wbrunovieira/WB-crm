@@ -1,0 +1,19 @@
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: frontend
+data:
+  NODE_ENV: production
+  PORT: "3000"
+  # NextAuth canonical URL (issuer of the JWT session cookies).
+  NEXTAUTH_URL: https://crm.example.com
+  # Server-side (SSR / server actions) calls to the NestJS backend go over
+  # the in-cluster service — no round-trip through the public internet.
+  BACKEND_URL: http://backend:3010
+  BACKEND_INTERNAL_URL: http://backend:3010
+  # Browser-side apiFetch() target. Inlined by `next build` as a magic UUID
+  # and replaced across /app/.next by frontend/prepare.sh when the container
+  # starts — fully runtime-configurable, no image rebuild needed.
+  NEXT_PUBLIC_BACKEND_URL: https://crm-api.example.com

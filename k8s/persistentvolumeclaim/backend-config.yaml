@@ -1,0 +1,18 @@
+---
+
+# Persistent, writable file storage for backend.env (OAuth tokens for GoTo
+# etc. — the docker-compose file mounts ./backend/.env:/app/backend.env for
+# the same purpose). RWO block storage is sufficient: single-writer volume.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  labels:
+    component: backend
+  name: backend-config
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ceph-block-2
+  resources:
+    requests:
+      storage: 100Mi

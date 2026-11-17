@@ -1,0 +1,15 @@
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    component: backend
+  name: backend
+spec:
+  ports:
+    # 3010 keeps parity with the app conventions (BACKEND_URL=http://backend:3010).
+    - port: 3010
+      targetPort: http
+  selector:
+    component: backend
