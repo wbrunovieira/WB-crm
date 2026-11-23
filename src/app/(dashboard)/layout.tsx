@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Toaster } from "sonner";
 import { LogoutButton } from "@/components/shared/LogoutButton";
+import { BrandLogo } from "@/components/shared/BrandLogo";
 import { MainNav } from "@/components/shared/MainNav";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { GlobalSearch } from "@/components/shared/GlobalSearch";
@@ -31,7 +32,7 @@ export default async function DashboardLayout({
           <div className="flex h-16 items-center justify-between gap-2">
             <div className="flex items-center gap-4 min-w-0 flex-1">
               <Link href="/dashboard" className="flex-shrink-0 text-lg font-bold text-primary hover:text-purple-400 transition-colors">
-                WB CRM
+                <BrandLogo />
               </Link>
               <MainNav userRole={session.user?.role} />
             </div>

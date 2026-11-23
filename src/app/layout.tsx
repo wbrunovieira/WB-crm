@@ -25,8 +25,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Identidade visual por negócio (WB roxo / RDS azul-laranja), ver globals.css.
+  const brand = process.env.NEXT_PUBLIC_BRAND === "rds" ? "rds" : "wb";
   return (
-    <html lang="pt-BR">
+    <html lang="pt-BR" data-brand={brand}>
       <body className="antialiased">
         {children}
       </body>

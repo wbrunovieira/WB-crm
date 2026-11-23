@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Custom colors for CRM */
+  /* A cor de ação vem do brand ativo (resolve em runtime via var). Status permanece fixo. */
   --color-primary: #792990;
   --color-success: #22c55e;
   --color-warning: #f59e0b;
@@ -11,17 +11,48 @@
   --breakpoint-3xl: 1920px;
 }
 
+/* ─── Tokens de MARCA ────────────────────────────────────────────────────────
+   Dois negócios na mesma base de código. O brand ativo é escolhido pelo atributo
+   data-brand no <html> (setado no layout a partir de NEXT_PUBLIC_BRAND).
+   Só a identidade muda — cores de status (sucesso/erro/aviso) são universais.   */
+/* AMBOS condicionais de propósito: sem um valor no :root base, o Lightning CSS
+   (minificador do Tailwind v4) não consegue "inlinear" as variáveis e descartar o
+   outro brand — ele é obrigado a manter os dois. O layout sempre seta data-brand. */
+:root[data-brand="wb"] {
+  /* WB Digital Solutions — roxo (default) */
+  --brand-bg:         #350045;
+  --brand-surface:    #1a0022;
+  --brand-surface-2:  #2d1b3d;
+  --brand-surface-3:  #3d2b4d;
+  --brand-surface-4:  #4d3b5d;
+  --brand-accent:     #792990;
+  --brand-accent-2:   #a03bb8;
+  --brand-border:     #792990;
+}
+
+:root[data-brand="rds"] {
+  /* RDS Transportes — azul-marinho + laranja */
+  --brand-bg:         #06152e;
+  --brand-surface:    #0a1f42;
+  --brand-surface-2:  #0e2a57;
+  --brand-surface-3:  #123260;
+  --brand-surface-4:  #163a6e;
+  --brand-accent:     #e64d00;
+  --brand-accent-2:   #ff6a2b;
+  --brand-border:     #1f4a86;
+}
+
 /* Base styles */
 body {
   font-family: var(--font-geist-sans);
-  background-color: #350045;
+  background-color: var(--brand-bg);
   color: #e5e7eb;
 }
 
 /* Dark theme for cards and forms */
 .bg-white,
 [class*="bg-white"] {
-  background-color: #1a0022 !important;
+  background-color: var(--brand-surface) !important;
 }
 
 .text-gray-900 {
@@ -50,8 +81,8 @@ input[type="date"],
 input[type="password"],
 textarea,
 select {
-  background-color: #2d1b3d !important;
-  border-color: #792990 !important;
+  background-color: var(--brand-surface-2) !important;
+  border-color: var(--brand-accent) !important;
   color: #e5e7eb !important;
 }
 
@@ -66,20 +97,20 @@ textarea::placeholder {
 
 /* Table styles */
 .bg-gray-50 {
-  background-color: #2d1b3d !important;
+  background-color: var(--brand-surface-2) !important;
 }
 
 thead.bg-gray-50 {
-  background-color: #1a0022 !important;
+  background-color: var(--brand-surface) !important;
 }
 
 /* Gray scale overrides */
 .bg-gray-100 {
-  background-color: #2d1b3d !important;
+  background-color: var(--brand-surface-2) !important;
 }
 
 .bg-gray-200 {
-  background-color: #3d2b4d !important;
+  background-color: var(--brand-surface-3) !important;
 }
 
 /* Very light (50) backgrounds — dark semi-transparent equivalents */
@@ -155,9 +186,9 @@ thead.bg-gray-50 {
 .text-indigo-600 { color: #818cf8 !important; }
 
 /* Hover states */
-.hover\:bg-gray-50:hover  { background-color: #2d1b3d !important; }
-.hover\:bg-gray-100:hover { background-color: #3d2b4d !important; }
-.hover\:bg-gray-200:hover { background-color: #4d3b5d !important; }
+.hover\:bg-gray-50:hover  { background-color: var(--brand-surface-2) !important; }
+.hover\:bg-gray-100:hover { background-color: var(--brand-surface-3) !important; }
+.hover\:bg-gray-200:hover { background-color: var(--brand-surface-4) !important; }
 
 .hover\:bg-red-50:hover     { background-color: rgba(239,68,68,0.12)   !important; }
 .hover\:bg-red-100:hover    { background-color: rgba(239,68,68,0.18)   !important; }
@@ -251,7 +282,7 @@ thead.bg-gray-50 {
 /* Navigation scroll container - visible scrollbar */
 .nav-scroll-container {
   scrollbar-width: thin;
-  scrollbar-color: #792990 transparent;
+  scrollbar-color: var(--brand-accent) transparent;
 }
 
 .nav-scroll-container::-webkit-scrollbar {
@@ -264,12 +295,12 @@ thead.bg-gray-50 {
 }
 
 .nav-scroll-container::-webkit-scrollbar-thumb {
-  background: #792990;
+  background: var(--brand-accent);
   border-radius: 2px;
 }
 
 .nav-scroll-container::-webkit-scrollbar-thumb:hover {
-  background: #a03bb8;
+  background: var(--brand-accent-2);
 }
 
 /* Custom scrollbar for navigation */
@@ -279,16 +310,16 @@ thead.bg-gray-50 {
 }
 
 ::-webkit-scrollbar-track {
-  background: #1a0022;
+  background: var(--brand-surface);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #792990;
+  background: var(--brand-accent);
   border-radius: 3px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a03bb8;
+  background: var(--brand-accent-2);
 }
 
 /* Pulsing border animation for deals without activities */
