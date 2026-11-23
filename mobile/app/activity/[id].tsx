@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable } from "react-native";
-import { c } from "@/theme";
+import { useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -62,6 +64,8 @@ function formatDateTime(iso: string | null): string | null {
 /** Full detail of one activity, reached by tapping a row in the lead or organization screen —
  *  those rows only ever showed a truncated subject and a date. */
 export default function ActivityDetailScreen() {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
@@ -182,7 +186,7 @@ export default function ActivityDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   container: { padding: 20, gap: 14 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg },
   header: { gap: 6 },

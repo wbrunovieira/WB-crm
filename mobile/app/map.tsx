@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { c } from "@/theme";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import MapView, { Marker, type Region } from "react-native-maps";
 import { useRouter } from "expo-router";
@@ -10,7 +11,7 @@ import { listLeadsForMap, listPendingActivitiesForMap, type LeadMapPin, type Pen
 const DEFAULT_DELTA = { latitudeDelta: 0.05, longitudeDelta: 0.05 };
 const PENDING_COLOR = "#3b82f6"; // takes visual priority over quality — "something to do here" beats "how hot is it"
 
-function leadPinColor(pin: LeadMapPin): string {
+function leadPinColor(pin: LeadMapPin, c: BrandColors): string {
   if (pin.quality === "hot") return "#ef4444";
   if (pin.quality === "warm") return "#f4c860";
   return c.text;
@@ -35,7 +36,7 @@ interface MapPin {
  *  coordinate. A pending activity whose lead isn't in `leadPins` (e.g. not sourceGroup
  *  porta-a-porta, so absent from listLeadsForMap) still gets its own marker as a fallback, so
  *  nothing is silently dropped from the map. */
-function buildMapPins(leadPins: LeadMapPin[], pending: PendingActivityMapPin[]): MapPin[] {
+function buildMapPins(leadPins: LeadMapPin[], pending: PendingActivityMapPin[], c: BrandColors): MapPin[] {
   const pendingByLead = new Map<string, PendingActivityMapPin>();
   for (const p of pending) {
     if (!pendingByLead.has(p.leadId)) pendingByLead.set(p.leadId, p); // first/soonest wins
@@ -54,7 +55,7 @@ function buildMapPins(leadPins: LeadMapPin[], pending: PendingActivityMapPin[]):
         ? `⏰ ${openFollowUp.subject}${openFollowUp.dueDate ? ` — até ${new Date(openFollowUp.dueDate).toLocaleDateString("pt-BR")}` : ""}`
         : [lead.city, lead.state].filter(Boolean).join(" - ") || undefined,
       hasPending: !!openFollowUp,
-      color: openFollowUp ? PENDING_COLOR : leadPinColor(lead),
+      color: openFollowUp ? PENDING_COLOR : leadPinColor(lead, c),
     };
   });
 
@@ -78,6 +79,8 @@ function buildMapPins(leadPins: LeadMapPin[], pending: PendingActivityMapPin[]):
  *  default provider on iOS). Only leads with a captured GPS position show up; manual/card
  *  captures without one are invisible here (see listLeadsForMap). */
 export default function MapScreen() {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [gpsRegion, setGpsRegion] = useState<Region | null>(null);
   const [locating, setLocating] = useState(true);
@@ -92,7 +95,7 @@ export default function MapScreen() {
   });
   const leadPins = leadsQuery.data ?? [];
   const pendingPins = pendingQuery.data ?? [];
-  const pins = buildMapPins(leadPins, pendingPins);
+  const pins = buildMapPins(leadPins, pendingPins, c);
   const pendingCount = pins.filter((p) => p.hasPending).length;
 
   useEffect(() => {
@@ -173,7 +176,7 @@ export default function MapScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg, padding: 24 },

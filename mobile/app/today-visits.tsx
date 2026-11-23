@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { c } from "@/theme";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking, Alert } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import MapView, { Marker, type Region } from "react-native-maps";
@@ -83,6 +84,8 @@ function CartaoVisita({
   onAdiar: (v: TodayScheduledVisit) => void;
   onDesistir: (v: TodayScheduledVisit) => void;
 }) {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
           <Pressable
             key={visita.activityId}
@@ -140,6 +143,8 @@ function CartaoVisita({
 }
 
 export default function TodayVisitsScreen() {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [mode, setMode] = useState<"list" | "map">("list");
   const [dayOffset, setDayOffset] = useState(0);
@@ -341,6 +346,8 @@ function MapModeContent({
   onSelect: (v: { kind: string; entityId: string }) => void;
   emptyLabel: string;
 }) {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const fallbackRegion: Region | undefined = pins.length
     ? { latitude: pins[0].latitude, longitude: pins[0].longitude, ...DEFAULT_DELTA }
     : undefined;
@@ -395,7 +402,7 @@ function MapModeContent({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   adiadaBadge: {
     color: "#f59e0b",
     fontSize: 11,

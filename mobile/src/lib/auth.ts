@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import { EMBEDDED_JWT } from "./config";
+import { empresaAtiva } from "./active-company";
 
 const TOKEN_KEY = "crm_jwt";
 
@@ -16,19 +16,11 @@ let resolved = false;
  * known user (see docs/plans/mobile-prospecting-app.md).
  */
 export async function getToken(): Promise<string | null> {
-  if (resolved) return cachedToken;
-
-  let token = await SecureStore.getItemAsync(TOKEN_KEY);
-
-  // Seed (first run) or re-seed (token rotated in .env) from the embedded token.
-  if (EMBEDDED_JWT && EMBEDDED_JWT !== token) {
-    await SecureStore.setItemAsync(TOKEN_KEY, EMBEDDED_JWT);
-    token = EMBEDDED_JWT;
-  }
-
-  cachedToken = token;
-  resolved = true;
-  return token;
+  // Cada empresa traz seu próprio JWT embutido no build (ver mobile/.env e app.config.ts).
+  // Trocar de empresa troca o token junto — por isso não há mais cache nem cópia no
+  // Keychain: a fonte de verdade é a empresa ativa, e ela muda em runtime.
+  const t = empresaAtiva().token;
+  return t.length > 0 ? t : null;
 }
 
 /** True when a token is available (embedded or already stored). */

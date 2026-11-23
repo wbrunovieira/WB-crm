@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { c } from "@/theme";
+import { useState, useMemo } from "react";
+import { useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking, Alert } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -71,6 +72,8 @@ function contactsKey(id: string) {
 }
 
 export default function LeadDetailScreen() {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const { id: rawId } = useLocalSearchParams<{ id: string | string[] }>();
   const router = useRouter();
   const id = Array.isArray(rawId) ? rawId[0] : rawId;
@@ -382,6 +385,8 @@ function InfoRow({
   latitude?: number | null;
   longitude?: number | null;
 }) {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [copied, setCopied] = useState(false);
   const hasValue = !!(value && value.trim());
   const trimmed = hasValue ? value!.trim() : "";
@@ -466,6 +471,8 @@ function toContactEditState(contact: LeadContact): ContactEditState {
 }
 
 function ContactRow({ leadId, contact, queryClient }: { leadId: string; contact: LeadContact; queryClient: QueryClient }) {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [editing, setEditing] = useState(false);
   const [edit, setEdit] = useState<ContactEditState>(() => toContactEditState(contact));
 
@@ -548,6 +555,8 @@ function ContactRow({ leadId, contact, queryClient }: { leadId: string; contact:
 }
 
 function NewContactForm({ leadId, queryClient, onDone }: { leadId: string; queryClient: QueryClient; onDone: () => void }) {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [phone, setPhone] = useState("");
@@ -589,6 +598,8 @@ function NewContactForm({ leadId, queryClient, onDone }: { leadId: string; query
 }
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipOn]}>
       <Text style={[styles.chipText, active && styles.chipTextOn]}>{label}</Text>
@@ -597,6 +608,8 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
 }
 
 function Field({ label, multiline, ...props }: { label: string; multiline?: boolean } & React.ComponentProps<typeof TextInput>) {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
@@ -610,7 +623,7 @@ function Field({ label, multiline, ...props }: { label: string; multiline?: bool
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   container: { padding: 20, gap: 14 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg },
   errorText: { color: "#f2a5a5" },

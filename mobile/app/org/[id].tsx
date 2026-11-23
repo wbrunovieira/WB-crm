@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking } from "react-native";
-import { c } from "@/theme";
+import { useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -50,6 +52,8 @@ function formatDate(iso: string | null): string | null {
  *  converted from a lead. Read-only for now: in the field what is needed is who to call, where
  *  to go, and what has already been done here. */
 export default function OrgDetailScreen() {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
 
@@ -204,7 +208,7 @@ export default function OrgDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   container: { padding: 20, gap: 14 },
   center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },

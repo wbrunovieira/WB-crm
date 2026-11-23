@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { c } from "@/theme";
+import { useState, useMemo } from "react";
+import { useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -31,6 +32,8 @@ function dayKey(daysAgo: number): string {
 }
 
 export default function TodayScreen() {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const queryClient = useQueryClient();
   // 0 = today, 1 = yesterday, ... — lets the rep browse prior days' prospecting, not just today's.
@@ -214,7 +217,7 @@ export default function TodayScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   container: { padding: 20 },
   section: { color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 8 },
   sectionSpaced: { marginTop: 24 },

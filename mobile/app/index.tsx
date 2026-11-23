@@ -1,5 +1,7 @@
 import { useMemo } from "react";
-import { c } from "@/theme";
+import { useBrand } from "@/theme/CompanyContext";
+import { CompanySwitcher } from "@/components/CompanySwitcher";
+import type { BrandColors } from "@/theme";
 import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -20,6 +22,9 @@ const MODES: Mode[] = [
 ];
 
 export default function Home() {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
+  const pillTone = useMemo(() => makePillTone(c), [c]);
   const router = useRouter();
 
   // Is a usable token present at runtime (Keychain or embedded)? Drives the check below.
@@ -59,6 +64,7 @@ export default function Home() {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      <CompanySwitcher />
       <View style={[styles.pill, pillTone[status.tone]]}>
         {status.tone === "muted" && <ActivityIndicator size="small" color={c.text} />}
         <Text style={styles.pillText}>{status.label}</Text>
@@ -133,14 +139,14 @@ export default function Home() {
   );
 }
 
-const pillTone: Record<string, object> = {
+const makePillTone = (c: BrandColors): Record<string, object> => ({
   ok: { backgroundColor: "#14351f", borderColor: "#2f7d4f" },
   warn: { backgroundColor: "#3a2e12", borderColor: "#8a6d1f" },
   error: { backgroundColor: "#3a1414", borderColor: "#8a2f2f" },
   muted: { backgroundColor: c.card, borderColor: c.border },
-};
+});
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   container: { padding: 20, gap: 8 },
   pill: {
     flexDirection: "row",

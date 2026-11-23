@@ -1,5 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import { c } from "@/theme";
+import { useEffect, useRef, useState, useMemo } from "react";
+import { useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 import { Field } from "./Field";
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator, Platform, InteractionManager } from "react-native";
 import { useRouter } from "expo-router";
@@ -109,6 +110,8 @@ export function ManualLeadForm({
   fromGoogle?: boolean;
   autoOpenCamera?: boolean;
 }) {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   // Read the selected place once (Google mode). Manual/GPS never touch the store.
   const [sel] = useState(() => (fromGoogle ? getSelectedPlace() : null));
@@ -671,6 +674,8 @@ export function ManualLeadForm({
 
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipOn]}>
       <Text style={[styles.chipText, active && styles.chipTextOn]}>{label}</Text>
@@ -678,7 +683,7 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   container: { padding: 16, gap: 10 },
   section: { color: c.textBright, fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 10 },
   field: { gap: 4 },

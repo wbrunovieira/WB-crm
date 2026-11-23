@@ -1,5 +1,6 @@
-import { useRef, useState, useEffect } from "react";
-import { c } from "@/theme";
+import { useRef, useState, useEffect, useMemo } from "react";
+import { useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 import { Field } from "@/components/Field";
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
@@ -32,6 +33,8 @@ function initial(): FormState {
  *  the contact person, with the same card-photo OCR fill used for leads. No offline queue yet
  *  (unlike leads' Fase 4 outbox) — a failed save just keeps the typed data on screen to retry. */
 export default function PartnerScreen() {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [f, setF] = useState<FormState>(initial);
   const [scanning, setScanning] = useState(false);
@@ -171,6 +174,8 @@ export default function PartnerScreen() {
 
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   return (
     <Pressable onPress={onPress} style={[styles.chip, active && styles.chipOn]}>
       <Text style={[styles.chipText, active && styles.chipTextOn]}>{label}</Text>
@@ -178,7 +183,7 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   container: { padding: 16, gap: 10 },
   section: { color: c.textBright, fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 10 },
   field: { gap: 4 },

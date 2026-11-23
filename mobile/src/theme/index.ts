@@ -37,7 +37,6 @@ export const BRANDS: Record<"wb" | "rds", BrandColors> = {
   },
 };
 
-/** Brand ativo. Etapa 5 troca isto em runtime via seletor + reload. */
-export const BRAND: "wb" | "rds" = "wb";
-
-export const c = BRANDS[BRAND];
+// A empresa ativa (e portanto as cores) vive no CompanyProvider — ver
+// src/theme/CompanyContext.tsx. Um valor estático aqui voltaria a congelar o tema
+// no import, que é exatamente o que o contexto resolve.

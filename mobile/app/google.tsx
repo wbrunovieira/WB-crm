@@ -1,5 +1,6 @@
-import { useState } from "react";
-import { c } from "@/theme";
+import { useState, useMemo } from "react";
+import { useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 import { View, Text, TextInput, Pressable, FlatList, StyleSheet, ActivityIndicator, Keyboard, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { searchPlaces, type Place } from "@/lib/places";
@@ -9,6 +10,8 @@ import { setSelectedPlace } from "@/lib/selected-place";
 import { isOnline } from "@/lib/net";
 
 export default function GoogleSearchScreen() {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [term, setTerm] = useState("");
   const [lastQuery, setLastQuery] = useState(""); // effective query actually sent (for pagination)
@@ -161,7 +164,7 @@ export default function GoogleSearchScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   container: { flex: 1, padding: 16 },
   searchRow: { flexDirection: "row", gap: 8 },
   input: {

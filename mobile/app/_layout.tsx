@@ -1,5 +1,6 @@
-import { useEffect } from "react";
-import { c } from "@/theme";
+import { useEffect} from "react";
+import { CompanyProvider, useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 import { AppState } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { Stack } from "expo-router";
@@ -16,6 +17,7 @@ import { drainOutbox } from "@/lib/outbox";
  * and once on cold start in case items were left over from a previous session.
  */
 function OutboxDrainListener() {
+  const c = useBrand();
   useEffect(() => {
     drainOutbox();
 
@@ -38,6 +40,16 @@ function OutboxDrainListener() {
 }
 
 export default function RootLayout() {
+  // O Provider precisa envolver quem usa useBrand — por isso a navegação é um filho.
+  return (
+    <CompanyProvider>
+      <RootNav />
+    </CompanyProvider>
+  );
+}
+
+function RootNav() {
+  const c = useBrand();
   return (
     <QueryClientProvider client={queryClient}>
       <SafeAreaProvider>
@@ -45,7 +57,7 @@ export default function RootLayout() {
         <OutboxDrainListener />
         <Stack
           screenOptions={{
-            headerStyle: { backgroundColor: "#792990" },
+            headerStyle: { backgroundColor: c.accent },
             headerTintColor: "#fff",
             headerTitleStyle: { fontWeight: "600" },
             contentStyle: { backgroundColor: c.bg },

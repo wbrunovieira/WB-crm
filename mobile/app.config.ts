@@ -73,5 +73,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     // Read at build/start time from the environment; never committed.
     crmJwt: process.env.CRM_JWT ?? "",
     apiUrl: process.env.CRM_API_URL ?? "https://crm-api.wbdigitalsolutions.com",
+    // Segunda empresa (RDS Transportes). Sem token, ela não aparece no seletor.
+    crmJwtRds: process.env.CRM_JWT_RDS ?? "",
+    apiUrlRds: process.env.CRM_API_URL_RDS ?? "https://crm-rds-api.wbdigitalsolutions.com",
   },
 });

@@ -18,10 +18,19 @@ NestJS CRM API** (`crm-api.wbdigitalsolutions.com`). Full product plan:
 
 - **No business logic in the app.** It orchestrates calls and reuses backend endpoints
   (leads, activities, Google Places search). New behavior belongs in the NestJS backend.
-- **Single-user auth, no login screen.** A long-lived JWT is read from a git-ignored `.env`
-  (`CRM_JWT`), seeded into the Keychain (`expo-secure-store`) on first run, and sent as
-  `Authorization: Bearer` on every request. `getToken()` re-seeds when the embedded token
-  changes (rotation = edit `.env` + rebuild). How to mint/rotate → skill `wb-crm-mobile`.
+- **Single-user auth, no login screen.** Long-lived JWTs are read from a git-ignored `.env`
+  and sent as `Authorization: Bearer` on every request. Rotation = edit `.env` + rebuild.
+  How to mint/rotate → skill `wb-crm-mobile`.
+- **Two companies, one app.** WB (consulting) and RDS (freight) are separate CRM instances
+  with separate databases. Each has its own JWT and API URL in `.env` (`CRM_JWT` /
+  `CRM_JWT_RDS`). The active company drives colours, API URL and token together; the picker
+  on the home screen switches all three, and only shows when both tokens are present.
+  `CompanyProvider` (`src/theme/CompanyContext.tsx`) holds the choice and mirrors it into
+  `src/lib/active-company.ts`, which the non-React network layer reads.
+- **Styles live inside components** (`makeStyles(c)` + `useBrand()`), not in module-level
+  `StyleSheet.create`. A module stylesheet is built at import time, before the stored company
+  choice can be read — and the app has no synchronous storage — so colours would be frozen to
+  one brand. This is why switching repaints instantly instead of needing a reload.
 - **Data flow:** UI component → React Query hook → `apiFetch` (`src/lib/api.ts`, attaches Bearer)
   → NestJS. Errors surface as `ApiError` (status + body); auth failures (401/403) are not retried.
 

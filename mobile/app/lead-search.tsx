@@ -1,10 +1,13 @@
-import { useState } from "react";
-import { c } from "@/theme";
+import { useState, useMemo } from "react";
+import { useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 import { View, Text, TextInput, Pressable, FlatList, StyleSheet, ActivityIndicator, Keyboard } from "react-native";
 import { useRouter } from "expo-router";
 import { searchLeadsAndOrgs, type SearchHit } from "@/lib/search";
 
 export default function BuscaScreen() {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const router = useRouter();
   const [term, setTerm] = useState("");
   const [results, setResults] = useState<SearchHit[]>([]);
@@ -87,7 +90,7 @@ export default function BuscaScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   container: { flex: 1, padding: 16 },
   searchRow: { flexDirection: "row", gap: 8 },
   input: {

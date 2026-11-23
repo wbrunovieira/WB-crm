@@ -1,4 +1,4 @@
-import { API_URL } from "./config";
+import { empresaAtiva } from "./active-company";
 import { getToken } from "./auth";
 
 export class ApiError extends Error {
@@ -24,7 +24,7 @@ export async function apiFetch<T = unknown>(path: string, opts: Options = {}): P
   // Content-Type with the boundary — JSON.stringify-ing it would lose the file.
   const isFormData = body instanceof FormData;
 
-  const res = await fetch(`${API_URL}${path}`, {
+  const res = await fetch(`${empresaAtiva().apiUrl}${path}`, {
     ...rest,
     headers: {
       ...(body === undefined || isFormData ? {} : { "Content-Type": "application/json" }),

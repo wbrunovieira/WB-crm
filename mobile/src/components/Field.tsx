@@ -1,5 +1,7 @@
+import { useMemo } from "react";
 import { View, Text, TextInput, Pressable, StyleSheet, Linking, Alert } from "react-native";
-import { c } from "@/theme";
+import { useBrand } from "@/theme/CompanyContext";
+import type { BrandColors } from "@/theme";
 
 /**
  * Campo de formulário do app. Extraído porque ManualLeadForm e a tela de parceiro tinham
@@ -36,6 +38,8 @@ export function Field({
   multiline?: boolean;
   abrirComoLink?: boolean;
 } & React.ComponentProps<typeof TextInput>) {
+  const c = useBrand();
+  const styles = useMemo(() => makeStyles(c), [c]);
   const valor = typeof props.value === "string" ? props.value : "";
   const podeAbrir = !!abrirComoLink && pareceEndereco(valor);
 
@@ -73,7 +77,7 @@ export function Field({
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (c: BrandColors) => StyleSheet.create({
   // Copiados EXATAMENTE do Field original (ManualLeadForm.tsx:690-693). Inventar estilo aqui
   // faria o campo destoar de todos os outros do formulario.
   field: { gap: 4 },
