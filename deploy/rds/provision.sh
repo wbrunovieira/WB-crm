@@ -44,8 +44,32 @@ for v in "BACKEND_CONTAINER=$CONTAINER" "BACKEND_PORT=3011"; do
 done
 echo "    ok"
 
-say "4/8  Migrations no $DB"
-cd "$DIR" && docker compose --profile backend run --rm backend npx prisma migrate deploy
+say "4/8  Schema no $DB"
+# As 45 migrations são todas incrementais: a base histórica do projeto veio de um
+# db push, então NÃO existe migração inicial que crie as tabelas — num banco vazio,
+# `migrate deploy` morre em "relation leads does not exist". O CI faz o mesmo que
+# aqui para o banco de teste efêmero (ver ci.yml).
+#
+# Banco novo  -> db push materializa o schema atual e as migrations são marcadas
+#                como aplicadas, para os deploys seguintes aplicarem só as novas.
+# Banco já com tabelas -> migrate deploy normal.
+cd "$DIR"
+TABELAS=$(docker exec crm_postgres psql -U "${POSTGRES_USER:-crm_user}" -d "$DB" -tAc \
+  "select count(*) from information_schema.tables where table_schema='public'" | tr -d ' ')
+if [ "${TABELAS:-0}" -eq 0 ]; then
+  echo "    banco vazio — db push + baseline das migrations"
+  docker compose --profile backend run --rm backend npx prisma db push --skip-generate
+  docker compose --profile backend run --rm backend sh -c '
+    for d in prisma/migrations/*/; do
+      m=$(basename "$d")
+      npx prisma migrate resolve --applied "$m" >/dev/null 2>&1 || true
+    done'
+  echo "    baseline aplicado"
+else
+  echo "    banco com $TABELAS tabelas — migrate deploy"
+  docker compose --profile backend run --rm backend npx prisma migrate deploy
+fi
+docker compose --profile backend run --rm backend npx prisma migrate status 2>&1 | tail -3 | sed 's/^/    /'
 
 say "5/8  Backend ($CONTAINER :3011)"
 cd "$DIR" && docker compose --profile backend up -d --build backend
