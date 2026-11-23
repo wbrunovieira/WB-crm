@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Toaster } from "sonner";
 import { LogoutButton } from "@/components/shared/LogoutButton";
 import { BrandLogo } from "@/components/shared/BrandLogo";
+import { BrandSwitcher } from "@/components/shared/BrandSwitcher";
 import { MainNav } from "@/components/shared/MainNav";
 import { NotificationBell } from "@/components/shared/NotificationBell";
 import { GlobalSearch } from "@/components/shared/GlobalSearch";
@@ -43,6 +44,7 @@ export default async function DashboardLayout({
               <div className="hidden lg:block text-sm text-gray-300 font-medium truncate max-w-[150px]" title={session.user?.name || session.user?.email || ""}>
                 {session.user?.name || session.user?.email}
               </div>
+              <BrandSwitcher />
               <NotificationBell />
               <LogoutButton />
             </div>
