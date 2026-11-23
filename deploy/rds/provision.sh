@@ -15,7 +15,7 @@ REPO=git@github.com:wbrunovieira/WB-crm.git
 
 say() { printf '\n\033[1;34m==> %s\033[0m\n' "$1"; }
 
-say "1/7  Banco $DB (database separado no crm_postgres)"
+say "1/8  Banco $DB (database separado no crm_postgres)"
 if docker exec crm_postgres psql -U "${POSTGRES_USER:-crm_user}" -lqt | cut -d\| -f1 | grep -qw "$DB"; then
   echo "    já existe — mantendo"
 else
@@ -23,7 +23,7 @@ else
   echo "    criado"
 fi
 
-say "2/7  Código em $DIR"
+say "2/8  Código em $DIR"
 if [ -d "$DIR/.git" ]; then
   git -C "$DIR" fetch origin main && git -C "$DIR" reset --hard origin/main
   echo "    atualizado"
@@ -32,21 +32,21 @@ else
   echo "    clonado"
 fi
 
-say "3/7  Envs (precisam existir — ver env.*.example)"
+say "3/8  Envs (precisam existir — ver env.*.example)"
 for f in "$DIR/.env" "$DIR/backend/.env"; do
   [ -f "$f" ] || { echo "    FALTA $f — copie do example e preencha os segredos"; exit 1; }
 done
 grep -q '^NEXT_PUBLIC_BRAND=rds' "$DIR/.env" || { echo "    .env sem NEXT_PUBLIC_BRAND=rds"; exit 1; }
 echo "    ok"
 
-say "4/7  Migrations no $DB"
+say "4/8  Migrations no $DB"
 cd "$DIR" && docker compose --profile backend run --rm backend npx prisma migrate deploy
 
-say "5/7  Backend ($CONTAINER :3011)"
+say "5/8  Backend ($CONTAINER :3011)"
 cd "$DIR" && docker compose --profile backend up -d --build backend
 docker ps --filter "name=$CONTAINER" --format '    {{.Names}} {{.Status}}'
 
-say "6/7  Frontend (build com BRAND=rds + PM2 $PM2_APP :3001)"
+say "6/8  Frontend (build com BRAND=rds + PM2 $PM2_APP :3001)"
 cd "$DIR" && npm ci --production=false && npm run build
 if pm2 describe "$PM2_APP" >/dev/null 2>&1; then
   pm2 restart "$PM2_APP"
@@ -55,11 +55,33 @@ else
   pm2 save
 fi
 
-say "7/7  Nginx (os certs dos 2 subdomínios precisam existir em /etc/nginx/certs/)"
+say "7/8  Certificados TLS dos 2 subdomínios (DNS-01 na Cloudflare)"
+# HTTP-01 não funciona aqui: o firewall só aceita IPs da Cloudflare e a borda força
+# HTTPS, então o desafio não chega num domínio que ainda não tem cert. DNS-01 resolve.
+install -m 700 "$DIR/deploy/rds/cf-dns-hook.sh" /usr/local/bin/cf-dns-hook.sh
+for d in crm-rds crm-rds-api; do
+  dom="$d.wbdigitalsolutions.com"
+  if [ -f "/etc/letsencrypt/live/$dom/fullchain.pem" ]; then
+    echo "    $dom — cert já existe"
+  else
+    certbot certonly --manual --preferred-challenges dns \
+      --manual-auth-hook    "/usr/local/bin/cf-dns-hook.sh auth" \
+      --manual-cleanup-hook "/usr/local/bin/cf-dns-hook.sh cleanup" \
+      --manual-public-ip-logging-ok \
+      -d "$dom" --cert-name "$dom" --non-interactive --agree-tos
+    echo "    $dom — emitido"
+  fi
+  # O nginx lê cópias deste layout; o deploy hook as atualiza nas renovações.
+  install -d -m 755 "/etc/nginx/certs/$dom"
+  install -m 644 "/etc/letsencrypt/live/$dom/fullchain.pem" "/etc/nginx/certs/$dom/fullchain.pem"
+  install -m 600 "/etc/letsencrypt/live/$dom/privkey.pem"   "/etc/nginx/certs/$dom/key.pem"
+done
+
+say "8/8  Nginx"
 for d in crm-rds crm-rds-api; do
   cp "$DIR/deploy/rds/nginx-$d.conf" "/etc/nginx/sites-available/$d.wbdigitalsolutions.com.conf"
   ln -sf "/etc/nginx/sites-available/$d.wbdigitalsolutions.com.conf" "/etc/nginx/sites-enabled/"
 done
 nginx -t && systemctl reload nginx
 
-say "Pronto. Falta criar o admin RDS (ver README) e apontar o DNS dos 2 subdomínios."
+say "Pronto. Falta criar o admin RDS (ver README)."
