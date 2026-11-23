@@ -54,10 +54,15 @@ say "4/8  Schema no $DB"
 #                como aplicadas, para os deploys seguintes aplicarem só as novas.
 # Banco já com tabelas -> migrate deploy normal.
 cd "$DIR"
+# _prisma_migrations não conta: ela sozinha ainda é um banco vazio (e uma tentativa
+# anterior que falhou deixa justamente ela, com o registro do erro).
 TABELAS=$(docker exec crm_postgres psql -U "${POSTGRES_USER:-crm_user}" -d "$DB" -tAc \
-  "select count(*) from information_schema.tables where table_schema='public'" | tr -d ' ')
+  "select count(*) from information_schema.tables where table_schema='public' and table_name <> '_prisma_migrations'" | tr -d ' ')
 if [ "${TABELAS:-0}" -eq 0 ]; then
   echo "    banco vazio — db push + baseline das migrations"
+  # Zera histórico de tentativa anterior, senão o Prisma recusa por migração falhada (P3009).
+  docker exec crm_postgres psql -U "${POSTGRES_USER:-crm_user}" -d "$DB" -qc \
+    "drop table if exists _prisma_migrations" >/dev/null
   docker compose --profile backend run --rm backend npx prisma db push --skip-generate
   docker compose --profile backend run --rm backend sh -c '
     for d in prisma/migrations/*/; do

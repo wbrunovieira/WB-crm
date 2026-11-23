@@ -5,16 +5,24 @@ import { MetaAdsCheckerPort, type MetaAdsResult } from "../application/ports/met
 @Injectable()
 export class MetaGraphApiAdapter extends MetaAdsCheckerPort {
   private readonly logger = new Logger(MetaGraphApiAdapter.name);
-  private readonly appToken: string;
   private readonly apiVersion = "v19.0";
 
   constructor(private readonly config: ConfigService) {
     super();
-    const userToken = config.get<string>("META_USER_TOKEN");
+  }
+
+  /**
+   * A credencial é cobrada no uso, não na construção. Validar no construtor derruba
+   * a aplicação inteira no boot — o Nest instancia todos os providers na subida, então
+   * uma instância que não usa o Meta Ads não conseguiria nem iniciar (foi o que
+   * impediu a instância RDS de subir). Mesmo padrão do google-places.client.
+   */
+  private token(): string {
+    const userToken = this.config.get<string>("META_USER_TOKEN");
     if (!userToken) {
-      throw new Error("META_USER_TOKEN must be set");
+      throw new Error("META_USER_TOKEN não configurada");
     }
-    this.appToken = userToken;
+    return userToken;
   }
 
   async check(instagramHandle: string): Promise<MetaAdsResult> {
@@ -25,7 +33,7 @@ export class MetaGraphApiAdapter extends MetaAdsCheckerPort {
       ad_active_status: "ACTIVE",
       limit: "25",
       fields: "id,page_name,ad_creative_bodies,ad_delivery_start_time",
-      access_token: this.appToken,
+      access_token: this.token(),
     });
 
     const url = `https://graph.facebook.com/${this.apiVersion}/ads_archive?${params.toString()}`;
