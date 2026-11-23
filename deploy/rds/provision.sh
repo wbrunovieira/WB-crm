@@ -37,6 +37,11 @@ for f in "$DIR/.env" "$DIR/backend/.env"; do
   [ -f "$f" ] || { echo "    FALTA $f — copie do example e preencha os segredos"; exit 1; }
 done
 grep -q '^NEXT_PUBLIC_BRAND=rds' "$DIR/.env" || { echo "    .env sem NEXT_PUBLIC_BRAND=rds"; exit 1; }
+# Precisam estar no .env da RAIZ: é de lá que o compose interpola. Se faltarem, ele
+# subiria o container como "wb-crm-backend" na 3010 e colidiria com a instância da WB.
+for v in "BACKEND_CONTAINER=$CONTAINER" "BACKEND_PORT=3011"; do
+  grep -q "^$v\$" "$DIR/.env" || { echo "    .env da raiz sem $v (o compose interpola de lá, não do backend/.env)"; exit 1; }
+done
 echo "    ok"
 
 say "4/8  Migrations no $DB"
