@@ -26,13 +26,15 @@ services:
     build:
       context: .
       dockerfile: backend/Dockerfile
-    container_name: wb-crm-backend
+    # Nome e porta parametrizados: o MESMO compose serve as duas instâncias (WB e RDS),
+    # cada uma com seu .env. Os defaults mantêm o comportamento do WB inalterado.
+    container_name: ${BACKEND_CONTAINER:-wb-crm-backend}
     restart: unless-stopped
     ports:
-      # Bind to localhost only — nginx (crm-api.wbdigitalsolutions.com) proxies to it.
+      # Bind to localhost only — nginx (crm-api / crm-rds-api) proxies to it.
       # Publishing on 0.0.0.0 would expose the API directly to the internet, bypassing
       # nginx (Docker port publishing also bypasses UFW).
-      - "127.0.0.1:3010:3010"
+      - "127.0.0.1:${BACKEND_PORT:-3010}:3010"
     environment:
       NODE_ENV: production
       PORT: 3010
