@@ -82,10 +82,12 @@ docker ps --filter "name=$CONTAINER" --format '    {{.Names}} {{.Status}}'
 
 say "6/8  Frontend (build com BRAND=rds + PM2 $PM2_APP :3005)"
 cd "$DIR" && npm ci --production=false && npm run build
+# A porta vai explícita no comando: `next start` NÃO lê PORT do .env, então sem isso
+# ele cai no default 3000 — a porta da WB — e morre com EADDRINUSE.
 if pm2 describe "$PM2_APP" >/dev/null 2>&1; then
-  pm2 restart "$PM2_APP"
+  pm2 restart "$PM2_APP" --update-env
 else
-  cd "$DIR" && pm2 start npm --name "$PM2_APP" -- start
+  cd "$DIR" && pm2 start npm --name "$PM2_APP" -- start -- -p 3005
   pm2 save
 fi
 
