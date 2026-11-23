@@ -102,7 +102,7 @@ export function LanguageSelector({ value, onChange, darkMode = false }: Language
   };
 
   const inputClass = darkMode
-    ? "block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990] cursor-pointer"
+    ? "block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border) cursor-pointer"
     : "block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-primary cursor-pointer";
 
   const badgeBg = darkMode ? "bg-indigo-900 text-indigo-200" : "bg-indigo-100 text-indigo-800";
@@ -166,7 +166,7 @@ export function LanguageSelector({ value, onChange, darkMode = false }: Language
 
           {showDropdown && (
             <div className={`absolute z-10 mt-1 w-full rounded-md shadow-lg max-h-48 overflow-y-auto ${
-              darkMode ? "bg-[#2d1b3d] border border-[#792990]" : "bg-white border border-gray-300"
+              darkMode ? "bg-(--brand-surface-2) border border-(--brand-border)" : "bg-white border border-gray-300"
             }`}>
               {availableLanguages.map((lang) => (
                 <button
@@ -175,7 +175,7 @@ export function LanguageSelector({ value, onChange, darkMode = false }: Language
                   onClick={() => addLanguage(lang.code)}
                   className={`w-full text-left px-4 py-2 text-sm ${
                     darkMode
-                      ? "text-gray-200 hover:bg-[#792990]/30"
+                      ? "text-gray-200 hover:bg-(--brand-accent)/30"
                       : "text-gray-700 hover:bg-gray-50"
                   }`}
                 >

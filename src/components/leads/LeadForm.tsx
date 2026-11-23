@@ -291,7 +291,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Informações Básicas */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Informações Básicas
         </h2>
@@ -305,7 +305,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="businessName"
               required
               defaultValue={lead?.businessName}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -316,7 +316,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="text"
               name="registeredName"
               defaultValue={lead?.registeredName || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -327,7 +327,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="text"
               name="companyRegistrationID"
               defaultValue={lead?.companyRegistrationID || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -342,7 +342,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                   ? new Date(lead.foundationDate).toISOString().split("T")[0]
                   : ""
               }
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -352,7 +352,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
             <select
               name="status"
               defaultValue={lead?.status || "new"}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               <option value="new">Novo</option>
               <option value="contacted">Contatado</option>
@@ -367,7 +367,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
             <select
               name="quality"
               defaultValue={lead?.quality || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               <option value="">Selecione...</option>
               <option value="cold">Frio</option>
@@ -384,13 +384,13 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
             name="description"
             rows={3}
             defaultValue={lead?.description || ""}
-            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
           />
         </div>
       </div>
 
       {/* Classificação */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Classificação
         </h2>
@@ -410,18 +410,18 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               ICP (Perfil de Cliente Ideal)
             </label>
             {loadingIcps ? (
-              <div className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-400">
+              <div className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-400">
                 Carregando ICPs...
               </div>
             ) : availableIcps.length === 0 ? (
-              <div className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-400">
+              <div className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-400">
                 Nenhum ICP ativo disponível
               </div>
             ) : (
               <select
                 value={selectedIcpId}
                 onChange={(e) => setSelectedIcpId(e.target.value)}
-                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
               >
                 <option value="">Selecione um ICP (opcional)</option>
                 {availableIcps.map((icp) => (
@@ -444,7 +444,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
             <select
               value={referredByPartnerId}
               onChange={(e) => setReferredByPartnerId(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               <option value="">Nenhum parceiro (opcional)</option>
               {partners.map((p) => (
@@ -464,7 +464,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               Empresa Matriz
             </label>
             {parentLeadId ? (
-              <div className="flex items-center justify-between rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2">
+              <div className="flex items-center justify-between rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2">
                 <span className="text-sm text-gray-200">
                   {(() => {
                     const found = leadsForSelect.find((l) => l.id === parentLeadId);
@@ -495,11 +495,11 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                     }}
                     onFocus={() => setParentLeadOpen(true)}
                     placeholder="Buscar empresa matriz..."
-                    className="w-full rounded-md border border-[#792990] bg-[#2d1b3d] py-2 pl-10 pr-3 text-sm text-gray-200 placeholder-gray-500 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                    className="w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) py-2 pl-10 pr-3 text-sm text-gray-200 placeholder-gray-500 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
                   />
                 </div>
                 {parentLeadOpen && (
-                  <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-600 bg-[#1a0022] shadow-lg">
+                  <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-600 bg-(--brand-surface) shadow-lg">
                     {leadsForSelect
                       .filter(
                         (l) =>
@@ -518,7 +518,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                             setParentLeadSearch("");
                             setParentLeadOpen(false);
                           }}
-                          className="w-full px-3 py-2 text-left hover:bg-[#2d1b3d] transition-colors"
+                          className="w-full px-3 py-2 text-left hover:bg-(--brand-surface-2) transition-colors"
                         >
                           <div className="text-sm text-gray-200">{l.businessName}</div>
                           {l.city && (
@@ -547,7 +547,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
       </div>
 
       {/* Presença Digital */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Presença Digital
         </h2>
@@ -584,7 +584,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
       </div>
 
       {/* Localização */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Localização
         </h2>
@@ -597,7 +597,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="text"
               name="address"
               defaultValue={lead?.address || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -608,7 +608,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="text"
               name="vicinity"
               defaultValue={lead?.vicinity || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -619,7 +619,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="text"
               name="city"
               defaultValue={lead?.city || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -630,7 +630,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="country"
               value={selectedCountry}
               onChange={(e) => setSelectedCountry(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               <option value="">Selecione...</option>
               {countries.map((country) => (
@@ -648,7 +648,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               <select
                 name="state"
                 defaultValue={lead?.state || ""}
-                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
               >
                 <option value="">Selecione...</option>
                 {brazilianStates.map((state) => (
@@ -663,7 +663,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                 name="state"
                 defaultValue={lead?.state || ""}
                 placeholder="Digite o estado, província ou região"
-                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
               />
             )}
           </div>
@@ -675,14 +675,14 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="text"
               name="zipCode"
               defaultValue={lead?.zipCode || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
         </div>
       </div>
 
       {/* Contato */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-200">
             Contato da Empresa
@@ -690,7 +690,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
           {lead?.id && (
             <Link
               href={`/contacts/new?leadId=${lead.id}`}
-              className="inline-flex items-center gap-2 rounded-md bg-[#792990] px-4 py-2 text-sm font-semibold text-white hover:bg-[#9333b8] transition-colors"
+              className="inline-flex items-center gap-2 rounded-md bg-(--brand-accent) px-4 py-2 text-sm font-semibold text-white hover:bg-[#9333b8] transition-colors"
             >
               <span>➕</span>
               Adicionar Contato
@@ -706,7 +706,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="tel"
               name="phone"
               defaultValue={lead?.phone || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -717,7 +717,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="tel"
               name="phone2"
               defaultValue={lead?.phone2 || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -728,7 +728,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="tel"
               name="whatsapp"
               defaultValue={lead?.whatsapp || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -739,7 +739,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="email"
               name="email"
               defaultValue={lead?.email || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -751,7 +751,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="website"
               placeholder="www.exemplo.com.br ou https://exemplo.com.br"
               defaultValue={lead?.website || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -761,7 +761,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
             <select
               name="commLanguage"
               defaultValue={lead?.commLanguage ?? "pt"}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               <option value="pt">Português</option>
               <option value="en">English</option>
@@ -777,7 +777,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
 
       {/* Contatos do Lead - Apenas para novos leads */}
       {!lead?.id && (
-        <div className="rounded-lg bg-[#1a0022] p-6">
+        <div className="rounded-lg bg-(--brand-surface) p-6">
           <div className="mb-4 flex items-center justify-between">
             <div>
               <h2 className="text-lg font-semibold text-gray-200">
@@ -790,7 +790,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
             <button
               type="button"
               onClick={() => setContacts([...contacts, { ...emptyContact }])}
-              className="inline-flex items-center gap-2 rounded-md bg-[#792990] px-3 py-1.5 text-sm font-medium text-white hover:bg-[#9333b8] transition-colors"
+              className="inline-flex items-center gap-2 rounded-md bg-(--brand-accent) px-3 py-1.5 text-sm font-medium text-white hover:bg-[#9333b8] transition-colors"
             >
               <Plus className="h-4 w-4" />
               Adicionar Contato
@@ -811,13 +811,13 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               {contacts.map((contact, index) => (
                 <div
                   key={index}
-                  className="rounded-lg border border-[#792990] bg-[#2d1b3d] p-4"
+                  className="rounded-lg border border-(--brand-border) bg-(--brand-surface-2) p-4"
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-300">
                       Contato {index + 1}
                       {index === 0 && (
-                        <span className="ml-2 rounded bg-[#792990] px-2 py-0.5 text-xs text-white">
+                        <span className="ml-2 rounded bg-(--brand-accent) px-2 py-0.5 text-xs text-white">
                           Principal
                         </span>
                       )}
@@ -848,7 +848,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                           setContacts(newContacts);
                         }}
                         placeholder="Nome do contato"
-                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                        className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
                       />
                     </div>
                     <div>
@@ -864,7 +864,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                           setContacts(newContacts);
                         }}
                         placeholder="Ex: CEO, Diretor, Gerente"
-                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                        className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
                       />
                     </div>
                     <div>
@@ -880,7 +880,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                           setContacts(newContacts);
                         }}
                         placeholder="email@exemplo.com"
-                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                        className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
                       />
                     </div>
                     <div>
@@ -896,7 +896,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                           setContacts(newContacts);
                         }}
                         placeholder="(00) 0000-0000"
-                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                        className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
                       />
                     </div>
                     <div>
@@ -912,7 +912,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                           setContacts(newContacts);
                         }}
                         placeholder="(00) 00000-0000"
-                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                        className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
                       />
                     </div>
                     <div>
@@ -928,7 +928,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                           setContacts(newContacts);
                         }}
                         placeholder="linkedin.com/in/..."
-                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                        className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
                       />
                     </div>
                     <div>
@@ -944,7 +944,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                           setContacts(newContacts);
                         }}
                         placeholder="@usuario"
-                        className="mt-1 block w-full rounded-md border border-[#792990] bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                        className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
                       />
                     </div>
                   </div>
@@ -956,7 +956,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
       )}
 
       {/* Idiomas */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <LanguageSelector
           value={leadLanguages}
           onChange={setLeadLanguages}
@@ -965,7 +965,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
       </div>
 
       {/* Redes Sociais */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Redes Sociais
         </h2>
@@ -979,7 +979,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="instagram"
               defaultValue={lead?.instagram || ""}
               placeholder="@usuario"
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -991,7 +991,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="linkedin"
               defaultValue={lead?.linkedin || ""}
               placeholder="linkedin.com/company/..."
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1003,7 +1003,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="facebook"
               defaultValue={lead?.facebook || ""}
               placeholder="facebook.com/..."
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1015,7 +1015,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="twitter"
               defaultValue={lead?.twitter || ""}
               placeholder="@usuario"
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1027,14 +1027,14 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="tiktok"
               defaultValue={lead?.tiktok || ""}
               placeholder="@usuario"
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
         </div>
       </div>
 
       {/* Informações da Empresa */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Informações da Empresa
         </h2>
@@ -1047,7 +1047,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="text"
               name="companyOwner"
               defaultValue={lead?.companyOwner || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1057,7 +1057,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
             <select
               name="companySize"
               defaultValue={lead?.companySize || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               <option value="">Selecione...</option>
               {companySizes.map((size) => (
@@ -1076,7 +1076,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               step="0.01"
               name="revenue"
               defaultValue={lead?.revenue || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1088,7 +1088,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               step="0.01"
               name="equityCapital"
               defaultValue={lead?.equityCapital || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1099,7 +1099,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="number"
               name="employeesCount"
               defaultValue={lead?.employeesCount || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1111,7 +1111,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="businessStatus"
               placeholder="Ativa, Suspensa, etc"
               defaultValue={lead?.businessStatus || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1123,7 +1123,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="segment"
               placeholder="Ex: Materiais de Construção, Saúde..."
               defaultValue={lead?.segment || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1135,7 +1135,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="legalNature"
               placeholder="Ex: Sociedade Limitada, EIRELI..."
               defaultValue={lead?.legalNature || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1145,7 +1145,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
             <select
               name="branchType"
               defaultValue={lead?.branchType || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               <option value="">Não informado</option>
               <option value="Matriz">Matriz</option>
@@ -1161,7 +1161,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="revenueRange"
               placeholder="Ex: R$ 360 mil a R$ 4,8 milhões"
               defaultValue={lead?.revenueRange || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div className="flex items-center gap-6">
@@ -1171,7 +1171,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                 name="simplesNacional"
                 value="true"
                 defaultChecked={lead?.simplesNacional ?? false}
-                className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990]"
+                className="rounded border-(--brand-border) bg-(--brand-surface-2) text-(--brand-accent)"
               />
               Simples Nacional
             </label>
@@ -1181,7 +1181,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                 name="isMei"
                 value="true"
                 defaultChecked={lead?.isMei ?? false}
-                className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990]"
+                className="rounded border-(--brand-border) bg-(--brand-surface-2) text-(--brand-accent)"
               />
               MEI
             </label>
@@ -1203,7 +1203,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="internationalActivity"
               placeholder="Ex: Software Development, Digital Marketing, E-commerce..."
               defaultValue={lead?.internationalActivity || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
             <p className="mt-1 text-xs text-gray-400">
               Use este campo para empresas não-brasileiras ou se não encontrar o CNAE adequado
@@ -1213,7 +1213,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
       </div>
 
       {/* Google Places */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Informações do Google Places
         </h2>
@@ -1226,7 +1226,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="text"
               name="googleId"
               defaultValue={lead?.googleId || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1238,7 +1238,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="categories"
               placeholder="Restaurante, Café, etc"
               defaultValue={lead?.categories || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1250,7 +1250,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="types"
               placeholder="restaurant, cafe, store"
               defaultValue={lead?.types || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1264,7 +1264,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               max="5"
               name="rating"
               defaultValue={lead?.rating || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1275,7 +1275,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               type="number"
               name="userRatingsTotal"
               defaultValue={lead?.userRatingsTotal || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1288,7 +1288,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               max="4"
               name="priceLevel"
               defaultValue={lead?.priceLevel || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1297,7 +1297,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
                 type="checkbox"
                 name="permanentlyClosed"
                 defaultChecked={lead?.permanentlyClosed}
-                className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990] focus:ring-[#792990]"
+                className="rounded border-(--brand-border) bg-(--brand-surface-2) text-(--brand-accent) focus:ring-(--brand-border)"
               />
               Permanentemente Fechado
             </label>
@@ -1306,7 +1306,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
       </div>
 
       {/* Metadados */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Metadados de Busca
         </h2>
@@ -1330,7 +1330,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="source"
               placeholder="Google, LinkedIn, Indicação..."
               defaultValue={lead?.source || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1342,7 +1342,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="searchTerm"
               placeholder="Palavras-chave usadas"
               defaultValue={lead?.searchTerm || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1354,7 +1354,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="category"
               placeholder="B2B, B2C, Varejo..."
               defaultValue={lead?.category || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -1366,7 +1366,7 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
               name="radius"
               placeholder="Se foi busca geográfica"
               defaultValue={lead?.radius || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
         </div>
@@ -1377,14 +1377,14 @@ export function LeadForm({ lead, sourceGroups = [] }: LeadFormProps) {
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-md border border-gray-600 px-6 py-2 text-gray-300 hover:bg-[#2d1b3d]"
+          className="rounded-md border border-gray-600 px-6 py-2 text-gray-300 hover:bg-(--brand-surface-2)"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="rounded-md bg-[#792990] px-6 py-2 text-white hover:bg-[#9333b8] disabled:opacity-50"
+          className="rounded-md bg-(--brand-accent) px-6 py-2 text-white hover:bg-[#9333b8] disabled:opacity-50"
         >
           {isSubmitting
             ? "Salvando..."

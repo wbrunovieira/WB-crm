@@ -10,7 +10,7 @@ export const businessLineSchema = z.object({
   description: z.string().max(5000, "Descrição deve ter no máximo 5.000 caracteres").optional().nullable(),
   color: z
     .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, "Cor deve ser um hex válido (ex: #792990)")
+    .regex(/^#[0-9A-Fa-f]{6}$/, "Cor deve ser um hex válido (ex: var(--brand-accent))")
     .optional()
     .nullable(),
   icon: z.string().max(50).optional().nullable(),

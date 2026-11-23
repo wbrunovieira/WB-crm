@@ -31,7 +31,7 @@ function ForecastNotes({ forecast }: ForecastDealsListProps) {
   return (
     <p
       data-testid="forecast-notes"
-      className="text-xs text-gray-400 pt-3 border-t border-[#792990]/20"
+      className="text-xs text-gray-400 pt-3 border-t border-(--brand-border)/20"
     >
       {overdue.count > 0 && (
         <span className="text-amber-400">
@@ -66,7 +66,7 @@ export function ForecastDealsList({ forecast }: ForecastDealsListProps) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm">
           <thead>
-            <tr className="text-left text-gray-400 border-b border-[#792990]/30">
+            <tr className="text-left text-gray-400 border-b border-(--brand-border)/30">
               <th className="pb-2 font-medium">Negócio</th>
               <th className="pb-2 font-medium whitespace-nowrap">Etapa</th>
               <th className="pb-2 font-medium whitespace-nowrap">Previsto</th>
@@ -75,7 +75,7 @@ export function ForecastDealsList({ forecast }: ForecastDealsListProps) {
           </thead>
           <tbody>
             {forecast.deals.map((deal) => (
-              <tr key={deal.id} className="border-b border-[#792990]/10 last:border-0">
+              <tr key={deal.id} className="border-b border-(--brand-border)/10 last:border-0">
                 <td className="py-2 pr-4">
                   <Link
                     href={`/deals/${deal.id}`}
@@ -97,7 +97,7 @@ export function ForecastDealsList({ forecast }: ForecastDealsListProps) {
             ))}
           </tbody>
           <tfoot>
-            <tr className="border-t border-[#792990]/30">
+            <tr className="border-t border-(--brand-border)/30">
               <td className="pt-2 text-gray-400 font-medium" colSpan={3}>
                 Total previsto ({forecast.deals.length})
               </td>

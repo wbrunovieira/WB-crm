@@ -39,7 +39,7 @@ export function WonDealsList({ wonDeals }: WonDealsListProps) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="text-left text-gray-400 border-b border-[#792990]/30">
+          <tr className="text-left text-gray-400 border-b border-(--brand-border)/30">
             <th className="pb-2 font-medium">Negócio</th>
             <th className="pb-2 font-medium whitespace-nowrap">Fechado em</th>
             <th className="pb-2 font-medium text-right whitespace-nowrap">Valor</th>
@@ -47,7 +47,7 @@ export function WonDealsList({ wonDeals }: WonDealsListProps) {
         </thead>
         <tbody>
           {wonDeals.map((deal) => (
-            <tr key={deal.id} className="border-b border-[#792990]/10 last:border-0">
+            <tr key={deal.id} className="border-b border-(--brand-border)/10 last:border-0">
               <td className="py-2 pr-4">
                 <Link
                   href={`/deals/${deal.id}`}
@@ -67,7 +67,7 @@ export function WonDealsList({ wonDeals }: WonDealsListProps) {
         </tbody>
         <tfoot>
           {Object.entries(totalsByCurrency).map(([currency, total], index) => (
-            <tr key={currency} className={index === 0 ? "border-t border-[#792990]/30" : ""}>
+            <tr key={currency} className={index === 0 ? "border-t border-(--brand-border)/30" : ""}>
               <td className="pt-2 text-gray-400 font-medium" colSpan={2}>
                 {index === 0 ? `Total (${wonDeals.length})` : ""}
               </td>

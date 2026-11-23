@@ -101,7 +101,7 @@ export default async function PartnerDetailPage({
   const broughtClient = partner.referredLeads.some((l) => l.convertedToOrganizationId);
 
   return (
-    <div className="min-h-screen bg-[#350045] p-4 md:p-8">
+    <div className="min-h-screen bg-(--brand-bg) p-4 md:p-8">
       {/* ── Header card (sticky, mirrors the lead page) ─────────────────── */}
       <div className="sticky top-16 z-40 mb-6 rounded-2xl border border-purple-900/40 bg-white px-4 py-4 shadow-lg md:px-6 md:py-5">
         <div className="flex flex-col gap-3">

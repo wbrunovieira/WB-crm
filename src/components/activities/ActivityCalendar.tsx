@@ -334,7 +334,7 @@ export default function ActivityCalendar({
                     style={
                       activity.completed
                         ? {}
-                        : { backgroundColor: "#350455", borderColor: "#792990", color: "#e5e7eb" }
+                        : { backgroundColor: "#350455", borderColor: "var(--brand-border)", color: "#e5e7eb" }
                     }
                     onClick={() => {
                       if (!isDragging) {
@@ -419,7 +419,7 @@ export default function ActivityCalendar({
                     style={
                       activity.completed
                         ? {}
-                        : { backgroundColor: "#350455", borderColor: "#792990", color: "#e5e7eb" }
+                        : { backgroundColor: "#350455", borderColor: "var(--brand-border)", color: "#e5e7eb" }
                     }
                     onClick={() => {
                       if (!isDragging) {

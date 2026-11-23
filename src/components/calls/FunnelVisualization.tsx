@@ -39,7 +39,7 @@ export function FunnelVisualization({
       goal: breakdown.requiredCalls,
       rate: null,
       rateLabel: "",
-      color: "#792990",
+      color: "var(--brand-accent)",
     },
     {
       label: "Conexões",

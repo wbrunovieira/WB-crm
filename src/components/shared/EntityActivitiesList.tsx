@@ -520,8 +520,8 @@ export function EntityActivitiesList({
   );
 
   return (
-    <div className="rounded-xl bg-[#1a0022] p-6 shadow-md">
-      <div className="mb-5 flex items-center justify-between pb-3 border-b-2 border-[#3d2b4d]">
+    <div className="rounded-xl bg-(--brand-surface) p-6 shadow-md">
+      <div className="mb-5 flex items-center justify-between pb-3 border-b-2 border-(--brand-surface-3)">
         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
           <span className="text-2xl">📅</span>
           Atividades ({activities.length})
@@ -531,7 +531,7 @@ export function EntityActivitiesList({
             <button
               onClick={handleResetOrder}
               disabled={savingOrder}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-xs font-medium text-gray-400 hover:bg-[#3d2b4d] hover:text-gray-200 transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-xs font-medium text-gray-400 hover:bg-(--brand-surface-3) hover:text-gray-200 transition-all disabled:opacity-50"
               title="Voltar a ordenar por data"
             >
               <Calendar className="h-3.5 w-3.5" />
@@ -566,7 +566,7 @@ export function EntityActivitiesList({
           </button>
           <Link
             href={`/activities/new?${ehLead ? "leadId" : "organizationId"}=${entityId}&returnTo=/${base}/${entityId}`}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#792990] px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+            className="inline-flex items-center gap-2 rounded-lg bg-(--brand-accent) px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
           >
             <span className="text-lg text-white">+</span>
             Adicionar Atividade
@@ -598,20 +598,20 @@ export function EntityActivitiesList({
           { label: "Caixa postal",    count: byOutcome.voicemail,      color: "text-purple-400 bg-purple-500/10 border-purple-500/30" },
           { label: "Ocupado",         count: byOutcome.busy,           color: "text-orange-400 bg-orange-500/10 border-orange-500/30" },
           { label: "Rejeitada",       count: byOutcome.rejected,       color: "text-red-400 bg-red-500/10 border-red-500/30" },
-          { label: "Nº inválido",     count: byOutcome.invalid_number, color: "text-gray-400 bg-[#2d1b3d] border-[#3d2b4d]" },
+          { label: "Nº inválido",     count: byOutcome.invalid_number, color: "text-gray-400 bg-(--brand-surface-2) border-(--brand-surface-3)" },
         ].filter((i) => i.count > 0);
 
         const statChips: { type: string; label: string; count: number; base: string; active: string; ring: string }[] = [
-          { type: "all",            label: "Total",    count: activities.length,     base: "border-[#4a3060] bg-[#2d1b3d] text-gray-400",               active: "border-[#a855f7] bg-[#792990]/40 text-purple-200",  ring: "ring-[#792990]/60" },
+          { type: "all",            label: "Total",    count: activities.length,     base: "border-[#4a3060] bg-(--brand-surface-2) text-gray-400",               active: "border-[#a855f7] bg-(--brand-accent)/40 text-purple-200",  ring: "ring-(--brand-border)/60" },
           { type: "call",           label: "Ligações", count: callActivities.length, base: "border-violet-500/30 bg-violet-500/10 text-violet-400",       active: "border-violet-400 bg-violet-500/30 text-violet-200", ring: "ring-violet-500/50" },
           { type: "meeting",        label: "Reuniões", count: meetings,              base: "border-amber-500/30 bg-amber-500/10 text-amber-400",           active: "border-amber-400 bg-amber-500/30 text-amber-200",   ring: "ring-amber-500/50" },
           { type: "whatsapp",       label: "WhatsApp", count: whatsapps,             base: "border-emerald-500/30 bg-emerald-500/10 text-emerald-400",     active: "border-emerald-400 bg-emerald-500/30 text-emerald-200", ring: "ring-emerald-500/50" },
           { type: "email",          label: "E-mail",   count: emails,                base: "border-blue-500/30 bg-blue-500/10 text-blue-400",              active: "border-blue-400 bg-blue-500/30 text-blue-200",      ring: "ring-blue-500/50" },
-          { type: "task",           label: "Tarefas",  count: tasks,                 base: "border-[#4a3060] bg-[#2d1b3d] text-gray-400",                 active: "border-slate-400 bg-slate-500/25 text-slate-200",   ring: "ring-slate-500/50" },
+          { type: "task",           label: "Tarefas",  count: tasks,                 base: "border-[#4a3060] bg-(--brand-surface-2) text-gray-400",                 active: "border-slate-400 bg-slate-500/25 text-slate-200",   ring: "ring-slate-500/50" },
         ].filter((c) => c.count > 0 || c.type === "all");
 
         return (
-          <div className="mb-4 rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] p-3 space-y-2">
+          <div className="mb-4 rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) p-3 space-y-2">
             {/* Clickable type filter chips */}
             <div className="flex flex-wrap gap-1.5">
               {statChips.map(({ type, label, count, base, active, ring }) => (
@@ -620,7 +620,7 @@ export function EntityActivitiesList({
                   onClick={() => setFilterType(type)}
                   className={`inline-flex items-center gap-1.5 rounded-md border px-2.5 py-1.5 text-xs font-semibold transition-all ${
                     filterType === type
-                      ? `${active} shadow-sm ring-2 ring-offset-1 ring-offset-[#1a0022] ${ring}`
+                      ? `${active} shadow-sm ring-2 ring-offset-1 ring-offset-(--brand-surface) ${ring}`
                       : `${base} hover:border-opacity-60 hover:brightness-125`
                   }`}
                 >
@@ -659,12 +659,12 @@ export function EntityActivitiesList({
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Buscar atividades..."
-              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] py-2 pl-9 pr-3 text-sm text-gray-200 placeholder:text-gray-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+              className="w-full rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) py-2 pl-9 pr-3 text-sm text-gray-200 placeholder:text-gray-500 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {([
-              { key: "all",       label: "Todas",      active: "border-[#a855f7] bg-[#792990]/35 text-purple-200 ring-[#792990]/50",  inactive: "border-[#4a3060] bg-[#2d1b3d] text-gray-400 hover:border-[#5a3a70] hover:text-gray-300" },
+              { key: "all",       label: "Todas",      active: "border-[#a855f7] bg-(--brand-accent)/35 text-purple-200 ring-(--brand-border)/50",  inactive: "border-[#4a3060] bg-(--brand-surface-2) text-gray-400 hover:border-[#5a3a70] hover:text-gray-300" },
               { key: "pending",   label: "Pendentes",  active: "border-blue-400 bg-blue-500/25 text-blue-200 ring-blue-500/50",       inactive: "border-blue-500/30 bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 hover:border-blue-400" },
               { key: "completed", label: "Concluídas", active: "border-green-400 bg-green-500/25 text-green-200 ring-green-500/50",   inactive: "border-green-500/30 bg-green-500/10 text-green-400 hover:bg-green-500/20 hover:border-green-400" },
               { key: "failed",    label: "Falha",      active: "border-red-400 bg-red-500/25 text-red-200 ring-red-500/50",           inactive: "border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:border-red-400" },
@@ -675,7 +675,7 @@ export function EntityActivitiesList({
                 onClick={() => setFilterStatus(key)}
                 className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-semibold transition-all ${
                   filterStatus === key
-                    ? `${active} shadow-sm ring-2 ring-offset-1 ring-offset-[#1a0022]`
+                    ? `${active} shadow-sm ring-2 ring-offset-1 ring-offset-(--brand-surface)`
                     : inactive
                 }`}
               >
@@ -1025,11 +1025,11 @@ export function EntityActivitiesList({
           onClick={() => setCompletionModal(null)}
         >
           <div
-            className="w-full max-w-md rounded-xl border border-[#3d2b4d] bg-[#1a0022] shadow-2xl flex flex-col max-h-[85vh]"
+            className="w-full max-w-md rounded-xl border border-(--brand-surface-3) bg-(--brand-surface) shadow-2xl flex flex-col max-h-[85vh]"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-[#3d2b4d] px-5 py-4 flex-shrink-0">
+            <div className="flex items-center justify-between border-b border-(--brand-surface-3) px-5 py-4 flex-shrink-0">
               <h2 className="flex items-center gap-2 text-sm font-semibold text-white">
                 <Check className="h-4 w-4 text-green-400" />
                 Concluir atividade
@@ -1073,7 +1073,7 @@ export function EntityActivitiesList({
                     className={`w-full text-left rounded-lg border px-3 py-2.5 text-xs transition-colors ${
                       completionLinkedId === null
                         ? "border-purple-500 bg-purple-500/20 text-white"
-                        : "border-[#3d2b4d] bg-[#2d1b3d] text-gray-400 hover:border-[#5a3a70] hover:text-gray-300"
+                        : "border-(--brand-surface-3) bg-(--brand-surface-2) text-gray-400 hover:border-[#5a3a70] hover:text-gray-300"
                     }`}
                   >
                     <span className="font-medium">Nenhuma — concluir sem vincular</span>
@@ -1089,7 +1089,7 @@ export function EntityActivitiesList({
                         className={`w-full text-left rounded-lg border px-3 py-2.5 text-xs transition-colors ${
                           completionLinkedId === candidate.id
                             ? "border-purple-500 bg-purple-500/20 text-white"
-                            : "border-[#3d2b4d] bg-[#2d1b3d] text-gray-400 hover:border-[#5a3a70] hover:text-gray-300"
+                            : "border-(--brand-surface-3) bg-(--brand-surface-2) text-gray-400 hover:border-[#5a3a70] hover:text-gray-300"
                         }`}
                       >
                         <div className="flex items-center gap-1.5 mb-0.5">
@@ -1116,7 +1116,7 @@ export function EntityActivitiesList({
             </div>
 
             {/* Footer */}
-            <div className="flex justify-end gap-2 border-t border-[#3d2b4d] px-5 py-4 flex-shrink-0">
+            <div className="flex justify-end gap-2 border-t border-(--brand-surface-3) px-5 py-4 flex-shrink-0">
               <button
                 onClick={() => setCompletionModal(null)}
                 className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
@@ -1138,7 +1138,7 @@ export function EntityActivitiesList({
       {/* Outcome Modal (Failed / Skipped) */}
       {outcomeModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setOutcomeModal(null)}>
-          <div className="w-full max-w-sm rounded-xl bg-[#1a0022] shadow-2xl border border-[#3d2b4d]" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-xl bg-(--brand-surface) shadow-2xl border border-(--brand-surface-3)" onClick={(e) => e.stopPropagation()}>
             <div className={`flex items-center justify-between border-b p-4 text-white rounded-t-xl ${
               outcomeModal.type === "failed"
                 ? "bg-gradient-to-r from-red-600 to-red-800"
@@ -1187,10 +1187,10 @@ export function EntityActivitiesList({
               />
             </div>
 
-            <div className="flex gap-3 border-t border-[#3d2b4d] bg-[#2d1b3d] px-4 py-3 rounded-b-xl">
+            <div className="flex gap-3 border-t border-(--brand-surface-3) bg-(--brand-surface-2) px-4 py-3 rounded-b-xl">
               <button
                 onClick={() => setOutcomeModal(null)}
-                className="flex-1 rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm font-medium text-gray-300 hover:bg-[#3d2b4d]"
+                className="flex-1 rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm font-medium text-gray-300 hover:bg-(--brand-surface-3)"
               >
                 Cancelar
               </button>
@@ -1224,7 +1224,7 @@ export function EntityActivitiesList({
           Sem esta guarda, o botao apareceria no cliente e responderia 404 em silencio. */}
       {ehLead && replyModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setReplyModal(false)}>
-          <div className="w-full max-w-sm rounded-xl bg-[#1a0022] shadow-2xl border border-[#3d2b4d]" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-xl bg-(--brand-surface) shadow-2xl border border-(--brand-surface-3)" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b p-4 text-white rounded-t-xl bg-gradient-to-r from-green-600 to-green-800">
               <h2 className="flex items-center gap-2 text-base font-bold">
                 <MessageCircleReply className="h-5 w-5" />
@@ -1269,10 +1269,10 @@ export function EntityActivitiesList({
               />
             </div>
 
-            <div className="flex gap-3 border-t border-[#3d2b4d] bg-[#2d1b3d] px-4 py-3 rounded-b-xl">
+            <div className="flex gap-3 border-t border-(--brand-surface-3) bg-(--brand-surface-2) px-4 py-3 rounded-b-xl">
               <button
                 onClick={() => setReplyModal(false)}
-                className="flex-1 rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm font-medium text-gray-300 hover:bg-[#3d2b4d]"
+                className="flex-1 rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm font-medium text-gray-300 hover:bg-(--brand-surface-3)"
               >
                 Cancelar
               </button>
@@ -1311,7 +1311,7 @@ export function EntityActivitiesList({
       {/* Assign Contacts Modal */}
       {assigningActivity && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setAssigningActivity(null)}>
-          <div className="w-full max-w-sm rounded-xl bg-[#1a0022] shadow-2xl border border-[#3d2b4d]" onClick={(e) => e.stopPropagation()}>
+          <div className="w-full max-w-sm rounded-xl bg-(--brand-surface) shadow-2xl border border-(--brand-surface-3)" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between border-b bg-gradient-to-r from-purple-600 to-purple-800 p-4 text-white rounded-t-xl">
               <h2 className="flex items-center gap-2 text-base font-bold">
                 <UserPlus className="h-5 w-5" />
@@ -1359,10 +1359,10 @@ export function EntityActivitiesList({
               </div>
             </div>
 
-            <div className="flex gap-3 border-t border-[#3d2b4d] bg-[#2d1b3d] px-4 py-3 rounded-b-xl">
+            <div className="flex gap-3 border-t border-(--brand-surface-3) bg-(--brand-surface-2) px-4 py-3 rounded-b-xl">
               <button
                 onClick={() => setAssigningActivity(null)}
-                className="flex-1 rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm font-medium text-gray-300 hover:bg-[#3d2b4d]"
+                className="flex-1 rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm font-medium text-gray-300 hover:bg-(--brand-surface-3)"
               >
                 Cancelar
               </button>

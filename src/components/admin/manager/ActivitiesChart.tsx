@@ -50,23 +50,23 @@ export function ActivitiesChart({ activities }: ActivitiesChartProps) {
           layout="vertical"
           margin={{ top: 5, right: 30, left: 80, bottom: 5 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#792990/20" />
+          <CartesianGrid strokeDasharray="3 3" stroke="color-mix(in srgb, var(--brand-accent) 20%, transparent)" />
           <XAxis
             type="number"
             tick={{ fill: "#9ca3af", fontSize: 12 }}
-            axisLine={{ stroke: "#792990/30" }}
+            axisLine={{ stroke: "color-mix(in srgb, var(--brand-accent) 30%, transparent)" }}
           />
           <YAxis
             type="category"
             dataKey="name"
             tick={{ fill: "#9ca3af", fontSize: 12 }}
-            axisLine={{ stroke: "#792990/30" }}
+            axisLine={{ stroke: "color-mix(in srgb, var(--brand-accent) 30%, transparent)" }}
             width={70}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "#1a0022",
-              border: "1px solid #792990",
+              backgroundColor: "var(--brand-surface)",
+              border: "1px solid var(--brand-border)",
               borderRadius: "8px",
               color: "#fff",
             }}
@@ -74,7 +74,7 @@ export function ActivitiesChart({ activities }: ActivitiesChartProps) {
           <Bar
             dataKey="quantidade"
             name="Quantidade"
-            fill="#792990"
+            fill="var(--brand-accent)"
             radius={[0, 4, 4, 0]}
           />
         </BarChart>

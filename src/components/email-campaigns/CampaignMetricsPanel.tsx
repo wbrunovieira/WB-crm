@@ -222,7 +222,7 @@ export function CampaignMetricsPanel({ metrics, recipientEngagement = [] }: { me
       <div className="bg-gray-800/60 border border-gray-700 rounded-xl p-5">
         <h3 className="text-white font-semibold mb-4">Funil de Engajamento</h3>
         <div className="space-y-3">
-          <FunnelBar label="Lista total" value={recipients.total} max={recipients.total} color="#792990" />
+          <FunnelBar label="Lista total" value={recipients.total} max={recipients.total} color="var(--brand-accent)" />
           <FunnelBar label="Enviados" value={totals.sent} max={recipients.total} color="#3b82f6" />
           <FunnelBar label="Abriram" value={totals.uniqueOpened} max={recipients.total} color="#22c55e" />
           <FunnelBar label="Clicaram" value={totals.uniqueClicked} max={recipients.total} color="#f59e0b" />

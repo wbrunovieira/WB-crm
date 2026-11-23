@@ -184,10 +184,10 @@ export function NotificationBell() {
       {open && (
         <div
           className="absolute right-0 mt-2 w-80 rounded-xl shadow-2xl border z-50 overflow-hidden"
-          style={{ backgroundColor: "#1a0022", borderColor: "#792990" }}
+          style={{ backgroundColor: "var(--brand-surface)", borderColor: "var(--brand-border)" }}
         >
           {/* Header */}
-          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "#792990" }}>
+          <div className="flex items-center justify-between px-4 py-3 border-b" style={{ borderColor: "var(--brand-border)" }}>
             <span className="text-sm font-semibold text-white">Notificações</span>
             {unreadCount > 0 && (
               <button

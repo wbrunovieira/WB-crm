@@ -15,7 +15,7 @@ interface DealsChartProps {
 }
 
 const COLORS = {
-  open: "#792990",
+  open: "var(--brand-accent)",
   won: "#22c55e",
   lost: "#ef4444",
 };
@@ -71,8 +71,8 @@ export function DealsChart({ deals }: DealsChartProps) {
           </Pie>
           <Tooltip
             contentStyle={{
-              backgroundColor: "#1a0022",
-              border: "1px solid #792990",
+              backgroundColor: "var(--brand-surface)",
+              border: "1px solid var(--brand-border)",
               borderRadius: "8px",
               color: "#fff",
             }}

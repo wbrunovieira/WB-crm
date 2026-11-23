@@ -47,7 +47,7 @@ export function HostingRenewalsWidget({ renewals }: HostingRenewalsWidgetProps) 
   );
 
   return (
-    <div className="rounded-lg border border-[#792990] bg-[#1a0022] p-6 shadow-lg">
+    <div className="rounded-lg border border-(--brand-border) bg-(--brand-surface) p-6 shadow-lg">
       <div className="flex items-center gap-3 mb-4">
         <div className="rounded-full bg-purple-900/50 p-2">
           <Server className="h-5 w-5 text-primary" />

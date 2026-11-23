@@ -77,8 +77,8 @@ export function EditEndedMeetingModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-md rounded-xl border border-[#3d2b4d] bg-[#1a0022] shadow-2xl">
-        <div className="flex items-center justify-between border-b border-[#3d2b4d] px-5 py-4">
+      <div className="w-full max-w-md rounded-xl border border-(--brand-surface-3) bg-(--brand-surface) shadow-2xl">
+        <div className="flex items-center justify-between border-b border-(--brand-surface-3) px-5 py-4">
           <h2 className="text-sm font-semibold text-white">Editar Reunião Concluída</h2>
           <button onClick={onClose} className="rounded p-1 text-gray-400 hover:text-white">
             <X size={16} />
@@ -92,7 +92,7 @@ export function EditEndedMeetingModal({
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+              className="w-full rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
             />
           </div>
 
@@ -102,7 +102,7 @@ export function EditEndedMeetingModal({
               type="datetime-local"
               value={actStart}
               onChange={(e) => setActStart(e.target.value)}
-              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none [color-scheme:dark]"
+              className="w-full rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none [color-scheme:dark]"
             />
           </div>
 
@@ -114,12 +114,12 @@ export function EditEndedMeetingModal({
               type="datetime-local"
               value={actEnd}
               onChange={(e) => setActEnd(e.target.value)}
-              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none [color-scheme:dark]"
+              className="w-full rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none [color-scheme:dark]"
             />
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 border-t border-[#3d2b4d] px-5 py-4">
+        <div className="flex justify-end gap-2 border-t border-(--brand-surface-3) px-5 py-4">
           <button
             onClick={onClose}
             className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white"

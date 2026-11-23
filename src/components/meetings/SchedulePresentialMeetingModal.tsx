@@ -154,14 +154,14 @@ export default function SchedulePresentialMeetingModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="relative w-full max-w-lg rounded-xl border border-[#3d2b4d] bg-[#1a0022] shadow-2xl">
+      <div className="relative w-full max-w-lg rounded-xl border border-(--brand-surface-3) bg-(--brand-surface) shadow-2xl">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#3d2b4d] px-5 py-4">
+        <div className="flex items-center justify-between border-b border-(--brand-surface-3) px-5 py-4">
           <div className="flex items-center gap-2">
             <MapPin size={18} className="text-purple-400" />
             <h2 className="text-base font-semibold text-white">Reunião Presencial</h2>
           </div>
-          <button onClick={onClose} className="rounded-md p-1 text-gray-400 hover:bg-[#2d1b3d] hover:text-white">
+          <button onClick={onClose} className="rounded-md p-1 text-gray-400 hover:bg-(--brand-surface-2) hover:text-white">
             <X size={18} />
           </button>
         </div>
@@ -175,7 +175,7 @@ export default function SchedulePresentialMeetingModal({
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Ex: Visita Comercial"
-              className="w-full rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+              className="w-full rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
               required
             />
           </div>
@@ -188,7 +188,7 @@ export default function SchedulePresentialMeetingModal({
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="w-full rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+                className="w-full rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
                 required
               />
             </div>
@@ -198,7 +198,7 @@ export default function SchedulePresentialMeetingModal({
                 type="time"
                 value={startTime}
                 onChange={(e) => setStartTime(e.target.value)}
-                className="w-full rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+                className="w-full rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
                 required
               />
             </div>
@@ -207,7 +207,7 @@ export default function SchedulePresentialMeetingModal({
               <select
                 value={duration}
                 onChange={(e) => setDuration(Number(e.target.value))}
-                className="w-full rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+                className="w-full rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
               >
                 <option value={30}>30 min</option>
                 <option value={60}>1h</option>
@@ -229,7 +229,7 @@ export default function SchedulePresentialMeetingModal({
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Ex: Rua das Flores, 100 — Sala 202"
-              className="w-full rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+              className="w-full rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
             />
           </div>
 
@@ -244,7 +244,7 @@ export default function SchedulePresentialMeetingModal({
                 <button
                   type="button"
                   onClick={() => setShowContactDropdown((v) => !v)}
-                  className="flex w-full items-center justify-between rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
+                  className="flex w-full items-center justify-between rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white focus:border-purple-500 focus:outline-none"
                 >
                   <span className={selectedContact ? "text-white" : "text-gray-500"}>
                     {selectedContact ? `${selectedContact.name}${selectedContact.role ? ` · ${selectedContact.role}` : ""}` : "Selecionar contato..."}
@@ -252,11 +252,11 @@ export default function SchedulePresentialMeetingModal({
                   <ChevronDown size={14} className="text-gray-400" />
                 </button>
                 {showContactDropdown && (
-                  <div className="absolute z-10 mt-1 w-full rounded-md border border-[#3d2b4d] bg-[#1a0022] shadow-lg">
+                  <div className="absolute z-10 mt-1 w-full rounded-md border border-(--brand-surface-3) bg-(--brand-surface) shadow-lg">
                     <button
                       type="button"
                       onClick={() => { setSelectedContact(null); setShowContactDropdown(false); }}
-                      className="w-full px-3 py-2 text-left text-sm text-gray-400 hover:bg-[#2d1b3d]"
+                      className="w-full px-3 py-2 text-left text-sm text-gray-400 hover:bg-(--brand-surface-2)"
                     >
                       Nenhum
                     </button>
@@ -265,7 +265,7 @@ export default function SchedulePresentialMeetingModal({
                         key={c.id}
                         type="button"
                         onClick={() => { setSelectedContact(c); setShowContactDropdown(false); }}
-                        className="w-full px-3 py-2 text-left hover:bg-[#2d1b3d]"
+                        className="w-full px-3 py-2 text-left hover:bg-(--brand-surface-2)"
                       >
                         <div className="text-sm font-medium text-white">{c.name}</div>
                         <div className="flex flex-wrap gap-2 text-xs text-gray-400 mt-0.5">
@@ -288,14 +288,14 @@ export default function SchedulePresentialMeetingModal({
                   value={manualEmail}
                   onChange={(e) => setManualEmail(e.target.value)}
                   placeholder="Email do contato"
-                  className="rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  className="rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                 />
                 <input
                   type="tel"
                   value={manualPhone}
                   onChange={(e) => setManualPhone(e.target.value)}
                   placeholder="WhatsApp do contato"
-                  className="rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+                  className="rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
                 />
               </div>
             )}
@@ -313,7 +313,7 @@ export default function SchedulePresentialMeetingModal({
           </div>
 
           {/* Confirmações e lembretes */}
-          <div className="rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] p-4">
+          <div className="rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) p-4">
             <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-gray-400">
               Confirmações e Lembretes (opcional)
             </p>
@@ -327,7 +327,7 @@ export default function SchedulePresentialMeetingModal({
                     className={`h-4 w-4 flex-shrink-0 rounded border transition-colors ${
                       reminderSteps.has(step)
                         ? "border-purple-500 bg-purple-500"
-                        : "border-[#5d3b6d] bg-[#1a0022]"
+                        : "border-[#5d3b6d] bg-(--brand-surface)"
                     } flex items-center justify-center cursor-pointer`}
                   >
                     {reminderSteps.has(step) && <Check size={10} className="text-white" />}
@@ -349,7 +349,7 @@ export default function SchedulePresentialMeetingModal({
                         className={`h-4 w-4 flex-shrink-0 rounded border transition-colors ${
                           channels.has(ch)
                             ? "border-purple-500 bg-purple-500"
-                            : "border-[#5d3b6d] bg-[#1a0022]"
+                            : "border-[#5d3b6d] bg-(--brand-surface)"
                         } flex items-center justify-center cursor-pointer`}
                       >
                         {channels.has(ch) && <Check size={10} className="text-white" />}
@@ -381,16 +381,16 @@ export default function SchedulePresentialMeetingModal({
               onChange={(e) => setDescription(e.target.value)}
               rows={2}
               placeholder="Pauta, materiais necessários..."
-              className="w-full rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none resize-none"
+              className="w-full rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none resize-none"
             />
           </div>
 
           {/* Actions */}
-          <div className="flex justify-end gap-2 pt-2 border-t border-[#3d2b4d]">
+          <div className="flex justify-end gap-2 pt-2 border-t border-(--brand-surface-3)">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md px-4 py-2 text-sm font-medium text-gray-400 hover:bg-[#2d1b3d]"
+              className="rounded-md px-4 py-2 text-sm font-medium text-gray-400 hover:bg-(--brand-surface-2)"
             >
               Cancelar
             </button>

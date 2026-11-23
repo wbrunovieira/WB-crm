@@ -13,7 +13,7 @@ const ESPERA_MS = 300;
  *  prospect, blue for a person. Read before the label is. */
 const COR: Record<SearchKind, { faixa: string; texto: string }> = {
   organization: { faixa: "#2f9e6e", texto: "#6fd8aa" },
-  lead: { faixa: "#792990", texto: "#c9a2dd" },
+  lead: { faixa: "var(--brand-accent)", texto: "#c9a2dd" },
   contact: { faixa: "#2f6f9e", texto: "#7ab8e8" },
 };
 
@@ -159,7 +159,7 @@ export function GlobalSearch() {
       {aberto && termo.trim().length >= MINIMO_CARACTERES && (
         <div
           className="absolute left-0 right-0 top-full z-50 mt-1 max-h-[70vh] overflow-y-auto rounded-lg border shadow-xl"
-          style={{ backgroundColor: "#1a0022", borderColor: "#4d2b5d" }}
+          style={{ backgroundColor: "var(--brand-surface)", borderColor: "#4d2b5d" }}
         >
           {hits.length === 0 && !carregando && (
             <p className="px-3 py-3 text-sm" style={{ color: "#8a6d9c" }}>

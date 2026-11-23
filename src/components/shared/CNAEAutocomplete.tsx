@@ -90,7 +90,7 @@ export function CNAEAutocomplete({
       )}
 
       {value ? (
-        <div className="flex items-center justify-between rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2">
+        <div className="flex items-center justify-between rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2">
           <div className="flex-1">
             <span className="font-mono text-sm text-gray-400">{value.code}</span>
             <span className="ml-2 text-sm text-gray-200">{value.description}</span>
@@ -113,12 +113,12 @@ export function CNAEAutocomplete({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder={placeholder}
-              className="w-full rounded-md border border-[#792990] bg-[#2d1b3d] py-2 pl-10 pr-3 text-gray-200 placeholder-gray-500 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) py-2 pl-10 pr-3 text-gray-200 placeholder-gray-500 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
           {isOpen && (
-            <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-600 bg-[#1a0022] shadow-lg">
+            <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-gray-600 bg-(--brand-surface) shadow-lg">
               {loading ? (
                 <div className="px-3 py-2 text-sm text-gray-400">Buscando...</div>
               ) : results.length === 0 ? (
@@ -131,7 +131,7 @@ export function CNAEAutocomplete({
                     key={cnae.id}
                     type="button"
                     onClick={() => handleSelect(cnae)}
-                    className="w-full px-3 py-2 text-left hover:bg-[#2d1b3d] transition-colors"
+                    className="w-full px-3 py-2 text-left hover:bg-(--brand-surface-2) transition-colors"
                   >
                     <div className="font-mono text-xs text-gray-400">{cnae.code}</div>
                     <div className="text-sm text-gray-200">{cnae.description}</div>

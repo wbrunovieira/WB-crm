@@ -100,12 +100,12 @@ export function TransferDialog({
       <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
 
       {/* Dialog */}
-      <div className="relative bg-[#1a0022] border border-[#792990]/50 rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
+      <div className="relative bg-(--brand-surface) border border-(--brand-border)/50 rounded-xl shadow-2xl w-full max-w-lg mx-4 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[#792990]/30">
+        <div className="flex items-center justify-between px-6 py-4 border-b border-(--brand-border)/30">
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-[#792990]/20">
-              <ArrowRightLeft className="h-5 w-5 text-[#792990]" />
+            <div className="p-2 rounded-lg bg-(--brand-accent)/20">
+              <ArrowRightLeft className="h-5 w-5 text-(--brand-accent)" />
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">Transferir Proprietário</h2>
@@ -114,14 +114,14 @@ export function TransferDialog({
           </div>
           <button
             onClick={onClose}
-            className="p-2 rounded-lg hover:bg-[#792990]/20 transition-colors"
+            className="p-2 rounded-lg hover:bg-(--brand-accent)/20 transition-colors"
           >
             <X className="h-5 w-5 text-gray-400" />
           </button>
         </div>
 
         {/* Current Owner */}
-        <div className="px-6 py-4 bg-[#792990]/10 border-b border-[#792990]/30">
+        <div className="px-6 py-4 bg-(--brand-accent)/10 border-b border-(--brand-border)/30">
           <p className="text-sm text-gray-400 mb-1">Proprietário Atual</p>
           <p className="text-white font-medium">{currentOwnerName}</p>
         </div>
@@ -136,7 +136,7 @@ export function TransferDialog({
               placeholder="Buscar usuário..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-[#350045] border border-[#792990]/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-[#792990]"
+              className="w-full pl-10 pr-4 py-2 bg-(--brand-bg) border border-(--brand-border)/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-(--brand-border)"
             />
           </div>
 
@@ -144,7 +144,7 @@ export function TransferDialog({
           <div className="max-h-64 overflow-y-auto space-y-2">
             {loading ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 text-[#792990] animate-spin" />
+                <Loader2 className="h-6 w-6 text-(--brand-accent) animate-spin" />
               </div>
             ) : filteredUsers.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
@@ -158,8 +158,8 @@ export function TransferDialog({
                   className={cn(
                     "w-full flex items-center justify-between p-3 rounded-lg transition-all",
                     selectedUserId === user.id
-                      ? "bg-[#792990]/30 border border-[#792990]"
-                      : "bg-[#350045] border border-transparent hover:border-[#792990]/50"
+                      ? "bg-(--brand-accent)/30 border border-(--brand-border)"
+                      : "bg-(--brand-bg) border border-transparent hover:border-(--brand-border)/50"
                   )}
                 >
                   <div className="text-left">
@@ -176,7 +176,7 @@ export function TransferDialog({
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-4 border-t border-[#792990]/30 flex items-center justify-between">
+        <div className="px-6 py-4 border-t border-(--brand-border)/30 flex items-center justify-between">
           <button
             onClick={onClose}
             className="px-4 py-2 text-gray-400 hover:text-white transition-colors"
@@ -189,7 +189,7 @@ export function TransferDialog({
             className={cn(
               "flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all",
               selectedUserId
-                ? "bg-[#792990] text-white hover:bg-[#792990]/80"
+                ? "bg-(--brand-accent) text-white hover:bg-(--brand-accent)/80"
                 : "bg-gray-700 text-gray-400 cursor-not-allowed"
             )}
           >

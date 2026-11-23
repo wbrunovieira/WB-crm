@@ -82,7 +82,7 @@ export function DuplicateWarningPanel({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-md border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-[#2d1b3d]"
+          className="rounded-md border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-(--brand-surface-2)"
         >
           Voltar e revisar
         </button>

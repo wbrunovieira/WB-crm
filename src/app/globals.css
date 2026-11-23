@@ -1,8 +1,9 @@
 @import "tailwindcss";
 
 @theme {
-  /* A cor de ação vem do brand ativo (resolve em runtime via var). Status permanece fixo. */
-  --color-primary: #792990;
+  /* A cor de ação segue a marca ativa. Estava fixa no roxo da WB, o que fazia a
+     instância da RDS herdar o roxo em tudo que usa `primary`. Status permanece fixo. */
+  --color-primary: var(--brand-accent);
   --color-success: #22c55e;
   --color-warning: #f59e0b;
   --color-danger: #ef4444;
@@ -40,6 +41,23 @@
   --brand-accent:     #e64d00;
   --brand-accent-2:   #ff6a2b;
   --brand-border:     #1f4a86;
+
+  /* A interface também usa a escala `purple-*` do Tailwind (895 ocorrências) para
+     estrutura: fundos, bordas e textos secundários. No Tailwind v4 essas classes
+     compilam para var(--color-purple-N), então redefinir a escala aqui re-tematiza
+     todas elas sem tocar em nenhum componente. Na RDS a escala vira azul; os tons
+     900/950 usam os azuis da própria marca, para casar com as superfícies. */
+  --color-purple-50:  #eff6ff;
+  --color-purple-100: #dbeafe;
+  --color-purple-200: #bfdbfe;
+  --color-purple-300: #93c5fd;
+  --color-purple-400: #60a5fa;
+  --color-purple-500: #3b82f6;
+  --color-purple-600: #2563eb;
+  --color-purple-700: #1d4ed8;
+  --color-purple-800: #1e40af;
+  --color-purple-900: #0e2a57;
+  --color-purple-950: #06152e;
 }
 
 /* Base styles */

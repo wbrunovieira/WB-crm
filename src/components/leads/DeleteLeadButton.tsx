@@ -37,7 +37,7 @@ export function DeleteLeadButton({ leadId }: { leadId: string }) {
     <button
       onClick={handleDelete}
       disabled={deleteMutation.isPending}
-      className="rounded-md border border-gray-300 px-4 py-2 text-gray-200 hover:bg-[#2d1b3d] disabled:opacity-50"
+      className="rounded-md border border-gray-300 px-4 py-2 text-gray-200 hover:bg-(--brand-surface-2) disabled:opacity-50"
       title="Excluir lead"
     >
       <svg

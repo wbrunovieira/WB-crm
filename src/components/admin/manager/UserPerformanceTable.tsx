@@ -34,7 +34,7 @@ export function UserPerformanceTable({ byUser }: UserPerformanceTableProps) {
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b border-[#792990]/30">
+          <tr className="border-b border-(--brand-border)/30">
             <th className="text-left py-3 px-4 text-gray-400 font-medium">Usuário</th>
             <th className="text-center py-3 px-4 text-gray-400 font-medium">Leads</th>
             <th className="text-center py-3 px-4 text-gray-400 font-medium">Conv.</th>
@@ -51,7 +51,7 @@ export function UserPerformanceTable({ byUser }: UserPerformanceTableProps) {
           {sortedUsers.map((user) => (
             <tr
               key={user.userId}
-              className="border-b border-[#792990]/10 hover:bg-[#792990]/10 transition-colors"
+              className="border-b border-(--brand-border)/10 hover:bg-(--brand-accent)/10 transition-colors"
             >
               <td className="py-3 px-4">
                 <div>
@@ -96,7 +96,7 @@ export function UserPerformanceTable({ byUser }: UserPerformanceTableProps) {
         </tbody>
         {/* Totals row */}
         <tfoot>
-          <tr className="bg-[#792990]/20">
+          <tr className="bg-(--brand-accent)/20">
             <td className="py-3 px-4 text-white font-bold">TOTAL</td>
             <td className="text-center py-3 px-4 text-white font-bold">
               {sortedUsers.reduce((sum, u) => sum + u.leads.created, 0)}

@@ -70,10 +70,10 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
               className={[
                 "flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-colors",
                 currentStep === step.number
-                  ? "bg-[#792990] text-white shadow-lg shadow-purple-900/40"
+                  ? "bg-(--brand-accent) text-white shadow-lg shadow-purple-900/40"
                   : currentStep > step.number
                   ? "bg-[#4a1660] text-purple-300"
-                  : "bg-[#2d1b3d] text-gray-500",
+                  : "bg-(--brand-surface-2) text-gray-500",
               ].join(" ")}
             >
               {currentStep > step.number ? (
@@ -97,7 +97,7 @@ function StepIndicator({ currentStep }: { currentStep: Step }) {
             <div
               className={[
                 "mx-3 mb-5 h-px w-16 transition-colors",
-                currentStep > step.number ? "bg-[#792990]" : "bg-[#2d1b3d]",
+                currentStep > step.number ? "bg-(--brand-accent)" : "bg-(--brand-surface-2)",
               ].join(" ")}
             />
           )}
@@ -173,7 +173,7 @@ function UploadStep({
   );
 
   return (
-    <div className="rounded-lg bg-[#1a0022] p-8">
+    <div className="rounded-lg bg-(--brand-surface) p-8">
       <h2 className="mb-2 text-xl font-semibold text-gray-200">
         Selecione o arquivo
       </h2>
@@ -193,8 +193,8 @@ function UploadStep({
         className={[
           "flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed p-12 text-center transition-colors outline-none",
           isDragging
-            ? "border-[#792990] bg-[#2d1b3d]"
-            : "border-[#4a1660] bg-[#200030] hover:border-[#792990] hover:bg-[#2d1b3d]",
+            ? "border-(--brand-border) bg-(--brand-surface-2)"
+            : "border-[#4a1660] bg-[#200030] hover:border-(--brand-border) hover:bg-(--brand-surface-2)",
           isLoading ? "pointer-events-none opacity-60" : "",
         ].join(" ")}
       >
@@ -208,7 +208,7 @@ function UploadStep({
 
         {isLoading ? (
           <>
-            <svg className="mb-4 h-10 w-10 animate-spin text-[#792990]" fill="none" viewBox="0 0 24 24">
+            <svg className="mb-4 h-10 w-10 animate-spin text-(--brand-accent)" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
             </svg>
@@ -216,7 +216,7 @@ function UploadStep({
           </>
         ) : (
           <>
-            <svg className="mb-4 h-12 w-12 text-[#792990]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+            <svg className="mb-4 h-12 w-12 text-(--brand-accent)" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5" />
             </svg>
             <p className="text-base font-medium text-gray-300">
@@ -240,8 +240,8 @@ function UploadStep({
 
       {/* Parsed file info */}
       {parsedFile && !parseError && (
-        <div className="mt-4 flex items-center gap-4 rounded-lg border border-[#4a1660] bg-[#2d1b3d] px-5 py-4">
-          <svg className="h-8 w-8 shrink-0 text-[#792990]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+        <div className="mt-4 flex items-center gap-4 rounded-lg border border-[#4a1660] bg-(--brand-surface-2) px-5 py-4">
+          <svg className="h-8 w-8 shrink-0 text-(--brand-accent)" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
           </svg>
           <div className="flex-1 overflow-hidden">
@@ -269,7 +269,7 @@ function UploadStep({
           type="button"
           disabled={!parsedFile}
           onClick={() => parsedFile && onParsed(parsedFile, fileName)}
-          className="rounded-md bg-[#792990] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#9333b8] disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-md bg-(--brand-accent) px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#9333b8] disabled:cursor-not-allowed disabled:opacity-40"
         >
           Próximo
         </button>
@@ -305,7 +305,7 @@ function MappingStep({
   };
 
   return (
-    <div className="rounded-lg bg-[#1a0022] p-8">
+    <div className="rounded-lg bg-(--brand-surface) p-8">
       <h2 className="mb-1 text-xl font-semibold text-gray-200">
         Mapeie as colunas do arquivo para os campos do CRM
       </h2>
@@ -337,7 +337,7 @@ function MappingStep({
               <th className="px-4 py-3 text-left font-medium text-gray-400">Campo no CRM</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[#2d1b3d]">
+          <tbody className="divide-y divide-(--brand-surface-2)">
             {parsedFile.headers.map((header) => {
               const exampleValue = firstRow[header] ?? "";
               const currentValue = mapping[header] ?? "ignore";
@@ -348,7 +348,7 @@ function MappingStep({
                   key={header}
                   className={[
                     "transition-colors",
-                    isMapped ? "bg-[#1e0a2e]" : "bg-[#1a0022]",
+                    isMapped ? "bg-[#1e0a2e]" : "bg-(--brand-surface)",
                   ].join(" ")}
                 >
                   {/* Column name */}
@@ -372,7 +372,7 @@ function MappingStep({
                     <select
                       value={currentValue}
                       onChange={(e) => handleChange(header, e.target.value)}
-                      className="w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                      className="w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-1.5 text-sm text-gray-200 focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
                     >
                       {FIELD_GROUPS.map((group) =>
                         group.name === "" ? (
@@ -412,7 +412,7 @@ function MappingStep({
           type="button"
           onClick={onBack}
           disabled={isImporting}
-          className="rounded-md border border-gray-600 px-5 py-2.5 text-sm text-gray-300 transition-colors hover:bg-[#2d1b3d] disabled:opacity-40"
+          className="rounded-md border border-gray-600 px-5 py-2.5 text-sm text-gray-300 transition-colors hover:bg-(--brand-surface-2) disabled:opacity-40"
         >
           Voltar
         </button>
@@ -420,7 +420,7 @@ function MappingStep({
           type="button"
           onClick={onImport}
           disabled={isImporting || !businessNameMapped}
-          className="inline-flex items-center gap-2 rounded-md bg-[#792990] px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#9333b8] disabled:cursor-not-allowed disabled:opacity-40"
+          className="inline-flex items-center gap-2 rounded-md bg-(--brand-accent) px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-[#9333b8] disabled:cursor-not-allowed disabled:opacity-40"
         >
           {isImporting ? (
             <>
@@ -521,7 +521,7 @@ function ResultsStep({
       label: "Total",
       value: result.total,
       color: "text-gray-400",
-      bgColor: "bg-[#2d1b3d] border-[#4a1660]",
+      bgColor: "bg-(--brand-surface-2) border-[#4a1660]",
       icon: (
         <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 4.5h14.25M3 9h9.75M3 13.5h9.75m4.5-4.5v12m0 0l-3.75-3.75M17.25 21L21 17.25" />
@@ -531,7 +531,7 @@ function ResultsStep({
   ];
 
   return (
-    <div className="rounded-lg bg-[#1a0022] p-8">
+    <div className="rounded-lg bg-(--brand-surface) p-8">
       <div className="mb-6 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[#4a1660]">
           <svg className="h-5 w-5 text-purple-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -583,7 +583,7 @@ function ResultsStep({
           </button>
 
           {showSkipped && (
-            <div className="divide-y divide-[#2d1b3d] bg-[#1a0022]">
+            <div className="divide-y divide-(--brand-surface-2) bg-(--brand-surface)">
               {result.skippedDetails.map((s) => {
                 const row = parsedFile.rows[s.rowIndex] ?? {};
                 const fileBusinessName =
@@ -604,7 +604,7 @@ function ResultsStep({
                         id={`dup-${s.rowIndex}`}
                         checked={selectedIndexes.has(s.rowIndex)}
                         onChange={() => toggleSelect(s.rowIndex)}
-                        className="h-4 w-4 cursor-pointer rounded border-yellow-700 bg-[#2d1b3d] accent-[#792990]"
+                        className="h-4 w-4 cursor-pointer rounded border-yellow-700 bg-(--brand-surface-2) accent-(--brand-accent)"
                         aria-label={`Importar mesmo assim: ${s.businessName}`}
                       />
                     </div>
@@ -625,7 +625,7 @@ function ResultsStep({
                     </div>
 
                     {/* Right: lead existente */}
-                    <div className="flex-1 min-w-0 border-l border-[#2d1b3d] pl-4">
+                    <div className="flex-1 min-w-0 border-l border-(--brand-surface-2) pl-4">
                       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 mb-1">Lead existente</p>
                       {s.existingLeadId ? (
                         <a
@@ -713,7 +713,7 @@ function ResultsStep({
           </button>
 
           {showErrors && (
-            <div className="divide-y divide-[#2d1b3d] bg-[#1a0022]">
+            <div className="divide-y divide-(--brand-surface-2) bg-(--brand-surface)">
               {result.errorDetails.map((err, idx) => (
                 <div key={idx} className="px-5 py-3">
                   <p className="text-sm font-medium text-gray-200">

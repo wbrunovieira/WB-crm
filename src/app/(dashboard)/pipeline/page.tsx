@@ -88,7 +88,7 @@ export default async function PipelineViewPage({
         </div>
       </div>
 
-      <div className="flex-1 overflow-hidden" style={{ background: "#792990" }}>
+      <div className="flex-1 overflow-hidden" style={{ background: "var(--brand-accent)" }}>
         <PipelineBoard pipeline={transformPipelineView(pipelineData)} />
       </div>
     </div>

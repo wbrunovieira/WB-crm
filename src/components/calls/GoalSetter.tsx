@@ -52,7 +52,7 @@ export function GoalSetter({ weekStart, initialTargetSales, onBreakdownChange }:
   };
 
   return (
-    <div className="rounded-xl border p-5 space-y-4" style={{ backgroundColor: "#1a0022", borderColor: "#792990" }}>
+    <div className="rounded-xl border p-5 space-y-4" style={{ backgroundColor: "var(--brand-surface)", borderColor: "var(--brand-border)" }}>
       <div className="flex items-center gap-2">
         <Target className="h-5 w-5 text-purple-400" />
         <h3 className="text-sm font-semibold text-white">Meta semanal de vendas</h3>
@@ -72,7 +72,7 @@ export function GoalSetter({ weekStart, initialTargetSales, onBreakdownChange }:
           value={targetSales}
           onChange={(e) => handleChange(Math.max(0, parseInt(e.target.value) || 0))}
           className="w-20 rounded-lg border px-3 py-1.5 text-center text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
-          style={{ backgroundColor: "#350045", borderColor: "#792990" }}
+          style={{ backgroundColor: "var(--brand-bg)", borderColor: "var(--brand-border)" }}
         />
       </div>
 

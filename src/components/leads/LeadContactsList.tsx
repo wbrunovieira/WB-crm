@@ -77,7 +77,7 @@ function ContactDetailModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
-      <div className="w-full max-w-md rounded-xl bg-[#1a0022] shadow-2xl border border-[#3d2b4d]" onClick={(e) => e.stopPropagation()}>
+      <div className="w-full max-w-md rounded-xl bg-(--brand-surface) shadow-2xl border border-(--brand-surface-3)" onClick={(e) => e.stopPropagation()}>
         {/* Header */}
         <div className="flex items-center justify-between border-b bg-gradient-to-r from-purple-600 to-purple-800 p-4 text-white rounded-t-xl">
           <h2 className="flex items-center gap-2 text-lg font-bold">
@@ -124,7 +124,7 @@ function ContactDetailModal({
           {/* Contact Info - Always show all fields */}
           <div className="space-y-3">
             {/* Email */}
-            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+            <div className="flex items-center gap-3 rounded-lg bg-(--brand-surface-2) p-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/15">
                 <Mail className="h-5 w-5 text-blue-600" />
               </div>
@@ -161,7 +161,7 @@ function ContactDetailModal({
             </div>
 
             {/* Phone */}
-            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+            <div className="flex items-center gap-3 rounded-lg bg-(--brand-surface-2) p-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/15">
                 <Phone className="h-5 w-5 text-green-600" />
               </div>
@@ -189,7 +189,7 @@ function ContactDetailModal({
             </div>
 
             {/* WhatsApp */}
-            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+            <div className="flex items-center gap-3 rounded-lg bg-(--brand-surface-2) p-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500/15">
                 <MessageCircle className="h-5 w-5 text-green-600" />
               </div>
@@ -237,7 +237,7 @@ function ContactDetailModal({
             </div>
 
             {/* LinkedIn */}
-            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+            <div className="flex items-center gap-3 rounded-lg bg-(--brand-surface-2) p-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-500/15">
                 <Linkedin className="h-5 w-5 text-blue-700" />
               </div>
@@ -260,7 +260,7 @@ function ContactDetailModal({
             </div>
 
             {/* Instagram */}
-            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+            <div className="flex items-center gap-3 rounded-lg bg-(--brand-surface-2) p-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-pink-500/15">
                 <Instagram className="h-5 w-5 text-pink-600" />
               </div>
@@ -283,7 +283,7 @@ function ContactDetailModal({
             </div>
 
             {/* Languages */}
-            <div className="flex items-center gap-3 rounded-lg bg-[#2d1b3d] p-3">
+            <div className="flex items-center gap-3 rounded-lg bg-(--brand-surface-2) p-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-500/15">
                 <Globe className="h-5 w-5 text-indigo-600" />
               </div>
@@ -298,7 +298,7 @@ function ContactDetailModal({
         </div>
 
         {/* Footer */}
-        <div className="border-t border-[#3d2b4d] bg-[#2d1b3d] px-6 py-4 rounded-b-xl">
+        <div className="border-t border-(--brand-surface-3) bg-(--brand-surface-2) px-6 py-4 rounded-b-xl">
           <button
             onClick={onClose}
             className="w-full rounded-lg bg-purple-600 px-4 py-3 text-base font-bold text-white hover:bg-purple-700 transition-colors shadow-md"
@@ -381,7 +381,7 @@ function EditContactModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-[#1a0022] shadow-2xl border border-[#3d2b4d]">
+      <div className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-xl bg-(--brand-surface) shadow-2xl border border-(--brand-surface-3)">
         <div className="flex items-center justify-between border-b bg-gradient-to-r from-purple-600 to-purple-800 p-4 text-white rounded-t-xl">
           <h2 className="flex items-center gap-2 text-lg font-bold">
             <Pencil className="h-5 w-5" />
@@ -490,7 +490,7 @@ function EditContactModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-4 py-2 text-gray-300 hover:bg-[#3d2b4d]"
+              className="flex-1 rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-4 py-2 text-gray-300 hover:bg-(--brand-surface-3)"
             >
               Cancelar
             </button>
@@ -580,8 +580,8 @@ export function LeadContactsList({
   }
 
   return (
-    <div className="rounded-xl bg-[#1a0022] p-6 shadow-md">
-      <div className="mb-5 flex items-center justify-between pb-3 border-b-2 border-[#3d2b4d]">
+    <div className="rounded-xl bg-(--brand-surface) p-6 shadow-md">
+      <div className="mb-5 flex items-center justify-between pb-3 border-b-2 border-(--brand-surface-3)">
         <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
           <span className="text-2xl">👥</span>
           Contatos ({leadContacts.length})
@@ -589,7 +589,7 @@ export function LeadContactsList({
         {!isConverted && (
           <button
             onClick={() => setIsModalOpen(true)}
-            className="inline-flex items-center gap-2 rounded-lg bg-[#792990] px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
+            className="inline-flex items-center gap-2 rounded-lg bg-(--brand-accent) px-4 py-2 text-sm font-semibold text-white shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200"
           >
             <span className="text-lg text-white">+</span>
             Adicionar Contato
@@ -616,8 +616,8 @@ export function LeadContactsList({
               onClick={() => setViewingContact(contact)}
               className={`flex items-start justify-between rounded-lg border p-4 transition-colors cursor-pointer ${
                 contact.isActive
-                  ? "border-[#3d2b4d] hover:border-purple-400/40 hover:bg-purple-500/10"
-                  : "border-[#3d2b4d] bg-[#2d1b3d] opacity-50"
+                  ? "border-(--brand-surface-3) hover:border-purple-400/40 hover:bg-purple-500/10"
+                  : "border-(--brand-surface-3) bg-(--brand-surface-2) opacity-50"
               }`}
             >
               <div className="flex-1">
@@ -642,12 +642,12 @@ export function LeadContactsList({
                 </div>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500">
                   {contact.email && (
-                    <span className="inline-flex items-center gap-1 rounded bg-[#2d1b3d] px-2 py-1 text-gray-300">
+                    <span className="inline-flex items-center gap-1 rounded bg-(--brand-surface-2) px-2 py-1 text-gray-300">
                       <Mail className="h-3 w-3" /> Email
                     </span>
                   )}
                   {contact.phone && (
-                    <span className="inline-flex items-center gap-1 rounded bg-[#2d1b3d] px-2 py-1 text-gray-300">
+                    <span className="inline-flex items-center gap-1 rounded bg-(--brand-surface-2) px-2 py-1 text-gray-300">
                       <Phone className="h-3 w-3" /> Telefone
                     </span>
                   )}

@@ -85,7 +85,7 @@ export function CallsStats({ callsPerDay, avgDuration, maxDuration }: Props) {
           <div
             key={label}
             className="rounded-xl p-4 border"
-            style={{ backgroundColor: "#1a0022", borderColor: "#792990" }}
+            style={{ backgroundColor: "var(--brand-surface)", borderColor: "var(--brand-border)" }}
           >
             <Icon className={`h-5 w-5 ${color} mb-2`} />
             <div className="text-xl font-bold text-white">{value}</div>
@@ -97,7 +97,7 @@ export function CallsStats({ callsPerDay, avgDuration, maxDuration }: Props) {
       {/* Bar chart */}
       <div
         className="rounded-xl border p-5"
-        style={{ backgroundColor: "#1a0022", borderColor: "#792990" }}
+        style={{ backgroundColor: "var(--brand-surface)", borderColor: "var(--brand-border)" }}
       >
         <h3 className="text-sm font-semibold text-white mb-4">Ligações por dia</h3>
         <ResponsiveContainer width="100%" height={220}>
@@ -116,7 +116,7 @@ export function CallsStats({ callsPerDay, avgDuration, maxDuration }: Props) {
               tickLine={false}
             />
             <Tooltip
-              contentStyle={{ backgroundColor: "#1a0022", border: "1px solid #792990", borderRadius: 8 }}
+              contentStyle={{ backgroundColor: "var(--brand-surface)", border: "1px solid var(--brand-border)", borderRadius: 8 }}
               labelStyle={{ color: "#e5e7eb" }}
               formatter={(value: number | undefined, name: string | undefined) => {
                 const labels: Record<string, string> = { total: "Ligações", answered: "Conectaram", decisor: "Decisor" };
@@ -130,7 +130,7 @@ export function CallsStats({ callsPerDay, avgDuration, maxDuration }: Props) {
                 return <span style={{ color: "#9ca3af", fontSize: 12 }}>{labels[value] ?? value}</span>;
               }}
             />
-            <Bar dataKey="total"    fill="#792990" radius={[4, 4, 0, 0]} maxBarSize={32} />
+            <Bar dataKey="total"    fill="var(--brand-accent)" radius={[4, 4, 0, 0]} maxBarSize={32} />
             <Bar dataKey="answered" fill="#16a34a" radius={[4, 4, 0, 0]} maxBarSize={32} />
             <Bar dataKey="decisor"  fill="#2563eb" radius={[4, 4, 0, 0]} maxBarSize={32} />
           </BarChart>

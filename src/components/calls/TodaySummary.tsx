@@ -41,7 +41,7 @@ export function TodaySummary({ dailyStats, todayDate }: Props) {
   const noAnswerPrev = prevStats ? prevStats.noAnswer + prevStats.busy + prevStats.voicemail : undefined;
 
   const items = [
-    { icon: Phone,       label: "Ligações",    value: stats.total,   prev: prevStats?.total,   color: "text-purple-300", border: "#792990", bg: "rgba(121,41,144,0.15)" },
+    { icon: Phone,       label: "Ligações",    value: stats.total,   prev: prevStats?.total,   color: "text-purple-300", border: "var(--brand-border)", bg: "color-mix(in srgb, var(--brand-accent) 15%, transparent)" },
     { icon: Phone,       label: "Atendidas",   value: stats.answered, prev: prevStats?.answered, color: "text-green-400",  border: "#16a34a", bg: "rgba(34,197,94,0.1)" },
     { icon: PhoneMissed, label: "Não atendeu", value: noAnswerVal,   prev: noAnswerPrev,        color: "text-red-400",   border: "#dc2626", bg: "rgba(239,68,68,0.1)" },
     { icon: Voicemail,   label: "Caixa postal", value: stats.voicemail, prev: prevStats?.voicemail, color: "text-yellow-400", border: "#ca8a04", bg: "rgba(234,179,8,0.1)" },
@@ -49,7 +49,7 @@ export function TodaySummary({ dailyStats, todayDate }: Props) {
   ];
 
   return (
-    <div className="rounded-xl border p-5" style={{ backgroundColor: "#1a0022", borderColor: "#792990" }}>
+    <div className="rounded-xl border p-5" style={{ backgroundColor: "var(--brand-surface)", borderColor: "var(--brand-border)" }}>
       {/* Header with chevron navigation */}
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-sm font-semibold text-white">

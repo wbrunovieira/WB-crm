@@ -83,7 +83,7 @@ export function FunnelDashboard({
       {/* Funnel */}
       <div
         className="rounded-xl border p-5"
-        style={{ backgroundColor: "#1a0022", borderColor: "#792990" }}
+        style={{ backgroundColor: "var(--brand-surface)", borderColor: "var(--brand-border)" }}
       >
         <h3 className="text-sm font-semibold text-white mb-4">Funil de vendas</h3>
         <FunnelVisualization stats={stats} breakdown={breakdown} />

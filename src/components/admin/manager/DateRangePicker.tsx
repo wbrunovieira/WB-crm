@@ -92,8 +92,8 @@ export function DateRangePicker({
             className={cn(
               "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
               currentPeriod === button.value
-                ? "bg-[#792990] text-white"
-                : "bg-[#1a0022] text-gray-300 hover:bg-[#792990]/30 border border-[#792990]/30"
+                ? "bg-(--brand-accent) text-white"
+                : "bg-(--brand-surface) text-gray-300 hover:bg-(--brand-accent)/30 border border-(--brand-border)/30"
             )}
           >
             {button.label}
@@ -103,7 +103,7 @@ export function DateRangePicker({
 
       {/* Week navigation */}
       {currentPeriod === "week" && (
-        <div className="flex items-center gap-1 bg-[#1a0022] border border-[#792990]/30 rounded-lg px-2 py-1">
+        <div className="flex items-center gap-1 bg-(--brand-surface) border border-(--brand-border)/30 rounded-lg px-2 py-1">
           <button
             onClick={() => navigate({ period: "week", weekOffset: String(weekOffset - 1) })}
             className="p-1 text-gray-400 hover:text-white transition-colors rounded"
@@ -127,7 +127,7 @@ export function DateRangePicker({
 
       {/* Month navigation */}
       {currentPeriod === "month" && (
-        <div className="flex items-center gap-1 bg-[#1a0022] border border-[#792990]/30 rounded-lg px-2 py-1">
+        <div className="flex items-center gap-1 bg-(--brand-surface) border border-(--brand-border)/30 rounded-lg px-2 py-1">
           <button
             onClick={() => navigate({ period: "month", monthOffset: String(monthOffset - 1) })}
             className="p-1 text-gray-400 hover:text-white transition-colors rounded"
@@ -151,7 +151,7 @@ export function DateRangePicker({
 
       {/* Day navigation */}
       {currentPeriod === "today" && (
-        <div className="flex items-center gap-1 bg-[#1a0022] border border-[#792990]/30 rounded-lg px-2 py-1">
+        <div className="flex items-center gap-1 bg-(--brand-surface) border border-(--brand-border)/30 rounded-lg px-2 py-1">
           <button
             onClick={() => navigate({ period: "today", dayOffset: String(dayOffset - 1) })}
             className="p-1 text-gray-400 hover:text-white transition-colors rounded"
@@ -182,20 +182,20 @@ export function DateRangePicker({
               type="date"
               value={customStart}
               onChange={(e) => setCustomStart(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-[#1a0022] border border-[#792990]/30 text-white text-sm focus:outline-none focus:border-[#792990]"
+              className="px-3 py-2 rounded-lg bg-(--brand-surface) border border-(--brand-border)/30 text-white text-sm focus:outline-none focus:border-(--brand-border)"
             />
             <span className="text-gray-400">até</span>
             <input
               type="date"
               value={customEnd}
               onChange={(e) => setCustomEnd(e.target.value)}
-              className="px-3 py-2 rounded-lg bg-[#1a0022] border border-[#792990]/30 text-white text-sm focus:outline-none focus:border-[#792990]"
+              className="px-3 py-2 rounded-lg bg-(--brand-surface) border border-(--brand-border)/30 text-white text-sm focus:outline-none focus:border-(--brand-border)"
             />
           </div>
           <button
             onClick={handleCustomDateApply}
             disabled={!customStart || !customEnd}
-            className="px-4 py-2 rounded-lg bg-[#792990] text-white text-sm font-medium hover:bg-[#792990]/80 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 rounded-lg bg-(--brand-accent) text-white text-sm font-medium hover:bg-(--brand-accent)/80 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Aplicar
           </button>

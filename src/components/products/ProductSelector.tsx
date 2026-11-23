@@ -165,7 +165,7 @@ export function ProductSelector({
                       className="inline-block h-2 w-2 rounded-full"
                       style={{
                         backgroundColor:
-                          selectedProduct.businessLineColor || "#792990",
+                          selectedProduct.businessLineColor || "var(--brand-accent)",
                       }}
                     />
                     <span className="text-xs text-gray-500">

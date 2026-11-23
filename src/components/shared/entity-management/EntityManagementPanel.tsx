@@ -78,10 +78,10 @@ export function EntityManagementPanel({
   return (
     <div className={cn("space-y-6", className)}>
       {/* Owner Section */}
-      <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 overflow-hidden">
-        <div className="px-4 py-3 border-b border-[#792990]/30">
+      <div className="bg-(--brand-surface) rounded-xl border border-(--brand-border)/30 overflow-hidden">
+        <div className="px-4 py-3 border-b border-(--brand-border)/30">
           <h3 className="text-sm font-medium text-white flex items-center gap-2">
-            <User className="h-4 w-4 text-[#792990]" />
+            <User className="h-4 w-4 text-(--brand-accent)" />
             Proprietário Atual
           </h3>
         </div>
@@ -99,10 +99,10 @@ export function EntityManagementPanel({
           {/* Transfer Button */}
           <button
             onClick={() => setShowTransferDialog(true)}
-            className="flex flex-col items-center gap-3 p-5 rounded-xl bg-gradient-to-br from-[#792990]/20 to-[#792990]/5 border-2 border-[#792990]/40 hover:border-[#792990] hover:from-[#792990]/30 hover:to-[#792990]/10 transition-all group"
+            className="flex flex-col items-center gap-3 p-5 rounded-xl bg-gradient-to-br from-(--brand-accent)/20 to-(--brand-accent)/5 border-2 border-(--brand-border)/40 hover:border-(--brand-border) hover:from-(--brand-accent)/30 hover:to-(--brand-accent)/10 transition-all group"
           >
-            <div className="p-3 rounded-full bg-[#792990]/20 group-hover:bg-[#792990]/30 transition-colors">
-              <ArrowRightLeft className="h-6 w-6 text-[#792990]" />
+            <div className="p-3 rounded-full bg-(--brand-accent)/20 group-hover:bg-(--brand-accent)/30 transition-colors">
+              <ArrowRightLeft className="h-6 w-6 text-(--brand-accent)" />
             </div>
             <div className="text-center">
               <p className="font-semibold text-white text-lg">Transferir</p>
@@ -139,7 +139,7 @@ export function EntityManagementPanel({
       {/* Shared Users List */}
       {loading ? (
         <div className="flex items-center justify-center py-4">
-          <Loader2 className="h-5 w-5 text-[#792990] animate-spin" />
+          <Loader2 className="h-5 w-5 text-(--brand-accent) animate-spin" />
         </div>
       ) : (
         <SharedUsersList

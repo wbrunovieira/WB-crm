@@ -159,7 +159,7 @@ export function DealProductsSection({ dealId }: DealProductsSectionProps) {
               <span
                 className="inline-block h-2 w-2 rounded-full"
                 style={{
-                  backgroundColor: item.product.businessLine.color || "#792990",
+                  backgroundColor: item.product.businessLine.color || "var(--brand-accent)",
                 }}
               />
               <span className={`text-xs font-semibold uppercase tracking-wide ${isInactive ? "text-gray-400" : "text-gray-500"}`}>

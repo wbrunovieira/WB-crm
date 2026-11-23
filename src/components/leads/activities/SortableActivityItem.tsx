@@ -103,7 +103,7 @@ export function SortableActivityItem({
           ? "border-red-500/30 border-l-red-500 bg-red-500/10"
           : activity.skippedAt
             ? "border-amber-500/30 border-l-amber-500 bg-amber-500/10"
-            : `border-[#3d2b4d] ${typeConfig[activity.type]?.border ?? "border-l-gray-400"} hover:shadow-md bg-[#2d1b3d]`
+            : `border-(--brand-surface-3) ${typeConfig[activity.type]?.border ?? "border-l-gray-400"} hover:shadow-md bg-(--brand-surface-2)`
       }`}
     >
       {/* Thread connector lines */}
@@ -139,7 +139,7 @@ export function SortableActivityItem({
           <button
             onClick={(e) => handleToggle(e, activity.id)}
             disabled={loadingId === activity.id}
-            className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-[#3d2b4d] bg-[#2d1b3d] hover:border-primary hover:bg-primary/10 transition-all disabled:opacity-50"
+            className="mt-0.5 flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full border-2 border-(--brand-surface-3) bg-(--brand-surface-2) hover:border-primary hover:bg-primary/10 transition-all disabled:opacity-50"
             title="Marcar como concluída"
           >
             {loadingId === activity.id && (
@@ -393,12 +393,12 @@ export function SortableActivityItem({
                   <GoToOutcomeBadge outcome={activity.gotoCallOutcome} />
                 </button>
                 {outcomePickerOpen && (
-                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-[#3d2b4d] bg-[#1a0022] shadow-lg">
+                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[160px] rounded-lg border border-(--brand-surface-3) bg-(--brand-surface) shadow-lg">
                     {GOTO_OUTCOME_OPTIONS.map((opt) => (
                       <button
                         key={opt.value}
                         type="button"
-                        className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-[#2d1b3d] first:rounded-t-lg last:rounded-b-lg ${activity.gotoCallOutcome === opt.value ? "font-semibold text-purple-400" : "text-gray-300"}`}
+                        className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-(--brand-surface-2) first:rounded-t-lg last:rounded-b-lg ${activity.gotoCallOutcome === opt.value ? "font-semibold text-purple-400" : "text-gray-300"}`}
                         onClick={() => { onChangeOutcome(activity.id, opt.value); setOutcomePickerOpen(false); }}
                       >
                         {opt.label}
@@ -431,12 +431,12 @@ export function SortableActivityItem({
                   )}
                 </button>
                 {contactTypePickerOpen && (
-                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[150px] rounded-lg border border-[#3d2b4d] bg-[#1a0022] shadow-lg">
+                  <div className="absolute left-0 top-full z-50 mt-1 min-w-[150px] rounded-lg border border-(--brand-surface-3) bg-(--brand-surface) shadow-lg">
                     {[{ value: "gatekeeper", label: "🚧 Gatekeeper" }, { value: "decisor", label: "🎯 Decisor" }, { value: "transfer", label: "🔄 Transferência (GK → Decisor)" }].map((opt) => (
                       <button
                         key={opt.value}
                         type="button"
-                        className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-[#2d1b3d] first:rounded-t-lg last:rounded-b-lg ${activity.callContactType === opt.value ? "font-semibold text-purple-400" : "text-gray-300"}`}
+                        className={`flex w-full items-center px-3 py-2 text-left text-sm hover:bg-(--brand-surface-2) first:rounded-t-lg last:rounded-b-lg ${activity.callContactType === opt.value ? "font-semibold text-purple-400" : "text-gray-300"}`}
                         onClick={() => { onChangeContactType(activity.id, opt.value); setContactTypePickerOpen(false); }}
                       >
                         {opt.label}

@@ -156,7 +156,7 @@ export default async function MeetAnalysisDetailPage({ params }: { params: { id:
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900">Análise DIAG — Reunião</h1>
           <p className="mt-1 text-sm text-gray-500">
-            <Link href={`/activities/${analysis.activityId}`} className="text-[#792990] hover:underline">
+            <Link href={`/activities/${analysis.activityId}`} className="text-(--brand-accent) hover:underline">
               Ver atividade da reunião
             </Link>
           </p>
@@ -189,8 +189,8 @@ export default async function MeetAnalysisDetailPage({ params }: { params: { id:
 
       {/* Next step */}
       {analysis.nextStep && (
-        <div className="mb-6 rounded-lg border-l-4 border-[#792990] bg-purple-50 p-4">
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#792990]">Próximo Passo</p>
+        <div className="mb-6 rounded-lg border-l-4 border-(--brand-border) bg-purple-50 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-(--brand-accent)">Próximo Passo</p>
           <p className="mt-1 text-sm text-gray-800">{analysis.nextStep}</p>
         </div>
       )}
@@ -250,7 +250,7 @@ export default async function MeetAnalysisDetailPage({ params }: { params: { id:
                 <p className="mb-1 text-xs font-semibold text-gray-600">Perguntas do cliente:</p>
                 <ul className="space-y-1">
                   {analysis.diagEngagement.buyerQuestions.map((q, i) => (
-                    <li key={i} className="flex items-start gap-1.5 text-xs text-gray-700"><span className="text-[#792990]">?</span>{q}</li>
+                    <li key={i} className="flex items-start gap-1.5 text-xs text-gray-700"><span className="text-(--brand-accent)">?</span>{q}</li>
                   ))}
                 </ul>
               </div>

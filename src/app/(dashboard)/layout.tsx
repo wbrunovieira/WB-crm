@@ -26,9 +26,9 @@ export default async function DashboardLayout({
   return (
     <SessionProvider session={session}>
     <QueryProvider>
-    <div className="min-h-screen" style={{ backgroundColor: '#350045' }}>
+    <div className="min-h-screen" style={{ backgroundColor: 'var(--brand-bg)' }}>
       <Toaster position="top-right" richColors closeButton />
-      <nav className="sticky top-0 z-50 border-b shadow-lg" style={{ backgroundColor: '#1a0022', borderColor: '#792990' }}>
+      <nav className="sticky top-0 z-50 border-b shadow-lg" style={{ backgroundColor: 'var(--brand-surface)', borderColor: 'var(--brand-border)' }}>
         <div className="mx-auto max-w-[1600px] px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 items-center justify-between gap-2">
             <div className="flex items-center gap-4 min-w-0 flex-1">

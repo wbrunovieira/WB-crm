@@ -44,7 +44,7 @@ export default async function EditLeadPage({
       <LeadForm lead={lead} sourceGroups={sourceGroups} />
 
       {/* Secondary CNAEs */}
-      <div className="mt-6 rounded-lg bg-[#1a0022] p-6">
+      <div className="mt-6 rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Atividades Secundárias (CNAEs)
         </h2>

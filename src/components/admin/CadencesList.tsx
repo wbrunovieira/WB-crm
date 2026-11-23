@@ -102,7 +102,7 @@ export function CadencesList() {
           <Link
             key={cadence.id}
             href={`/admin/cadences/${cadence.id}`}
-            className="group block rounded-lg border border-gray-200 bg-white p-4 shadow-sm cursor-pointer transition-all duration-300 ease-out hover:bg-[#792990] hover:border-[#792990] hover:shadow-xl hover:scale-[1.02]"
+            className="group block rounded-lg border border-gray-200 bg-white p-4 shadow-sm cursor-pointer transition-all duration-300 ease-out hover:bg-(--brand-accent) hover:border-(--brand-border) hover:shadow-xl hover:scale-[1.02]"
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">

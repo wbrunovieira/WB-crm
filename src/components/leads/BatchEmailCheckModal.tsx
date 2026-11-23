@@ -162,7 +162,7 @@ export function BatchEmailCheckModal() {
               <select
                 value={selected}
                 onChange={e => setSelected(e.target.value)}
-                className="w-full rounded-lg border border-purple-700 bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                className="w-full rounded-lg border border-purple-700 bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
               >
                 <option value="">— escolha um grupo —</option>
                 {sourceGroups.map(g => (

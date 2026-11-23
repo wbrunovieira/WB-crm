@@ -582,7 +582,7 @@ export function DealsListView({ deals, groupBy, displayMode = "table", isAdmin =
               .map(([stageId, stats]) => (
               <div
                 key={stageId}
-                className="group relative overflow-hidden rounded-lg border-2 border-primary/20 bg-gradient-to-br from-[#2d1b3d] to-[#1a0022] p-4 shadow-sm transition-all hover:border-primary hover:shadow-lg hover:shadow-primary/20"
+                className="group relative overflow-hidden rounded-lg border-2 border-primary/20 bg-gradient-to-br from-(--brand-surface-2) to-(--brand-surface) p-4 shadow-sm transition-all hover:border-primary hover:shadow-lg hover:shadow-primary/20"
               >
                 {/* Pipeline Badge */}
                 <div className="mb-2">

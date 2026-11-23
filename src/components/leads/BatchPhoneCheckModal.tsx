@@ -163,7 +163,7 @@ export function BatchPhoneCheckModal() {
               <select
                 value={selected}
                 onChange={e => setSelected(e.target.value)}
-                className="w-full rounded-lg border border-purple-700 bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
+                className="w-full rounded-lg border border-purple-700 bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:outline-none focus:ring-2 focus:ring-purple-500/50"
               >
                 <option value="">— escolha um grupo —</option>
                 {sourceGroups.map(g => (
@@ -235,30 +235,30 @@ export function BatchPhoneCheckModal() {
               <p className="text-white font-semibold">Verificação concluída!</p>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+              <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
                 <p className="text-gray-400 text-xs">Total</p>
                 <p className="text-white font-bold text-lg">{result.total}</p>
               </div>
-              <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+              <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
                 <p className="text-gray-400 text-xs">Verificados</p>
                 <p className="text-blue-300 font-bold text-lg">{result.checked}</p>
               </div>
-              <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+              <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
                 <p className="text-gray-400 text-xs">Válidos</p>
                 <p className="text-green-400 font-bold text-lg">{result.valid}</p>
               </div>
-              <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+              <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
                 <p className="text-gray-400 text-xs">Inválidos</p>
                 <p className="text-red-400 font-bold text-lg">{result.invalid}</p>
               </div>
               {result.skipped > 0 && (
-                <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+                <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
                   <p className="text-gray-400 text-xs">Ignorados</p>
                   <p className="text-gray-300 font-bold text-lg">{result.skipped}</p>
                 </div>
               )}
               {result.errors > 0 && (
-                <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+                <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
                   <p className="text-gray-400 text-xs">Erros</p>
                   <p className="text-yellow-400 font-bold text-lg">{result.errors}</p>
                 </div>

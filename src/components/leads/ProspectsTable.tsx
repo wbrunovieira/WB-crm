@@ -474,7 +474,7 @@ export function ProspectsTable({ prospects, currentUserId: _ }: ProspectsTablePr
                 </button>
                 <button
                   onClick={() => { setDuplicates(null); setPendingQualifyId(null); }}
-                  className="w-full rounded-md border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-[#2d1b3d]"
+                  className="w-full rounded-md border border-gray-600 px-4 py-2 text-sm text-gray-300 hover:bg-(--brand-surface-2)"
                 >
                   Cancelar (manter na lista)
                 </button>

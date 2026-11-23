@@ -290,7 +290,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, part
   }
 
   return (
-    <div className="rounded-lg bg-[#1a0022] p-6 shadow border border-[#3d2b4d]">
+    <div className="rounded-lg bg-(--brand-surface) p-6 shadow border border-(--brand-surface-3)">
       <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
         <h2 className="text-lg font-bold text-gray-900">
           Propostas ({proposals.length})
@@ -338,7 +338,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, part
             return (
               <li
                 key={proposal.id}
-                className="rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-4 py-3"
+                className="rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-4 py-3"
               >
                 {/* Linha principal */}
                 <div className="flex items-start gap-3">
@@ -404,7 +404,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, part
                       <select
                         value={proposal.status}
                         onChange={(e) => handleStatusChange(proposal.id, e.target.value as ProposalStatus)}
-                        className="rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-2 py-1 text-xs text-gray-300 focus:border-primary focus:outline-none"
+                        className="rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-2 py-1 text-xs text-gray-300 focus:border-primary focus:outline-none"
                       >
                         {STATUS_OPTIONS.map((opt) => (
                           <option key={opt.value} value={opt.value}>
@@ -452,7 +452,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, part
                     <a
                       href={`${BACKEND_URL}/proposals/${proposal.id}/file?token=${encodeURIComponent(token)}`}
                       download={proposal.fileName ?? true}
-                      className="inline-flex items-center gap-1.5 rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-[#3d2b4d]"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-(--brand-surface-3)"
                     >
                       <Download size={13} />
                       Download
@@ -463,7 +463,7 @@ export default function ProposalsList({ proposals: initial, leadId, dealId, part
                       href={`${BACKEND_URL}/proposals/${proposal.id}/file?inline=true&token=${encodeURIComponent(token)}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-[#3d2b4d]"
+                      className="inline-flex items-center gap-1.5 rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-(--brand-surface-3)"
                     >
                       <MonitorDown size={13} />
                       Abrir com app

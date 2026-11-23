@@ -480,7 +480,7 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
                   className={`rounded border px-2 py-0.5 text-xs font-medium transition-colors ${
                     requestedCount === n
                       ? "border-primary bg-primary text-white"
-                      : "border-[#792990]/50 bg-[#2d1b3d] text-gray-300 hover:border-[#792990] hover:text-white"
+                      : "border-(--brand-border)/50 bg-(--brand-surface-2) text-gray-300 hover:border-(--brand-border) hover:text-white"
                   }`}
                 >
                   {n}
@@ -505,7 +505,7 @@ export function GoogleLeadsModal({ onClose, onSuccess }: GoogleLeadsModalProps) 
                     className={`rounded border px-2.5 py-1 text-xs font-medium transition-colors ${
                       country === code
                         ? "border-primary bg-primary text-white"
-                        : "border-[#792990]/50 bg-[#2d1b3d] text-gray-300 hover:border-[#792990] hover:text-white"
+                        : "border-(--brand-border)/50 bg-(--brand-surface-2) text-gray-300 hover:border-(--brand-border) hover:text-white"
                     }`}
                   >
                     {label}

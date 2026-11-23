@@ -62,7 +62,7 @@ function ICPCard({ icp, loading, onToggleStatus, onDelete }: {
       {/* ========== HEADER - Primary (White bg, purple accent) ========== */}
       <Link
         href={`/admin/icps/${icp.id}`}
-        className="group block bg-white border-l-4 border-l-[#792990] hover:bg-[#792990] transition-all duration-300"
+        className="group block bg-white border-l-4 border-l-(--brand-border) hover:bg-(--brand-accent) transition-all duration-300"
       >
         <div className="p-5">
           <div className="flex items-start justify-between gap-4">
@@ -72,7 +72,7 @@ function ICPCard({ icp, loading, onToggleStatus, onDelete }: {
                 <h3 className="text-xl font-bold text-gray-900 group-hover:text-white transition-colors duration-200">
                   {icp.name}
                 </h3>
-                <ChevronRight className="h-5 w-5 text-[#792990] opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-white transition-all duration-200" />
+                <ChevronRight className="h-5 w-5 text-(--brand-accent) opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 group-hover:text-white transition-all duration-200" />
 
                 {/* Status badge */}
                 <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors duration-200 ${status.color} ${status.hoverColor}`}>
@@ -82,7 +82,7 @@ function ICPCard({ icp, loading, onToggleStatus, onDelete }: {
               </div>
 
               {/* Slug */}
-              <p className="mt-1 text-sm font-mono text-[#792990] group-hover:text-white/70 transition-colors duration-200">
+              <p className="mt-1 text-sm font-mono text-(--brand-accent) group-hover:text-white/70 transition-colors duration-200">
                 /{icp.slug}
               </p>
 
@@ -108,7 +108,7 @@ function ICPCard({ icp, loading, onToggleStatus, onDelete }: {
               <button
                 onClick={(e) => { e.preventDefault(); e.stopPropagation(); onToggleStatus(icp); }}
                 disabled={loading === icp.id}
-                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-[#792990] group-hover:text-white/70 group-hover:hover:text-white group-hover:hover:bg-white/20 disabled:opacity-50 transition-all"
+                className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-(--brand-accent) group-hover:text-white/70 group-hover:hover:text-white group-hover:hover:bg-white/20 disabled:opacity-50 transition-all"
                 title={icp.status === "active" ? "Arquivar" : "Ativar"}
               >
                 {icp.status === "active" ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
@@ -141,7 +141,7 @@ function ICPCard({ icp, loading, onToggleStatus, onDelete }: {
             )}
           </div>
           {isLongContent && (
-            <span className={`p-1.5 rounded-full transition-all duration-200 ${isExpanded ? 'bg-[#792990] text-white' : 'bg-[#4a3252] text-purple-300'}`}>
+            <span className={`p-1.5 rounded-full transition-all duration-200 ${isExpanded ? 'bg-(--brand-accent) text-white' : 'bg-[#4a3252] text-purple-300'}`}>
               <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
             </span>
           )}

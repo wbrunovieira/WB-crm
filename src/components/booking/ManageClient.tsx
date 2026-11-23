@@ -20,7 +20,7 @@ function Atmosphere() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden" style={{ background: "#2a0038" }}>
       <div className="absolute inset-0" style={{ background: "radial-gradient(120% 90% at 50% -10%, #4a0a5e 0%, #350045 45%, #240030 100%)" }} />
-      <div className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full opacity-50 blur-[120px]" style={{ background: "#792990" }} />
+      <div className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full opacity-50 blur-[120px]" style={{ background: "var(--brand-accent)" }} />
       <div className="absolute -bottom-40 -right-20 h-[26rem] w-[26rem] rounded-full opacity-30 blur-[130px]" style={{ background: "#e8531e" }} />
     </div>
   );
@@ -141,7 +141,7 @@ export function ManageClient({ manageToken, backend, initial }: { manageToken: s
         {initial.bookingType && <p className="mt-3 inline-block rounded-full border border-white/15 bg-white/[0.07] px-3 py-1 text-xs text-white/80">{initial.bookingType.name} · {initial.bookingType.durationMinutes} min</p>}
         {status === "error" && <p className="mt-4 rounded-xl border border-red-400/30 bg-red-500/15 px-3.5 py-2.5 text-sm text-red-100">{errorMsg}</p>}
         <div className="mt-6 flex gap-2.5">
-          <button type="button" onClick={() => setView("reschedule")} className="flex-1 rounded-2xl py-3 font-semibold text-white transition hover:brightness-110" style={{ background: "#792990" }}>Remarcar</button>
+          <button type="button" onClick={() => setView("reschedule")} className="flex-1 rounded-2xl py-3 font-semibold text-white transition hover:brightness-110" style={{ background: "var(--brand-accent)" }}>Remarcar</button>
           <button type="button" disabled={status === "submitting"} onClick={async () => { if (await call("cancel")) setStatus("cancelled"); }}
             className="flex-1 rounded-2xl border border-red-400/40 py-3 font-medium text-red-200 transition hover:bg-red-500/10 disabled:opacity-40">Cancelar</button>
         </div>

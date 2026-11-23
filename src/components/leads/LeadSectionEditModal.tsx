@@ -18,8 +18,8 @@ function Modal({ title, onClose, onSave, saving, children }: {
 }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-      <div className="w-full max-w-lg rounded-xl border border-[#3d2b4d] bg-[#1a0022] shadow-2xl max-h-[90vh] flex flex-col">
-        <div className="flex items-center justify-between border-b border-[#3d2b4d] px-5 py-4 flex-shrink-0">
+      <div className="w-full max-w-lg rounded-xl border border-(--brand-surface-3) bg-(--brand-surface) shadow-2xl max-h-[90vh] flex flex-col">
+        <div className="flex items-center justify-between border-b border-(--brand-surface-3) px-5 py-4 flex-shrink-0">
           <h2 className="text-sm font-semibold text-white">{title}</h2>
           <button onClick={onClose} className="rounded p-1 text-gray-400 hover:text-white">
             <X size={16} />
@@ -28,7 +28,7 @@ function Modal({ title, onClose, onSave, saving, children }: {
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-4">
           {children}
         </div>
-        <div className="flex justify-end gap-2 border-t border-[#3d2b4d] px-5 py-4 flex-shrink-0">
+        <div className="flex justify-end gap-2 border-t border-(--brand-surface-3) px-5 py-4 flex-shrink-0">
           <button onClick={onClose} className="rounded-lg px-4 py-2 text-sm font-medium text-gray-400 hover:text-white">
             Cancelar
           </button>
@@ -68,7 +68,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-const inputCls = "w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none";
+const inputCls = "w-full rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2 text-sm text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none";
 const selectCls = inputCls + " cursor-pointer";
 
 function useLeadEdit(leadId: string) {

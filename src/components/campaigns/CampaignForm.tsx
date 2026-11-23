@@ -76,7 +76,7 @@ export function CampaignForm() {
           value={form.name}
           onChange={(e) => setForm({ ...form, name: e.target.value })}
           placeholder="Ex: Promoção Junho 2025"
-          className="w-full rounded-lg border border-[#792990]/40 bg-[#1a0022]/80 px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-[#792990] focus:outline-none"
+          className="w-full rounded-lg border border-(--brand-border)/40 bg-(--brand-surface)/80 px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-(--brand-border) focus:outline-none"
         />
       </div>
 
@@ -90,7 +90,7 @@ export function CampaignForm() {
           value={form.instanceName}
           onChange={(e) => setForm({ ...form, instanceName: e.target.value })}
           placeholder="Ex: wbdigital"
-          className="w-full rounded-lg border border-[#792990]/40 bg-[#1a0022]/80 px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-[#792990] focus:outline-none"
+          className="w-full rounded-lg border border-(--brand-border)/40 bg-(--brand-surface)/80 px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-(--brand-border) focus:outline-none"
         />
         <p className="mt-1 text-xs text-gray-500">
           Nome da instância configurada no Evolution API
@@ -105,12 +105,12 @@ export function CampaignForm() {
           onChange={(e) => setForm({ ...form, description: e.target.value })}
           rows={3}
           placeholder="Objetivo desta campanha..."
-          className="w-full rounded-lg border border-[#792990]/40 bg-[#1a0022]/80 px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-[#792990] focus:outline-none resize-none"
+          className="w-full rounded-lg border border-(--brand-border)/40 bg-(--brand-surface)/80 px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-(--brand-border) focus:outline-none resize-none"
         />
       </div>
 
       {/* Anti-block config */}
-      <div className="rounded-lg border border-[#792990]/20 bg-[#1a0022]/40 p-4">
+      <div className="rounded-lg border border-(--brand-border)/20 bg-(--brand-surface)/40 p-4">
         <button
           type="button"
           onClick={() => setShowAntiBlock(!showAntiBlock)}
@@ -130,7 +130,7 @@ export function CampaignForm() {
                 onChange={(e) => setAntiBlock({ ...antiBlock, minDelayMs: Number(e.target.value) })}
                 min={500}
                 step={500}
-                className="w-full rounded-lg border border-[#792990]/40 bg-[#1a0022] px-2 py-1.5 text-sm text-gray-200 focus:border-[#792990] focus:outline-none"
+                className="w-full rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) px-2 py-1.5 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none"
               />
             </div>
             <div>
@@ -141,7 +141,7 @@ export function CampaignForm() {
                 onChange={(e) => setAntiBlock({ ...antiBlock, maxDelayMs: Number(e.target.value) })}
                 min={1000}
                 step={500}
-                className="w-full rounded-lg border border-[#792990]/40 bg-[#1a0022] px-2 py-1.5 text-sm text-gray-200 focus:border-[#792990] focus:outline-none"
+                className="w-full rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) px-2 py-1.5 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none"
               />
             </div>
             <div>
@@ -152,7 +152,7 @@ export function CampaignForm() {
                 onChange={(e) => setAntiBlock({ ...antiBlock, maxPerHour: Number(e.target.value) })}
                 min={1}
                 max={200}
-                className="w-full rounded-lg border border-[#792990]/40 bg-[#1a0022] px-2 py-1.5 text-sm text-gray-200 focus:border-[#792990] focus:outline-none"
+                className="w-full rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) px-2 py-1.5 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none"
               />
             </div>
           </div>
@@ -164,7 +164,7 @@ export function CampaignForm() {
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-lg border border-[#792990]/40 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-purple-900/20 transition-colors"
+          className="rounded-lg border border-(--brand-border)/40 px-4 py-2 text-sm font-medium text-gray-300 hover:bg-purple-900/20 transition-colors"
         >
           Cancelar
         </button>

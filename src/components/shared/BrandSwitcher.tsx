@@ -21,7 +21,7 @@ const OUTRA = {
     nome: "WB Digital Solutions",
     curto: "WB",
     url: process.env.NEXT_PUBLIC_URL_WB,
-    cor: "#a03bb8", // roxo da WB
+    cor: "var(--brand-accent-2)", // roxo da WB
   },
 }[BRAND];
 

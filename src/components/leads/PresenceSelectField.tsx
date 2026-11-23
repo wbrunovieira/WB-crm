@@ -68,7 +68,7 @@ export function PresenceSelectField({
   }
 
   const inputClass =
-    "mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]";
+    "mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)";
 
   return (
     <div className={className}>
@@ -109,7 +109,7 @@ export function PresenceSelectField({
             placeholder="Nova opção..."
             autoFocus
             disabled={saving}
-            className="flex-1 rounded-md border border-[#792990] bg-[#2d1b3d] px-2 py-1 text-xs text-gray-200 focus:outline-none"
+            className="flex-1 rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-2 py-1 text-xs text-gray-200 focus:outline-none"
           />
           <button
             type="button"

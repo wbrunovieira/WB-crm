@@ -41,23 +41,23 @@ export function StageChangesChart({ stageChanges }: StageChangesChartProps) {
           layout="vertical"
           margin={{ top: 5, right: 30, left: 120, bottom: 5 }}
         >
-          <CartesianGrid strokeDasharray="3 3" stroke="#792990/20" />
+          <CartesianGrid strokeDasharray="3 3" stroke="color-mix(in srgb, var(--brand-accent) 20%, transparent)" />
           <XAxis
             type="number"
             tick={{ fill: "#9ca3af", fontSize: 12 }}
-            axisLine={{ stroke: "#792990/30" }}
+            axisLine={{ stroke: "color-mix(in srgb, var(--brand-accent) 30%, transparent)" }}
           />
           <YAxis
             type="category"
             dataKey="name"
             tick={{ fill: "#9ca3af", fontSize: 10 }}
-            axisLine={{ stroke: "#792990/30" }}
+            axisLine={{ stroke: "color-mix(in srgb, var(--brand-accent) 30%, transparent)" }}
             width={110}
           />
           <Tooltip
             contentStyle={{
-              backgroundColor: "#1a0022",
-              border: "1px solid #792990",
+              backgroundColor: "var(--brand-surface)",
+              border: "1px solid var(--brand-border)",
               borderRadius: "8px",
               color: "#fff",
             }}

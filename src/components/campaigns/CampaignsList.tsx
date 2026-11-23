@@ -74,7 +74,7 @@ export function CampaignsList({ campaigns }: Props) {
 
   if (campaigns.length === 0) {
     return (
-      <div className="rounded-xl border border-[#792990]/30 bg-[#1a0022]/50 p-16 text-center">
+      <div className="rounded-xl border border-(--brand-border)/30 bg-(--brand-surface)/50 p-16 text-center">
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-purple-900/30">
           <svg className="h-8 w-8 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}
@@ -98,7 +98,7 @@ export function CampaignsList({ campaigns }: Props) {
       {campaigns.map((campaign) => (
         <div
           key={campaign.id}
-          className="rounded-xl border border-[#792990]/30 bg-[#1a0022]/70 p-5 flex flex-col gap-4 hover:border-[#792990]/60 transition-colors"
+          className="rounded-xl border border-(--brand-border)/30 bg-(--brand-surface)/70 p-5 flex flex-col gap-4 hover:border-(--brand-border)/60 transition-colors"
         >
           {/* Header */}
           <div className="flex items-start justify-between gap-2">
@@ -131,10 +131,10 @@ export function CampaignsList({ campaigns }: Props) {
           </div>
 
           {/* Actions */}
-          <div className="flex items-center gap-2 border-t border-[#792990]/20 pt-3">
+          <div className="flex items-center gap-2 border-t border-(--brand-border)/20 pt-3">
             <Link
               href={`/campaigns/${campaign.id}`}
-              className="flex-1 rounded-lg border border-[#792990]/40 px-3 py-1.5 text-center text-xs font-medium text-gray-300 hover:bg-purple-900/30 transition-colors"
+              className="flex-1 rounded-lg border border-(--brand-border)/40 px-3 py-1.5 text-center text-xs font-medium text-gray-300 hover:bg-purple-900/30 transition-colors"
             >
               Detalhes
             </Link>

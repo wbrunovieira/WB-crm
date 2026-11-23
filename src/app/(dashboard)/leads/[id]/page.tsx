@@ -163,7 +163,7 @@ export default async function LeadDetailPage({
     ) : null;
 
   return (
-    <div className="min-h-screen bg-[#350045] p-4 md:p-8">
+    <div className="min-h-screen bg-(--brand-bg) p-4 md:p-8">
       {websiteAlert && <LeadWebsiteAlertToast leadId={lead.id} message={websiteAlert} />}
 
       {/* ── Header card ──────────────────────────────────────────────── */}

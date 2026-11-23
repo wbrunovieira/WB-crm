@@ -117,7 +117,7 @@ export default async function GkAnalysisDetailPage({ params }: { params: { id: s
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900">Análise RAPORT — Gatekeeper</h1>
           <p className="mt-1 text-sm text-gray-500">
-            <Link href={`/activities/${analysis.activityId}`} className="text-[#792990] hover:underline">
+            <Link href={`/activities/${analysis.activityId}`} className="text-(--brand-accent) hover:underline">
               Ver atividade da ligação
             </Link>
           </p>
@@ -208,8 +208,8 @@ export default async function GkAnalysisDetailPage({ params }: { params: { id: s
             </div>
           )}
           {analysis.raportResultado?.nextAttemptTip && (
-            <div className="mt-3 rounded border-l-4 border-[#792990] bg-purple-50 p-2">
-              <p className="text-xs font-semibold text-[#792990]">Dica para próxima tentativa</p>
+            <div className="mt-3 rounded border-l-4 border-(--brand-border) bg-purple-50 p-2">
+              <p className="text-xs font-semibold text-(--brand-accent)">Dica para próxima tentativa</p>
               <p className="mt-0.5 text-xs text-gray-700">{analysis.raportResultado.nextAttemptTip}</p>
             </div>
           )}

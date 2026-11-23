@@ -216,7 +216,7 @@ export function CampaignDetail({ campaign: initial }: Props) {
   return (
     <div className="space-y-6">
       {/* Header card */}
-      <div className="rounded-xl border border-[#792990]/30 bg-[#1a0022]/70 p-6">
+      <div className="rounded-xl border border-(--brand-border)/30 bg-(--brand-surface)/70 p-6">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
@@ -251,7 +251,7 @@ export function CampaignDetail({ campaign: initial }: Props) {
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap gap-6 border-t border-[#792990]/20 pt-4 text-sm">
+        <div className="mt-4 flex flex-wrap gap-6 border-t border-(--brand-border)/20 pt-4 text-sm">
           <div><span className="text-gray-500">Steps: </span><span className="font-medium text-gray-200">{campaign.steps.length}</span></div>
           <div><span className="text-gray-500">Destinatários: </span><span className="font-medium text-gray-200">{campaign.sends.length}</span></div>
           <div><span className="text-gray-500">Enviados: </span><span className="font-medium text-green-400">{statusCounts.DONE ?? 0}</span></div>
@@ -260,7 +260,7 @@ export function CampaignDetail({ campaign: initial }: Props) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 rounded-lg border border-[#792990]/20 bg-[#1a0022]/40 p-1 w-fit">
+      <div className="flex gap-1 rounded-lg border border-(--brand-border)/20 bg-(--brand-surface)/40 p-1 w-fit">
         {(["steps", "recipients", "stats"] as const).map((t) => (
           <button key={t} onClick={() => setTab(t)}
             className={`rounded-md px-4 py-1.5 text-sm font-medium transition-colors ${
@@ -280,7 +280,7 @@ export function CampaignDetail({ campaign: initial }: Props) {
           ) : (
             <div className="space-y-2">
               {[...campaign.steps].sort((a, b) => a.order - b.order).map((step) => (
-                <div key={step.id} className="rounded-xl border border-[#792990]/20 bg-[#1a0022]/60 p-4 flex items-start gap-3">
+                <div key={step.id} className="rounded-xl border border-(--brand-border)/20 bg-(--brand-surface)/60 p-4 flex items-start gap-3">
                   <div className="mt-0.5 shrink-0 text-gray-500">
                     {STEP_ICON[step.type]}
                   </div>
@@ -314,13 +314,13 @@ export function CampaignDetail({ campaign: initial }: Props) {
 
           {/* Add step form */}
           {canEdit ? (
-            <div className="rounded-xl border border-[#792990]/30 bg-[#1a0022]/70 p-5 space-y-4 mt-4">
+            <div className="rounded-xl border border-(--brand-border)/30 bg-(--brand-surface)/70 p-5 space-y-4 mt-4">
               <h3 className="text-sm font-semibold text-gray-300">Adicionar step</h3>
               <div className="flex flex-wrap gap-2">
                 {(["TEXT", "MEDIA", "AUDIO", "DELAY", "TYPING"] as StepType[]).map((t) => (
                   <button key={t} type="button" onClick={() => setStepType(t)}
                     className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors ${
-                      stepType === t ? "bg-primary/30 border-primary text-white" : `${STEP_TYPE_COLOR[t]} hover:bg-[#350045]`
+                      stepType === t ? "bg-primary/30 border-primary text-white" : `${STEP_TYPE_COLOR[t]} hover:bg-(--brand-bg)`
                     }`}>
                     {STEP_TYPE_LABEL[t]}
                   </button>
@@ -331,21 +331,21 @@ export function CampaignDetail({ campaign: initial }: Props) {
                 <div>
                   <p className="text-xs text-gray-500 mb-1.5">Variáveis: <code className="text-purple-300">{"{{nome}}"}</code> <code className="text-purple-300">{"{{empresa}}"}</code></p>
                   <textarea value={stepText} onChange={(e) => setStepText(e.target.value)} rows={3}
-                    placeholder="Olá {{nome}}, tudo bem?" className="w-full rounded-lg border border-[#792990]/40 bg-[#1a0022] px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-[#792990] focus:outline-none resize-none" />
+                    placeholder="Olá {{nome}}, tudo bem?" className="w-full rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-(--brand-border) focus:outline-none resize-none" />
                 </div>
               )}
               {(stepType === "MEDIA" || stepType === "AUDIO") && (
                 <div className="space-y-2">
                   <input value={stepMedia.url} onChange={(e) => setStepMedia({ ...stepMedia, url: e.target.value })}
                     placeholder="URL do arquivo (https://...)"
-                    className="w-full rounded-lg border border-[#792990]/40 bg-[#1a0022] px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-[#792990] focus:outline-none" />
+                    className="w-full rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-(--brand-border) focus:outline-none" />
                   {stepType === "MEDIA" && (
                     <>
                       <input value={stepMedia.caption} onChange={(e) => setStepMedia({ ...stepMedia, caption: e.target.value })}
                         placeholder="Legenda (opcional)"
-                        className="w-full rounded-lg border border-[#792990]/40 bg-[#1a0022] px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-[#792990] focus:outline-none" />
+                        className="w-full rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-(--brand-border) focus:outline-none" />
                       <select value={stepMedia.type} onChange={(e) => setStepMedia({ ...stepMedia, type: e.target.value })}
-                        className="rounded-lg border border-[#792990]/40 bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none">
+                        className="rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none">
                         <option value="image">Imagem</option>
                         <option value="video">Vídeo</option>
                         <option value="document">Documento</option>
@@ -358,7 +358,7 @@ export function CampaignDetail({ campaign: initial }: Props) {
                 <div className="flex items-center gap-3">
                   <label className="text-sm text-gray-400">Aguardar</label>
                   <input type="number" value={stepDelay} onChange={(e) => setStepDelay(Number(e.target.value))} min={1} max={3600}
-                    className="w-24 rounded-lg border border-[#792990]/40 bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none" />
+                    className="w-24 rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none" />
                   <label className="text-sm text-gray-400">segundos</label>
                 </div>
               )}
@@ -366,7 +366,7 @@ export function CampaignDetail({ campaign: initial }: Props) {
                 <div className="flex items-center gap-3">
                   <label className="text-sm text-gray-400">Mostrar digitando por</label>
                   <input type="number" value={stepTyping} onChange={(e) => setStepTyping(Number(e.target.value))} min={1} max={60}
-                    className="w-20 rounded-lg border border-[#792990]/40 bg-[#1a0022] px-3 py-2 text-sm text-gray-200 focus:border-[#792990] focus:outline-none" />
+                    className="w-20 rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 focus:border-(--brand-border) focus:outline-none" />
                   <label className="text-sm text-gray-400">segundos</label>
                 </div>
               )}
@@ -386,11 +386,11 @@ export function CampaignDetail({ campaign: initial }: Props) {
       {tab === "recipients" && (
         <div className="space-y-4">
           {campaign.status !== "FINISHED" && (
-            <div className="rounded-xl border border-[#792990]/30 bg-[#1a0022]/70 p-5 space-y-4">
+            <div className="rounded-xl border border-(--brand-border)/30 bg-(--brand-surface)/70 p-5 space-y-4">
               <h3 className="text-sm font-semibold text-gray-300">Adicionar destinatários</h3>
 
               {/* Mode toggle */}
-              <div className="flex gap-1 bg-[#1a0022] rounded-lg p-1 w-fit border border-[#792990]/20">
+              <div className="flex gap-1 bg-(--brand-surface) rounded-lg p-1 w-fit border border-(--brand-border)/20">
                 <button onClick={() => setRecipientMode("phone")}
                   className={`px-3 py-1.5 rounded text-xs font-medium transition-colors ${recipientMode === "phone" ? "bg-primary text-white" : "text-gray-400 hover:text-gray-200"}`}>
                   Números de telefone
@@ -406,7 +406,7 @@ export function CampaignDetail({ campaign: initial }: Props) {
                   <p className="text-xs text-gray-500">Um número por linha, ou separados por vírgula. Formato: 11999999999 ou 5511999999999</p>
                   <textarea value={phonesRaw} onChange={(e) => setPhonesRaw(e.target.value)} rows={5}
                     placeholder={"11999999999\n5511888888888\n21977777777"}
-                    className="w-full rounded-lg border border-[#792990]/40 bg-[#1a0022] px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-[#792990] focus:outline-none resize-none font-mono" />
+                    className="w-full rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) px-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-(--brand-border) focus:outline-none resize-none font-mono" />
                   <button type="button" onClick={handleAddPhones} disabled={loading === "addRecipients"}
                     className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 transition-colors disabled:opacity-50">
                     {loading === "addRecipients" ? "Adicionando..." : "Adicionar"}
@@ -420,13 +420,13 @@ export function CampaignDetail({ campaign: initial }: Props) {
                     <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
                     <input value={leadSearch} onChange={(e) => searchLeads(e.target.value)}
                       placeholder="Buscar lead por nome ou empresa..."
-                      className="w-full rounded-lg border border-[#792990]/40 bg-[#1a0022] pl-8 pr-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-[#792990] focus:outline-none" />
+                      className="w-full rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) pl-8 pr-3 py-2 text-sm text-gray-200 placeholder-gray-600 focus:border-(--brand-border) focus:outline-none" />
                   </div>
                   {loadingLeads && <p className="text-xs text-gray-500">Buscando...</p>}
                   {leadOptions.length > 0 && (
-                    <div className="max-h-52 overflow-y-auto space-y-1 border border-[#792990]/20 rounded-lg p-2">
+                    <div className="max-h-52 overflow-y-auto space-y-1 border border-(--brand-border)/20 rounded-lg p-2">
                       {leadOptions.map((lead) => (
-                        <label key={lead.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-[#350045]/50 cursor-pointer">
+                        <label key={lead.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-(--brand-bg)/50 cursor-pointer">
                           <input type="checkbox" checked={selectedLeads.has(lead.id)} onChange={() => toggleLead(lead.id)}
                             className="accent-purple-500" />
                           <div className="min-w-0 flex-1">
@@ -455,11 +455,11 @@ export function CampaignDetail({ campaign: initial }: Props) {
           {campaign.sends.length === 0 ? (
             <p className="text-sm text-gray-500">Nenhum destinatário adicionado ainda.</p>
           ) : (
-            <div className="rounded-xl border border-[#792990]/30 bg-[#1a0022]/70 overflow-hidden">
-              <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-2.5 text-xs font-medium text-gray-500 border-b border-[#792990]/20">
+            <div className="rounded-xl border border-(--brand-border)/30 bg-(--brand-surface)/70 overflow-hidden">
+              <div className="grid grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-2.5 text-xs font-medium text-gray-500 border-b border-(--brand-border)/20">
                 <span>#</span><span>Telefone</span><span>Step</span><span>Status</span>
               </div>
-              <div className="max-h-96 overflow-y-auto divide-y divide-[#792990]/10">
+              <div className="max-h-96 overflow-y-auto divide-y divide-(--brand-border)/10">
                 {campaign.sends.map((send, i) => (
                   <div key={send.id} className="grid grid-cols-[auto_1fr_auto_auto] gap-4 px-4 py-2.5 text-sm items-center">
                     <span className="text-gray-600">{i + 1}</span>
@@ -478,12 +478,12 @@ export function CampaignDetail({ campaign: initial }: Props) {
       {tab === "stats" && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           {(["PENDING", "RUNNING", "DONE", "FAILED", "OPTED_OUT"] as SendStatus[]).map((status) => (
-            <div key={status} className="rounded-xl border border-[#792990]/30 bg-[#1a0022]/70 p-4 text-center">
+            <div key={status} className="rounded-xl border border-(--brand-border)/30 bg-(--brand-surface)/70 p-4 text-center">
               <div className={`text-3xl font-bold ${SEND_STATUS_COLOR[status]}`}>{statusCounts[status] ?? 0}</div>
               <div className="mt-1 text-xs text-gray-500">{SEND_STATUS_LABEL[status]}</div>
             </div>
           ))}
-          <div className="rounded-xl border border-[#792990]/30 bg-[#1a0022]/70 p-4 text-center col-span-2 sm:col-span-3 lg:col-span-5">
+          <div className="rounded-xl border border-(--brand-border)/30 bg-(--brand-surface)/70 p-4 text-center col-span-2 sm:col-span-3 lg:col-span-5">
             <div className="text-3xl font-bold text-gray-200">{campaign.sends.length}</div>
             <div className="mt-1 text-xs text-gray-500">Total de destinatários</div>
           </div>

@@ -118,7 +118,7 @@ const RSVP_CONFIG: Record<
   accepted:    { label: "Aceitou",    color: "bg-green-100 text-green-700" },
   declined:    { label: "Recusou",    color: "bg-red-100 text-red-700" },
   tentative:   { label: "Talvez",     color: "bg-yellow-100 text-yellow-700" },
-  needsAction: { label: "Pendente",   color: "bg-[#2d1b3d] text-gray-400" },
+  needsAction: { label: "Pendente",   color: "bg-(--brand-surface-2) text-gray-400" },
 };
 
 function parseAttendees(raw: string | (string | Attendee)[]): Attendee[] {
@@ -216,7 +216,7 @@ export default function MeetingsList({
   }
 
   return (
-    <div className="rounded-lg bg-[#1a0022] p-6 shadow border border-[#3d2b4d]">
+    <div className="rounded-lg bg-(--brand-surface) p-6 shadow border border-(--brand-surface-3)">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between border-b border-gray-200 pb-3">
         <h2 className="text-lg font-bold text-gray-900">Reuniões ({meetings.length})</h2>
@@ -561,7 +561,7 @@ function MeetingCard({
   }
 
   return (
-    <li className="rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-4 py-3">
+    <li className="rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-4 py-3">
       <div className="flex items-start gap-3">
         {isPresential
           ? <MapPin size={18} className="mt-0.5 flex-shrink-0 text-orange-400" />
@@ -851,7 +851,7 @@ function MeetingCard({
             className={`inline-flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
               hasSummary
                 ? "border-amber-500/30 bg-amber-500/15 text-amber-300 hover:bg-amber-500/25"
-                : "border-dashed border-[#3d2b4d] bg-[#2d1b3d] text-gray-400 hover:border-amber-500/40 hover:text-amber-400"
+                : "border-dashed border-(--brand-surface-3) bg-(--brand-surface-2) text-gray-400 hover:border-amber-500/40 hover:text-amber-400"
             }`}
           >
             <NotebookPen size={13} />
@@ -861,7 +861,7 @@ function MeetingCard({
           {hasTranscript && (
             <button
               onClick={() => onToggleTranscript(isTranscriptOpen ? null : meeting.id)}
-              className="inline-flex items-center gap-1.5 rounded-md border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-[#3d2b4d]"
+              className="inline-flex items-center gap-1.5 rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-(--brand-surface-3)"
             >
               <FileText size={13} />
               {isTranscriptOpen ? "Ocultar Transcrição" : "Ver Transcrição"}
@@ -897,7 +897,7 @@ function MeetingCard({
                 value={summaryDraft}
                 onChange={(e) => setSummaryDraft(e.target.value)}
                 rows={8}
-                className="w-full rounded-md border border-amber-500/40 bg-[#2d1b3d] px-3 py-2 text-xs text-gray-200 leading-relaxed focus:border-amber-500 focus:outline-none"
+                className="w-full rounded-md border border-amber-500/40 bg-(--brand-surface-2) px-3 py-2 text-xs text-gray-200 leading-relaxed focus:border-amber-500 focus:outline-none"
                 placeholder="Escreva o resumo da reunião..."
               />
               <div className="flex items-center gap-2">
@@ -945,7 +945,7 @@ function MeetingCard({
 
       {/* Transcript panel (expanded) */}
       {isTranscriptOpen && meeting.transcriptText && (
-        <div className="mt-3 rounded-md border border-[#3d2b4d] bg-[#2d1b3d] p-3">
+        <div className="mt-3 rounded-md border border-(--brand-surface-3) bg-(--brand-surface-2) p-3">
           <div className="mb-2 flex items-center justify-between">
             <p className="text-xs font-semibold text-gray-300">Transcrição</p>
             <CopyButton text={meeting.transcriptText} />

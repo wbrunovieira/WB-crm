@@ -199,7 +199,7 @@ export function DealProductsForm({
                     <span
                       className="inline-block h-2 w-2 rounded-full"
                       style={{
-                        backgroundColor: dealProduct.businessLineColor || "#792990",
+                        backgroundColor: dealProduct.businessLineColor || "var(--brand-accent)",
                       }}
                     />
                     <span className="text-xs text-gray-500">

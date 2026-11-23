@@ -44,18 +44,18 @@ export function SharedUsersList({
   }
 
   return (
-    <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 overflow-hidden">
-      <div className="px-4 py-3 border-b border-[#792990]/30 flex items-center gap-2">
-        <Users className="h-4 w-4 text-[#792990]" />
+    <div className="bg-(--brand-surface) rounded-xl border border-(--brand-border)/30 overflow-hidden">
+      <div className="px-4 py-3 border-b border-(--brand-border)/30 flex items-center gap-2">
+        <Users className="h-4 w-4 text-(--brand-accent)" />
         <h3 className="text-sm font-medium text-white">
           Compartilhado com ({sharedUsers.length})
         </h3>
       </div>
-      <div className="divide-y divide-[#792990]/10">
+      <div className="divide-y divide-(--brand-border)/10">
         {sharedUsers.map((share) => (
           <div
             key={share.shareId}
-            className="px-4 py-3 flex items-center justify-between hover:bg-[#792990]/5 transition-colors"
+            className="px-4 py-3 flex items-center justify-between hover:bg-(--brand-accent)/5 transition-colors"
           >
             <div className="min-w-0 flex-1">
               <p className="text-white font-medium truncate">

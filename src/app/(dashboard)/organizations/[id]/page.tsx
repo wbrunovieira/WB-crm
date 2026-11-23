@@ -83,7 +83,7 @@ export default async function OrganizationDetailPage({
   const dash = <span className="text-gray-600">—</span>;
 
   return (
-    <div className="min-h-screen bg-[#350045] p-4 md:p-8">
+    <div className="min-h-screen bg-(--brand-bg) p-4 md:p-8">
       {/* Header sticky no molde da página do lead (leads/[id]/page.tsx:165-296): identidade,
           badges e ações sempre visíveis, com a navegação por âncoras abaixo. */}
       {/* Faixa lateral verde = cliente, contra o roxo do lead. Ver leads/[id]/page.tsx. */}

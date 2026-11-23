@@ -13,7 +13,7 @@ export interface BookingData {
 
 const LOGO_WB_WHITE = "https://crm.wbdigitalsolutions.com/email-assets/logo-wb-white.svg";
 const WB_SITE = "https://www.wbdigitalsolutions.com";
-const WB = "#792990"; // cor de destaque da WB
+const WB = "var(--brand-accent)"; // cor de destaque da WB
 
 const display = { fontFamily: "var(--font-display), Georgia, serif" } as const;
 const bodyFont = { fontFamily: "var(--font-body), system-ui, sans-serif" } as const;
@@ -289,8 +289,8 @@ function Atmosphere() {
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden" style={{ background: "#2a0038" }}>
       <div className="absolute inset-0" style={{ background: "radial-gradient(120% 90% at 50% -10%, #4a0a5e 0%, #350045 45%, #240030 100%)" }} />
-      <div className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full opacity-50 blur-[120px]" style={{ background: "#792990" }} />
-      <div className="absolute -bottom-40 -right-20 h-[26rem] w-[26rem] rounded-full opacity-30 blur-[130px]" style={{ background: "#792990" }} />
+      <div className="absolute -top-32 -left-24 h-[28rem] w-[28rem] rounded-full opacity-50 blur-[120px]" style={{ background: "var(--brand-accent)" }} />
+      <div className="absolute -bottom-40 -right-20 h-[26rem] w-[26rem] rounded-full opacity-30 blur-[130px]" style={{ background: "var(--brand-accent)" }} />
       <div className="absolute left-1/2 top-1/3 h-72 w-72 -translate-x-1/2 rounded-full opacity-20 blur-[120px]" style={{ background: "#b06fd0" }} />
       <div
         className="absolute inset-0 opacity-[0.04] mix-blend-overlay"
@@ -379,7 +379,7 @@ function PhoneField({ onChange, t }: { onChange: (v: string) => void; t: Dict })
         value={iso}
         onChange={(e) => { const i = e.target.value as CountryCode; setIso(i); emit(i, num); }}
         aria-label={t.countryAria}
-        className="w-[6rem] shrink-0 rounded-xl border border-white/15 bg-white/[0.06] px-2 py-2.5 text-sm text-white outline-none transition focus:border-[#792990]/70 [color-scheme:dark]"
+        className="w-[6rem] shrink-0 rounded-xl border border-white/15 bg-white/[0.06] px-2 py-2.5 text-sm text-white outline-none transition focus:border-(--brand-border)/70 [color-scheme:dark]"
       >
         {COUNTRY_OPTIONS.map((c) => (
           <option key={c.iso} value={c.iso} className="bg-[#2a0038] text-white">{flagEmoji(c.iso)} +{c.dial}</option>
@@ -390,7 +390,7 @@ function PhoneField({ onChange, t }: { onChange: (v: string) => void; t: Dict })
         onChange={(e) => { setNum(e.target.value); emit(iso, e.target.value); }}
         inputMode="tel"
         placeholder={t.whatsappPh}
-        className="flex-1 rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]"
+        className="flex-1 rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-(--brand-border)/70 focus:bg-white/[0.09]"
       />
     </div>
   );
@@ -507,7 +507,7 @@ export function BookingClient({ token, backend, initial }: { token?: string; bac
         <Brand kicker={t.kicker} />
         <div className="mt-10 overflow-hidden rounded-3xl border border-white/10 bg-white/[0.04] backdrop-blur-xl" style={reveal(1)}>
           <div className="flex flex-col items-center px-7 pt-9 text-center">
-            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-[#792990] text-3xl shadow-[0_8px_30px_rgba(121,41,144,0.45)]">✓</div>
+            <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-(--brand-accent) text-3xl shadow-[0_8px_30px_color-mix(in srgb, var(--brand-accent) 45%, transparent)]">✓</div>
             <h1 style={display} className="text-[1.7rem] font-bold leading-tight">{t.successTitle}</h1>
             <p className="mt-3 text-white/80">
               {firstName ? t.successBye(firstName) : t.successByeNoName}
@@ -528,7 +528,7 @@ export function BookingClient({ token, backend, initial }: { token?: string; bac
           {result.mode === "online" && result.meetLink && (
             <div className="px-7">
               <a href={result.meetLink} target="_blank" rel="noreferrer"
-                className="block w-full rounded-2xl bg-[#792990] py-3.5 text-center font-semibold text-white shadow-[0_8px_30px_rgba(121,41,144,0.4)] transition hover:brightness-110">
+                className="block w-full rounded-2xl bg-(--brand-accent) py-3.5 text-center font-semibold text-white shadow-[0_8px_30px_color-mix(in srgb, var(--brand-accent) 40%, transparent)] transition hover:brightness-110">
                 {t.joinMeet}
               </a>
             </div>
@@ -588,7 +588,7 @@ export function BookingClient({ token, backend, initial }: { token?: string; bac
                   <button key={o.m} type="button" aria-pressed={on} onClick={() => setMode(o.m)}
                     className="rounded-2xl border p-3 text-left transition"
                     style={on
-                      ? { borderColor: "#b06fd0", background: "rgba(121,41,144,0.30)" }
+                      ? { borderColor: "#b06fd0", background: "color-mix(in srgb, var(--brand-accent) 30%, transparent)" }
                       : { borderColor: "rgba(255,255,255,0.22)", background: "rgba(255,255,255,0.08)" }}>
                     <div className="text-xl">{o.icon}</div>
                     <div className="mt-1 text-sm font-semibold">{o.tt}</div>
@@ -601,7 +601,7 @@ export function BookingClient({ token, backend, initial }: { token?: string; bac
               <div className="mt-3">
                 <label className="text-xs font-medium text-white/60">{t.addressLabel}</label>
                 <input value={address} onChange={(e) => setAddress(e.target.value)}
-                  className="mt-1.5 w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]"
+                  className="mt-1.5 w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-(--brand-border)/70 focus:bg-white/[0.09]"
                   placeholder={t.addressPh} />
               </div>
             )}
@@ -639,10 +639,10 @@ export function BookingClient({ token, backend, initial }: { token?: string; bac
                       className={`rounded-xl border py-2.5 text-sm font-semibold tabular-nums transition-all duration-200 active:scale-[0.96] ${
                         on
                           ? "text-white"
-                          : "border-white/20 bg-white/[0.07] text-white/90 hover:-translate-y-0.5 hover:border-[#b06fd0]/80 hover:bg-white/[0.16] hover:text-white hover:shadow-[0_8px_22px_rgba(121,41,144,0.4)]"
+                          : "border-white/20 bg-white/[0.07] text-white/90 hover:-translate-y-0.5 hover:border-[#b06fd0]/80 hover:bg-white/[0.16] hover:text-white hover:shadow-[0_8px_22px_color-mix(in srgb, var(--brand-accent) 40%, transparent)]"
                       }`}
                       style={on
-                        ? { borderColor: "#b06fd0", background: WB, boxShadow: "0 6px 22px rgba(121,41,144,0.6)", animation: `slotIn .45s ${EASE} both`, animationDelay: `${delay}ms` }
+                        ? { borderColor: "#b06fd0", background: WB, boxShadow: "0 6px 22px color-mix(in srgb, var(--brand-accent) 60%, transparent)", animation: `slotIn .45s ${EASE} both`, animationDelay: `${delay}ms` }
                         : { animation: `slotIn .45s ${EASE} both`, animationDelay: `${delay}ms` }}>
                       {fmtTime(s.start)}
                     </button>
@@ -657,9 +657,9 @@ export function BookingClient({ token, backend, initial }: { token?: string; bac
           <div className="mt-6 space-y-2.5 border-t border-white/10 pt-5">
             <div className="text-sm font-semibold text-white/85">{t.yourData}</div>
             <input value={name} onChange={(e) => setName(e.target.value)} placeholder={t.namePh}
-              className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]" />
+              className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-(--brand-border)/70 focus:bg-white/[0.09]" />
             <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder={t.emailPh}
-              className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-[#792990]/70 focus:bg-white/[0.09]" />
+              className="w-full rounded-xl border border-white/15 bg-white/[0.06] px-3.5 py-2.5 text-sm text-white placeholder-white/45 outline-none transition focus:border-(--brand-border)/70 focus:bg-white/[0.09]" />
             <PhoneField onChange={setWhatsapp} t={t} />
             <p className="text-[11px] text-white/60">{t.privacy}</p>
           </div>
@@ -671,7 +671,7 @@ export function BookingClient({ token, backend, initial }: { token?: string; bac
 
         <button type="button" disabled={confirmDisabled} onClick={submit}
           className="mt-6 w-full rounded-2xl py-3.5 text-[15px] font-semibold text-white transition enabled:hover:brightness-110 enabled:active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40"
-          style={{ background: "linear-gradient(135deg, #9d3bc4 0%, #792990 100%)", boxShadow: confirmDisabled ? "none" : "0 12px 36px rgba(121,41,144,0.6)" }}>
+          style={{ background: "linear-gradient(135deg, #9d3bc4 0%, #792990 100%)", boxShadow: confirmDisabled ? "none" : "0 12px 36px color-mix(in srgb, var(--brand-accent) 60%, transparent)" }}>
           {status === "submitting"
             ? t.confirming
             : selected

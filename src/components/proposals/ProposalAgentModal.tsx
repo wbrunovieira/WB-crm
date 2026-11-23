@@ -88,11 +88,11 @@ export function ProposalAgentModal({ leadId, leadContacts, onClose, onProposalCr
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-lg rounded-xl border border-[#3d2b4d] bg-[#1a0022] shadow-2xl"
+        className="w-full max-w-lg rounded-xl border border-(--brand-surface-3) bg-(--brand-surface) shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-[#3d2b4d] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-(--brand-surface-3) px-6 py-4">
           <div className="flex items-center gap-2">
             <BrainCircuit size={20} className="text-purple-400" />
             <h2 className="text-base font-semibold text-gray-100">Gerar Proposta com Agente IA</h2>
@@ -114,7 +114,7 @@ export function ProposalAgentModal({ leadId, leadContacts, onClose, onProposalCr
                   className={`rounded-lg border px-4 py-3 text-left transition-colors ${
                     brand === opt.value
                       ? "border-purple-500 bg-purple-950/60 text-purple-100"
-                      : "border-[#3d2b4d] bg-[#2d1b3d] text-gray-300 hover:border-purple-700"
+                      : "border-(--brand-surface-3) bg-(--brand-surface-2) text-gray-300 hover:border-purple-700"
                   }`}
                 >
                   <div className="text-sm font-medium">{opt.label}</div>
@@ -131,7 +131,7 @@ export function ProposalAgentModal({ leadId, leadContacts, onClose, onProposalCr
               <span className="ml-1 text-xs text-gray-500">(selecione e defina tratamento)</span>
             </label>
             {activeContacts.length === 0 ? (
-              <p className="rounded-lg border border-[#3d2b4d] px-4 py-3 text-sm text-gray-500">
+              <p className="rounded-lg border border-(--brand-surface-3) px-4 py-3 text-sm text-gray-500">
                 Nenhum contato ativo neste lead
               </p>
             ) : (
@@ -145,7 +145,7 @@ export function ProposalAgentModal({ leadId, leadContacts, onClose, onProposalCr
                       className={`flex items-center gap-3 rounded-lg border px-3 py-2.5 transition-colors cursor-pointer ${
                         isChecked
                           ? "border-purple-500/60 bg-purple-950/30"
-                          : "border-[#3d2b4d] bg-[#2d1b3d] hover:border-purple-700/50"
+                          : "border-(--brand-surface-3) bg-(--brand-surface-2) hover:border-purple-700/50"
                       }`}
                       onClick={() => toggleContact(contact)}
                     >
@@ -167,7 +167,7 @@ export function ProposalAgentModal({ leadId, leadContacts, onClose, onProposalCr
                           value={sel.gender}
                           onChange={(e) => { e.stopPropagation(); setGender(contact.id, e.target.value as Gender); }}
                           onClick={(e) => e.stopPropagation()}
-                          className="rounded border border-[#3d2b4d] bg-[#1a0022] px-2 py-1 text-xs text-gray-300 focus:border-purple-500 focus:outline-none"
+                          className="rounded border border-(--brand-surface-3) bg-(--brand-surface) px-2 py-1 text-xs text-gray-300 focus:border-purple-500 focus:outline-none"
                         >
                           {GENDER_OPTIONS.map((g) => (
                             <option key={g.value} value={g.value}>{g.label}</option>
@@ -192,17 +192,17 @@ export function ProposalAgentModal({ leadId, leadContacts, onClose, onProposalCr
               onChange={(e) => setInstructions(e.target.value)}
               placeholder="Ex: Foco em automação industrial, prazo de 3 meses, budget até R$ 50k..."
               rows={3}
-              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-500 focus:outline-none resize-none"
+              className="w-full rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-500 focus:outline-none resize-none"
             />
           </div>
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-end gap-3 border-t border-[#3d2b4d] px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-(--brand-surface-3) px-6 py-4">
           <button
             onClick={onClose}
             disabled={loading}
-            className="rounded-lg border border-[#3d2b4d] px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-50"
+            className="rounded-lg border border-(--brand-surface-3) px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-50"
           >
             Cancelar
           </button>
@@ -262,8 +262,8 @@ export function ProposalAgentQuestionModal({ question, proposalId, onAnswered, o
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-md rounded-xl border border-[#3d2b4d] bg-[#1a0022] shadow-2xl">
-        <div className="flex items-center gap-2 border-b border-[#3d2b4d] px-6 py-4">
+      <div className="w-full max-w-md rounded-xl border border-(--brand-surface-3) bg-(--brand-surface) shadow-2xl">
+        <div className="flex items-center gap-2 border-b border-(--brand-surface-3) px-6 py-4">
           <MessageSquare size={18} className="text-yellow-400" />
           <h2 className="text-base font-semibold text-gray-100">Pergunta do Agente</h2>
         </div>
@@ -281,7 +281,7 @@ export function ProposalAgentQuestionModal({ question, proposalId, onAnswered, o
               placeholder="Digite sua resposta..."
               rows={4}
               autoFocus
-              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-500 focus:outline-none resize-none"
+              className="w-full rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-500 focus:outline-none resize-none"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSubmit();
               }}
@@ -290,11 +290,11 @@ export function ProposalAgentQuestionModal({ question, proposalId, onAnswered, o
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-[#3d2b4d] px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-(--brand-surface-3) px-6 py-4">
           <button
             onClick={onClose}
             disabled={loading}
-            className="rounded-lg border border-[#3d2b4d] px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-50"
+            className="rounded-lg border border-(--brand-surface-3) px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-50"
           >
             Fechar
           </button>
@@ -322,7 +322,7 @@ interface CompletionDialogProps {
 export function ProposalAgentCompletionDialog({ proposalTitle, driveUrl, onClose }: CompletionDialogProps) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="w-full max-w-sm rounded-xl border border-green-500/40 bg-[#1a0022] shadow-2xl">
+      <div className="w-full max-w-sm rounded-xl border border-green-500/40 bg-(--brand-surface) shadow-2xl">
         <div className="px-6 py-8 text-center space-y-4">
           <CheckCircle2 size={48} className="mx-auto text-green-400" />
           <div>
@@ -395,10 +395,10 @@ export function ProposalCorrectModal({ proposalId, proposalTitle, onClose, onSta
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-xl border border-[#3d2b4d] bg-[#1a0022] shadow-2xl"
+        className="w-full max-w-md rounded-xl border border-(--brand-surface-3) bg-(--brand-surface) shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-[#3d2b4d] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-(--brand-surface-3) px-6 py-4">
           <div className="flex items-center gap-2">
             <BrainCircuit size={18} className="text-orange-400" />
             <h2 className="text-base font-semibold text-gray-100">Corrigir Proposta</h2>
@@ -423,7 +423,7 @@ export function ProposalCorrectModal({ proposalId, proposalTitle, onClose, onSta
               placeholder="Ex: Reduza o prazo para 5 dias úteis, ajuste o valor para R$ 1.200..."
               rows={4}
               autoFocus
-              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-500 focus:outline-none resize-none"
+              className="w-full rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-500 focus:outline-none resize-none"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSubmit();
               }}
@@ -432,11 +432,11 @@ export function ProposalCorrectModal({ proposalId, proposalTitle, onClose, onSta
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-[#3d2b4d] px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-(--brand-surface-3) px-6 py-4">
           <button
             onClick={onClose}
             disabled={loading}
-            className="rounded-lg border border-[#3d2b4d] px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-50"
+            className="rounded-lg border border-(--brand-surface-3) px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-50"
           >
             Cancelar
           </button>
@@ -488,10 +488,10 @@ export function ProposalReviseModal({ proposalId, proposalTitle, onClose, onStar
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
       <div
-        className="w-full max-w-md rounded-xl border border-[#3d2b4d] bg-[#1a0022] shadow-2xl"
+        className="w-full max-w-md rounded-xl border border-(--brand-surface-3) bg-(--brand-surface) shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between border-b border-[#3d2b4d] px-6 py-4">
+        <div className="flex items-center justify-between border-b border-(--brand-surface-3) px-6 py-4">
           <div className="flex items-center gap-2">
             <BrainCircuit size={18} className="text-blue-400" />
             <h2 className="text-base font-semibold text-gray-100">Revisão de Proposta</h2>
@@ -519,7 +519,7 @@ export function ProposalReviseModal({ proposalId, proposalTitle, onClose, onStar
               placeholder="Ex: Cliente pediu desconto de 10% e prazo de 30 dias no pagamento..."
               rows={4}
               autoFocus
-              className="w-full rounded-lg border border-[#3d2b4d] bg-[#2d1b3d] px-3 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-500 focus:outline-none resize-none"
+              className="w-full rounded-lg border border-(--brand-surface-3) bg-(--brand-surface-2) px-3 py-2.5 text-sm text-gray-200 placeholder:text-gray-600 focus:border-purple-500 focus:outline-none resize-none"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) handleSubmit();
               }}
@@ -528,11 +528,11 @@ export function ProposalReviseModal({ proposalId, proposalTitle, onClose, onStar
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-3 border-t border-[#3d2b4d] px-6 py-4">
+        <div className="flex items-center justify-end gap-3 border-t border-(--brand-surface-3) px-6 py-4">
           <button
             onClick={onClose}
             disabled={loading}
-            className="rounded-lg border border-[#3d2b4d] px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-50"
+            className="rounded-lg border border-(--brand-surface-3) px-4 py-2 text-sm text-gray-300 hover:bg-white/5 disabled:opacity-50"
           >
             Cancelar
           </button>

@@ -55,7 +55,7 @@ export function SourceGroupCombobox({ name, defaultValue = "", groups }: SourceG
           onChange={handleInputChange}
           onFocus={() => setOpen(true)}
           placeholder="Selecione ou digite um novo grupo..."
-          className="block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 pr-9 text-gray-200 placeholder-gray-500 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+          className="block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 pr-9 text-gray-200 placeholder-gray-500 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
         />
         <button
           type="button"
@@ -68,13 +68,13 @@ export function SourceGroupCombobox({ name, defaultValue = "", groups }: SourceG
       </div>
 
       {open && (filtered.length > 0 || isNew) && (
-        <ul className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-md border border-[#792990] bg-[#1a0022] py-1 shadow-xl">
+        <ul className="absolute z-50 mt-1 max-h-56 w-full overflow-auto rounded-md border border-(--brand-border) bg-(--brand-surface) py-1 shadow-xl">
           {filtered.map((g) => (
             <li
               key={g}
               onMouseDown={(e) => { e.preventDefault(); select(g); }}
-              className={`flex cursor-pointer items-center px-3 py-2 text-sm text-gray-200 hover:bg-[#792990] hover:text-white ${
-                g === value ? "bg-[#2d1b3d] font-medium" : ""
+              className={`flex cursor-pointer items-center px-3 py-2 text-sm text-gray-200 hover:bg-(--brand-accent) hover:text-white ${
+                g === value ? "bg-(--brand-surface-2) font-medium" : ""
               }`}
             >
               {g}
@@ -83,7 +83,7 @@ export function SourceGroupCombobox({ name, defaultValue = "", groups }: SourceG
           {isNew && (
             <li
               onMouseDown={(e) => { e.preventDefault(); select(query.trim()); }}
-              className="flex cursor-pointer items-center gap-2 border-t border-[#792990]/40 px-3 py-2 text-sm text-purple-300 hover:bg-[#792990] hover:text-white"
+              className="flex cursor-pointer items-center gap-2 border-t border-(--brand-border)/40 px-3 py-2 text-sm text-purple-300 hover:bg-(--brand-accent) hover:text-white"
             >
               <Plus className="h-3.5 w-3.5" />
               Criar &ldquo;{query.trim()}&rdquo;

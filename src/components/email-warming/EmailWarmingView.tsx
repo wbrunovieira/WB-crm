@@ -230,7 +230,7 @@ export function EmailWarmingView({ accounts, poolEmails, history, historyTotal }
                                 <div className={`h-px flex-1 ${i === 0 ? "invisible" : isDone || isActive ? "bg-primary" : "bg-gray-700"}`} />
                                 <div className={`h-3 w-3 rounded-full flex-shrink-0 border-2 transition-colors ${
                                   isActive
-                                    ? "border-primary bg-primary shadow-[0_0_6px_#792990]"
+                                    ? "border-primary bg-primary shadow-[0_0_6px_var(--brand-accent)]"
                                     : isDone
                                     ? "border-primary bg-primary/40"
                                     : "border-gray-600 bg-gray-800"

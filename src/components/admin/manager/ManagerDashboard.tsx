@@ -78,13 +78,13 @@ export function ManagerDashboard({
       {/* Charts Row 1 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Leads by User */}
-        <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+        <div className="bg-(--brand-surface) rounded-xl border border-(--brand-border)/30 p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Leads por Usuário</h2>
           <LeadsChart byUser={stats.byUser} />
         </div>
 
         {/* Deals by Status */}
-        <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+        <div className="bg-(--brand-surface) rounded-xl border border-(--brand-border)/30 p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Negócios por Status</h2>
           <DealsChart deals={stats.totals.deals} />
         </div>
@@ -93,12 +93,12 @@ export function ManagerDashboard({
       {/* Result vs pipeline, side by side: what was actually closed in the period, and what
           is still open and expected to close in it. */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+        <div className="bg-(--brand-surface) rounded-xl border border-(--brand-border)/30 p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Negócios ganhos no período</h2>
           <WonDealsList wonDeals={stats.totals.deals.wonDeals ?? []} />
         </div>
 
-        <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+        <div className="bg-(--brand-surface) rounded-xl border border-(--brand-border)/30 p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Negócios previstos para o período</h2>
           <ForecastDealsList forecast={stats.totals.deals.forecast ?? EMPTY_FORECAST} />
         </div>
@@ -107,26 +107,26 @@ export function ManagerDashboard({
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Activities by Type */}
-        <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+        <div className="bg-(--brand-surface) rounded-xl border border-(--brand-border)/30 p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Atividades por Tipo</h2>
           <ActivitiesChart activities={stats.totals.activities} />
         </div>
 
         {/* Stage Changes */}
-        <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+        <div className="bg-(--brand-surface) rounded-xl border border-(--brand-border)/30 p-6">
           <h2 className="text-lg font-semibold text-white mb-4">Mudanças de Etapa</h2>
           <StageChangesChart stageChanges={stats.totals.stageChanges} />
         </div>
       </div>
 
       {/* Activity Calendar Heatmap */}
-      <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+      <div className="bg-(--brand-surface) rounded-xl border border-(--brand-border)/30 p-6">
         <h2 className="text-lg font-semibold text-white mb-4">Calendario de Atividades</h2>
         <ActivityCalendar />
       </div>
 
       {/* User Performance Table */}
-      <div className="bg-[#1a0022] rounded-xl border border-[#792990]/30 p-6">
+      <div className="bg-(--brand-surface) rounded-xl border border-(--brand-border)/30 p-6">
         <h2 className="text-lg font-semibold text-white mb-4">Performance por Usuario</h2>
         <UserPerformanceTable byUser={stats.byUser} />
       </div>

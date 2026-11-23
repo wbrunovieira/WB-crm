@@ -34,11 +34,11 @@ const activityTypeLabels: Record<string, { label: string; color: string }> = {
 const WEEKDAYS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 
 function getIntensityClass(total: number): string {
-  if (total === 0) return "bg-[#2d1b3d]";
-  if (total <= 2) return "bg-[#792990]/30";
-  if (total <= 5) return "bg-[#792990]/50";
-  if (total <= 10) return "bg-[#792990]/70";
-  return "bg-[#792990]";
+  if (total === 0) return "bg-(--brand-surface-2)";
+  if (total <= 2) return "bg-(--brand-accent)/30";
+  if (total <= 5) return "bg-(--brand-accent)/50";
+  if (total <= 10) return "bg-(--brand-accent)/70";
+  return "bg-(--brand-accent)";
 }
 
 export function ActivityCalendar() {
@@ -156,7 +156,7 @@ export function ActivityCalendar() {
         <div className="flex items-center gap-3">
           <button
             onClick={goToPrevMonth}
-            className="rounded-lg p-2 text-gray-400 hover:bg-[#792990]/20 hover:text-white transition-colors"
+            className="rounded-lg p-2 text-gray-400 hover:bg-(--brand-accent)/20 hover:text-white transition-colors"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
@@ -165,14 +165,14 @@ export function ActivityCalendar() {
           </h3>
           <button
             onClick={goToNextMonth}
-            className="rounded-lg p-2 text-gray-400 hover:bg-[#792990]/20 hover:text-white transition-colors"
+            className="rounded-lg p-2 text-gray-400 hover:bg-(--brand-accent)/20 hover:text-white transition-colors"
           >
             <ChevronRight className="h-5 w-5" />
           </button>
         </div>
         <button
           onClick={goToToday}
-          className="rounded-lg border border-[#792990]/40 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-[#792990]/20 hover:text-white transition-colors"
+          className="rounded-lg border border-(--brand-border)/40 px-3 py-1.5 text-xs font-medium text-gray-300 hover:bg-(--brand-accent)/20 hover:text-white transition-colors"
         >
           Hoje
         </button>
@@ -180,27 +180,27 @@ export function ActivityCalendar() {
 
       {/* Summary cards */}
       <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
-        <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+        <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
           <p className="text-2xl font-bold text-white">{monthTotal}</p>
           <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Total</p>
         </div>
-        <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+        <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
           <p className="text-2xl font-bold text-green-400">{monthCompleted}</p>
           <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Concluidas</p>
         </div>
-        <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+        <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
           <p className="text-2xl font-bold text-yellow-400">{monthPending}</p>
           <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Pendentes</p>
         </div>
-        <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+        <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
           <p className="text-2xl font-bold text-red-400">{monthFailed}</p>
           <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Falharam</p>
         </div>
-        <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+        <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
           <p className="text-2xl font-bold text-amber-400">{monthSkipped}</p>
           <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Puladas</p>
         </div>
-        <div className="rounded-lg bg-[#2d1b3d] p-3 text-center">
+        <div className="rounded-lg bg-(--brand-surface-2) p-3 text-center">
           <p className="text-2xl font-bold text-[#b84fd1]">{avgPerDay}</p>
           <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Media/dia</p>
         </div>
@@ -209,7 +209,7 @@ export function ActivityCalendar() {
       {/* Calendar grid */}
       {loading ? (
         <div className="flex items-center justify-center py-16">
-          <Loader2 className="h-8 w-8 animate-spin text-[#792990]" />
+          <Loader2 className="h-8 w-8 animate-spin text-(--brand-accent)" />
         </div>
       ) : (
         <div className="relative">
@@ -262,11 +262,11 @@ export function ActivityCalendar() {
           {/* Legend */}
           <div className="flex items-center gap-2 mt-4 justify-end">
             <span className="text-xs text-gray-500">Menos</span>
-            <div className="w-4 h-4 rounded bg-[#2d1b3d]" />
-            <div className="w-4 h-4 rounded bg-[#792990]/30" />
-            <div className="w-4 h-4 rounded bg-[#792990]/50" />
-            <div className="w-4 h-4 rounded bg-[#792990]/70" />
-            <div className="w-4 h-4 rounded bg-[#792990]" />
+            <div className="w-4 h-4 rounded bg-(--brand-surface-2)" />
+            <div className="w-4 h-4 rounded bg-(--brand-accent)/30" />
+            <div className="w-4 h-4 rounded bg-(--brand-accent)/50" />
+            <div className="w-4 h-4 rounded bg-(--brand-accent)/70" />
+            <div className="w-4 h-4 rounded bg-(--brand-accent)" />
             <span className="text-xs text-gray-500">Mais</span>
           </div>
 
@@ -280,7 +280,7 @@ export function ActivityCalendar() {
                 transform: "translate(-50%, -100%)",
               }}
             >
-              <div className="rounded-xl bg-[#0d0012] border border-[#792990] shadow-2xl p-4 min-w-[220px]">
+              <div className="rounded-xl bg-[#0d0012] border border-(--brand-border) shadow-2xl p-4 min-w-[220px]">
                 <p className="text-sm font-semibold text-white mb-2">
                   {new Date(hoveredDay.date + "T12:00:00").toLocaleDateString("pt-BR", {
                     weekday: "long",
@@ -316,7 +316,7 @@ export function ActivityCalendar() {
                   )}
                 </div>
 
-                <div className="border-t border-[#792990]/30 pt-2 space-y-2">
+                <div className="border-t border-(--brand-border)/30 pt-2 space-y-2">
                   {hoveredDay.completed > 0 && Object.keys(hoveredDay.completedByType || {}).length > 0 && (
                     <div className="space-y-1">
                       <p className="text-[10px] uppercase tracking-wider text-green-400/70 font-medium">Concluidas</p>

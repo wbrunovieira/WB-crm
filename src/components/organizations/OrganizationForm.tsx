@@ -201,7 +201,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
       )}
 
       {/* Basic Information */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Informações Básicas
         </h2>
@@ -219,7 +219,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             name="name"
             required
             defaultValue={organization?.name}
-            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
           />
         </div>
 
@@ -246,7 +246,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             id="legalName"
             name="legalName"
             defaultValue={organization?.legalName || ""}
-            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
           />
         </div>
 
@@ -262,7 +262,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             id="foundationDate"
             name="foundationDate"
             defaultValue={organization?.foundationDate ? new Date(organization.foundationDate).toISOString().split('T')[0] : ""}
-            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
           />
         </div>
 
@@ -280,7 +280,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="website"
               placeholder="www.exemplo.com.br ou https://exemplo.com.br"
               defaultValue={organization?.website || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -296,7 +296,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="email"
               name="email"
                             defaultValue={organization?.email || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -312,7 +312,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="phone"
               name="phone"
               defaultValue={organization?.phone || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -325,7 +325,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="phone2"
               name="phone2"
               defaultValue={organization?.phone2 || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -341,7 +341,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="whatsapp"
               name="whatsapp"
               defaultValue={organization?.whatsapp || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -356,7 +356,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="commLanguage"
               name="commLanguage"
               defaultValue={organization?.commLanguage ?? "pt"}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               <option value="pt">Português</option>
               <option value="en">English</option>
@@ -371,7 +371,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
       </div>
 
       {/* Location */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">Localização</h2>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -387,7 +387,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="country"
               value={selectedCountry}
               onChange={(e) => setSelectedCountry(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               <option value="">Selecione...</option>
               {countries.map((country) => (
@@ -410,7 +410,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 id="state"
                 name="state"
                 defaultValue={organization?.state || ""}
-                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
               >
                 <option value="">Selecione...</option>
                 {brazilianStates.map((state) => (
@@ -426,7 +426,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 name="state"
                 defaultValue={organization?.state || ""}
                 placeholder="Digite o estado, província ou região"
-                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
               />
             )}
           </div>
@@ -443,7 +443,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="city"
               name="city"
               defaultValue={organization?.city || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -459,7 +459,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="zipCode"
               name="zipCode"
               defaultValue={organization?.zipCode || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
         </div>
@@ -476,13 +476,13 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             id="streetAddress"
             name="streetAddress"
             defaultValue={organization?.streetAddress || ""}
-            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
           />
         </div>
       </div>
 
       {/* Business Information */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">
           Informações de Negócio
         </h2>
@@ -501,7 +501,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="industry"
               placeholder="Ex: Tecnologia, Varejo, Saúde"
               defaultValue={organization?.industry || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -518,7 +518,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="employeeCount"
               min="0"
               defaultValue={organization?.employeeCount || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -536,7 +536,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               min="0"
               step="0.01"
               defaultValue={organization?.annualRevenue || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -552,7 +552,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="taxId"
               name="taxId"
               defaultValue={organization?.taxId || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -568,7 +568,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="companyOwner"
               name="companyOwner"
                             defaultValue={organization?.companyOwner || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -583,7 +583,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="companySize"
               name="companySize"
               defaultValue={organization?.companySize || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               <option value="">Selecione...</option>
               {companySizes.map((size) => (
@@ -605,7 +605,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             <select
               value={referredByPartnerId}
               onChange={(e) => setReferredByPartnerId(e.target.value)}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               <option value="">Nenhum parceiro (opcional)</option>
               {partners.map((p) => (
@@ -628,7 +628,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="segment"
               placeholder="Ex: Materiais de Construção, Saúde..."
               defaultValue={organization?.segment ?? ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -641,7 +641,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="legalNature"
               placeholder="Ex: Sociedade Limitada, EIRELI..."
               defaultValue={organization?.legalNature ?? ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -652,7 +652,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="branchType"
               name="branchType"
               defaultValue={organization?.branchType ?? ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             >
               {/* Mesmos valores gravados pelo LeadForm — em minúsculo, o dado convertido do
                   lead ("Matriz") não casaria e o select abriria vazio. */}
@@ -671,7 +671,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="revenueRange"
               placeholder="Ex: R$ 360 mil a R$ 4,8 milhões"
               defaultValue={organization?.revenueRange ?? ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div>
@@ -683,7 +683,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               id="sourceGroup"
               name="sourceGroup"
               defaultValue={organization?.sourceGroup ?? ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
           <div className="flex items-center gap-6">
@@ -693,7 +693,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 name="simplesNacional"
                 value="true"
                 defaultChecked={organization?.simplesNacional ?? false}
-                className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990] focus:ring-[#792990]"
+                className="rounded border-(--brand-border) bg-(--brand-surface-2) text-(--brand-accent) focus:ring-(--brand-border)"
               />
               Simples Nacional
             </label>
@@ -703,7 +703,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 name="isMei"
                 value="true"
                 defaultChecked={organization?.isMei ?? false}
-                className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990] focus:ring-[#792990]"
+                className="rounded border-(--brand-border) bg-(--brand-surface-2) text-(--brand-accent) focus:ring-(--brand-border)"
               />
               MEI
             </label>
@@ -733,7 +733,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="internationalActivity"
               placeholder="Ex: Software Development, Digital Marketing, E-commerce..."
               defaultValue={organization?.internationalActivity || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
             <p className="mt-1 text-xs text-gray-400">
               Use este campo para empresas não-brasileiras ou se não encontrar o CNAE adequado
@@ -753,13 +753,13 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             name="description"
             rows={3}
             defaultValue={organization?.description || ""}
-            className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+            className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
           />
         </div>
       </div>
 
       {/* Hosting */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">Hospedagem</h2>
 
         <div className="flex items-center gap-3">
@@ -768,7 +768,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
             id="hasHosting"
             checked={hasHosting}
             onChange={(e) => setHasHosting(e.target.checked)}
-            className="rounded border-[#792990] bg-[#2d1b3d] text-[#792990] focus:ring-[#792990]"
+            className="rounded border-(--brand-border) bg-(--brand-surface-2) text-(--brand-accent) focus:ring-(--brand-border)"
           />
           <label htmlFor="hasHosting" className="text-sm font-medium text-gray-300">
             Cliente possui hospedagem conosco
@@ -790,7 +790,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 name="hostingRenewalDate"
                 required={hasHosting}
                 defaultValue={organization?.hostingRenewalDate ? new Date(organization.hostingRenewalDate).toISOString().split('T')[0] : ""}
-                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
               />
             </div>
 
@@ -805,7 +805,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 id="hostingPlan"
                 name="hostingPlan"
                 defaultValue={organization?.hostingPlan || ""}
-                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
               >
                 <option value="">Selecione...</option>
                 <option value="Básico">Básico</option>
@@ -829,7 +829,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 min="0"
                 step="0.01"
                 defaultValue={organization?.hostingValue || ""}
-                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
               />
             </div>
 
@@ -844,7 +844,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 id="hostingReminderDays"
                 name="hostingReminderDays"
                 defaultValue={organization?.hostingReminderDays || 30}
-                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
               >
                 <option value="7">7 dias</option>
                 <option value="15">15 dias</option>
@@ -867,7 +867,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
                 rows={2}
                 placeholder="Ex: Renovação automática, contato financeiro@empresa.com"
                 defaultValue={organization?.hostingNotes || ""}
-                className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+                className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
               />
             </div>
           </div>
@@ -875,12 +875,12 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
       </div>
 
       {/* Languages */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <LanguageSelector value={orgLanguages} onChange={setOrgLanguages} darkMode />
       </div>
 
       {/* Social Media */}
-      <div className="rounded-lg bg-[#1a0022] p-6">
+      <div className="rounded-lg bg-(--brand-surface) p-6">
         <h2 className="mb-4 text-lg font-semibold text-gray-200">Redes Sociais</h2>
 
         <div className="grid gap-4 md:grid-cols-2">
@@ -897,7 +897,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="instagram"
               placeholder="@usuario"
               defaultValue={organization?.instagram || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -914,7 +914,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="linkedin"
               placeholder="linkedin.com/company/..."
               defaultValue={organization?.linkedin || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -931,7 +931,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="facebook"
               placeholder="facebook.com/..."
               defaultValue={organization?.facebook || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -948,7 +948,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="twitter"
               placeholder="@usuario"
               defaultValue={organization?.twitter || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -965,7 +965,7 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
               name="tiktok"
               placeholder="@usuario"
               defaultValue={organization?.tiktok || ""}
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
         </div>
@@ -975,14 +975,14 @@ export function OrganizationForm({ organization }: OrganizationFormProps) {
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-md border border-gray-600 px-6 py-2 text-gray-300 hover:bg-[#2d1b3d]"
+          className="rounded-md border border-gray-600 px-6 py-2 text-gray-300 hover:bg-(--brand-surface-2)"
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="rounded-md bg-[#792990] px-6 py-2 text-white hover:bg-[#9333b8] disabled:opacity-50"
+          className="rounded-md bg-(--brand-accent) px-6 py-2 text-white hover:bg-[#9333b8] disabled:opacity-50"
         >
           {isLoading
             ? "Salvando..."

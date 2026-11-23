@@ -232,7 +232,7 @@ export function MainNav({ userRole: role }: MainNavProps) {
         {showLeftArrow && (
           <button
             onClick={() => scroll("left")}
-            className="absolute left-0 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[#1a0022] border border-[#792990] text-gray-300 hover:bg-purple-900/50 hover:text-white shadow-lg transition-all"
+            className="absolute left-0 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-(--brand-surface) border border-(--brand-border) text-gray-300 hover:bg-purple-900/50 hover:text-white shadow-lg transition-all"
             aria-label="Scroll left"
           >
             <ChevronLeft className="h-4 w-4" />
@@ -241,7 +241,7 @@ export function MainNav({ userRole: role }: MainNavProps) {
 
         {/* Left fade gradient */}
         {showLeftArrow && (
-          <div className="absolute left-8 top-0 bottom-0 w-8 bg-gradient-to-r from-[#1a0022] to-transparent z-[5] pointer-events-none" />
+          <div className="absolute left-8 top-0 bottom-0 w-8 bg-gradient-to-r from-(--brand-surface) to-transparent z-[5] pointer-events-none" />
         )}
 
         {/* Scrollable nav container */}
@@ -251,7 +251,7 @@ export function MainNav({ userRole: role }: MainNavProps) {
           className="flex items-center gap-1 overflow-x-auto px-1 py-1 nav-scroll-container"
           style={{
             scrollbarWidth: "thin",
-            scrollbarColor: "#792990 #1a0022",
+            scrollbarColor: "var(--brand-border) var(--brand-surface)",
           }}
         >
           {filteredNavItems.map((item) => {
@@ -319,7 +319,7 @@ export function MainNav({ userRole: role }: MainNavProps) {
                   <div
                     style={{ left: submenuLeft }}
                     className={cn(
-                      "fixed top-[60px] z-50 min-w-[160px] rounded-lg border border-[#792990]/40 bg-[#1a0022] shadow-xl transition-all duration-200",
+                      "fixed top-[60px] z-50 min-w-[160px] rounded-lg border border-(--brand-border)/40 bg-(--brand-surface) shadow-xl transition-all duration-200",
                       isOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-1 pointer-events-none"
                     )}
                   >
@@ -366,14 +366,14 @@ export function MainNav({ userRole: role }: MainNavProps) {
 
         {/* Right fade gradient */}
         {showRightArrow && (
-          <div className="absolute right-8 top-0 bottom-0 w-8 bg-gradient-to-l from-[#1a0022] to-transparent z-[5] pointer-events-none" />
+          <div className="absolute right-8 top-0 bottom-0 w-8 bg-gradient-to-l from-(--brand-surface) to-transparent z-[5] pointer-events-none" />
         )}
 
         {/* Right scroll arrow */}
         {showRightArrow && (
           <button
             onClick={() => scroll("right")}
-            className="absolute right-0 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-[#1a0022] border border-[#792990] text-gray-300 hover:bg-purple-900/50 hover:text-white shadow-lg transition-all"
+            className="absolute right-0 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-(--brand-surface) border border-(--brand-border) text-gray-300 hover:bg-purple-900/50 hover:text-white shadow-lg transition-all"
             aria-label="Scroll right"
           >
             <ChevronRight className="h-4 w-4" />
@@ -393,7 +393,7 @@ export function MainNav({ userRole: role }: MainNavProps) {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden fixed inset-0 top-16 z-40 bg-black/50 backdrop-blur-sm">
-          <div className="bg-[#1a0022] border-t border-[#792990] p-4 shadow-xl max-h-[calc(100vh-4rem)] overflow-y-auto">
+          <div className="bg-(--brand-surface) border-t border-(--brand-border) p-4 shadow-xl max-h-[calc(100vh-4rem)] overflow-y-auto">
             <div className="grid gap-2">
               {filteredNavItems.map((item) => {
                 const Icon = item.icon;
@@ -436,7 +436,7 @@ export function MainNav({ userRole: role }: MainNavProps) {
                       )}
                     </Link>
                     {hasChildren && (
-                      <div className="ml-4 mt-1 space-y-1 border-l border-[#792990]/30 pl-3">
+                      <div className="ml-4 mt-1 space-y-1 border-l border-(--brand-border)/30 pl-3">
                         {item.children!.map((child) => {
                           const ChildIcon = child.icon;
                           const childActive = pathname.startsWith(child.href);

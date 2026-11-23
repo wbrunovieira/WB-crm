@@ -342,7 +342,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
               e.preventDefault();
               handleColorOpen();
             }}
-            className={`rounded p-1.5 transition-colors hover:bg-gray-200 ${showColor ? "bg-gray-200 text-[#792990]" : "text-gray-600"}`}
+            className={`rounded p-1.5 transition-colors hover:bg-gray-200 ${showColor ? "bg-gray-200 text-(--brand-accent)" : "text-gray-600"}`}
           >
             <Palette className="h-4 w-4" />
           </button>
@@ -406,7 +406,7 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
             <span className="text-xs text-gray-500">Código:</span>
             <input
               type="color"
-              value={/^#[0-9a-f]{6}$/i.test(hexInput) ? hexInput : "#792990"}
+              value={/^#[0-9a-f]{6}$/i.test(hexInput) ? hexInput : "var(--brand-accent)"}
               onChange={(e) => { setHexInput(e.target.value); applyColor(e.target.value); }}
               title="Escolher cor"
               className="h-6 w-7 cursor-pointer rounded border border-gray-200 bg-white p-0.5"
@@ -419,14 +419,14 @@ const RichTextEditor = forwardRef<RichTextEditorHandle, RichTextEditorProps>(
                 if (e.key === "Enter") { e.preventDefault(); applyColor(hexInput); }
                 if (e.key === "Escape") setShowColor(false);
               }}
-              placeholder="#792990"
+              placeholder="var(--brand-accent)"
               maxLength={7}
               className="w-24 rounded border border-gray-300 bg-white px-2 py-1 text-sm outline-none focus:ring-1 focus:ring-purple-400"
             />
             <button
               type="button"
               onMouseDown={(e) => { e.preventDefault(); applyColor(hexInput); }}
-              className="rounded bg-[#792990] px-3 py-1 text-xs font-medium text-white hover:opacity-90"
+              className="rounded bg-(--brand-accent) px-3 py-1 text-xs font-medium text-white hover:opacity-90"
             >
               Aplicar
             </button>

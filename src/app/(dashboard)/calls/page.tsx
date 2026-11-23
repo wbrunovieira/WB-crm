@@ -121,7 +121,7 @@ export default async function CallsPage({
   const maxDuration = durations.length > 0 ? Math.max(...durations) : null;
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: "#350045" }}>
+    <div className="min-h-screen" style={{ backgroundColor: "var(--brand-bg)" }}>
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold text-white">Funil de Vendas</h1>

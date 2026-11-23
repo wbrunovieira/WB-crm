@@ -91,7 +91,7 @@ export default async function GkBatchDetailPage({ params }: { params: { id: stri
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900">Análise de Lote — Gatekeeper</h1>
           <p className="mt-1 text-sm text-gray-500">
-            <Link href="/call-analyses?tab=gatekeeper" className="text-[#792990] hover:underline">
+            <Link href="/call-analyses?tab=gatekeeper" className="text-(--brand-accent) hover:underline">
               ← Voltar para análises
             </Link>
           </p>
@@ -195,7 +195,7 @@ export default async function GkBatchDetailPage({ params }: { params: { id: stri
               <div key={i} className="flex items-start gap-4 py-3">
                 <div className="flex-1">
                   <p className="text-sm text-gray-700">{h.highlight}</p>
-                  <Link href={`/activities/${h.activityId}`} className="mt-0.5 text-xs text-[#792990] hover:underline">
+                  <Link href={`/activities/${h.activityId}`} className="mt-0.5 text-xs text-(--brand-accent) hover:underline">
                     Ver atividade
                   </Link>
                 </div>
@@ -214,8 +214,8 @@ export default async function GkBatchDetailPage({ params }: { params: { id: stri
 
       {/* Recommendations */}
       {batch.recommendations && batch.recommendations.length > 0 && (
-        <div className="mb-6 rounded-lg border-l-4 border-[#792990] bg-purple-50 p-5">
-          <h2 className="mb-3 font-semibold text-[#792990]">Recomendações de Treino</h2>
+        <div className="mb-6 rounded-lg border-l-4 border-(--brand-border) bg-purple-50 p-5">
+          <h2 className="mb-3 font-semibold text-(--brand-accent)">Recomendações de Treino</h2>
           <StringList items={batch.recommendations} color="text-gray-800" prefix="→" />
         </div>
       )}

@@ -56,7 +56,7 @@ export function CadenceStepsList({ cadenceId }: CadenceStepsListProps) {
 
   const getChannelStyles = (channel: string) => {
     const styles: Record<string, { border: string; badge: string; badgeText: string }> = {
-      email: { border: "border-l-[#792990]", badge: "bg-[#792990]/10", badgeText: "text-[#792990]" },
+      email: { border: "border-l-(--brand-border)", badge: "bg-(--brand-accent)/10", badgeText: "text-(--brand-accent)" },
       linkedin: { border: "border-l-[#0A66C2]", badge: "bg-[#0A66C2]/10", badgeText: "text-[#0A66C2]" },
       whatsapp: { border: "border-l-[#25D366]", badge: "bg-[#25D366]/10", badgeText: "text-[#128C7E]" },
       call: { border: "border-l-[#5B4BA0]", badge: "bg-[#5B4BA0]/10", badgeText: "text-[#5B4BA0]" },
@@ -99,7 +99,7 @@ export function CadenceStepsList({ cadenceId }: CadenceStepsListProps) {
       <h2 className="text-lg font-semibold text-gray-900">Etapas ({steps.length})</h2>
 
       <div className="relative">
-        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-[#792990]/20" />
+        <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-(--brand-accent)/20" />
 
         <div className="space-y-6">
           {sortedDays.map((day) => (
@@ -135,7 +135,7 @@ export function CadenceStepsList({ cadenceId }: CadenceStepsListProps) {
                         <div className="flex items-center gap-1 ml-3 shrink-0">
                           <button
                             onClick={() => handleCopy(step)}
-                            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-[#792990] transition-all"
+                            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-(--brand-accent) transition-all"
                             title="Copiar conteúdo"
                           >
                             {copiedId === step.id ? (
@@ -146,7 +146,7 @@ export function CadenceStepsList({ cadenceId }: CadenceStepsListProps) {
                           </button>
                           <button
                             onClick={() => setEditingStep(step)}
-                            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-[#792990] transition-all"
+                            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-(--brand-accent) transition-all"
                             title="Editar etapa"
                           >
                             <Pencil className="h-4 w-4" />

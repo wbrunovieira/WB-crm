@@ -28,7 +28,7 @@ export function MetricCard({
     <div
       className={cn(
         "rounded-xl p-6 border",
-        "bg-[#1a0022] border-[#792990]/30",
+        "bg-(--brand-surface) border-(--brand-border)/30",
         className
       )}
     >
@@ -40,8 +40,8 @@ export function MetricCard({
             <p className="text-sm text-gray-500">{subtitle}</p>
           )}
         </div>
-        <div className="rounded-lg bg-[#792990]/20 p-3">
-          <Icon className="h-6 w-6 text-[#792990]" />
+        <div className="rounded-lg bg-(--brand-accent)/20 p-3">
+          <Icon className="h-6 w-6 text-(--brand-accent)" />
         </div>
       </div>
 

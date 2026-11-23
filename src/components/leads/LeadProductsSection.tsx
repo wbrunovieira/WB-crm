@@ -111,7 +111,7 @@ export function LeadProductsSection({ leadId, isConverted }: LeadProductsSection
                   <span
                     className="inline-block h-2 w-2 rounded-full"
                     style={{
-                      backgroundColor: item.product.businessLine.color || "#792990",
+                      backgroundColor: item.product.businessLine.color || "var(--brand-accent)",
                     }}
                   />
                   <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">

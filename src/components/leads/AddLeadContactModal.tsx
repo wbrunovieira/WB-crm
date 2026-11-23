@@ -66,7 +66,7 @@ export function AddLeadContactModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-      <div className="w-full max-w-md rounded-lg bg-[#1a0022] p-6 shadow-xl">
+      <div className="w-full max-w-md rounded-lg bg-(--brand-surface) p-6 shadow-xl">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-xl font-semibold text-gray-200">
             Adicionar Contato
@@ -104,7 +104,7 @@ export function AddLeadContactModal({
               id="name"
               name="name"
               required
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -120,7 +120,7 @@ export function AddLeadContactModal({
               id="role"
               name="role"
               placeholder="Ex: Gerente, Diretor..."
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -135,7 +135,7 @@ export function AddLeadContactModal({
               type="email"
               id="email"
               name="email"
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -150,7 +150,7 @@ export function AddLeadContactModal({
               type="tel"
               id="phone"
               name="phone"
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -165,7 +165,7 @@ export function AddLeadContactModal({
               type="tel"
               id="whatsapp"
               name="whatsapp"
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -181,7 +181,7 @@ export function AddLeadContactModal({
               id="linkedin"
               name="linkedin"
               placeholder="linkedin.com/in/..."
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -197,7 +197,7 @@ export function AddLeadContactModal({
               id="instagram"
               name="instagram"
               placeholder="@usuario"
-              className="mt-1 block w-full rounded-md border border-[#792990] bg-[#2d1b3d] px-3 py-2 text-gray-200 focus:border-[#792990] focus:outline-none focus:ring-1 focus:ring-[#792990]"
+              className="mt-1 block w-full rounded-md border border-(--brand-border) bg-(--brand-surface-2) px-3 py-2 text-gray-200 focus:border-(--brand-border) focus:outline-none focus:ring-1 focus:ring-(--brand-border)"
             />
           </div>
 
@@ -212,7 +212,7 @@ export function AddLeadContactModal({
               type="checkbox"
               id="isPrimary"
               name="isPrimary"
-              className="h-4 w-4 rounded border-[#792990] bg-[#2d1b3d] text-[#792990] focus:ring-[#792990]"
+              className="h-4 w-4 rounded border-(--brand-border) bg-(--brand-surface-2) text-(--brand-accent) focus:ring-(--brand-border)"
             />
             <label
               htmlFor="isPrimary"
@@ -226,14 +226,14 @@ export function AddLeadContactModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-md border border-gray-600 px-4 py-2 text-gray-300 hover:bg-[#2d1b3d]"
+              className="rounded-md border border-gray-600 px-4 py-2 text-gray-300 hover:bg-(--brand-surface-2)"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={isSubmitting}
-              className="rounded-md bg-[#792990] px-4 py-2 text-white hover:bg-[#9333b8] disabled:opacity-50"
+              className="rounded-md bg-(--brand-accent) px-4 py-2 text-white hover:bg-[#9333b8] disabled:opacity-50"
             >
               {isSubmitting ? "Adicionando..." : "Adicionar"}
             </button>
