@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { c } from "@/theme";
 import { View, Text, TextInput, Pressable, FlatList, StyleSheet, ActivityIndicator, Keyboard, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { searchPlaces, type Place } from "@/lib/places";
@@ -106,7 +107,7 @@ export default function GoogleSearchScreen() {
           onSubmitEditing={onSearch}
           returnKeyType="search"
           placeholder="O que procura? (ex.: padaria, restaurante)"
-          placeholderTextColor="#8a6d9c"
+          placeholderTextColor={c.textFaint}
           style={styles.input}
         />
         <Pressable style={({ pressed }) => [styles.searchBtn, pressed && styles.pressed]} onPress={onSearch}>
@@ -115,7 +116,7 @@ export default function GoogleSearchScreen() {
       </View>
 
       <Pressable style={({ pressed }) => [styles.nearBtn, pressed && styles.pressed]} onPress={onNearMe} disabled={locating}>
-        {locating ? <ActivityIndicator size="small" color="#c9b3d6" /> : <Text style={styles.nearBtnText}>📍 Perto de mim</Text>}
+        {locating ? <ActivityIndicator size="small" color={c.text} /> : <Text style={styles.nearBtnText}>📍 Perto de mim</Text>}
       </Pressable>
 
       {nearby && (
@@ -146,7 +147,7 @@ export default function GoogleSearchScreen() {
         )}
         ListFooterComponent={
           <View style={styles.footer}>
-            {loading && <ActivityIndicator color="#c9b3d6" />}
+            {loading && <ActivityIndicator color={c.text} />}
             {!loading && nextPageToken && (
               <Pressable style={({ pressed }) => [styles.moreBtn, pressed && styles.pressed]} onPress={() => runSearch(lastQuery, nextPageToken)}>
                 <Text style={styles.moreBtnText}>Carregar mais</Text>
@@ -165,8 +166,8 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: "row", gap: 8 },
   input: {
     flex: 1,
-    backgroundColor: "#2a1533",
-    borderColor: "#4d2b5d",
+    backgroundColor: c.card,
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,
@@ -174,43 +175,43 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
   },
-  searchBtn: { backgroundColor: "#762991", borderRadius: 12, paddingHorizontal: 18, justifyContent: "center" },
+  searchBtn: { backgroundColor: c.accent, borderRadius: 12, paddingHorizontal: 18, justifyContent: "center" },
   searchBtnText: { color: "#fff", fontWeight: "700" },
   nearBtn: {
     marginTop: 10,
     alignSelf: "flex-start",
-    borderColor: "#4d2b5d",
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 8,
   },
-  nearBtnText: { color: "#c9b3d6", fontWeight: "600", fontSize: 13 },
+  nearBtnText: { color: c.text, fontWeight: "600", fontSize: 13 },
   chip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     alignSelf: "flex-start",
     marginTop: 8,
-    backgroundColor: "#2a1533",
-    borderColor: "#762991",
+    backgroundColor: c.card,
+    borderColor: c.accent,
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 6,
   },
-  chipText: { color: "#e9dcf0", fontSize: 12, fontWeight: "600" },
-  chipX: { color: "#b79ec6", fontSize: 13, fontWeight: "700" },
+  chipText: { color: c.textBright, fontSize: 12, fontWeight: "600" },
+  chipX: { color: c.textMuted, fontSize: 13, fontWeight: "700" },
   pressed: { opacity: 0.7 },
   error: { color: "#f2a5a5", marginTop: 12 },
   list: { paddingVertical: 12, gap: 10 },
-  card: { backgroundColor: "#2a1533", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 14, padding: 14 },
+  card: { backgroundColor: c.card, borderColor: c.border, borderWidth: 1, borderRadius: 14, padding: 14 },
   name: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  addr: { color: "#b79ec6", fontSize: 13, marginTop: 2 },
+  addr: { color: c.textMuted, fontSize: 13, marginTop: 2 },
   metaRow: { flexDirection: "row", gap: 14, marginTop: 8, flexWrap: "wrap" },
-  meta: { color: "#c9b3d6", fontSize: 12 },
+  meta: { color: c.text, fontSize: 12 },
   footer: { paddingVertical: 16, alignItems: "center" },
-  moreBtn: { borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
-  moreBtnText: { color: "#c9b3d6", fontWeight: "600" },
-  empty: { color: "#8a6d9c", textAlign: "center", marginTop: 24 },
+  moreBtn: { borderColor: c.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 20, paddingVertical: 10 },
+  moreBtnText: { color: c.text, fontWeight: "600" },
+  empty: { color: c.textFaint, textAlign: "center", marginTop: 24 },
 });

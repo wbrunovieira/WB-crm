@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable } from "react-native";
+import { c } from "@/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -73,7 +74,7 @@ export default function ActivityDetailScreen() {
   if (query.isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#c9b3d6" size="large" />
+        <ActivityIndicator color={c.text} size="large" />
       </View>
     );
   }
@@ -183,33 +184,33 @@ export default function ActivityDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, gap: 14 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1a0022" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg },
   header: { gap: 6 },
   title: { color: "#fff", fontSize: 20, fontWeight: "700" },
   badgeRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: -6 },
   typeBadge: {
-    backgroundColor: "#2a1533",
-    borderColor: "#4d2b5d",
+    backgroundColor: c.card,
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 4,
   },
-  typeBadgeText: { color: "#c9b3d6", fontSize: 12, fontWeight: "600" },
+  typeBadgeText: { color: c.text, fontSize: 12, fontWeight: "600" },
   status: { fontSize: 13, fontWeight: "700" },
   card: {
-    backgroundColor: "#2a1533",
-    borderColor: "#4d2b5d",
+    backgroundColor: c.card,
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 16,
     padding: 16,
     gap: 8,
   },
   sectionTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  field: { color: "#e7d9ee", fontSize: 14 },
-  fieldMuted: { color: "#9b86a8", fontSize: 12 },
-  body: { color: "#e7d9ee", fontSize: 14, lineHeight: 20 },
-  emptyText: { color: "#9b86a8", fontSize: 13, fontStyle: "italic" },
+  field: { color: c.textBright2, fontSize: 14 },
+  fieldMuted: { color: c.textFaint2, fontSize: 12 },
+  body: { color: c.textBright2, fontSize: 14, lineHeight: 20 },
+  emptyText: { color: c.textFaint2, fontSize: 13, fontStyle: "italic" },
   errorText: { color: "#ef9a9a", fontSize: 15 },
   linkRow: {
     flexDirection: "row",
@@ -217,6 +218,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     paddingVertical: 4,
   },
-  linkText: { color: "#c9a3e0", fontSize: 14, fontWeight: "600", flex: 1 },
-  chevron: { color: "#9b86a8", fontSize: 20 },
+  linkText: { color: c.accentLight, fontSize: 14, fontWeight: "600", flex: 1 },
+  chevron: { color: c.textFaint2, fontSize: 20 },
 });

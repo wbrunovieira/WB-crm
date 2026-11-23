@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { c } from "@/theme";
 import { AppState } from "react-native";
 import NetInfo from "@react-native-community/netinfo";
 import { Stack } from "expo-router";
@@ -47,7 +48,7 @@ export default function RootLayout() {
             headerStyle: { backgroundColor: "#792990" },
             headerTintColor: "#fff",
             headerTitleStyle: { fontWeight: "600" },
-            contentStyle: { backgroundColor: "#1a0022" },
+            contentStyle: { backgroundColor: c.bg },
           }}
         >
           <Stack.Screen name="index" options={{ title: "WB Prospecção" }} />

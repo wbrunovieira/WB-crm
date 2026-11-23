@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { c } from "@/theme";
 import { View, Text, TextInput, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking, Alert } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -135,7 +136,7 @@ export default function LeadDetailScreen() {
   if (detailQuery.isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#c9b3d6" size="large" />
+        <ActivityIndicator color={c.text} size="large" />
       </View>
     );
   }
@@ -262,7 +263,7 @@ export default function LeadDetailScreen() {
             </Pressable>
           )}
         </View>
-        {contactsQuery.isLoading && <ActivityIndicator color="#c9b3d6" style={{ marginTop: 8 }} />}
+        {contactsQuery.isLoading && <ActivityIndicator color={c.text} style={{ marginTop: 8 }} />}
         {contactsQuery.isError && <Text style={styles.errorText}>Não foi possível carregar os contatos.</Text>}
         {!contactsQuery.isLoading && !contactsQuery.isError && contacts.length === 0 && !addingContact && (
           <Text style={styles.empty}>Nenhum contato registrado.</Text>
@@ -600,7 +601,7 @@ function Field({ label, multiline, ...props }: { label: string; multiline?: bool
     <View style={styles.field}>
       <Text style={styles.label}>{label}</Text>
       <TextInput
-        placeholderTextColor="#8a6d9c"
+        placeholderTextColor={c.textFaint}
         style={[styles.input, multiline && styles.multiline]}
         multiline={multiline}
         {...props}
@@ -611,47 +612,47 @@ function Field({ label, multiline, ...props }: { label: string; multiline?: bool
 
 const styles = StyleSheet.create({
   container: { padding: 20, gap: 14 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1a0022" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg },
   errorText: { color: "#f2a5a5" },
   name: { color: "#fff", fontSize: 22, fontWeight: "700" },
   badgeRow: { flexDirection: "row", gap: 8 },
-  badge: { backgroundColor: "#2a1533", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4 },
-  badgeText: { color: "#c9b3d6", fontSize: 12, fontWeight: "600" },
-  card: { backgroundColor: "#2a1533", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 16, padding: 16, gap: 10 },
+  badge: { backgroundColor: c.card, borderColor: c.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 4 },
+  badgeText: { color: c.text, fontSize: 12, fontWeight: "600" },
+  card: { backgroundColor: c.card, borderColor: c.border, borderWidth: 1, borderRadius: 16, padding: 16, gap: 10 },
   cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  section: { color: "#e9dcf0", fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
-  editLink: { color: "#c9b3d6", fontWeight: "600", fontSize: 13 },
+  section: { color: c.textBright, fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5 },
+  editLink: { color: c.text, fontWeight: "600", fontSize: 13 },
   editActions: { flexDirection: "row", gap: 16 },
-  cancelLink: { color: "#8a6d9c", fontWeight: "600", fontSize: 13 },
+  cancelLink: { color: c.textFaint, fontWeight: "600", fontSize: 13 },
   saveLink: { color: "#7ee0a0", fontWeight: "700", fontSize: 13 },
   readRows: { gap: 10 },
   field: { gap: 4 },
-  label: { color: "#b79ec6", fontSize: 13 },
+  label: { color: c.textMuted, fontSize: 13 },
   value: { color: "#fff", fontSize: 15, flex: 1 },
   infoValueRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   infoActions: { flexDirection: "row", gap: 12 },
-  input: { backgroundColor: "#1a0022", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: "#fff", fontSize: 15 },
+  input: { backgroundColor: c.bg, borderColor: c.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: "#fff", fontSize: 15 },
   multiline: { minHeight: 80, textAlignVertical: "top" },
   row: { flexDirection: "row", gap: 10 },
   grow: { flex: 1 },
   uf: { width: 80 },
-  empty: { color: "#8a6d9c", fontSize: 13 },
-  contactRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#4d2b5d" },
+  empty: { color: c.textFaint, fontSize: 13 },
+  contactRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingVertical: 8, borderTopWidth: 1, borderTopColor: c.border },
   contactName: { color: "#fff", fontSize: 15, fontWeight: "600" },
-  contactRole: { color: "#b79ec6", fontSize: 12, marginTop: 2 },
+  contactRole: { color: c.textMuted, fontSize: 12, marginTop: 2 },
   contactActions: { flexDirection: "row", gap: 14 },
   actionIcon: { fontSize: 20 },
-  contactEditBlock: { gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: "#4d2b5d" },
+  contactEditBlock: { gap: 10, paddingVertical: 10, borderTopWidth: 1, borderTopColor: c.border },
   chipsRow: { flexDirection: "row", gap: 8 },
-  chip: { borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
-  chipOn: { backgroundColor: "#762991", borderColor: "#762991" },
-  chipText: { color: "#c9b3d6", fontWeight: "600", fontSize: 13 },
+  chip: { borderColor: c.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  chipOn: { backgroundColor: c.accent, borderColor: c.accent },
+  chipText: { color: c.text, fontWeight: "600", fontSize: 13 },
   chipTextOn: { color: "#fff" },
   activityRowPressed: { opacity: 0.6 },
   activityRowInner: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   activityRowText: { flex: 1 },
-  activityChevron: { color: "#9b86a8", fontSize: 20 },
-  activityRow: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: "#4d2b5d" },
+  activityChevron: { color: c.textFaint2, fontSize: 20 },
+  activityRow: { paddingVertical: 8, borderTopWidth: 1, borderTopColor: c.border },
   activitySubject: { color: "#fff", fontSize: 14 },
-  activityMeta: { color: "#8a6d9c", fontSize: 12, marginTop: 2, textTransform: "capitalize" },
+  activityMeta: { color: c.textFaint, fontSize: 12, marginTop: 2, textTransform: "capitalize" },
 });

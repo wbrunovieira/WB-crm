@@ -1,4 +1,5 @@
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Linking } from "react-native";
+import { c } from "@/theme";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -61,7 +62,7 @@ export default function OrgDetailScreen() {
   if (orgQuery.isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#c9b3d6" size="large" />
+        <ActivityIndicator color={c.text} size="large" />
       </View>
     );
   }
@@ -205,12 +206,12 @@ export default function OrgDetailScreen() {
 
 const styles = StyleSheet.create({
   container: { padding: 20, gap: 14 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1a0022" },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg },
   header: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 10 },
   title: { color: "#fff", fontSize: 22, fontWeight: "700", flex: 1 },
-  subtitle: { color: "#c9b3d6", fontSize: 13, marginTop: -8 },
+  subtitle: { color: c.text, fontSize: 13, marginTop: -8 },
   badge: {
-    backgroundColor: "#2a1533",
+    backgroundColor: c.card,
     borderColor: "#f59e0b",
     borderWidth: 1,
     borderRadius: 999,
@@ -220,42 +221,42 @@ const styles = StyleSheet.create({
   badgeText: { color: "#f59e0b", fontSize: 12, fontWeight: "600" },
   actionsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
   action: {
-    backgroundColor: "#762991",
+    backgroundColor: c.accent,
     borderRadius: 12,
     paddingHorizontal: 14,
     paddingVertical: 10,
   },
   actionText: { color: "#fff", fontSize: 14, fontWeight: "600" },
   card: {
-    backgroundColor: "#2a1533",
-    borderColor: "#4d2b5d",
+    backgroundColor: c.card,
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 16,
     padding: 16,
     gap: 10,
   },
   sectionTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  field: { color: "#e7d9ee", fontSize: 14 },
-  emptyText: { color: "#9b86a8", fontSize: 13, fontStyle: "italic" },
+  field: { color: c.textBright2, fontSize: 14 },
+  emptyText: { color: c.textFaint2, fontSize: 13, fontStyle: "italic" },
   errorText: { color: "#ef9a9a", fontSize: 15 },
   contactRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    borderTopColor: "#4d2b5d",
+    borderTopColor: c.border,
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: 10,
     gap: 10,
   },
   contactInfo: { flex: 1 },
   contactName: { color: "#fff", fontSize: 15, fontWeight: "600" },
-  contactRole: { color: "#c9b3d6", fontSize: 12 },
+  contactRole: { color: c.text, fontSize: 12 },
   contactActions: { flexDirection: "row", gap: 14 },
   contactIcon: { fontSize: 20 },
   activityRowPressed: { opacity: 0.6 },
-  activityMore: { color: "#c9a3e0", fontSize: 12, fontWeight: "600", marginTop: 2 },
+  activityMore: { color: c.accentLight, fontSize: 12, fontWeight: "600", marginTop: 2 },
   activityRow: {
-    borderTopColor: "#4d2b5d",
+    borderTopColor: c.border,
     borderTopWidth: StyleSheet.hairlineWidth,
     paddingTop: 10,
     gap: 3,
@@ -263,6 +264,6 @@ const styles = StyleSheet.create({
   activityHeader: { flexDirection: "row", alignItems: "flex-start", justifyContent: "space-between", gap: 8 },
   activitySubject: { color: "#fff", fontSize: 14, fontWeight: "600", flex: 1 },
   activityStatus: { fontSize: 11, fontWeight: "700" },
-  activityMeta: { color: "#9b86a8", fontSize: 12 },
-  activityDescription: { color: "#c9b3d6", fontSize: 13 },
+  activityMeta: { color: c.textFaint2, fontSize: 12 },
+  activityDescription: { color: c.text, fontSize: 13 },
 });

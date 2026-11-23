@@ -1,4 +1,5 @@
 import { View, Text, TextInput, Pressable, StyleSheet, Linking, Alert } from "react-native";
+import { c } from "@/theme";
 
 /**
  * Campo de formulário do app. Extraído porque ManualLeadForm e a tela de parceiro tinham
@@ -52,7 +53,7 @@ export function Field({
       <Text style={styles.label}>{label}</Text>
       <View style={styles.linha}>
         <TextInput
-          placeholderTextColor="#8a6d9c"
+          placeholderTextColor={c.textFaint}
           style={[styles.input, multiline && styles.multiline, podeAbrir && styles.inputComBotao]}
           multiline={multiline}
           {...props}
@@ -76,11 +77,11 @@ const styles = StyleSheet.create({
   // Copiados EXATAMENTE do Field original (ManualLeadForm.tsx:690-693). Inventar estilo aqui
   // faria o campo destoar de todos os outros do formulario.
   field: { gap: 4 },
-  label: { color: "#b79ec6", fontSize: 13 },
+  label: { color: c.textMuted, fontSize: 13 },
   input: {
     flex: 1,
-    backgroundColor: "#2a1533",
-    borderColor: "#4d2b5d",
+    backgroundColor: c.card,
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,
@@ -97,9 +98,9 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: "#4d2b5d",
-    backgroundColor: "#2a1533",
+    borderColor: c.border,
+    backgroundColor: c.card,
   },
   botaoPressed: { opacity: 0.6 },
-  botaoTexto: { color: "#b79ec6", fontSize: 16, fontWeight: "700" },
+  botaoTexto: { color: c.textMuted, fontSize: 16, fontWeight: "700" },
 });

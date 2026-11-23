@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { c } from "@/theme";
 import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator } from "react-native";
 import { useRouter, type Href } from "expo-router";
 import { useQuery } from "@tanstack/react-query";
@@ -59,7 +60,7 @@ export default function Home() {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <View style={[styles.pill, pillTone[status.tone]]}>
-        {status.tone === "muted" && <ActivityIndicator size="small" color="#c9b3d6" />}
+        {status.tone === "muted" && <ActivityIndicator size="small" color={c.text} />}
         <Text style={styles.pillText}>{status.label}</Text>
       </View>
 
@@ -136,7 +137,7 @@ const pillTone: Record<string, object> = {
   ok: { backgroundColor: "#14351f", borderColor: "#2f7d4f" },
   warn: { backgroundColor: "#3a2e12", borderColor: "#8a6d1f" },
   error: { backgroundColor: "#3a1414", borderColor: "#8a2f2f" },
-  muted: { backgroundColor: "#2a1533", borderColor: "#4d2b5d" },
+  muted: { backgroundColor: c.card, borderColor: c.border },
 };
 
 const styles = StyleSheet.create({
@@ -152,14 +153,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     marginBottom: 12,
   },
-  pillText: { color: "#e9dcf0", fontSize: 12, fontWeight: "600" },
+  pillText: { color: c.textBright, fontSize: 12, fontWeight: "600" },
   syncNowText: { color: "#f4c860", fontSize: 12, fontWeight: "700", textDecorationLine: "underline" },
   heading: { color: "#fff", fontSize: 26, fontWeight: "700" },
-  sub: { color: "#b79ec6", fontSize: 14, marginBottom: 12 },
+  sub: { color: c.textMuted, fontSize: 14, marginBottom: 12 },
   grid: { gap: 12 },
   card: {
-    backgroundColor: "#2a1533",
-    borderColor: "#4d2b5d",
+    backgroundColor: c.card,
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 16,
     padding: 18,
@@ -167,14 +168,14 @@ const styles = StyleSheet.create({
   cardPressed: { opacity: 0.7 },
   emoji: { fontSize: 28, marginBottom: 8 },
   cardTitle: { color: "#fff", fontSize: 18, fontWeight: "600" },
-  cardSub: { color: "#b79ec6", fontSize: 13, marginTop: 4 },
+  cardSub: { color: c.textMuted, fontSize: 13, marginTop: 4 },
   todayLink: {
     marginTop: 20,
     alignItems: "center",
-    borderColor: "#4d2b5d",
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 12,
     paddingVertical: 12,
   },
-  todayLinkText: { color: "#c9b3d6", fontSize: 14, fontWeight: "600" },
+  todayLinkText: { color: c.text, fontSize: 14, fontWeight: "600" },
 });

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { c } from "@/theme";
 import { View, Text, Pressable, StyleSheet, ScrollView, ActivityIndicator, Linking, Alert } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import MapView, { Marker, type Region } from "react-native-maps";
@@ -277,7 +278,7 @@ export default function TodayVisitsScreen() {
 
       {mode === "list" ? (
         <ScrollView contentContainerStyle={styles.listContent}>
-          {visitsQuery.isLoading && <ActivityIndicator color="#c9b3d6" style={{ marginTop: 24 }} />}
+          {visitsQuery.isLoading && <ActivityIndicator color={c.text} style={{ marginTop: 24 }} />}
           {visitsQuery.isError && <Text style={styles.errorText}>Não foi possível carregar as visitas de hoje.</Text>}
           {!visitsQuery.isLoading && !visitsQuery.isError && visits.length === 0 && (
             <Text style={styles.emptyText}>Nada agendado para {dayLabel(dayOffset).toLowerCase()}.</Text>
@@ -348,7 +349,7 @@ function MapModeContent({
   if (locating || pinsLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#c9b3d6" size="large" />
+        <ActivityIndicator color={c.text} size="large" />
       </View>
     );
   }
@@ -414,7 +415,7 @@ const styles = StyleSheet.create({
     borderColor: "#3f3550",
   },
   acaoPressed: { opacity: 0.6 },
-  acaoTexto: { color: "#c9b3d6", fontSize: 13, fontWeight: "600" },
+  acaoTexto: { color: c.text, fontSize: 13, fontWeight: "600" },
   acaoDescartar: { color: "#94a3b8" },
   atrasadasTitulo: {
     color: "#f59e0b",
@@ -428,7 +429,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#3f3550",
     marginVertical: 14,
   },
-  summary: { color: "#c9b3d6", fontSize: 13, marginBottom: 6 },
+  summary: { color: c.text, fontSize: 13, marginBottom: 6 },
   cardMetaRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   statusText: { fontSize: 12, fontWeight: "700" },
   cardDone: { opacity: 0.62 },
@@ -437,13 +438,13 @@ const styles = StyleSheet.create({
   tab: {
     flex: 1,
     alignItems: "center",
-    borderColor: "#4d2b5d",
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 999,
     paddingVertical: 10,
   },
-  tabActive: { backgroundColor: "#762991", borderColor: "#762991" },
-  tabText: { color: "#c9b3d6", fontWeight: "600", fontSize: 14 },
+  tabActive: { backgroundColor: c.accent, borderColor: c.accent },
+  tabText: { color: c.text, fontWeight: "600", fontSize: 14 },
   dayNav: {
     flexDirection: "row",
     alignItems: "center",
@@ -451,37 +452,37 @@ const styles = StyleSheet.create({
     gap: 20,
     paddingBottom: 12,
   },
-  dayNavArrow: { color: "#c9b3d6", fontSize: 18, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 4 },
+  dayNavArrow: { color: c.text, fontSize: 18, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 4 },
   dayNavLabel: { color: "#fff", fontSize: 15, fontWeight: "700", textTransform: "capitalize", minWidth: 110, textAlign: "center" },
   tabTextActive: { color: "#fff" },
   listContent: { padding: 16, paddingTop: 8, gap: 10 },
   errorText: { color: "#f2a5a5", textAlign: "center", marginTop: 24 },
-  emptyText: { color: "#8a6d9c", textAlign: "center", marginTop: 24, paddingHorizontal: 24 },
-  card: { backgroundColor: "#2a1533", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 14, padding: 14 },
+  emptyText: { color: c.textFaint, textAlign: "center", marginTop: 24, paddingHorizontal: 24 },
+  card: { backgroundColor: c.card, borderColor: c.border, borderWidth: 1, borderRadius: 14, padding: 14 },
   cardPressed: { opacity: 0.7 },
   cardHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 },
   cardTitle: { color: "#fff", fontSize: 16, fontWeight: "600", flex: 1 },
-  cardSubject: { color: "#b79ec6", fontSize: 13, marginTop: 4 },
-  cardMeta: { color: "#8a6d9c", fontSize: 12, marginTop: 6 },
+  cardSubject: { color: c.textMuted, fontSize: 13, marginTop: 4 },
+  cardMeta: { color: c.textFaint, fontSize: 12, marginTop: 6 },
   kindBadge: { borderRadius: 999, paddingHorizontal: 10, paddingVertical: 3, borderWidth: 1 },
   kindBadgeLead: { backgroundColor: "#0d3b36", borderColor: LEAD_COLOR },
   kindBadgeOrg: { backgroundColor: "#3a2e12", borderColor: ORG_COLOR },
-  kindBadgeText: { color: "#e9dcf0", fontSize: 11, fontWeight: "700" },
+  kindBadgeText: { color: c.textBright, fontSize: 11, fontWeight: "700" },
   orgActions: { flexDirection: "row", gap: 16, marginTop: 10 },
   orgActionIcon: { fontSize: 20 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1a0022", padding: 24 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg, padding: 24 },
   mapContainer: { flex: 1 },
   map: { flex: 1 },
   countPill: {
     position: "absolute",
     top: 12,
     alignSelf: "center",
-    backgroundColor: "#2a1533",
-    borderColor: "#4d2b5d",
+    backgroundColor: c.card,
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
-  countPillText: { color: "#e9dcf0", fontSize: 12, fontWeight: "600" },
+  countPillText: { color: c.textBright, fontSize: 12, fontWeight: "600" },
 });

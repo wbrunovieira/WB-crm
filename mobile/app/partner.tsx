@@ -1,4 +1,5 @@
 import { useRef, useState, useEffect } from "react";
+import { c } from "@/theme";
 import { Field } from "@/components/Field";
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
@@ -141,7 +142,7 @@ export default function PartnerScreen() {
       <Field label="Nome *" value={f.name} onChangeText={(v) => set("name", v)} placeholder="Ex.: Agência Prisma" />
 
       <Pressable style={({ pressed }) => [styles.ghost, pressed && styles.pressed]} onPress={onPhoto} disabled={busy}>
-        {scanning ? <ActivityIndicator size="small" color="#c9b3d6" /> : <Text style={styles.ghostText}>📷 Foto do cartão</Text>}
+        {scanning ? <ActivityIndicator size="small" color={c.text} /> : <Text style={styles.ghostText}>📷 Foto do cartão</Text>}
       </Pressable>
 
       <Text style={styles.label}>Tipo de parceria *</Text>
@@ -179,19 +180,19 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
 
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 10 },
-  section: { color: "#e9dcf0", fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 10 },
+  section: { color: c.textBright, fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 10 },
   field: { gap: 4 },
-  label: { color: "#b79ec6", fontSize: 13 },
-  input: { backgroundColor: "#2a1533", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: "#fff", fontSize: 15 },
+  label: { color: c.textMuted, fontSize: 13 },
+  input: { backgroundColor: c.card, borderColor: c.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: "#fff", fontSize: 15 },
   multiline: { minHeight: 80, textAlignVertical: "top" },
-  ghost: { alignSelf: "flex-start", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
-  ghostText: { color: "#c9b3d6", fontWeight: "600", fontSize: 13 },
+  ghost: { alignSelf: "flex-start", borderColor: c.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  ghostText: { color: c.text, fontWeight: "600", fontSize: 13 },
   pressed: { opacity: 0.7 },
   typeChipsRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  chip: { borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
-  chipOn: { backgroundColor: "#762991", borderColor: "#762991" },
-  chipText: { color: "#c9b3d6", fontWeight: "600", fontSize: 13 },
+  chip: { borderColor: c.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  chipOn: { backgroundColor: c.accent, borderColor: c.accent },
+  chipText: { color: c.text, fontWeight: "600", fontSize: 13 },
   chipTextOn: { color: "#fff" },
-  saveBtn: { backgroundColor: "#762991", borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 16 },
+  saveBtn: { backgroundColor: c.accent, borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 16 },
   saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
 });

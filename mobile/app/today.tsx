@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { c } from "@/theme";
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable, Alert } from "react-native";
 import { useRouter } from "expo-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -128,7 +129,7 @@ export default function TodayScreen() {
           </Pressable>
         </View>
         {goalQuery.isLoading || countsQuery.isLoading || goalHistoryQuery.isLoading ? (
-          <ActivityIndicator color="#c9b3d6" style={{ marginTop: 8 }} />
+          <ActivityIndicator color={c.text} style={{ marginTop: 8 }} />
         ) : (
           <>
             <Text style={styles.goalCount}>
@@ -192,7 +193,7 @@ export default function TodayScreen() {
       )}
 
       <Text style={styles.section}>✅ Visitas ({synced.length})</Text>
-      {visitsQuery.isLoading && <ActivityIndicator color="#c9b3d6" />}
+      {visitsQuery.isLoading && <ActivityIndicator color={c.text} />}
       {!visitsQuery.isLoading && synced.length === 0 && <Text style={styles.empty}>Nenhuma visita nesse dia.</Text>}
       {synced.map((v) => (
         <Pressable
@@ -217,10 +218,10 @@ const styles = StyleSheet.create({
   container: { padding: 20 },
   section: { color: "#fff", fontSize: 18, fontWeight: "700", marginBottom: 8 },
   sectionSpaced: { marginTop: 24 },
-  empty: { color: "#8a6d9c", fontSize: 13, marginBottom: 8 },
+  empty: { color: c.textFaint, fontSize: 13, marginBottom: 8 },
   card: {
-    backgroundColor: "#2a1533",
-    borderColor: "#4d2b5d",
+    backgroundColor: c.card,
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 14,
     padding: 14,
@@ -228,13 +229,13 @@ const styles = StyleSheet.create({
   },
   cardPressed: { opacity: 0.7 },
   name: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  meta: { color: "#b79ec6", fontSize: 12, marginTop: 2 },
+  meta: { color: c.textMuted, fontSize: 12, marginTop: 2 },
   badgePending: { color: "#f4c860", fontSize: 12, fontWeight: "700", marginTop: 6 },
   badgeWarn: { color: "#f2a5a5", fontSize: 12, fontWeight: "700", marginTop: 6 },
   badgeOk: { color: "#7ee0a0", fontSize: 12, fontWeight: "700", marginTop: 6 },
   goalCard: {
-    backgroundColor: "#2a1533",
-    borderColor: "#4d2b5d",
+    backgroundColor: c.card,
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 16,
     padding: 18,
@@ -243,20 +244,20 @@ const styles = StyleSheet.create({
   goalCardMet: { borderColor: "#2f7d4f", backgroundColor: "#14351f" },
   goalHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
   goalTitle: { color: "#fff", fontSize: 16, fontWeight: "700" },
-  editLink: { color: "#c9b3d6", fontWeight: "600", fontSize: 13 },
+  editLink: { color: c.text, fontWeight: "600", fontSize: 13 },
   goalCount: { color: "#fff", fontSize: 32, fontWeight: "800", marginTop: 10 },
-  goalCountTotal: { color: "#b79ec6", fontSize: 16, fontWeight: "600" },
+  goalCountTotal: { color: c.textMuted, fontSize: 16, fontWeight: "600" },
   progressTrack: {
     height: 10,
     borderRadius: 999,
-    backgroundColor: "#1a0022",
+    backgroundColor: c.bg,
     marginTop: 12,
     overflow: "hidden",
   },
-  progressFill: { height: "100%", borderRadius: 999, backgroundColor: "#762991" },
+  progressFill: { height: "100%", borderRadius: 999, backgroundColor: c.accent },
   progressFillMet: { backgroundColor: "#3fae6f" },
   statsRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 12 },
-  statText: { color: "#c9b3d6", fontSize: 12, fontWeight: "600" },
+  statText: { color: c.text, fontSize: 12, fontWeight: "600" },
   dayNav: {
     flexDirection: "row",
     alignItems: "center",
@@ -264,16 +265,16 @@ const styles = StyleSheet.create({
     gap: 20,
     marginBottom: 8,
   },
-  dayNavArrow: { color: "#c9b3d6", fontSize: 18, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 4 },
-  dayNavArrowDisabled: { color: "#4d2b5d" },
+  dayNavArrow: { color: c.text, fontSize: 18, fontWeight: "700", paddingHorizontal: 8, paddingVertical: 4 },
+  dayNavArrowDisabled: { color: c.border },
   dayNavLabel: { color: "#fff", fontSize: 15, fontWeight: "700", textTransform: "capitalize", minWidth: 110, textAlign: "center" },
   dayProgress: { marginBottom: 16 },
-  dayProgressText: { color: "#c9b3d6", fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 6 },
+  dayProgressText: { color: c.text, fontSize: 13, fontWeight: "600", textAlign: "center", marginBottom: 6 },
   dayProgressTrack: {
     height: 6,
     borderRadius: 999,
-    backgroundColor: "#1a0022",
+    backgroundColor: c.bg,
     overflow: "hidden",
   },
-  dayProgressFill: { height: "100%", borderRadius: 999, backgroundColor: "#762991" },
+  dayProgressFill: { height: "100%", borderRadius: 999, backgroundColor: c.accent },
 });

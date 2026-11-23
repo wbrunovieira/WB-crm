@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { c } from "@/theme";
 import { View, Text, TextInput, Pressable, FlatList, StyleSheet, ActivityIndicator, Keyboard } from "react-native";
 import { useRouter } from "expo-router";
 import { searchLeadsAndOrgs, type SearchHit } from "@/lib/search";
@@ -37,7 +38,7 @@ export default function BuscaScreen() {
           onSubmitEditing={onSearch}
           returnKeyType="search"
           placeholder="Nome do lead ou cliente"
-          placeholderTextColor="#8a6d9c"
+          placeholderTextColor={c.textFaint}
           style={styles.input}
           autoFocus
         />
@@ -79,7 +80,7 @@ export default function BuscaScreen() {
             </Pressable>
           );
         }}
-        ListFooterComponent={loading ? <ActivityIndicator color="#c9b3d6" style={styles.footer} /> : null}
+        ListFooterComponent={loading ? <ActivityIndicator color={c.text} style={styles.footer} /> : null}
         ListEmptyComponent={!loading && searched ? <Text style={styles.empty}>Nenhum lead ou cliente encontrado.</Text> : null}
       />
     </View>
@@ -91,8 +92,8 @@ const styles = StyleSheet.create({
   searchRow: { flexDirection: "row", gap: 8 },
   input: {
     flex: 1,
-    backgroundColor: "#2a1533",
-    borderColor: "#4d2b5d",
+    backgroundColor: c.card,
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 12,
     paddingHorizontal: 14,
@@ -100,21 +101,21 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 15,
   },
-  searchBtn: { backgroundColor: "#762991", borderRadius: 12, paddingHorizontal: 18, justifyContent: "center" },
+  searchBtn: { backgroundColor: c.accent, borderRadius: 12, paddingHorizontal: 18, justifyContent: "center" },
   searchBtnText: { color: "#fff", fontWeight: "700" },
   pressed: { opacity: 0.7 },
   error: { color: "#f2a5a5", marginTop: 12 },
   list: { paddingVertical: 12, gap: 10 },
-  card: { backgroundColor: "#2a1533", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 14, padding: 14 },
+  card: { backgroundColor: c.card, borderColor: c.border, borderWidth: 1, borderRadius: 14, padding: 14 },
   // Side stripe + label, the same lead/customer cue the web CRM uses.
-  cardLead: { borderLeftWidth: 4, borderLeftColor: "#762991" },
+  cardLead: { borderLeftWidth: 4, borderLeftColor: c.accent },
   cardOrg: { borderLeftWidth: 4, borderLeftColor: "#2f9e6e" },
   tagLead: { color: "#c9a2dd", fontSize: 10, fontWeight: "700", letterSpacing: 1, marginBottom: 2 },
   tagOrg: { color: "#6fd8aa", fontSize: 10, fontWeight: "700", letterSpacing: 1, marginBottom: 2 },
   name: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  addr: { color: "#b79ec6", fontSize: 13, marginTop: 2 },
+  addr: { color: c.textMuted, fontSize: 13, marginTop: 2 },
   metaRow: { flexDirection: "row", gap: 14, marginTop: 8, flexWrap: "wrap" },
-  meta: { color: "#c9b3d6", fontSize: 12 },
+  meta: { color: c.text, fontSize: 12 },
   footer: { paddingVertical: 16 },
-  empty: { color: "#8a6d9c", textAlign: "center", marginTop: 24 },
+  empty: { color: c.textFaint, textAlign: "center", marginTop: 24 },
 });

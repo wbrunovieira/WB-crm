@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { c } from "@/theme";
 import { Field } from "./Field";
 import { View, Text, Pressable, StyleSheet, ScrollView, Alert, ActivityIndicator, Platform, InteractionManager } from "react-native";
 import { useRouter } from "expo-router";
@@ -585,10 +586,10 @@ export function ManualLeadForm({
       <Field label="Nome do negócio *" value={f.businessName} onChangeText={(v) => set("businessName", v)} placeholder="Ex.: Padaria do João" />
       <View style={styles.chipsRow}>
         <Pressable style={({ pressed }) => [styles.ghost, pressed && styles.pressed]} onPress={fillLocation} disabled={busy}>
-          {locating ? <ActivityIndicator size="small" color="#c9b3d6" /> : <Text style={styles.ghostText}>📍 Usar localização</Text>}
+          {locating ? <ActivityIndicator size="small" color={c.text} /> : <Text style={styles.ghostText}>📍 Usar localização</Text>}
         </Pressable>
         <Pressable style={({ pressed }) => [styles.ghost, pressed && styles.pressed]} onPress={onPhoto} disabled={busy}>
-          {scanning ? <ActivityIndicator size="small" color="#c9b3d6" /> : <Text style={styles.ghostText}>📷 Foto do cartão</Text>}
+          {scanning ? <ActivityIndicator size="small" color={c.text} /> : <Text style={styles.ghostText}>📷 Foto do cartão</Text>}
         </Pressable>
         <Pressable style={({ pressed }) => [styles.ghost, pressed && styles.pressed]} onPress={onFacadePhoto} disabled={busy}>
           <Text style={styles.ghostText}>{facadePhotoUri ? "✅ Fachada anexada" : "🏬 Foto da fachada"}</Text>
@@ -605,7 +606,7 @@ export function ManualLeadForm({
           filled in later). "Usar localização" above already covers the on-site case. */}
       <Pressable style={({ pressed }) => [styles.ghost, pressed && styles.pressed]} onPress={geocodeFromTypedAddress} disabled={busy}>
         {geocoding ? (
-          <ActivityIndicator size="small" color="#c9b3d6" />
+          <ActivityIndicator size="small" color={c.text} />
         ) : (
           <Text style={styles.ghostText}>
             {f.latitude != null ? "✅ Coordenadas definidas" : "📍 Buscar coordenadas pelo endereço"}
@@ -679,34 +680,34 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
 
 const styles = StyleSheet.create({
   container: { padding: 16, gap: 10 },
-  section: { color: "#e9dcf0", fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 10 },
+  section: { color: c.textBright, fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginTop: 10 },
   field: { gap: 4 },
-  label: { color: "#b79ec6", fontSize: 13 },
-  input: { backgroundColor: "#2a1533", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: "#fff", fontSize: 15 },
+  label: { color: c.textMuted, fontSize: 13 },
+  input: { backgroundColor: c.card, borderColor: c.border, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, color: "#fff", fontSize: 15 },
   multiline: { minHeight: 80, textAlignVertical: "top" },
   row: { flexDirection: "row", gap: 10 },
   grow: { flex: 1 },
   uf: { width: 80 },
-  ghost: { alignSelf: "flex-start", borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
-  ghostText: { color: "#c9b3d6", fontWeight: "600", fontSize: 13 },
+  ghost: { alignSelf: "flex-start", borderColor: c.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  ghostText: { color: c.text, fontWeight: "600", fontSize: 13 },
   pressed: { opacity: 0.7 },
   chipsRow: { flexDirection: "row", gap: 8, marginTop: 4 },
-  chip: { borderColor: "#4d2b5d", borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
-  chipOn: { backgroundColor: "#762991", borderColor: "#762991" },
-  chipText: { color: "#c9b3d6", fontWeight: "600", fontSize: 13 },
+  chip: { borderColor: c.border, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
+  chipOn: { backgroundColor: c.accent, borderColor: c.accent },
+  chipText: { color: c.text, fontWeight: "600", fontSize: 13 },
   chipTextOn: { color: "#fff" },
   toggleRow: { flexDirection: "row", alignItems: "center", gap: 10, marginTop: 6 },
-  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: "#4d2b5d", alignItems: "center", justifyContent: "center" },
-  checkboxOn: { backgroundColor: "#762991", borderColor: "#762991" },
+  checkbox: { width: 22, height: 22, borderRadius: 6, borderWidth: 1, borderColor: c.border, alignItems: "center", justifyContent: "center" },
+  checkboxOn: { backgroundColor: c.accent, borderColor: c.accent },
   check: { color: "#fff", fontWeight: "700", fontSize: 13 },
-  toggleText: { color: "#e9dcf0", fontSize: 14 },
+  toggleText: { color: c.textBright, fontSize: 14 },
   followUp: { gap: 8, marginTop: 4, paddingLeft: 4 },
-  saveBtn: { backgroundColor: "#762991", borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 16 },
+  saveBtn: { backgroundColor: c.accent, borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 16 },
   saveBtnText: { color: "#fff", fontSize: 16, fontWeight: "700" },
   dupTitle: { color: "#f4c860", fontSize: 17, fontWeight: "700" },
-  dupSub: { color: "#e9dcf0", fontSize: 13, marginTop: 4 },
+  dupSub: { color: c.textBright, fontSize: 13, marginTop: 4 },
   dupCard: {
-    backgroundColor: "#2a1533",
+    backgroundColor: c.card,
     borderColor: "#8a6d1f",
     borderWidth: 1,
     borderRadius: 14,
@@ -715,7 +716,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   dupName: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  dupMeta: { color: "#b79ec6", fontSize: 13 },
+  dupMeta: { color: c.textMuted, fontSize: 13 },
   dupBadge: { backgroundColor: "#3a2e12", borderColor: "#8a6d1f", borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
   dupBadgeText: { color: "#f4c860", fontSize: 11, fontWeight: "600" },
   dupViewBtn: { marginTop: 8, alignSelf: "flex-start" },

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { c } from "@/theme";
 import { View, Text, StyleSheet, ActivityIndicator } from "react-native";
 import MapView, { Marker, type Region } from "react-native-maps";
 import { useRouter } from "expo-router";
@@ -12,7 +13,7 @@ const PENDING_COLOR = "#3b82f6"; // takes visual priority over quality — "some
 function leadPinColor(pin: LeadMapPin): string {
   if (pin.quality === "hot") return "#ef4444";
   if (pin.quality === "warm") return "#f4c860";
-  return "#c9b3d6";
+  return c.text;
 }
 
 interface MapPin {
@@ -124,7 +125,7 @@ export default function MapScreen() {
   if (locating || leadsQuery.isLoading || pendingQuery.isLoading) {
     return (
       <View style={styles.center}>
-        <ActivityIndicator color="#c9b3d6" size="large" />
+        <ActivityIndicator color={c.text} size="large" />
       </View>
     );
   }
@@ -175,19 +176,19 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   map: { flex: 1 },
-  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: "#1a0022", padding: 24 },
+  center: { flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: c.bg, padding: 24 },
   errorText: { color: "#f2a5a5" },
-  emptyText: { color: "#b79ec6", fontSize: 14, textAlign: "center" },
+  emptyText: { color: c.textMuted, fontSize: 14, textAlign: "center" },
   countPill: {
     position: "absolute",
     top: 12,
     alignSelf: "center",
-    backgroundColor: "#2a1533",
-    borderColor: "#4d2b5d",
+    backgroundColor: c.card,
+    borderColor: c.border,
     borderWidth: 1,
     borderRadius: 999,
     paddingVertical: 6,
     paddingHorizontal: 14,
   },
-  countPillText: { color: "#e9dcf0", fontSize: 12, fontWeight: "600" },
+  countPillText: { color: c.textBright, fontSize: 12, fontWeight: "600" },
 });
