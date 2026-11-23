@@ -6,7 +6,7 @@ toca o outro.
 
 | | WB Digital Solutions (consultoria) | RDS Transportes (frete) |
 |---|---|---|
-| frontend | crm.wbdigitalsolutions.com → PM2 `wb-crm` :3000 | crm-rds.wbdigitalsolutions.com → PM2 `wb-crm-rds` :3001 |
+| frontend | crm.wbdigitalsolutions.com → PM2 `wb-crm` :3000 | crm-rds.wbdigitalsolutions.com → PM2 `wb-crm-rds` :3005 |
 | API | crm-api.wbdigitalsolutions.com → :3010 | crm-rds-api.wbdigitalsolutions.com → :3011 |
 | container | `wb-crm-backend` | `wb-crm-backend-rds` |
 | banco | `crm_db` | `crm_rds` (mesmo Postgres, database separado) |

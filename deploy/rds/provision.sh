@@ -11,7 +11,7 @@ DIR=/opt/wb-crm-rds
 DB=crm_rds
 CONTAINER=wb-crm-backend-rds
 PM2_APP=wb-crm-rds
-REPO=git@github.com:wbrunovieira/WB-crm.git
+REPO=https://github.com/wbrunovieira/WB-crm.git
 
 say() { printf '\n\033[1;34m==> %s\033[0m\n' "$1"; }
 
@@ -51,7 +51,7 @@ say "5/8  Backend ($CONTAINER :3011)"
 cd "$DIR" && docker compose --profile backend up -d --build backend
 docker ps --filter "name=$CONTAINER" --format '    {{.Names}} {{.Status}}'
 
-say "6/8  Frontend (build com BRAND=rds + PM2 $PM2_APP :3001)"
+say "6/8  Frontend (build com BRAND=rds + PM2 $PM2_APP :3005)"
 cd "$DIR" && npm ci --production=false && npm run build
 if pm2 describe "$PM2_APP" >/dev/null 2>&1; then
   pm2 restart "$PM2_APP"
